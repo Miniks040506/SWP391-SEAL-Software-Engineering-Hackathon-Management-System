@@ -1,4 +1,3 @@
-bash -lc cat > /mnt/data/README.md <<'EOF'
 # SEAL - Software Engineering Hackathon Management System
 
 A web-based platform for managing SEAL academic hackathon events organized by the Software Engineering Department and PDP at FPT University HCMC.
