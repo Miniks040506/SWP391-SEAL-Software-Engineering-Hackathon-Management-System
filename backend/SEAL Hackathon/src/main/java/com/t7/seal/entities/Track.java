@@ -38,9 +38,26 @@ public class Track {
 
     @Column(name = "max_members", nullable = false)
     @Builder.Default
-    private Integer max_members = 5;
+    private Integer maxMembers = 5;
 
     @Column(name = "display_order", nullable = false)
     @Builder.Default
     private Integer displayOrder = 0;
+
+    // Checks whether this track has a configured team limit.
+    public boolean hasTeamLimit() {
+        return maxTeams != null;
+    }
+
+    // Checks whether a proposed member count is within this track's allowed range.
+    public boolean isMemberCountAllowed(int count) {
+        return count >= minMembers && count <= maxMembers;
+    }
+
+    // Performs a coarse substring check on the required link types JSON string.
+    public boolean requiresLinkType(String type) {
+        return requiredLinkTypes != null
+                && type != null
+                && requiredLinkTypes.toUpperCase().contains(type.toUpperCase());
+    }
 }

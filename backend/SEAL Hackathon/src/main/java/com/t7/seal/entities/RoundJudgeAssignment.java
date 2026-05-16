@@ -127,4 +127,9 @@ public class RoundJudgeAssignment {
 
         this.scoringProgress++;
     }
+
+    // Checks whether the 24-hour reminder rate limit allows another reminder.
+    public boolean canSendReminder(LocalDateTime now) {
+        return remindedAt == null || remindedAt.plusHours(24).isBefore(now);
+    }
 }

@@ -39,4 +39,29 @@ public class TeamMember {
 
     @Column(name = "left_reason")
     private LeftReason leftReason;
+
+    // Checks whether this membership is currently active.
+    public boolean isActive() {
+        return leftAt == null;
+    }
+
+    // Checks whether this member is the team leader.
+    public boolean isLeader() {
+        return role == MemberRole.LEADER;
+    }
+
+    // Marks this member as having left the team.
+    public void leave(LocalDateTime now, LeftReason reason) {
+        if (!isActive()) {
+            throw new IllegalStateException("Team member has already left.");
+        }
+
+        leftAt = now;
+        leftReason = reason;
+    }
+
+    // Transfers leadership to this member; caller must demote prior leader in same transaction.
+    public void transferLeadership() {
+        role = MemberRole.LEADER;
+    }
 }

@@ -22,6 +22,7 @@ public class StudentProfile {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "student_type", nullable = false)
     private StudentType studentType;
 
@@ -37,6 +38,28 @@ public class StudentProfile {
     @Column(name = "graduation_year")
     private Integer graduationYear;
 
+
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
+
+    // True when the student comes from outside FPT (university_name becomes mandatory).
+    public boolean isExternal() {
+        return studentType == StudentType.EXTERNAL;
+    }
+
+    // App-layer validation hook: EXTERNAL students must provide a university name.
+    public boolean requiresUniversityName() {
+        return isExternal();
+    }
+
+    // Minimal completeness check for UC-07 approval: required fields are present.
+    public boolean isComplete() {
+        return studentCode != null && !studentCode.isBlank()
+                && (!isExternal() || (universityName != null && !universityName.isBlank()));
+    }
+
+    // Stamp verifiedAt — called together with User.status -> ACTIVE during UC-07.
+    public void markVerified(LocalDateTime now) {
+        verifiedAt = now;
+    }
 }

@@ -3,8 +3,8 @@ package com.t7.seal.entities;
 import com.t7.seal.domain.TeamStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CollectionId;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -28,12 +28,12 @@ public class Team {
     @Column(nullable = false, length = 200)
     private String name;
 
-    @Column(name = "join_code", nullable = false, length = 20)
+    @Column(name = "join_code", nullable = false, length = 20, unique = true)
     private String joinCode;
 
-    @Column(name = "join_code_enable", nullable = false)
+    @Column(name = "join_code_enabled", nullable = false)
     @Builder.Default
-    private Boolean joinCodeEnable = true;
+    private Boolean joinCodeEnabled = true;
 
     @Column(name = "project_title", length = 300)
     private String projectTitle;
@@ -42,4 +42,87 @@ public class Team {
     @Column(nullable = false)
     @Builder.Default
     private TeamStatus status = TeamStatus.FORMING;
+
+    @Column(name = "member_count", nullable = false)
+    @Builder.Default
+    private Integer memberCount = 1;
+
+    @Column(name = "registered_at")
+    private LocalDateTime registeredAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    // Checks whether this team is still forming.
+    public boolean isForming() {
+        return status == TeamStatus.FORMING;
+    }
+
+    // Checks whether the join code is enabled for this team.
+    public boolean hasJoinCodeEnabled() {
+        return Boolean.TRUE.equals(joinCodeEnabled);
+    }
+
+    // Checks whether this team has at least the required number of members.
+    public boolean hasMinimumMembers(int minMembers) {
+        return memberCount != null && memberCount >= minMembers;
+    }
+
+    // Checks whether this team has reached the supplied member limit.
+    public boolean isAtMemberLimit(int maxMembers) {
+        return memberCount != null && memberCount >= maxMembers;
+    }
+
+    // Registers a forming team for the event.
+    public void register(LocalDateTime now) {
+        if (status != TeamStatus.FORMING) {
+            throw new IllegalStateException("Team must be forming to register.");
+        }
+
+        status = TeamStatus.REGISTERED;
+        registeredAt = now;
+    }
+
+    // Advances a registered or competing team.
+    public void advance() {
+        if (status != TeamStatus.REGISTERED && status != TeamStatus.COMPETING) {
+            throw new IllegalStateException("Team must be registered or competing to advance.");
+        }
+
+        status = TeamStatus.ADVANCED;
+    }
+
+    // Eliminates a team unless it is already final.
+    public void eliminate() {
+        if (status == TeamStatus.WINNER || status == TeamStatus.ELIMINATED) {
+            throw new IllegalStateException("Team cannot be eliminated from its current status.");
+        }
+
+        status = TeamStatus.ELIMINATED;
+    }
+
+    // Marks an advanced team as the winner.
+    public void markWinner() {
+        if (status != TeamStatus.ADVANCED) {
+            throw new IllegalStateException("Team must be advanced to become the winner.");
+        }
+
+        status = TeamStatus.WINNER;
+    }
+
+    // Increments the cached team member count.
+    public void incrementMemberCount() {
+        memberCount = (memberCount == null ? 0 : memberCount) + 1;
+    }
+
+    // Decrements the cached team member count when above zero.
+    public void decrementMemberCount() {
+        if (memberCount != null && memberCount > 0) {
+            memberCount--;
+        }
+    }
 }

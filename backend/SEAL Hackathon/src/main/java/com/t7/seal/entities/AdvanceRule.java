@@ -36,4 +36,23 @@ public class AdvanceRule {
 
     @Column(length = 300)
     private String description;
+
+    // Checks whether this advance rule applies across all tracks.
+    public boolean appliesGlobally() {
+        return trackId == null;
+    }
+
+    // Checks whether this advance rule applies to the supplied track.
+    public boolean appliesToTrack(UUID trackId) {
+        return appliesGlobally() || (this.trackId != null && this.trackId.equals(trackId));
+    }
+
+    // Higher rank means higher priority per spec.
+    public int priorityRank() {
+        return switch (ruleType) {
+            case MIN_SCORE -> 3;
+            case TOP_N, TOP_PERCENT -> 2;
+            case WILDCARD -> 1;
+        };
+    }
 }

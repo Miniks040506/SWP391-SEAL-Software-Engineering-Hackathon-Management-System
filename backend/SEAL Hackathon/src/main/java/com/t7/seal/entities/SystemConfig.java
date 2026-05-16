@@ -18,7 +18,7 @@ import java.util.UUID;
 public class SystemConfig {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private Long id;
+    private UUID id;
 
     @Column(name = "config_key", unique = true, nullable = false, length = 200)
     private String configKey;
@@ -50,10 +50,40 @@ public class SystemConfig {
     @Column(name = "updated_by", nullable = false)
     private UUID updatedBy;
 
-    @Column(name = "created_by", nullable = false)
+    @Column(name = "created_at", nullable = false)
     @Builder.Default
-    private LocalDateTime createdBy = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
+
+    // Checks whether this configuration is active and usable.
+    public boolean isUsable() {
+        return Boolean.TRUE.equals(isActive);
+    }
+
+    // Checks whether this configuration stores a boolean value.
+    public boolean isBoolean() {
+        return valueType == ValueType.BOOLEAN;
+    }
+
+    // Checks whether this configuration stores an integer value.
+    public boolean isInteger() {
+        return valueType == ValueType.INTEGER;
+    }
+
+    // Checks whether this configuration stores a JSON value.
+    public boolean isJson() {
+        return valueType == ValueType.JSON;
+    }
+
+    // Deactivates this configuration.
+    public void deactivate() {
+        isActive = false;
+    }
+
+    // Activates this configuration.
+    public void activate() {
+        isActive = true;
+    }
 }

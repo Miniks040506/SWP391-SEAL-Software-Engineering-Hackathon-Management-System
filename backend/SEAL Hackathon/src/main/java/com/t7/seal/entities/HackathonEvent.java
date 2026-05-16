@@ -63,4 +63,62 @@ public class HackathonEvent {
 
     @Column(name = "update_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // Checks whether registrations can be accepted for the supplied date.
+    public boolean isRegistrationWindowOpen(LocalDate today) {
+        return status == RegistrationStatus.REGISTRATION
+                && today != null
+                && !today.isBefore(registrationOpen)
+                && !today.isAfter(registrationClose);
+    }
+
+    // Moves the event from draft into the registration phase.
+    public void openRegistration() {
+        if (status != RegistrationStatus.DRAFT) {
+            throw new IllegalStateException("Event must be in draft status to open registration.");
+        }
+
+        status = RegistrationStatus.REGISTRATION;
+    }
+
+    // Starts the event after registration has been opened.
+    public void startEvent() {
+        if (status != RegistrationStatus.REGISTRATION) {
+            throw new IllegalStateException("Event must be in registration status to start.");
+        }
+
+        status = RegistrationStatus.ONGOING;
+    }
+
+    // Starts judging after the event is ongoing.
+    public void startJudging() {
+        if (status != RegistrationStatus.ONGOING) {
+            throw new IllegalStateException("Event must be ongoing to start judging.");
+        }
+
+        status = RegistrationStatus.JUDGING;
+    }
+
+    // Completes the event after judging has started.
+    public void complete() {
+        if (status != RegistrationStatus.JUDGING) {
+            throw new IllegalStateException("Event must be in judging status to complete.");
+        }
+
+        status = RegistrationStatus.COMPLETED;
+    }
+
+    // Publishes results once the event is judging or completed.
+    public void publishResults(LocalDateTime now) {
+        if (status != RegistrationStatus.JUDGING && status != RegistrationStatus.COMPLETED) {
+            throw new IllegalStateException("Results can only be published during judging or after completion.");
+        }
+
+        resultPublishedAt = now;
+    }
+
+    // Checks whether event results have been published.
+    public boolean areResultsPublished() {
+        return resultPublishedAt != null;
+    }
 }
