@@ -58,7 +58,7 @@ public class RoundJudgeAssignment {
     @Column(name = "reminded_at")
     private LocalDateTime remindedAt;
 
-    // Effective value helper methods
+    // Helper methods
 
     public boolean isAssignedToAllTracks() {
         return track == null;
@@ -91,12 +91,15 @@ public class RoundJudgeAssignment {
                 && scoringProgress >= totalToScore;
     }
 
-    //Check if the Judge is authorized to grade a Submission belonging to this round/track.
-    // + Must be in the same Round.
-    // + If assignment.track == null, then all Tracks in the Round can be graded.
-    // + If assignment.track != null, then the Submission must belong to that specific Track.
+    /**
+     * Check if this assignment allows the Judge to grade a specific Submission.
+     * Logic:
+     * - The Submission must belong to the correct Round.
+     * - If track == null: The Judge is allowed to grade all Tracks in the Round.
+     * - If track != null: The Submission must belong to that specific Track.
+     */
     public boolean canScore(UUID submissionRoundId, UUID submissionTrackId) {
-        if (round == null || round.getId() == null) {
+        if (round == null || round.getId() == null || submissionRoundId == null) {
             return false;
         }
 
@@ -109,5 +112,19 @@ public class RoundJudgeAssignment {
         }
 
         return track.getId() != null && track.getId().equals(submissionTrackId);
+    }
+
+    //update time that send to reminder
+    public void markReminderSent() {
+        this.remindedAt = LocalDateTime.now();
+    }
+
+    //The pace slows down once the Judge finishes grading a Submission.
+    public void increaseScoringProgress() {
+        if (this.scoringProgress == null) {
+            this.scoringProgress = 0;
+        }
+
+        this.scoringProgress++;
     }
 }

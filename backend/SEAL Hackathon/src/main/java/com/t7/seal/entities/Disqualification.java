@@ -11,13 +11,28 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "disqualification")
+@Table(
+        name = "disqualifications",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_disqualification_submission",
+                        columnNames = "submission_id"
+                )
+        },
+        indexes = {
+                @Index(name = "idx_disqualification_submission", columnList = "submission_id"),
+                @Index(name = "idx_disqualification_issued_by", columnList = "issued_by"),
+                @Index(name = "idx_disqualification_appeal_status", columnList = "appeal_status"),
+                @Index(name = "idx_disqualification_issued_at", columnList = "issued_at")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Disqualification {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -26,7 +41,6 @@ public class Disqualification {
     @JoinColumn(name = "submission_id", nullable = false, unique = true)
     private Submission submission;
 
-    //The coordinator signed the disqualify order.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "issued_by", nullable = false)
     private User issuedBy;
@@ -35,17 +49,22 @@ public class Disqualification {
     private String reason;
 
     /**
-     * Link evidence.
-     * Ví dụ:
-     * - Google Drive evidence
-     * - Screenshot
-     * - Report document
+     * Optional evidence URL.
+     * Examples:
+     * - Google Drive evidence folder
+     * - screenshot link
+     * - plagiarism report
+     * - violation report document
      */
     @URL(message = "Evidence URL must be valid")
     @Column(name = "evidence_url", length = 500)
     private String evidenceUrl;
 
-    // Appeal note from the Team.
+    /**
+     * Appeal note submitted by the team.
+     * This can contain the team's explanation, clarification,
+     * or request to review the disqualification decision.
+     */
     @Column(name = "appeal_note", columnDefinition = "TEXT")
     private String appealNote;
 
@@ -53,16 +72,27 @@ public class Disqualification {
     @Column(name = "appeal_status", length = 30)
     private AppealStatus appealStatus;
 
-    // The moment to make the disqualify decision.
     @CreationTimestamp
     @Column(name = "issued_at", nullable = false, updatable = false)
     private LocalDateTime issuedAt;
 
-    // Validation
+    // Lifecycle validation
 
     @PrePersist
     @PreUpdate
     private void validate() {
+        validateRequiredFields();
+    }
+
+    private void validateRequiredFields() {
+        if (submission == null) {
+            throw new IllegalStateException("Submission is required.");
+        }
+
+        if (issuedBy == null) {
+            throw new IllegalStateException("Issued by user is required.");
+        }
+
         if (reason == null || reason.isBlank()) {
             throw new IllegalStateException("Disqualification reason is required.");
         }
@@ -70,36 +100,66 @@ public class Disqualification {
 
     // Helper methods
 
+    /**
+     * Checks whether evidence URL is provided.
+     */
     public boolean hasEvidence() {
         return evidenceUrl != null && !evidenceUrl.isBlank();
     }
 
+    /**
+     * Checks whether the team has submitted an appeal.
+     */
     public boolean hasAppeal() {
         return appealStatus != null;
     }
 
+    /**
+     * Checks whether the appeal is currently pending.
+     */
     public boolean isAppealPending() {
         return appealStatus == AppealStatus.PENDING;
     }
 
-    public boolean isUpheld() {
+    /**
+     * Checks whether the disqualification decision was upheld.
+     */
+    public boolean isAppealUpheld() {
         return appealStatus == AppealStatus.UPHELD;
     }
 
-    public boolean isOverturned() {
+    /**
+     * Checks whether the disqualification decision was overturned.
+     */
+    public boolean isAppealOverturned() {
         return appealStatus == AppealStatus.OVERTURNED;
     }
 
+    /**
+     * Submits an appeal from the team.
+     */
     public void submitAppeal(String appealNote) {
+        if (appealNote == null || appealNote.isBlank()) {
+            throw new IllegalArgumentException("Appeal note is required.");
+        }
+
         this.appealNote = appealNote;
         this.appealStatus = AppealStatus.PENDING;
     }
 
-    public void upholdAppealDecision() {
+    /**
+     * Keeps the original disqualification decision.
+     */
+    public void upholdAppeal() {
         this.appealStatus = AppealStatus.UPHELD;
     }
 
-    public void overturnAppealDecision() {
+    /**
+     * Cancels the disqualification decision.
+     * The service layer should also restore Submission status
+     * and recalculate Ranking in the same transaction.
+     */
+    public void overturnAppeal() {
         this.appealStatus = AppealStatus.OVERTURNED;
     }
 }
