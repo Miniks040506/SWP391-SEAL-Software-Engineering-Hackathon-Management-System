@@ -72,4 +72,8 @@ public class User {
 
     @Column(name = "update_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public boolean isActive() {
+        return status == UserStatus.ACTIVE;
+    }
 }
