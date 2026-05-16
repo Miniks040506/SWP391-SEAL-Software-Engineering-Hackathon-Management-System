@@ -20,11 +20,12 @@ import java.util.UUID;
                 )
         },
         indexes = {
+                @Index(name = "idx_ranking_submission", columnList = "submission_id"),
                 @Index(name = "idx_ranking_round", columnList = "round_id"),
                 @Index(name = "idx_ranking_track", columnList = "track_id"),
-                @Index(name = "idx_ranking_round_track_rank",
-                        columnList = "round_id, track_id, rank_position"),
-                @Index(name = "idx_ranking_is_advanced", columnList = "is_advanced")
+                @Index(name = "idx_ranking_round_track_rank", columnList = "round_id, track_id, rank_position"),
+                @Index(name = "idx_ranking_is_advanced", columnList = "is_advanced"),
+                @Index(name = "idx_ranking_calculated_by", columnList = "calculated_by")
         }
 )
 @Getter
@@ -51,25 +52,29 @@ public class Ranking {
     private Track track;
 
     /**
-     * Total score has been aggregated.
+     * Final aggregated score of the submission.
      * Business formula:
-     * AVG_judges[SUM(score.value * weight) / SUM(weight)]
+     * AVG_judges[
+     *     SUM(score.value * weight) / SUM(weight)
+     * ]
+     * This value is materialized to avoid recalculating scores
+     * every time the leaderboard is displayed.
      */
     @Column(name = "total_score", nullable = false)
     private Float totalScore;
 
     /**
-     * Snapshot breakdown of scores.
-     * Suggested JSONB structure:
+     * Snapshot of detailed scores.
+     * Suggested JSON structure:
      * {
-         * "judgeId-1": {
-         * "criteriaId-1": 8.5,
-         * "criteriaId-2": 9.0
-         * },
-         * "judgeId-2": {
-         * "criteriaId-1": 7.5,
-         * "criteriaId-2": 8.0
-         * }
+     *   "judgeId-1": {
+     *     "criteriaId-1": 8.5,
+     *     "criteriaId-2": 9.0
+     *   },
+     *   "judgeId-2": {
+     *     "criteriaId-1": 7.5,
+     *     "criteriaId-2": 8.0
+     *   }
      * }
      */
     @JdbcTypeCode(SqlTypes.JSON)
@@ -79,12 +84,19 @@ public class Ranking {
     @Column(name = "judge_count", nullable = false)
     private Integer judgeCount;
 
-    //Ranking in the Track at Round.
+    /**
+     * Rank position within the same round and track.
+     * This value should be recalculated after:
+     * - score updates
+     * - disqualification
+     * - manual result adjustment
+     */
     @Column(name = "rank_position", nullable = false)
     private Integer rankPosition;
 
     /**
-     * TRUE nếu đội được advance sang Round tiếp theo.
+     * Whether the team is advanced to the next round.
+     * This field is used by the advancement confirmation flow.
      */
     @Column(name = "is_advanced", nullable = false)
     @Builder.Default
@@ -94,41 +106,136 @@ public class Ranking {
     @Column(name = "advance_reason", length = 200)
     private AdvanceReason advanceReason;
 
-    //The most recent ranking calculation date.
     @Column(name = "calculated_at", nullable = false)
     private LocalDateTime calculatedAt;
 
-     // Coordinator trigger calculates ranking
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "calculated_by", nullable = false)
     private User calculatedBy;
 
+    // Lifecycle validation
+
+    @PrePersist
+    @PreUpdate
+    private void validate() {
+        validateRequiredFields();
+        validateRankingValues();
+    }
+
+    private void validateRequiredFields() {
+        if (submission == null) {
+            throw new IllegalStateException("Submission is required.");
+        }
+
+        if (round == null) {
+            throw new IllegalStateException("Round is required.");
+        }
+
+        if (track == null) {
+            throw new IllegalStateException("Track is required.");
+        }
+
+        if (calculatedBy == null) {
+            throw new IllegalStateException("Calculated by user is required.");
+        }
+
+        if (calculatedAt == null) {
+            calculatedAt = LocalDateTime.now();
+        }
+
+        if (isAdvanced == null) {
+            isAdvanced = false;
+        }
+    }
+
+    private void validateRankingValues() {
+        if (totalScore == null) {
+            throw new IllegalStateException("Total score is required.");
+        }
+
+        if (totalScore < 0) {
+            throw new IllegalStateException("Total score must be greater than or equal to 0.");
+        }
+
+        if (judgeCount == null || judgeCount < 0) {
+            throw new IllegalStateException("Judge count must be greater than or equal to 0.");
+        }
+
+        if (rankPosition == null || rankPosition < 1) {
+            throw new IllegalStateException("Rank position must be greater than or equal to 1.");
+        }
+    }
+
     // Helper methods
 
+    /**
+     * Checks whether this team has advanced to the next round.
+     */
     public boolean hasAdvanced() {
         return Boolean.TRUE.equals(isAdvanced);
     }
 
+    /**
+     * Checks whether this ranking has score breakdown data.
+     */
     public boolean hasScoreBreakdown() {
         return scoreBreakdown != null && !scoreBreakdown.isEmpty();
     }
 
+    /**
+     * Checks whether enough judges have submitted confirmed scores.
+     */
     public boolean hasEnoughJudges(int requiredJudgeCount) {
         return judgeCount != null && judgeCount >= requiredJudgeCount;
     }
 
+    /**
+     * Marks this ranking as advanced.
+     */
     public void markAdvanced(AdvanceReason reason) {
         this.isAdvanced = true;
         this.advanceReason = reason;
     }
 
+    /**
+     * Marks this ranking as not advanced.
+     */
     public void markNotAdvanced(AdvanceReason reason) {
         this.isAdvanced = false;
         this.advanceReason = reason;
     }
 
+    /**
+     * Marks this ranking as disqualified.
+     */
+    public void markDisqualified() {
+        this.isAdvanced = false;
+        this.advanceReason = AdvanceReason.DISQUALIFIED;
+    }
+
+    /**
+     * Updates calculation metadata after recalculating ranking.
+     */
     public void updateCalculationInfo(User calculatedBy) {
         this.calculatedBy = calculatedBy;
         this.calculatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Returns the score of a specific judge for a specific criterion
+     * from the score breakdown snapshot.
+     */
+    public Float getBreakdownScore(UUID judgeId, UUID criteriaId) {
+        if (scoreBreakdown == null || judgeId == null || criteriaId == null) {
+            return null;
+        }
+
+        Map<String, Float> judgeScores = scoreBreakdown.get(judgeId.toString());
+
+        if (judgeScores == null) {
+            return null;
+        }
+
+        return judgeScores.get(criteriaId.toString());
     }
 }
