@@ -31,6 +31,7 @@ public class MentorFeedback {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private MentorFeedbackCategory category = MentorFeedbackCategory.GENERAL;
@@ -41,4 +42,14 @@ public class MentorFeedback {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // Checks whether this feedback is specific to a round.
+    public boolean isRoundSpecific() {
+        return roundId != null;
+    }
+
+    // Checks whether this feedback has enough meaningful content.
+    public boolean hasValidContentLength() {
+        return content != null && content.trim().length() >= 20;
+    }
 }

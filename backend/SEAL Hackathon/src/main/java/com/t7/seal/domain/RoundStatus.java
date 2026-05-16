@@ -5,5 +5,5 @@ public enum RoundStatus {
     OPEN,
     CLOSED,
     JUDGING,
-    RESULT_READY
+    RESULTS_READY
 }

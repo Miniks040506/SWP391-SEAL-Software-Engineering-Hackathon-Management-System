@@ -26,7 +26,7 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "full_name", length = 200)
+    @Column(name = "full_name", length = 200, nullable = false)
     private String fullName;
 
     @Column(length = 20)
@@ -70,10 +70,56 @@ public class User {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "update_at", nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    // True only when account status is ACTIVE.
     public boolean isActive() {
         return status == UserStatus.ACTIVE;
+    }
+
+    // Email has been confirmed via the verification link (UC-02).
+    public boolean isVerified() {
+        return emailVerifiedAt != null;
+    }
+
+    // Account is currently inside a login lockout window (UC-03).
+    public boolean isLocked(LocalDateTime now) {
+        return lockedUntil != null && lockedUntil.isAfter(now);
+    }
+
+    // ACTIVE account that is not in a lockout window — allowed to authenticate.
+    public boolean canLogin(LocalDateTime now) {
+        return status == UserStatus.ACTIVE && !isLocked(now);
+    }
+
+    // UC-02: user clicked verify link — stamp time, drop token, move to PENDING_APPROVAL.
+    public void markEmailVerified(LocalDateTime now) {
+        emailVerifiedAt = now;
+        emailVerificationToken = null;
+        status = UserStatus.PENDING_APPROVAL;
+    }
+
+    // UC-07: coordinator approves; only legal from PENDING_APPROVAL.
+    public void approve() {
+        if (status != UserStatus.PENDING_APPROVAL) {
+            throw new IllegalStateException("User must be pending approval before approval");
+        }
+        status = UserStatus.ACTIVE;
+    }
+
+    // UC-03: increment failure counter; once 5 consecutive fails are reached, lock for 15 minutes.
+    public void recordFailedLogin(LocalDateTime now) {
+        failedLoginCount = (failedLoginCount == null ? 0 : failedLoginCount) + 1;
+        if (failedLoginCount >= 5) {
+            lockedUntil = now.plusMinutes(15);
+        }
+    }
+
+    // UC-03: successful login clears the lockout state and updates lastLoginAt.
+    public void recordSuccessfulLogin(LocalDateTime now) {
+        lastLoginAt = now;
+        failedLoginCount = 0;
+        lockedUntil = null;
     }
 }

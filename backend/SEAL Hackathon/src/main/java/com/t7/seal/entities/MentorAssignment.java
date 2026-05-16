@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "student_profile")
+@Table(name = "mentor_assignment")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,7 +15,7 @@ import java.util.UUID;
 @Builder
 public class MentorAssignment {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "user_id", nullable = false)
@@ -33,4 +33,12 @@ public class MentorAssignment {
     @Column(name = "assign_at", nullable = false)
     @Builder.Default
     private LocalDateTime assignAt = LocalDateTime.now();
+
+    // Checks whether this assignment matches a mentor and track for in-memory uniqueness checks.
+    public boolean matches(UUID userId, UUID trackId) {
+        return this.userId != null
+                && this.userId.equals(userId)
+                && this.trackId != null
+                && this.trackId.equals(trackId);
+    }
 }

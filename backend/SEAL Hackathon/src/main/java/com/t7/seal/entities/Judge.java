@@ -22,6 +22,7 @@ public class Judge {
     @Column(name = "user_id", unique = true, nullable = false)
     private UUID userId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "judge_type", nullable = false)
     private JudgeType judgeType;
 
@@ -40,4 +41,25 @@ public class Judge {
 
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
+
+    // Guest judge (RQ3 grouping) — distinguishes external evaluators.
+    public boolean isGuest() {
+        return judgeType == JudgeType.GUEST;
+    }
+
+    // UC-08: temporary guest judge is still usable when expiresAt is in the future (or unset).
+    public boolean isTemporaryActive(LocalDateTime now) {
+        return Boolean.TRUE.equals(isTemporary) && (expiresAt == null || expiresAt.isAfter(now));
+    }
+
+    // Spec invariant: temporary judges should carry an expires_at value.
+    public boolean requiresExpiry() {
+        return Boolean.TRUE.equals(isTemporary);
+    }
+
+    // Convert a temporary judge into a permanent one (clears the expiry).
+    public void markPermanent() {
+        isTemporary = false;
+        expiresAt = null;
+    }
 }
