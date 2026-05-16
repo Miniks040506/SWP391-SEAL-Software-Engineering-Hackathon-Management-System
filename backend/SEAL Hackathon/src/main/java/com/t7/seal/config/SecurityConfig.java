@@ -16,6 +16,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import java.util.Collections;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -23,16 +25,15 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        http.sessionManagement(management ->
-                        management.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )).authorizeHttpRequests(authorize ->
-                                authorize
-//                                .requestMatchers("/api/products/*/reviews").permitAll()
-//                                .requestMatchers("/api/**").authenticated()
-                                        .anyRequest().permitAll()
-                )
-                .addFilterBefore(new JwtTokenValidator(), BasicAuthenticationFilter.class)
+        http.sessionManagement(management
+                        -> management.sessionCreationPolicy(
+                        SessionCreationPolicy.STATELESS
+                )).authorizeHttpRequests(authorize
+                        -> authorize
+//                            .requestMatchers("/api/products/*/reviews").permitAll()
+//                            .requestMatchers("/api/**").authenticated()
+                            .anyRequest().permitAll()
+                ).addFilterBefore(new JwtTokenValidator(), BasicAuthenticationFilter.class)
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(
                         corsConfigurationSource()));
@@ -45,7 +46,15 @@ public class SecurityConfig {
         return new CorsConfigurationSource() {
             @Override
             public @Nullable CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
-                return null;
+                CorsConfiguration corsConfiguration = new CorsConfiguration();
+//                corsConfiguration.setAllowedOrigins(Collections.singletonList("*"));
+//                corsConfiguration.setAllowedMethods(Collections.singletonList("*"));
+//                corsConfiguration.setAllowedHeaders(Collections.singletonList("*"));
+//                corsConfiguration.setAllowCredentials(true);
+//                corsConfiguration.setExposedHeaders(Collections.singletonList(new JwtConstant().getHeader()));
+//                corsConfiguration.setMaxAge(3600L);
+
+                return corsConfiguration;
             }
         };
     }

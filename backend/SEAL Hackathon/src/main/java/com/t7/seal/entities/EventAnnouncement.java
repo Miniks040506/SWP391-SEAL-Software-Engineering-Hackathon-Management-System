@@ -14,6 +14,6 @@ import java.util.UUID;
 @Builder
 public class EventAnnouncement {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 }

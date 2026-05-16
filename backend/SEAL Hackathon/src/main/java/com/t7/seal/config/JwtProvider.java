@@ -5,7 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Collection;
@@ -13,7 +13,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-@Service
+@Component
 public class JwtProvider {
 
     SecretKey key = Keys.hmacShaKeyFor(new JwtConstant().getSecret().getBytes());
@@ -25,7 +25,7 @@ public class JwtProvider {
 
         //86400000 = 24h
         String jwt = Jwts.builder().setIssuedAt(new Date())
-                .setExpiration(new Date(new Date().getTime() + 24*60*60*1000))
+                .setExpiration(new Date(new Date().getTime() + 86400000))
                 .claim("email", authentication.getName())
                 .claim("authorities", roles)
                 .signWith(key).compact();
@@ -54,5 +54,4 @@ public class JwtProvider {
 
         return String.join(",", auths);
     }
-
 }
