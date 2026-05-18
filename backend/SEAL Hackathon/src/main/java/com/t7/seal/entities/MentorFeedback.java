@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "mentor_feedback")
+@Table(name = "mentor_feedbacks")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,14 +19,17 @@ public class MentorFeedback {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "team_id", nullable = false)
-    private UUID teamId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id", nullable = false)
+    private Team team;
 
-    @Column(name = "mentor_user_id", nullable = false)
-    private UUID mentorUserId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mentor_user_id", nullable = false)
+    private User mentor;
 
-    @Column(name = "round_id", nullable = false)
-    private UUID roundId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "round_id")
+    private Round round;
 
     @Column(columnDefinition = "TEXT")
     private String content;
@@ -45,7 +48,7 @@ public class MentorFeedback {
 
     // Checks whether this feedback is specific to a round.
     public boolean isRoundSpecific() {
-        return roundId != null;
+        return round != null;
     }
 
     // Checks whether this feedback has enough meaningful content.

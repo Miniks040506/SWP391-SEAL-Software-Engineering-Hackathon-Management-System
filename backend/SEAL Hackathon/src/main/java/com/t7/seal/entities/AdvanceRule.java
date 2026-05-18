@@ -7,7 +7,7 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "advance_rule")
+@Table(name = "advance_rules")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,11 +18,13 @@ public class AdvanceRule {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "round_id", nullable = false)
-    private UUID roundId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "round_id", nullable = false)
+    private Round round;
 
-    @Column(name = "track_id")
-    private UUID trackId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "track_id")
+    private Track track;
 
     @Column(name = "rule_type", nullable = false)
     private RuleType ruleType;
@@ -39,12 +41,13 @@ public class AdvanceRule {
 
     // Checks whether this advance rule applies across all tracks.
     public boolean appliesGlobally() {
-        return trackId == null;
+        return track == null;
     }
 
     // Checks whether this advance rule applies to the supplied track.
     public boolean appliesToTrack(UUID trackId) {
-        return appliesGlobally() || (this.trackId != null && this.trackId.equals(trackId));
+        return appliesGlobally()
+                || (track != null && track.getId() != null && track.getId().equals(trackId));
     }
 
     // Higher rank means higher priority per spec.

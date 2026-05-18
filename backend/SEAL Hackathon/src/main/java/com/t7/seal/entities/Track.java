@@ -3,10 +3,12 @@ package com.t7.seal.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "track")
+@Table(name = "tracks")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,8 +19,9 @@ public class Track {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "event_id", nullable = false)
-    private UUID eventId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id", nullable = false)
+    private HackathonEvent event;
 
     @Column(length = 200, nullable = false)
     private String name;
@@ -43,6 +46,13 @@ public class Track {
     @Column(name = "display_order", nullable = false)
     @Builder.Default
     private Integer displayOrder = 0;
+
+    @OneToMany(
+            mappedBy = "track",
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<Team> teams = new ArrayList<>();
 
     // Checks whether this track has a configured team limit.
     public boolean hasTeamLimit() {

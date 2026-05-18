@@ -8,7 +8,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "team_invitation")
+@Table(
+        name = "team_invitations",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_invitation_token", columnNames = "token")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,19 +24,22 @@ public class TeamInvitation {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
-    private UUID teamId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id", nullable = false)
+    private Team team;
 
-    @Column(name = "invite_by", nullable = false)
-    private UUID invitedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invited_by", nullable = false)
+    private User invitedBy;
 
     @Column(name = "invite_email", nullable = false)
     private String inviteEmail;
 
-    @Column(name = "invite_user_id")
-    private UUID inviteUserId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invitee_user_id")
+    private User invitee;
 
-    @Column(unique = true, nullable = false, length = 100)
+    @Column(nullable = false, length = 100)
     private String token;
 
     @Column(nullable = false)
