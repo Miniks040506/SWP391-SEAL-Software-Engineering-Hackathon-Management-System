@@ -46,9 +46,8 @@ public class Prize {
     @Column(name = "rank_position", nullable = false)
     private Integer rankPosition;
 
-    /**
-     * Prize title displayed on UI and certificates.
-     */
+
+    // Prize title displayed on UI and certificates.
     @Column(name = "title", nullable = false, length = 200)
     private String title;
 
@@ -113,37 +112,30 @@ public class Prize {
 
     // Helper methods
 
-    /**
-     * Checks whether this is an overall event-level prize.
-     */
+
+    // Checks whether this is an overall event-level prize.
     public boolean isOverallPrize() {
         return track == null;
     }
 
-    /**
-     * Checks whether this prize belongs to a specific track.
-     */
+
+    // Checks whether this prize belongs to a specific track.
     public boolean isTrackPrize() {
         return track != null;
     }
 
-    /**
-     * Checks whether this prize has been awarded.
-     */
+    // Checks whether this prize has been awarded.
     public boolean isAwarded() {
         return awardedTeam != null;
     }
 
-    /**
-     * Checks whether this prize has monetary value.
-     */
+
+    // Checks whether this prize has monetary value.
     public boolean hasMonetaryValue() {
         return value != null;
     }
 
-    /**
-     * Checks whether this prize has sponsor information.
-     */
+    // Checks whether this prize has sponsor information.
     public boolean hasSponsor() {
         return sponsorName != null && !sponsorName.isBlank();
     }

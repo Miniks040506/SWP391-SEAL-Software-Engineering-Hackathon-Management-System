@@ -147,67 +147,56 @@ public class Notification {
 
     // Helper methods
 
-    /**
-     * Checks whether this is a system-level notification.
-     */
+
+    // Checks whether this is a system-level notification.
     public boolean isSystemNotification() {
         return event == null;
     }
 
-    /**
-     * Checks whether this notification should be sent immediately.
-     */
+
+    // Checks whether this notification should be sent immediately.
     public boolean isImmediate() {
         return scheduledAt == null;
     }
 
-    /**
-     * Checks whether this notification is scheduled for later.
-     */
+    // Checks whether this notification is scheduled for later.
     public boolean isScheduled() {
         return scheduledAt != null;
     }
 
-    /**
-     * Checks whether this notification has already been sent successfully.
-     */
+
+    // Checks whether this notification has already been sent successfully.
     public boolean isSent() {
         return status == NotificationStatus.SENT;
     }
 
-    /**
-     * Checks whether this notification has failed completely.
-     */
+
+    // Checks whether this notification has failed completely.
     public boolean isFailed() {
         return status == NotificationStatus.FAILED;
     }
 
-    /**
-     * Checks whether some recipients failed during sending.
-     */
+
+    // Checks whether some recipients failed during sending.
     public boolean isPartiallyFailed() {
         return status == NotificationStatus.PARTIALLY_FAILED;
     }
 
-    /**
-     * Checks whether this notification should be delivered in-app.
-     */
+
+    // Checks whether this notification should be delivered in-app.
     public boolean usesInAppChannel() {
         return channel == NotificationChannel.IN_APP
                 || channel == NotificationChannel.BOTH;
     }
 
-    /**
-     * Checks whether this notification should be delivered by email.
-     */
+
+    // Checks whether this notification should be delivered by email.
     public boolean usesEmailChannel() {
         return channel == NotificationChannel.EMAIL
                 || channel == NotificationChannel.BOTH;
     }
 
-    /**
-     * Marks this notification as scheduled.
-     */
+    // Marks this notification as scheduled.
     public void markScheduled(LocalDateTime scheduledAt) {
         if (scheduledAt == null) {
             throw new IllegalArgumentException("Scheduled time is required.");
@@ -217,16 +206,14 @@ public class Notification {
         this.status = NotificationStatus.SCHEDULED;
     }
 
-    /**
-     * Marks this notification as being processed.
-     */
+
+    // Marks this notification as being processed.
     public void markProcessing() {
         this.status = NotificationStatus.PROCESSING;
     }
 
-    /**
-     * Marks this notification as sent successfully.
-     */
+
+    // Marks this notification as sent successfully.
     public void markSent(int recipientCount) {
         this.status = NotificationStatus.SENT;
         this.sentAt = LocalDateTime.now();
@@ -234,9 +221,8 @@ public class Notification {
         this.failureReason = null;
     }
 
-    /**
-     * Marks this notification as partially failed.
-     */
+
+    // Marks this notification as partially failed.
     public void markPartiallyFailed(int recipientCount, String failureReason) {
         this.status = NotificationStatus.PARTIALLY_FAILED;
         this.sentAt = LocalDateTime.now();
@@ -244,9 +230,8 @@ public class Notification {
         this.failureReason = failureReason;
     }
 
-    /**
-     * Marks this notification as failed.
-     */
+
+    // Marks this notification as failed.
     public void markFailed(String failureReason) {
         this.status = NotificationStatus.FAILED;
         this.sentAt = LocalDateTime.now();
