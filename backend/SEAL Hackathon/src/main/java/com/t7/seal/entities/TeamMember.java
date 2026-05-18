@@ -22,12 +22,6 @@ public class TeamMember {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "team_id", nullable = false)
-    private UUID teamId;
-
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
-
     @Column(nullable = false)
     @Builder.Default
     private MemberRole role = MemberRole.MEMBER;

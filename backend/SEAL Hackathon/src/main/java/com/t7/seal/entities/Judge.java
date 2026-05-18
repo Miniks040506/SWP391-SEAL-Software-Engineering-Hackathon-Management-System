@@ -21,9 +21,6 @@ public class Judge {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "user_id", unique = true, nullable = false)
-    private UUID userId;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "judge_type", nullable = false)
     private JudgeType judgeType;
