@@ -9,7 +9,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "system_config")
+@Table(
+        name = "system_configs",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_sysconfig_key", columnNames = "config_key")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,7 +25,7 @@ public class SystemConfig {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "config_key", unique = true, nullable = false, length = 200)
+    @Column(name = "config_key", nullable = false, length = 200)
     private String configKey;
 
     @Column(name = "config_value", columnDefinition = "TEXT")
@@ -47,8 +52,9 @@ public class SystemConfig {
     @Builder.Default
     private Boolean isActive = true;
 
-    @Column(name = "updated_by", nullable = false)
-    private UUID updatedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by", nullable = false)
+    private User updatedBy;
 
     @Column(name = "created_at", nullable = false)
     @Builder.Default

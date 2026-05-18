@@ -5,10 +5,17 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "team")
+@Table(
+        name = "teams",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_team_joincode", columnNames = "join_code")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,16 +26,18 @@ public class Team {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "track_id", nullable = false)
-    private UUID trackId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "track_id", nullable = false)
+    private Track track;
 
-    @Column(name = "leader_id", nullable = false)
-    private UUID leaderId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "leader_id", nullable = false)
+    private User leader;
 
     @Column(nullable = false, length = 200)
     private String name;
 
-    @Column(name = "join_code", nullable = false, length = 20, unique = true)
+    @Column(name = "join_code", nullable = false, length = 20)
     private String joinCode;
 
     @Column(name = "join_code_enabled", nullable = false)
@@ -125,4 +134,13 @@ public class Team {
             memberCount--;
         }
     }
+
+    // 1 - N to TeamMember
+    @OneToMany(
+            mappedBy = "team",
+            fetch = FetchType.LAZY,
+            cascade = {CascadeType.MERGE, CascadeType.PERSIST},
+            orphanRemoval = false //false due to UC26 constraint
+    )
+    private List<TeamMember> members = new ArrayList<>();
 }

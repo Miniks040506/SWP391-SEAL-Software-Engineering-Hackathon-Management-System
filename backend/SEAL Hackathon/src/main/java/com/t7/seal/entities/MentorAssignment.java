@@ -18,14 +18,17 @@ public class MentorAssignment {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(name = "track_id", nullable = false)
-    private UUID trackId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "track_id", nullable = false)
+    private Track track;
 
-    @Column(name = "assign_by", nullable = false)
-    private UUID assignBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_by", nullable = false)
+    private User assignedBy;
 
     @Column(length = 200)
     private String note;
@@ -36,9 +39,12 @@ public class MentorAssignment {
 
     // Checks whether this assignment matches a mentor and track for in-memory uniqueness checks.
     public boolean matches(UUID userId, UUID trackId) {
-        return this.userId != null
-                && this.userId.equals(userId)
-                && this.trackId != null
-                && this.trackId.equals(trackId);
+        UUID mentorId = user != null ? user.getId() : null;
+        UUID assignedTrackId = track != null ? track.getId() : null;
+
+        return mentorId != null
+                && mentorId.equals(userId)
+                && assignedTrackId != null
+                && assignedTrackId.equals(trackId);
     }
 }
