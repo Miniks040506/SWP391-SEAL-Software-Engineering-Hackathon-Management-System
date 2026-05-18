@@ -4,6 +4,8 @@ import com.t7.seal.domain.LeftReason;
 import com.t7.seal.domain.MemberRole;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -60,8 +62,19 @@ public class TeamMember {
         leftReason = reason;
     }
 
-    // Transfers leadership to this member; caller must demote prior leader in same transaction.
-    public void transferLeadership() {
-        role = MemberRole.LEADER;
-    }
+    // N - 1 relationship with User
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id",
+            nullable = false,
+            updatable = false
+    )
+    private User user;
+
+    // N - 1 relationship with Team
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(
+            name = "team_id",
+            nullable = false
+    )
+    private Team team;
 }

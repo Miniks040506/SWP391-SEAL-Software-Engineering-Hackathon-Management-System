@@ -7,10 +7,18 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "hackathon_event")
+@Table(
+        name = "hackathon_events",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_event_slug", columnNames = "slug"),
+                @UniqueConstraint(name = "uq_event_season_year", columnNames = {"season", "year"})
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,7 +32,7 @@ public class HackathonEvent {
     @Column(nullable = false, length = 200)
     private String name;
 
-    @Column(unique = true, nullable = false, length = 100)
+    @Column(nullable = false, length = 100)
     private String slug;
 
     @Enumerated(EnumType.STRING)
@@ -63,6 +71,27 @@ public class HackathonEvent {
 
     @Column(name = "update_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @OneToMany(
+            mappedBy = "event",
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<Track> tracks = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "event",
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<Round> rounds = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "event",
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<EventCriteria> eventCriteria = new ArrayList<>();
 
     // Checks whether registrations can be accepted for the supplied date.
     public boolean isRegistrationWindowOpen(LocalDate today) {

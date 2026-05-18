@@ -5,10 +5,17 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "round")
+@Table(
+        name = "rounds",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_round_event_order", columnNames = {"event_id", "order_index"})
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,8 +26,9 @@ public class Round {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "event_id", nullable = false)
-    private UUID eventId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id", nullable = false)
+    private HackathonEvent event;
 
     @Column(length = 200, nullable = false)
     private String name;
@@ -51,6 +59,20 @@ public class Round {
 
     @Column(name = "advancement_confirmed_at")
     private LocalDateTime advancementConfirmedAt;
+
+    @OneToMany(
+            mappedBy = "round",
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<AdvanceRule> advanceRules = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "round",
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<RoundJudgeAssignment> judgeAssignments = new ArrayList<>();
 
     // Checks whether submissions are open and not locked.
     public boolean isSubmissionOpen() {

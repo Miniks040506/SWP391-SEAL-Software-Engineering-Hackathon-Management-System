@@ -3,6 +3,8 @@ package com.t7.seal.entities;
 import com.t7.seal.domain.JudgeType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -62,4 +64,13 @@ public class Judge {
         isTemporary = false;
         expiresAt = null;
     }
+
+    // 1 - 1 to User
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false
+    )
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private User user;
 }

@@ -78,12 +78,6 @@ public class Submission {
 
     /**
      * Links attached to this submission.
-     * Examples:
-     * - repository link
-     * - demo link
-     * - slide link
-     * - report link
-     * - video link
      */
     @OneToMany(
             mappedBy = "submission",
