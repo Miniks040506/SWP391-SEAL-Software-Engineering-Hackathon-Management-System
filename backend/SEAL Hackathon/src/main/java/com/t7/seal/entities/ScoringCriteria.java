@@ -52,17 +52,8 @@ public class ScoringCriteria {
     private CriteriaCategory category;
 
     /**
-     * TRUE:
-     * - technical criteria
-     * - code
-     * - architecture
-     * - performance
-     * - process
-     * FALSE:
-     * - presentation
-     * - business
-     * - innovation
-     * - subjective criteria
+     * TRUE: technical criteria, code, architecture, performance, process
+     * FALSE: presentation, business, innovation, subjective criteria
      */
     @Column(name = "is_technical", nullable = false)
     private Boolean isTechnical;

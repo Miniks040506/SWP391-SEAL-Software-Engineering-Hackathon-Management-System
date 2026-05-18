@@ -52,9 +52,7 @@ public class ExportJob {
     @Builder.Default
     private ExportJobStatus status = ExportJobStatus.QUEUED;
 
-    /**
-     * Download URL of the generated file.
-     */
+    // Download URL of the generated file.
     @Column(name = "file_url", length = 500)
     private String fileUrl;
 
@@ -141,58 +139,50 @@ public class ExportJob {
 
     // Helper methods
 
-    /**
-     * Checks whether this export job is waiting for processing.
-     */
+
+    // Checks whether this export job is waiting for processing.
     public boolean isQueued() {
         return status == ExportJobStatus.QUEUED;
     }
 
-    /**
-     * Checks whether this export job is currently processing.
-     */
+
+    // Checks whether this export job is currently processing.
     public boolean isProcessing() {
         return status == ExportJobStatus.PROCESSING;
     }
 
-    /**
-     * Checks whether this export job completed successfully.
-     */
+
+    // Checks whether this export job completed successfully.
     public boolean isDone() {
         return status == ExportJobStatus.DONE;
     }
 
-    /**
-     * Checks whether this export job failed.
-     */
+
+    // Checks whether this export job failed.
     public boolean isFailed() {
         return status == ExportJobStatus.FAILED;
     }
 
-    /**
-     * Checks whether this export job is related to an anonymized RBL dataset.
-     */
+
+    // Checks whether this export job is related to an anonymized RBL dataset.
     public boolean isAnonymizedScoreDataset() {
         return exportType == ExportType.SCORE_DATASET_ANONYMIZED;
     }
 
-    /**
-     * Checks whether this export job has a downloadable file.
-     */
+
+    // Checks whether this export job has a downloadable file.
     public boolean hasDownloadFile() {
         return fileUrl != null && !fileUrl.isBlank();
     }
 
-    /**
-     * Checks whether the exported file has expired.
-     */
+
+    // Checks whether the exported file has expired.
     public boolean isExpired(LocalDateTime now) {
         return expiresAt != null && now != null && now.isAfter(expiresAt);
     }
 
-    /**
-     * Marks this export job as processing.
-     */
+
+    // Marks this export job as processing.
     public void markProcessing() {
         this.status = ExportJobStatus.PROCESSING;
         this.startedAt = LocalDateTime.now();
@@ -229,9 +219,8 @@ public class ExportJob {
         this.errorMessage = null;
     }
 
-    /**
-     * Marks this export job as failed.
-     */
+
+    // Marks this export job as failed.
     public void markFailed(String errorMessage) {
         if (errorMessage == null || errorMessage.isBlank()) {
             errorMessage = "Unknown export error.";
@@ -242,9 +231,8 @@ public class ExportJob {
         this.completedAt = LocalDateTime.now();
     }
 
-    /**
-     * Returns a parameter value by key.
-     */
+
+    // Returns a parameter value by key.
     public Object getParam(String key) {
         if (params == null || key == null) {
             return null;
@@ -253,17 +241,13 @@ public class ExportJob {
         return params.get(key);
     }
 
-    /**
-     * Returns a parameter value as String.
-     */
+    // Returns a parameter value as String.
     public String getParamAsString(String key) {
         Object value = getParam(key);
         return value != null ? value.toString() : null;
     }
 
-    /**
-     * Checks whether the export should anonymize sensitive identifiers.
-     */
+    // Checks whether the export should anonymize sensitive identifiers.
     public boolean shouldAnonymize() {
         Object value = getParam("anonymize");
 

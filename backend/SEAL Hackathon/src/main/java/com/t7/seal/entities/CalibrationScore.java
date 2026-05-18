@@ -128,38 +128,31 @@ public class CalibrationScore {
 
     // Helper methods
 
-    /**
-     * Checks whether this score has benchmark deviation data.
-     */
+
+    // Checks whether this score has benchmark deviation data.
     public boolean hasDeviationFromBenchmark() {
         return deviationFromBenchmark != null;
     }
 
-    /**
-     * Checks whether the judge scored higher than the benchmark.
-     */
+
+    // Checks whether the judge scored higher than the benchmark.
     public boolean isAboveBenchmark() {
         return deviationFromBenchmark != null && deviationFromBenchmark > 0;
     }
 
-    /**
-     * Checks whether the judge scored lower than the benchmark.
-     */
+    // Checks whether the judge scored lower than the benchmark.
     public boolean isBelowBenchmark() {
         return deviationFromBenchmark != null && deviationFromBenchmark < 0;
     }
 
-    /**
-     * Checks whether the judge matched the benchmark score exactly.
-     */
+    // Checks whether the judge matched the benchmark score exactly.
     public boolean matchesBenchmark() {
         return deviationFromBenchmark != null
                 && Float.compare(deviationFromBenchmark, 0.0f) == 0;
     }
 
-    /**
-     * Returns the absolute deviation from benchmark.
-     */
+
+    // Returns the absolute deviation from benchmark.
     public Float getAbsoluteDeviation() {
         if (deviationFromBenchmark == null) {
             return null;

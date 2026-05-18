@@ -53,30 +53,15 @@ public class Ranking {
 
     /**
      * Final aggregated score of the submission.
-     * Business formula:
-     * AVG_judges[
-     *     SUM(score.value * weight) / SUM(weight)
-     * ]
+     * Business formula: AVG_judges[SUM(score.value * weight) / SUM(weight)]
      * This value is materialized to avoid recalculating scores
      * every time the leaderboard is displayed.
      */
     @Column(name = "total_score", nullable = false)
     private Float totalScore;
 
-    /**
-     * Snapshot of detailed scores.
-     * Suggested JSON structure:
-     * {
-     *   "judgeId-1": {
-     *     "criteriaId-1": 8.5,
-     *     "criteriaId-2": 9.0
-     *   },
-     *   "judgeId-2": {
-     *     "criteriaId-1": 7.5,
-     *     "criteriaId-2": 8.0
-     *   }
-     * }
-     */
+
+    // Snapshot of detailed scores.
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "score_breakdown", columnDefinition = "jsonb")
     private Map<String, Map<String, Float>> scoreBreakdown;
@@ -168,54 +153,45 @@ public class Ranking {
 
     // Helper methods
 
-    /**
-     * Checks whether this team has advanced to the next round.
-     */
+
+    // Checks whether this team has advanced to the next round.
     public boolean hasAdvanced() {
         return Boolean.TRUE.equals(isAdvanced);
     }
 
-    /**
-     * Checks whether this ranking has score breakdown data.
-     */
+    // Checks whether this ranking has score breakdown data.
     public boolean hasScoreBreakdown() {
         return scoreBreakdown != null && !scoreBreakdown.isEmpty();
     }
 
-    /**
-     * Checks whether enough judges have submitted confirmed scores.
-     */
+    // Checks whether enough judges have submitted confirmed scores.
     public boolean hasEnoughJudges(int requiredJudgeCount) {
         return judgeCount != null && judgeCount >= requiredJudgeCount;
     }
 
-    /**
-     * Marks this ranking as advanced.
-     */
+
+    // Marks this ranking as advanced.
     public void markAdvanced(AdvanceReason reason) {
         this.isAdvanced = true;
         this.advanceReason = reason;
     }
 
-    /**
-     * Marks this ranking as not advanced.
-     */
+
+    // Marks this ranking as not advanced.
     public void markNotAdvanced(AdvanceReason reason) {
         this.isAdvanced = false;
         this.advanceReason = reason;
     }
 
-    /**
-     * Marks this ranking as disqualified.
-     */
+
+    // Marks this ranking as disqualified.
     public void markDisqualified() {
         this.isAdvanced = false;
         this.advanceReason = AdvanceReason.DISQUALIFIED;
     }
 
-    /**
-     * Updates calculation metadata after recalculating ranking.
-     */
+
+    // Updates calculation metadata after recalculating ranking.
     public void updateCalculationInfo(User calculatedBy) {
         this.calculatedBy = calculatedBy;
         this.calculatedAt = LocalDateTime.now();

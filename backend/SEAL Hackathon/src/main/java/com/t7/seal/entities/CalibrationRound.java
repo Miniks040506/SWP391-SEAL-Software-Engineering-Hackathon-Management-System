@@ -123,53 +123,46 @@ public class CalibrationRound {
 
     // Helper methods
 
-    /**
-     * Checks whether the calibration round is currently open.
-     */
+
+    // Checks whether the calibration round is currently open.
     public boolean isOpen(LocalDateTime now) {
         return now != null
                 && !now.isBefore(startAt)
                 && !now.isAfter(endAt);
     }
 
-    /**
-     * Checks whether the calibration round has not started yet.
-     */
+
+    // Checks whether the calibration round has not started yet.
     public boolean isNotStarted(LocalDateTime now) {
         return now != null && now.isBefore(startAt);
     }
 
-    /**
-     * Checks whether the calibration round is already closed.
-     */
+
+    // Checks whether the calibration round is already closed.
     public boolean isClosed(LocalDateTime now) {
         return now != null && now.isAfter(endAt);
     }
 
-    /**
-     * Checks whether the distribution chart has been published.
-     */
+
+    // Checks whether the distribution chart has been published.
     public boolean isDistributionPublished() {
         return distributionPublishedAt != null;
     }
 
-    /**
-     * Publishes the distribution chart.
-     */
+
+    // Publishes the distribution chart.
     public void publishDistribution() {
         this.distributionPublishedAt = LocalDateTime.now();
     }
 
-    /**
-     * Checks whether benchmark scores are configured.
-     */
+
+    // Checks whether benchmark scores are configured.
     public boolean hasBenchmarkScores() {
         return benchmarkScores != null && !benchmarkScores.isEmpty();
     }
 
-    /**
-     * Returns the benchmark score of a specific event criterion.
-     */
+
+    // Returns the benchmark score of a specific event criterion.
     public Float getBenchmarkScore(UUID eventCriteriaId) {
         if (benchmarkScores == null || eventCriteriaId == null) {
             return null;
@@ -178,9 +171,8 @@ public class CalibrationRound {
         return benchmarkScores.get(eventCriteriaId.toString());
     }
 
-    /**
-     * Checks whether this calibration round is mandatory.
-     */
+
+    // Checks whether this calibration round is mandatory.
     public boolean isMandatoryRound() {
         return Boolean.TRUE.equals(isMandatory);
     }

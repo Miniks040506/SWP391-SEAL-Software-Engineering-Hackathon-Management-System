@@ -121,16 +121,13 @@ public class Score {
 
     // Helper methods
 
-    /**
-     * Checks whether this score has been confirmed.
-     */
+
+    // Checks whether this score has been confirmed.
     public boolean isConfirmed() {
         return Boolean.FALSE.equals(isDraft);
     }
 
-    /**
-     * Checks whether this score is still a draft.
-     */
+    // Checks whether this score is still a draft.
     public boolean isDraftScore() {
         return Boolean.TRUE.equals(isDraft);
     }
@@ -143,16 +140,12 @@ public class Score {
         this.isDraft = false;
     }
 
-    /**
-     * Marks this score as draft again.
-     */
+    // Marks this score as draft again.
     public void markAsDraft() {
         this.isDraft = true;
     }
 
-    /**
-     * Checks whether the judge has written a comment.
-     */
+    // Checks whether the judge has written a comment.
     public boolean hasComment() {
         return comment != null && !comment.isBlank();
     }
@@ -175,9 +168,8 @@ public class Score {
         return value * weight;
     }
 
-    /**
-     * Returns the effective max score from EventCriteria.
-     */
+
+    // Returns the effective max score from EventCriteria.
     public Float getEffectiveMaxScore() {
         if (eventCriteria == null) {
             return null;
@@ -186,9 +178,8 @@ public class Score {
         return eventCriteria.getEffectiveMaxScore();
     }
 
-    /**
-     * Checks whether this score reaches the maximum score.
-     */
+
+    // Checks whether this score reaches the maximum score.
     public boolean isMaxScore() {
         Float maxScore = getEffectiveMaxScore();
 

@@ -13,10 +13,14 @@ spring:
     active: dev
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/seal_hackathon
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:123456}
-    driver-class-name: org.postgresql.Driver
+#    url: jdbc:postgresql://localhost:5432/seal_hackathon
+#    username: ${DB_USERNAME:postgres}
+#    password: ${DB_PASSWORD:123456}
+#    driver-class-name: org.postgresql.Driver
+    url: jdbc:jdbc:sqlserver://localhost:1433;databaseName=HSF_JPA_DB;encrypt=true;trustServerCertificate=true
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    username: sa
+    password: 12345
 
   jpa:
     open-in-view: false

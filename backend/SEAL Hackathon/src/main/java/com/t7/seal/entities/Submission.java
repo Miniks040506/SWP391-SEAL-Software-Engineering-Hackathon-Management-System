@@ -76,15 +76,7 @@ public class Submission {
     @Builder.Default
     private Integer submissionNumber = 1;
 
-    /**
-     * Links attached to this submission.
-     * Examples:
-     * - repository link
-     * - demo link
-     * - slide link
-     * - report link
-     * - video link
-     */
+    // Links attached to this submission.
     @OneToMany(
             mappedBy = "submission",
             cascade = CascadeType.ALL,
@@ -92,9 +84,8 @@ public class Submission {
     )
     private List<SubmissionLink> submissionLinks;
 
-    /**
-     * Scores given by judges for this submission.
-     */
+
+    // Scores given by judges for this submission.
     @OneToMany(
             mappedBy = "submission",
             cascade = CascadeType.ALL,
@@ -160,40 +151,32 @@ public class Submission {
         return status == SubmissionStatus.DISQUALIFIED;
     }
 
-    /**
-     * Checks whether this submission can be scored by judges.
-     */
+    // Checks whether this submission can be scored by judges.
     public boolean isScorable() {
         return status == SubmissionStatus.SUBMITTED
                 || status == SubmissionStatus.LATE;
     }
 
-    /**
-     * Marks this submission as officially submitted on time.
-     */
+
+    // Marks this submission as officially submitted on time.
     public void markSubmitted() {
         this.status = SubmissionStatus.SUBMITTED;
         this.submittedAt = LocalDateTime.now();
     }
 
-    /**
-     * Marks this as a late submission.
-     */
+    // Marks this as a late submission.
     public void markLate() {
         this.status = SubmissionStatus.LATE;
         this.submittedAt = LocalDateTime.now();
     }
 
-    /**
-     * Marks this submission as disqualified.
-     */
+
+    // Marks this submission as disqualified.
     public void markDisqualified() {
         this.status = SubmissionStatus.DISQUALIFIED;
     }
 
-    /**
-     * Increases the submission count when the team leader resubmits.
-     */
+    // Increases the submission count when the team leader resubmits.
     public void increaseSubmissionNumber() {
         if (this.submissionNumber == null) {
             this.submissionNumber = 1;
@@ -202,9 +185,8 @@ public class Submission {
         }
     }
 
-    /**
-     * Handles resubmission by updating the note, submission count, and status.
-     */
+
+    // Handles resubmission by updating the note, submission count, and status.
     public void resubmit(String newNote, boolean late) {
         this.note = newNote;
         increaseSubmissionNumber();

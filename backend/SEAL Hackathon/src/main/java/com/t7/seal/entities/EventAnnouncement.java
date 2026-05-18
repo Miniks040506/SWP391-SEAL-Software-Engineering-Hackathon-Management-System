@@ -102,37 +102,31 @@ public class EventAnnouncement {
 
     // Helper methods
 
-    /**
-     * Checks whether this announcement is still a draft.
-     */
+    // Checks whether this announcement is still a draft.
     public boolean isDraft() {
         return publishedAt == null;
     }
 
-    /**
-     * Checks whether this announcement has been published.
-     */
+
+    // Checks whether this announcement has been published.
     public boolean isPublished() {
         return publishedAt != null;
     }
 
-    /**
-     * Checks whether this announcement is pinned.
-     */
+
+    // Checks whether this announcement is pinned.
     public boolean isPinnedAnnouncement() {
         return Boolean.TRUE.equals(isPinned);
     }
 
-    /**
-     * Checks whether this announcement is the official result announcement.
-     */
+
+    // Checks whether this announcement is the official result announcement.
     public boolean isOfficialResultAnnouncement() {
         return Boolean.TRUE.equals(isResultAnnouncement);
     }
 
     /**
      * Publishes this announcement.
-     *
      * Published announcements are visible on the event page.
      */
     public void publish() {
@@ -147,30 +141,26 @@ public class EventAnnouncement {
         this.publishedAt = null;
     }
 
-    /**
-     * Pins this announcement to the top of the event page.
-     */
+
+    // Pins this announcement to the top of the event page.
     public void pin() {
         this.isPinned = true;
     }
 
-    /**
-     * Removes this announcement from the pinned section.
-     */
+
+    // Removes this announcement from the pinned section.
     public void unpin() {
         this.isPinned = false;
     }
 
-    /**
-     * Marks this announcement as the official result announcement.
-     */
+
+    // Marks this announcement as the official result announcement.
     public void markAsResultAnnouncement() {
         this.isResultAnnouncement = true;
     }
 
-    /**
-     * Removes the official result announcement marker.
-     */
+
+    // Removes the official result announcement marker.
     public void unmarkAsResultAnnouncement() {
         this.isResultAnnouncement = false;
     }

@@ -50,23 +50,20 @@ public class AuditLog {
     @Column(name = "target_id", nullable = false)
     private UUID targetId;
 
-    /**
-     * State of the target record before the action. NULL for create actions.
-     */
+
+    // State of the target record before the action. NULL for create actions.
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "before_state", columnDefinition = "jsonb")
     private Map<String, Object> beforeState;
 
-    /**
-     * State of the target record after the action. NULL for delete actions.
-     */
+
+    // State of the target record after the action. NULL for delete actions.
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "after_state", columnDefinition = "jsonb")
     private Map<String, Object> afterState;
 
-    /**
-     * Additional metadata related to the action.
-     */
+
+    // Additional metadata related to the action.
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "context", columnDefinition = "jsonb")
     private Map<String, Object> context;
@@ -117,45 +114,39 @@ public class AuditLog {
 
     // Helper methods
 
-    /**
-     * Checks whether this log has before-state data.
-     */
+
+    // Checks whether this log has before-state data.
     public boolean hasBeforeState() {
         return beforeState != null && !beforeState.isEmpty();
     }
 
-    /**
-     * Checks whether this log has after-state data.
-     */
+
+    // Checks whether this log has after-state data.
     public boolean hasAfterState() {
         return afterState != null && !afterState.isEmpty();
     }
 
-    /**
-     * Checks whether this log has additional context metadata.
-     */
+
+    // Checks whether this log has additional context metadata.
     public boolean hasContext() {
         return context != null && !context.isEmpty();
     }
 
-    /**
-     * Checks whether this audit log is related to a specific target table.
-     */
+
+    // Checks whether this audit log is related to a specific target table.
     public boolean isTargetTable(String tableName) {
         return targetTable != null && targetTable.equalsIgnoreCase(tableName);
     }
 
-    /**
-     * Checks whether this action is related to scoring.
-     */
+
+    // Checks whether this action is related to scoring.
     public boolean isScoreAction() {
         return actionType == AuditActionType.SCORE_CREATE
                 || actionType == AuditActionType.SCORE_UPDATE;
     }
 
-    /**
-     * Checks whether this action is related to result or ranking flow.
-     */
+
+    // Checks whether this action is related to result or ranking flow.
     public boolean isResultAction() {
         return actionType == AuditActionType.RANKING_RECALCULATED
                 || actionType == AuditActionType.TEAM_ADVANCED
@@ -163,9 +154,7 @@ public class AuditLog {
                 || actionType == AuditActionType.ADVANCEMENT_CONFIRMED;
     }
 
-    /**
-     * Checks whether this action is related to disqualification.
-     */
+    // Checks whether this action is related to disqualification.
     public boolean isDisqualificationAction() {
         return actionType == AuditActionType.TEAM_DISQUALIFIED;
     }

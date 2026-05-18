@@ -100,44 +100,38 @@ public class Disqualification {
 
     // Helper methods
 
-    /**
-     * Checks whether evidence URL is provided.
-     */
+
+    // Checks whether evidence URL is provided.
     public boolean hasEvidence() {
         return evidenceUrl != null && !evidenceUrl.isBlank();
     }
 
-    /**
-     * Checks whether the team has submitted an appeal.
-     */
+
+    // Checks whether the team has submitted an appeal.
     public boolean hasAppeal() {
         return appealStatus != null;
     }
 
-    /**
-     * Checks whether the appeal is currently pending.
-     */
+
+    // Checks whether the appeal is currently pending.
     public boolean isAppealPending() {
         return appealStatus == AppealStatus.PENDING;
     }
 
-    /**
-     * Checks whether the disqualification decision was upheld.
-     */
+
+    // Checks whether the disqualification decision was upheld.
     public boolean isAppealUpheld() {
         return appealStatus == AppealStatus.UPHELD;
     }
 
-    /**
-     * Checks whether the disqualification decision was overturned.
-     */
+
+    // Checks whether the disqualification decision was overturned.
     public boolean isAppealOverturned() {
         return appealStatus == AppealStatus.OVERTURNED;
     }
 
-    /**
-     * Submits an appeal from the team.
-     */
+
+    // Submits an appeal from the team.
     public void submitAppeal(String appealNote) {
         if (appealNote == null || appealNote.isBlank()) {
             throw new IllegalArgumentException("Appeal note is required.");
@@ -147,9 +141,8 @@ public class Disqualification {
         this.appealStatus = AppealStatus.PENDING;
     }
 
-    /**
-     * Keeps the original disqualification decision.
-     */
+
+    // Keeps the original disqualification decision.
     public void upholdAppeal() {
         this.appealStatus = AppealStatus.UPHELD;
     }

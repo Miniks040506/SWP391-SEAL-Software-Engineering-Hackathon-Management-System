@@ -59,15 +59,14 @@ public class SubmissionLink {
 
     /**
      * Repository metadata extracted from Git APIs.
-     * This field should only be used when linkType is REPOSITORY.
+     * This field should only be used when linkType is repository.
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "repo_metadata", columnDefinition = "jsonb")
     private RepositoryMetadata repoMetadata;
 
-    /**
-     * Marks this link as the main link within the same link type.
-     */
+
+     // Marks this link as the main link within the same link type.
     @Column(name = "is_primary", nullable = false)
     @Builder.Default
     private Boolean isPrimary = false;
