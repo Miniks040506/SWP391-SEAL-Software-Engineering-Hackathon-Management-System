@@ -37,7 +37,7 @@ public class Team {
     @Column(nullable = false, length = 200)
     private String name;
 
-    @Column(name = "join_code", nullable = false, length = 20)
+    @Column(name = "join_code", nullable = false, length = 20, unique = true)
     private String joinCode;
 
     @Column(name = "join_code_enabled", nullable = false)

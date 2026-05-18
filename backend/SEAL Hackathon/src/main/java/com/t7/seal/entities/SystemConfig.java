@@ -25,7 +25,7 @@ public class SystemConfig {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "config_key", nullable = false, length = 200)
+    @Column(name = "config_key", nullable = false, length = 200, unique = true)
     private String configKey;
 
     @Column(name = "config_value", columnDefinition = "TEXT")
