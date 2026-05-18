@@ -13,25 +13,26 @@ spring:
     active: dev
 
   datasource:
-#    url: jdbc:postgresql://localhost:5432/seal_hackathon
-#    username: ${DB_USERNAME:postgres}
-#    password: ${DB_PASSWORD:123456}
-#    driver-class-name: org.postgresql.Driver
-    url: jdbc:jdbc:sqlserver://localhost:1433;databaseName=HSF_JPA_DB;encrypt=true;trustServerCertificate=true
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    username: sa
-    password: 12345
+    url: jdbc:postgresql://localhost:5432/seal_hackathon
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:Miniks@040506}
+    driver-class-name: org.postgresql.Driver
+#    url: jdbc:sqlserver://localhost:1433;databaseName=SealHackathonSystem;encrypt=true;trustServerCertificate=true
+#    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+#    username: sa
+#    password: 12345
 
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: validate
+      ddl-auto: create
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           time_zone: UTC
+#        dialect: org.hibernate.dialect.SQLServerDialect
 
   flyway:
     enabled: true
@@ -41,8 +42,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    username: ${MAIL_USERNAME:sealhackathon@gmail.com}
+    password: ${MAIL_PASSWORD:hwlgahvlrupscpie}
     properties:
       mail:
         smtp:
