@@ -57,7 +57,7 @@ public class TeamMember {
     }
 
     // N - 1 relationship with User
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id",
             nullable = false,
             updatable = false
