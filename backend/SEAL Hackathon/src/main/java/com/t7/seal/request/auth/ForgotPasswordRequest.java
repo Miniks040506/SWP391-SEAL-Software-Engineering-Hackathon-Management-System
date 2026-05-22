@@ -1,7 +1,6 @@
 package com.t7.seal.request.auth;
 
-import lombok.Data;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
-@Data
-public class ForgotPasswordRequest {
-}
+public record ForgotPasswordRequest(@NotBlank @Email String email) {}

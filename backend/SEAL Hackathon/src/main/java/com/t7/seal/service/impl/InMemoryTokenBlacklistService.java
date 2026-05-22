@@ -11,63 +11,32 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class InMemoryTokenBlacklistService implements TokenBlacklistService {
 
-    /**
-     * Key   = JWT token
-     * Value = expiration timestamp in milliseconds
-     */
     private final Map<String, Long> blacklistedTokens = new ConcurrentHashMap<>();
 
     @Override
     public boolean isBlacklisted(String token) {
-        if (token == null || token.isBlank()) {
-            return false;
-        }
-
+        if (token == null || token.isBlank()) return false;
         cleanupExpiredTokens();
-
         Long expiresAt = blacklistedTokens.get(token);
-
-        if (expiresAt == null) {
-            return false;
-        }
-
-        return expiresAt > Instant.now().toEpochMilli();
+        return expiresAt != null && expiresAt > Instant.now().toEpochMilli();
     }
 
     @Override
     public void blacklist(String token) {
-        if (token == null || token.isBlank()) {
-            return;
-        }
-
-        long expiresAt = Instant.now()
-                .plusSeconds(24 * 60 * 60)
-                .toEpochMilli();
-
-        blacklistedTokens.put(token, expiresAt);
+        blacklist(token, Instant.now().plusSeconds(24 * 60 * 60).toEpochMilli());
     }
 
     @Override
     public void blacklist(String token, long expiresAtMillis) {
-        if (token == null || token.isBlank()) {
-            return;
-        }
-
+        if (token == null || token.isBlank()) return;
         blacklistedTokens.put(token, expiresAtMillis);
     }
 
     private void cleanupExpiredTokens() {
         long now = Instant.now().toEpochMilli();
-
-        Iterator<Map.Entry<String, Long>> iterator =
-                blacklistedTokens.entrySet().iterator();
-
+        Iterator<Map.Entry<String, Long>> iterator = blacklistedTokens.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<String, Long> entry = iterator.next();
-
-            if (entry.getValue() <= now) {
-                iterator.remove();
-            }
+            if (iterator.next().getValue() <= now) iterator.remove();
         }
     }
 }
