@@ -32,34 +32,36 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
+    public String extractTokenType(String token) {
+        return extractClaim(token, claims -> claims.get("type", String.class));
+    }
+
+    @Override
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        if (token == null || token.isBlank() || userDetails == null) {
-            return false;
-        }
+
+        if (token == null || token.isBlank() || userDetails == null) return false;
 
         String username = extractUsername(token);
 
-        return username != null
-                && username.equals(userDetails.getUsername())
-                && !isTokenExpired(token);
+        return username != null &&
+                username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
+
+    @Override
+    public boolean isRefreshToken(String token) {
+        return "REFRESH".equals(extractTokenType(token));
     }
 
     @Override
     public String generateAccessToken(UserDetails userDetails) {
-        return generateToken(
-                Map.of("type", "ACCESS"),
-                userDetails,
-                accessTokenExpirationMs
-        );
+        return generateToken(Map.of("type", "ACCESS"),
+                userDetails, accessTokenExpirationMs);
     }
 
     @Override
     public String generateRefreshToken(UserDetails userDetails) {
-        return generateToken(
-                Map.of("type", "REFRESH"),
-                userDetails,
-                refreshTokenExpirationMs
-        );
+        return generateToken(Map.of("type", "REFRESH"),
+                userDetails, refreshTokenExpirationMs);
     }
 
     @Override
@@ -74,15 +76,13 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public long extractExpirationMillis(String token) {
-        Date expiration = extractClaim(token, Claims::getExpiration);
-        return expiration.getTime();
+        return extractClaim(token, Claims::getExpiration).getTime();
     }
 
-    private String generateToken(
-            Map<String, Object> extraClaims,
-            UserDetails userDetails,
-            long expirationMs
-    ) {
+    private String generateToken(Map<String, Object> extraClaims,
+                                 UserDetails userDetails,
+                                 long expirationMs) {
+
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationMs);
 
@@ -96,13 +96,12 @@ public class JwtServiceImpl implements JwtService {
     }
 
     private boolean isTokenExpired(String token) {
-        Date expiration = extractClaim(token, Claims::getExpiration);
-        return expiration.before(new Date());
+        return extractClaim(token, Claims::getExpiration)
+                .before(new Date());
     }
 
-    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
+    private <T> T extractClaim(String token, Function<Claims, T> resolver) {
+        return resolver.apply(extractAllClaims(token));
     }
 
     private Claims extractAllClaims(String token) {
@@ -114,7 +113,6 @@ public class JwtServiceImpl implements JwtService {
     }
 
     private SecretKey getSigningKey() {
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 }
