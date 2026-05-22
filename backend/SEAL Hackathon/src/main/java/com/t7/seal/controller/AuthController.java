@@ -1,6 +1,6 @@
 package com.t7.seal.controller;
 
-import com.t7.seal.request.*;
+import com.t7.seal.request.auth.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

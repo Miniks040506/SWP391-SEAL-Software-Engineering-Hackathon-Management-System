@@ -1,4 +1,4 @@
-package com.t7.seal.request;
+package com.t7.seal.request.auth;
 
 import lombok.Data;
 
