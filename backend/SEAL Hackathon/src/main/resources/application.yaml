@@ -15,7 +15,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/seal_hackathon
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:Miniks@040506}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
 #    url: jdbc:sqlserver://localhost:1433;databaseName=SealHackathonSystem;encrypt=true;trustServerCertificate=true
 #    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
