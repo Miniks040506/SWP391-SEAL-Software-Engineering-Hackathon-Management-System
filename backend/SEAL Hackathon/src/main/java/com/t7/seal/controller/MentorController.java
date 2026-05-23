@@ -17,7 +17,7 @@ import java.util.UUID;
 @RequestMapping(ApiPaths.API_V1 + "/mentor-feedback")
 //none of the mentors have records attribute for now, check and add laters
 public class MentorController {
-    @PostMapping("/mentor-feedback/teams/{teamId}")
+    @PostMapping("/teams/{teamId}")
     public ResponseEntity<MentorFeedbackResponse> createFeedback(
             @PathVariable("teamId") UUID teamId,
             @Valid @RequestBody CreateMentorFeedbackRequest request
@@ -25,22 +25,22 @@ public class MentorController {
         return null;
     }
 
-    //request a query, remember to add
-    @GetMapping("/mentor-feedback/teams/{teamId}")
+    //request a query beside path variable
+    @GetMapping("/teams/{teamId}")
     public ResponseEntity<List<MentorFeedbackResponse>> getTeamFeedback(
             @PathVariable("teamId") UUID teamId
     ) {
         return null;
     }
 
-    @GetMapping("/mentor-feedback/{feedbackId}")
+    @GetMapping("/{feedbackId}")
     public ResponseEntity<MentorFeedbackResponse> getFeedbackById(
             @PathVariable("feedbackId") UUID feedbackId
     ) {
         return null;
     }
 
-    @PatchMapping("/mentor-feedback/{feedbackId}")
+    @PatchMapping("/{feedbackId}")
     public ResponseEntity<MentorFeedbackResponse> updateFeedback(
             @PathVariable("feedbackId") UUID feedbackId,
             @Valid @RequestBody UpdateMentorFeedbackRequest request
@@ -48,7 +48,7 @@ public class MentorController {
         return null;
     }
 
-    @DeleteMapping("/mentor-feedback/{feedbackId}")
+    @DeleteMapping("/{feedbackId}")
     public ResponseEntity<Void> deleteFeedback(
             @PathVariable("feedbackId") UUID feedbackId
     ) {

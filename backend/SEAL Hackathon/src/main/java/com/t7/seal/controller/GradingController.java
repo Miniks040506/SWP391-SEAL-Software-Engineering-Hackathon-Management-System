@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/grading")
 public class GradingController {
-    @GetMapping("/grading/rounds/{roundId}/assigned-submissions")
+    @GetMapping("/rounds/{roundId}/assigned-submissions")
     public ResponseEntity<PageResponse<AssignedSubmissionResponse>> getAssignedSubmissions(
             @PathVariable("roundId") UUID roundId,
             @RequestParam(required = false) String status,
@@ -31,7 +31,7 @@ public class GradingController {
         return null;
     }
 
-    @GetMapping("/grading/submissions/{submissionId}")
+    @GetMapping("/submissions/{submissionId}")
     public ResponseEntity<GradingSubmissionDetailResponse> getSubmissionForGrading(
             @PathVariable("submissionId") UUID submissionId,
             @Valid @RequestBody GradingSubmissionDetailResponse request
@@ -39,14 +39,14 @@ public class GradingController {
         return null;
     }
 
-    @GetMapping("/grading/submissions/{submissionId}/scores")
+    @GetMapping("/submissions/{submissionId}/scores")
     public ResponseEntity<ScoreSheetResponse> getMyScoresForSubmission(
             @PathVariable("submissionId") UUID submissionId
     ) {
         return null;
     }
 
-    @PostMapping("/grading/submissions/{submissionId}/scores")
+    @PostMapping("/submissions/{submissionId}/scores")
     public ResponseEntity<ScoreSheetResponse> saveScores(
             @PathVariable("submissionId") UUID submissionId,
             @Valid @RequestBody SaveScoreSheetRequest request
@@ -54,7 +54,7 @@ public class GradingController {
         return null;
     }
 
-    @PostMapping("/grading/submissions/{submissionId}/scores/confirm")
+    @PostMapping("/submissions/{submissionId}/scores/confirm")
     public ResponseEntity<ScoreSheetResponse> confirmScores(
             @PathVariable("submissionId") UUID submissionId,
             @Valid @RequestBody ConfirmScoreSheetRequest request
