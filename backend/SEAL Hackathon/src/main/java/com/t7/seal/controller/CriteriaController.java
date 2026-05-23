@@ -1,7 +1,10 @@
 package com.t7.seal.controller;
 
 import com.t7.seal.config.ApiPaths;
+import com.t7.seal.request.criteria.CreateEventCriteriaRequest;
 import com.t7.seal.request.criteria.CreateScoringCriteriaRequest;
+import com.t7.seal.request.criteria.UpdateEventCriteriaRequest;
+import com.t7.seal.request.criteria.UpdateScoringCriteriaRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.criteria.EventCriteriaResponse;
 import com.t7.seal.response.criteria.ScoringCriteriaResponse;
@@ -41,7 +44,7 @@ public class CriteriaController {
     public ResponseEntity<ScoringCriteriaResponse> getScoringCriteriaById(
             @PathVariable UUID criteriaId
     ) {
-        return ResponseEntity.ok(criteriaService.getScoringCriteriaById(criteriaId));
+        return null;
     }
 
     @PatchMapping("/criteria/{criteriaId}")
@@ -49,12 +52,14 @@ public class CriteriaController {
             @PathVariable UUID criteriaId,
             @Valid @RequestBody UpdateScoringCriteriaRequest request
     ) {
-        return ResponseEntity.ok(criteriaService.updateScoringCriteria(criteriaId, request));
+        return null;
     }
 
     @PatchMapping("/criteria/{criteriaId}/deactivate")
-    public ResponseEntity<ScoringCriteriaResponse> deactivateScoringCriteria(@PathVariable UUID criteriaId) {
-        return ResponseEntity.ok(criteriaService.deactivateScoringCriteria(criteriaId));
+    public ResponseEntity<ScoringCriteriaResponse> deactivateScoringCriteria(
+            @PathVariable UUID criteriaId
+    ) {
+        return null;
     }
 
     @GetMapping("/events/{eventId}/criteria")
@@ -63,7 +68,7 @@ public class CriteriaController {
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(required = false) Boolean isTechnical
     ) {
-        return ResponseEntity.ok(eventCriteriaService.getEventCriteria(eventId, isActive, isTechnical));
+        return null;
     }
 
     @PostMapping("/events/{eventId}/criteria")
@@ -71,8 +76,7 @@ public class CriteriaController {
             @PathVariable UUID eventId,
             @Valid @RequestBody CreateEventCriteriaRequest request
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(eventCriteriaService.createEventCriteria(eventId, request));
+        return null;
     }
 
     @PatchMapping("/event-criteria/{eventCriteriaId}")
@@ -80,18 +84,21 @@ public class CriteriaController {
             @PathVariable UUID eventCriteriaId,
             @Valid @RequestBody UpdateEventCriteriaRequest request
     ) {
-        return ResponseEntity.ok(eventCriteriaService.updateEventCriteria(eventCriteriaId, request));
+        return null;
     }
 
     @DeleteMapping("/event-criteria/{eventCriteriaId}")
-    public ResponseEntity<Void> deleteEventCriteria(@PathVariable UUID eventCriteriaId) {
-        eventCriteriaService.deleteEventCriteria(eventCriteriaId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> deleteEventCriteria(
+            @PathVariable UUID eventCriteriaId
+    ) {
+        return null;
     }
 
     @GetMapping("/rounds/{roundId}/criteria")
-    public ResponseEntity<List<EventCriteriaResponse>> getCriteriaByRound(@PathVariable UUID roundId) {
-        return ResponseEntity.ok(eventCriteriaService.getCriteriaByRound(roundId));
+    public ResponseEntity<List<EventCriteriaResponse>> getCriteriaByRound(
+            @PathVariable UUID roundId
+    ) {
+        return null;
     }
 }
 
