@@ -93,8 +93,7 @@ export const EventsPage = () => {
             <div
               key={event.id}
               onClick={() => handleSelectEvent(event)}
-              className="group cursor-pointer bg-white border border-gray-200 hover:border-blue-400 hover:shadow-xl rounded-xl p-7 transition-all flex flex-col h-full"
-            >
+              className="group cursor-pointer bg-white border border-gray-200 hover:border-blue-400 hover:shadow-xl rounded-xl p-7 transition-all flex flex-col h-full">
               <div className="flex justify-between items-center mb-5">
                 <StatusBadge status={event.status} />
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{event.season}</span>
