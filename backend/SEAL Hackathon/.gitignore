@@ -18,6 +18,20 @@ target/
 *.iws
 *.iml
 *.ipr
+.idea/
+*.iml
+
+# Environment files
+.env
+.env.*
+
+# Config files
+*.yaml
+*.yml
+*.properties
+
+# AI tooling
+.claude/
 
 ### NetBeans ###
 /nbproject/private/
