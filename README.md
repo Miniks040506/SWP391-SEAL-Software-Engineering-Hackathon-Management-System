@@ -155,14 +155,23 @@ SEAL solves these issues by centralizing event operations, scoring data, communi
 
 ## Tech Stack
 
-### Frontend
+## Frontend
 
-- React
-- JavaScript
-- React Router
-- Axios or Fetch API
-- HTML/CSS
+- React (SPA Architecture)
+- TypeScript
 - Vite
+- MUI + MUI Icons
+- Tailwind CSS
+- TanStack Query
+- Zustand
+- Axios
+- React Router DOM
+- React Hook Form
+- Zod
+- Recharts
+- ESLint + Prettier
+- date-fns
+- notistack
 
 ### Backend
 
@@ -172,9 +181,9 @@ SEAL solves these issues by centralizing event operations, scoring data, communi
 - Spring Security
 - Spring Data JPA
 - Hibernate
-- Bean Validation
-- JWT authentication
-- Java Mail / SMTP integration
+- Jakarta Bean Validation
+- JWT Authentication
+- Spring Mail / SMTP Integration
 
 ### Database
 
@@ -403,7 +412,7 @@ The project also supports RBL research on scoring consistency in academic softwa
 
 ## Project Structure
 
-Recommended repository layout:
+### Backend Project Structure
 
 ```text
 SWP391-SEAL-Software-Engineering-Hackathon-Management-System/
@@ -430,26 +439,75 @@ SWP391-SEAL-Software-Engineering-Hackathon-Management-System/
 │       │   └── test/
 │       ├── pom.xml
 │       └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   ├── assets/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── layouts/
-│   │   ├── pages/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   └── utils/
-│   ├── package.json
-│   └── .env.example
-├── docs/
-│   ├── CONTEXT.docx
-│   ├── SEAL_Entity_Design_v6.docx
-│   └── usecase.docx
 └── README.md
 ```
 
+### Frontend Project Structure
+
+```text
+seal-fe/
+├── public/
+├── src/
+│   ├── app/
+│   │   ├── App.tsx
+│   │   ├── router.tsx
+│   │   ├── providers.tsx
+│   │   └── theme.ts
+│   │
+│   ├── api/
+│   │   ├── axiosClient.ts
+│   │   ├── auth.api.ts
+│   │   ├── user.api.ts
+│   │   ├── event.api.ts
+│   │   ├── round.api.ts
+│   │   ├── track.api.ts
+│   │   ├── criteria.api.ts
+│   │   ├── team.api.ts
+│   │   ├── submission.api.ts
+│   │   ├── grading.api.ts
+│   │   ├── ranking.api.ts
+│   │   ├── notification.api.ts
+│   │   └── export.api.ts
+│   │
+│   ├── components/
+│   │   ├── common/
+│   │   ├── layout/
+│   │   └── guards/
+│   │
+│   ├── features/
+│   │   ├── auth/
+│   │   │   ├── pages/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   └── schemas/
+│   │   ├── users/
+│   │   ├── system/
+│   │   ├── events/
+│   │   ├── rounds/
+│   │   ├── tracks/
+│   │   ├── criteria/
+│   │   ├── teams/
+│   │   ├── submissions/
+│   │   ├── grading/
+│   │   ├── feedback/
+│   │   ├── ranking/
+│   │   ├── dashboard/
+│   │   └── exports/
+│   │
+│   ├── hooks/
+│   ├── stores/
+│   ├── types/
+│   ├── utils/
+│   ├── index.css
+│   └── main.tsx
+│
+├── .env.example
+├── .env.development
+├── .env.production
+├── vite.config.ts
+├── package.json
+└── README.md
+```
 ---
 
 ## Getting Started
