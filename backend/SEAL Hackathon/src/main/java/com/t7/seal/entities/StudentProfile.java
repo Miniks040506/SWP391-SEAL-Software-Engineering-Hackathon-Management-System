@@ -37,7 +37,6 @@ public class StudentProfile {
     @Column(name = "graduation_year")
     private Integer graduationYear;
 
-
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
 
