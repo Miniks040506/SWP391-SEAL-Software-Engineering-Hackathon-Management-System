@@ -49,10 +49,10 @@ public class HackathonEvent {
     private String bannerUrl;
 
     @Column(name = "registration_open", nullable = false)
-    private LocalDate registrationOpen;
+    private LocalDateTime registrationOpen;
 
     @Column(name = "registration_close", nullable = false)
-    private LocalDate registrationClose;
+    private LocalDateTime registrationClose;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -94,11 +94,11 @@ public class HackathonEvent {
     private List<EventCriteria> eventCriteria = new ArrayList<>();
 
     // Checks whether registrations can be accepted for the supplied date.
-    public boolean isRegistrationWindowOpen(LocalDate today) {
+    public boolean isRegistrationWindowOpen(LocalDateTime now) {
         return status == RegistrationStatus.REGISTRATION
-                && today != null
-                && !today.isBefore(registrationOpen)
-                && !today.isAfter(registrationClose);
+                && now != null
+                && !now.isBefore(registrationOpen)
+                && !now.isAfter(registrationClose);
     }
 
     // Moves the event from draft into the registration phase.

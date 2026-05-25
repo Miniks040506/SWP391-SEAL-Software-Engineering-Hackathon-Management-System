@@ -10,9 +10,9 @@ import com.t7.seal.response.event.EventSummaryResponse;
 import com.t7.seal.response.results.PublishResultsResponse;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.system.VarianceDashboardResponse;
+import com.t7.seal.service.EventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +24,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EventController {
 
+    private final EventService eventService;
+
     @PostMapping
     public ResponseEntity<EventDetailResponse> createEvent(
             @Valid @RequestBody CreateEventRequest request
@@ -32,19 +34,20 @@ public class EventController {
     }
 
     @GetMapping
-    public ResponseEntity<PageResponse<EventSummaryResponse>> getEvents(
+    public ResponseEntity<PageResponse<EventSummaryResponse>> getPublicEvents(
             @RequestParam(required = false) String season,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return null;
+        return ResponseEntity.ok(eventService.getPublicEvent(season, year, status, size, page));
     }
 
     @GetMapping("/{eventId}")
-    public ResponseEntity<EventDetailResponse> getEventById(@PathVariable UUID eventId) {
-        return null;
+    public ResponseEntity<EventDetailResponse> getEventById(@PathVariable UUID eventId
+    ) {
+        return ResponseEntity.ok(eventService.getEventById(eventId));
     }
 
     @PatchMapping("/{eventId}")

@@ -1,5 +1,7 @@
 package com.t7.seal.entities;
 
+import com.t7.seal.domain.SubmissionLinkType;
+import com.t7.seal.infrastructure.SubmissionLinkTypeListConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,8 +31,9 @@ public class Track {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Convert(converter = SubmissionLinkTypeListConverter.class)
     @Column(name = "required_link_types", length = 200)
-    private String requiredLinkTypes;
+    private List<SubmissionLinkType> requiredLinkTypes;
 
     @Column(name = "max_teams")
     private Integer maxTeams;
@@ -65,9 +68,10 @@ public class Track {
     }
 
     // Performs a coarse substring check on the required link types JSON string.
-    public boolean requiresLinkType(String type) {
-        return requiredLinkTypes != null
-                && type != null
-                && requiredLinkTypes.toUpperCase().contains(type.toUpperCase());
-    }
+//    public boolean requiresLinkType(String type) {
+//        return requiredLinkTypes != null
+//                && type != null
+//                && requiredLinkTypes.toUpperCase().contains(type.toUpperCase());
+//    }
+
 }
