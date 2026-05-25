@@ -1,9 +1,18 @@
 import { createBrowserRouter, Outlet } from 'react-router-dom';
+
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { NavbarLoggedin } from '@/components/layout/NavbarLoggedin';
+import { SidebarLoggedin } from '@/components/layout/SidebarLoggedin';
+
+
+
 import { EventsPage, EventDetailPage } from '@/features/events';
 import { LeaderboardPage } from '@/features/ranking';
 import { NotFoundPage } from '@/components/common/NotFoundPage';
+
+import { CoordinatorDashboardPage } from '@/features/coordinator';
+import { coordinatorSidebarItems } from '@/features/coordinator/configs/coordinatorSidebar.config';
 
 // Layout shell: Navbar + <Outlet /> + Footer
 const RootLayout = () => (
@@ -16,25 +25,53 @@ const RootLayout = () => (
   </div>
 );
 
+// Logged-in layout: NavbarLoggedin + Sidebar + Outlet
+const LoggedinLayout = () => (
+  <div className="min-h-screen bg-slate-50 text-gray-900 font-sans">
+    <NavbarLoggedin
+      homePath="/coordinator/dashboard"
+      currentEventLabel="Current: Spring 2024"
+      notificationPath="/coordinator/notifications"
+      settingsPath="/coordinator/settings"
+      profilePath="/coordinator/profile"
+    />
+
+    <SidebarLoggedin items={coordinatorSidebarItems} />
+
+    <main className="ml-64 px-8 py-8">
+      <Outlet />
+    </main>
+  </div>
+);
+
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
-      // main page
       { path: '/', element: <EventsPage /> },
-
-      // event detail: /events/seal-spring-24
       { path: '/events/:id', element: <EventDetailPage /> },
-
-      // leaderboard, support ?eventId=... to filter by event
-      // VD: /standings?eventId=seal-spring-24
       { path: '/standings', element: <LeaderboardPage /> },
-
-      // { path: '/login', element: <LoginPage /> },
-      // { path: '/register', element: <RegisterPage /> },
-      // { path: '/dashboard', element: <DashboardPage /> },
-
-      { path: '*', element: <NotFoundPage /> },
     ],
   },
+
+  {
+    element: <LoggedinLayout />,
+    children: [
+      { path: '/coordinator/dashboard', element: <CoordinatorDashboardPage /> },
+
+      { path: '/coordinator/events', element: <NotFoundPage /> },
+      { path: '/coordinator/teams', element: <NotFoundPage /> },
+      { path: '/coordinator/submissions', element: <NotFoundPage /> },
+      { path: '/coordinator/judging', element: <NotFoundPage /> },
+      { path: '/coordinator/prizes', element: <NotFoundPage /> },
+      { path: '/coordinator/analytics', element: <NotFoundPage /> },
+      { path: '/coordinator/notifications', element: <NotFoundPage /> },
+      { path: '/coordinator/schedule', element: <NotFoundPage /> },
+      { path: '/coordinator/reports', element: <NotFoundPage /> },
+      { path: '/coordinator/profile', element: <NotFoundPage /> },
+      { path: '/coordinator/settings', element: <NotFoundPage /> },
+    ],
+  },
+
+  { path: '*', element: <NotFoundPage /> },
 ]);
