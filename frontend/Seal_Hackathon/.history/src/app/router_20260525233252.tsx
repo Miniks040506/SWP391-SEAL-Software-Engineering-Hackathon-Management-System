@@ -5,31 +5,27 @@ import { Footer } from '@/components/layout/Footer';
 import { NavbarLoggedin } from '@/components/layout/NavbarLoggedin';
 import { SidebarLoggedin } from '@/components/layout/SidebarLoggedin';
 
+
+
 import { EventsPage, EventDetailPage } from '@/features/events';
 import { LeaderboardPage } from '@/features/ranking';
 import { NotFoundPage } from '@/components/common/NotFoundPage';
 
-import {
-  CoordinatorDashboardPage,
-  CoordinatorEventsPage,
-} from '@/features/coordinator';
-
+import { CoordinatorDashboardPage, CoordinatorEventsPage } from '@/features/coordinator';
 import { coordinatorSidebarItems } from '@/features/coordinator/configs/coordinatorSidebar.config';
 
-// Public layout
+// Layout shell: Navbar + <Outlet /> + Footer
 const RootLayout = () => (
   <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900">
     <Navbar />
-
     <main className="max-w-6xl mx-auto px-6 py-12 md:py-16 min-h-[calc(100vh-280px)]">
       <Outlet />
     </main>
-
     <Footer />
   </div>
 );
 
-// Logged-in layout
+// Logged-in layout: NavbarLoggedin + Sidebar + Outlet
 const LoggedinLayout = () => (
   <div className="min-h-screen bg-slate-50 text-gray-900 font-sans">
     <NavbarLoggedin
@@ -59,22 +55,21 @@ export const router = createBrowserRouter([
   },
 
   {
-    path: '/coordinator',
     element: <LoggedinLayout />,
     children: [
-      { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: 'dashboard', element: <CoordinatorDashboardPage /> },
-      { path: 'events', element: <CoordinatorEventsPage /> },
-      { path: 'teams', element: <NotFoundPage /> },
-      { path: 'submissions', element: <NotFoundPage /> },
-      { path: 'judging', element: <NotFoundPage /> },
-      { path: 'prizes', element: <NotFoundPage /> },
-      { path: 'analytics', element: <NotFoundPage /> },
-      { path: 'notifications', element: <NotFoundPage /> },
-      { path: 'schedule', element: <NotFoundPage /> },
-      { path: 'reports', element: <NotFoundPage /> },
-      { path: 'profile', element: <NotFoundPage /> },
-      { path: 'settings', element: <NotFoundPage /> },
+      { index: true, element: <Navigate to="/coordinator/dashboard" replace /> },
+      { path: '/coordinator/dashboard', element: <CoordinatorDashboardPage /> },
+      { path: '/coordinator/events', element: <CoordinatorEventsPage /> },
+      { path: '/coordinator/teams', element: <NotFoundPage /> },
+      { path: '/coordinator/submissions', element: <NotFoundPage /> },
+      { path: '/coordinator/judging', element: <NotFoundPage /> },
+      { path: '/coordinator/prizes', element: <NotFoundPage /> },
+      { path: '/coordinator/analytics', element: <NotFoundPage /> },
+      { path: '/coordinator/notifications', element: <NotFoundPage /> },
+      { path: '/coordinator/schedule', element: <NotFoundPage /> },
+      { path: '/coordinator/reports', element: <NotFoundPage /> },
+      { path: '/coordinator/profile', element: <NotFoundPage /> },
+      { path: '/coordinator/settings', element: <NotFoundPage /> },
     ],
   },
 
