@@ -3,6 +3,13 @@ export type EventStatus = 'Upcoming' | 'Ongoing' | 'Ended';
 export interface Track {
   name: string;
   desc: string;
+  rounds: Round[];
+}
+
+export interface Round {
+  id: string;
+  name: string;
+  duration: string;
 }
 
 export interface Prize {
