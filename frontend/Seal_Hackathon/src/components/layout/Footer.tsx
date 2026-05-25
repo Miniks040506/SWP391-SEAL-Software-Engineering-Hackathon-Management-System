@@ -3,6 +3,8 @@ import PublicIcon from '@mui/icons-material/Public';
 import MailIcon from '@mui/icons-material/Mail';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export const Footer = () => (
   <footer className="border-t border-gray-100 bg-gray-50/40 py-16">
     <div className="max-w-6xl mx-auto px-6">
@@ -78,7 +80,7 @@ export const Footer = () => (
           <span>SE Faculty</span>
         </div>
         <div className="text-xs font-semibold text-gray-400">
-          © 2024 SEAL LEAGUE PORTAL • v2.7 STABLE
+          © {CURRENT_YEAR} SEAL LEAGUE PORTAL
         </div>
       </div>
 
