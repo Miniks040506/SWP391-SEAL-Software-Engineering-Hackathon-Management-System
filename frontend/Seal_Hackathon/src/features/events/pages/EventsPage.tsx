@@ -4,6 +4,7 @@ import CodeIcon from '@mui/icons-material/Code';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { EVENTS } from '../mocks/events.mock';
 import type { Event } from '@/types/event.types';
@@ -22,6 +23,11 @@ export const EventsPage = () => {
     ),
     [activeSeason],
   );
+
+  // Scroll smoothly to the seasonal rounds section
+  const handleExploreNow = () => {
+    document.getElementById('seasonal-rounds')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // receive card -> move to /events/:id
   const handleSelectEvent = (event: Event) => {
@@ -43,13 +49,16 @@ export const EventsPage = () => {
             Build. Compete. <span className="text-blue-500 font-bold">Innovate.</span>
           </h1>
           <p className="text-gray-500 text-lg leading-relaxed">
-            The ultimate software engineering challenge for FPT students.{' '}
+            The ultimate software engineering challenge for FPT students.
             <br className="hidden md:block" />
             Turn your groundbreaking ideas into real-world technical solutions.
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-3 pt-6">
-          <button className="px-8 py-3 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-black transition-all shadow-lg active:scale-95">
+          {/* Scroll to #seasonal-rounds on click */}
+          <button
+            onClick={handleExploreNow}
+            className="inline-flex items-center gap-2 px-7 py-3 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-black transition-all shadow-lg active:scale-95">
             Explore Now
           </button>
           <button className="px-8 py-3 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-all">
@@ -63,8 +72,8 @@ export const EventsPage = () => {
         />
       </section>
 
-      {/* Event list + season filter */}
-      <div className="space-y-8">
+      {/* Event list + season filter - scroll target */}
+      <div id="seasonal-rounds" className="space-y-8 scroll-mt-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
           <div className="flex items-center gap-2">
             <AutoAwesomeIcon style={{ fontSize: 20 }} className="text-blue-500" />
@@ -115,7 +124,6 @@ export const EventsPage = () => {
           ))}
         </div>
       </div>
-
     </div>
   );
 };

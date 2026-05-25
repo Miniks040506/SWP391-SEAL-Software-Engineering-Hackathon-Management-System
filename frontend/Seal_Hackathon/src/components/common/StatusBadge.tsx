@@ -12,9 +12,7 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge = ({ status }: StatusBadgeProps) => (
-  <span
-    className={`px-2.5 py-1 rounded text-xs font-bold tracking-tight shadow-sm ${STATUS_STYLES[status]}`}
-  >
+  <span className={`px-2.5 py-1 rounded text-xs font-bold tracking-tight shadow-sm ${STATUS_STYLES[status]}`}>
     {status.toUpperCase()}
   </span>
 );
