@@ -1,0 +1,518 @@
+[33mcommit 732c6ffc7a56d358b51c361c349d87e320a029a8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/miniks[m[33m, [m[1;31morigin/feature/miniks[m[33m)[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Mon May 25 10:26:37 2026 +0700
+
+    Add vite configs
+
+[33mcommit e66f276f9db6b71045ecc896a91016293e1fe187[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Mon May 25 10:25:27 2026 +0700
+
+    Add vite config
+
+[33mcommit ff20e3feab8a91f1ddaf40842f03d9634875bd61[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: 52b62ec b0d2286
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sun May 24 23:55:44 2026 +0700
+
+    Merge pull request #36 from Miniks040506/yuk1na2312-patch-1
+    
+    Update .gitignore to exclude environment and config files
+
+[33mcommit b0d22862d48cd7b4dc1891b6cadfa21b4c831052[m
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Sun May 24 16:33:43 2026 +0700
+
+    Update .gitignore to exclude environment and config files
+    
+    Added environment and config file patterns to .gitignore.
+
+[33mcommit 52b62eceee4f63c05eeaa7819ca162f479c6d528[m
+Merge: c4e6d0b 15397d7
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sun May 24 12:30:12 2026 +0700
+
+    Merge pull request #34 from Miniks040506/yuk1na2312-patch-1
+    
+    Update README
+
+[33mcommit 15397d7df1cec91caa35814888738fed53ac772d[m
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Sun May 24 12:28:45 2026 +0700
+
+    Update README
+
+[33mcommit c4e6d0bb623cb59d68480af64f3e94649e7d391a[m
+Merge: a81bfe6 be79bfb
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sun May 24 10:35:04 2026 +0700
+
+    Merge pull request #33 from Miniks040506/feature/yuk1na
+    
+    finish export and announce controller
+
+[33mcommit be79bfb10c8c019d190e1089f22ca4ea92101da6[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Sun May 24 10:33:15 2026 +0700
+
+    finish export and announce controller
+
+[33mcommit a81bfe64bf674993259aa1e0c7eab361d70a386d[m
+Merge: 51059c1 2b6d3e9
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Sun May 24 00:10:01 2026 +0700
+
+    Merge pull request #32 from Miniks040506/feature/miniks
+    
+    Add round, track, criteria and team controller
+
+[33mcommit 2b6d3e9b3da6b31308b79402b291a74c46700b88[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Sun May 24 00:06:42 2026 +0700
+
+    Add round, track, criteria and team controller
+
+[33mcommit 51059c1cf4801e411884810e6b72adf9463ab4b1[m
+Merge: 8279086 9142aaf
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sun May 24 00:05:07 2026 +0700
+
+    Merge pull request #31 from Miniks040506/feature/yuk1na
+    
+    finish ranking, prize, disqualification and notification controllers.…
+
+[33mcommit 9142aaf555f7831c60eacce325b9952570fe01ed[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Sun May 24 00:01:40 2026 +0700
+
+    finish ranking, prize, disqualification and notification controllers. Fix some bugs in other controllers as well
+
+[33mcommit 8279086bea64253302f7d4d86de7d02117b69b23[m
+Merge: 4e81b80 73515c7
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Sat May 23 22:44:03 2026 +0700
+
+    Merge pull request #30 from Miniks040506/feature/thuvnm
+    
+    Create and setup frontend project
+
+[33mcommit 73515c7e75423e65747f9e6cebc3ec4fcb4cf4fe[m[33m ([m[1;31morigin/feature/thuvnm[m[33m)[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Sat May 23 22:41:45 2026 +0700
+
+    Create and setup frontend project
+
+[33mcommit 4e81b80c5809bc3e400531b3dfb48bad278ea622[m
+Merge: 3812416 781cf09
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Fri May 22 21:47:42 2026 +0700
+
+    Merge pull request #28 from Miniks040506/feature/yuk1na
+    
+    controller for mentor, calibration and grading
+
+[33mcommit 381241673e7a0676c51f04fe64b48a11d0020d23[m
+Merge: aeaff13 576b991
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Fri May 22 21:47:11 2026 +0700
+
+    Merge pull request #29 from Miniks040506/feature/miniks
+    
+    Add system and event controllers
+
+[33mcommit 576b99109340f8207d0a4afe67b7f0559b158848[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Fri May 22 21:45:17 2026 +0700
+
+    Add system and event controllers
+
+[33mcommit 781cf098aa58d49e1992f109be4103ed246f97be[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Fri May 22 21:43:36 2026 +0700
+
+    more controllers
+
+[33mcommit aeaff13e4305e6476bdc62562293d49fdc34d7d9[m
+Merge: 66ebe38 9359fa3
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Fri May 22 13:50:23 2026 +0700
+
+    Merge pull request #27 from Miniks040506/feature/yuk1na
+    
+    Feature/yuk1na
+
+[33mcommit 9359fa3ad84f4d27166c8fd3ca1e749c4ca88d3e[m
+Merge: 36d7426 66ebe38
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Fri May 22 13:49:55 2026 +0700
+
+    Merge branch 'main' into feature/yuk1na
+
+[33mcommit 36d742645af0488364eae11a1e26966e2acaf2f1[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Fri May 22 10:45:49 2026 +0700
+
+    add submission controller
+
+[33mcommit 66ebe3816c8ad4154dce20ee14f841a0e94a38c5[m
+Merge: b7488d6 b28396c
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Fri May 22 10:38:56 2026 +0700
+
+    Merge pull request #26 from Miniks040506/feature/miniks
+    
+    Add User and Auth Controller and it's requests and response
+
+[33mcommit b28396ca9fa30a2ecd011af4e4c3e917d27e82a1[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Fri May 22 00:28:44 2026 +0700
+
+    Add User and Auth Controller and it's requests and response
+
+[33mcommit 9ddff9114e64fffa5e2ae47b52adce190b7f6430[m
+Merge: 9a81b15 b7488d6
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Mon May 18 13:31:04 2026 +0700
+
+    Merge branch 'main' of https://github.com/Miniks040506/SWP391-SEAL-Software-Engineering-Hackathon-Management-System into feature/yuk1na
+
+[33mcommit b7488d6df4b1780768b01e43a81dae0151041485[m
+Merge: fdde704 ead9c43
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Mon May 18 13:30:56 2026 +0700
+
+    Merge pull request #25 from Miniks040506/feature/miniks
+
+[33mcommit ead9c43247adcd89ce6e662b051d19eac50a2130[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Mon May 18 13:28:32 2026 +0700
+
+    update user info
+
+[33mcommit fdde704922b7ee8c1b0a345a475d343265a83091[m
+Merge: 198f189 a4098f5
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Mon May 18 13:10:15 2026 +0700
+
+    Merge pull request #24 from Miniks040506/feature/yuk1na
+    
+    update relationship attributes
+
+[33mcommit 9a81b155b9f07362302b0c31e64a5a34d8fbc97f[m
+Merge: a4098f5 198f189
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Mon May 18 13:09:14 2026 +0700
+
+    Merge branch 'main' of https://github.com/Miniks040506/SWP391-SEAL-Software-Engineering-Hackathon-Management-System into feature/yuk1na
+
+[33mcommit a4098f5330c7c34fb74ca5827873c78f33beadb6[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Mon May 18 13:07:01 2026 +0700
+
+    update relationship attributes
+
+[33mcommit 198f189a1336c17012633a2ca0a99a62c0450252[m
+Merge: d6ea658 9696a7c
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Mon May 18 13:04:39 2026 +0700
+
+    Merge pull request #23 from Miniks040506/feature/miniks
+    
+    edit config
+
+[33mcommit 9696a7cc5db908c3199acb033fda51c639fc3e48[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Mon May 18 13:00:41 2026 +0700
+
+    edit config
+
+[33mcommit d6ea658219071fa78be7e520df12242ba23f1514[m
+Merge: 66b6b20 c0f17bb
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Mon May 18 11:54:59 2026 +0700
+
+    Merge pull request #22 from Miniks040506/feature/miniks
+    
+    update entities and env config
+
+[33mcommit c0f17bb5cc3c3f1a404d2aa1f455a048ae011f2d[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Mon May 18 11:53:54 2026 +0700
+
+    update entities and env config
+
+[33mcommit 66b6b20c0660210cf8ffeea146e32b1302eabd20[m
+Merge: 15a10ab 036dfee
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Mon May 18 11:15:20 2026 +0700
+
+    Merge pull request #21 from Miniks040506/feature/miniks
+    
+    Add Controller mapping for Auth
+
+[33mcommit 036dfee83e48fa14f8ee840d4fbde72585d40989[m
+Merge: 37cb73e 15a10ab
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Mon May 18 11:14:43 2026 +0700
+
+    Merge branch 'main' into feature/miniks
+
+[33mcommit 37cb73e17614b14861f83bb5ffdded6d83bddfe7[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Mon May 18 11:08:54 2026 +0700
+
+    Add Controller mapping for Auth
+
+[33mcommit 15a10ab680208bee3f191f02d3167944586f4c99[m
+Merge: e3e217f 09fc334
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Mon May 18 10:52:21 2026 +0700
+
+    Merge pull request #20 from Miniks040506/feature/entities-yuk1naa
+    
+    add relationship for entity group 1,2,3
+
+[33mcommit 09fc33407790a3449ea499a0a33f388298b54209[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Mon May 18 10:44:18 2026 +0700
+
+    add relationship for entity group 1,2,3
+
+[33mcommit e3e217f369ddf8967fbab70f63be24c9e4edcbee[m
+Merge: 710d709 61cadda
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Mon May 18 09:37:05 2026 +0700
+
+    Merge pull request #19 from Miniks040506/feature/miniks
+    
+    Feature/miniks
+
+[33mcommit 61cadda7c63b38c870be8cd4b4bdc8cf8a16d6f0[m[33m ([m[1;32mfeature/entities-miniks[m[33m)[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Mon May 18 09:33:49 2026 +0700
+
+    add security config v1
+
+[33mcommit cb1aad816f76fa6971844f212934b5234a8f17d1[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Mon May 18 00:22:53 2026 +0700
+
+    Add Controllers for system
+
+[33mcommit 710d709e7e91083e07fb116f73e9357f27094c37[m
+Merge: cc096c6 bc8bab4
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sun May 17 21:17:35 2026 +0700
+
+    Merge pull request #18 from Miniks040506/nguyen2312-dev-patch-1
+    
+    Update README
+
+[33mcommit bc8bab4c8d25231fabfdaba3e5f239f1af14b085[m
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Sun May 17 21:15:04 2026 +0700
+
+    Update README
+    
+    Thằng Cường tày lắm ae
+
+[33mcommit cc096c6a5d5ef6afe9ffa7e68c61fef432f4541e[m
+Merge: b08298c 699fe01
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Sun May 17 15:46:19 2026 +0700
+
+    Merge pull request #16 from Miniks040506/Miniks040506-patch-1
+    
+    Create SECURITY.md for security policy and reporting
+
+[33mcommit 699fe01cd9fa043d5af65fcc96f3ecfff7a288ea[m
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sun May 17 12:48:26 2026 +0700
+
+    Create SECURITY.md for security policy and reporting
+    
+    Added a security policy document outlining supported versions and vulnerability reporting.
+
+[33mcommit b08298c07f7c0da3b522348b458c3a25269605ce[m
+Merge: 6177811 5d9e33c
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sun May 17 00:02:07 2026 +0700
+
+    Merge pull request #14 from Miniks040506/feature/create_entities-yuk1na
+    
+    add repositories and update some entities attribute
+
+[33mcommit 6177811b0a12051ac939c63afece027f2c23329a[m
+Merge: a34da4c 7fe599d
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Sun May 17 00:01:50 2026 +0700
+
+    Merge pull request #15 from Miniks040506/feature/entities-miniks
+    
+    complete entities 4,5
+
+[33mcommit 7fe599d3b525d69fc261eaf796bee59574b09378[m[33m ([m[1;31morigin/feature/entities-miniks[m[33m)[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Sat May 16 23:59:28 2026 +0700
+
+    complete entities 4,5
+
+[33mcommit 5d9e33c1cef1124456bd9096113497b40bcfd384[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Sat May 16 23:57:56 2026 +0700
+
+    add repositories and update some entities attribute
+
+[33mcommit a34da4cda135b00ce7cf7253fd5ee4d457573c29[m
+Merge: 4275ac4 61a2fb0
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sat May 16 23:09:15 2026 +0700
+
+    Merge pull request #13 from Miniks040506/feature/entities-miniks
+    
+    Update entities's attribute 4
+
+[33mcommit 61a2fb0497e7f918617e16d883db9f9d3aedf321[m[33m ([m[1;32mfeature/entities4[m[33m)[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Sat May 16 23:03:24 2026 +0700
+
+    Update entities's attribute 4
+
+[33mcommit 4275ac434c1b90c6b448a744ce71dbc820ecd739[m
+Merge: 0f871e8 4968a0f
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Sat May 16 21:59:25 2026 +0700
+
+    Merge pull request #12 from Miniks040506/feature/create_entities-yuk1na
+    
+    remove vs code config
+
+[33mcommit 4968a0f4f214f578c106ed5f27b02a40ef46cb84[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Sat May 16 21:57:33 2026 +0700
+
+    remove vs code config
+
+[33mcommit 0f871e89774b5fbab9b90ee750f14d9822291a1d[m
+Merge: 89f4882 dc7390f
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Sat May 16 21:52:02 2026 +0700
+
+    Merge pull request #11 from Miniks040506/feature/create_entities-yuk1na
+    
+    add attributes for entities
+
+[33mcommit dc7390f7dcd594e41ff3b789aaf19d157285ce42[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Sat May 16 21:46:22 2026 +0700
+
+    add attributes for entities
+
+[33mcommit 89f4882f66e86d7812679531c7bc893240385c51[m
+Merge: fe2a17b 76820f9
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sat May 16 16:10:39 2026 +0700
+
+    Merge pull request #10 from Miniks040506/feature/entities4
+    
+    Feature/entities4
+
+[33mcommit 76820f99e54da443fae31743712f5d96f8386529[m[33m ([m[1;31morigin/feature/entities4[m[33m, [m[1;32mfeature/create_entities[m[33m)[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Sat May 16 16:06:37 2026 +0700
+
+    Add entities's attribute for group 4 and basic security config
+
+[33mcommit fe2a17ba13a7b30afdd8880592cd1ae3965f86dc[m
+Merge: 2948adc b0e7af3
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sat May 16 15:55:57 2026 +0700
+
+    Merge pull request #9 from Miniks040506/feature/create_entities
+    
+    update attributes for entities group 1,2,3
+
+[33mcommit b0e7af3991c474ef5221547b3f816d3ab3d6388b[m[33m ([m[1;31morigin/feature/create_entities[m[33m)[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Sat May 16 15:50:40 2026 +0700
+
+    update attributes for entities group 1,2,3
+
+[33mcommit 2948adc76f6d1759a010dc1526070d4be7c5de9d[m
+Merge: b0e888f daba58b
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sat May 16 11:45:11 2026 +0700
+
+    Merge pull request #8 from Miniks040506/feature/create_entities
+    
+    add attributes for entities
+
+[33mcommit daba58b25fc696fc9312ec415d5b131855eabf4f[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Sat May 16 11:43:34 2026 +0700
+
+    add attributes for entities
+
+[33mcommit 0116ec353895b9a464ccae55990d772a4357445c[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Sat May 16 11:33:53 2026 +0700
+
+    Add security config
+
+[33mcommit b0e888f0018c86ff629c161d4dbd40bacc2d508a[m[33m ([m[1;31morigin/feature/config[m[33m)[m
+Merge: 7a3cbe9 52c19f6
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Sat May 16 11:00:33 2026 +0700
+
+    Merge pull request #7 from Miniks040506/feature/create_entities
+    
+    add missing entities
+
+[33mcommit 52c19f690deff4d5971cbce73f905bd9640cf054[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Sat May 16 09:41:22 2026 +0700
+
+    add missing entities
+
+[33mcommit 7a3cbe9023ce7f2bfe02962c9629640777d21854[m
+Merge: e864c96 ecffc73
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Thu May 14 11:27:47 2026 +0700
+
+    Merge pull request #6 from Miniks040506/feature/config
+    
+    env
+
+[33mcommit ecffc733347786202e81c5ed60c6c8d97a376ebc[m
+Author: nguyen2312-dev <khoinguyenho2006@gmail.com>
+Date:   Thu May 14 11:24:26 2026 +0700
+
+    env
+
+[33mcommit e864c96eb45b5bde74c969f265e5dad0e221e663[m
+Merge: ae62850 25e0ac2
+Author: yuk1na <khoinguyenho2006@gmail.com>
+Date:   Thu May 14 11:16:56 2026 +0700
+
+    Merge pull request #5 from Miniks040506/feature/create_entities
+    
+    add some security config - pretty good niga
+
+[33mcommit 25e0ac246dce08f6a155c091137941a45799e5fe[m
+Author: Miniks <miniksnhc456@gmail.com>
+Date:   Thu May 14 11:14:41 2026 +0700
+
+    add some security config
+
+[33mcommit ae62850bd9db132d4ea34f601a05c60627c52b9d[m
+Merge: b1ec8ce 35f187b
+Author: Miniks040506 <miniksnhc456@gmail.com>
+Date:   Thu May 14 10:38:17 2026 +0700
+
+    Merge pull request #4 from Miniks040506/feature/create_entities
+    
+    Feature/create entities
+
+[33mcommit 35f187b94d0fd5f163cb6c944a7d7d55e3878797[m
+Merge: 75f99c0 254d6bd
+Author: Min

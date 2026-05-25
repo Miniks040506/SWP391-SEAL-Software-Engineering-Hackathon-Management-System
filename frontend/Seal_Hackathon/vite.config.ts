@@ -15,4 +15,13 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+<<<<<<< HEAD
 })
+=======
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    }
+  }
+})
+>>>>>>> origin
