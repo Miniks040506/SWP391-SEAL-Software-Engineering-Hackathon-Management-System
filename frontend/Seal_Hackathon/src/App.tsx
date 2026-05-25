@@ -3,9 +3,12 @@ import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
+import { ThemeProvider } from '@mui/material'
+import { theme } from './app/theme'
+import TeamParticipantManagementPage from './features/teams/pages/TeamParticipantManagementPage'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <>
@@ -119,4 +122,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
