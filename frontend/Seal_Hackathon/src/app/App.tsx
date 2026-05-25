@@ -1,5 +1,13 @@
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
+import { ThemeProvider } from '@mui/material/styles';
+import { theme } from './theme';
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <ThemeProvider theme={theme}>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </>
+  )
 }
