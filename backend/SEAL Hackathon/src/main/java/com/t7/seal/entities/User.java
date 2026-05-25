@@ -79,6 +79,9 @@ public class User {
     @Column(name = "email_verification_token", unique = true, length = 100)
     private String emailVerificationToken;
 
+    @Column(name = "email_verification_expires_at")
+    private LocalDateTime emailVerificationExpiresAt;
+
     @Column(name = "password_reset_token", unique = true, length = 100)
     private String passwordResetToken;
 
@@ -252,7 +255,7 @@ public class User {
         this.emailVerificationToken = null;
 
         if (this.status == UserStatus.UNVERIFIED) {
-            this.status = UserStatus.PENDING_APPROVAL;
+            this.status = UserStatus.ACTIVE;
         }
     }
 

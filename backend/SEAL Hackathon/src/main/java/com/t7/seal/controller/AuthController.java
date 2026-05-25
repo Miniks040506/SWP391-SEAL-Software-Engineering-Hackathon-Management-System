@@ -2,11 +2,11 @@ package com.t7.seal.controller;
 
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.auth.*;
-import com.t7.seal.response.auth.LoginResponse;
-import com.t7.seal.response.auth.RefreshTokenResponse;
-import com.t7.seal.response.auth.UserResponse;
+import com.t7.seal.response.auth.*;
+import com.t7.seal.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,50 +15,46 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(ApiPaths.API_V1 + "/auth")
 public class AuthController {
 
-//    private final AuthService authService;
+    private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
-//        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
-        return null;
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
     @PostMapping("/verify-email")
-    public ResponseEntity<UserResponse> verifyEmail(@Valid @RequestBody TokenRequest request) {
-//        return ResponseEntity.ok(authService.verifyEmail(request));
-        return null;
+    public ResponseEntity<VerifyEmailResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        return ResponseEntity.ok(authService.verifyEmail(request));
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<AuthMessageResponse> resendVerification(@Valid @RequestBody EmailRequest request) {
+        return ResponseEntity.ok(authService.resendVerification(request));
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-//        return ResponseEntity.ok(authService.login(request));
-        return null;
+        return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/refresh-token")
     public ResponseEntity<RefreshTokenResponse> refreshToken(@Valid @RequestBody TokenRequest request) {
-//        return ResponseEntity.ok(authService.refreshToken(request));
-        return null;
+        return ResponseEntity.ok(authService.refreshToken(request));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorizationHeader) {
-//        authService.logout(authorizationHeader);
-//        return ResponseEntity.noContent().build();
-        return null;
+        authService.logout(authorizationHeader);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-//        authService.forgotPassword(request);
-//        return ResponseEntity.noContent().build();
-        return null;
+    public ResponseEntity<AuthMessageResponse> forgotPassword(@Valid @RequestBody EmailRequest request) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-//        authService.resetPassword(request);
-//        return ResponseEntity.noContent().build();
-        return null;
+    public ResponseEntity<AuthMessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 }

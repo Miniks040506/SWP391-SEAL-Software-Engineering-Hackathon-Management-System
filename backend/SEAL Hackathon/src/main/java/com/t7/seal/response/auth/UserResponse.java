@@ -1,5 +1,0 @@
-package com.t7.seal.response.auth;
-
-import java.util.UUID;
-
-public record UserResponse(UUID userId, String email, String status, String message) {}

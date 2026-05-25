@@ -1,7 +1,10 @@
 package com.t7.seal.request.auth;
 
-import lombok.Data;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
-@Data
-public class VerifyEmailRequest {
-}
+public record VerifyEmailRequest(
+        @NotBlank @Email String email,
+        @NotBlank @Pattern(regexp = "\\d{6}") String code
+) {}

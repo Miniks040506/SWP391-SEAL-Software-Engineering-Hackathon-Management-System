@@ -15,7 +15,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/seal_hackathon
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:123456}
+    password: ${DB_PASSWORD:Miniks@040506}
     driver-class-name: org.postgresql.Driver
 #    url: jdbc:sqlserver://localhost:1433;databaseName=SealHackathonSystem;encrypt=true;trustServerCertificate=true
 #    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
@@ -71,9 +71,9 @@ github:
   api-base-url: https://api.github.com
   token: ${GITHUB_TOKEN:}
 
-gitlab:
-  api-base-url: https://gitlab.com/api/v4
-  token: ${GITLAB_TOKEN:}
+#gitlab:
+#  api-base-url: https://gitlab.com/api/v4
+#  token: ${GITLAB_TOKEN:}
 
 springdoc:
   api-docs:

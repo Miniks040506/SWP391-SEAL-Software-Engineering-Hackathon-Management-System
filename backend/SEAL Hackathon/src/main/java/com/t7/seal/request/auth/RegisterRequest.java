@@ -11,7 +11,7 @@ public record RegisterRequest(
         @Size(max = 20) String phone,
         @NotBlank String studentType,
         @Size(max = 50) String studentCode,
-        @NotBlank @Size(max = 200) String universityName,
+        @Size(max = 200) String universityName,
         @Size(max = 200) String major,
         Integer graduationYear
 ) {}
