@@ -73,6 +73,12 @@ public class SecurityConfig {
                                 API + "/auth/reset-password"
                         ).permitAll()
 
+                        // OAuth2
+                        .requestMatchers(
+                                API + "/auth/oauth2/authorization/**",
+                                API + "/auth/oauth2/callback/**"
+                        ).permitAll()
+
                         // Public Read
                         .requestMatchers(HttpMethod.GET,
                                 API + "/events",
