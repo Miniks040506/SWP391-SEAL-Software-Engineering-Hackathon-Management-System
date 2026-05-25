@@ -63,9 +63,6 @@ public class StudentProfile {
 
     // 1 - 1 to User
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "user_id",
-            nullable = false
-    )
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 }
