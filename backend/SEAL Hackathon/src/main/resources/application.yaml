@@ -14,8 +14,8 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5432/seal_hackathon
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:123456}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
   #    url: jdbc:sqlserver://localhost:1433;databaseName=SealHackathonSystem;encrypt=true;trustServerCertificate=true
   #    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
@@ -70,8 +70,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:sealhackathon@gmail.com}
-    password: ${MAIL_PASSWORD:hwlgahvlrupscpie}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:

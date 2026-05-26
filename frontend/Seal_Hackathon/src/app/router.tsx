@@ -1,20 +1,22 @@
-import { createBrowserRouter, Outlet, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Outlet, Navigate } from "react-router-dom";
 
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
-import { NavbarLoggedin } from '@/components/layout/NavbarLoggedin';
-import { SidebarLoggedin } from '@/components/layout/SidebarLoggedin';
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { NavbarLoggedin } from "@/components/layout/NavbarLoggedin";
+import { SidebarLoggedin } from "@/components/layout/SidebarLoggedin";
 
-import { EventsPage, EventDetailPage } from '@/features/events';
-import { LeaderboardPage } from '@/features/ranking';
-import { NotFoundPage } from '@/components/common/NotFoundPage';
+import { EventsPage, EventDetailPage } from "@/features/events";
+import { LeaderboardPage } from "@/features/ranking";
+import { NotFoundPage } from "@/components/common/NotFoundPage";
 
-import {
-  CoordinatorDashboardPage,
-  CoordinatorEventsPage,
-} from '@/features/coordinator';
+import { CoordinatorDashboardPage, CoordinatorEventsPage } from "@/features/coordinator";
 
-import { coordinatorSidebarItems } from '@/features/coordinator/configs/coordinatorSidebar.config';
+import { coordinatorSidebarItems } from "@/features/coordinator/configs/coordinatorSidebar.config";
+import { RegisterPage } from "@/features/auth/pages/RegisterPage";
+import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
+import { VerifyEmailSuccessPage } from "@/features/auth/pages/VerifyEmailSuccessPage";
+import { LoginPage } from "@/features/auth/pages/LoginPage";
+import BottomBar from "@/components/layout/BottomBar";
 
 // Public layout
 const RootLayout = () => (
@@ -26,6 +28,24 @@ const RootLayout = () => (
     </main>
 
     <Footer />
+  </div>
+);
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+const AuthLayout = () => (
+  <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900">
+    <Navbar />
+
+    <main className="max-w-6xl mx-auto px-6 py-12 md:py-16 min-h-[calc(100vh-280px)]">
+      <Outlet />
+    </main>
+    
+    <footer className="bg-gray-50/40 py-16">
+      <div className="max-w-6xl mx-auto px-6">
+        <BottomBar />
+      </div>
+    </footer>
   </div>
 );
 
@@ -52,31 +72,47 @@ export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
-      { path: '/', element: <EventsPage /> },
-      { path: '/events/:id', element: <EventDetailPage /> },
-      { path: '/standings', element: <LeaderboardPage /> },
+      { path: "/", element: <Navigate to="/events" replace /> },
+      { path: "/events", element: <EventsPage /> },
+      { path: "/events/:id", element: <EventDetailPage /> },
+      { path: "/standings", element: <LeaderboardPage /> },
     ],
   },
-
+  
   {
-    path: '/coordinator',
+    element: <AuthLayout />,
+    children: [
+      //AUTH ROUTES
+      { path: "/register", element: <RegisterPage /> },
+      { path: "/verify-email", element: <VerifyEmailPage /> },
+      { path: "/verify-email/success", element: <VerifyEmailSuccessPage /> },
+      { path: "/login", element: <LoginPage /> },
+      { path: "/oauth/callback", element: <NotFoundPage /> },
+      { path: "/forgot-password", element: <NotFoundPage /> },
+      { path: "/reset-password/code", element: <NotFoundPage /> },
+      { path: "/reset-password/new", element: <NotFoundPage /> },
+    ]
+  },
+  
+  {
+    path: "/coordinator",
     element: <LoggedinLayout />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: 'dashboard', element: <CoordinatorDashboardPage /> },
-      { path: 'events', element: <CoordinatorEventsPage /> },
-      { path: 'teams', element: <NotFoundPage /> },
-      { path: 'submissions', element: <NotFoundPage /> },
-      { path: 'judging', element: <NotFoundPage /> },
-      { path: 'prizes', element: <NotFoundPage /> },
-      { path: 'analytics', element: <NotFoundPage /> },
-      { path: 'notifications', element: <NotFoundPage /> },
-      { path: 'schedule', element: <NotFoundPage /> },
-      { path: 'reports', element: <NotFoundPage /> },
-      { path: 'profile', element: <NotFoundPage /> },
-      { path: 'settings', element: <NotFoundPage /> },
+      { path: "dashboard", element: <CoordinatorDashboardPage /> },
+      { path: "events", element: <CoordinatorEventsPage /> },
+      { path: "teams", element: <NotFoundPage /> },
+      { path: "submissions", element: <NotFoundPage /> },
+      { path: "judging", element: <NotFoundPage /> },
+      { path: "prizes", element: <NotFoundPage /> },
+      { path: "analytics", element: <NotFoundPage /> },
+      { path: "notifications", element: <NotFoundPage /> },
+      { path: "schedule", element: <NotFoundPage /> },
+      { path: "reports", element: <NotFoundPage /> },
+      { path: "profile", element: <NotFoundPage /> },
+      { path: "settings", element: <NotFoundPage /> },
     ],
   },
 
-  { path: '*', element: <NotFoundPage /> },
+  { path: "*", element: <NotFoundPage /> },
 ]);
