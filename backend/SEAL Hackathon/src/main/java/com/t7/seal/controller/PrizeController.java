@@ -6,6 +6,7 @@ import com.t7.seal.request.results.ClearPrizeAwardRequest;
 import com.t7.seal.request.results.CreatePrizeRequest;
 import com.t7.seal.request.results.UpdatePrizeRequest;
 import com.t7.seal.response.results.PrizeResponse;
+import com.t7.seal.service.PrizeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/prizes")
 public class PrizeController {
+
+    private final PrizeService prizeService;
+
     @PostMapping
     public ResponseEntity<PrizeResponse> createPrize(
             @Valid @RequestBody CreatePrizeRequest request
@@ -29,14 +33,14 @@ public class PrizeController {
     public ResponseEntity<List<PrizeResponse>> getPrizesByEvent(
             @PathVariable("eventId") UUID eventId
     ) {
-        return null;
+        return ResponseEntity.ok(prizeService.getPrizesByEvent(eventId));
     }
 
     @GetMapping("/{prizeId}")
     public ResponseEntity<PrizeResponse> getPrizeById(
             @PathVariable("prizeId") UUID prizeId
     ) {
-        return null;
+        return ResponseEntity.ok(prizeService.getPrizeById(prizeId));
     }
 
     @PatchMapping("/{prizeId}")
