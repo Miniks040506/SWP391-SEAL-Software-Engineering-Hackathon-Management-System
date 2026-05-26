@@ -9,7 +9,7 @@ import type {
   CoordinatorEventStatus,
 } from "../mocks/coordinatorEvents.mock";
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
+// Status badge 
 const STATUS_STYLES: Record<
   CoordinatorEventStatus,
   { bg: string; text: string; border: string; label: string }
@@ -40,7 +40,7 @@ const StatusBadge = ({ status }: { status: CoordinatorEventStatus }) => {
   );
 };
 
-// ─── Stat item ────────────────────────────────────────────────────────────────
+// Stat item
 const Stat = ({
   icon,
   value,
@@ -58,7 +58,7 @@ const Stat = ({
   </div>
 );
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+// Props
 interface CoordinatorEventCardProps {
   event: CoordinatorEvent;
   // Static preview data — will be replaced by real API data later
@@ -68,7 +68,7 @@ interface CoordinatorEventCardProps {
   onView: (id: string) => void;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// Component
 export const CoordinatorEventCard = ({
   event,
   trackCount = 3,
