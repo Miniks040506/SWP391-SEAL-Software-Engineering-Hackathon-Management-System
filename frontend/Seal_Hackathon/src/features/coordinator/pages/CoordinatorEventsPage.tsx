@@ -1,179 +1,222 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
-import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
+import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 import {
-    coordinatorEventsMock,
-    type CoordinatorEventStatus,
-} from '../mocks/coordinatorEvents.mock';
+  coordinatorEventsMock,
+  type CoordinatorEventStatus,
+} from "../mocks/coordinatorEvents.mock";
 
 export const CoordinatorEventsPage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    const getStatusChip = (status: CoordinatorEventStatus) => {
-        switch (status) {
-            case 'ONGOING':
-                return (
-                    <Chip
-                        label="ONGOING"
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                            height: 24,
-                            borderRadius: '8px',
-                            borderColor: '#bfdbfe',
-                            bgcolor: '#eff6ff',
-                            color: '#2563eb',
-                            fontSize: 11,
-                            fontWeight: 800,
-                            letterSpacing: '0.08em',
-                        }}
-                    />
-                );
+  const handleCreateEvent = () => {
+    navigate("/coordinator/events/create");
+  };
 
-            case 'DRAFT':
-                return (
-                    <Chip
-                        label="DRAFT"
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                            height: 24,
-                            borderRadius: '8px',
-                            borderColor: '#fef3c7',
-                            bgcolor: '#fffbeb',
-                            color: '#d97706',
-                            fontSize: 11,
-                            fontWeight: 800,
-                            letterSpacing: '0.08em',
-                        }}
-                    />
-                );
+  const getStatusChip = (status: CoordinatorEventStatus) => {
+    switch (status) {
+      case "ONGOING":
+        return (
+          <Chip
+            label="ONGOING"
+            size="small"
+            sx={{
+              borderRadius: "8px",
+              bgcolor: "#eff6ff",
+              color: "#2563eb",
+              border: "1px solid #bfdbfe",
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+            }}
+          />
+        );
+      case "DRAFT":
+        return (
+          <Chip
+            label="DRAFT"
+            size="small"
+            sx={{
+              borderRadius: "8px",
+              bgcolor: "#fffbeb",
+              color: "#d97706",
+              border: "1px solid #fef3c7",
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+            }}
+          />
+        );
+      case "ENDED":
+        return (
+          <Chip
+            label="ENDED"
+            size="small"
+            sx={{
+              borderRadius: "8px",
+              bgcolor: "#f3f4f6",
+              color: "#6b7280",
+              border: "1px solid #e5e7eb",
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+            }}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
-            case 'ENDED':
-                return (
-                    <Chip
-                        label="ENDED"
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                            height: 24,
-                            borderRadius: '8px',
-                            borderColor: '#e5e7eb',
-                            bgcolor: '#f3f4f6',
-                            color: '#6b7280',
-                            fontSize: 11,
-                            fontWeight: 800,
-                            letterSpacing: '0.08em',
-                        }}
-                    />
-                );
+  return (
+    <div className="space-y-8">
+      {/* Header Section */}
+      <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-800">
+            Event Management
+          </h1>
+          <p className="mt-2 text-base text-gray-500">
+            Manage all Hackathon events, timelines, and configurations.
+          </p>
+        </div>
 
-            default:
-                return null;
-        }
-    };
+<Button
+  variant="contained"
+  startIcon={<AddOutlinedIcon />}
+  onClick={handleCreateEvent}
+  sx={{
+    bgcolor: '#2563eb',
+    hover: { bgcolor: '#1d4ed8' },
+    textTransform: 'none',
+    fontWeight: 600,
+    borderRadius: '8px',
+    boxShadow: 'none',
+    '&:hover': { boxShadow: 'none', bgcolor: '#1d4ed8' }
+  }}
+>
+  Create New Event
+</Button>
+      </section>
 
-    return (
-        <div className="space-y-8">
-            <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-                        Event Management
-                    </h1>
+      {/* Events Card Grid Layout */}
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {coordinatorEventsMock.map((event) => {
+          const isOngoing = event.status === "ONGOING";
 
-                    <p className="mt-3 text-base text-gray-500">
-                        Manage all Hackathon events, timelines, and configurations.
-                    </p>
+          return (
+            <Card
+              key={event.id}
+              variant="outlined"
+              className={`relative overflow-hidden transition-all duration-200 hover:shadow-md ${
+                isOngoing
+                  ? "border-blue-500 ring-1 ring-blue-500/20 bg-gradient-to-b from-blue-50/10 to-transparent"
+                  : "border-gray-200"
+              }`}
+              style={{ borderRadius: "16px" }}
+            >
+              {/* Visual Highlight Badge cho Event đang diễn ra */}
+              {isOngoing && (
+                <div className="absolute right-0 top-0 rounded-bl-xl bg-blue-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
+                  Active
+                </div>
+              )}
+
+              <CardContent className="flex h-full flex-col p-6">
+                {/* Top Row: Status & Season */}
+                <div className="flex items-center justify-between gap-2">
+                  {getStatusChip(event.status)}
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    {event.season}
+                  </span>
                 </div>
 
-                <Button
-                    variant="contained"
-                    onClick={() => navigate('/coordinator/events/create')}
+                {/* Event Name */}
+                <h2 className="mt-4 text-lg font-bold text-slate-800 line-clamp-1">
+                  {event.name}
+                </h2>
+
+                {/* Metadata / Quick Info Grid */}
+                <div className="mt-5 grid grid-cols-2 gap-y-3 border-y border-gray-100 py-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <DynamicFeedOutlinedIcon
+                      sx={{ fontSize: 18, color: "#94a3b8" }}
+                    />
+                    <span>
+                      <strong>{event.rounds}</strong> Rounds
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <LayersOutlinedIcon
+                      sx={{ fontSize: 18, color: "#94a3b8" }}
+                    />
+                    {/* Mocking static tracks/teams info for preview context */}
+                    <span>
+                      <strong>3</strong> Tracks
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 col-span-2">
+                    <GroupsOutlinedIcon
+                      sx={{ fontSize: 18, color: "#94a3b8" }}
+                    />
+                    <span>
+                      <strong>36</strong> Approved Teams
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bottom Row: Clear Action Buttons */}
+                <div className="mt-6 flex gap-2">
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    startIcon={<EditOutlinedIcon sx={{ fontSize: 16 }} />}
+                    onClick={() => navigate(`/coordinator/events/${event.id}`)}
                     sx={{
-                        px: 2.5,
-                        py: 1.1,
-                        borderRadius: 2,
-                        bgcolor: '#2563eb',
-                        fontWeight: 800,
-                        boxShadow: '0 8px 18px rgba(37, 99, 235, 0.18)',
-                        '&:hover': {
-                            bgcolor: '#1d4ed8',
-                        },
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      borderColor: isOngoing ? "#bfdbfe" : "#e5e7eb",
                     }}
-                >
-                    + Create New Event
-                </Button>
-            </section>
-
-            {/* Event table */}
-            <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <table className="w-full border-collapse">
-                    <thead className="border-b border-gray-200 bg-slate-50">
-                        <th className="px-6 py-5 text-left text-xs font-extrabold uppercase tracking-[0.18em] text-gray-500">
-                            Event Name
-                        </th>
-                        <th className="px-6 py-5 text-left text-xs font-extrabold uppercase tracking-[0.18em] text-gray-500">
-                            Timeline
-                        </th>
-                        <th className="px-6 py-5 text-left text-xs font-extrabold uppercase tracking-[0.18em] text-gray-500">
-                            Status
-                        </th>
-                        <th className="px-6 py-5 text-right text-xs font-extrabold uppercase tracking-[0.18em] text-gray-500">
-                            Actions
-                        </th>
-                    </thead>
-                    <tbody>
-                        {coordinatorEventsMock.map((event) => (
-                            <tr
-                                key={event.id}
-                                className="border-b border-gray-100 last:border-b-0 hover:bg-slate-50/70"
-                            >
-                                <td className="px-6 py-6">
-                                    <button
-                                        type="button"
-                                        onClick={() => navigate(`/coordinator/events/${event.id}`)}
-                                        className="text-left text-sm font-extrabold text-gray-900 hover:text-blue-600"
-                                    >
-                                        {event.name}
-                                    </button>
-                                </td>
-
-                                <td className="px-6 py-6 text-sm font-medium text-gray-600">
-                                    {event.season}
-                                </td>
-
-                                <td className="px-6 py-6 text-sm font-medium text-gray-600">
-                                    {event.rounds} Phases
-                                </td>
-
-                                <td className="px-6 py-6">
-                                    {getStatusChip(event.status)}
-                                </td>
-
-                                <td className="px-6 py-6 text-right">
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => navigate(`/coordinator/events/${event.id}`)}
-                                        sx={{
-                                            color: '#94a3b8',
-                                            '&:hover': {
-                                                bgcolor: '#f1f5f9',
-                                                color: '#475569',
-                                            },
-                                        }}
-                                    >
-                                        <MoreVertOutlinedIcon fontSize="small" />
-                                    </IconButton>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </section>
-        </div>
-    );
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant={isOngoing ? "contained" : "outlined"}
+                    size="small"
+                    color={isOngoing ? "primary" : "inherit"}
+                    startIcon={<VisibilityOutlinedIcon sx={{ fontSize: 16 }} />}
+                    onClick={() => navigate(`/coordinator/events/${event.id}`)}
+                    sx={{
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      bgcolor: isOngoing ? "#2563eb" : "transparent",
+                      "&:hover": isOngoing
+                        ? { bgcolor: "#1d4ed8" }
+                        : { bgffcolor: "#f8fafc" },
+                    }}
+                  >
+                    View
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </section>
+    </div>
+  );
 };

@@ -40,17 +40,18 @@ export const EventCard = ({ event, onClick }: EventCardProps) => {
 
       {/* ── Track chips ── */}
       {event.tracks.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-6">
+        <div className="flex items-center gap-1.5 mb-6 overflow-hidden whitespace-nowrap">
           {visibleTracks.map((track) => (
             <span
               key={track.name}
-              className="inline-block text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full truncate max-w-[160px]"
+              title={track.name}
+              className="inline-block text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full truncate max-w-[110px]"
             >
               {track.name}
             </span>
           ))}
           {hiddenCount > 0 && (
-            <span className="inline-block text-[11px] font-bold text-gray-400 bg-gray-50 border border-gray-200 px-2.5 py-0.5 rounded-full">
+            <span className="inline-block shrink-0 text-[11px] font-bold text-gray-400 bg-gray-50 border border-gray-200 px-2.5 py-0.5 rounded-full">
               +{hiddenCount} more
             </span>
           )}
