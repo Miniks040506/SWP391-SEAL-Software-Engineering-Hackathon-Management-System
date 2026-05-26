@@ -33,6 +33,9 @@ target/
 
 # AI tooling
 .claude/
+AGENTS.md
+CLAUDE.md
+.ai/
 
 ### NetBeans ###
 /nbproject/private/
