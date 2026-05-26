@@ -11,6 +11,7 @@ import com.t7.seal.response.results.PublishResultsResponse;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.system.VarianceDashboardResponse;
 import com.t7.seal.service.EventService;
+import com.t7.seal.service.RankingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +26,13 @@ import java.util.UUID;
 public class EventController {
 
     private final EventService eventService;
+    private final RankingService rankingService;
 
     @PostMapping
     public ResponseEntity<EventDetailResponse> createEvent(
             @Valid @RequestBody CreateEventRequest request
     ) {
-        return null;
+        return ResponseEntity.ok(eventService.createEvent(request));
     }
 
     @GetMapping
@@ -69,7 +71,7 @@ public class EventController {
             @RequestParam(required = false) UUID roundId,
             @RequestParam(required = false) UUID trackId
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService.getRankings(eventId, roundId, trackId));
     }
 
     @PostMapping("/{eventId}/publish-results")

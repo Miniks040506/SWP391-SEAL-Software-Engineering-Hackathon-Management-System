@@ -4,6 +4,7 @@ export interface Track {
   name: string;
   desc: string;
   rounds: Round[];
+  prizes: Prize[];
 }
 
 export interface Round {
@@ -37,6 +38,5 @@ export interface Event {
   startDate: string;
   endDate: string;
   tracks: Track[];
-  prizes: Prize[];
   announcements: Announcement[];
 }

@@ -5,127 +5,122 @@ import CampaignIcon from "@mui/icons-material/Campaign";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import CloseIcon from "@mui/icons-material/Close";
 import FlagIcon from "@mui/icons-material/Flag";
+import { getPhaseColor } from "../common/PhaseBadge";
 import type { Announcement } from "@/types/event.types";
-
-const PHASE_COLORS: Record<number, { bg: string; text: string; border: string }> = {
-  1: { bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-100" },
-  2: {
-    bg: "bg-violet-50",
-    text: "text-violet-600",
-    border: "border-violet-100",
-  },
-  3: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-600",
-    border: "border-emerald-100",
-  },
-};
-
-const getPhaseColor = (phase?: number) =>
-  phase ? (PHASE_COLORS[phase] ?? PHASE_COLORS[1]) : null;
 
 interface AnnouncementModalProps {
   announcement: Announcement;
   index: number;
   total: number;
+  showBackButton?: boolean;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
+  onBack: () => void;
 }
 
 export const AnnouncementModal = ({
   announcement,
   index,
   total,
+  showBackButton = false,
   onClose,
   onPrev,
   onNext,
+  onBack,
 }: AnnouncementModalProps) => {
   const phaseColor = getPhaseColor(announcement.phase);
 
   return (
-    /*
-      Use w-screen/h-screen instead of inset-0 so the overlay fills the
-      viewport even when an ancestor has transform or overflow-hidden applied.
-    */
     <div
       className="fixed left-0 top-0 z-[999] w-screen h-screen flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={onClose}>
+      onClick={onClose}
+    >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}>
-        {/* Colored top accent per phase */}
-        {phaseColor && (
-          <div
-            className={`h-1 w-full ${phaseColor.bg.replace("bg-", "bg-").replace("50", "400")}`}
-          />
-        )}
-
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-8 space-y-6">
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                <CampaignIcon
-                  style={{ fontSize: 16 }}
-                  className="text-blue-500"
-                />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-blue-500 uppercase tracking-widest block">
-                  Announcement
-                </span>
-                {announcement.phase && phaseColor && (
-                  <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border mt-0.5 ${phaseColor.bg} ${phaseColor.text} ${phaseColor.border}`}>
-                    <FlagIcon style={{ fontSize: 10 }} />
-                    Phase {announcement.phase}
+            <div className="flex items-start gap-3">
+              {showBackButton && (
+                <button
+                  onClick={onBack}
+                  className="mt-1 p-1.5 -ml-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                  title="Back to all announcements"
+                >
+                  <ArrowBackIcon style={{ fontSize: 20 }} />
+                </button>
+              )}
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <CampaignIcon style={{ fontSize: 18 }} className="text-blue-500" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block">
+                    System Announcement
                   </span>
-                )}
+                  {announcement.phase && phaseColor && (
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border mt-1.5 ${phaseColor.bg} ${phaseColor.text} ${phaseColor.border}`}
+                    >
+                      <FlagIcon style={{ fontSize: 10 }} />
+                      Phase {announcement.phase}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all -mt-0.5 -mr-0.5">
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all -mt-0.5 -mr-0.5"
+            >
               <CloseIcon style={{ fontSize: 18 }} />
             </button>
           </div>
 
           {/* Body */}
           <div className="space-y-4">
-            <p className="text-gray-800 text-sm font-semibold leading-relaxed">
+            <h3 className="text-lg font-bold text-gray-900 leading-snug tracking-tight">
               {announcement.text}
-            </p>
+            </h3>
             {announcement.detail && (
-              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-xs text-gray-500 leading-relaxed font-medium whitespace-pre-line">
+              <div
+                className={`border-l-4 ${phaseColor ? phaseColor.accent : "border-blue-500"} ${
+                  phaseColor ? phaseColor.bg : "bg-gray-50"
+                } rounded-r-xl p-4 text-sm text-gray-600 leading-relaxed font-medium whitespace-pre-line`}
+              >
                 {announcement.detail}
               </div>
             )}
           </div>
 
           {/* Footer: date + prev/next navigation */}
-          <div className="pt-4 border-t border-gray-50 space-y-3">
+          <div className="pt-5 border-t border-gray-100 space-y-4">
             <div className="flex items-center gap-2 text-xs text-gray-400 font-bold uppercase tracking-widest">
               <CalendarTodayIcon style={{ fontSize: 12 }} />
               {announcement.date}
             </div>
 
             {total > 1 && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pt-1">
                 <button
                   onClick={onPrev}
                   disabled={index === 0}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 border border-gray-200 rounded-lg hover:border-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                  <ArrowBackIcon style={{ fontSize: 13 }} /> Next
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  <ArrowBackIcon style={{ fontSize: 13 }} /> Previous
                 </button>
-                <span className="text-xs text-gray-400 font-semibold tabular-nums">
+                <span className="text-xs text-gray-400 font-bold tabular-nums bg-gray-50 px-2.5 py-1 rounded-md">
                   {index + 1} / {total}
                 </span>
                 <button
                   onClick={onNext}
                   disabled={index === total - 1}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 border border-gray-200 rounded-lg hover:border-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                  Previous <ArrowForwardIcon style={{ fontSize: 13 }} />
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  Next <ArrowForwardIcon style={{ fontSize: 13 }} />
                 </button>
               </div>
             )}
