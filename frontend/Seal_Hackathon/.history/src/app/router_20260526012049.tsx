@@ -30,7 +30,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <CoordinatorDashboardPage /> },
       { path: 'events', element: <CoordinatorEventsPage /> },
-      { path: 'events/create', element: <CoordinatorCreateEventPage /> },
+      { path: 'create-event', element: <CoordinatorCreateEventPage /> },
       { path: 'teams', element: <NotFoundPage /> },
       { path: 'submissions', element: <NotFoundPage /> },
       { path: 'judging', element: <NotFoundPage /> },

@@ -1,7 +1,9 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Outlet, Navigate } from 'react-router-dom';
 
-import { RootLayout } from '@/components/layout/RootLayout';
-import { LoggedinLayout } from '@/components/layout/LoggedinLayout';
+import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
+import { NavbarLoggedin } from '@/components/layout/NavbarLoggedin';
+import { SidebarLoggedin } from '@/components/layout/SidebarLoggedin';
 
 import { EventsPage, EventDetailPage } from '@/features/events';
 import { LeaderboardPage } from '@/features/ranking';
@@ -12,6 +14,40 @@ import {
   CoordinatorEventsPage,
   CoordinatorCreateEventPage
 } from '@/features/coordinator';
+
+import { coordinatorSidebarItems } from '@/features/coordinator/configs/coordinatorSidebar.config';
+
+// Public layout
+const RootLayout = () => (
+  <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900">
+    <Navbar />
+
+    <main className="max-w-6xl mx-auto px-6 py-12 md:py-16 min-h-[calc(100vh-280px)]">
+      <Outlet />
+    </main>
+
+    <Footer />
+  </div>
+);
+
+// Logged-in layout
+const LoggedinLayout = () => (
+  <div className="min-h-screen bg-slate-50 text-gray-900 font-sans">
+    <NavbarLoggedin
+      homePath="/coordinator/dashboard"
+      currentEventLabel="Current: Spring 2024"
+      notificationPath="/coordinator/notifications"
+      settingsPath="/coordinator/settings"
+      profilePath="/coordinator/profile"
+    />
+
+    <SidebarLoggedin items={coordinatorSidebarItems} />
+
+    <main className="ml-64 px-8 py-8">
+      <Outlet />
+    </main>
+  </div>
+);
 
 export const router = createBrowserRouter([
   {
@@ -30,7 +66,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <CoordinatorDashboardPage /> },
       { path: 'events', element: <CoordinatorEventsPage /> },
-      { path: 'events/create', element: <CoordinatorCreateEventPage /> },
+      { path: 'create-event', element: <CoordinatorCreateEventPage /> },
       { path: 'teams', element: <NotFoundPage /> },
       { path: 'submissions', element: <NotFoundPage /> },
       { path: 'judging', element: <NotFoundPage /> },
