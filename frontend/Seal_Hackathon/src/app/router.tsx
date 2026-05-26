@@ -4,7 +4,7 @@ import { EventsPage, EventDetailPage } from "@/features/events";
 import { LeaderboardPage } from "@/features/ranking";
 import { NotFoundPage } from "@/components/common/NotFoundPage";
 
-import { CoordinatorDashboardPage, CoordinatorEventsPage } from "@/features/coordinator";
+import { CoordinatorCreateEventPage, CoordinatorDashboardPage, CoordinatorEventsPage } from "@/features/coordinator";
 
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
@@ -50,6 +50,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <CoordinatorDashboardPage /> },
       { path: 'events', element: <CoordinatorEventsPage /> },
+      { path: 'events/create', element: <CoordinatorCreateEventPage /> },
       { path: 'teams', element: <NotFoundPage /> },
       { path: 'submissions', element: <NotFoundPage /> },
       { path: 'judging', element: <NotFoundPage /> },
