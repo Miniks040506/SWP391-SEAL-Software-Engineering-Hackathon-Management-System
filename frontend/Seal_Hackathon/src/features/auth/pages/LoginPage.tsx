@@ -1,124 +1,141 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import type { AuthUser } from '@/stores/authStore';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button, TextField } from "@mui/material";
+import { enqueueSnackbar } from "notistack";
+import { useForm } from "react-hook-form";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { AuthCard } from "@/features/auth/components/AuthCard";
+import { PasswordField } from "@/features/auth/components/PasswordField";
+import { SocialLoginButtons } from "@/features/auth/components/SocialLoginButton";
+import { useLoginMutation } from "@/features/auth/hooks/useAuthMutations";
+import {
+  loginSchema,
+  type LoginFormValues,
+} from "@/features/auth/schemas/auth.schema";
+import { useAuthStore } from "@/stores/authStore";
+import { getDashboardPathByRole } from "@/utils/roleRedirect";
 
-// ─── Mock users để test các role khác nhau ────────────────────────────────────
-const MOCK_USERS: Record<string, { password: string; user: AuthUser }> = {
-  'student@seal.dev': {
-    password: '123456',
-    user: { id: '1', email: 'student@seal.dev', fullName: 'Nguyen Van A', role: 'STUDENT', status: 'ACTIVE' },
-  },
-  'mentor@seal.dev': {
-    password: '123456',
-    user: { id: '2', email: 'mentor@seal.dev', fullName: 'Tran Thi B', role: 'MENTOR', status: 'ACTIVE' },
-  },
-  'judge@seal.dev': {
-    password: '123456',
-    user: { id: '3', email: 'judge@seal.dev', fullName: 'Le Van C', role: 'JUDGE', status: 'ACTIVE' },
-  },
-  'coordinator@seal.dev': {
-    password: '123456',
-    user: { id: '4', email: 'coordinator@seal.dev', fullName: 'Pham Thi D', role: 'COORDINATOR', status: 'ACTIVE' },
-  },
-  'admin@seal.dev': {
-    password: '123456',
-    user: { id: '5', email: 'admin@seal.dev', fullName: 'Hoang Van E', role: 'ADMIN', status: 'ACTIVE' },
+const textFieldSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "12px",
   },
 };
-// ─────────────────────────────────────────────────────────────────────────────
 
-export const LoginPage = () => {
+export function LoginPage() {
   const navigate = useNavigate();
-  const { setAuth } = useAuth();
+  const location = useLocation();
+  const loginMutation = useLoginMutation();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  const handleLogin = () => {
-    setError('');
-    const match = MOCK_USERS[email];
+  const onSubmit = async (values: LoginFormValues) => {
+    try {
+      await loginMutation.mutateAsync(values);
 
-    if (!match || match.password !== password) {
-      setError('Email hoặc mật khẩu không đúng.');
-      return;
+      const user = useAuthStore.getState().user;
+      const fallbackPath = getDashboardPathByRole(user?.role || "STUDENT");
+      const fromPath = (location.state as { from?: string } | null)?.from;
+      const redirectPath = fromPath || fallbackPath;
+
+      enqueueSnackbar("Login successfully.", {
+        variant: "success",
+      });
+
+      navigate(redirectPath, {
+        replace: true,
+      });
+    } catch (error: any) {
+      enqueueSnackbar(error?.response?.data?.message || "Login failed.", {
+        variant: "error",
+      });
     }
-
-    // Gọi đúng setAuth như store yêu cầu
-    setAuth(match.user, 'mock-access-token', 'mock-refresh-token');
-    navigate('/');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-xl shadow-blue-500/20">
-            S
-          </div>
-          <div className="flex flex-col -space-y-1">
-            <span className="text-xl font-bold text-gray-900 tracking-tighter italic">SEAL</span>
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Hackathon System</span>
-          </div>
-        </div>
-
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Đăng nhập</h1>
-        <p className="text-sm text-gray-400 mb-6">Dùng mock account bên dưới để test.</p>
-
-        {/* Form */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="student@seal.dev"
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+    <>
+      <div className="mx-auto w-full max-w-155 py-16">
+        <AuthCard
+          title="Welcome Back"
+          description="Sign in to continue managing your SEAL Hackathon workspace."
+        >
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <TextField
+              fullWidth
+              size="small"
+              label="Email"
+              placeholder="alex.n@fpt.edu.vn"
+              {...register("email")}
+              error={Boolean(errors.email)}
+              helperText={errors.email?.message}
+              sx={textFieldSx}
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="123456"
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+
+            <PasswordField
+              fullWidth
+              size="small"
+              label="Password"
+              {...register("password")}
+              error={Boolean(errors.password)}
+              helperText={errors.password?.message}
+              sx={textFieldSx}
             />
-          </div>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
-
-          <button
-            onClick={handleLogin}
-            className="w-full py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-black transition-all shadow-md active:translate-y-0.5"
-          >
-            Đăng nhập
-          </button>
-        </div>
-
-        {/* Mock accounts hint */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Mock accounts (password: 123456)</p>
-          <div className="space-y-1">
-            {Object.entries(MOCK_USERS).map(([email, { user }]) => (
-              <button
-                key={email}
-                onClick={() => { setEmail(email); setPassword('123456'); }}
-                className="w-full text-left flex items-center justify-between px-3 py-1.5 rounded-lg hover:bg-white transition-colors group"
+            <div className="flex items-center justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-sm font-bold text-blue-500 hover:underline"
               >
-                <span className="text-xs text-gray-600 group-hover:text-gray-900">{email}</span>
-                <span className="text-xs font-bold text-blue-500">{user.role}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+                Forgot password?
+              </Link>
+            </div>
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disabled={loginMutation.isPending}
+              sx={{
+                height: 46,
+                borderRadius: "10px",
+                textTransform: "none",
+                fontWeight: 900,
+                boxShadow: "none",
+              }}
+            >
+              {loginMutation.isPending ? "Signing in..." : "Sign In"}
+            </Button>
+
+            <div className="flex items-center gap-4">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                Or
+              </span>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <SocialLoginButtons />
+
+            <p className="text-center text-xs text-slate-500">
+              Do not have an account?{" "}
+              <Link
+                className="font-semibold text-blue-500 hover:underline"
+                to="/register"
+              >
+                Create account
+              </Link>
+            </p>
+          </form>
+        </AuthCard>
       </div>
-    </div>
+    </>
   );
-};
+}

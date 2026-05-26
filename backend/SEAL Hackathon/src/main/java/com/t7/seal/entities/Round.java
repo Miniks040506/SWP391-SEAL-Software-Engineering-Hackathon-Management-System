@@ -57,6 +57,9 @@ public class Round {
     @Column(name = "submission_locked_at")
     private LocalDateTime submissionLockedAt;
 
+    @Column(name = "grading_locked_at")
+    private LocalDateTime gradingLockedAt;
+
     @Column(name = "advancement_confirmed_at")
     private LocalDateTime advancementConfirmedAt;
 

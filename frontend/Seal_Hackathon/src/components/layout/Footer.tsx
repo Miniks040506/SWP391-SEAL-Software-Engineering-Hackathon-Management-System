@@ -2,8 +2,7 @@ import React from 'react';
 import PublicIcon from '@mui/icons-material/Public';
 import MailIcon from '@mui/icons-material/Mail';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-
-const CURRENT_YEAR = new Date().getFullYear();
+import BottomBar from './BottomBar';
 
 export const Footer = () => (
   <footer className="border-t border-gray-100 bg-gray-50/40 py-16">
@@ -73,16 +72,7 @@ export const Footer = () => (
       </div>
 
       {/* Bottom bar */}
-      <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">
-          <span>FPT University HCM</span>
-          <span>PDP Department</span>
-          <span>SE Faculty</span>
-        </div>
-        <div className="text-xs font-semibold text-gray-400">
-          © {CURRENT_YEAR} SEAL LEAGUE PORTAL
-        </div>
-      </div>
+      <BottomBar />
 
     </div>
   </footer>
