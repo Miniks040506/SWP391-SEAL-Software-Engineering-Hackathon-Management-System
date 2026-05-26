@@ -82,6 +82,12 @@ public class User {
     @Column(name = "email_verification_expires_at")
     private LocalDateTime emailVerificationExpiresAt;
 
+    @Column(name = "oauth_provider", length = 30)
+    private String oauthProvider;
+
+    @Column(name = "oauth_provider_id", length = 150)
+    private String oauthProviderId;
+
     @Column(name = "password_reset_token", unique = true, length = 100)
     private String passwordResetToken;
 
@@ -345,5 +351,19 @@ public class User {
 
         this.passwordHash = newPasswordHash;
         clearPasswordResetToken();
+    }
+
+    public boolean isEmailVerificationCodeValid(String code) {
+        if (code == null || code.isBlank()) return false;
+        if (emailVerificationToken == null) return false;
+        if (!emailVerificationToken.equals(code)) return false;
+
+        return emailVerificationExpiresAt == null
+                || LocalDateTime.now().isBefore(emailVerificationExpiresAt);
+    }
+
+    public void setOAuthIdentity(String provider, String providerId) {
+        this.oauthProvider = provider;
+        this.oauthProviderId = providerId;
     }
 }

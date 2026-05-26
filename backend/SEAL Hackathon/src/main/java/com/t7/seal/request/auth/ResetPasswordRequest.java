@@ -8,7 +8,8 @@ import lombok.Data;
 
 public record ResetPasswordRequest(
         @NotBlank @Email String email,
-        @NotBlank @Pattern(regexp = "\\d{6}") String code,
+        @NotBlank @Pattern(regexp = "\\d{6}", message = "Reset code must contain exactly 6 digits.")
+        String code,
         @NotBlank @Size(min = 8, max = 100) String newPassword,
         @NotBlank @Size(min = 8, max = 100) String confirmPassword
 ) {}

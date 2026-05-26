@@ -23,6 +23,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             String passwordResetToken
     );
 
+    Optional<User> findByOauthProviderAndOauthProviderId(
+            String oauthProvider,
+            String oauthProviderId
+    );
+
     boolean existsByEmail(String email);
 
     long countByStatus(UserStatus status);

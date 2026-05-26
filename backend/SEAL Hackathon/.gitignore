@@ -22,8 +22,9 @@ target/
 *.iml
 
 # Environment files
-.env
-.env.*
+**/.env
+**/.env.*
+!**/.env.example
 
 # Config files
 *.yaml
@@ -32,6 +33,9 @@ target/
 
 # AI tooling
 .claude/
+AGENTS.md
+CLAUDE.md
+.ai/
 
 ### NetBeans ###
 /nbproject/private/
