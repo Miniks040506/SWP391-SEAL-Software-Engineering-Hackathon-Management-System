@@ -10,7 +10,7 @@ import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
 import { VerifyEmailSuccessPage } from "@/features/auth/pages/VerifyEmailSuccessPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
-import { CoordinatorCreateEventPage } from "@/features/coordinator/pages/CoordinatorCreateEventPage/1_EventDetails";
+import { CoordinatorCreateEventPage } from "@/features/coordinator/pages/CoordinatorCreateEventPage";
 
 import { RootLayout } from "@/components/layout/RootLayout";
 import { AuthLayout } from "@/components/layout/AuthLayout";
@@ -51,7 +51,6 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <CoordinatorDashboardPage /> },
       { path: 'events', element: <CoordinatorEventsPage /> },
-      { path: 'events/create', element: <CoordinatorCreateEventPage /> },
       { path: 'teams', element: <NotFoundPage /> },
       { path: 'submissions', element: <NotFoundPage /> },
       { path: 'judging', element: <NotFoundPage /> },

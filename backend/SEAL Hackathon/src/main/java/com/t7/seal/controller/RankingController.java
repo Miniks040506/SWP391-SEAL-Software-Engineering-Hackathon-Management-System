@@ -5,6 +5,7 @@ import com.t7.seal.request.results.RecalculateRankingRequest;
 import com.t7.seal.response.results.RankingRecalculationResponse;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.results.TeamRankingHistoryResponse;
+import com.t7.seal.service.RankingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,13 +18,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/rankings")
 public class RankingController {
+
+    private final RankingService rankingService;
+
     @GetMapping
     public ResponseEntity<List<RankingResponse>> getRankings(
             @RequestParam(required = false) UUID eventId,
             @RequestParam(required = false) UUID roundId,
             @RequestParam(required = false) UUID trackId
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService.getRankings(eventId, roundId, trackId));
     }
 
     @PostMapping("/recalculate")
@@ -37,6 +41,6 @@ public class RankingController {
     public ResponseEntity<List<TeamRankingHistoryResponse>> getTeamRankingHistory(
             @PathVariable("teamId") UUID teamId
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService.getTeamRankingHistory(teamId));
     }
 }
