@@ -7,17 +7,28 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface TrackRepository extends JpaRepository<Track, UUID> {
     @Query("""
-    SELECT t FROM Track t 
-        JOIN t.event e 
-            WHERE e.id = :eventId
-                AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
-                    ORDER BY t.name ASC 
-    """)
+            SELECT t FROM Track t 
+                JOIN t.event e 
+                    WHERE e.id = :eventId
+                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
+                            ORDER BY t.name ASC 
+            """)
     List<Track> findPublicByEventIdOrderByNameAsc(
             @Param("eventId") UUID eventId);
+
+    @Query("""
+            SELECT t FROM Track t 
+                JOIN t.event e 
+                    WHERE t.id = :trackId
+                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
+                            ORDER BY t.name ASC 
+            """)
+    Optional<Track> findPublicById(
+            @Param("trackId") UUID trackId);
 }

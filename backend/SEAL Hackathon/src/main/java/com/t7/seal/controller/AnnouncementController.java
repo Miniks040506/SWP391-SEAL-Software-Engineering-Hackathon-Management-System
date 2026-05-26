@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.system.CreateAnnouncementRequest;
 import com.t7.seal.request.system.UpdateAnnouncementRequest;
 import com.t7.seal.response.system.AnnouncementResponse;
+import com.t7.seal.service.AnnouncementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +17,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
 public class AnnouncementController {
+    private final AnnouncementService announcementService;
+
     @GetMapping("/events/{eventId}/announcements")
     public ResponseEntity<List<AnnouncementResponse>> getEventAnnouncements(
             @PathVariable UUID eventId
     ) {
-        return null;
+        return ResponseEntity.ok(announcementService.getEventAnnouncements(eventId));
     }
 
     @PostMapping("/events/{eventId}/announcements")
@@ -32,10 +35,10 @@ public class AnnouncementController {
     }
 
     @GetMapping("/announcements/{announcementId}")
-    public ResponseEntity<AnnouncementResponse>	getAnnouncementById(
+    public ResponseEntity<AnnouncementResponse> getAnnouncementById(
             @PathVariable UUID announcementId
     ) {
-        return null;
+        return ResponseEntity.ok(announcementService.getAnnouncementById(announcementId));
     }
 
     @PatchMapping("/announcements/{announcementId}")
@@ -47,9 +50,9 @@ public class AnnouncementController {
     }
 
     @DeleteMapping("/announcements/{announcementId}")
-    public ResponseEntity<Void>	deleteAnnouncement(
+    public ResponseEntity<Void> deleteAnnouncement(
             @PathVariable UUID announcementId
-    ){
+    ) {
         return null;
     }
 
