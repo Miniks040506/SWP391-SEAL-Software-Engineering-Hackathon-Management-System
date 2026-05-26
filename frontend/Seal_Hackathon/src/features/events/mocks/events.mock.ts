@@ -23,41 +23,39 @@ export const EVENTS: Event[] = [
           { id: "r2", name: "48-Hour Live Coding Sprint", duration: "2 days" },
           { id: "r3", name: "Grand Finale Pitching", duration: "1 day" },
         ],
+        prizes: [
+          { rank: "Champion", value: "10,000,000 VND" },
+          { rank: "Runner Up", value: "5,000,000 VND" },
+          { rank: "Third Place", value: "2,500,000 VND" },
+        ],
       },
       {
         name: "Mobile Application",
         desc: "Creating seamless, high-performance, and intuitive mobile experiences.",
         rounds: [
           { id: "r1", name: "UI/UX & Architecture Proposal", duration: "14 days" },
-          {
-            id: "r2",
-            name: "48-Hour Live Coding Sprint",
-            duration: "2 days",
-          },
+          { id: "r2", name: "48-Hour Live Coding Sprint", duration: "2 days" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "10,000,000 VND" },
+          { rank: "Runner Up", value: "5,000,000 VND" },
+          { rank: "Third Place", value: "2,500,000 VND" },
         ],
       },
       {
         name: "AI & Machine Learning",
         desc: "Implementing intelligent algorithms, NLP, and predictive data models.",
         rounds: [
-          {
-            id: "r1",
-            name: "Dataset Analysis & Model Selection",
-            duration: "14 days",
-          },
-          {
-            id: "r2",
-            name: "Model Training & Optimization Sprint",
-            duration: "2 days",
-          },
+          { id: "r1", name: "Dataset Analysis & Model Selection", duration: "14 days" },
+          { id: "r2", name: "Model Training & Optimization Sprint", duration: "2 days" },
           { id: "r3", name: "Solution Presentation", duration: "1 day" },
         ],
+        prizes: [
+          { rank: "Champion", value: "5,000,000 VND" },
+          { rank: "Runner Up", value: "3,000,000 VND" },
+          { rank: "Third Place", value: "2,000,000 VND" },
+        ],
       },
-    ],
-    prizes: [
-      { rank: "Champion", value: "25,000,000 VND" },
-      { rank: "Runner Up", value: "15,000,000 VND" },
-      { rank: "Third Place", value: "7,500,000 VND" },
     ],
     announcements: [
       {
@@ -127,13 +125,13 @@ export const EVENTS: Event[] = [
         name: "Information Security",
         desc: "Secure software development and backend vulnerability mitigation.",
         rounds: [
-          {
-            id: "r1",
-            name: "Capture The Flag (CTF) Qualifier",
-            duration: "14 days",
-          },
+          { id: "r1", name: "Capture The Flag (CTF) Qualifier", duration: "14 days" },
           { id: "r2", name: "Secure Architecture Design", duration: "7 days" },
           { id: "r3", name: "48-Hour Live Defense Hack", duration: "2 days" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "15,000,000 VND" },
+          { rank: "Runner Up", value: "8,000,000 VND" },
         ],
       },
       {
@@ -141,15 +139,14 @@ export const EVENTS: Event[] = [
         desc: "Serverless architectures, containerization, and infrastructure as code.",
         rounds: [
           { id: "r1", name: "Cloud Architecture Proposal", duration: "14 days" },
-          {
-            id: "r2",
-            name: "IaC Implementation & Deployment Sprint",
-            duration: "2 days",
-          },
+          { id: "r2", name: "IaC Implementation & Deployment Sprint", duration: "2 days" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "15,000,000 VND" },
+          { rank: "Runner Up", value: "7,000,000 VND" },
         ],
       },
     ],
-    prizes: [{ rank: "Champion", value: "30,000,000 VND" }],
     announcements: [
       {
         date: "Jun 02, 2026",
@@ -191,119 +188,33 @@ export const EVENTS: Event[] = [
         desc: "Developing next-generation financial applications and secure transaction gateways.",
         rounds: [
           { id: "r1", name: "Abstract & Architecture Wireframing", duration: "14 days" },
-          {
-            id: "r2",
-            name: "Prototype Construction & API Integration",
-            duration: "7 days",
-          },
+          { id: "r2", name: "Prototype Construction & API Integration", duration: "7 days" },
           { id: "r3", name: "Demo Day Pitching", duration: "1 day" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "12,000,000 VND" },
+          { rank: "Runner Up", value: "6,000,000 VND" },
         ],
       },
       {
         name: "Enterprise Digitalization",
         desc: "Optimizing university enterprise workflows and educational resource distribution systems.",
         rounds: [
-          {
-            id: "r1",
-            name: "System Architecture Proposal",
-            duration: "14 days",
-          },
+          { id: "r1", name: "System Architecture Proposal", duration: "14 days" },
           { id: "r2", name: "48-Hour Core System Deployment", duration: "2 days" },
         ],
+        prizes: [
+          { rank: "Champion", value: "8,000,000 VND" },
+          { rank: "Runner Up", value: "4,000,000 VND" },
+        ],
       },
-    ],
-    prizes: [
-      { rank: "Champion", value: "20,000,000 VND" },
-      { rank: "Runner Up", value: "10,000,000 VND" },
     ],
     announcements: [
       {
         date: "Oct 16, 2025",
         text: "Final scoreboard and winners announcement.",
         phase: 3,
-        detail:
-          "Congratulations to all teams! The final results and prize allocation for the Fintech and Enterprise Digitalization tracks have been officially published on the leaderboard channel.",
-      },
-      {
-        date: "Oct 14, 2025",
-        text: "System Stability Warning & Live API Gateway Maintenance",
-        phase: 2,
-        detail:
-          "The core payment validation simulators will go offline for 15 minutes. Please gracefully catch operational timeouts in your staging environment.",
-      },
-      {
-        date: "Sep 20, 2025",
-        text: "Staging Database Integration Standard Guidelines Issued",
-        phase: 1,
-        detail:
-          "All prototypes must rely strictly on the standardized secure sandboxed parameters. Please reference the authentication documentation.",
-      },
-    ],
-  },
-  {
-    id: "seal-summer-25",
-    title: "FPT Edu Research Festival 2025",
-    season: "Summer",
-    status: "Ended",
-    registrationOpen: false,
-    currentPhase: 3,
-    description:
-      "Information Technology track at FPT Edu ResFes 2025, focusing on software architecture research and applied AI.",
-    startDate: "May 15, 2025",
-    endDate: "Jul 10, 2025",
-    tracks: [
-      {
-        name: "Applied AI",
-        desc: "Researching artificial intelligence applications in natural language processing and computer vision.",
-        rounds: [
-          { id: "r1", name: "Detailed Proposal Submission", duration: "30 days" },
-          {
-            id: "r2",
-            name: "Defense Before Scientific Council",
-            duration: "3 days",
-          },
-          { id: "r3", name: "Final Q&A and Award Ceremony", duration: "1 day" },
-        ],
-      },
-      {
-        name: "Software Architecture",
-        desc: "Researching modern software methodologies, microservices, and distributed systems.",
-        rounds: [
-          { id: "r1", name: "Research Paper Review", duration: "30 days" },
-          {
-            id: "r2",
-            name: "Academic Poster Presentation",
-            duration: "3 days",
-          },
-        ],
-      },
-    ],
-    prizes: [
-      { rank: "First Prize", value: "30,000,000 VND" },
-      { rank: "Second Prize", value: "20,000,000 VND" },
-      { rank: "Third Prize", value: "10,000,000 VND" },
-    ],
-    announcements: [
-      {
-        date: "Jul 11, 2025",
-        text: "FPT Edu Research Festival 2025 has successfully concluded.",
-        phase: 3,
-        detail:
-          "Thank you to all student researchers and mentors for outstanding scientific defenses. All presentation materials and council rubrics have been archived.",
-      },
-      {
-        date: "Jul 08, 2025",
-        text: "Interactive Presentation & Dynamic Model Verification Order",
-        phase: 2,
-        detail:
-          "The scheduled council presentation ordering schema has been distributed to your primary faculty contacts. Please show up exactly 20 minutes before execution.",
-      },
-      {
-        date: "Jun 15, 2025",
-        text: "Initial Presentation Room Allocations & Technical Checks",
-        phase: 1,
-        detail:
-          "Verify the display interface connectors in blocks Alpha and Beta. All computational platforms must support external continuous scaling outputs.",
+        detail: "Congratulations to all winners! Full results published on the dashboard.",
       },
     ],
   },
@@ -323,38 +234,26 @@ export const EVENTS: Event[] = [
         name: "Generative AI Application",
         desc: "Building software solutions integrated with GenAI, RAG architectures, and Large Language Models.",
         rounds: [
-          {
-            id: "r1",
-            name: "Preliminary Round: Concept Pitch",
-            duration: "14 days",
-          },
-          {
-            id: "r2",
-            name: "Final Round: 24-Hour Continuous Hacking",
-            duration: "1 day",
-          },
+          { id: "r1", name: "Preliminary Round: Concept Pitch", duration: "14 days" },
+          { id: "r2", name: "Final Round: 24-Hour Continuous Hacking", duration: "1 day" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "30,000,000 VND" },
+          { rank: "Runner Up", value: "15,000,000 VND" },
         ],
       },
       {
         name: "Campus Management Systems",
         desc: "Leveraging software tools to improve campus scheduling optimization and student management.",
         rounds: [
-          {
-            id: "r1",
-            name: "Technical Document Screening",
-            duration: "14 days",
-          },
-          {
-            id: "r2",
-            name: "Prototype Exhibition & Coding Sprint",
-            duration: "2 days",
-          },
+          { id: "r1", name: "Technical Document Screening", duration: "14 days" },
+          { id: "r2", name: "Prototype Exhibition & Coding Sprint", duration: "2 days" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "20,000,000 VND" },
+          { rank: "Runner Up", value: "10,000,000 VND" },
         ],
       },
-    ],
-    prizes: [
-      { rank: "Champion", value: "50,000,000 VND" },
-      { rank: "Runner Up", value: "25,000,000 VND" },
     ],
     announcements: [
       {
@@ -396,16 +295,12 @@ export const EVENTS: Event[] = [
         name: "Software Engineering",
         desc: "Researching software architecture design, agile methodologies, and testing frameworks.",
         rounds: [
-          {
-            id: "r1",
-            name: "Abstract & Overview Screening",
-            duration: "30 days",
-          },
-          {
-            id: "r2",
-            name: "Poster Presentation & Peer Review",
-            duration: "4 days",
-          },
+          { id: "r1", name: "Abstract & Overview Screening", duration: "30 days" },
+          { id: "r2", name: "Poster Presentation & Peer Review", duration: "4 days" },
+        ],
+        prizes: [
+          { rank: "First Prize", value: "12,000,000 VND" },
+          { rank: "Second Prize", value: "6,000,000 VND" },
         ],
       },
       {
@@ -413,17 +308,13 @@ export const EVENTS: Event[] = [
         desc: "Exploring predictive data engineering models and advanced analytics for commercial applications.",
         rounds: [
           { id: "r1", name: "Data Model Proposal", duration: "30 days" },
-          {
-            id: "r2",
-            name: "Empirical Result Presentation",
-            duration: "3 days",
-          },
+          { id: "r2", name: "Empirical Result Presentation", duration: "3 days" },
+        ],
+        prizes: [
+          { rank: "First Prize", value: "8,000,000 VND" },
+          { rank: "Second Prize", value: "4,000,000 VND" },
         ],
       },
-    ],
-    prizes: [
-      { rank: "First Prize", value: "20,000,000 VND" },
-      { rank: "Second Prize", value: "10,000,000 VND" },
     ],
     announcements: [
       {
@@ -465,56 +356,44 @@ export const EVENTS: Event[] = [
         name: "Blockchain & Web3",
         desc: "Developing secure smart contracts and decentralized systems for community benefits.",
         rounds: [
-          {
-            id: "r1",
-            name: "Preliminary Round: Solution Architecture",
-            duration: "14 days",
-          },
-          {
-            id: "r2",
-            name: "48-Hour Code Marathon & Cloud Deployment",
-            duration: "2 days",
-          },
+          { id: "r1", name: "Preliminary Round: Solution Architecture", duration: "14 days" },
+          { id: "r2", name: "48-Hour Code Marathon & Cloud Deployment", duration: "2 days" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "18,000,000 VND" },
+          { rank: "Runner Up", value: "9,000,000 VND" },
         ],
       },
       {
         name: "Decentralized Applications (DApps)",
         desc: "Creating secure user identity management and asset distribution frameworks on-chain.",
         rounds: [
-          {
-            id: "r1",
-            name: "Smart Contract Design Proposal",
-            duration: "14 days",
-          },
-          {
-            id: "r2",
-            name: "DApp Integration & Functional Testing",
-            duration: "2 days",
-          },
+          { id: "r1", name: "Smart Contract Design Proposal", duration: "14 days" },
+          { id: "r2", name: "DApp Integration & Functional Testing", duration: "2 days" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "12,000,000 VND" },
+          { rank: "Runner Up", value: "6,000,000 VND" },
         ],
       },
     ],
-    prizes: [
-      { rank: "Champion", value: "30,000,000 VND" },
-      { rank: "Runner Up", value: "15,000,000 VND" },
-    ],
     announcements: [
       {
-        date: "Jul 12, 2024",
+        date: "May 12, 2024",
         text: "Web3 and Blockchain tracks system deployment audit complete.",
         phase: 3,
         detail:
           "The decentralized smart contracts deployed on the sandbox network have been verified and scored by the central engineering committee.",
       },
       {
-        date: "Jul 10, 2024",
+        date: "May 10, 2024",
         text: "Gas Fee Optimization Architecture Directive Issued",
         phase: 2,
         detail:
           "Smart contract implementations failing to apply computational loop optimizations will incur significant functional baseline penalties during execution tests.",
       },
       {
-        date: "Jun 01, 2024",
+        date: "Apr 01, 2024",
         text: "RPC Network Infrastructure Latency Resolution",
         phase: 1,
         detail:
@@ -522,4 +401,149 @@ export const EVENTS: Event[] = [
       },
     ],
   },
+
+  {
+    id: "seal-spring-24",
+    title: "FPT Edu Hackathon Spring 2024",
+    season: "Spring",
+    status: "Ended",
+    registrationOpen: false,
+    currentPhase: 3,
+    description:
+      "A high-intensity software competition deeply exploring the concepts of Blockchain and Web3 technologies.",
+    startDate: "Feb 15, 2024",
+    endDate: "May 12, 2024",
+    tracks: [
+      {
+        name: "Blockchain & Web3",
+        desc: "Developing secure smart contracts and decentralized systems for community benefits.",
+        rounds: [
+          { id: "r1", name: "Preliminary Round: Solution Architecture", duration: "14 days" },
+          { id: "r2", name: "48-Hour Code Marathon & Cloud Deployment", duration: "2 days" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "18,000,000 VND" },
+          { rank: "Runner Up", value: "9,000,000 VND" },
+        ],
+      },
+      {
+        name: "Decentralized Applications (DApps)",
+        desc: "Creating secure user identity management and asset distribution frameworks on-chain.",
+        rounds: [
+          { id: "r1", name: "Smart Contract Design Proposal", duration: "14 days" },
+          { id: "r2", name: "DApp Integration & Functional Testing", duration: "2 days" },
+        ],
+        prizes: [
+          { rank: "Champion", value: "12,000,000 VND" },
+          { rank: "Runner Up", value: "6,000,000 VND" },
+        ],
+      },
+    ],
+    announcements: [
+      {
+        date: "May 12, 2024",
+        text: "Web3 and Blockchain tracks system deployment audit complete.",
+        phase: 3,
+        detail:
+          "The decentralized smart contracts deployed on the sandbox network have been verified and scored by the central engineering committee.",
+      },
+      {
+        date: "May 10, 2024",
+        text: "Gas Fee Optimization Architecture Directive Issued",
+        phase: 2,
+        detail:
+          "Smart contract implementations failing to apply computational loop optimizations will incur significant functional baseline penalties during execution tests.",
+      },
+      {
+        date: "Apr 01, 2024",
+        text: "RPC Network Infrastructure Latency Resolution",
+        phase: 1,
+        detail:
+          "The primary node configuration endpoints have been scaled up horizontally to isolate connection drops during parallel deployment phases.",
+      },
+    ],
+  },
+
+  {
+    id: "seal-stress-test-26",
+    title: "SEAL UI Stress Test 2026",
+    season: "Winter",
+    status: "Upcoming",
+    registrationOpen: true,
+    currentPhase: 0,
+    description: "Event mock data created specifically to test horizontal scrolling with a large number of tracks and extremely long track names.",
+    startDate: "Nov 01, 2026",
+    endDate: "Dec 31, 2026",
+    tracks: [
+      {
+        name: "Frontend & Advanced UI/UX Engineering",
+        desc: "Building intuitive interfaces.",
+        rounds: [{ id: "r1", name: "UI Challenge", duration: "7 days" }],
+        prizes: [
+          { rank: "Champion", value: "10,000,000 VND" },
+          { rank: "Runner Up", value: "5,000,000 VND" },
+        ],
+      },
+      {
+        name: "Backend Architectures & Distributed Systems",
+        desc: "Scaling servers and databases.",
+        rounds: [{ id: "r1", name: "System Design", duration: "7 days" }],
+        prizes: [
+          { rank: "Champion", value: "10,000,000 VND" },
+          { rank: "Runner Up", value: "5,000,000 VND" },
+        ],
+      },
+      {
+        name: "Artificial Intelligence & Natural Language Processing",
+        desc: "Training custom models.",
+        rounds: [{ id: "r1", name: "Model Tuning", duration: "7 days" }],
+        prizes: [
+          { rank: "Champion", value: "15,000,000 VND" },
+        ],
+      },
+      {
+        name: "Cybersecurity & Ethical Hacking Operations",
+        desc: "Securing vulnerabilities.",
+        rounds: [{ id: "r1", name: "CTF Live", duration: "2 days" }],
+        prizes: [
+          { rank: "Champion", value: "20,000,000 VND" },
+          { rank: "Runner Up", value: "10,000,000 VND" },
+        ],
+      },
+      {
+        name: "Blockchain Technologies & Smart Contracts",
+        desc: "On-chain development.",
+        rounds: [{ id: "r1", name: "Smart Contract Audit", duration: "7 days" }],
+        prizes: [
+          { rank: "Champion", value: "12,000,000 VND" },
+        ],
+      },
+      {
+        name: "Internet of Things (IoT) & Embedded Systems",
+        desc: "Hardware programming.",
+        rounds: [{ id: "r1", name: "Hardware Prototyping", duration: "14 days" }],
+        prizes: [
+          { rank: "Champion", value: "8,000,000 VND" },
+        ],
+      },
+      {
+        name: "Game Development & Interactive Media Entertainment",
+        desc: "Building immersive games.",
+        rounds: [{ id: "r1", name: "Game Jam Sprint", duration: "3 days" }],
+        prizes: [
+          { rank: "Champion", value: "15,000,000 VND" },
+          { rank: "Runner Up", value: "7,000,000 VND" },
+          { rank: "Third Place", value: "3,000,000 VND" },
+        ],
+      },
+    ],
+    announcements: [
+      {
+        date: "Nov 01, 2026",
+        text: "Stress Test Initiated",
+        detail: "This event contains 7 tracks to verify that the UI tab list scrolls perfectly.",
+        phase: 1,
+      }
+    ],
+  }
 ];

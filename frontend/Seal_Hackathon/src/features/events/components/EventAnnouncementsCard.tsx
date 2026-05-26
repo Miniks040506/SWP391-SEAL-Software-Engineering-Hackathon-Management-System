@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
@@ -11,15 +11,17 @@ const ANNOUNCEMENT_MAX_PREVIEW = 2;
 
 interface EventAnnouncementsCardProps {
   announcements: Event["announcements"];
-  onSelect: (index: number) => void;
+  onSelect: (index: number, fromList?: boolean) => void;
+  showAllModal: boolean;
+  setShowAllModal: (show: boolean) => void;
 }
 
 export const EventAnnouncementsCard = ({
   announcements,
   onSelect,
+  showAllModal,
+  setShowAllModal,
 }: EventAnnouncementsCardProps) => {
-  const [showAllModal, setShowAllModal] = useState(false);
-
   useBodyScrollLock(showAllModal);
 
   if (!announcements || announcements.length === 0) {
@@ -63,7 +65,7 @@ export const EventAnnouncementsCard = ({
                 {msg.text}
               </p>
               <button
-                onClick={() => onSelect(i)}
+                onClick={() => onSelect(i, false)}
                 className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 pt-1"
               >
                 <OpenInNewIcon style={{ fontSize: 12 }} />
@@ -125,7 +127,7 @@ export const EventAnnouncementsCard = ({
                   <button
                     onClick={() => {
                       setShowAllModal(false);
-                      onSelect(idx);
+                      onSelect(idx, true);
                     }}
                     className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors whitespace-nowrap self-start sm:self-center"
                   >
