@@ -11,21 +11,24 @@ type Props = {
 };
 
 export function StepProgress({
-  title = "Registration Progress",
+  title = "Progress",
   currentStep,
   steps,
 }: Props) {
   const safeStep = Math.min(Math.max(currentStep, 1), steps.length);
 
+  const gridTemplateColumns = [
+    "24px",
+    ...steps.flatMap((_, index) =>
+      index < steps.length - 1 ? ["36px", "1fr"] : ["36px"],
+    ),
+    "24px",
+  ].join(" ");
+
   const isLineActive = (lineIndex: number) => {
-    // 0 = line before step 1
-    // 1 = line step 1 -> step 2
-    // 2 = line step 2 -> step 3
-    // 3 = line after step 3
     if (lineIndex === 0) return safeStep >= 1;
-    if (lineIndex === 1) return safeStep >= 2;
-    if (lineIndex === 2) return safeStep >= 3;
-    return safeStep >= 3;
+    if (lineIndex >= steps.length) return safeStep >= steps.length;
+    return safeStep >= lineIndex + 1;
   };
 
   const renderCircle = (stepNumber: number) => {
@@ -55,7 +58,7 @@ export function StepProgress({
         {title}
       </h2>
 
-      <div className="grid grid-cols-[24px_36px_1fr_36px_1fr_36px_24px] items-center">
+      <div className="grid items-center" style={{ gridTemplateColumns }}>
         <div
           className={[
             "h-0.75",
@@ -63,36 +66,40 @@ export function StepProgress({
           ].join(" ")}
         />
 
-        {renderCircle(1)}
+        {steps.map((step, index) => {
+          const stepNumber = index + 1;
+
+          return (
+            <div key={step.label} className="contents">
+              {renderCircle(stepNumber)}
+
+              {index < steps.length - 1 && (
+                <div
+                  className={[
+                    "h-0.75",
+                    isLineActive(index + 1) ? "bg-blue-500" : "bg-slate-800",
+                  ].join(" ")}
+                />
+              )}
+            </div>
+          );
+        })}
 
         <div
           className={[
             "h-0.75",
-            isLineActive(1) ? "bg-blue-500" : "bg-slate-800",
-          ].join(" ")}
-        />
-
-        {renderCircle(2)}
-
-        <div
-          className={[
-            "h-0.75",
-            isLineActive(2) ? "bg-blue-500" : "bg-slate-800",
-          ].join(" ")}
-        />
-
-        {renderCircle(3)}
-
-        <div
-          className={[
-            "h-0.75",
-            isLineActive(3) ? "bg-blue-500" : "bg-slate-800",
+            isLineActive(steps.length) ? "bg-blue-500" : "bg-slate-800",
           ].join(" ")}
         />
       </div>
 
-      <div className="mt-4 grid grid-cols-3">
-        {steps.slice(0, 3).map((step, index) => {
+      <div
+        className="mt-4 grid gap-2"
+        style={{
+          gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {steps.map((step, index) => {
           const stepNumber = index + 1;
           const isBlue = stepNumber <= safeStep;
 
@@ -100,12 +107,12 @@ export function StepProgress({
             <div
               key={step.label}
               className={[
-                "text-xs font-extrabold uppercase tracking-[0.2em]",
+                "text-xs font-extrabold uppercase tracking-[0.16em]",
                 index === 0
                   ? "text-left"
-                  : index === 1
-                    ? "text-center"
-                    : "text-right",
+                  : index === steps.length - 1
+                    ? "text-right"
+                    : "text-center",
                 isBlue ? "text-blue-500" : "text-slate-700",
               ].join(" ")}
             >

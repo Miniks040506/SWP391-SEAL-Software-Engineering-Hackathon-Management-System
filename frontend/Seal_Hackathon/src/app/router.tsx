@@ -15,6 +15,8 @@ import { CoordinatorCreateEventPage } from "@/features/coordinator/pages/Coordin
 import { RootLayout } from "@/components/layout/RootLayout";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
+import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 
 
 export const router = createBrowserRouter([
@@ -37,12 +39,8 @@ export const router = createBrowserRouter([
       { path: "/verify-email/success", element: <VerifyEmailSuccessPage /> },
       { path: "/login", element: <LoginPage /> },
       { path: "/oauth/callback", element: <NotFoundPage /> },
-      { path: "/forgot-password", element: <NotFoundPage /> },
-      { path: "/reset-password/code", element: <NotFoundPage /> },
-      { path: "/reset-password/new", element: <NotFoundPage /> },
-            
-      { path: '/coordinator/events/create', element: <CoordinatorCreateEventPage /> },
-
+      { path: "/forgot-password", element: <ForgotPasswordPage /> },
+      { path: "/reset-password", element: <ResetPasswordPage /> },
     ]
   },
   

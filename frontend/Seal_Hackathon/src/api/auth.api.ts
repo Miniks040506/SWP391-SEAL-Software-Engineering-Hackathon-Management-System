@@ -1,11 +1,9 @@
-// auth.api.ts
 import { axiosClient } from "@/api/axiosClient";
 import type {
   AuthMessageResponse,
   ForgotPasswordRequest,
   LoginRequest,
   LoginResponse,
-  RefreshTokenRequest,
   RefreshTokenResponse,
   RegisterRequest,
   RegisterResponse,
@@ -15,54 +13,55 @@ import type {
   VerifyEmailResponse,
 } from "@/types/auth.types";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
+
+const request = {
+  get: <T>(url: string) => axiosClient.get<T>(url) as unknown as Promise<T>,
+  post: <T>(url: string, data?: unknown) =>
+    axiosClient.post<T>(url, data) as unknown as Promise<T>,
+};
+
 export const authApi = {
   register(payload: RegisterRequest) {
-    return axiosClient
-      .post<RegisterResponse>("/auth/register", payload)
-      .then((res) => res.data);
+    return request.post<RegisterResponse>("/auth/register", payload);
   },
 
   verifyEmail(payload: VerifyEmailRequest) {
-    return axiosClient
-      .post<VerifyEmailResponse>("/auth/verify-email", payload)
-      .then((res) => res.data);
+    return request.post<VerifyEmailResponse>("/auth/verify-email", payload);
   },
 
   resendVerification(payload: ResendVerificationRequest) {
-    return axiosClient
-      .post<AuthMessageResponse>("/auth/resend-verification", payload)
-      .then((res) => res.data);
+    return request.post<AuthMessageResponse>("/auth/resend-verification", payload);
   },
 
   login(payload: LoginRequest) {
-    return axiosClient
-      .post<LoginResponse>("/auth/login", payload)
-      .then((res) => res.data);
+    return request.post<LoginResponse>("/auth/login", payload);
   },
 
-  refreshToken(payload: RefreshTokenRequest) {
-    return axiosClient
-      .post<RefreshTokenResponse>("/auth/refresh-token", payload)
-      .then((res) => res.data);
+  refreshToken(refreshToken: string) {
+    return request.post<RefreshTokenResponse>("/auth/refresh-token", {
+      refreshToken,
+    });
   },
 
   logout() {
-    return axiosClient.post<void>("/auth/logout").then((res) => res.data);
+    return request.post<void>("/auth/logout");
   },
 
   forgotPassword(payload: ForgotPasswordRequest) {
-    return axiosClient
-      .post<AuthMessageResponse>("/auth/forgot-password", payload)
-      .then((res) => res.data);
+    return request.post<AuthMessageResponse>("/auth/forgot-password", payload);
   },
 
   resetPassword(payload: ResetPasswordRequest) {
-    return axiosClient
-      .post<AuthMessageResponse>("/auth/reset-password", payload)
-      .then((res) => res.data);
+    return request.post<AuthMessageResponse>("/auth/reset-password", payload);
   },
 
-  getOAuth2AuthorizationUrl(provider: "google" | "github") {
-    return `${import.meta.env.VITE_API_BASE_URL}/auth/oauth2/authorization/${provider}`;
+  loginWithGoogle() {
+    window.location.href = `${API_BASE_URL}/auth/oauth2/authorization/google`;
+  },
+
+  loginWithGithub() {
+    window.location.href = `${API_BASE_URL}/auth/oauth2/authorization/github`;
   },
 };

@@ -16,7 +16,6 @@ export function CodeInput({
   disabled = false,
 }: Props) {
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
-
   const digits = Array.from({ length }, (_, index) => value[index] ?? "");
 
   const focusInput = (index: number) => {
@@ -96,7 +95,7 @@ export function CodeInput({
           inputMode="numeric"
           autoComplete={index === 0 ? "one-time-code" : "off"}
           maxLength={1}
-          aria-label={`Verification code digit ${index + 1}`}
+          aria-label={`Code digit ${index + 1}`}
           onChange={(event) => handleChange(index, event.target.value)}
           onPaste={(event) => {
             event.preventDefault();
@@ -126,7 +125,7 @@ export function CodeInput({
             "disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400",
             error
               ? "border-rose-500 text-rose-500 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
-              : "border-slate-300 text-slate-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+              : "border-slate-400 text-slate-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
           ].join(" ")}
         />
       ))}
