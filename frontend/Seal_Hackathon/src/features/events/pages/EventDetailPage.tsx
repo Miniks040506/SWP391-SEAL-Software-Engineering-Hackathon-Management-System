@@ -16,6 +16,8 @@ export const EventDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedAnnouncementIdx, setSelectedAnnouncementIdx] = useState<number | null>(null);
+  const [showAnnouncementsList, setShowAnnouncementsList] = useState(false);
+  const [cameFromList, setCameFromList] = useState(false);
 
   const event: Event | undefined = EVENTS.find((e) => e.id === id);
 
@@ -44,7 +46,11 @@ export const EventDetailPage = () => {
             announcement={event.announcements[selectedAnnouncementIdx]}
             index={selectedAnnouncementIdx}
             total={event.announcements.length}
-            onClose={() => setSelectedAnnouncementIdx(null)}
+            showBackButton={cameFromList}
+            onClose={() => {
+              setSelectedAnnouncementIdx(null);
+              setCameFromList(false);
+            }}
             onPrev={() =>
               setSelectedAnnouncementIdx((i) => (i !== null ? Math.max(0, i - 1) : null))
             }
@@ -53,6 +59,11 @@ export const EventDetailPage = () => {
                 i !== null ? Math.min(event.announcements.length - 1, i + 1) : null
               )
             }
+            onBack={() => {
+              setSelectedAnnouncementIdx(null);
+              setShowAnnouncementsList(true);
+              setCameFromList(false);
+            }}
           />
         )}
 
@@ -64,9 +75,8 @@ export const EventDetailPage = () => {
         <ArrowBackIcon style={{ fontSize: 15 }} /> Back to dashboard
       </button>
 
-      {/* 2-column layout: left = Header + Tracks, right = Prize + Announcements */}
+      {/* 2-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
         {/* Left column */}
         <div className="lg:col-span-8 flex flex-col gap-8">
           <section className="bg-white border border-gray-200 rounded-2xl p-8 md:p-10 shadow-sm space-y-6">
@@ -117,13 +127,17 @@ export const EventDetailPage = () => {
 
         {/* Right column */}
         <div className="lg:col-span-4 flex flex-col gap-8">
-          <EventPrizesCard prizes={event.prizes} />
+          <EventPrizesCard tracks={event.tracks} />
           <EventAnnouncementsCard
             announcements={event.announcements}
-            onSelect={setSelectedAnnouncementIdx}
+            onSelect={(idx, fromList = false) => {
+              setSelectedAnnouncementIdx(idx);
+              setCameFromList(fromList);
+            }}
+            showAllModal={showAnnouncementsList}
+            setShowAllModal={setShowAnnouncementsList}
           />
         </div>
-
       </div>
     </div>
   );

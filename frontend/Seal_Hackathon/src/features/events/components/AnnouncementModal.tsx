@@ -12,18 +12,22 @@ interface AnnouncementModalProps {
   announcement: Announcement;
   index: number;
   total: number;
+  showBackButton?: boolean;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
+  onBack: () => void;
 }
 
 export const AnnouncementModal = ({
   announcement,
   index,
   total,
+  showBackButton = false,
   onClose,
   onPrev,
   onNext,
+  onBack,
 }: AnnouncementModalProps) => {
   const phaseColor = getPhaseColor(announcement.phase);
 
@@ -39,22 +43,33 @@ export const AnnouncementModal = ({
         <div className="p-8 space-y-6">
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
-                <CampaignIcon style={{ fontSize: 18 }} className="text-blue-500" />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block">
-                  System Announcement
-                </span>
-                {announcement.phase && phaseColor && (
-                  <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border mt-1.5 ${phaseColor.bg} ${phaseColor.text} ${phaseColor.border}`}
-                  >
-                    <FlagIcon style={{ fontSize: 10 }} />
-                    Phase {announcement.phase}
+            <div className="flex items-start gap-3">
+              {showBackButton && (
+                <button
+                  onClick={onBack}
+                  className="mt-1 p-1.5 -ml-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                  title="Back to all announcements"
+                >
+                  <ArrowBackIcon style={{ fontSize: 20 }} />
+                </button>
+              )}
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <CampaignIcon style={{ fontSize: 18 }} className="text-blue-500" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block">
+                    System Announcement
                   </span>
-                )}
+                  {announcement.phase && phaseColor && (
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border mt-1.5 ${phaseColor.bg} ${phaseColor.text} ${phaseColor.border}`}
+                    >
+                      <FlagIcon style={{ fontSize: 10 }} />
+                      Phase {announcement.phase}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <button
