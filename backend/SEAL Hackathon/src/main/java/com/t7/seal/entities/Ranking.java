@@ -58,7 +58,7 @@ public class Ranking {
      * every time the leaderboard is displayed.
      */
     @Column(name = "total_score", nullable = false)
-    private Float totalScore;
+    private Double totalScore;
 
 
     // Snapshot of detailed scores.

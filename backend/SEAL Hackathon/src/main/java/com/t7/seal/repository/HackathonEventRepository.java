@@ -36,4 +36,7 @@ public interface HackathonEventRepository extends JpaRepository<HackathonEvent, 
             @Param("year") Integer year,
             Pageable pageable
     );
+    
+    boolean existsByNameIgnoreCaseAndYear(
+            String name, Integer year);
 }
