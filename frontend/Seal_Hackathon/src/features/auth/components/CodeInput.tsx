@@ -126,7 +126,7 @@ export function CodeInput({
             "disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400",
             error
               ? "border-rose-500 text-rose-500 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
-              : "border-slate-200 text-slate-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+              : "border-slate-300 text-slate-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
           ].join(" ")}
         />
       ))}

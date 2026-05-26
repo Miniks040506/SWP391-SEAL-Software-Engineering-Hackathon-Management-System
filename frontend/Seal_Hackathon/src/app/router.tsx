@@ -17,6 +17,7 @@ import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
 import { VerifyEmailSuccessPage } from "@/features/auth/pages/VerifyEmailSuccessPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import BottomBar from "@/components/layout/BottomBar";
+import { CoordinatorCreateEventPage } from "@/features/coordinator/pages/CoordinatorCreateEventPage/1_EventDetails";
 
 // Public layout
 const RootLayout = () => (
@@ -30,8 +31,6 @@ const RootLayout = () => (
     <Footer />
   </div>
 );
-
-const CURRENT_YEAR = new Date().getFullYear();
 
 const AuthLayout = () => (
   <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900">
