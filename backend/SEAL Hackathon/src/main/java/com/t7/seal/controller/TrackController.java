@@ -11,6 +11,7 @@ import com.t7.seal.response.track.MentorAssignmentResponse;
 import com.t7.seal.response.track.TrackDetailResponse;
 import com.t7.seal.response.track.TrackResponse;
 import com.t7.seal.response.track.TrackTeamProgressResponse;
+import com.t7.seal.service.TrackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,7 +26,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TrackController {
 
-//    private final TrackService trackService;
+    private final TrackService trackService;
 //    private final MentorAssignmentService mentorAssignmentService;
 //    private final TeamService teamService;
 
@@ -41,14 +42,14 @@ public class TrackController {
     public ResponseEntity<List<TrackResponse>> getTracksByEvent(
             @PathVariable UUID eventId
     ) {
-        return null;
+        return ResponseEntity.ok(trackService.getTracksByEvent(eventId));
     }
 
     @GetMapping("/tracks/{trackId}")
     public ResponseEntity<TrackDetailResponse> getTrackById(
             @PathVariable UUID trackId
     ) {
-        return null;
+        return ResponseEntity.ok(trackService.getTrackById(trackId));
     }
 
     @PatchMapping("/tracks/{trackId}")

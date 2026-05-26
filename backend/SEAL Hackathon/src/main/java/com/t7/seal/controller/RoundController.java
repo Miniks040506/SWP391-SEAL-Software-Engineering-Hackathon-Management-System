@@ -3,6 +3,7 @@ package com.t7.seal.controller;
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.round.*;
 import com.t7.seal.response.round.*;
+import com.t7.seal.service.RoundService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RoundController {
 
+    private RoundService roundService;
+
     @PostMapping("/events/{eventId}/rounds")
     public ResponseEntity<RoundResponse> createRound(
             @PathVariable UUID eventId,
@@ -29,14 +32,14 @@ public class RoundController {
     public ResponseEntity<List<RoundResponse>> getRoundsByEvent(
             @PathVariable UUID eventId
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.getRoundsByEvent(eventId));
     }
 
     @GetMapping("/rounds/{roundId}")
     public ResponseEntity<RoundDetailResponse> getRoundById(
             @PathVariable UUID roundId
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.getRoundById(roundId));
     }
 
     @PatchMapping("/rounds/{roundId}")

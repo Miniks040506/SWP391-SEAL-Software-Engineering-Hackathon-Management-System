@@ -14,12 +14,22 @@ import java.util.UUID;
 @Repository
 public interface RoundRepository extends JpaRepository<Round, UUID> {
     @Query("""
-    SELECT r FROM Round r
-        JOIN r.event e 
-            WHERE e.id = :eventId
-                AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
-                    ORDER BY r.orderIndex
-    """)
+            SELECT r FROM Round r
+                JOIN r.event e 
+                    WHERE e.id = :eventId
+                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
+                            ORDER BY r.orderIndex
+            """)
     List<Round> findPublicByEventIdOrderByOrderIndexAsc(
             @Param("eventId") UUID eventId);
+
+    @Query("""
+            SELECT r FROM Round r
+                JOIN r.event e 
+                    WHERE r.id = :roundId
+                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
+                            ORDER BY r.orderIndex
+            """)
+    Optional<Round> findPublicById(
+            @Param("roundId") UUID roundId);
 }
