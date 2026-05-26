@@ -9,7 +9,7 @@ import {
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
-import IconButton from "@mui/material/IconButton";
+import IconButton from "@mui/material";
 
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
@@ -271,10 +271,13 @@ export const TracksRoundsStep = ({ onNext, onBack }: TracksRoundsStepProps) => {
       return;
     }
 
-    if (selectedTrackIndex > trackFields.length - 1) {
-      setSelectedTrackIndex(trackFields.length - 1);
-    }
-  }, [trackFields.length, selectedTrackIndex]);
+    setSelectedTrackIndex((prev) => {
+      if (prev > trackFields.length - 1) {
+        return trackFields.length - 1;
+      }
+      return prev;
+    });
+  }, [trackFields.length]);
 
   const handleAddTrack = () => {
     appendTrack(createEmptyTrack());
@@ -392,7 +395,7 @@ export const TracksRoundsStep = ({ onNext, onBack }: TracksRoundsStepProps) => {
                     <IconButton
                       size="small"
                       color="error"
-                      onClick={(event: React.MouseEvent) => {
+                      onClick={(event) => {
                         event.stopPropagation();
                         handleDeleteTrack(trackIndex);
                       }}
