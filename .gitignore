@@ -1,0 +1,24 @@
+# Claude / AI
+.claude/
+CLAUDE.md
+AGENTS.md
+
+# IDE
+.idea/
+.vscode/
+
+# Env
+.env
+.env.*
+
+# Java
+target/
+*.class
+
+# Config
+*.yaml
+*.yml
+*.properties
+
+# Logs
+*.log
