@@ -55,6 +55,8 @@ export const EventDetailsStep = ({ onNext }: EvenDetailsStepProps) => {
               <TextField
                 select
                 label="Season"
+                value={field.value}
+                onChange={field.onChange}
                 error={Boolean(errors.season)}
                 helperText={errors.season?.message}
                 required
@@ -79,11 +81,6 @@ export const EventDetailsStep = ({ onNext }: EvenDetailsStepProps) => {
             required
             fullWidth
             size="small"
-            slotProps={{
-              inputLabel: {
-                shrink: true,
-              },
-            }}
             {...register("registrationOpen")}
           />
 
@@ -95,11 +92,6 @@ export const EventDetailsStep = ({ onNext }: EvenDetailsStepProps) => {
             required
             fullWidth
             size="small"
-            slotProps={{
-              inputLabel: {
-                shrink: true,
-              },
-            }}
             {...register("registrationClose")}
           />
 
@@ -134,39 +126,35 @@ export const EventDetailsStep = ({ onNext }: EvenDetailsStepProps) => {
             }}
             {...register("competitionEndDate")}
           />
-        </div>
 
-        <TextField
-          label="Description"
-          placeholder="Brief description about the event"
-          multiline
-          minRows={4}
-          fullWidth
-          {...register("description")}
-        />
-
-        <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-slate-50 text-center transition hover:border-blue-300 hover:bg-blue-50/40">
-          <CloudUploadOutlinedIcon className="text-gray-400" />
-
-          <span className="mt-2 text-sm font-medium text-gray-600">
-            {bannerFile ? bannerFile.name : "Upload Event Banner"}
-          </span>
-
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0] || null;
-              setValue("bannerFile", file, {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-            }}
+          <TextField
+            label="Description"
+            placeholder="Brief description about the event"
+            multiline
+            minRows={4}
+            fullWidth
+            {...register("description")}
           />
-        </label>
 
-        <div className="flex justify-end border-t border-gray-100 px-7 py-5">
+          <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-slate-50 text-center transition hover:border-blue-300 hover:bg-blue-50/40">
+            <CloudUploadOutlinedIcon className="text-gray-400" />
+
+            <span className="mt-2 text-sm font-medium text-gray-600">
+              {bannerFile ? bannerFile.name : "Upload Event Banner"}
+            </span>
+
+            <input 
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0] || null;
+                setValue("bannerFile", file, { shouldDirty: true, shouldValidate: true });
+              }}
+            />
+          </label>
+
+          <div className="flex justify-end border-t border-gray-100 px-7 py-5">
           <Button
             type="button"
             variant="contained"
