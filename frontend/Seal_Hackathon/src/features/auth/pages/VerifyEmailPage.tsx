@@ -77,7 +77,7 @@ export function VerifyEmailPage() {
         variant: "success",
       });
 
-      navigate("/verify-email-success");
+      navigate("/verify-email/success");
     } catch (error: any) {
       setStatus("error");
 
@@ -117,101 +117,99 @@ export function VerifyEmailPage() {
       setStatus("input");
       setCode("");
 
-      enqueueSnackbar("Verification link sent again.", {
+      enqueueSnackbar("Verification code sent again.", {
         variant: "success",
       });
     } catch (error: any) {
-      enqueueSnackbar(error?.response?.data?.message || "Cannot resend verification link.", {
+      enqueueSnackbar(error?.response?.data?.message || "Cannot resend verification code.", {
         variant: "error",
       });
     }
   };
 
   return (
-    <>
-      <div className="mx-auto w-full max-w-155 py-16">
-        <StepProgress
-          title="Registration Progress"
-          currentStep={2}
-          steps={steps}
-        />
+    <div className="mx-auto w-full max-w-155 py-16">
+      <StepProgress
+        title="Registration Progress"
+        currentStep={2}
+        steps={steps}
+      />
 
-        <AuthCard title={pageState.title} className="text-center">
-          <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500 text-white shadow-[0_12px_24px_rgba(59,130,246,0.25)]">
-            {pageState.icon}
-          </div>
-
-          <p className="mx-auto max-w-107.5 text-base leading-7 text-slate-600">
-            A verification code has been sent to{" "}
-            <span className="font-semibold text-blue-500">
-              {email || "your email"}
-            </span>
-          </p>
-
-          <p
-            className={[
-              "mx-auto mt-2 max-w-107.5 text-base leading-7",
-              status === "error" ? "font-semibold text-rose-500" : "text-slate-600",
-            ].join(" ")}
-          >
-            {pageState.description}
-          </p>
-
-          <div className="mt-8">
-            <CodeInput
-              value={code}
-              onChange={handleCodeChange}
-              error={status === "error"}
-            />
-          </div>
-
-          <div className="mt-8 text-sm font-extrabold text-slate-600">
-            {verifyMutation.isPending ? (
-              <span className="inline-flex items-center justify-center gap-2">
-                <CircularProgress size={14} />
-                Verifying code...
-              </span>
-            ) : (
-              "The code will expire in 9s."
-            )}
-          </div>
-        </AuthCard>
-
-        <div className="mx-auto mt-8 flex w-full max-w-155 items-center justify-center gap-4">
-          <Button
-            type="button"
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate("/register")}
-            sx={{
-              width: 220,
-              height: 42,
-              borderRadius: 999,
-              textTransform: "none",
-              fontWeight: 900,
-            }}
-          >
-            Change email
-          </Button>
-
-          <Button
-            type="button"
-            variant="outlined"
-            startIcon={<RestartAltIcon />}
-            disabled={isLoading}
-            onClick={handleResend}
-            sx={{
-              width: 250,
-              height: 42,
-              borderRadius: 999,
-              textTransform: "none",
-              fontWeight: 900,
-            }}
-          >
-            {resendMutation.isPending ? "Resending..." : "Resend verification link"}
-          </Button>
+      <AuthCard title={pageState.title} className="text-center">
+        <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500 text-white shadow-[0_12px_24px_rgba(59,130,246,0.25)]">
+          {pageState.icon}
         </div>
+
+        <p className="mx-auto max-w-107.5 text-base leading-7 text-slate-600">
+          A verification code has been sent to{" "}
+          <span className="font-semibold text-blue-500">
+            {email || "your email"}
+          </span>
+        </p>
+
+        <p
+          className={[
+            "mx-auto mt-2 max-w-107.5 text-base leading-7",
+            status === "error" ? "font-semibold text-rose-500" : "text-slate-600",
+          ].join(" ")}
+        >
+          {pageState.description}
+        </p>
+
+        <div className="mt-8">
+          <CodeInput
+            value={code}
+            onChange={handleCodeChange}
+            error={status === "error"}
+          />
+        </div>
+
+        <div className="mt-8 text-sm font-extrabold text-slate-600">
+          {verifyMutation.isPending ? (
+            <span className="inline-flex items-center justify-center gap-2">
+              <CircularProgress size={14} />
+              Verifying code...
+            </span>
+          ) : (
+            "Enter the 6-digit code from your email."
+          )}
+        </div>
+      </AuthCard>
+
+      <div className="mx-auto mt-8 flex w-full max-w-155 items-center justify-center gap-4">
+        <Button
+          type="button"
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate("/register")}
+          sx={{
+            width: 220,
+            height: 42,
+            borderRadius: 999,
+            textTransform: "none",
+            fontWeight: 900,
+          }}
+        >
+          Change email
+        </Button>
+
+        <Button
+          type="button"
+          variant="outlined"
+          startIcon={<RestartAltIcon />}
+          disabled={isLoading}
+          onClick={handleResend}
+          sx={{
+            width: 250,
+            height: 42,
+            borderRadius: 999,
+            textTransform: "none",
+            fontWeight: 900,
+          }}
+        >
+          {resendMutation.isPending ? "Resending..." : "Resend verification code"}
+        </Button>
       </div>
-    </>
+    </div>
   );
 }

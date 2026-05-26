@@ -10,7 +10,7 @@ export function SocialLoginButtons() {
         type="button"
         variant="outlined"
         startIcon={<GoogleIcon />}
-        onClick={authApi.getGoogleOAuthUrl}
+        onClick={authApi.loginWithGoogle}
         sx={{
           height: 44,
           borderRadius: "10px",

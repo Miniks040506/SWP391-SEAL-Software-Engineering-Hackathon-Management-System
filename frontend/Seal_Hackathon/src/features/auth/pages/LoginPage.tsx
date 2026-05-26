@@ -1,8 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, TextField } from "@mui/material";
+import { Alert, Button, TextField } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthCard } from "@/features/auth/components/AuthCard";
 import { PasswordField } from "@/features/auth/components/PasswordField";
 import { SocialLoginButtons } from "@/features/auth/components/SocialLoginButton";
@@ -12,7 +13,7 @@ import {
   type LoginFormValues,
 } from "@/features/auth/schemas/auth.schema";
 import { useAuthStore } from "@/stores/authStore";
-import { getDashboardPathByRole } from "@/utils/roleRedirect";
+import { getRoleRedirectPath } from "@/utils/roleRedirect";
 
 const textFieldSx = {
   "& .MuiOutlinedInput-root": {
@@ -23,7 +24,10 @@ const textFieldSx = {
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const loginMutation = useLoginMutation();
+
+  const oauthError = useMemo(() => searchParams.get("oauthError"), [searchParams]);
 
   const {
     register,
@@ -39,10 +43,13 @@ export function LoginPage() {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      await loginMutation.mutateAsync(values);
+      await loginMutation.mutateAsync({
+        email: values.email.trim().toLowerCase(),
+        password: values.password,
+      });
 
       const user = useAuthStore.getState().user;
-      const fallbackPath = getDashboardPathByRole(user?.role || "STUDENT");
+      const fallbackPath = getRoleRedirectPath(user);
       const fromPath = (location.state as { from?: string } | null)?.from;
       const redirectPath = fromPath || fallbackPath;
 
@@ -61,81 +68,85 @@ export function LoginPage() {
   };
 
   return (
-    <>
-      <div className="mx-auto w-full max-w-155 py-16">
-        <AuthCard
-          title="Welcome Back"
-          description="Sign in to continue managing your SEAL Hackathon workspace."
-        >
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <TextField
-              fullWidth
-              size="small"
-              label="Email"
-              placeholder="alex.n@fpt.edu.vn"
-              {...register("email")}
-              error={Boolean(errors.email)}
-              helperText={errors.email?.message}
-              sx={textFieldSx}
-            />
+    <div className="mx-auto w-full max-w-155 py-16">
+      <AuthCard
+        title="Welcome Back"
+        description="Sign in to continue managing your SEAL Hackathon workspace."
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {oauthError && (
+            <Alert severity="error">
+              {oauthError}
+            </Alert>
+          )}
 
-            <PasswordField
-              fullWidth
-              size="small"
-              label="Password"
-              {...register("password")}
-              error={Boolean(errors.password)}
-              helperText={errors.password?.message}
-              sx={textFieldSx}
-            />
+          <TextField
+            fullWidth
+            size="small"
+            label="Email"
+            placeholder="alex.n@fpt.edu.vn"
+            {...register("email")}
+            error={Boolean(errors.email)}
+            helperText={errors.email?.message}
+            sx={textFieldSx}
+          />
 
-            <div className="flex items-center justify-end">
-              <Link
-                to="/forgot-password"
-                className="text-sm font-bold text-blue-500 hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
+          <PasswordField
+            fullWidth
+            size="small"
+            label="Password"
+            {...register("password")}
+            error={Boolean(errors.password)}
+            helperText={errors.password?.message}
+            sx={textFieldSx}
+          />
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              disabled={loginMutation.isPending}
-              sx={{
-                height: 46,
-                borderRadius: "10px",
-                textTransform: "none",
-                fontWeight: 900,
-                boxShadow: "none",
-              }}
+          <div className="flex items-center justify-end">
+            <Link
+              to="/forgot-password"
+              className="text-sm font-bold text-blue-500 hover:underline"
             >
-              {loginMutation.isPending ? "Signing in..." : "Sign In"}
-            </Button>
+              Forgot password?
+            </Link>
+          </div>
 
-            <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                Or
-              </span>
-              <div className="h-px flex-1 bg-slate-200" />
-            </div>
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            disabled={loginMutation.isPending}
+            sx={{
+              height: 46,
+              borderRadius: "10px",
+              textTransform: "none",
+              fontWeight: 900,
+              boxShadow: "none",
+            }}
+          >
+            {loginMutation.isPending ? "Signing in..." : "Sign In"}
+          </Button>
 
-            <SocialLoginButtons />
+          <div className="flex items-center gap-4">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
+              Or
+            </span>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
 
-            <p className="text-center text-xs text-slate-500">
-              Do not have an account?{" "}
-              <Link
-                className="font-semibold text-blue-500 hover:underline"
-                to="/register"
-              >
-                Create account
-              </Link>
-            </p>
-          </form>
-        </AuthCard>
-      </div>
-    </>
+          <SocialLoginButtons />
+
+          <p className="text-center text-xs text-slate-500">
+            Do not have an account?{" "}
+            <Link
+              className="font-semibold text-blue-500 hover:underline"
+              to="/register"
+            >
+              Create account
+            </Link>
+          </p>
+        </form>
+      </AuthCard>
+    </div>
   );
 }

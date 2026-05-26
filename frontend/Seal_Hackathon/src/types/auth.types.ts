@@ -1,18 +1,23 @@
 export type UserRole =
-  | "STUDENT"
+  | "ADMIN"
+  | "COORDINATOR"
   | "JUDGE"
   | "MENTOR"
-  | "COORDINATOR"
-  | "ADMIN";
-
-export type UserStatus =
-  | "UNVERIFIED"
-  | "PENDING_APPROVAL"
-  | "ACTIVE"
-  | "SUSPENDED"
-  | "DEACTIVATED";
+  | "PARTICIPANT"
+  | "STUDENT"
+  | "GUEST";
 
 export type StudentType = "FPT" | "EXTERNAL";
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  fullName?: string;
+  avatarUrl?: string;
+  role?: UserRole;
+  roles?: UserRole[];
+  status?: string;
+};
 
 export type RegisterRequest = {
   email: string;
@@ -29,8 +34,8 @@ export type RegisterRequest = {
 export type RegisterResponse = {
   userId: string;
   email: string;
-  status: UserStatus;
-  verificationExpiresInSeconds: number;
+  status: string;
+  verificationExpiresInSeconds?: number;
   message: string;
 };
 
@@ -42,7 +47,7 @@ export type VerifyEmailRequest = {
 export type VerifyEmailResponse = {
   userId: string;
   email: string;
-  status: UserStatus;
+  status: string;
   message: string;
 };
 
@@ -60,7 +65,7 @@ export type LoginResponse = {
   email: string;
   fullName: string;
   role: UserRole;
-  status: UserStatus;
+  status: string;
   accessToken: string;
   refreshToken: string;
   accessTokenExpiresInMs: number;
@@ -74,6 +79,10 @@ export type RefreshTokenResponse = {
   refreshTokenExpiresInMs: number;
 };
 
+export type AuthMessageResponse = {
+  message: string;
+};
+
 export type ForgotPasswordRequest = {
   email: string;
 };
@@ -83,33 +92,4 @@ export type ResetPasswordRequest = {
   code: string;
   newPassword: string;
   confirmPassword: string;
-};
-
-export type AuthMessageResponse = {
-  message: string;
-};
-
-export type ApiErrorResponse = {
-  success?: boolean;
-  status?: number;
-  error?: string;
-  message?: string;
-  path?: string;
-  timestamp?: string;
-  fieldErrors?: {
-    field: string;
-    message: string;
-  }[];
-};
-
-export type AuthUser = {
-  userId: string;
-  email: string;
-  fullName: string;
-  role: UserRole;
-  status: UserStatus;
-};
-
-export type RefreshTokenRequest = {
-  refreshToken: string;
 };

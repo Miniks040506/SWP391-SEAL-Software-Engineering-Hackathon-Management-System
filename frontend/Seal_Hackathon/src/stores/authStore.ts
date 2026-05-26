@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AuthUser, LoginResponse } from "@/types/auth.types";
+import type {
+  AuthUser,
+  LoginResponse,
+  RefreshTokenResponse,
+} from "@/types/auth.types";
 
 type AuthState = {
   accessToken: string | null;
@@ -8,16 +12,10 @@ type AuthState = {
   user: AuthUser | null;
 
   isAuthenticated: () => boolean;
-  setTokens: (accessToken: string, refreshToken: string) => void;
-  setLogin: (response: LoginResponse) => void;
-  setOAuthLogin: (data: {
-    accessToken: string;
-    refreshToken: string;
-    role: AuthUser["role"];
-    status: AuthUser["status"];
-    email: string;
-  }) => void;
-  logout: () => void;
+  setLoginResponse: (payload: LoginResponse) => void;
+  setTokens: (payload: RefreshTokenResponse) => void;
+  setUser: (user: AuthUser | null) => void;
+  clearAuth: () => void;
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -27,51 +25,48 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       user: null,
 
-      isAuthenticated: () => Boolean(get().accessToken && get().user),
+      isAuthenticated: () => Boolean(get().accessToken),
 
-      setTokens: (accessToken, refreshToken) => {
-        set({ accessToken, refreshToken });
-      },
-
-      setLogin: (response) => {
+      setLoginResponse: (payload) => {
         set({
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
+          accessToken: payload.accessToken,
+          refreshToken: payload.refreshToken,
           user: {
-            userId: response.userId,
-            email: response.email,
-            fullName: response.fullName,
-            role: response.role,
-            status: response.status,
+            id: payload.userId,
+            email: payload.email,
+            fullName: payload.fullName,
+            role: payload.role,
+            status: payload.status,
           },
         });
       },
 
-      setOAuthLogin: (data) => {
+      setTokens: (payload) => {
         set({
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          user: {
-            userId: "oauth-user",
-            email: data.email,
-            fullName: data.email,
-            role: data.role,
-            status: data.status,
-          },
+          accessToken: payload.accessToken,
+          refreshToken: payload.refreshToken,
         });
       },
 
-      logout: () => {
-        set({ accessToken: null, refreshToken: null, user: null });
+      setUser: (user) => {
+        set({ user });
+      },
+
+      clearAuth: () => {
+        set({
+          accessToken: null,
+          refreshToken: null,
+          user: null,
+        });
       },
     }),
     {
-      name: "seal-auth-store",
+      name: "seal-auth-storage",
       partialize: (state) => ({
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         user: state.user,
       }),
-    }
-  )
+    },
+  ),
 );

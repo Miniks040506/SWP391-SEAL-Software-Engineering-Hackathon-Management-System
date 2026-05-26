@@ -35,9 +35,7 @@ export function AuthCard({
         </p>
       )}
 
-      <div className={["mt-8", contentClassName].join(" ")}>
-        {children}
-      </div>
+      <div className={["mt-8", contentClassName].join(" ")}>{children}</div>
     </section>
   );
 }
