@@ -3,7 +3,6 @@ import type { Event } from "@/types/event.types";
 // Remove this file once the real API is connected.
 // Replace with TanStack Query → GET /api/events in events.api.ts
 export const EVENTS: Event[] = [
-  // Active
   {
     id: "seal-spring-26",
     title: "SEAL Hackathon Spring 2026",
@@ -13,42 +12,42 @@ export const EVENTS: Event[] = [
     currentPhase: 2,
     description:
       "Conquer software engineering challenges and find innovative digital solutions for modern problems.",
-    startDate: "Mar 15, 2026",
+    startDate: "Feb 15, 2026",
     endDate: "Mar 20, 2026",
     tracks: [
       {
-        name: "Web Development",
-        desc: "Building scalable modern web applications with cutting-edge tech.",
+        name: "Web Application",
+        desc: "Building scalable modern web applications with cutting-edge tech and microservices.",
         rounds: [
-          { id: "r1", name: "Proposal Submission", duration: "2 days" },
-          { id: "r2", name: "MVP Development & Coding", duration: "3 days" },
+          { id: "r1", name: "Proposal Submission", duration: "14 days" },
+          { id: "r2", name: "48-Hour Live Coding Sprint", duration: "2 days" },
           { id: "r3", name: "Grand Finale Pitching", duration: "1 day" },
         ],
       },
       {
-        name: "Mobile App",
-        desc: "Creating seamless and intuitive mobile experiences.",
+        name: "Mobile Application",
+        desc: "Creating seamless, high-performance, and intuitive mobile experiences.",
         rounds: [
-          { id: "r1", name: "UI/UX Prototype Submission", duration: "2 days" },
+          { id: "r1", name: "UI/UX & Architecture Proposal", duration: "14 days" },
           {
             id: "r2",
-            name: "App Core Feature Development",
-            duration: "3 days",
+            name: "48-Hour Live Coding Sprint",
+            duration: "2 days",
           },
         ],
       },
       {
         name: "AI & Machine Learning",
-        desc: "Implementing intelligent algorithms and data models.",
+        desc: "Implementing intelligent algorithms, NLP, and predictive data models.",
         rounds: [
           {
             id: "r1",
             name: "Dataset Analysis & Model Selection",
-            duration: "2 days",
+            duration: "14 days",
           },
           {
             id: "r2",
-            name: "Model Training & Accuracy Optimization",
+            name: "Model Training & Optimization Sprint",
             duration: "2 days",
           },
           { id: "r3", name: "Solution Presentation", duration: "1 day" },
@@ -56,28 +55,62 @@ export const EVENTS: Event[] = [
       },
     ],
     prizes: [
-      { rank: "Champion", value: "$1,000" },
-      { rank: "Runner Up", value: "$600" },
-      { rank: "Third Place", value: "$300" },
+      { rank: "Champion", value: "25,000,000 VND" },
+      { rank: "Runner Up", value: "15,000,000 VND" },
+      { rank: "Third Place", value: "7,500,000 VND" },
     ],
     announcements: [
       {
-        date: "2h ago",
-        text: "Final round scoring criteria have been updated.",
-        phase: 2,
+        date: "Mar 19, 2026",
+        text: "Grand Finale Pitching Registration Deadline Extended",
         detail:
-          'Attention all teams!\n\nThe judges have revised the weight for the technical implementation sector from 30% to 40%.\n\nPlease review the updated scoring rubric PDF under the "Criteria" tab to ensure your project alignment meets the new expectations before the final submission deadline.',
+          "Teams now have until 11:59 PM tonight to submit their final pitch decks and repository links. No further extensions will be granted.",
+        phase: 3,
       },
       {
-        date: "1d ago",
-        text: "Technical workshop recordings are now available on the portal.",
-        phase: 1,
+        date: "Mar 18, 2026",
+        text: "Phase 2 Live Coding Sprint Results Dispatched",
         detail:
-          'Missed our live mentoring sessions?\n\nDon\'t worry! The full video recordings and presentation materials for "Scalable Architecture Setup" and "Smart Contract Security Audits" have been successfully processed.\n\nYou can access them directly via the Cloud drive link pinned in your dashboard announcements channel.',
+          "Check your registered team emails for detailed code quality and architecture feedback matrices from the technical jury. Top 10 teams move to the Grand Finale.",
+        phase: 2,
+      },
+      {
+        date: "Mar 17, 2026",
+        text: "Mentorship Session #2: UI/UX & Scaling on Cloud Hosting",
+        detail:
+          "Join our industry experts at Room 204 or via the Microsoft Teams link provided in the Discord announcements channel at 2:00 PM.",
+        phase: 2,
+      },
+      {
+        date: "Mar 16, 2026",
+        text: "Phase 1 Proposal Submission Approved Shortlist Released",
+        detail:
+          "Congratulations to all qualifying tracks! Please review the cloud computing requirements and workspace setups in the shared drive.",
+        phase: 1,
+      },
+      {
+        date: "Mar 15, 2026",
+        text: "Official Kick-off: Opening Ceremony Live Stream Link",
+        detail:
+          "Watch the opening briefing from the SE Faculty management detailing evaluation criteria, scoring metrics, and resource allocations.",
+        phase: 1,
+      },
+      {
+        date: "Feb 20, 2026",
+        text: "Pre-Event Technical Guidelines & Repository Standard",
+        detail:
+          "All source code must be hosted on GitHub under a clean organizational structure using continuous integration templates.",
+        phase: 1,
+      },
+      {
+        date: "Feb 15, 2026",
+        text: "Team Formation & Mandatory Discord Server Join Request",
+        detail:
+          "Ensure all 4 members have verified their student credentials on our automation system to unlock private channels.",
+        phase: 1,
       },
     ],
   },
-
   {
     id: "seal-summer-26",
     title: "SEAL Hackathon Summer 2026",
@@ -86,40 +119,61 @@ export const EVENTS: Event[] = [
     registrationOpen: true,
     currentPhase: 0,
     description:
-      "Integrated competition for Smart City solutions and Software innovation.",
-    startDate: "Jun 20, 2026",
+      "Intensive competition focusing on Enterprise Software Solutions and Cloud Architecture innovation.",
+    startDate: "May 20, 2026",
     endDate: "Jun 25, 2026",
     tracks: [
       {
-        name: "Cybersecurity",
-        desc: "Secure software development and vulnerability mitigation.",
+        name: "Information Security",
+        desc: "Secure software development and backend vulnerability mitigation.",
         rounds: [
           {
             id: "r1",
             name: "Capture The Flag (CTF) Qualifier",
-            duration: "1 day",
+            duration: "14 days",
           },
-          { id: "r2", name: "Secure Architecture Design", duration: "2 days" },
-          { id: "r3", name: "Live Defense Hack", duration: "2 days" },
+          { id: "r2", name: "Secure Architecture Design", duration: "7 days" },
+          { id: "r3", name: "48-Hour Live Defense Hack", duration: "2 days" },
         ],
       },
       {
-        name: "Cloud Computing",
-        desc: "Serverless solutions and infrastructure as code.",
+        name: "Cloud Native Solutions",
+        desc: "Serverless architectures, containerization, and infrastructure as code.",
         rounds: [
-          { id: "r1", name: "Cloud Architecture Proposal", duration: "2 days" },
+          { id: "r1", name: "Cloud Architecture Proposal", duration: "14 days" },
           {
             id: "r2",
-            name: "IaC Implementation & Deployment",
-            duration: "3 days",
+            name: "IaC Implementation & Deployment Sprint",
+            duration: "2 days",
           },
         ],
       },
     ],
-    prizes: [{ rank: "Champion", value: "$1,200" }],
-    announcements: [],
+    prizes: [{ rank: "Champion", value: "30,000,000 VND" }],
+    announcements: [
+      {
+        date: "Jun 02, 2026",
+        text: "Detailed Rulebook & Sandbox Server Credentials Disclosed",
+        phase: 1,
+        detail:
+          "The updated competition parameters document has been uploaded to the dashboard. Teams can now log into their designated target isolated environments.",
+      },
+      {
+        date: "May 28, 2026",
+        text: "Upcoming Pre-Hackathon Webinar: Mastering Infrastructure as Code",
+        phase: 1,
+        detail:
+          "Set up your reminders for a live technological breakdown of containerization strategies and serverless microarchitectures on our streaming terminal.",
+      },
+      {
+        date: "May 20, 2026",
+        text: "Registration portal for SEAL Hackathon Summer 2026 is officially open!",
+        phase: 1,
+        detail:
+          "Ready to build scalable Cloud and Security solutions? Gather your team and complete the registration form before June 15, 2026 to secure your slot.",
+      },
+    ],
   },
-
   {
     id: "seal-fall-25",
     title: "SEAL Hackathon Fall 2025",
@@ -128,257 +182,344 @@ export const EVENTS: Event[] = [
     registrationOpen: false,
     currentPhase: 3,
     description:
-      "Successfully concluded with over 60 teams and hundreds of participants.",
-    startDate: "Oct 10, 2025",
+      "Successfully concluded with over 60 teams driving automated software solutions and modern technology implementation across FPT campuses.",
+    startDate: "Sep 10, 2025",
     endDate: "Oct 15, 2025",
     tracks: [
       {
-        name: "Fintech",
-        desc: "Innovation in the financial technology sector.",
+        name: "Fintech & Open Banking",
+        desc: "Developing next-generation financial applications and secure transaction gateways.",
         rounds: [
+          { id: "r1", name: "Abstract & Architecture Wireframing", duration: "14 days" },
           {
-            id: "r1",
-            name: "Idea Brainstorming & Registration",
-            duration: "2 days",
+            id: "r2",
+            name: "Prototype Construction & API Integration",
+            duration: "7 days",
           },
-          { id: "r2", name: "Prototype Construction", duration: "2 days" },
           { id: "r3", name: "Demo Day Pitching", duration: "1 day" },
         ],
       },
+      {
+        name: "Enterprise Digitalization",
+        desc: "Optimizing university enterprise workflows and educational resource distribution systems.",
+        rounds: [
+          {
+            id: "r1",
+            name: "System Architecture Proposal",
+            duration: "14 days",
+          },
+          { id: "r2", name: "48-Hour Core System Deployment", duration: "2 days" },
+        ],
+      },
     ],
-    prizes: [],
-    announcements: [],
+    prizes: [
+      { rank: "Champion", value: "20,000,000 VND" },
+      { rank: "Runner Up", value: "10,000,000 VND" },
+    ],
+    announcements: [
+      {
+        date: "Oct 16, 2025",
+        text: "Final scoreboard and winners announcement.",
+        phase: 3,
+        detail:
+          "Congratulations to all teams! The final results and prize allocation for the Fintech and Enterprise Digitalization tracks have been officially published on the leaderboard channel.",
+      },
+      {
+        date: "Oct 14, 2025",
+        text: "System Stability Warning & Live API Gateway Maintenance",
+        phase: 2,
+        detail:
+          "The core payment validation simulators will go offline for 15 minutes. Please gracefully catch operational timeouts in your staging environment.",
+      },
+      {
+        date: "Sep 20, 2025",
+        text: "Staging Database Integration Standard Guidelines Issued",
+        phase: 1,
+        detail:
+          "All prototypes must rely strictly on the standardized secure sandboxed parameters. Please reference the authentication documentation.",
+      },
+    ],
   },
-
   {
     id: "seal-summer-25",
-    title: "SEAL Hackathon Summer 2025",
+    title: "FPT Edu Research Festival 2025",
     season: "Summer",
     status: "Ended",
     registrationOpen: false,
     currentPhase: 3,
     description:
-      "A high-intensity 5-day sprint focused on sustainable tech and green software engineering.",
-    startDate: "Jul 5, 2025",
+      "Information Technology track at FPT Edu ResFes 2025, focusing on software architecture research and applied AI.",
+    startDate: "May 15, 2025",
     endDate: "Jul 10, 2025",
     tracks: [
       {
-        name: "Green Tech",
-        desc: "Energy-efficient software and environmental monitoring tools.",
+        name: "Applied AI",
+        desc: "Researching artificial intelligence applications in natural language processing and computer vision.",
         rounds: [
-          { id: "r1", name: "Eco-Design & Concept Pitch", duration: "1 day" },
-          { id: "r2", name: "Green Code Implementation", duration: "3 days" },
-          { id: "r3", name: "Carbon Impact Evaluation", duration: "1 day" },
+          { id: "r1", name: "Detailed Proposal Submission", duration: "30 days" },
+          {
+            id: "r2",
+            name: "Defense Before Scientific Council",
+            duration: "3 days",
+          },
+          { id: "r3", name: "Final Q&A and Award Ceremony", duration: "1 day" },
         ],
       },
       {
-        name: "IoT & Hardware",
-        desc: "Embedded systems and sensor-driven smart applications.",
+        name: "Software Architecture",
+        desc: "Researching modern software methodologies, microservices, and distributed systems.",
         rounds: [
-          {
-            id: "r1",
-            name: "Hardware Schema & Architecture",
-            duration: "2 days",
-          },
+          { id: "r1", name: "Research Paper Review", duration: "30 days" },
           {
             id: "r2",
-            name: "Firmware & Sensor Integration",
+            name: "Academic Poster Presentation",
             duration: "3 days",
           },
         ],
       },
     ],
     prizes: [
-      { rank: "Champion", value: "$1,000" },
-      { rank: "Runner Up", value: "$500" },
-      { rank: "Third Place", value: "$250" },
+      { rank: "First Prize", value: "30,000,000 VND" },
+      { rank: "Second Prize", value: "20,000,000 VND" },
+      { rank: "Third Prize", value: "10,000,000 VND" },
     ],
-    announcements: [],
+    announcements: [
+      {
+        date: "Jul 11, 2025",
+        text: "FPT Edu Research Festival 2025 has successfully concluded.",
+        phase: 3,
+        detail:
+          "Thank you to all student researchers and mentors for outstanding scientific defenses. All presentation materials and council rubrics have been archived.",
+      },
+      {
+        date: "Jul 08, 2025",
+        text: "Interactive Presentation & Dynamic Model Verification Order",
+        phase: 2,
+        detail:
+          "The scheduled council presentation ordering schema has been distributed to your primary faculty contacts. Please show up exactly 20 minutes before execution.",
+      },
+      {
+        date: "Jun 15, 2025",
+        text: "Initial Presentation Room Allocations & Technical Checks",
+        phase: 1,
+        detail:
+          "Verify the display interface connectors in blocks Alpha and Beta. All computational platforms must support external continuous scaling outputs.",
+      },
+    ],
   },
-
   {
     id: "seal-spring-25",
-    title: "SEAL Hackathon Spring 2025",
+    title: "FPT Edu Hackathon 2025",
     season: "Spring",
     status: "Ended",
     registrationOpen: false,
     currentPhase: 3,
     description:
-      "The inaugural SEAL Spring edition — 45 teams tackled real-world logistics and e-commerce problems.",
-    startDate: "Mar 10, 2025",
+      "The ultimate coding arena for FPT Edu students to tackle real-world problems with disruptive software solutions.",
+    startDate: "Feb 10, 2025",
     endDate: "Mar 14, 2025",
     tracks: [
       {
-        name: "E-Commerce",
-        desc: "Digital retail platforms and supply-chain automation.",
+        name: "Generative AI Application",
+        desc: "Building software solutions integrated with GenAI, RAG architectures, and Large Language Models.",
         rounds: [
           {
             id: "r1",
-            name: "Market Research & Feature Definition",
+            name: "Preliminary Round: Concept Pitch",
+            duration: "14 days",
+          },
+          {
+            id: "r2",
+            name: "Final Round: 24-Hour Continuous Hacking",
             duration: "1 day",
           },
-          { id: "r2", name: "Core Engine Development", duration: "3 days" },
         ],
       },
       {
-        name: "Blockchain",
-        desc: "Decentralised applications and smart contract systems.",
+        name: "Campus Management Systems",
+        desc: "Leveraging software tools to improve campus scheduling optimization and student management.",
         rounds: [
-          { id: "r1", name: "Smart Contract Design", duration: "2 days" },
-          { id: "r2", name: "DApp Frontend Integration", duration: "2 days" },
+          {
+            id: "r1",
+            name: "Technical Document Screening",
+            duration: "14 days",
+          },
+          {
+            id: "r2",
+            name: "Prototype Exhibition & Coding Sprint",
+            duration: "2 days",
+          },
         ],
       },
     ],
     prizes: [
-      { rank: "Champion", value: "$800" },
-      { rank: "Runner Up", value: "$400" },
+      { rank: "Champion", value: "50,000,000 VND" },
+      { rank: "Runner Up", value: "25,000,000 VND" },
     ],
-    announcements: [],
+    announcements: [
+      {
+        date: "Mar 14, 2025",
+        text: "Final Showcase Live Execution Metrics Update",
+        phase: 3,
+        detail:
+          "Pitch timing allocations will adhere strictly to a 5-minute configuration followed by a 3-minute validation sequence by enterprise professionals.",
+      },
+      {
+        date: "Mar 13, 2025",
+        text: "24-Hour continuous coding marathon phase completed.",
+        phase: 2,
+        detail:
+          "All repository access has been restricted as coding time concludes. Prepare your slides and dynamic models for tomorrow's grand evaluation.",
+      },
+      {
+        date: "Feb 15, 2025",
+        text: "API Rate-Limiting Protocols & Structural Blueprint Review",
+        phase: 1,
+        detail:
+          "Please prevent spamming requests against the localized embedding models. Ensure intelligent local operational caching systems are integrated.",
+      },
+    ],
   },
-
   {
     id: "seal-fall-24",
-    title: "SEAL Hackathon Fall 2024",
+    title: "FPT Edu Research Festival 2024",
     season: "Fall",
     status: "Ended",
     registrationOpen: false,
     currentPhase: 3,
     description:
-      "Fall 2024 edition focused on AI-assisted tooling and developer productivity.",
-    startDate: "Oct 5, 2024",
+      "An annual academic event rooted in innovative teaching and learning, gathering hundreds of software and data science papers from students.",
+    startDate: "Aug 15, 2024",
     endDate: "Oct 10, 2024",
     tracks: [
       {
-        name: "E-Commerce",
-        desc: "Digital retail platforms and supply-chain automation.",
+        name: "Software Engineering",
+        desc: "Researching software architecture design, agile methodologies, and testing frameworks.",
         rounds: [
-          { id: "r1", name: "Product Requirement Document", duration: "1 day" },
-          { id: "r2", name: "Coding & Integrations", duration: "4 days" },
+          {
+            id: "r1",
+            name: "Abstract & Overview Screening",
+            duration: "30 days",
+          },
+          {
+            id: "r2",
+            name: "Poster Presentation & Peer Review",
+            duration: "4 days",
+          },
         ],
       },
       {
-        name: "Blockchain",
-        desc: "Decentralised applications and smart contract systems.",
+        name: "Data Science & Analytics",
+        desc: "Exploring predictive data engineering models and advanced analytics for commercial applications.",
         rounds: [
-          { id: "r1", name: "Whitepaper & Security Audit", duration: "2 days" },
+          { id: "r1", name: "Data Model Proposal", duration: "30 days" },
           {
             id: "r2",
-            name: "Mainnet Deployment Simulation",
+            name: "Empirical Result Presentation",
             duration: "3 days",
           },
         ],
       },
     ],
     prizes: [
-      { rank: "Champion", value: "$800" },
-      { rank: "Runner Up", value: "$400" },
+      { rank: "First Prize", value: "20,000,000 VND" },
+      { rank: "Second Prize", value: "10,000,000 VND" },
     ],
-    announcements: [],
+    announcements: [
+      {
+        date: "Oct 11, 2024",
+        text: "Closing ceremony updates and academic certificate distribution.",
+        phase: 3,
+        detail:
+          "Digital participation credentials and peer-review accolades will be sent to your registered student dashboard accounts within 7 working days.",
+      },
+      {
+        date: "Oct 08, 2024",
+        text: "Anomalous Structural Data Submission Constraints Modified",
+        phase: 2,
+        detail:
+          "The evaluation council explicitly demands all analytical software outputs compile safely under standard isolated terminal execution environments.",
+      },
+      {
+        date: "Sep 01, 2024",
+        text: "Peer Review Assignment Matrix Available",
+        phase: 1,
+        detail:
+          "Please verify your localized evaluation targets under the research panel mapping matrix on your portal accounts directly.",
+      },
+    ],
   },
-
   {
-    id: "seal-fall-23",
-    title: "SEAL Hackathon Fall 2023",
-    season: "Fall",
+    id: "seal-summer-24",
+    title: "FPT Edu Hackathon 2024",
+    season: "Summer",
     status: "Ended",
     registrationOpen: false,
     currentPhase: 3,
     description:
-      "Fall 2023 edition — teams competed across web, mobile and data tracks.",
-    startDate: "Oct 8, 2023",
-    endDate: "Oct 12, 2023",
+      "A high-intensity software competition deeply exploring the concepts of Blockchain and Web3 technologies.",
+    startDate: "May 15, 2024",
+    endDate: "Jul 12, 2024",
     tracks: [
       {
-        name: "E-Commerce",
-        desc: "Digital retail platforms and supply-chain automation.",
+        name: "Blockchain & Web3",
+        desc: "Developing secure smart contracts and decentralized systems for community benefits.",
         rounds: [
-          { id: "r1", name: "System Design", duration: "1 day" },
-          { id: "r2", name: "Hackathon Hack Time", duration: "3 days" },
+          {
+            id: "r1",
+            name: "Preliminary Round: Solution Architecture",
+            duration: "14 days",
+          },
+          {
+            id: "r2",
+            name: "48-Hour Code Marathon & Cloud Deployment",
+            duration: "2 days",
+          },
         ],
       },
       {
-        name: "Blockchain",
-        desc: "Decentralised applications and smart contract systems.",
+        name: "Decentralized Applications (DApps)",
+        desc: "Creating secure user identity management and asset distribution frameworks on-chain.",
         rounds: [
-          { id: "r1", name: "Tokenomics Formulation", duration: "2 days" },
-          { id: "r2", name: "Protocol Prototyping", duration: "2 days" },
+          {
+            id: "r1",
+            name: "Smart Contract Design Proposal",
+            duration: "14 days",
+          },
+          {
+            id: "r2",
+            name: "DApp Integration & Functional Testing",
+            duration: "2 days",
+          },
         ],
       },
     ],
     prizes: [
-      { rank: "Champion", value: "$800" },
-      { rank: "Runner Up", value: "$400" },
+      { rank: "Champion", value: "30,000,000 VND" },
+      { rank: "Runner Up", value: "15,000,000 VND" },
     ],
-    announcements: [],
-  },
-
-  {
-    id: "seal-fall-19",
-    title: "SEAL Hackathon Fall 2019",
-    season: "Fall",
-    status: "Ended",
-    registrationOpen: false,
-    currentPhase: 3,
-    description: "The very first SEAL Hackathon — where it all began.",
-    startDate: "Nov 1, 2019",
-    endDate: "Nov 5, 2019",
-    tracks: [
+    announcements: [
       {
-        name: "E-Commerce",
-        desc: "Digital retail platforms and supply-chain automation.",
-        rounds: [
-          { id: "r1", name: "Concept Formulation", duration: "1 day" },
-          { id: "r2", name: "Development Sprint", duration: "3 days" },
-        ],
+        date: "Jul 12, 2024",
+        text: "Web3 and Blockchain tracks system deployment audit complete.",
+        phase: 3,
+        detail:
+          "The decentralized smart contracts deployed on the sandbox network have been verified and scored by the central engineering committee.",
       },
       {
-        name: "Blockchain",
-        desc: "Decentralised applications and smart contract systems.",
-        rounds: [
-          { id: "r1", name: "Genesis Block Setup", duration: "2 days" },
-          { id: "r2", name: "Smart Contract Validation", duration: "2 days" },
-        ],
-      },
-    ],
-    prizes: [
-      { rank: "Champion", value: "$800" },
-      { rank: "Runner Up", value: "$400" },
-    ],
-    announcements: [],
-  },
-
-  {
-    id: "seal-fall-18",
-    title: "SEAL Hackathon Fall 2018",
-    season: "Fall",
-    status: "Ended",
-    registrationOpen: false,
-    currentPhase: 3,
-    description: "The pilot edition that sparked the SEAL Hackathon series.",
-    startDate: "Nov 3, 2018",
-    endDate: "Nov 7, 2018",
-    tracks: [
-      {
-        name: "E-Commerce",
-        desc: "Digital retail platforms and supply-chain automation.",
-        rounds: [
-          { id: "r1", name: "Initial Briefing", duration: "1 day" },
-          { id: "r2", name: "Prototype Showcase", duration: "3 days" },
-        ],
+        date: "Jul 10, 2024",
+        text: "Gas Fee Optimization Architecture Directive Issued",
+        phase: 2,
+        detail:
+          "Smart contract implementations failing to apply computational loop optimizations will incur significant functional baseline penalties during execution tests.",
       },
       {
-        name: "Blockchain",
-        desc: "Decentralised applications and smart contract systems.",
-        rounds: [
-          { id: "r1", name: "Cryptography Basics Test", duration: "1 day" },
-          { id: "r2", name: "Basic Ledger Deployment", duration: "3 days" },
-        ],
+        date: "Jun 01, 2024",
+        text: "RPC Network Infrastructure Latency Resolution",
+        phase: 1,
+        detail:
+          "The primary node configuration endpoints have been scaled up horizontally to isolate connection drops during parallel deployment phases.",
       },
     ],
-    prizes: [
-      { rank: "Champion", value: "$800" },
-      { rank: "Runner Up", value: "$400" },
-    ],
-    announcements: [],
   },
 ];
