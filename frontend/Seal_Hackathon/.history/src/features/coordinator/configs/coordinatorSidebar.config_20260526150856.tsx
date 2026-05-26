@@ -1,4 +1,4 @@
-import type { SidebarLoggedinItem } from '@/components/layout/SidebarLoggedin';
+import type { LoggedinSidebarItem } from '@/components/layout/SidebarLoggedin';
 
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
@@ -12,7 +12,7 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 
-export const coordinatorSidebarItems: SidebarLoggedinItem[] = [
+export const coordinatorSidebarItems: LoggedinSidebarItem[] = [
   {
     label: 'Dashboard',
     path: '/coordinator/dashboard',
