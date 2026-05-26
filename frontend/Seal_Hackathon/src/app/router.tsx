@@ -10,7 +10,6 @@ import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
 import { VerifyEmailSuccessPage } from "@/features/auth/pages/VerifyEmailSuccessPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
-import { CoordinatorCreateEventPage } from "@/features/coordinator/pages/CoordinatorCreateEventPage";
 
 import { RootLayout } from "@/components/layout/RootLayout";
 import { AuthLayout } from "@/components/layout/AuthLayout";
