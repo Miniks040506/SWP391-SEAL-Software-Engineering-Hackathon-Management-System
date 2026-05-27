@@ -1,4 +1,4 @@
-package com.t7.seal.request.system;
+package com.t7.seal.request.event;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
