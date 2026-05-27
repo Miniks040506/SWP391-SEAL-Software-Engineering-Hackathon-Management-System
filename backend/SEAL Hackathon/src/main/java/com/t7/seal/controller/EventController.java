@@ -60,12 +60,14 @@ public class EventController {
             @PathVariable UUID eventId,
             @Valid @RequestBody UpdateEventRequest request
     ) {
-        return null;
+        EventDetailResponse ev = eventService.updateEvent(eventId, request);
+        return ResponseEntity.accepted().body(ev);
     }
 
     @DeleteMapping("/{eventId}")
     public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
-        return null;
+        eventService.deleteEvent(eventId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{eventId}/ranking")

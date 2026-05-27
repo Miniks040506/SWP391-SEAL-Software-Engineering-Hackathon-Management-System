@@ -35,7 +35,8 @@ public class TrackController {
             @PathVariable UUID eventId,
             @Valid @RequestBody CreateTrackRequest request
     ) {
-        return null;
+        TrackResponse response = trackService.createTrack(eventId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/events/{eventId}/tracks")
@@ -57,14 +58,15 @@ public class TrackController {
             @PathVariable UUID trackId,
             @Valid @RequestBody UpdateTrackRequest request
     ) {
-        return null;
+        return ResponseEntity.ok(trackService.updateTrack(trackId, request));
     }
 
     @DeleteMapping("/tracks/{trackId}")
     public ResponseEntity<Void> deleteTrack(
             @PathVariable UUID trackId
     ) {
-        return null;
+        trackService.deleteTrack(trackId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/tracks/{trackId}/mentor-assignments")
