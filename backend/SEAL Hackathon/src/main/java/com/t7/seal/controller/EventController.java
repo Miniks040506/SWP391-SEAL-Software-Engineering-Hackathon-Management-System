@@ -14,6 +14,7 @@ import com.t7.seal.service.EventService;
 import com.t7.seal.service.RankingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +33,9 @@ public class EventController {
     public ResponseEntity<EventDetailResponse> createEvent(
             @Valid @RequestBody CreateEventRequest request
     ) {
-        return ResponseEntity.ok(eventService.createEvent(request));
+        EventDetailResponse response = eventService.createEvent(request);
+//        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response); // 2 method to create response
     }
 
     @GetMapping
