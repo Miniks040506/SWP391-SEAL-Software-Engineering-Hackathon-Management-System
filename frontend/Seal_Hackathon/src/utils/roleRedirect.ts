@@ -3,7 +3,7 @@ import type { AuthUser, UserRole } from "@/types/auth.types";
 export function getDashboardPathByRole(role: UserRole): string {
   switch (role) {
     case "STUDENT":
-      return "/coordinator/dashboard";
+      return "/events";
 
     case "JUDGE":
       return "/judge/dashboard";
@@ -18,7 +18,7 @@ export function getDashboardPathByRole(role: UserRole): string {
       return "/admin/dashboard";
 
     case "PARTICIPANT":
-      return "/coordinator/dashboard";
+      return "/events";
 
     case "GUEST":
       return "/login";

@@ -16,6 +16,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { OAuthCallbackPage } from "@/features/auth/pages/OAuthCallbackPage";
 
 
 export const router = createBrowserRouter([
@@ -37,7 +38,7 @@ export const router = createBrowserRouter([
       { path: "/verify-email", element: <VerifyEmailPage /> },
       { path: "/verify-email/success", element: <VerifyEmailSuccessPage /> },
       { path: "/login", element: <LoginPage /> },
-      { path: "/oauth/callback", element: <NotFoundPage /> },
+      { path: "/oauth/callback", element: <OAuthCallbackPage /> },
       { path: "/forgot-password", element: <ForgotPasswordPage /> },
       { path: "/reset-password", element: <ResetPasswordPage /> },
     ]

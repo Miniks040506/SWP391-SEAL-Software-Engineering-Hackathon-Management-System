@@ -95,7 +95,7 @@ app:
   email-verification-expiration-minutes: 30
   password-reset-expiration-minutes: 15
   oauth2:
-    success-path: /oauth2/callback
+    success-path: /oauth/callback
     failure-path: /login
 
 github:

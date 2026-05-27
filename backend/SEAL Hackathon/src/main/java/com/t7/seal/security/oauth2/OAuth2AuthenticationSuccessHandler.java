@@ -23,14 +23,14 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
-    private final OAuth2Service oAuth2AuthService;
+    private final OAuth2Service oAuth2Service;
     private final OAuth2AuthorizedClientService authorizedClientService;
     private final GithubEmailClient githubEmailClient;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
-    @Value("${app.oauth2.success-path:/oauth2/callback}")
+    @Value("${app.oauth2.success-path:/oauth/callback}")
     private String successPath;
 
     @Override
@@ -45,7 +45,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         try {
             String resolvedEmail = resolveEmailIfNeeded(token, registrationId);
 
-            LoginResponse loginResponse = oAuth2AuthService.authenticateOAuth2User(
+            LoginResponse loginResponse = oAuth2Service.authenticateOAuth2User(
                     registrationId,
                     token.getPrincipal(),
                     resolvedEmail

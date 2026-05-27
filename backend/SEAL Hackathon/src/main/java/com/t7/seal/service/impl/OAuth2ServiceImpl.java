@@ -12,9 +12,11 @@ import com.t7.seal.response.auth.LoginResponse;
 import com.t7.seal.security.oauth2.GithubOAuth2UserInfo;
 import com.t7.seal.security.oauth2.GoogleOAuth2UserInfo;
 import com.t7.seal.security.oauth2.OAuth2UserInfo;
+import com.t7.seal.service.EmailService;
 import com.t7.seal.service.JwtService;
 import com.t7.seal.service.OAuth2Service;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,13 +28,16 @@ import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OAuth2ServiceImpl implements OAuth2Service {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -55,15 +60,14 @@ public class OAuth2ServiceImpl implements OAuth2Service {
                 .map(existing -> updateExistingOAuthUser(existing, userInfo))
                 .orElseGet(() -> createNewOAuthUser(userInfo));
 
-        if (user.isUnverified()) {
-            user.verifyEmail();
+        if (user.isUnverified() || user.isPendingApproval()) {
+            if (user.getEmailVerifiedAt() == null) {
+                user.setEmailVerifiedAt(LocalDateTime.now());
+            }
+            user.setStatus(UserStatus.ACTIVE);
         }
 
         userRepository.save(user);
-
-        if (user.isPendingApproval()) {
-            throw new UnauthorizedException("Your account is waiting for coordinator approval.");
-        }
 
         if (!user.canLogin()) {
             throw new UnauthorizedException("Your account is not allowed to login.");
@@ -76,6 +80,9 @@ public class OAuth2ServiceImpl implements OAuth2Service {
 
         user.recordSuccessfulLogin();
         userRepository.save(user);
+
+        String providerName = toProviderDisplayName(registrationId);
+        sendOAuthLoginSuccessEmailSafely(user, providerName);
 
         return new LoginResponse(
                 user.getId(),
@@ -109,8 +116,9 @@ public class OAuth2ServiceImpl implements OAuth2Service {
             user.setEmailVerifiedAt(LocalDateTime.now());
         }
 
-        if (user.getStatus() == UserStatus.UNVERIFIED) {
-            user.setStatus(UserStatus.PENDING_APPROVAL);
+        if (user.getStatus() == UserStatus.UNVERIFIED
+                || user.getStatus() == UserStatus.PENDING_APPROVAL) {
+            user.setStatus(UserStatus.ACTIVE);
         }
 
         return user;
@@ -129,7 +137,7 @@ public class OAuth2ServiceImpl implements OAuth2Service {
                 .fullName(info.name())
                 .avatarUrl(info.avatarUrl())
                 .role(UserRole.STUDENT)
-                .status(UserStatus.PENDING_APPROVAL)
+                .status(UserStatus.ACTIVE)
                 .emailVerifiedAt(LocalDateTime.now())
                 .failedLoginCount(0)
                 .build();
@@ -145,5 +153,34 @@ public class OAuth2ServiceImpl implements OAuth2Service {
         user.setStudentProfile(profile);
 
         return user;
+    }
+
+    private String toProviderDisplayName(String registrationId) {
+        if ("google".equalsIgnoreCase(registrationId)) {
+            return "Google";
+        }
+
+        if ("github".equalsIgnoreCase(registrationId)) {
+            return "GitHub";
+        }
+
+        return registrationId;
+    }
+
+    private void sendOAuthLoginSuccessEmailSafely(User user, String providerName) {
+        try {
+            emailService.sendOAuthLoginSuccessEmail(
+                    user.getEmail(),
+                    user.getFullName(),
+                    providerName
+            );
+        } catch (Exception ex) {
+            log.warn(
+                    "Cannot send OAuth login success email to {} via {}: {}",
+                    user.getEmail(),
+                    providerName,
+                    ex.getMessage()
+            );
+        }
     }
 }

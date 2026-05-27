@@ -260,7 +260,7 @@ public class User {
         this.emailVerifiedAt = LocalDateTime.now();
         this.emailVerificationToken = null;
 
-        if (this.status == UserStatus.UNVERIFIED) {
+        if (this.status == UserStatus.UNVERIFIED || this.status == UserStatus.PENDING_APPROVAL) {
             this.status = UserStatus.ACTIVE;
         }
     }
