@@ -18,14 +18,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RoundController {
 
-    private RoundService roundService;
+    private final RoundService roundService;
 
     @PostMapping("/events/{eventId}/rounds")
     public ResponseEntity<RoundResponse> createRound(
             @PathVariable UUID eventId,
             @Valid @RequestBody CreateRoundRequest request
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(roundService.createRound(eventId, request));
     }
 
     @GetMapping("/events/{eventId}/rounds")
@@ -47,14 +48,15 @@ public class RoundController {
             @PathVariable UUID roundId,
             @Valid @RequestBody UpdateRoundRequest request
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.updateRound(roundId, request));
     }
 
     @DeleteMapping("/rounds/{roundId}")
     public ResponseEntity<Void> deleteRound(
             @PathVariable UUID roundId
     ) {
-        return null;
+        roundService.deleteRound(roundId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/rounds/{roundId}/lock-submissions")

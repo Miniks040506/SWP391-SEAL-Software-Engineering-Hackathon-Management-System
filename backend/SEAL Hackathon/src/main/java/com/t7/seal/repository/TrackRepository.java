@@ -12,6 +12,8 @@ import java.util.UUID;
 
 @Repository
 public interface TrackRepository extends JpaRepository<Track, UUID> {
+    boolean existsByEventIdAndNameIgnoreCase(UUID eventId, String name);
+
     @Query("""
             SELECT t FROM Track t 
                 JOIN t.event e 
