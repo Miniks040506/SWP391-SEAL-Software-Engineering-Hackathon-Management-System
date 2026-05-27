@@ -3,7 +3,7 @@ package com.t7.seal.controller;
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.event.UpdateEventRequest;
 import com.t7.seal.request.results.PublishResultsRequest;
-import com.t7.seal.request.system.CreateEventRequest;
+import com.t7.seal.request.event.CreateEventRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.event.EventDetailResponse;
 import com.t7.seal.response.event.EventSummaryResponse;

@@ -101,7 +101,7 @@ export const EventDetailPage = () => {
             <div className="flex flex-wrap gap-3 pt-2">
               {event.registrationOpen && (
                 <button
-                  onClick={() => navigate("/register")}
+                  onClick={() => navigate("/login")}
                   className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-sm font-bold rounded-lg shadow-md shadow-blue-100 transition-all"
                 >
                   <LoginIcon style={{ fontSize: 16 }} /> Join Now

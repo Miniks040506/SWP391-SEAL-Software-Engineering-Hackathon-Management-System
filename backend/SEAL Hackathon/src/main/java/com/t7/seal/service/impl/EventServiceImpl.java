@@ -11,7 +11,7 @@ import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.repository.TrackRepository;
-import com.t7.seal.request.system.CreateEventRequest;
+import com.t7.seal.request.event.CreateEventRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.event.EventDetailResponse;
 import com.t7.seal.response.event.EventSummaryResponse;
