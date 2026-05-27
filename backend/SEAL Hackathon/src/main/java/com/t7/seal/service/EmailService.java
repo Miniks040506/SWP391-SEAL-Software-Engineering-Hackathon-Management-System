@@ -5,4 +5,6 @@ public interface EmailService {
     void sendVerificationCode(String to, String fullName, String code, int expiresInMinutes);
 
     void sendPasswordResetCode(String to, String fullName, String code, int expiresInMinutes);
+
+    void sendOAuthLoginSuccessEmail(String to, String fullName, String providerName);
 }

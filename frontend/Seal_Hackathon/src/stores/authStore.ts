@@ -11,7 +11,6 @@ type AuthState = {
   refreshToken: string | null;
   user: AuthUser | null;
 
-  isAuthenticated: () => boolean;
   setLoginResponse: (payload: LoginResponse) => void;
   setTokens: (payload: RefreshTokenResponse) => void;
   setUser: (user: AuthUser | null) => void;
@@ -20,12 +19,10 @@ type AuthState = {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       accessToken: null,
       refreshToken: null,
       user: null,
-
-      isAuthenticated: () => Boolean(get().accessToken),
 
       setLoginResponse: (payload) => {
         set({
