@@ -6,6 +6,7 @@ AGENTS.md
 # IDE
 .idea/
 .vscode/
+.history/
 
 # Env
 .env

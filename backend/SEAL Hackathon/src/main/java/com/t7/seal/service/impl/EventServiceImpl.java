@@ -12,6 +12,7 @@ import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.repository.TrackRepository;
 import com.t7.seal.request.event.CreateEventRequest;
+import com.t7.seal.request.event.UpdateEventRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.event.EventDetailResponse;
 import com.t7.seal.response.event.EventSummaryResponse;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
@@ -75,6 +77,7 @@ public class EventServiceImpl implements EventService {
         return buildEventDetailResponse(event);
     }
 
+    @Transactional
     @Override
     public EventDetailResponse createEvent(CreateEventRequest event) {
 
@@ -100,6 +103,56 @@ public class EventServiceImpl implements EventService {
         HackathonEvent saved = hackathonEventRepository.save(newEvent);
 
         return buildEventDetailResponse(saved);
+    }
+
+    @Transactional
+    @Override
+    public EventDetailResponse updateEvent(UUID eventId, UpdateEventRequest request) {
+        HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+
+        if (request.name() != null) {
+            if (request.name().isBlank()) {
+                throw new BadRequestException("Event name is required");
+            }
+
+            event.setName(request.name().trim());
+        }
+
+        applyIfNotNull(request.description(), v -> event.setDescription(trimToNull(v)));
+
+        applyIfNotNull(request.registrationStartAt(), v -> event.setRegistrationOpen(v));
+        if (request.registrationEndAt() != null) {
+            event.setRegistrationClose(request.registrationEndAt());
+        }
+
+        validateRegistrationTime(event.getRegistrationOpen(), event.getRegistrationClose());
+
+        if (request.bannerUrl() != null) {
+            event.setBannerUrl(trimToNull(request.bannerUrl()));
+        }
+        if (request.status() != null) {
+            event.setStatus(parseEnum(RegistrationStatus.class, request.status(), "status"));
+        }
+
+        HackathonEvent saved = hackathonEventRepository.save(event);
+
+        return buildEventDetailResponse(saved);
+    }
+
+    @Transactional
+    @Override
+    public void deleteEvent(UUID eventId) {
+        HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+
+        if (event.getResultPublishedAt() != null) {
+            throw new ConflictException("Cannot delete event that has already published result");
+        }
+
+        event.setStatus(RegistrationStatus.CANCELLED);
+
+        hackathonEventRepository.save(event);
     }
 
     //HELPERS
@@ -206,6 +259,12 @@ public class EventServiceImpl implements EventService {
                 tracks,
                 rounds
         );
+    }
+
+    private <T> void applyIfNotNull(T value, Consumer<T> setter) {
+        if (value != null) {
+            setter.accept(value);
+        }
     }
 }
 

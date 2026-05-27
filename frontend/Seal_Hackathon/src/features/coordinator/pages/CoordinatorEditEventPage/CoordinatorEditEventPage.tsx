@@ -174,13 +174,47 @@ export const CoordinatorEditEventPage = () => {
 
   const [newTrackName, setNewTrackName] = useState('');
   const [newTrackDesc, setNewTrackDesc] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof EditEventData, string>>>({});
 
   const pendingCount = useMemo(() => teams.filter((t) => t.status === 'PENDING').length, [teams]);
 
   const closeDialog = () => setDialog(null);
 
+  const validate = (data: EditEventData) => {
+    const errs: Partial<Record<keyof EditEventData, string>> = {};
+    if (!data.name.trim()) errs.name = 'Event name is required.';
+    if (!data.startDate) errs.startDate = 'Start date is required.';
+    if (!data.endDate) errs.endDate = 'End date is required.';
+    if (data.startDate && data.endDate && data.endDate < data.startDate)
+      errs.endDate = 'End date must be on or after start date.';
+    return errs;
+  };
+
+  const handleSave = async () => {
+    const errs = validate(event);
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      setActiveTab('info');
+      return;
+    }
+    setIsSaving(true);
+    // Simulate API call
+    await new Promise((res) => setTimeout(res, 1000));
+    setIsSaving(false);
+    navigate('/coordinator/events');
+  };
+
+  const handleDiscard = () => {
+    setEvent(editEventMock);
+    setTeams(eventTeamsMock);
+    setErrors({});
+    navigate('/coordinator/events');
+  };
+
   const handleEventChange = (field: keyof EditEventData, value: string) => {
     setEvent((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const toggleExpand = (id: string) =>
@@ -363,16 +397,28 @@ export const CoordinatorEditEventPage = () => {
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => navigate('/coordinator/events')}
+              onClick={handleDiscard}
               className="rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-all"
             >
               Discard
             </button>
             <button
               type="button"
-              className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 hover:shadow-lg transition-all"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 hover:shadow-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Save Changes
+              {isSaving ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Saving…
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </button>
           </div>
         </div>
@@ -431,6 +477,8 @@ export const CoordinatorEditEventPage = () => {
                   value={event.name}
                   onChange={(e) => handleEventChange('name', e.target.value)}
                   fullWidth
+                  error={!!errors.name}
+                  helperText={errors.name}
                   sx={formInputSx}
                 />
                 <TextField
@@ -463,6 +511,8 @@ export const CoordinatorEditEventPage = () => {
                   value={event.startDate}
                   onChange={(e) => handleEventChange('startDate', e.target.value)}
                   fullWidth
+                  error={!!errors.startDate}
+                  helperText={errors.startDate}
                   slotProps={{ inputLabel: { shrink: true } }}
                   sx={formInputSx}
                 />
@@ -472,6 +522,8 @@ export const CoordinatorEditEventPage = () => {
                   value={event.endDate}
                   onChange={(e) => handleEventChange('endDate', e.target.value)}
                   fullWidth
+                  error={!!errors.endDate}
+                  helperText={errors.endDate}
                   slotProps={{ inputLabel: { shrink: true } }}
                   sx={formInputSx}
                 />
