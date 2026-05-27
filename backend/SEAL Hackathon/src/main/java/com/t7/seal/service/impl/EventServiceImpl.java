@@ -75,6 +75,7 @@ public class EventServiceImpl implements EventService {
         return buildEventDetailResponse(event);
     }
 
+    @Transactional
     @Override
     public EventDetailResponse createEvent(CreateEventRequest event) {
 
