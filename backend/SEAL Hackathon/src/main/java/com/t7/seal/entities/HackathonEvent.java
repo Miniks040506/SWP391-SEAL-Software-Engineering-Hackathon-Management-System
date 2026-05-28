@@ -61,9 +61,6 @@ public class HackathonEvent {
     @Column(name = "result_published_at")
     private LocalDateTime resultPublishedAt;
 
-    @Column(name = "created_by", nullable = false)
-    private UUID createdBy;
-
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -91,6 +88,10 @@ public class HackathonEvent {
     )
     @Builder.Default
     private List<EventCriteria> eventCriteria = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", nullable = false, updatable = false)
+    private User createdBy;
 
     // Checks whether registrations can be accepted for the supplied date.
     public boolean isRegistrationWindowOpen(LocalDateTime now) {

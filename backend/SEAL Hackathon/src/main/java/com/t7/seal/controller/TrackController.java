@@ -11,6 +11,7 @@ import com.t7.seal.response.track.MentorAssignmentResponse;
 import com.t7.seal.response.track.TrackDetailResponse;
 import com.t7.seal.response.track.TrackResponse;
 import com.t7.seal.response.track.TrackTeamProgressResponse;
+import com.t7.seal.service.MentorAssignmentService;
 import com.t7.seal.service.TrackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ import java.util.UUID;
 public class TrackController {
 
     private final TrackService trackService;
-//    private final MentorAssignmentService mentorAssignmentService;
+    private final MentorAssignmentService mentorAssignmentService;
 //    private final TeamService teamService;
 
     @PostMapping("/events/{eventId}/tracks")
@@ -74,14 +75,15 @@ public class TrackController {
             @PathVariable UUID trackId,
             @Valid @RequestBody AssignMentorRequest request
     ) {
-        return null;
+        MentorAssignmentResponse response = mentorAssignmentService.assignMentor(trackId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/tracks/{trackId}/mentor-assignments")
     public ResponseEntity<List<MentorAssignmentResponse>> getMentorAssignments(
             @PathVariable UUID trackId
     ) {
-        return null;
+        return ResponseEntity.ok(mentorAssignmentService.getMentorAssignments(trackId));
     }
 
     @DeleteMapping("/tracks/{trackId}/mentor-assignments/{assignmentId}")
@@ -89,7 +91,7 @@ public class TrackController {
             @PathVariable UUID trackId,
             @PathVariable UUID assignmentId
     ) {
-        return null;
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/tracks/{trackId}/teams")

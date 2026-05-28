@@ -5,12 +5,14 @@ import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.Track;
+import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.repository.UserRepository;
 import com.t7.seal.request.event.CreateEventRequest;
 import com.t7.seal.request.event.UpdateEventRequest;
 import com.t7.seal.response.PageResponse;
@@ -18,10 +20,12 @@ import com.t7.seal.response.event.EventDetailResponse;
 import com.t7.seal.response.event.EventSummaryResponse;
 import com.t7.seal.response.round.RoundResponse;
 import com.t7.seal.response.track.TrackResponse;
+import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +41,7 @@ public class EventServiceImpl implements EventService {
     private final HackathonEventRepository hackathonEventRepository;
     private final TrackRepository trackRepository;
     private final RoundRepository roundRepository;
+    private final UserRepository userRepository;
 
     private static final int MAX_PAGE_SIZE = 50;
 
@@ -79,7 +84,11 @@ public class EventServiceImpl implements EventService {
 
     @Transactional
     @Override
-    public EventDetailResponse createEvent(CreateEventRequest event) {
+    public EventDetailResponse createEvent(CreateEventRequest event, Authentication authentication) {
+
+        UUID userId = CurrentUser.id(authentication);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         validateRequest(event);
 
@@ -90,6 +99,7 @@ public class EventServiceImpl implements EventService {
         HackathonEvent newEvent = new HackathonEvent();
 
         newEvent.setName(event.name().trim());
+        newEvent.setCreatedBy(user);
         newEvent.setDescription(trimToNull(event.description()));
         newEvent.setSeason(parseEnum(HackathonSeason.class, event.season(), "season"));
         newEvent.setYear(event.year());

@@ -12,4 +12,6 @@ import java.util.UUID;
 public interface MentorAssignmentRepository extends JpaRepository<MentorAssignment, UUID> {
 
     List<MentorAssignment> findByTrackIdOrderByAssignAtAsc(UUID trackId);
+
+    boolean existsByTrackIdAndUserId(UUID trackId, UUID mentorUserId);
 }

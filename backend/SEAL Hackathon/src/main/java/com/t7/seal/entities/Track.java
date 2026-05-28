@@ -21,10 +21,6 @@ public class Track {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id", nullable = false)
-    private HackathonEvent event;
-
     @Column(length = 200, nullable = false)
     private String name;
 
@@ -56,6 +52,10 @@ public class Track {
     )
     @Builder.Default
     private List<Team> teams = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id", nullable = false)
+    private HackathonEvent event;
 
     // Checks whether this track has a configured team limit.
     public boolean hasTeamLimit() {
