@@ -6,6 +6,6 @@ public record UpdateTrackRequest(
         String name,
         String description,
         Integer maxTeams,
-        List<String> requiredLinkTypes,
-        String status
-) {}
+        List<String> requiredLinkTypes
+) {
+}

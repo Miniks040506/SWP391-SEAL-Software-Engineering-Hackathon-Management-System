@@ -8,8 +8,6 @@ import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import { EventDetailsStep } from "./1_EventDetails";
 import { TracksRoundsStep } from "./2_TracksRounds";
 
-import { StepProgress } from "@/features/auth/components/StepProgress";
-
 import {
   createEventSchema,
   initialCreateEventFormValues,
@@ -97,13 +95,41 @@ export const CoordinatorCreateEventPage = () => {
           </h1>
         </div>
 
-        <StepProgress
-          title="Create Event Progress"
-          currentStep={activeStep}
-          steps={steps.map((step) => ({
-            label: step.label,
-          }))}
-        />
+        <section className="pt-4">
+          <div className="relative flex items-start justify-between">
+            <div className="absolute left-8 right-8 top-5 h-1 rounded-full bg-gray-200" />
+
+            {steps.map((step) => {
+              const active = step.number === activeStep;
+              const completed = step.number < activeStep;
+
+              return (
+                <div
+                  key={step.number}
+                  className="relative z-10 flex w-28 flex-col items-center gap-2"
+                >
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-extrabold ${
+                      active || completed
+                        ? "border-blue-600 bg-blue-600 text-white"
+                        : "border-gray-300 bg-white text-gray-400"
+                    }`}
+                  >
+                    {step.number}
+                  </div>
+
+                  <p
+                    className={`text-center text-xs font-extrabold ${
+                      active || completed ? "text-blue-600" : "text-gray-600"
+                    }`}
+                  >
+                    {step.label}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         {activeStep === 1 && <EventDetailsStep onNext={handleNextStep} />}
 
