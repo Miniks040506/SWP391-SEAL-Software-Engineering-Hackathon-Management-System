@@ -61,7 +61,7 @@ const Stat = ({
 // Props
 interface CoordinatorEventCardProps {
   event: CoordinatorEvent;
-  // Static preview data — will be replaced by real API data later
+  // Static preview data - will be replaced by real API data later
   trackCount?: number;
   approvedTeams?: number;
   onEdit: (id: string) => void;
