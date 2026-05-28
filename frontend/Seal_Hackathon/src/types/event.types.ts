@@ -40,3 +40,71 @@ export interface Event {
   tracks: Track[];
   announcements: Announcement[];
 }
+
+//RIEL REQ/RES
+
+import type { ISODateTime, UUID } from "@/types/common.types";
+import type { RoundResponse } from "@/types/round.types";
+import type { TrackResponse } from "@/types/track.types";
+
+export type CreateEventRequest = {
+  name: string;
+  description?: string;
+  season: string;
+  year: number;
+  registrationStartAt?: ISODateTime;
+  registrationEndAt?: ISODateTime;
+  bannerUrl?: string;
+  status?: string;
+};
+
+export type UpdateEventRequest = {
+  name?: string;
+  description?: string;
+  registrationStartAt?: ISODateTime;
+  registrationEndAt?: ISODateTime;
+  bannerUrl?: string;
+  status?: string;
+};
+
+export type EventSummaryResponse = {
+  id: UUID;
+  name: string;
+  season: string;
+  year: number;
+  status: string;
+  bannerUrl?: string;
+};
+
+export type EventDetailResponse = {
+  id: UUID;
+  name: string;
+  description?: string;
+  season: string;
+  year: number;
+  status: string;
+  bannerUrl?: string;
+  registrationStartAt?: ISODateTime;
+  registrationEndAt?: ISODateTime;
+  tracks: TrackResponse[];
+  rounds: RoundResponse[];
+};
+
+export type GetEventsParams = {
+  season?: string;
+  year?: number;
+  status?: string;
+  page?: number;
+  size?: number;
+};
+
+export type GetEventRankingParams = {
+  roundId?: UUID;
+  trackId?: UUID;
+};
+
+export type GetVarianceDashboardParams = {
+  roundId?: UUID;
+  criteriaType?: string;
+  judgeType?: string;
+};

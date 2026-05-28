@@ -217,7 +217,7 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login", { replace: true });
+    navigate("/events", { replace: true });
   };
 
   return (
