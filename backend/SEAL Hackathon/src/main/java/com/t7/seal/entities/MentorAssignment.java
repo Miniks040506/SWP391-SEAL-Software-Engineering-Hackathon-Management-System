@@ -33,9 +33,9 @@ public class MentorAssignment {
     @Column(length = 200)
     private String note;
 
-    @Column(name = "assign_at", nullable = false)
+    @Column(name = "assigned_at", nullable = false)
     @Builder.Default
-    private LocalDateTime assignAt = LocalDateTime.now();
+    private LocalDateTime assignedAt = LocalDateTime.now();
 
     // Checks whether this assignment matches a mentor and track for in-memory uniqueness checks.
     public boolean matches(UUID userId, UUID trackId) {
