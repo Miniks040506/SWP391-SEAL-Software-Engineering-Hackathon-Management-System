@@ -14,6 +14,7 @@ export function getDashboardPathByRole(role: UserRole): string {
     case "COORDINATOR":
       return "/coordinator/dashboard";
 
+      // vo day ne
     case "ADMIN":
       return "/admin/dashboard";
 

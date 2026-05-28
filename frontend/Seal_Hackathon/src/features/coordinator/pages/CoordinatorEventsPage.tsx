@@ -52,7 +52,7 @@ export const CoordinatorEventsPage = () => {
 
   const handleCreate = () => navigate("/coordinator/events/create");
   const handleEdit = (id: string) => navigate(`/coordinator/events/${id}/edit`);
-  const handleView = (id: string) => navigate(`/coordinator/events/${id}`);
+  const handleView = (id: string) => navigate(`/coordinator/events/${id}/view`);
 
   return (
     <div className="space-y-8">

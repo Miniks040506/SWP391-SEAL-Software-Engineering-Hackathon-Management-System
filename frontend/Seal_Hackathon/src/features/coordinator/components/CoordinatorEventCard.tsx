@@ -9,7 +9,7 @@ import type {
   CoordinatorEventStatus,
 } from "../mocks/coordinatorEvents.mock";
 
-// Status badge 
+// Status badge
 const STATUS_STYLES: Record<
   CoordinatorEventStatus,
   { bg: string; text: string; border: string; label: string }
@@ -26,6 +26,7 @@ const STATUS_STYLES: Record<
 
 const StatusBadge = ({ status }: { status: CoordinatorEventStatus }) => {
   const s = STATUS_STYLES[status];
+  const isOngoing = status === "ONGOING";
   return (
     <span
       style={{
@@ -33,8 +34,13 @@ const StatusBadge = ({ status }: { status: CoordinatorEventStatus }) => {
         color: s.text,
         border: `1px solid ${s.border}`,
       }}
-      className="rounded-lg px-2.5 py-0.5 text-[11px] font-extrabold tracking-widest"
-    >
+      className="flex items-center gap-1.5 rounded-lg px-2.5 py-0.5 text-[11px] font-extrabold tracking-widest">
+      {isOngoing && (
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600"></span>
+        </span>
+      )}
       {s.label}
     </span>
   );
@@ -79,20 +85,7 @@ export const CoordinatorEventCard = ({
   const isOngoing = event.status === "ONGOING";
 
   return (
-    <div
-      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white transition-shadow duration-200 hover:shadow-md ${
-        isOngoing
-          ? "border-blue-400 ring-1 ring-blue-400/20"
-          : "border-gray-200"
-      }`}
-    >
-      {/* Active ribbon */}
-      {isOngoing && (
-        <div className="absolute right-0 top-0 rounded-bl-xl bg-blue-600 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-white">
-          Active
-        </div>
-      )}
-
+    <div className="relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-shadow duration-200 hover:shadow-md">
       <div className="flex flex-1 flex-col p-6">
         {/* Top row */}
         <div className="flex items-center justify-between gap-2">
@@ -108,24 +101,17 @@ export const CoordinatorEventCard = ({
         </h2>
 
         {/* Stats */}
-        <div className="mt-4 grid grid-cols-2 gap-y-2.5 border-y border-gray-100 py-4">
-          <Stat
-            icon={<DynamicFeedOutlinedIcon sx={{ fontSize: 16 }} />}
-            value={event.rounds}
-            label="Rounds"
-          />
+        <div className="mt-4 flex flex-col gap-y-2.5 border-y border-gray-100 py-4">
           <Stat
             icon={<LayersOutlinedIcon sx={{ fontSize: 16 }} />}
             value={trackCount}
             label="Tracks"
           />
-          <div className="col-span-2">
-            <Stat
-              icon={<GroupsOutlinedIcon sx={{ fontSize: 16 }} />}
-              value={approvedTeams}
-              label="Approved Teams"
-            />
-          </div>
+          <Stat
+            icon={<GroupsOutlinedIcon sx={{ fontSize: 16 }} />}
+            value={approvedTeams}
+            label="Approved Teams"
+          />
         </div>
 
         {/* Actions */}

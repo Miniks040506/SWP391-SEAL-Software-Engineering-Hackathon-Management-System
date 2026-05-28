@@ -36,9 +36,9 @@ const NavLinks = ({
 }) => (
   <div className="flex items-center">
     <button
-      onClick={() => navigate("/")}
+      onClick={() => navigate("/events")}
       className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-        isActive("/") ? "text-blue-500" : "text-gray-500 hover:text-gray-900"
+        isActive("/") || location.pathname.startsWith("/events") ? "text-blue-500" : "text-gray-500 hover:text-gray-900"
       }`}
     >
       Explore

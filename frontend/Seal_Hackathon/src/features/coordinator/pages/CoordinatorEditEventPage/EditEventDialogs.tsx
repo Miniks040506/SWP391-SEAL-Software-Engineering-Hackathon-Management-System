@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import Checkbox from "@mui/material/Checkbox";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -15,7 +16,7 @@ import {
 import { avatarColor } from "@/utils/avatarColor";
 import type { DialogState } from "../../types/coordinator.types";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 interface EditEventDialogsProps {
   dialog: DialogState;
@@ -58,7 +59,7 @@ const checkboxSx = {
   },
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// Component
 
 export const EditEventDialogs = ({
   dialog,

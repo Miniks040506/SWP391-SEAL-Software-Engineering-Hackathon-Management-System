@@ -57,6 +57,10 @@ export type DialogState =
   | { kind: "editCriteria"; trackId: string; roundId: string }
   | { kind: "addTrack" }
   | { kind: "teamDetail"; team: EventTeam }
+  | { kind: "editTrack"; trackId: string }
+  | { kind: "editRound"; trackId: string; roundId: string }
   | null;
 
-export type EventFormErrors = Partial<Record<keyof Omit<EditEventData, "tracks" | "season" | "description">, string>>;
+export type EventFormErrors = Partial<
+  Record<keyof Omit<EditEventData, "tracks" | "season" | "description">, string>
+>;
