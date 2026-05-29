@@ -11,7 +11,7 @@ import { TeamStatusBadge } from "../../components/TeamStatusBadge";
 import { avatarColor } from "@/utils/avatarColor";
 import type { EditEventData, EventTeam, TeamStatus } from "../../types/coordinator.types";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 interface TeamsTabProps {
   event: EditEventData;
@@ -31,7 +31,7 @@ const checkboxSx = {
   },
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// Component
 
 export const TeamsTab = ({
   event,
@@ -152,7 +152,7 @@ export const TeamsTab = ({
   </div>
 );
 
-// ─── Local helpers ────────────────────────────────────────────────────────────
+// Local helpers
 
 const TeamActions = ({
   status,

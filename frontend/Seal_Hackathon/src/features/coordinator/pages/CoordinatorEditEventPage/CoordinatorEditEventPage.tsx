@@ -10,7 +10,7 @@ import { InfoTab } from "./InfoTab";
 import { TeamsTab } from "./TeamsTab";
 import { TracksTab } from "./TracksTab";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// Constants
 
 const TAB_LABELS: Record<TabId, string> = {
   info: "Basic Information",
@@ -20,26 +20,58 @@ const TAB_LABELS: Record<TabId, string> = {
 
 const TABS = ["info", "tracks", "teams"] as const;
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// Page
 
 export const CoordinatorEditEventPage = () => {
   const navigate = useNavigate();
   const {
-    activeTab, setActiveTab,
-    event, teams, expandedTracks, dialog, setDialog,
-    selectedIds, selectedTeamIds,
-    newRoundName, setNewRoundName,
-    newRoundStart, setNewRoundStart,
-    newRoundEnd, setNewRoundEnd,
-    newTrackName, setNewTrackName,
-    newTrackDesc, setNewTrackDesc,
-    isSaving, errors, pendingCount,
-    closeDialog, handleSave, handleDiscard, handleEventChange,
-    toggleExpand, removeTrack, removeRound, removeUser,
-    openAddJudge, openAddMentor, openEditCriteria, openAddRound, openAddTrack,
-    confirmAddRound, confirmAddTrack, confirmAddJudge, confirmAddMentor, confirmEditCriteria,
-    toggleSelectId, updateTeamStatus,
-    handleSelectAllTrackTeams, handleToggleSelectTeam, handleBulkTeamStatusUpdate,
+    activeTab,
+    setActiveTab,
+    event,
+    teams,
+    expandedTracks,
+    dialog,
+    setDialog,
+    selectedIds,
+    selectedTeamIds,
+    newRoundName,
+    setNewRoundName,
+    newRoundStart,
+    setNewRoundStart,
+    newRoundEnd,
+    setNewRoundEnd,
+    newTrackName,
+    setNewTrackName,
+    newTrackDesc,
+    setNewTrackDesc,
+    isSaving,
+    errors,
+    pendingCount,
+    closeDialog,
+    handleSave,
+    handleDiscard,
+    handleEventChange,
+    toggleExpand,
+    removeTrack,
+    removeRound,
+    removeUser,
+    openAddJudge,
+    openAddMentor,
+    openEditCriteria,
+    openAddRound,
+    openAddTrack,
+    confirmAddRound,
+    confirmAddTrack,
+    confirmAddJudge,
+    confirmAddMentor,
+    confirmEditCriteria,
+    toggleSelectId,
+    updateTeamStatus,
+    handleSelectAllTrackTeams,
+    handleToggleSelectTeam,
+    handleBulkTeamStatusUpdate,
+    openEditTrack,
+    openEditRound,
   } = useEditEvent();
 
   return (
@@ -81,9 +113,24 @@ export const CoordinatorEditEventPage = () => {
             >
               {isSaving ? (
                 <>
-                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  <svg
+                    className="h-4 w-4 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
                   </svg>
                   Saving…
                 </>
@@ -106,7 +153,9 @@ export const CoordinatorEditEventPage = () => {
                 type="button"
                 onClick={() => setActiveTab(id)}
                 className={`relative px-5 py-3 text-sm font-bold transition-colors ${
-                  isActive ? "text-blue-600" : "text-slate-500 hover:text-slate-800"
+                  isActive
+                    ? "text-blue-600"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -127,7 +176,11 @@ export const CoordinatorEditEventPage = () => {
 
         <div className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
           {activeTab === "info" && (
-            <InfoTab event={event} errors={errors} onChange={handleEventChange} />
+            <InfoTab
+              event={event}
+              errors={errors}
+              onChange={handleEventChange}
+            />
           )}
 
           {activeTab === "tracks" && (
@@ -143,6 +196,8 @@ export const CoordinatorEditEventPage = () => {
               onOpenAddRound={openAddRound}
               onOpenEditCriteria={openEditCriteria}
               onOpenAddTrack={openAddTrack}
+              onOpenEditTrack={openEditTrack}
+              onOpenEditRound={openEditRound}
             />
           )}
 
@@ -155,7 +210,9 @@ export const CoordinatorEditEventPage = () => {
               onSelectAll={handleSelectAllTrackTeams}
               onToggleSelect={handleToggleSelectTeam}
               onBulkUpdate={handleBulkTeamStatusUpdate}
-              onOpenTeamDetail={(team) => setDialog({ kind: "teamDetail", team })}
+              onOpenTeamDetail={(team) =>
+                setDialog({ kind: "teamDetail", team })
+              }
             />
           )}
         </div>

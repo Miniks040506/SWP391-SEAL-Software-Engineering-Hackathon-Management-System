@@ -2,8 +2,7 @@ import IconButton from "@mui/material/IconButton";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import ExpandLessOutlinedIcon from "@mui/icons-material/ExpandLessOutlined";
-import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
@@ -17,7 +16,7 @@ import {
 } from "../../mocks/coordinatorEditEvent.mock";
 import type { EditEventData } from "../../types/coordinator.types";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 interface TracksTabProps {
   event: EditEventData;
@@ -29,22 +28,24 @@ interface TracksTabProps {
   onOpenAddJudge: (trackId: string) => void;
   onOpenAddMentor: (trackId: string) => void;
   onOpenAddRound: (trackId: string) => void;
+  onOpenEditTrack: (trackId: string) => void;
+  onOpenEditRound: (trackId: string, roundId: string) => void;
   onOpenEditCriteria: (trackId: string, roundId: string) => void;
   onOpenAddTrack: () => void;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// Component
 
 export const TracksTab = ({
   event,
   expandedTracks,
-  onToggleExpand,
   onRemoveTrack,
   onRemoveRound,
   onRemoveUser,
   onOpenAddJudge,
   onOpenAddMentor,
   onOpenAddRound,
+  onOpenEditTrack,
   onOpenEditCriteria,
   onOpenAddTrack,
 }: TracksTabProps) => (
@@ -55,40 +56,22 @@ export const TracksTab = ({
         className="overflow-hidden border-slate-200 p-0 transition-all hover:shadow-md"
       >
         {/* Track header */}
-        <div
-          className="flex cursor-pointer items-center justify-between bg-slate-50/50 px-6 py-5"
-          onClick={() => onToggleExpand(track.id)}
-        >
-          <div className="flex items-center gap-4">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-                expandedTracks[track.id]
-                  ? "bg-blue-100 text-blue-600"
-                  : "border border-slate-200 bg-white text-slate-400 shadow-sm"
-              }`}
-            >
-              {expandedTracks[track.id] ? (
-                <ExpandLessOutlinedIcon />
-              ) : (
-                <ExpandMoreOutlinedIcon />
-              )}
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-800">{track.name}</h3>
-              <p className="text-sm text-slate-500">{track.description}</p>
-            </div>
-          </div>
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemoveTrack(track.id);
-            }}
-            size="small"
-            className="!text-slate-400 hover:!bg-red-50 hover:!text-red-500"
-          >
-            <DeleteOutlineOutlinedIcon fontSize="small" />
-          </IconButton>
-        </div>
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+  <IconButton
+    onClick={(e) => { e.stopPropagation(); onOpenEditTrack(track.id); }}
+    size="small"
+    className="!text-slate-400 hover:!bg-blue-50 hover:!text-blue-500"
+  >
+    <EditOutlinedIcon fontSize="small" />
+  </IconButton>
+  <IconButton
+    onClick={(e) => { e.stopPropagation(); onRemoveTrack(track.id); }}
+    size="small"
+    className="!text-slate-400 hover:!bg-red-50 hover:!text-red-500"
+  >
+    <DeleteOutlineOutlinedIcon fontSize="small" />
+  </IconButton>
+</div>
 
         {/* Track body */}
         {expandedTracks[track.id] && (
@@ -228,8 +211,7 @@ export const TracksTab = ({
   </div>
 );
 
-// ─── Local helpers ────────────────────────────────────────────────────────────
-
+// Local helpers
 const AddUserButton = ({
   label,
   colorClass,

@@ -109,6 +109,63 @@ export function useEditEvent() {
     setDialog({ kind: "addTrack" });
   };
 
+  // Thêm sau openAddTrack
+  const openEditTrack = (trackId: string) => {
+    const track = event.tracks.find((t) => t.id === trackId);
+    if (!track) return;
+    setNewTrackName(track.name);
+    setNewTrackDesc(track.description);
+    setDialog({ kind: "editTrack", trackId });
+  };
+
+  const openEditRound = (trackId: string, roundId: string) => {
+    const round = event.tracks
+      .find((t) => t.id === trackId)
+      ?.rounds.find((r) => r.id === roundId);
+    if (!round) return;
+    setNewRoundName(round.name);
+    setNewRoundStart(round.startDate);
+    setNewRoundEnd(round.endDate);
+    setDialog({ kind: "editRound", trackId, roundId });
+  };
+
+  const confirmEditTrack = () => {
+    if (dialog?.kind !== "editTrack" || !newTrackName.trim()) return;
+    setEvent((prev) => ({
+      ...prev,
+      tracks: patchTrack(prev.tracks, dialog.trackId, {
+        name: newTrackName,
+        description: newTrackDesc,
+      }),
+    }));
+    closeDialog();
+  };
+
+  const confirmEditRound = () => {
+    if (dialog?.kind !== "editRound" || !newRoundName.trim()) return;
+    setEvent((prev) => ({
+      ...prev,
+      tracks: prev.tracks.map((t) =>
+        t.id === dialog.trackId
+          ? {
+              ...t,
+              rounds: t.rounds.map((r) =>
+                r.id === dialog.roundId
+                  ? {
+                      ...r,
+                      name: newRoundName,
+                      startDate: newRoundStart,
+                      endDate: newRoundEnd,
+                    }
+                  : r,
+              ),
+            }
+          : t,
+      ),
+    }));
+    closeDialog();
+  };
+
   // Dialog confirms
 
   const confirmAddRound = () => {
@@ -211,9 +268,10 @@ export function useEditEvent() {
     navigate("/coordinator/events");
   };
 
-  const handleEventChange = (field: keyof EventFormErrors, value: string) => {
+  const handleEventChange = (field: keyof EditEventData, value: string) => {
     setEvent((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+    if (errors[field as keyof EventFormErrors])
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   // Track handlers
@@ -336,6 +394,10 @@ export function useEditEvent() {
     confirmAddTrack,
     confirmAddJudge,
     confirmAddMentor,
+    openEditTrack,
+    openEditRound,
+    confirmEditTrack,
+    confirmEditRound,
     confirmEditCriteria,
     toggleSelectId,
     updateTeamStatus,
