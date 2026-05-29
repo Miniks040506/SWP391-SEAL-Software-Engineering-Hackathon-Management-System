@@ -12,11 +12,11 @@ import {
   type CreateEventFormValues,
 } from "../../schemas/createEvent.schema";
 
-type EvenDetailsStepProps = {
+type EventDetailsStepProps = {
   onNext: () => void;
 };
 
-export const EventDetailsStep = ({ onNext }: EvenDetailsStepProps) => {
+export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
   const {
     register,
     control,

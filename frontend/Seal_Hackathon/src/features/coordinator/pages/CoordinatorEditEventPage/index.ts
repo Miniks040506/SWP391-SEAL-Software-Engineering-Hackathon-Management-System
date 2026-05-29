@@ -1,0 +1,1 @@
+export { CoordinatorEditEventPage } from "./CoordinatorEditEventPage";

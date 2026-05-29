@@ -1,8 +1,10 @@
+// Logged-in layout
+
 import { Outlet } from 'react-router-dom';
 
 import { NavbarLoggedin } from './NavbarLoggedin';
 import { SidebarLoggedin } from './SidebarLoggedin';
-import { coordinatorSidebarItems } from '@/features/coordinator/configs/coordinatorSidebar.config';
+import { coordinatorSidebarItems } from "./coordinatorSidebar.config";
 
 export const LoggedinLayout = () => {
   return (

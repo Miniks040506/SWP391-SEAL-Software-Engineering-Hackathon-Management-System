@@ -2,13 +2,16 @@ import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
+import { enqueueSnackbar } from "notistack";
 
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+
+import { StepProgress } from "@/features/auth/components/StepProgress";
 
 import { EventDetailsStep } from "./1_EventDetails";
 import { TracksRoundsStep } from "./2_TracksRounds";
 
-import { StepProgress } from "@/features/auth/components/StepProgress";
+import { useCreateEventFlowMutation } from "../../hooks/useCreateEventFlow";
 
 import {
   createEventSchema,
@@ -28,6 +31,7 @@ const steps = [
 export const CoordinatorCreateEventPage = () => {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(1);
+  const createEventFlowMutation = useCreateEventFlowMutation();
 
   const methods = useForm<CreateEventFormValues, unknown, CreateEventPayload>({
     resolver: zodResolver(createEventSchema),
@@ -75,8 +79,24 @@ export const CoordinatorCreateEventPage = () => {
     setActiveStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleCreateEvent = methods.handleSubmit((values) => {
-    console.log("Create event payload:", values);
+  const handleCreateEvent = methods.handleSubmit(async (values) => {
+    try {
+      await createEventFlowMutation.mutateAsync(values);
+
+      enqueueSnackbar("Event created successfully.", {
+        variant: "success",
+      });
+
+      navigate("/coordinator/dashboard");
+    } catch (error: any) {
+      enqueueSnackbar(
+        error?.response?.data?.message ||
+          "Failed to create event. Please try again.",
+        {
+          variant: "error",
+        },
+      );
+    }
   });
 
   return (
@@ -98,7 +118,7 @@ export const CoordinatorCreateEventPage = () => {
         </div>
 
         <StepProgress
-          title="Create Event Progress"
+          title=""
           currentStep={activeStep}
           steps={steps.map((step) => ({
             label: step.label,
@@ -192,9 +212,12 @@ export const CoordinatorCreateEventPage = () => {
 
               <button
                 type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white"
+                disabled={createEventFlowMutation.isPending}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Create Event
+                {createEventFlowMutation.isPending
+                  ? "Creating..."
+                  : "Create Event"}
               </button>
             </div>
           </section>

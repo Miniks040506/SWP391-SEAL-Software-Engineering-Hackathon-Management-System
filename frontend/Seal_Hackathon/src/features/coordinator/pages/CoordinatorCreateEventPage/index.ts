@@ -1,1 +1,1 @@
-export { CoordinatorCreateEventPage } from "./CoordinatorCreateEventPage.tsx";
+export { CoordinatorCreateEventPage } from "./CoordinatorCreateEventPage";
