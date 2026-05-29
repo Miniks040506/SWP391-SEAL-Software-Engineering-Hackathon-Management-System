@@ -38,7 +38,7 @@ const graduationYearSchema = z
   })
   .transform((v) => (v ? Number(v) : undefined));
 
-// ─── Create ───────────────────────────────────────────────────────────────────
+// Create
 
 export const createUserSchema = z.object({
   fullName: z
