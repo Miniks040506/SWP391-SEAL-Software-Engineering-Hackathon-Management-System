@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +31,7 @@ public class EventController {
     private final EventService eventService;
     private final RankingService rankingService;
 
+    @PreAuthorize("@eventSecurity.canCreateEvent(authentication)")
     @PostMapping
     public ResponseEntity<EventDetailResponse> createEvent(
             @Valid @RequestBody CreateEventRequest request,
@@ -57,18 +59,23 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEventById(eventId));
     }
 
+    @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @PatchMapping("/{eventId}")
     public ResponseEntity<EventDetailResponse> updateEvent(
             @PathVariable UUID eventId,
-            @Valid @RequestBody UpdateEventRequest request
+            @Valid @RequestBody UpdateEventRequest request,
+            Authentication authentication
     ) {
-        EventDetailResponse ev = eventService.updateEvent(eventId, request);
+        EventDetailResponse ev = eventService.updateEvent(eventId, request, authentication);
         return ResponseEntity.accepted().body(ev);
     }
 
+    @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @DeleteMapping("/{eventId}")
-    public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
-        eventService.deleteEvent(eventId);
+    public ResponseEntity<Void> deleteEvent(
+            @PathVariable UUID eventId,
+            Authentication authentication) {
+        eventService.deleteEvent(eventId, authentication);
         return ResponseEntity.noContent().build();
     }
 

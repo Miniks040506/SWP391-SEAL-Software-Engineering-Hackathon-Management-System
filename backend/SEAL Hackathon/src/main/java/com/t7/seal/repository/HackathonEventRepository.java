@@ -36,7 +36,15 @@ public interface HackathonEventRepository extends JpaRepository<HackathonEvent, 
             @Param("year") Integer year,
             Pageable pageable
     );
-    
+
     boolean existsByNameIgnoreCaseAndYear(
             String name, Integer year);
+
+    @Query("""
+                    SELECT e FROM HackathonEvent e 
+                        WHERE e.id = :eventId 
+                            AND CAST(e.status AS STRING)  IN  ('DRAFT', 'REGISTRATION')
+            """)
+    Optional<HackathonEvent> findByIdCanAssignedPrize(
+            @Param("id") UUID id);
 }

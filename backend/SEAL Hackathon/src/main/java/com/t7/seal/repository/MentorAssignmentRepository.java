@@ -6,12 +6,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface MentorAssignmentRepository extends JpaRepository<MentorAssignment, UUID> {
 
-    List<MentorAssignment> findByTrackIdOrderByAssignAtAsc(UUID trackId);
+    List<MentorAssignment> findByTrackIdOrderByAssignedAtAsc(UUID trackId);
 
     boolean existsByTrackIdAndUserId(UUID trackId, UUID mentorUserId);
+
+    Optional<MentorAssignment> findByIdAndTrackId(UUID id, UUID trackId);
 }

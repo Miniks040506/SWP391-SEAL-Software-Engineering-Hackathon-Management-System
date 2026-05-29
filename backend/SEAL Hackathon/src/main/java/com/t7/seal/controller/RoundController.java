@@ -3,11 +3,14 @@ package com.t7.seal.controller;
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.round.*;
 import com.t7.seal.response.round.*;
+import com.t7.seal.service.JudgeAssignmentService;
 import com.t7.seal.service.RoundService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,14 +22,17 @@ import java.util.UUID;
 public class RoundController {
 
     private final RoundService roundService;
+    private final JudgeAssignmentService judgeAssignmentService;
 
+    @PreAuthorize("@eventSecurity.canCreateRound(#eventId, authentication)")
     @PostMapping("/events/{eventId}/rounds")
     public ResponseEntity<RoundResponse> createRound(
             @PathVariable UUID eventId,
-            @Valid @RequestBody CreateRoundRequest request
+            @Valid @RequestBody CreateRoundRequest request,
+            Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(roundService.createRound(eventId, request));
+                .body(roundService.createRound(eventId, request, authentication));
     }
 
     @GetMapping("/events/{eventId}/rounds")
@@ -43,19 +49,23 @@ public class RoundController {
         return ResponseEntity.ok(roundService.getRoundById(roundId));
     }
 
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @PatchMapping("/rounds/{roundId}")
     public ResponseEntity<RoundResponse> updateRound(
             @PathVariable UUID roundId,
-            @Valid @RequestBody UpdateRoundRequest request
+            @Valid @RequestBody UpdateRoundRequest request,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(roundService.updateRound(roundId, request));
+        return ResponseEntity.ok(roundService.updateRound(roundId, request, authentication));
     }
 
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @DeleteMapping("/rounds/{roundId}")
     public ResponseEntity<Void> deleteRound(
-            @PathVariable UUID roundId
+            @PathVariable UUID roundId,
+            Authentication authentication
     ) {
-        roundService.deleteRound(roundId);
+        roundService.deleteRound(roundId, authentication);
         return ResponseEntity.noContent().build();
     }
 
@@ -119,24 +129,31 @@ public class RoundController {
         return null;
     }
 
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @GetMapping("/rounds/{roundId}/judge-assignments")
     public ResponseEntity<List<JudgeAssignmentResponse>> getJudgeAssignments(@PathVariable UUID roundId) {
-        return null;
+        return ResponseEntity.ok(judgeAssignmentService.getJudgeAssignments(roundId));
     }
 
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @PostMapping("/rounds/{roundId}/judge-assignments")
     public ResponseEntity<JudgeAssignmentResponse> assignJudge(
             @PathVariable UUID roundId,
-            @Valid @RequestBody AssignJudgeRequest request
+            @Valid @RequestBody AssignJudgeRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(judgeAssignmentService.assignJudge(roundId, request, authentication));
     }
 
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @DeleteMapping("/rounds/{roundId}/judge-assignments/{assignmentId}")
     public ResponseEntity<Void> removeJudgeAssignment(
             @PathVariable UUID roundId,
-            @PathVariable UUID assignmentId
+            @PathVariable UUID assignmentId,
+            Authentication authentication
     ) {
-        return null;
+        judgeAssignmentService.removeJudgeAssignment(roundId, assignmentId, authentication);
+        return ResponseEntity.noContent().build();
     }
 }

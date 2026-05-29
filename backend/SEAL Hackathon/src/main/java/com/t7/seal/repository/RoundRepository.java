@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface RoundRepository extends JpaRepository<Round, UUID> {
     boolean existsByEventIdAndOrderIndex(UUID eventId, Integer orderIndex);
 
-    boolean existByEventIdAndNameIgnoreCase(UUID eventId, String name);
+    boolean existsByEventIdAndNameIgnoreCase(UUID eventId, String name);
 
     @Query("""
             SELECT r FROM Round r
