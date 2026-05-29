@@ -31,7 +31,9 @@ export const EventAnnouncementsCard = ({
           <CampaignIcon style={{ fontSize: 18 }} className="text-blue-500" />
           Latest Announcements
         </h3>
-        <p className="text-sm text-gray-500 italic text-center py-6">No recent updates.</p>
+        <p className="text-sm text-gray-500 italic text-center py-6">
+          No recent updates.
+        </p>
       </section>
     );
   }
@@ -55,22 +57,18 @@ export const EventAnnouncementsCard = ({
           {previewAnnouncements.map((msg, i) => (
             <div
               key={i}
-              className="p-4 rounded-xl bg-gray-50/50 border border-gray-200 space-y-2"
+              onClick={() => onSelect(i, false)}
+              className="p-4 rounded-xl bg-gray-50/50 border border-gray-200 space-y-2 cursor-pointer hover:bg-gray-100 hover:border-gray-300 active:scale-[0.98] active:bg-gray-200 transition-all"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-gray-500 font-medium">{msg.date}</span>
+                <span className="text-xs text-gray-500 font-medium">
+                  {msg.date}
+                </span>
                 <PhaseBadge phase={msg.phase} />
               </div>
               <p className="text-sm text-gray-800 font-semibold leading-relaxed line-clamp-2">
                 {msg.text}
               </p>
-              <button
-                onClick={() => onSelect(i, false)}
-                className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 pt-1"
-              >
-                <OpenInNewIcon style={{ fontSize: 12 }} />
-                <span>View details</span>
-              </button>
             </div>
           ))}
         </div>
@@ -101,7 +99,9 @@ export const EventAnnouncementsCard = ({
             <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
               <div className="flex items-center gap-2">
                 <CampaignIcon className="text-blue-500" />
-                <h3 className="text-base font-bold text-gray-900">All Event Announcements</h3>
+                <h3 className="text-base font-bold text-gray-900">
+                  All Event Announcements
+                </h3>
               </div>
               <button
                 onClick={() => setShowAllModal(false)}
@@ -119,10 +119,14 @@ export const EventAnnouncementsCard = ({
                 >
                   <div className="space-y-1.5 flex-1">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-gray-500">{msg.date}</span>
+                      <span className="text-xs font-bold text-gray-500">
+                        {msg.date}
+                      </span>
                       <PhaseBadge phase={msg.phase} />
                     </div>
-                    <p className="text-sm font-bold text-gray-900 leading-snug">{msg.text}</p>
+                    <p className="text-sm font-bold text-gray-900 leading-snug">
+                      {msg.text}
+                    </p>
                   </div>
                   <button
                     onClick={() => {

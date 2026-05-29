@@ -45,7 +45,7 @@ export const teamApi = {
   },
 
   removeMember(teamId: UUID, memberId: UUID, payload?: RemoveMemberRequest) {
-    return apiRequest.delete<void>(`/teams/${teamId}/members/${memberId}`, payload);
+    return apiRequest.delete<void>(`/teams/${teamId}/members/${memberId}`, { data: payload });
   },
 
   acceptInvitation(invitationId: UUID) {

@@ -1,0 +1,78 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminApi } from "@/api/admin.api";
+import type {
+  AdminUserListParams,
+  CreateUserRequest,
+  UpdateUserRequest,
+} from "@/types/admin.types";
+
+const QUERY_KEY = "admin-users";
+
+export function useAdminUsersQuery(params: AdminUserListParams) {
+  return useQuery({
+    queryKey: [QUERY_KEY, params],
+    queryFn: () => adminApi.listUsers(params),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useAdminUserQuery(userId: string) {
+  return useQuery({
+    queryKey: [QUERY_KEY, userId],
+    queryFn: () => adminApi.getUser(userId),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useCreateUserMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateUserRequest) => adminApi.createUser(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [QUERY_KEY] }),
+  });
+}
+
+export function useUpdateUserMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: UpdateUserRequest;
+    }) => adminApi.updateUser(userId, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [QUERY_KEY] }),
+  });
+}
+
+/* Dedicated deactivate endpoint: PATCH /users/:id/deactivate */
+export function useDeactivateUserMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => adminApi.deactivateUser(userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [QUERY_KEY] }),
+  });
+}
+
+/* Activate via updateUser with status: "ACTIVE" */
+export function useActivateUserMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      adminApi.updateUser(userId, { status: "ACTIVE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [QUERY_KEY] }),
+  });
+}
+
+export function useResetUserPasswordMutation() {
+  return useMutation({
+    mutationFn: ({
+      userId,
+      newPassword,
+    }: {
+      userId: string;
+      newPassword: string;
+    }) => adminApi.resetPassword(userId, newPassword),
+  });
+}
