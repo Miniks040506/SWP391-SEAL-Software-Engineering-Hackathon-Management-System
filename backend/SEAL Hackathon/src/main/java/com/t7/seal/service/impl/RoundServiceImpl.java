@@ -41,7 +41,7 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException("Round orderIndex already exists in this event");
         }
 
-        if (roundRepository.existByEventIdAndNameIgnoreCase(eventId, request.name().trim())) {
+        if (roundRepository.existsByEventIdAndNameIgnoreCase(eventId, request.name().trim())) {
             throw new ConflictException("Round with this name already exists in this event");
         }
 

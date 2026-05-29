@@ -119,7 +119,7 @@ public class EmailServiceImpl implements EmailService {
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 
         String html = buildBaseTemplate(
-                "Login Successful",
+                "Welcome tho SEAL",
                 "Your SEAL account was accessed securely",
                 """
                 <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">

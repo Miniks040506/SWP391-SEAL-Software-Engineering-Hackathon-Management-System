@@ -54,16 +54,38 @@ public class OAuth2ServiceImpl implements OAuth2Service {
 
         String email = userInfo.email().trim().toLowerCase(Locale.ROOT);
 
-        User user = userRepository
-                .findByOauthProviderAndOauthProviderId(userInfo.provider(), userInfo.providerId())
-                .or(() -> userRepository.findByEmail(email))
-                .map(existing -> updateExistingOAuthUser(existing, userInfo))
-                .orElseGet(() -> createNewOAuthUser(userInfo));
+        User user;
+        boolean shouldSendFirstOAuthLoginEmail = false;
+
+        var userByOAuth = userRepository.findByOauthProviderAndOauthProviderId(
+                userInfo.provider(),
+                userInfo.providerId()
+        );
+
+        if (userByOAuth.isPresent()) {
+            user = updateExistingOAuthUser(userByOAuth.get(), userInfo);
+        } else {
+            var userByEmail = userRepository.findByEmail(email);
+
+            if (userByEmail.isPresent()) {
+                user = updateExistingOAuthUser(userByEmail.get(), userInfo);
+
+                // Existing account, only link OAuth identity.
+                // Do not send first OAuth login email.
+                shouldSendFirstOAuthLoginEmail = false;
+            } else {
+                user = createNewOAuthUser(userInfo);
+
+                // Only new OAuth-created account receives login success email.
+                shouldSendFirstOAuthLoginEmail = true;
+            }
+        }
 
         if (user.isUnverified() || user.isPendingApproval()) {
             if (user.getEmailVerifiedAt() == null) {
                 user.setEmailVerifiedAt(LocalDateTime.now());
             }
+
             user.setStatus(UserStatus.ACTIVE);
         }
 
@@ -81,8 +103,10 @@ public class OAuth2ServiceImpl implements OAuth2Service {
         user.recordSuccessfulLogin();
         userRepository.save(user);
 
-        String providerName = toProviderDisplayName(registrationId);
-        sendOAuthLoginSuccessEmailSafely(user, providerName);
+        if (shouldSendFirstOAuthLoginEmail) {
+            String providerName = toProviderDisplayName(registrationId);
+            sendOAuthLoginSuccessEmailSafely(user, providerName);
+        }
 
         return new LoginResponse(
                 user.getId(),

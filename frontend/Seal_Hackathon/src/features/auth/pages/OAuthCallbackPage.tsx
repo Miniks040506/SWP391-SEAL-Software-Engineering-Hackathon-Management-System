@@ -22,9 +22,15 @@ export function OAuthCallbackPage() {
     const userId = searchParams.get("userId") || "";
 
     if (oauthError) {
-      enqueueSnackbar(oauthError, {
-        variant: "error",
-      });
+      const errorKey = `oauth-error:${oauthError}`;
+
+      if (!sessionStorage.getItem(errorKey)) {
+        sessionStorage.setItem(errorKey, "handled");
+
+        enqueueSnackbar(oauthError, {
+          variant: "error",
+        });
+      }
 
       navigate("/login", {
         replace: true,
@@ -34,9 +40,15 @@ export function OAuthCallbackPage() {
     }
 
     if (!accessToken || !refreshToken || !role || !email) {
-      enqueueSnackbar("OAuth login failed.", {
-        variant: "error",
-      });
+      const errorKey = "oauth-error:missing-params";
+
+      if (!sessionStorage.getItem(errorKey)) {
+        sessionStorage.setItem(errorKey, "handled");
+
+        enqueueSnackbar("OAuth login failed.", {
+          variant: "error",
+        });
+      }
 
       navigate("/login", {
         replace: true,
@@ -59,9 +71,15 @@ export function OAuthCallbackPage() {
 
     setLoginResponse(response);
 
-    enqueueSnackbar("Login successfully.", {
-      variant: "success",
-    });
+    const successKey = `oauth-success:${email}:${accessToken.slice(0, 24)}`;
+
+    if (!sessionStorage.getItem(successKey)) {
+      sessionStorage.setItem(successKey, "handled");
+
+      enqueueSnackbar("Login successfully.", {
+        variant: "success",
+      });
+    }
 
     navigate(getRoleRedirectPath(useAuthStore.getState().user), {
       replace: true,
