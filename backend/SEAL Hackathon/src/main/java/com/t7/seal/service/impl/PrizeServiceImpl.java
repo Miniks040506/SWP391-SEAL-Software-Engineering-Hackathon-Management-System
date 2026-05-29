@@ -1,14 +1,25 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Prize;
+import com.t7.seal.entities.Track;
+import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.PrizeRepository;
+import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.request.results.CreatePrizeRequest;
+import com.t7.seal.request.results.UpdatePrizeRequest;
 import com.t7.seal.response.results.PrizeResponse;
+import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.PrizeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,7 +28,94 @@ import java.util.UUID;
 public class PrizeServiceImpl implements PrizeService {
 
     private final PrizeRepository prizeRepository;
-    
+    private final HackathonEventRepository eventRepository;
+    private final TrackRepository trackRepository;
+    private final CurrentUserService currentUserService;
+
+    @Transactional
+    @Override
+    public PrizeResponse createPrize(CreatePrizeRequest request, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        validateCreatePrizeRequest(request);
+
+        HackathonEvent event = findEvent(request.eventId());
+        Track track = resolveTrack(event.getId(), request.trackId());
+
+        if (prizeRepository.existsSameRank(event.getId(), request.trackId(), request.rankPosition())) {
+            throw new ConflictException("Prize rank already exists for this event/track.");
+        }
+
+        Prize prize = new Prize();
+        prize.setEvent(event);
+        prize.setTrack(track);
+        prize.setRankPosition(request.rankPosition());
+        prize.setTitle(request.title().trim());
+        prize.setDescription(trimToNull(request.description()));
+        prize.setValue(request.value());
+        prize.setCurrency(request.currency() == null || request.currency().isBlank()
+                ? "VND"
+                : request.currency().trim().toUpperCase());
+        prize.setSponsorName(trimToNull(request.sponsorName()));
+
+        return toPrizeResponse(prizeRepository.save(prize));
+    }
+
+    @Transactional
+    @Override
+    public PrizeResponse updatePrize(UUID prizeId, UpdatePrizeRequest request, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        Prize prize = findPrize(prizeId, request.eventId(), request.trackId());
+
+        UUID trackId = prize.getTrack() == null ? null : prize.getTrack().getId();
+        Integer newRank = request.rankPosition() == null ? prize.getRankPosition() : request.rankPosition();
+
+        if (request.rankPosition() != null) {
+            if (request.rankPosition() < 1) {
+                throw new BadRequestException("rankPosition must be greater than 0.");
+            }
+            if (prizeRepository.existsSameRankExceptSelf(prizeId, prize.getEvent().getId(), trackId, newRank)) {
+                throw new ConflictException("Prize rank already exists for this event/track.");
+            }
+            prize.setRankPosition(request.rankPosition());
+        }
+
+        if (request.title() != null) {
+            if (request.title().isBlank()) {
+                throw new BadRequestException("Prize title cannot be blank.");
+            }
+            prize.setTitle(request.title().trim());
+        }
+        if (request.description() != null) {
+            prize.setDescription(trimToNull(request.description()));
+        }
+        if (request.value() != null) {
+            validateNonNegative(request.value(), "value");
+            prize.setValue(request.value());
+        }
+        if (request.currency() != null) {
+            prize.setCurrency(request.currency().trim().toUpperCase());
+        }
+        if (request.sponsorName() != null) {
+            prize.setSponsorName(trimToNull(request.sponsorName()));
+        }
+
+        return toPrizeResponse(prizeRepository.save(prize));
+    }
+
+    @Transactional
+    @Override
+    public void deletePrize(UUID prizeId, UUID eventId, UUID trackId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        Prize prize = findPrize(prizeId, eventId, trackId);
+        if (prize.getAwardedTeam() != null) {
+            throw new ConflictException("Cannot delete prize after it has been awarded. Clear award first.");
+        }
+        prizeRepository.delete(prize);
+    }
+
     @Transactional(readOnly = true)
     @Override
     public List<PrizeResponse> getPrizesByEvent(UUID eventId) {
@@ -32,35 +130,75 @@ public class PrizeServiceImpl implements PrizeService {
     public PrizeResponse getPrizeById(UUID prizeId) {
         Prize prize = prizeRepository.findPublicById(prizeId)
                 .orElseThrow(() -> new NotFoundException("Prize not found " + prizeId));
-
-        return new PrizeResponse(
-                prize.getId(),
-                prize.getEvent().getId(),
-                prize.getTrack().getId(),
-                prize.getRankPosition(),
-                prize.getTitle(),
-                prize.getDescription(),
-                prize.getValue(),
-                prize.getCurrency(),
-                prize.getSponsorName(),
-                prize.getAwardedTeam().getId(),
-                prize.getAwardedAt()
-        );
+        return toPrizeResponse(prize);
     }
 
     //HELPERS
-    PrizeResponse toPrizeResponse(Prize prize) {
+    private HackathonEvent findEvent(UUID eventId) {
+        if (eventId == null) {
+            throw new BadRequestException("Event id is required.");
+        }
+        return eventRepository.findByIdCanAssignedPrize(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found."));
+    }
+
+    private Track resolveTrack(UUID eventId, UUID trackId) {
+        if (trackId == null) {
+            return null;
+        }
+        Track track = trackRepository.findPublicById(trackId)
+                .orElseThrow(() -> new NotFoundException("Track not found."));
+        if (!track.getEvent().getId().equals(eventId)) {
+            throw new BadRequestException("Track does not belong to this event.");
+        }
+        return track;
+    }
+
+    private Prize findPrize(UUID prizeId, UUID eventId, UUID trackId) {
+        if (prizeId == null) {
+            throw new BadRequestException("Prize id is required.");
+        }
+        return prizeRepository.findPrizeByIdInEventAndTrack(prizeId, eventId, trackId)
+                .orElseThrow(() -> new NotFoundException("Prize not found."));
+    }
+
+    private void validateCreatePrizeRequest(CreatePrizeRequest request) {
+        if (request.eventId() == null) {
+            throw new BadRequestException("eventId is required.");
+        }
+        if (request.rankPosition() == null || request.rankPosition() < 1) {
+            throw new BadRequestException("rankPosition must be greater than 0.");
+        }
+        if (request.title() == null || request.title().isBlank()) {
+            throw new BadRequestException("Prize title is required.");
+        }
+        if (request.value() != null) {
+            validateNonNegative(request.value(), "value");
+        }
+    }
+
+    private void validateNonNegative(BigDecimal value, String fieldName) {
+        if (value.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException(fieldName + " must not be negative.");
+        }
+    }
+
+    private String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private PrizeResponse toPrizeResponse(Prize prize) {
         return new PrizeResponse(
                 prize.getId(),
                 prize.getEvent().getId(),
-                prize.getTrack().getId(),
+                prize.getTrack() == null ? null : prize.getTrack().getId(),
                 prize.getRankPosition(),
                 prize.getTitle(),
                 prize.getDescription(),
                 prize.getValue(),
                 prize.getCurrency(),
                 prize.getSponsorName(),
-                prize.getAwardedTeam().getId(),
+                prize.getAwardedTeam() == null ? null : prize.getAwardedTeam().getId(),
                 prize.getAwardedAt()
         );
     }

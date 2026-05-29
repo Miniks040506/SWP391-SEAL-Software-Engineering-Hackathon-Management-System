@@ -1,6 +1,7 @@
 package com.t7.seal.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,6 @@ public interface MentorAssignmentRepository extends JpaRepository<MentorAssignme
     List<MentorAssignment> findByTrackIdOrderByAssignedAtAsc(UUID trackId);
 
     boolean existsByTrackIdAndUserId(UUID trackId, UUID mentorUserId);
+
+    Optional<MentorAssignment> findByIdAndTrackId(UUID id, UUID trackId);
 }

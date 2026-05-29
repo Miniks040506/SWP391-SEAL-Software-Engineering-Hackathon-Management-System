@@ -13,8 +13,10 @@ import com.t7.seal.request.round.CreateRoundRequest;
 import com.t7.seal.request.round.UpdateRoundRequest;
 import com.t7.seal.response.round.RoundDetailResponse;
 import com.t7.seal.response.round.RoundResponse;
+import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,10 +30,13 @@ public class RoundServiceImpl implements RoundService {
 
     private final HackathonEventRepository hackathonEventRepository;
     private final RoundRepository roundRepository;
+    private final CurrentUserService currentUserService;
 
     @Transactional
     @Override
-    public RoundResponse createRound(UUID eventId, CreateRoundRequest request) {
+    public RoundResponse createRound(UUID eventId, CreateRoundRequest request, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
         HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
@@ -91,7 +96,9 @@ public class RoundServiceImpl implements RoundService {
 
     @Transactional
     @Override
-    public RoundResponse updateRound(UUID roundId, UpdateRoundRequest request) {
+    public RoundResponse updateRound(UUID roundId, UpdateRoundRequest request, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
         Round round = roundRepository.findPublicById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
 
@@ -159,7 +166,9 @@ public class RoundServiceImpl implements RoundService {
 
     @Transactional
     @Override
-    public void deleteRound(UUID roundId) {
+    public void deleteRound(UUID roundId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
         Round round = roundRepository.findPublicById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
 

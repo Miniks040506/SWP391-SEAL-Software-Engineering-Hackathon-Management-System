@@ -9,7 +9,10 @@ import com.t7.seal.response.results.PrizeResponse;
 import com.t7.seal.service.PrizeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,11 +25,14 @@ public class PrizeController {
 
     private final PrizeService prizeService;
 
+    @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
     @PostMapping
     public ResponseEntity<PrizeResponse> createPrize(
-            @Valid @RequestBody CreatePrizeRequest request
+            @Valid @RequestBody CreatePrizeRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(prizeService.createPrize(request, authentication));
     }
 
     @GetMapping("/events/{eventId}")
@@ -43,19 +49,26 @@ public class PrizeController {
         return ResponseEntity.ok(prizeService.getPrizeById(prizeId));
     }
 
+    @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
     @PatchMapping("/{prizeId}")
     public ResponseEntity<PrizeResponse> updatePrize(
             @PathVariable("prizeId") UUID prizeId,
-            @Valid @RequestBody UpdatePrizeRequest request
+            @Valid @RequestBody UpdatePrizeRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(prizeService.updatePrize(prizeId, request, authentication));
     }
 
+    @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
     @DeleteMapping("/{prizeId}")
     public ResponseEntity<Void> deletePrize(
-            @PathVariable("prizeId") UUID prizeId
+            @PathVariable("prizeId") UUID prizeId,
+            @RequestParam("eventId") UUID eventId,
+            @RequestParam("trackId") UUID trackId,
+            Authentication authentication
     ) {
-        return null;
+        prizeService.deletePrize(prizeId, eventId, trackId, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{prizeId}/award")
