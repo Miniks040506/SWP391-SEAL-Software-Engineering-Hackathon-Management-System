@@ -4,23 +4,39 @@ import { useNavigate } from "react-router-dom";
 import {
   editEventMock,
   eventTeamsMock,
+  type EditEventData,
+  type EventRound,
+  type EventTeam,
+  type EventTrack,
 } from "../mocks/coordinatorEditEvent.mock";
-import type {
-  DialogState,
-  EditEventData,
-  EventFormErrors,
-  EventRound,
-  EventTeam,
-  EventTrack,
-  TabId,
-  TeamStatus,
-} from "../types/coordinator.types";
 
-// Types
+// ─── ĐỊNH NGHĨA CÁC TYPE BỊ THIẾU TẠI ĐÂY ────────────────────────────────────
+
+export type TabId = "info" | "tracks" | "teams";
+
+export type TeamStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export type EventFormErrors = {
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+};
+
+export type DialogState =
+  | { kind: "addJudge" | "addMentor"; trackId: string }
+  | { kind: "editCriteria"; trackId: string; roundId: string }
+  | { kind: "addRound"; trackId: string }
+  | { kind: "addTrack" }
+  | { kind: "editTrack"; trackId: string }
+  | { kind: "editRound"; trackId: string; roundId: string }
+  | { kind: "teamDetail"; team: EventTeam }
+  | null;
+
+// ─── TYPES ──────────────────────────────────────────────────────────────────
 
 export type UseEditEventReturn = ReturnType<typeof useEditEvent>;
 
-// Helpers
+// ─── HELPERS ────────────────────────────────────────────────────────────────
 
 function validateEvent(data: EditEventData): EventFormErrors {
   const errors: EventFormErrors = {};
@@ -40,7 +56,7 @@ function patchTrack(
   return tracks.map((t) => (t.id === trackId ? { ...t, ...patch } : t));
 }
 
-// Hook
+// ─── HOOK ───────────────────────────────────────────────────────────────────
 
 export function useEditEvent() {
   const navigate = useNavigate();
@@ -109,7 +125,6 @@ export function useEditEvent() {
     setDialog({ kind: "addTrack" });
   };
 
-  // Thêm sau openAddTrack
   const openEditTrack = (trackId: string) => {
     const track = event.tracks.find((t) => t.id === trackId);
     if (!track) return;

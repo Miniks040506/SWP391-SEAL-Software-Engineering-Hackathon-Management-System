@@ -47,10 +47,10 @@ import {
   useActivateUserMutation,
   useResetUserPasswordMutation,
 } from "@/features/admin/hooks/useAdminMutations";
-import type { AdminUser, UserStatus } from "@/types/admin.types";
+import type { UserStatus } from "@/types/admin.types";
 import type { UserRole } from "@/types/auth.types";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// Constants
 
 const ALL_ROLES: UserRole[] = [
   "ADMIN",
@@ -68,7 +68,7 @@ const PAGE_SIZE = 10;
 
 const textFieldSx = { "& .MuiOutlinedInput-root": { borderRadius: "10px" } };
 
-// ─── Role / Status helpers ────────────────────────────────────────────────────
+// Role / Status helpers
 
 const ROLE_COLORS: Record<UserRole, string> = {
   ADMIN: "bg-red-100 text-red-700",
@@ -108,7 +108,7 @@ function StatusDot({ status }: { status: UserStatus }) {
   );
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
+// Stat Card
 
 function StatCard({
   label,
@@ -140,8 +140,7 @@ function StatCard({
   );
 }
 
-// ─── View User Dialog ─────────────────────────────────────────────────────────
-// Fetches the full UserDetailResponse (phone, studentCode, etc.) for a given id.
+// View User Dialog
 
 function ViewUserDialog({
   userId,
@@ -151,8 +150,8 @@ function ViewUserDialog({
 }: {
   userId: string | null;
   onClose: () => void;
-  onEdit: (user: AdminUser) => void;
-  onResetPassword: (user: AdminUser) => void;
+  onEdit: (userId: string) => void;
+  onResetPassword: (user: { id: string; email: string }) => void;
 }) {
   // ✅ useAdminUserQuery accepts null and is disabled when null
   const { data: user, isLoading } = useAdminUserQuery(userId);
@@ -221,45 +220,7 @@ function ViewUserDialog({
                     : "Never"
                 }
               />
-              <DetailRow
-                label="Created"
-                value={new Date(user.createdAt).toLocaleDateString("sv-SE")}
-              />
             </div>
-
-            {/* Student profile — only shown when fields present */}
-            {(user.studentCode ||
-              user.universityName ||
-              user.major ||
-              user.graduationYear) && (
-              <>
-                <Divider />
-                <div>
-                  <div className="mb-2 text-xs font-extrabold uppercase tracking-widest text-slate-400">
-                    Student Profile
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                    <DetailRow
-                      label="Student Code"
-                      value={user.studentCode ?? "—"}
-                    />
-                    <DetailRow
-                      label="Student Type"
-                      value={user.studentType ?? "—"}
-                    />
-                    <DetailRow
-                      label="University"
-                      value={user.universityName ?? "—"}
-                    />
-                    <DetailRow label="Major" value={user.major ?? "—"} />
-                    <DetailRow
-                      label="Graduation Year"
-                      value={user.graduationYear?.toString() ?? "—"}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         )}
       </DialogContent>
@@ -286,7 +247,7 @@ function ViewUserDialog({
               variant="contained"
               startIcon={<EditIcon />}
               onClick={() => {
-                onEdit(user);
+                onEdit(user.id);
                 onClose();
               }}
               sx={{
@@ -322,7 +283,7 @@ function DetailRow({
   );
 }
 
-// ─── Create User Dialog ───────────────────────────────────────────────────────
+// Create User Dialog
 
 function CreateUserDialog({
   open,
@@ -338,28 +299,20 @@ function CreateUserDialog({
     register,
     handleSubmit,
     control,
-    watch,
     reset,
     formState: { errors },
   } = useForm<CreateUserFormInput, unknown, CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       role: "STUDENT",
-      studentType: "FPT",
+      status: "PENDING",
       fullName: "",
       email: "",
       password: "",
       phone: "",
-      studentCode: "",
-      universityName: "",
-      major: "",
-      graduationYear: "",
     },
   });
 
-  const selectedRole = watch("role");
-  const isStudentRole =
-    selectedRole === "STUDENT" || selectedRole === "PARTICIPANT";
 
   const handleClose = () => {
     reset();
@@ -372,10 +325,6 @@ function CreateUserDialog({
         ...values,
         email: values.email.trim().toLowerCase(),
         phone: values.phone || undefined,
-        studentCode: values.studentCode || undefined,
-        universityName: values.universityName || undefined,
-        major: values.major || undefined,
-        // graduationYear already transformed to number | undefined by Zod
       });
       enqueueSnackbar("User created successfully.", { variant: "success" });
       handleClose();
@@ -460,105 +409,67 @@ function CreateUserDialog({
             />
           </div>
 
-          {/* Role */}
-          <Controller
-            control={control}
-            name="role"
-            render={({ field }) => (
-              <div>
-                <div className="mb-1 text-xs font-bold text-slate-500">
-                  Role *
-                </div>
-                <Select
-                  {...field}
-                  size="small"
-                  fullWidth
-                  displayEmpty
-                  sx={{ borderRadius: "10px" }}
-                >
-                  {ALL_ROLES.map((r) => (
-                    <MenuItem key={r} value={r}>
-                      {r}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {errors.role && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {errors.role.message}
-                  </p>
-                )}
-              </div>
-            )}
-          />
-
-          {/* Student fields — only visible for STUDENT / PARTICIPANT */}
-          {isStudentRole && (
-            <>
-              <Divider>
-                <span className="text-xs font-bold text-slate-400">
-                  Student Profile
-                </span>
-              </Divider>
-
-              <Controller
-                control={control}
-                name="studentType"
-                render={({ field }) => (
-                  <div>
-                    <div className="mb-1 text-xs font-bold text-slate-500">
-                      Student Type
-                    </div>
-                    <Select
-                      {...field}
-                      size="small"
-                      fullWidth
-                      sx={{ borderRadius: "10px" }}
-                    >
-                      <MenuItem value="FPT">FPT Student</MenuItem>
-                      <MenuItem value="EXTERNAL">External Student</MenuItem>
-                    </Select>
+          {/* Role + Status */}
+          <div className="grid grid-cols-2 gap-4">
+            <Controller
+              control={control}
+              name="role"
+              render={({ field }) => (
+                <div>
+                  <div className="mb-1 text-xs font-bold text-slate-500">
+                    Role *
                   </div>
-                )}
-              />
+                  <Select
+                    {...field}
+                    size="small"
+                    fullWidth
+                    displayEmpty
+                    sx={{ borderRadius: "10px" }}
+                  >
+                    {ALL_ROLES.map((r) => (
+                      <MenuItem key={r} value={r}>
+                        {r}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.role && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {errors.role.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
 
-              <div className="grid grid-cols-2 gap-4">
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Student Code"
-                  {...register("studentCode")}
-                  sx={textFieldSx}
-                />
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="University"
-                  {...register("universityName")}
-                  sx={textFieldSx}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Major"
-                  {...register("major")}
-                  sx={textFieldSx}
-                />
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Graduation Year"
-                  placeholder="2027"
-                  {...register("graduationYear")}
-                  error={Boolean(errors.graduationYear)}
-                  helperText={errors.graduationYear?.message}
-                  sx={textFieldSx}
-                />
-              </div>
-            </>
-          )}
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <div>
+                  <div className="mb-1 text-xs font-bold text-slate-500">
+                    Status *
+                  </div>
+                  <Select
+                    {...field}
+                    size="small"
+                    fullWidth
+                    sx={{ borderRadius: "10px" }}
+                  >
+                    {ALL_STATUSES.map((s) => (
+                      <MenuItem key={s} value={s}>
+                        {s}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.status && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {errors.status.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+          </div>
         </DialogContent>
 
         <DialogActions className="px-6 pb-4">
@@ -584,9 +495,7 @@ function CreateUserDialog({
   );
 }
 
-// ─── Edit User Dialog ─────────────────────────────────────────────────────────
-// ✅ Fetches the full UserDetailResponse before populating the form so phone,
-//    studentCode, etc. are available (list endpoint only returns UserSummaryResponse).
+// Edit User Dialog
 
 function EditUserDialog({
   userId,
@@ -597,7 +506,7 @@ function EditUserDialog({
 }) {
   const updateMutation = useUpdateUserMutation();
 
-  // Fetch full detail — form only populates once this resolves
+  // Fetch full detail - form only populates once this resolves
   const { data: user, isLoading } = useAdminUserQuery(userId);
 
   const {
@@ -614,12 +523,6 @@ function EditUserDialog({
           phone: user.phone ?? "",
           role: user.role,
           status: user.status,
-          studentCode: user.studentCode ?? "",
-          universityName: user.universityName ?? "",
-          major: user.major ?? "",
-          graduationYear: user.graduationYear
-            ? String(user.graduationYear)
-            : "",
         }
       : undefined,
   });
@@ -632,9 +535,6 @@ function EditUserDialog({
         payload: {
           ...values,
           phone: values.phone || undefined,
-          studentCode: values.studentCode || undefined,
-          universityName: values.universityName || undefined,
-          major: values.major || undefined,
         },
       });
       enqueueSnackbar("User updated successfully.", { variant: "success" });
@@ -735,49 +635,6 @@ function EditUserDialog({
                 )}
               />
             </div>
-
-            {/* Student profile */}
-            <Divider>
-              <span className="text-xs font-bold text-slate-400">
-                Student Profile (optional)
-              </span>
-            </Divider>
-
-            <div className="grid grid-cols-2 gap-4">
-              <TextField
-                fullWidth
-                size="small"
-                label="Student Code"
-                {...register("studentCode")}
-                sx={textFieldSx}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="University"
-                {...register("universityName")}
-                sx={textFieldSx}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <TextField
-                fullWidth
-                size="small"
-                label="Major"
-                {...register("major")}
-                sx={textFieldSx}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="Graduation Year"
-                {...register("graduationYear")}
-                error={Boolean(errors.graduationYear)}
-                helperText={errors.graduationYear?.message}
-                sx={textFieldSx}
-              />
-            </div>
           </DialogContent>
 
           <DialogActions className="px-6 pb-4">
@@ -804,13 +661,13 @@ function EditUserDialog({
   );
 }
 
-// ─── Reset Password Dialog ────────────────────────────────────────────────────
+// Reset Password Dialog
 
 function ResetPasswordDialog({
   user,
   onClose,
 }: {
-  user: AdminUser | null;
+  user: { id: string; email: string } | null;
   onClose: () => void;
 }) {
   const resetMutation = useResetUserPasswordMutation();
@@ -837,7 +694,7 @@ function ResetPasswordDialog({
       await resetMutation.mutateAsync({
         userId: user.id,
         newPassword: values.newPassword,
-        // ✅ confirmPassword is NOT sent — validation only
+        // confirmPassword is NOT sent - validation only
       });
       enqueueSnackbar("Password reset successfully.", { variant: "success" });
       handleClose();
@@ -923,7 +780,7 @@ function ResetPasswordDialog({
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// Main Page
 
 export function AdminUsersPage() {
   const [search, setSearch] = useState("");
@@ -933,14 +790,13 @@ export function AdminUsersPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [viewUserId, setViewUserId] = useState<string | null>(null);
-  // ✅ Edit and Reset dialogs store userId string, not the summary object
   const [editUserId, setEditUserId] = useState<string | null>(null);
-  const [resetUser, setResetUser] = useState<AdminUser | null>(null);
+  const [resetUser, setResetUser] = useState<{ id: string; email: string } | null>(null);
 
   const deactivateMutation = useDeactivateUserMutation();
   const activateMutation = useActivateUserMutation();
 
-  // ── Main list (with active filters)
+  // Main list (with active filters)
   const { data, isLoading } = useAdminUsersQuery({
     search: search || undefined,
     role: roleFilter || undefined,
@@ -949,9 +805,7 @@ export function AdminUsersPage() {
     pageSize: PAGE_SIZE,
   });
 
-  // ── Stat card queries — each fetches only 1 row just to read totalElements.
-  // ✅ These are NOT derived from the current page; they are independent queries
-  //    so the counts are always accurate across all pages.
+  // Stat card queries - each fetches only 1 row just to read totalElements.
   const { data: adminStats } = useAdminUsersQuery({
     role: "ADMIN",
     status: "ACTIVE",
@@ -1031,7 +885,7 @@ export function AdminUsersPage() {
         </Button>
       </div>
 
-      {/* Stat Cards — counts from totalElements, not from current page */}
+      {/* Stat Cards - counts from totalElements, not from current page */}
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
           label="Administrators"
@@ -1130,7 +984,6 @@ export function AdminUsersPage() {
                   "Role",
                   "ID",
                   "Status",
-                  "Last Login",
                   "Actions",
                 ].map((h) => (
                   <th
@@ -1194,14 +1047,6 @@ export function AdminUsersPage() {
                       <StatusDot status={user.status} />
                     </td>
 
-                    <td className="px-5 py-3.5 text-xs text-slate-500">
-                      {user.lastLoginAt
-                        ? new Date(user.lastLoginAt)
-                            .toLocaleString("sv-SE")
-                            .slice(0, 16)
-                        : "—"}
-                    </td>
-
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1">
                         <Tooltip title="Edit user">
@@ -1220,11 +1065,7 @@ export function AdminUsersPage() {
                         <Tooltip title="Reset password">
                           <IconButton
                             size="small"
-                            // ✅ user here is UserSummaryResponse which has id + email
-                            //    that's all ResetPasswordDialog needs
-                            onClick={() =>
-                              setResetUser(user as unknown as AdminUser)
-                            }
+                            onClick={() => setResetUser(user)}
                           >
                             <LockResetIcon
                               fontSize="small"
@@ -1292,14 +1133,14 @@ export function AdminUsersPage() {
       <ViewUserDialog
         userId={viewUserId}
         onClose={() => setViewUserId(null)}
-        onEdit={(u) => setEditUserId(u.id)}
+        onEdit={(userId) => setEditUserId(userId)}
         onResetPassword={(u) => setResetUser(u)}
       />
       <CreateUserDialog
         open={showCreate}
         onClose={() => setShowCreate(false)}
       />
-      {/* ✅ EditUserDialog now receives userId and fetches full detail internally */}
+      {/* EditUserDialog now receives userId and fetches full detail internally */}
       <EditUserDialog
         userId={editUserId}
         onClose={() => setEditUserId(null)}

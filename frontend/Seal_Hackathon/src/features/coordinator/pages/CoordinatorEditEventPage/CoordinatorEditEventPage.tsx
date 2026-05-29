@@ -1,26 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-
 import { useEditEvent } from "../../hooks/useEditEvent";
-import type { TabId } from "../../types/coordinator.types";
-
 import { EditEventDialogs } from "./EditEventDialogs";
 import { InfoTab } from "./InfoTab";
 import { TeamsTab } from "./TeamsTab";
 import { TracksTab } from "./TracksTab";
 
-// Constants
+const TABS = ["info", "tracks", "teams"] as const;
+
+export type TabId = typeof TABS[number];
 
 const TAB_LABELS: Record<TabId, string> = {
   info: "Basic Information",
   tracks: "Tracks & Rounds",
   teams: "Participating Teams",
 };
-
-const TABS = ["info", "tracks", "teams"] as const;
-
-// Page
 
 export const CoordinatorEditEventPage = () => {
   const navigate = useNavigate();
@@ -72,11 +67,12 @@ export const CoordinatorEditEventPage = () => {
     handleBulkTeamStatusUpdate,
     openEditTrack,
     openEditRound,
+    confirmEditTrack,
+    confirmEditRound,
   } = useEditEvent();
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-12 font-sans text-slate-900">
-      {/* Header */}
+    <div className="w-full bg-slate-50/50 pb-8 font-sans text-slate-900">
       <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 px-6 py-4 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-4">
@@ -143,7 +139,6 @@ export const CoordinatorEditEventPage = () => {
       </div>
 
       <div className="mx-auto max-w-6xl px-6 pt-8">
-        {/* Tabs */}
         <div className="mb-8 flex space-x-1 border-b border-slate-200">
           {TABS.map((id) => {
             const isActive = activeTab === id;
@@ -238,6 +233,8 @@ export const CoordinatorEditEventPage = () => {
         onConfirmAddJudge={confirmAddJudge}
         onConfirmAddMentor={confirmAddMentor}
         onConfirmEditCriteria={confirmEditCriteria}
+        onConfirmEditTrack={confirmEditTrack}
+        onConfirmEditRound={confirmEditRound}
       />
     </div>
   );
