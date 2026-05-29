@@ -7,6 +7,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   IconButton,
   InputAdornment,
   MenuItem,
@@ -23,6 +24,7 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SearchIcon from "@mui/icons-material/Search";
+import PersonIcon from "@mui/icons-material/Person";
 import { Controller, useForm } from "react-hook-form";
 import { enqueueSnackbar } from "notistack";
 
@@ -38,6 +40,7 @@ import {
 } from "@/features/admin/schemas/admin.schema";
 import {
   useAdminUsersQuery,
+  useAdminUserQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
   useDeactivateUserMutation,
@@ -112,21 +115,209 @@ function StatCard({
   count,
   sub,
   accent,
+  loading,
 }: {
   label: string;
   count: number;
   sub: string;
   accent: string;
+  loading: boolean;
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <div
-        className={`text-xs font-extrabold uppercase tracking-widest ${accent}`}
-      >
+      <div className={`text-xs font-extrabold uppercase tracking-widest ${accent}`}>
         {label}
       </div>
-      <div className="mt-1 text-3xl font-black text-slate-800">{count}</div>
+      <div className="mt-1 text-3xl font-black text-slate-800">
+        {loading ? (
+          <span className="inline-block h-8 w-10 animate-pulse rounded bg-slate-100" />
+        ) : (
+          count
+        )}
+      </div>
       <div className="text-xs text-slate-400">{sub}</div>
+    </div>
+  );
+}
+
+// ─── View User Dialog ─────────────────────────────────────────────────────────
+// Fetches the full UserDetailResponse (phone, studentCode, etc.) for a given id.
+
+function ViewUserDialog({
+  userId,
+  onClose,
+  onEdit,
+  onResetPassword,
+}: {
+  userId: string | null;
+  onClose: () => void;
+  onEdit: (user: AdminUser) => void;
+  onResetPassword: (user: AdminUser) => void;
+}) {
+  // ✅ useAdminUserQuery accepts null and is disabled when null
+  const { data: user, isLoading } = useAdminUserQuery(userId);
+
+  return (
+    <Dialog open={Boolean(userId)} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle className="font-black text-slate-800">
+        User Profile
+        {user && (
+          <div className="text-sm font-normal text-slate-400">{user.email}</div>
+        )}
+      </DialogTitle>
+
+      <DialogContent>
+        {isLoading || !user ? (
+          <div className="flex justify-center py-10">
+            <CircularProgress size={28} />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Avatar + name */}
+            <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200 text-slate-400">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName}
+                    className="h-14 w-14 rounded-full object-cover"
+                  />
+                ) : (
+                  <PersonIcon fontSize="large" />
+                )}
+              </div>
+              <div>
+                <div className="text-base font-bold text-slate-800">
+                  {user.fullName}
+                </div>
+                <div className="mt-1 flex items-center gap-2">
+                  <RoleBadge role={user.role} />
+                  <StatusDot status={user.status} />
+                </div>
+              </div>
+            </div>
+
+            <Divider />
+
+            {/* Core fields */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <DetailRow label="Email" value={user.email} />
+              <DetailRow label="Phone" value={user.phone ?? "—"} />
+              <DetailRow
+                label="User ID"
+                value={
+                  <span className="font-mono text-xs">
+                    {user.id.slice(0, 8).toUpperCase()}
+                  </span>
+                }
+              />
+              <DetailRow
+                label="Last Login"
+                value={
+                  user.lastLoginAt
+                    ? new Date(user.lastLoginAt)
+                        .toLocaleString("sv-SE")
+                        .slice(0, 16)
+                    : "Never"
+                }
+              />
+              <DetailRow
+                label="Created"
+                value={new Date(user.createdAt).toLocaleDateString("sv-SE")}
+              />
+            </div>
+
+            {/* Student profile — only shown when fields present */}
+            {(user.studentCode ||
+              user.universityName ||
+              user.major ||
+              user.graduationYear) && (
+              <>
+                <Divider />
+                <div>
+                  <div className="mb-2 text-xs font-extrabold uppercase tracking-widest text-slate-400">
+                    Student Profile
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <DetailRow
+                      label="Student Code"
+                      value={user.studentCode ?? "—"}
+                    />
+                    <DetailRow
+                      label="Student Type"
+                      value={user.studentType ?? "—"}
+                    />
+                    <DetailRow
+                      label="University"
+                      value={user.universityName ?? "—"}
+                    />
+                    <DetailRow label="Major" value={user.major ?? "—"} />
+                    <DetailRow
+                      label="Graduation Year"
+                      value={user.graduationYear?.toString() ?? "—"}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </DialogContent>
+
+      <DialogActions className="gap-2 px-6 pb-4">
+        <Button onClick={onClose} sx={{ textTransform: "none" }}>
+          Close
+        </Button>
+        {user && (
+          <>
+            <Button
+              variant="outlined"
+              color="warning"
+              startIcon={<LockResetIcon />}
+              onClick={() => {
+                onResetPassword(user);
+                onClose();
+              }}
+              sx={{ textTransform: "none", borderRadius: "8px" }}
+            >
+              Reset Password
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<EditIcon />}
+              onClick={() => {
+                onEdit(user);
+                onClose();
+              }}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: "8px",
+                boxShadow: "none",
+              }}
+            >
+              Edit User
+            </Button>
+          </>
+        )}
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        {label}
+      </div>
+      <div className="mt-0.5 text-sm text-slate-700">{value}</div>
     </div>
   );
 }
@@ -147,6 +338,7 @@ function CreateUserDialog({
     register,
     handleSubmit,
     control,
+    watch,
     reset,
     formState: { errors },
   } = useForm<CreateUserFormInput, unknown, CreateUserFormValues>({
@@ -165,6 +357,10 @@ function CreateUserDialog({
     },
   });
 
+  const selectedRole = watch("role");
+  const isStudentRole =
+    selectedRole === "STUDENT" || selectedRole === "PARTICIPANT";
+
   const handleClose = () => {
     reset();
     onClose();
@@ -179,6 +375,7 @@ function CreateUserDialog({
         studentCode: values.studentCode || undefined,
         universityName: values.universityName || undefined,
         major: values.major || undefined,
+        // graduationYear already transformed to number | undefined by Zod
       });
       enqueueSnackbar("User created successfully.", { variant: "success" });
       handleClose();
@@ -198,11 +395,12 @@ function CreateUserDialog({
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent className="space-y-4">
+          {/* Name + Email */}
           <div className="grid grid-cols-2 gap-4">
             <TextField
               fullWidth
               size="small"
-              label="Full Name"
+              label="Full Name *"
               {...register("fullName")}
               error={Boolean(errors.fullName)}
               helperText={errors.fullName?.message}
@@ -211,7 +409,7 @@ function CreateUserDialog({
             <TextField
               fullWidth
               size="small"
-              label="Email"
+              label="Email *"
               {...register("email")}
               error={Boolean(errors.email)}
               helperText={errors.email?.message}
@@ -219,11 +417,12 @@ function CreateUserDialog({
             />
           </div>
 
+          {/* Password + Phone */}
           <div className="grid grid-cols-2 gap-4">
             <TextField
               fullWidth
               size="small"
-              label="Password"
+              label="Password *"
               type={showPassword ? "text" : "password"}
               {...register("password")}
               error={Boolean(errors.password)}
@@ -261,62 +460,105 @@ function CreateUserDialog({
             />
           </div>
 
+          {/* Role */}
           <Controller
             control={control}
             name="role"
             render={({ field }) => (
-              <Select
-                {...field}
-                size="small"
-                fullWidth
-                displayEmpty
-                sx={{ borderRadius: "10px" }}
-              >
-                {ALL_ROLES.map((r) => (
-                  <MenuItem key={r} value={r}>
-                    {r}
-                  </MenuItem>
-                ))}
-              </Select>
+              <div>
+                <div className="mb-1 text-xs font-bold text-slate-500">
+                  Role *
+                </div>
+                <Select
+                  {...field}
+                  size="small"
+                  fullWidth
+                  displayEmpty
+                  sx={{ borderRadius: "10px" }}
+                >
+                  {ALL_ROLES.map((r) => (
+                    <MenuItem key={r} value={r}>
+                      {r}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.role && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.role.message}
+                  </p>
+                )}
+              </div>
             )}
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <TextField
-              fullWidth
-              size="small"
-              label="Student Code"
-              {...register("studentCode")}
-              sx={textFieldSx}
-            />
-            <TextField
-              fullWidth
-              size="small"
-              label="University"
-              {...register("universityName")}
-              sx={textFieldSx}
-            />
-          </div>
+          {/* Student fields — only visible for STUDENT / PARTICIPANT */}
+          {isStudentRole && (
+            <>
+              <Divider>
+                <span className="text-xs font-bold text-slate-400">
+                  Student Profile
+                </span>
+              </Divider>
 
-          <div className="grid grid-cols-2 gap-4">
-            <TextField
-              fullWidth
-              size="small"
-              label="Major"
-              {...register("major")}
-              sx={textFieldSx}
-            />
-            <TextField
-              fullWidth
-              size="small"
-              label="Graduation Year"
-              placeholder="2027"
-              {...register("graduationYear")}
-              error={Boolean(errors.graduationYear)}
-              helperText={errors.graduationYear?.message}
-              sx={textFieldSx}
-            />
-          </div>
+              <Controller
+                control={control}
+                name="studentType"
+                render={({ field }) => (
+                  <div>
+                    <div className="mb-1 text-xs font-bold text-slate-500">
+                      Student Type
+                    </div>
+                    <Select
+                      {...field}
+                      size="small"
+                      fullWidth
+                      sx={{ borderRadius: "10px" }}
+                    >
+                      <MenuItem value="FPT">FPT Student</MenuItem>
+                      <MenuItem value="EXTERNAL">External Student</MenuItem>
+                    </Select>
+                  </div>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Student Code"
+                  {...register("studentCode")}
+                  sx={textFieldSx}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="University"
+                  {...register("universityName")}
+                  sx={textFieldSx}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Major"
+                  {...register("major")}
+                  sx={textFieldSx}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Graduation Year"
+                  placeholder="2027"
+                  {...register("graduationYear")}
+                  error={Boolean(errors.graduationYear)}
+                  helperText={errors.graduationYear?.message}
+                  sx={textFieldSx}
+                />
+              </div>
+            </>
+          )}
         </DialogContent>
 
         <DialogActions className="px-6 pb-4">
@@ -343,15 +585,20 @@ function CreateUserDialog({
 }
 
 // ─── Edit User Dialog ─────────────────────────────────────────────────────────
+// ✅ Fetches the full UserDetailResponse before populating the form so phone,
+//    studentCode, etc. are available (list endpoint only returns UserSummaryResponse).
 
 function EditUserDialog({
-  user,
+  userId,
   onClose,
 }: {
-  user: AdminUser | null;
+  userId: string | null;
   onClose: () => void;
 }) {
   const updateMutation = useUpdateUserMutation();
+
+  // Fetch full detail — form only populates once this resolves
+  const { data: user, isLoading } = useAdminUserQuery(userId);
 
   const {
     register,
@@ -360,6 +607,7 @@ function EditUserDialog({
     formState: { errors },
   } = useForm<EditUserFormInput, unknown, EditUserFormValues>({
     resolver: zodResolver(editUserSchema),
+    // "values" mode re-syncs when user data arrives
     values: user
       ? {
           fullName: user.fullName,
@@ -376,12 +624,11 @@ function EditUserDialog({
       : undefined,
   });
 
-  if (!user) return null;
-
   const onSubmit = async (values: EditUserFormValues) => {
+    if (!userId) return;
     try {
       await updateMutation.mutateAsync({
-        userId: user.id,
+        userId,
         payload: {
           ...values,
           phone: values.phone || undefined,
@@ -401,137 +648,158 @@ function EditUserDialog({
   };
 
   return (
-    <Dialog open={Boolean(user)} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={Boolean(userId)} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle className="font-black text-slate-800">
         Edit User
-        <div className="text-sm font-normal text-slate-400">{user.email}</div>
+        {user && (
+          <div className="text-sm font-normal text-slate-400">{user.email}</div>
+        )}
       </DialogTitle>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <TextField
-              fullWidth
-              size="small"
-              label="Full Name"
-              {...register("fullName")}
-              error={Boolean(errors.fullName)}
-              helperText={errors.fullName?.message}
-              sx={textFieldSx}
-            />
-            <TextField
-              fullWidth
-              size="small"
-              label="Phone"
-              {...register("phone")}
-              sx={textFieldSx}
-            />
-          </div>
-
-          <Controller
-            control={control}
-            name="role"
-            render={({ field }) => (
-              <div>
-                <div className="mb-1 text-xs font-bold text-slate-500">
-                  Role
-                </div>
-                <Select
-                  {...field}
-                  size="small"
-                  fullWidth
-                  sx={{ borderRadius: "10px" }}
-                >
-                  {ALL_ROLES.map((r) => (
-                    <MenuItem key={r} value={r}>
-                      {r}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </div>
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="status"
-            render={({ field }) => (
-              <div>
-                <div className="mb-1 text-xs font-bold text-slate-500">
-                  Status
-                </div>
-                <Select
-                  {...field}
-                  size="small"
-                  fullWidth
-                  sx={{ borderRadius: "10px" }}
-                >
-                  {ALL_STATUSES.map((s) => (
-                    <MenuItem key={s} value={s}>
-                      {s}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </div>
-            )}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <TextField
-              fullWidth
-              size="small"
-              label="Student Code"
-              {...register("studentCode")}
-              sx={textFieldSx}
-            />
-            <TextField
-              fullWidth
-              size="small"
-              label="University"
-              {...register("universityName")}
-              sx={textFieldSx}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <TextField
-              fullWidth
-              size="small"
-              label="Major"
-              {...register("major")}
-              sx={textFieldSx}
-            />
-            <TextField
-              fullWidth
-              size="small"
-              label="Graduation Year"
-              {...register("graduationYear")}
-              error={Boolean(errors.graduationYear)}
-              helperText={errors.graduationYear?.message}
-              sx={textFieldSx}
-            />
+      {isLoading || !user ? (
+        <DialogContent>
+          <div className="flex justify-center py-10">
+            <CircularProgress size={28} />
           </div>
         </DialogContent>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <DialogContent className="space-y-4">
+            {/* Name + Phone */}
+            <div className="grid grid-cols-2 gap-4">
+              <TextField
+                fullWidth
+                size="small"
+                label="Full Name *"
+                {...register("fullName")}
+                error={Boolean(errors.fullName)}
+                helperText={errors.fullName?.message}
+                sx={textFieldSx}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Phone"
+                {...register("phone")}
+                sx={textFieldSx}
+              />
+            </div>
 
-        <DialogActions className="px-6 pb-4">
-          <Button onClick={onClose} sx={{ textTransform: "none" }}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={updateMutation.isPending}
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              borderRadius: "8px",
-              boxShadow: "none",
-            }}
-          >
-            {updateMutation.isPending ? "Saving…" : "Save Changes"}
-          </Button>
-        </DialogActions>
-      </form>
+            {/* Role + Status */}
+            <div className="grid grid-cols-2 gap-4">
+              <Controller
+                control={control}
+                name="role"
+                render={({ field }) => (
+                  <div>
+                    <div className="mb-1 text-xs font-bold text-slate-500">
+                      Role
+                    </div>
+                    <Select
+                      {...field}
+                      size="small"
+                      fullWidth
+                      sx={{ borderRadius: "10px" }}
+                    >
+                      {ALL_ROLES.map((r) => (
+                        <MenuItem key={r} value={r}>
+                          {r}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="status"
+                render={({ field }) => (
+                  <div>
+                    <div className="mb-1 text-xs font-bold text-slate-500">
+                      Status
+                    </div>
+                    <Select
+                      {...field}
+                      size="small"
+                      fullWidth
+                      sx={{ borderRadius: "10px" }}
+                    >
+                      {ALL_STATUSES.map((s) => (
+                        <MenuItem key={s} value={s}>
+                          {s}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+              />
+            </div>
+
+            {/* Student profile */}
+            <Divider>
+              <span className="text-xs font-bold text-slate-400">
+                Student Profile (optional)
+              </span>
+            </Divider>
+
+            <div className="grid grid-cols-2 gap-4">
+              <TextField
+                fullWidth
+                size="small"
+                label="Student Code"
+                {...register("studentCode")}
+                sx={textFieldSx}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="University"
+                {...register("universityName")}
+                sx={textFieldSx}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <TextField
+                fullWidth
+                size="small"
+                label="Major"
+                {...register("major")}
+                sx={textFieldSx}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Graduation Year"
+                {...register("graduationYear")}
+                error={Boolean(errors.graduationYear)}
+                helperText={errors.graduationYear?.message}
+                sx={textFieldSx}
+              />
+            </div>
+          </DialogContent>
+
+          <DialogActions className="px-6 pb-4">
+            <Button onClick={onClose} sx={{ textTransform: "none" }}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={updateMutation.isPending}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: "8px",
+                boxShadow: "none",
+              }}
+            >
+              {updateMutation.isPending ? "Saving…" : "Save Changes"}
+            </Button>
+          </DialogActions>
+        </form>
+      )}
     </Dialog>
   );
 }
@@ -569,6 +837,7 @@ function ResetPasswordDialog({
       await resetMutation.mutateAsync({
         userId: user.id,
         newPassword: values.newPassword,
+        // ✅ confirmPassword is NOT sent — validation only
       });
       enqueueSnackbar("Password reset successfully.", { variant: "success" });
       handleClose();
@@ -663,12 +932,15 @@ export function AdminUsersPage() {
   const [page, setPage] = useState(1);
 
   const [showCreate, setShowCreate] = useState(false);
-  const [editUser, setEditUser] = useState<AdminUser | null>(null);
+  const [viewUserId, setViewUserId] = useState<string | null>(null);
+  // ✅ Edit and Reset dialogs store userId string, not the summary object
+  const [editUserId, setEditUserId] = useState<string | null>(null);
   const [resetUser, setResetUser] = useState<AdminUser | null>(null);
 
   const deactivateMutation = useDeactivateUserMutation();
   const activateMutation = useActivateUserMutation();
 
+  // ── Main list (with active filters)
   const { data, isLoading } = useAdminUsersQuery({
     search: search || undefined,
     role: roleFilter || undefined,
@@ -677,25 +949,39 @@ export function AdminUsersPage() {
     pageSize: PAGE_SIZE,
   });
 
-  // PageResponse<UserSummaryResponse> shape
+  // ── Stat card queries — each fetches only 1 row just to read totalElements.
+  // ✅ These are NOT derived from the current page; they are independent queries
+  //    so the counts are always accurate across all pages.
+  const { data: adminStats } = useAdminUsersQuery({
+    role: "ADMIN",
+    status: "ACTIVE",
+    pageSize: 1,
+  });
+  const { data: studentStats } = useAdminUsersQuery({
+    role: "STUDENT",
+    pageSize: 1,
+  });
+  const { data: mentorStats } = useAdminUsersQuery({
+    role: "MENTOR",
+    pageSize: 1,
+  });
+  const { data: judgeStats } = useAdminUsersQuery({
+    role: "JUDGE",
+    pageSize: 1,
+  });
+
   const users = data?.content ?? [];
   const total = data?.totalElements ?? 0;
   const totalPages = data?.totalPages ?? 0;
-
-  // Counts for stat cards — derived from current page data
-  const adminCount = users.filter(
-    (u) => u.role === "ADMIN" && u.status === "ACTIVE",
-  ).length;
-  const studentCount = users.filter((u) => u.role === "STUDENT").length;
-  const mentorCount = users.filter((u) => u.role === "MENTOR").length;
-  const judgeCount = users.filter((u) => u.role === "JUDGE").length;
 
   const handleToggleStatus = async (user: (typeof users)[number]) => {
     const isActive = user.status === "ACTIVE";
     try {
       if (isActive) {
         await deactivateMutation.mutateAsync(user.id);
-        enqueueSnackbar("User deactivated successfully.", { variant: "success" });
+        enqueueSnackbar("User deactivated successfully.", {
+          variant: "success",
+        });
       } else {
         await activateMutation.mutateAsync(user.id);
         enqueueSnackbar("User activated successfully.", { variant: "success" });
@@ -745,31 +1031,35 @@ export function AdminUsersPage() {
         </Button>
       </div>
 
-      {/* Stat cards */}
+      {/* Stat Cards — counts from totalElements, not from current page */}
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
           label="Administrators"
-          count={adminCount}
+          count={adminStats?.totalElements ?? 0}
           sub="Active"
           accent="text-red-500"
+          loading={!adminStats}
         />
         <StatCard
           label="Students"
-          count={studentCount}
+          count={studentStats?.totalElements ?? 0}
           sub="Registered"
           accent="text-green-600"
+          loading={!studentStats}
         />
         <StatCard
           label="Mentors"
-          count={mentorCount}
+          count={mentorStats?.totalElements ?? 0}
           sub="Assigned"
           accent="text-pink-600"
+          loading={!mentorStats}
         />
         <StatCard
           label="Judges"
-          count={judgeCount}
+          count={judgeStats?.totalElements ?? 0}
           sub="Invited"
           accent="text-yellow-600"
+          loading={!judgeStats}
         />
       </div>
 
@@ -876,10 +1166,18 @@ export function AdminUsersPage() {
                     className="border-b border-slate-50 transition hover:bg-slate-50/60"
                   >
                     <td className="px-5 py-3.5">
-                      <div className="font-semibold text-slate-800">
-                        {user.fullName}
-                      </div>
-                      <div className="text-xs text-slate-400">{user.email}</div>
+                      <button
+                        type="button"
+                        className="text-left"
+                        onClick={() => setViewUserId(user.id)}
+                      >
+                        <div className="font-semibold text-slate-800 hover:underline">
+                          {user.fullName}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {user.email}
+                        </div>
+                      </button>
                     </td>
 
                     <td className="px-5 py-3.5">
@@ -909,7 +1207,8 @@ export function AdminUsersPage() {
                         <Tooltip title="Edit user">
                           <IconButton
                             size="small"
-                            onClick={() => setEditUser(user as AdminUser)}
+                            // ✅ Pass userId; EditUserDialog will fetch full detail
+                            onClick={() => setEditUserId(user.id)}
                           >
                             <EditIcon
                               fontSize="small"
@@ -921,7 +1220,11 @@ export function AdminUsersPage() {
                         <Tooltip title="Reset password">
                           <IconButton
                             size="small"
-                            onClick={() => setResetUser(user as AdminUser)}
+                            // ✅ user here is UserSummaryResponse which has id + email
+                            //    that's all ResetPasswordDialog needs
+                            onClick={() =>
+                              setResetUser(user as unknown as AdminUser)
+                            }
                           >
                             <LockResetIcon
                               fontSize="small"
@@ -986,11 +1289,21 @@ export function AdminUsersPage() {
       </div>
 
       {/* Dialogs */}
+      <ViewUserDialog
+        userId={viewUserId}
+        onClose={() => setViewUserId(null)}
+        onEdit={(u) => setEditUserId(u.id)}
+        onResetPassword={(u) => setResetUser(u)}
+      />
       <CreateUserDialog
         open={showCreate}
         onClose={() => setShowCreate(false)}
       />
-      <EditUserDialog user={editUser} onClose={() => setEditUser(null)} />
+      {/* ✅ EditUserDialog now receives userId and fetches full detail internally */}
+      <EditUserDialog
+        userId={editUserId}
+        onClose={() => setEditUserId(null)}
+      />
       <ResetPasswordDialog
         user={resetUser}
         onClose={() => setResetUser(null)}

@@ -1,10 +1,6 @@
-// Enums / Literals
-
 export type TabId = "info" | "tracks" | "teams";
 
 export type TeamStatus = "APPROVED" | "PENDING" | "REJECTED";
-
-// Domain types
 
 export type TeamMember = {
   id: string;
@@ -47,8 +43,6 @@ export type EditEventData = {
   endDate: string;
   tracks: EventTrack[];
 };
-
-// UI state types
 
 export type DialogState =
   | { kind: "addJudge"; trackId: string }

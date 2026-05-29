@@ -14,11 +14,9 @@ export type UserSummaryResponse = {
   id: string;
   email: string;
   fullName: string;
-  avatarUrl?: string;
   role: UserRole;
   status: UserStatus;
   createdAt: string;
-  lastLoginAt?: string;
 };
 
 export type UserDetailResponse = {
@@ -26,25 +24,16 @@ export type UserDetailResponse = {
   email: string;
   fullName: string;
   phone?: string;
-  avatarUrl?: string;
   role: UserRole;
   status: UserStatus;
-  studentType?: "FPT" | "EXTERNAL";
-  studentCode?: string;
-  universityName?: string;
-  major?: string;
-  graduationYear?: number;
+  avatarUrl?: string;
+  emailVerifiedAt?: string;
   lastLoginAt?: string;
-  createdAt: string;
+  roleProfile?: unknown;
 };
 
-/** Full user record - maps to UserDetailResponse */
 export type AdminUser = UserDetailResponse;
-
-/** List-level user record - maps to UserSummaryResponse */
 export type AdminUserSummary = UserSummaryResponse;
-
-// Request types
 
 export type AdminUserListParams = {
   search?: string;
@@ -56,15 +45,11 @@ export type AdminUserListParams = {
 
 export type CreateUserRequest = {
   email: string;
-  password: string;
   fullName: string;
   phone?: string;
   role: UserRole;
-  studentType?: "FPT" | "EXTERNAL";
-  studentCode?: string;
-  universityName?: string;
-  major?: string;
-  graduationYear?: number;
+  status: UserStatus;
+  password: string;
 };
 
 export type UpdateUserRequest = {
@@ -72,14 +57,9 @@ export type UpdateUserRequest = {
   phone?: string;
   role?: UserRole;
   status?: UserStatus;
-  studentCode?: string;
-  universityName?: string;
-  major?: string;
-  graduationYear?: number;
+  avatarUrl?: string;
 };
 
 export type AdminResetPasswordRequest = {
-  userId: string;
   newPassword: string;
-  confirmPassword: string;
 };
