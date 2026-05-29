@@ -6,8 +6,9 @@ export type PageResponse<T> = {
   content: T[];
   totalElements: number;
   totalPages: number;
-  number: number;
+  page: number;
   size: number;
+  last: boolean;
 };
 
 export type UserSummaryResponse = {
@@ -31,9 +32,6 @@ export type UserDetailResponse = {
   lastLoginAt?: string;
   roleProfile?: unknown;
 };
-
-export type AdminUser = UserDetailResponse;
-export type AdminUserSummary = UserSummaryResponse;
 
 export type AdminUserListParams = {
   search?: string;
