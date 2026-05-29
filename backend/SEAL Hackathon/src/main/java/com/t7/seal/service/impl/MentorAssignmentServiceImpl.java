@@ -35,7 +35,7 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
     @Transactional(readOnly = true)
     public List<MentorAssignmentResponse> getMentorAssignments(UUID trackId) {
         findTrack(trackId);
-        return assignmentRepository.findByTrackIdOrderByAssignAtAsc(trackId)
+        return assignmentRepository.findByTrackIdOrderByAssignedAtAsc(trackId)
                 .stream()
                 .map(this::toMentorAssignmentResponse)
                 .toList();
@@ -63,7 +63,7 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
 
         assignment.setAssignedBy(track.getEvent().getCreatedBy());
 
-        assignment.setAssignAt(LocalDateTime.now());
+        assignment.setAssignedAt(LocalDateTime.now());
 
         return toMentorAssignmentResponse(assignmentRepository.save(assignment));
     }
@@ -101,7 +101,7 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
                 assignment.getTrack().getId(),
                 assignment.getUser().getId(),
                 assignment.getUser().getFullName(),
-                assignment.getAssignAt()
+                assignment.getAssignedAt()
         );
     }
 }

@@ -11,17 +11,11 @@ import {
   CoordinatorEditEventPage,
 } from "@/features/coordinator";
 
-import { RegisterPage } from "@/features/auth/pages/RegisterPage";
-import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
-import { VerifyEmailSuccessPage } from "@/features/auth/pages/VerifyEmailSuccessPage";
-import { LoginPage } from "@/features/auth/pages/LoginPage";
-
 import { RootLayout } from "@/components/layout/RootLayout";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
-import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
-import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
-import { OAuthCallbackPage } from "@/features/auth/pages/OAuthCallbackPage";
+
+import { ForgotPasswordPage, LoginPage, OAuthCallbackPage, RegisterPage, ResetPasswordPage, VerifyEmailPage, VerifyEmailSuccessPage } from "@/features/auth";
 
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
 

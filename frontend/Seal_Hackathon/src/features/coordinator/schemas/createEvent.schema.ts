@@ -48,7 +48,6 @@ export const createEventTrackSchema = z.object({
   description: z.string().optional().or(z.literal("")),
   rounds: z
     .array(createEventRoundSchema)
-    .min(1, "At least one round is required"),
 });
 
 export const createEventDetailsSchema = z
@@ -72,9 +71,6 @@ export const createEventDetailsSchema = z
         "Invalid banner file",
       )
       .nullable(),
-    tracks: z
-      .array(createEventTrackSchema)
-      .min(1, "At least one track is required."),
   })
   .superRefine((data, ctx) => {
     if (
@@ -89,37 +85,11 @@ export const createEventDetailsSchema = z
           "Registration close date must be after registration open date.",
       });
     }
-
-    if (
-      data.competitionStartDate &&
-      data.competitionEndDate &&
-      data.competitionStartDate >= data.competitionEndDate
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["competitionEndDate"],
-        message: "Competition end date must be after competition start date.",
-      });
-    }
-
-    if (
-      data.registrationClose &&
-      data.competitionStartDate &&
-      data.registrationClose >= data.competitionStartDate
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["competitionStartDate"],
-        message:
-          "Competition start date must be after registration close date.",
-      });
-    }
   });
 
 export const createEventSchema = createEventDetailsSchema.safeExtend({
   tracks: z
     .array(createEventTrackSchema)
-    .min(1, "At least one track is required."),
 });
 
 export type CreateEventFormValues = z.input<typeof createEventSchema>;
