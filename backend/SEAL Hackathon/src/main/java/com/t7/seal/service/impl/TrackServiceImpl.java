@@ -77,7 +77,7 @@ public class TrackServiceImpl implements TrackService {
         int registerdTeamCount = teamRepository.CountActiveTeamByTrackId(trackId);
 
         List<MentorAssignmentResponse> mentorAssignmentResponses = mentorAssignmentRepository
-                .findByTrackIdOrderByAssignAtAsc(trackId)
+                .findByTrackIdOrderByAssignedAtAsc(trackId)
                 .stream()
                 .map(this::toMentorAssignmentResponse)
                 .toList();
@@ -207,7 +207,7 @@ public class TrackServiceImpl implements TrackService {
                 assignment.getTrack().getId(),
                 assignment.getUser().getId(),
                 assignment.getUser().getFullName(),
-                assignment.getAssignAt()
+                assignment.getAssignedAt()
         );
     }
 }

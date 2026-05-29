@@ -11,5 +11,5 @@ import java.util.UUID;
 @Repository
 public interface MentorAssignmentRepository extends JpaRepository<MentorAssignment, UUID> {
 
-    List<MentorAssignment> findByTrackIdOrderByAssignAtAsc(UUID trackId);
+    List<MentorAssignment> findByTrackIdOrderByAssignedAtAsc(UUID trackId);
 }

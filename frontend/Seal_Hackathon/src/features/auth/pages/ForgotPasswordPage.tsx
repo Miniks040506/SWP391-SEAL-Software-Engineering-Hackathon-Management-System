@@ -5,6 +5,7 @@ import LockResetIcon from "@mui/icons-material/LockReset";
 import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
 import PasswordIcon from "@mui/icons-material/Password";
 import ReplayIcon from "@mui/icons-material/Replay";
+import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import { Button, CircularProgress, TextField } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
@@ -35,6 +36,7 @@ const resetSteps = [
 ];
 
 type ResetStep = 1 | 2 | 3 | 4;
+type ResetCodeStatus = "input" | "error";
 
 const textFieldSx = {
   "& .MuiOutlinedInput-root": {
@@ -57,6 +59,7 @@ export function ForgotPasswordPage() {
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
+  const [codeStatus, setCodeStatus] = useState<ResetCodeStatus>("input");
 
   const emailForm = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -73,6 +76,8 @@ export function ForgotPasswordPage() {
     },
   });
 
+  const isStepCenter = currentStep === 2 || currentStep === 4;
+
   const pageState = useMemo(() => {
     if (currentStep === 1) {
       return {
@@ -84,10 +89,18 @@ export function ForgotPasswordPage() {
     }
 
     if (currentStep === 2) {
+      if (codeStatus === "error") {
+        return {
+          title: "Verification Error",
+          description: "Invalid reset code. Please try again.",
+          icon: <ReportGmailerrorredIcon sx={{ fontSize: 30 }} />,
+        };
+      }
+
       return {
         title: "Verify Reset Code",
         description:
-          "Enter the 6-digit password reset code we sent to your email.",
+          "Please check your inbox and enter the reset code below to continue.",
         icon: <MarkEmailReadIcon sx={{ fontSize: 30 }} />,
       };
     }
@@ -106,7 +119,7 @@ export function ForgotPasswordPage() {
         "Your password has been updated. You can now log in with your new password.",
       icon: <TaskAltIcon sx={{ fontSize: 30 }} />,
     };
-  }, [currentStep]);
+  }, [currentStep, codeStatus]);
 
   const handleEmailSubmit = async (values: ForgotPasswordFormValues) => {
     try {
@@ -119,6 +132,7 @@ export function ForgotPasswordPage() {
       setEmail(normalizedEmail);
       setCode("");
       setCodeError("");
+      setCodeStatus("input");
       setCurrentStep(2);
 
       enqueueSnackbar("Password reset code sent to your email.", {
@@ -132,18 +146,37 @@ export function ForgotPasswordPage() {
     }
   };
 
-  const handleCodeContinue = () => {
+  const acceptResetCode = (nextCode: string) => {
     const parsed = resetPasswordCodeSchema.safeParse({
-      code,
+      code: nextCode,
     });
 
     if (!parsed.success) {
+      setCodeStatus("error");
       setCodeError(parsed.error.issues[0]?.message || "Invalid reset code.");
       return;
     }
 
+    setCodeStatus("input");
     setCodeError("");
     setCurrentStep(3);
+  };
+
+  const handleCodeChange = (nextCode: string) => {
+    const cleaned = nextCode.replace(/\D/g, "").slice(0, 6);
+
+    setCode(cleaned);
+
+    if (codeStatus === "error") {
+      setCodeStatus("input");
+      setCodeError("");
+    }
+
+    if (cleaned.length === 6) {
+      window.setTimeout(() => {
+        acceptResetCode(cleaned);
+      }, 0);
+    }
   };
 
   const handleResendCode = async () => {
@@ -159,6 +192,7 @@ export function ForgotPasswordPage() {
 
       setCode("");
       setCodeError("");
+      setCodeStatus("input");
 
       enqueueSnackbar("Password reset code sent again.", {
         variant: "success",
@@ -198,6 +232,8 @@ export function ForgotPasswordPage() {
       );
 
       if (error?.response?.status === 400 || error?.response?.status === 404) {
+        setCodeStatus("error");
+        setCodeError("Invalid or expired reset code. Please try again.");
         setCurrentStep(2);
       }
     }
@@ -211,7 +247,11 @@ export function ForgotPasswordPage() {
         steps={resetSteps}
       />
 
-      <AuthCard title={pageState.title} description={pageState.description}>
+      <AuthCard
+        title={pageState.title}
+        description={currentStep === 2 ? undefined : pageState.description}
+        className={isStepCenter ? "text-center" : ""}
+      >
         <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500 text-white shadow-[0_12px_24px_rgba(59,130,246,0.25)]">
           {pageState.icon}
         </div>
@@ -270,77 +310,38 @@ export function ForgotPasswordPage() {
         )}
 
         {currentStep === 2 && (
-          <div className="space-y-6 text-center">
-            <p className="text-sm leading-6 text-slate-600">
-              Code sent to{" "}
-              <span className="font-bold text-blue-500">{email}</span>
+          <>
+            <p className="mx-auto max-w-107.5 text-base leading-7 text-slate-600">
+              A reset code has been sent to{" "}
+              <span className="font-semibold text-blue-500">
+                {email || "your email"}
+              </span>
             </p>
 
-            <CodeInput
-              value={code}
-              onChange={(nextCode) => {
-                setCode(nextCode);
-                setCodeError("");
-              }}
-              error={codeError}
-            />
+            <p
+              className={[
+                "mx-auto mt-2 max-w-107.5 text-base leading-7",
+                codeStatus === "error"
+                  ? "font-semibold text-rose-500"
+                  : "text-slate-600",
+              ].join(" ")}
+            >
+              {codeError || pageState.description}
+            </p>
 
-            {codeError && (
-              <p className="text-sm font-semibold text-rose-500">
-                {codeError}
-              </p>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant="outlined"
-                onClick={() => setCurrentStep(1)}
-                startIcon={<ArrowBackIcon />}
-                sx={{
-                  height: 42,
-                  borderRadius: 999,
-                  textTransform: "none",
-                  fontWeight: 900,
-                }}
-              >
-                Change email
-              </Button>
-
-              <Button
-                type="button"
-                variant="outlined"
-                onClick={handleResendCode}
+            <div className="mt-8">
+              <CodeInput
+                value={code}
+                onChange={handleCodeChange}
+                error={codeStatus === "error"}
                 disabled={forgotPasswordMutation.isPending}
-                startIcon={<ReplayIcon />}
-                sx={{
-                  height: 42,
-                  borderRadius: 999,
-                  textTransform: "none",
-                  fontWeight: 900,
-                }}
-              >
-                Resend code
-              </Button>
+              />
             </div>
 
-            <Button
-              type="button"
-              fullWidth
-              variant="contained"
-              onClick={handleCodeContinue}
-              disabled={code.length !== 6}
-              sx={{
-                height: 46,
-                borderRadius: "10px",
-                textTransform: "none",
-                fontWeight: 900,
-                boxShadow: "none",
-              }}
-            >
-              Continue
-            </Button>
-          </div>
+            <div className="mt-8 text-sm font-extrabold text-slate-600">
+              Enter the 6-digit code from your email.
+            </div>
+          </>
         )}
 
         {currentStep === 3 && (
@@ -428,6 +429,48 @@ export function ForgotPasswordPage() {
           </div>
         )}
       </AuthCard>
+
+      {currentStep === 2 && (
+        <div className="mx-auto mt-8 flex w-full max-w-155 items-center justify-center gap-4">
+          <Button
+            type="button"
+            variant="outlined"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => {
+              setCode("");
+              setCodeError("");
+              setCodeStatus("input");
+              setCurrentStep(1);
+            }}
+            sx={{
+              width: 220,
+              height: 42,
+              borderRadius: 999,
+              textTransform: "none",
+              fontWeight: 900,
+            }}
+          >
+            Change email
+          </Button>
+
+          <Button
+            type="button"
+            variant="outlined"
+            startIcon={<ReplayIcon />}
+            disabled={forgotPasswordMutation.isPending}
+            onClick={handleResendCode}
+            sx={{
+              width: 220,
+              height: 42,
+              borderRadius: 999,
+              textTransform: "none",
+              fontWeight: 900,
+            }}
+          >
+            {forgotPasswordMutation.isPending ? "Resending..." : "Resend code"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
