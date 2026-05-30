@@ -1,19 +1,18 @@
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useState } from "react";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
-import IconButton from "@mui/material/IconButton";
 
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 
-import {
-  createEmptyPrize,
-  prizeRankOptions,
-  type CreateEventFormValues,
+import type {
+  CreateEventFormValues,
+  PrizeFormValues,
 } from "../../schemas/createEvent.schema";
+
+import { PrizeCreateModal } from "./components/PrizeCreateModal";
+import { PrizeTable } from "./components/PrizeTable";
 
 type PrizesStepProps = {
   onBack: () => void;
@@ -21,21 +20,61 @@ type PrizesStepProps = {
 };
 
 export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
-  const {
-    register,
-    control,
-    formState: { errors },
-  } = useFormContext<CreateEventFormValues>();
+  const { control } = useFormContext<CreateEventFormValues>();
+
+  const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
+  const [editingPrizeIndex, setEditingPrizeIndex] = useState<number | null>(
+    null,
+  );
 
   const {
-    fields: prizeFields,
     append: appendPrize,
     remove: removePrize,
+    update: updatePrize,
   } = useFieldArray({
     control,
     name: "prizes",
     keyName: "fieldId",
   });
+
+  const prizes = useWatch({
+    control,
+    name: "prizes",
+  });
+
+  const tracks = useWatch({
+    control,
+    name: "tracks",
+  });
+
+  const currentPrizes = prizes ?? [];
+  const currentTracks = tracks ?? [];
+  const editingPrize =
+    editingPrizeIndex !== null ? currentPrizes[editingPrizeIndex] : null;
+
+  const handleOpenCreateModal = () => {
+    setEditingPrizeIndex(null);
+    setIsPrizeModalOpen(true);
+  };
+
+  const handleOpenEditModal = (prizeIndex: number) => {
+    setEditingPrizeIndex(prizeIndex);
+    setIsPrizeModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsPrizeModalOpen(false);
+    setEditingPrizeIndex(null);
+  };
+
+  const handleSavePrize = (prize: PrizeFormValues) => {
+    if (editingPrizeIndex === null) {
+      appendPrize(prize);
+      return;
+    }
+
+    updatePrize(editingPrizeIndex, prize);
+  };
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -46,8 +85,8 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
           </h2>
 
           <p className="mt-1 text-sm text-gray-500">
-            Configure award titles and prize values. You can also skip this step
-            and configure prizes later.
+            Create prize configurations through a modal, then review all prizes
+            below.
           </p>
         </div>
 
@@ -55,7 +94,7 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
           type="button"
           variant="contained"
           startIcon={<AddOutlinedIcon />}
-          onClick={() => appendPrize(createEmptyPrize())}
+          onClick={handleOpenCreateModal}
           sx={{
             bgcolor: "white",
             color: "#2563eb",
@@ -72,86 +111,13 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
         </Button>
       </div>
 
-      <div className="space-y-4 px-7 py-6">
-        {prizeFields.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-6 py-12 text-center">
-            <p className="text-sm font-semibold text-gray-500">
-              No prizes added yet.
-            </p>
-
-            <p className="mt-1 text-sm text-gray-400">
-              Click Add Prize to configure awards, or skip this step.
-            </p>
-          </div>
-        )}
-
-        {prizeFields.map((field, index) => {
-          const prizeErrors = errors.prizes?.[index];
-
-          return (
-            <div
-              key={field.fieldId}
-              className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-extrabold text-gray-900">
-                  Prize {index + 1}
-                </h3>
-
-                <IconButton color="error" onClick={() => removePrize(index)}>
-                  <DeleteOutlineOutlinedIcon />
-                </IconButton>
-              </div>
-
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <TextField
-                  select
-                  label="Rank"
-                  fullWidth
-                  size="small"
-                  {...register(`prizes.${index}.rank`)}
-                >
-                  {prizeRankOptions.map((rank) => (
-                    <MenuItem key={rank} value={rank}>
-                      {rank}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <TextField
-                  label="Prize Title"
-                  placeholder="e.g. Champion Award"
-                  error={Boolean(prizeErrors?.title)}
-                  helperText={prizeErrors?.title?.message}
-                  fullWidth
-                  required
-                  size="small"
-                  {...register(`prizes.${index}.title`)}
-                />
-
-                <TextField
-                  label="Prize Value"
-                  placeholder="e.g. 5,000,000 VND"
-                  error={Boolean(prizeErrors?.value)}
-                  helperText={prizeErrors?.value?.message}
-                  fullWidth
-                  size="small"
-                  {...register(`prizes.${index}.value`)}
-                />
-
-                <TextField
-                  label="Description"
-                  placeholder="Brief prize description"
-                  error={Boolean(prizeErrors?.description)}
-                  helperText={prizeErrors?.description?.message}
-                  fullWidth
-                  size="small"
-                  {...register(`prizes.${index}.description`)}
-                />
-              </div>
-            </div>
-          );
-        })}
+      <div className="px-7 py-6">
+        <PrizeTable
+          prizes={currentPrizes}
+          tracks={currentTracks}
+          onEditPrize={handleOpenEditModal}
+          onDeletePrize={removePrize}
+        />
       </div>
 
       <div className="flex justify-between border-t border-gray-100 px-7 py-5">
@@ -175,9 +141,17 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
             },
           }}
         >
-          {prizeFields.length === 0 ? "Skip Step" : "Next Step"}
+          {currentPrizes.length === 0 ? "Skip Step" : "Next Step"}
         </Button>
       </div>
+
+      <PrizeCreateModal
+        open={isPrizeModalOpen}
+        tracks={currentTracks}
+        initialPrize={editingPrize}
+        onClose={handleCloseModal}
+        onSave={handleSavePrize}
+      />
     </section>
   );
 };

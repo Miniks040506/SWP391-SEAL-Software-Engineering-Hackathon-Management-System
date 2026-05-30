@@ -9,9 +9,7 @@ export const ADVANCEMENT_RULE_TYPES = [
 ] as const;
 
 export const prizeRankOptions = ["1st", "2nd", "3rd", "Consolation"] as const;
-
-export const prizeTargetScopeOptions = ["Event", "Track", "Round"] as const;
-
+export const prizeCurrencyOptions = ["VND", "USD", "Other"] as const;
 export const mentorJudgeRoleOptions = ["Mentor", "Judge"] as const;
 
 export const criteriaTypeOptions = [
@@ -65,33 +63,33 @@ export const createEventTrackSchema = z.object({
 });
 
 export const createEventPrizeSchema = z
-.object({
-  id: z.string(),
-  rank: z.enum(prizeRankOptions),
-  title: z.string().min(1, "Prize title is required").max(200),
-  value: z.string().optional().or(z.literal("")),
-  description: z.string().optional().or(z.literal("")),
+  .object({
+    id: z.string(),
+    rank: z.enum(prizeRankOptions),
+    title: z.string().min(1, "Prize title is required").max(200),
 
-  targetScope: z.enum(prizeTargetScopeOptions),
-  targetTrackId: z.string().optional().or(z.literal("")),
-  targetRoundId: z.string().optional().or(z.literal("")),
-})
+    value: z
+      .string()
+      .min(1, "Prize value is required")
+      .refine((value) => Number(value) > 0, {
+        message: "Prize value must be greater than 0",
+      }),
+
+    currency: z.enum(prizeCurrencyOptions),
+    customCurrency: z.string().optional().or(z.literal("")),
+
+    description: z.string().optional().or(z.literal("")),
+    targetTrackId: z.string().optional().or(z.literal("")),
+    targetRoundId: z.string().optional().or(z.literal("")),
+  })
   .superRefine((data, ctx) => {
-    if (data.targetScope === "Track" && !data.targetTrackId){
+    if (data.currency === "Other" && !data.customCurrency?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["targetTrackId"],
-        message: "Track is required for track prize.",
+        path: ["customCurrency"],
+        message: "Currency unit is required.",
       });
     }
-
-    if (data.targetScope === "Round" && !data.targetRoundId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["targetRoundId"],
-        message: "Round is require for round prize.",
-      });
-    } 
   });
 
 export const createEventMentorJudgeSchema = z.object({
@@ -230,8 +228,9 @@ export const createEmptyPrize = (): PrizeFormValues => ({
   rank: "1st",
   title: "",
   value: "",
+  currency: "VND",
+  customCurrency: "",
   description: "",
-  targetScope: "Event",
   targetTrackId: "",
   targetRoundId: "",
 });
