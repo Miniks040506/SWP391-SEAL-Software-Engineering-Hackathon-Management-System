@@ -29,7 +29,7 @@ import { UserViewDialog } from "@/features/admin/components/UserViewDialog";
 import { UserCreateDialog } from "@/features/admin/components/UserCreateDialog";
 import { UserEditDialog } from "@/features/admin/components/UserEditDialog";
 import { UserResetPasswordDialog } from "@/features/admin/components/UserResetPasswordDialog";
-import type { UserStatus } from "@/types/admin.types";
+import type { UserStatus } from "@/types/user.types";
 import type { UserRole } from "@/types/auth.types";
 
 const ALL_ROLES: UserRole[] = [
@@ -187,13 +187,13 @@ export function AdminUsersPage() {
                         <div className="text-xs text-slate-400">{user.email}</div>
                       </button>
                     </td>
-                    <td className="px-5 py-3.5"><RoleBadge role={user.role} /></td>
+                    <td className="px-5 py-3.5"><RoleBadge role={user.role as UserRole} /></td>
                     <td className="px-5 py-3.5">
                       <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600">
                         {user.id.slice(0, 8).toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5"><StatusDot status={user.status} /></td>
+                    <td className="px-5 py-3.5"><StatusDot status={user.status as UserStatus} /></td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1">
                         <Tooltip title="Edit user">

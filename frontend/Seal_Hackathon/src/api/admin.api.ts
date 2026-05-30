@@ -1,12 +1,12 @@
 import { apiRequest } from "./apiRequest";
+import type { PageResponse } from "@/types/common.types";
 import type {
   AdminUserListParams,
   CreateUserRequest,
-  PageResponse,
   UpdateUserRequest,
   UserDetailResponse,
   UserSummaryResponse,
-} from "@/types/admin.types";
+} from "@/types/user.types";
 
 export const adminApi = {
   listUsers(params: AdminUserListParams): Promise<PageResponse<UserSummaryResponse>> {

@@ -3,7 +3,7 @@ import TextField from "@mui/material/TextField";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import { SectionCard } from "../../components/SectionCard";
 import type { EditEventData } from "../../mocks/coordinatorEditEvent.mock";
-import type { EventFormErrors } from "../../hooks/useEditEvent";
+import type { EventFormErrors } from "../../hooks/useEditEventMutation";
 
 const SEASONS = ["Spring", "Summer", "Fall"] as const;
 

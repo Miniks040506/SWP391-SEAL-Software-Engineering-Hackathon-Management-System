@@ -23,7 +23,7 @@ import {
   useUpdateUserMutation,
 } from "@/features/admin/hooks/useAdminMutations";
 import type { UserRole } from "@/types/auth.types";
-import type { UserStatus } from "@/types/admin.types";
+import type { UserStatus } from "@/types/user.types";
 
 const ALL_ROLES: UserRole[] = [
   "ADMIN", "COORDINATOR", "JUDGE", "MENTOR", "PARTICIPANT", "STUDENT", "GUEST",
@@ -49,7 +49,7 @@ export function UserEditDialog({
   } = useForm<EditUserFormInput, unknown, EditUserFormValues>({
     resolver: zodResolver(editUserSchema),
     values: user
-      ? { fullName: user.fullName, phone: user.phone ?? "", role: user.role, status: user.status }
+      ? { fullName: user.fullName, phone: user.phone ?? "", role: user.role as UserRole, status: user.status as UserStatus }
       : undefined,
   });
 

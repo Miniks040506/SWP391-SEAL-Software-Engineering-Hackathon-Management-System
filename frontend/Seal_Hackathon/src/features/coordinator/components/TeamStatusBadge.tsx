@@ -1,4 +1,4 @@
-import type { TeamStatus } from "../types/coordinator.types";
+import type { TeamStatus } from "../hooks/useEditEventMutation";
 
 const STATUS_STYLES: Record<TeamStatus, string> = {
   APPROVED: "bg-emerald-100 text-emerald-700 border-emerald-200",

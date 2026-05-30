@@ -24,7 +24,7 @@ import {
 } from "@/features/admin/schemas/admin.schema";
 import { useCreateUserMutation } from "@/features/admin/hooks/useAdminMutations";
 import type { UserRole } from "@/types/auth.types";
-import type { UserStatus } from "@/types/admin.types";
+import type { UserStatus } from "@/types/user.types";
 
 const ALL_ROLES: UserRole[] = [
   "ADMIN", "COORDINATOR", "JUDGE", "MENTOR", "PARTICIPANT", "STUDENT", "GUEST",
