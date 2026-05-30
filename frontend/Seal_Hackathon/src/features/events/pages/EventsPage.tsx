@@ -18,6 +18,65 @@ const seasons: PublicEventsFilterValues["season"][] = [
   "FALL",
 ];
 
+const paginationSx = {
+  "& .MuiPaginationItem-root": {
+    borderColor: "#d1d5db",
+    color: "#111827",
+    backgroundColor: "#ffffff",
+    fontWeight: 800,
+  },
+
+  "& .MuiPaginationItem-root:hover": {
+    backgroundColor: "#eff6ff",
+    borderColor: "#3b82f6",
+    color: "#2563eb",
+  },
+
+  "& .MuiPaginationItem-root.Mui-selected": {
+    backgroundColor: "#3b82f6",
+    borderColor: "#3b82f6",
+    color: "#ffffff",
+    boxShadow: "0 8px 20px rgba(59, 130, 246, 0.25)",
+  },
+
+  "& .MuiPaginationItem-root.Mui-selected:hover": {
+    backgroundColor: "#2563eb",
+  },
+
+  "& .MuiPaginationItem-root.Mui-disabled": {
+    opacity: 1,
+    borderColor: "#e5e7eb",
+    color: "#9ca3af",
+    backgroundColor: "#f9fafb",
+  },
+
+  ".dark & .MuiPaginationItem-root": {
+    borderColor: "#334155",
+    color: "#e5e7eb",
+    backgroundColor: "#0f172a",
+  },
+
+  ".dark & .MuiPaginationItem-root:hover": {
+    backgroundColor: "#1e293b",
+    borderColor: "#60a5fa",
+    color: "#93c5fd",
+  },
+
+  ".dark & .MuiPaginationItem-root.Mui-selected": {
+    backgroundColor: "#3b82f6",
+    borderColor: "#60a5fa",
+    color: "#ffffff",
+    boxShadow: "0 10px 24px rgba(59, 130, 246, 0.32)",
+  },
+
+  ".dark & .MuiPaginationItem-root.Mui-disabled": {
+    opacity: 1,
+    borderColor: "#1e293b",
+    color: "#64748b",
+    backgroundColor: "#020617",
+  },
+} as const;
+
 export function EventsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -191,6 +250,7 @@ export function EventsPage() {
               onChange={(_, value) => handlePageChange(value)}
               variant="outlined"
               shape="rounded"
+              sx={paginationSx}
             />
           </div>
         )}
