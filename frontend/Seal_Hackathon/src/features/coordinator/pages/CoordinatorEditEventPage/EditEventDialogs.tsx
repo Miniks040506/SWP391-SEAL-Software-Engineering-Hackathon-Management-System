@@ -7,37 +7,28 @@ import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
 import { DialogCancelBtn, DialogConfirmBtn } from "../../components/DialogButtons";
 import { TeamStatusBadge } from "../../components/TeamStatusBadge";
-import {
-  availableJudges,
-  availableMentors,
-  availableScoreCriteria,
-} from "../../mocks/coordinatorEditEvent.mock";
 import { avatarColor } from "@/utils/avatarColor";
-import type { DialogState } from "../../hooks/useEditEvent";
+import type { DialogState } from "../../hooks/useEditEventMutation";
+import type { EventUser, ScoreCriteria } from "../../mocks/coordinatorEditEvent.mock";
+
+// ─── Props ───────────────────────────────────────────────────────────────────
 
 interface EditEventDialogsProps {
   dialog: DialogState;
-  selectedIds: string[];
-  newRoundName: string;
-  newRoundStart: string;
-  newRoundEnd: string;
-  newTrackName: string;
-  newTrackDesc: string;
+  judges: EventUser[];
+  mentors: EventUser[];
+  criteria: ScoreCriteria[];
   onClose: () => void;
-  onToggleSelectId: (id: string) => void;
-  onSetNewRoundName: (v: string) => void;
-  onSetNewRoundStart: (v: string) => void;
-  onSetNewRoundEnd: (v: string) => void;
-  onSetNewTrackName: (v: string) => void;
-  onSetNewTrackDesc: (v: string) => void;
-  onConfirmAddTrack: () => void;
-  onConfirmAddRound: () => void;
-  onConfirmAddJudge: () => void;
-  onConfirmAddMentor: () => void;
-  onConfirmEditCriteria: () => void;
-  onConfirmEditTrack: () => void;
-  onConfirmEditRound: () => void;
+  onConfirmAddTrack: (name: string, desc: string) => void;
+  onConfirmEditTrack: (name: string, desc: string) => void;
+  onConfirmAddRound: (name: string, start: string, end: string) => void;
+  onConfirmEditRound: (name: string, start: string, end: string) => void;
+  onConfirmAddJudge: (selectedIds: string[]) => void;
+  onConfirmAddMentor: (selectedIds: string[]) => void;
+  onConfirmEditCriteria: (selectedIds: string[]) => void;
 }
+
+// ─── Style constants ──────────────────────────────────────────────────────────
 
 const dialogPaperSx = {
   borderRadius: "24px",
@@ -53,44 +44,91 @@ const formInputSx = {
 
 const checkboxSx = {
   color: "#94a3b8",
-  "&.Mui-checked": {
-    color: "#3b82f6",
-  },
+  "&.Mui-checked": { color: "#3b82f6" },
 };
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export const EditEventDialogs = ({
   dialog,
-  selectedIds,
-  newRoundName,
-  newRoundStart,
-  newRoundEnd,
-  newTrackName,
-  newTrackDesc,
+  judges,
+  mentors,
+  criteria,
   onClose,
-  onToggleSelectId,
-  onSetNewRoundName,
-  onSetNewRoundStart,
-  onSetNewRoundEnd,
-  onSetNewTrackName,
-  onSetNewTrackDesc,
   onConfirmAddTrack,
+  onConfirmEditTrack,
   onConfirmAddRound,
+  onConfirmEditRound,
   onConfirmAddJudge,
   onConfirmAddMentor,
   onConfirmEditCriteria,
-  onConfirmEditTrack,
-  onConfirmEditRound,
 }: EditEventDialogsProps) => {
+
+  // ── Track form state ──────────────────────────────────────────────────────
+  const [trackName, setTrackName] = useState("");
+  const [trackDesc, setTrackDesc] = useState("");
+
+  // ── Round form state ──────────────────────────────────────────────────────
+  const [roundName, setRoundName] = useState("");
+  const [roundStart, setRoundStart] = useState("");
+  const [roundEnd, setRoundEnd] = useState("");
+
+  // ── Selection state (judge/mentor/criteria) ───────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // ── Judge/Mentor search ───────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
 
+  // ── Sync local state when dialog opens ───────────────────────────────────
   useEffect(() => {
     if (!dialog) {
       setSearchQuery("");
+      setSelectedIds([]);
+      setTrackName("");
+      setTrackDesc("");
+      setRoundName("");
+      setRoundStart("");
+      setRoundEnd("");
+      return;
+    }
+
+    if (dialog.kind === "editTrack") {
+      setTrackName(dialog.initialName ?? "");
+      setTrackDesc(dialog.initialDesc ?? "");
+    }
+
+    if (dialog.kind === "addTrack") {
+      setTrackName("");
+      setTrackDesc("");
+    }
+
+    if (dialog.kind === "editRound") {
+      setRoundName(dialog.initialName ?? "");
+      setRoundStart(dialog.initialStart ?? "");
+      setRoundEnd(dialog.initialEnd ?? "");
+    }
+
+    if (dialog.kind === "addRound") {
+      setRoundName("");
+      setRoundStart("");
+      setRoundEnd("");
+    }
+
+    if (dialog.kind === "addJudge" || dialog.kind === "addMentor" || dialog.kind === "editCriteria") {
+      setSelectedIds(dialog.initialSelectedIds ?? []);
     }
   }, [dialog]);
 
+  const toggleSelectId = (id: string) =>
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+
+  // ── Renders ───────────────────────────────────────────────────────────────
+
   return (
     <>
+      {/* Track Dialog (add + edit) */}
       <Dialog
         open={dialog?.kind === "addTrack" || dialog?.kind === "editTrack"}
         onClose={onClose}
@@ -106,16 +144,16 @@ export const EditEventDialogs = ({
             <TextField
               label="Track Name"
               placeholder="e.g. AI Track"
-              value={newTrackName}
-              onChange={(e) => onSetNewTrackName(e.target.value)}
+              value={trackName}
+              onChange={(e) => setTrackName(e.target.value)}
               fullWidth
               sx={formInputSx}
             />
             <TextField
               label="Description"
               placeholder="Brief description of the track"
-              value={newTrackDesc}
-              onChange={(e) => onSetNewTrackDesc(e.target.value)}
+              value={trackDesc}
+              onChange={(e) => setTrackDesc(e.target.value)}
               fullWidth
               multiline
               rows={3}
@@ -126,13 +164,18 @@ export const EditEventDialogs = ({
         <DialogActions sx={{ p: 2, pt: 0 }}>
           <DialogCancelBtn onClick={onClose} />
           <DialogConfirmBtn
-            onClick={dialog?.kind === "addTrack" ? onConfirmAddTrack : onConfirmEditTrack}
-            disabled={!newTrackName.trim()}
+            onClick={() =>
+              dialog?.kind === "addTrack"
+                ? onConfirmAddTrack(trackName, trackDesc)
+                : onConfirmEditTrack(trackName, trackDesc)
+            }
+            disabled={!trackName.trim()}
             label={dialog?.kind === "addTrack" ? "Create Track" : "Save Changes"}
           />
         </DialogActions>
       </Dialog>
 
+      {/* Round Dialog (add + edit) */}
       <Dialog
         open={dialog?.kind === "addRound" || dialog?.kind === "editRound"}
         onClose={onClose}
@@ -148,16 +191,16 @@ export const EditEventDialogs = ({
             <TextField
               label="Round Name"
               placeholder="e.g. Preliminary Round"
-              value={newRoundName}
-              onChange={(e) => onSetNewRoundName(e.target.value)}
+              value={roundName}
+              onChange={(e) => setRoundName(e.target.value)}
               fullWidth
               sx={formInputSx}
             />
             <TextField
               label="Start Date"
               type="date"
-              value={newRoundStart}
-              onChange={(e) => onSetNewRoundStart(e.target.value)}
+              value={roundStart}
+              onChange={(e) => setRoundStart(e.target.value)}
               fullWidth
               slotProps={{ inputLabel: { shrink: true } }}
               sx={formInputSx}
@@ -165,8 +208,8 @@ export const EditEventDialogs = ({
             <TextField
               label="End Date"
               type="date"
-              value={newRoundEnd}
-              onChange={(e) => onSetNewRoundEnd(e.target.value)}
+              value={roundEnd}
+              onChange={(e) => setRoundEnd(e.target.value)}
               fullWidth
               slotProps={{ inputLabel: { shrink: true } }}
               sx={formInputSx}
@@ -176,13 +219,18 @@ export const EditEventDialogs = ({
         <DialogActions sx={{ p: 2, pt: 0 }}>
           <DialogCancelBtn onClick={onClose} />
           <DialogConfirmBtn
-            onClick={dialog?.kind === "addRound" ? onConfirmAddRound : onConfirmEditRound}
-            disabled={!newRoundName.trim()}
+            onClick={() =>
+              dialog?.kind === "addRound"
+                ? onConfirmAddRound(roundName, roundStart, roundEnd)
+                : onConfirmEditRound(roundName, roundStart, roundEnd)
+            }
+            disabled={!roundName.trim()}
             label={dialog?.kind === "addRound" ? "Add Round" : "Save Changes"}
           />
         </DialogActions>
       </Dialog>
 
+      {/* Judge / Mentor Assignment Dialog */}
       {(dialog?.kind === "addJudge" || dialog?.kind === "addMentor") && (
         <Dialog
           open
@@ -206,7 +254,7 @@ export const EditEventDialogs = ({
               />
             </div>
             <div className="h-[350px] divide-y divide-slate-100 overflow-y-auto p-2">
-              {(dialog.kind === "addJudge" ? availableJudges : availableMentors)
+              {(dialog.kind === "addJudge" ? judges : mentors)
                 .filter(
                   (u) =>
                     u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -219,7 +267,7 @@ export const EditEventDialogs = ({
                   >
                     <Checkbox
                       checked={selectedIds.includes(user.id)}
-                      onChange={() => onToggleSelectId(user.id)}
+                      onChange={() => toggleSelectId(user.id)}
                       sx={checkboxSx}
                     />
                     <div
@@ -233,7 +281,7 @@ export const EditEventDialogs = ({
                     </div>
                   </label>
                 ))}
-              {(dialog.kind === "addJudge" ? availableJudges : availableMentors).filter(
+              {(dialog.kind === "addJudge" ? judges : mentors).filter(
                 (u) =>
                   u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   u.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -247,13 +295,18 @@ export const EditEventDialogs = ({
           <DialogActions sx={{ p: 2 }}>
             <DialogCancelBtn onClick={onClose} />
             <DialogConfirmBtn
-              onClick={dialog.kind === "addJudge" ? onConfirmAddJudge : onConfirmAddMentor}
+              onClick={() =>
+                dialog.kind === "addJudge"
+                  ? onConfirmAddJudge(selectedIds)
+                  : onConfirmAddMentor(selectedIds)
+              }
               label="Save Assignments"
             />
           </DialogActions>
         </Dialog>
       )}
 
+      {/* Scoring Criteria Dialog */}
       <Dialog
         open={dialog?.kind === "editCriteria"}
         onClose={onClose}
@@ -266,7 +319,7 @@ export const EditEventDialogs = ({
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: "#f1f5f9" }}>
           <div className="grid gap-3">
-            {availableScoreCriteria.map((criterion) => (
+            {criteria.map((criterion) => (
               <label
                 key={criterion.id}
                 className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-all ${
@@ -277,7 +330,7 @@ export const EditEventDialogs = ({
               >
                 <Checkbox
                   checked={selectedIds.includes(criterion.id)}
-                  onChange={() => onToggleSelectId(criterion.id)}
+                  onChange={() => toggleSelectId(criterion.id)}
                   sx={{ ...checkboxSx, mt: -1 }}
                 />
                 <div className="flex-1">
@@ -298,10 +351,14 @@ export const EditEventDialogs = ({
             {selectedIds.length} criteria selected
           </span>
           <DialogCancelBtn onClick={onClose} />
-          <DialogConfirmBtn onClick={onConfirmEditCriteria} label="Save Criteria" />
+          <DialogConfirmBtn
+            onClick={() => onConfirmEditCriteria(selectedIds)}
+            label="Save Criteria"
+          />
         </DialogActions>
       </Dialog>
 
+      {/* Team Detail Dialog */}
       {dialog?.kind === "teamDetail" && (
         <Dialog
           open

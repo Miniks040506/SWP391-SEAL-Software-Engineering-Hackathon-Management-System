@@ -10,7 +10,7 @@ import { SectionCard } from "../../components/SectionCard";
 import { TeamStatusBadge } from "../../components/TeamStatusBadge";
 import { avatarColor } from "@/utils/avatarColor";
 import type { EditEventData, EventTeam } from "../../mocks/coordinatorEditEvent.mock";
-import type { TeamStatus } from "../../hooks/useEditEvent";
+import type { TeamStatus } from "../../hooks/useEditEventMutation";
 
 // Types
 

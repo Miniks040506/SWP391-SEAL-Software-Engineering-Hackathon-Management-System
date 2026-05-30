@@ -1,11 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import { useEditEvent } from "../../hooks/useEditEvent";
+import { useEditEventMutation } from "../../hooks/useEditEventMutation";
 import { EditEventDialogs } from "./EditEventDialogs";
 import { InfoTab } from "./InfoTab";
 import { TeamsTab } from "./TeamsTab";
 import { TracksTab } from "./TracksTab";
+import {
+  availableJudges,
+  availableMentors,
+  availableScoreCriteria,
+} from "../../mocks/coordinatorEditEvent.mock";
 
 const TABS = ["info", "tracks", "teams"] as const;
 
@@ -26,23 +31,26 @@ export const CoordinatorEditEventPage = () => {
     teams,
     expandedTracks,
     dialog,
-    setDialog,
-    selectedIds,
     selectedTeamIds,
-    newRoundName,
-    setNewRoundName,
-    newRoundStart,
-    setNewRoundStart,
-    newRoundEnd,
-    setNewRoundEnd,
-    newTrackName,
-    setNewTrackName,
-    newTrackDesc,
-    setNewTrackDesc,
     isSaving,
     errors,
     pendingCount,
     closeDialog,
+    openAddTrack,
+    openEditTrack,
+    openAddRound,
+    openEditRound,
+    openAddJudge,
+    openAddMentor,
+    openEditCriteria,
+    openTeamDetail,
+    confirmAddTrack,
+    confirmEditTrack,
+    confirmAddRound,
+    confirmEditRound,
+    confirmAddJudge,
+    confirmAddMentor,
+    confirmEditCriteria,
     handleSave,
     handleDiscard,
     handleEventChange,
@@ -50,26 +58,11 @@ export const CoordinatorEditEventPage = () => {
     removeTrack,
     removeRound,
     removeUser,
-    openAddJudge,
-    openAddMentor,
-    openEditCriteria,
-    openAddRound,
-    openAddTrack,
-    confirmAddRound,
-    confirmAddTrack,
-    confirmAddJudge,
-    confirmAddMentor,
-    confirmEditCriteria,
-    toggleSelectId,
     updateTeamStatus,
     handleSelectAllTrackTeams,
     handleToggleSelectTeam,
     handleBulkTeamStatusUpdate,
-    openEditTrack,
-    openEditRound,
-    confirmEditTrack,
-    confirmEditRound,
-  } = useEditEvent();
+  } = useEditEventMutation();
 
   return (
     <div className="w-full bg-slate-50/50 pb-8 font-sans text-slate-900">
@@ -205,36 +198,26 @@ export const CoordinatorEditEventPage = () => {
               onSelectAll={handleSelectAllTrackTeams}
               onToggleSelect={handleToggleSelectTeam}
               onBulkUpdate={handleBulkTeamStatusUpdate}
-              onOpenTeamDetail={(team) =>
-                setDialog({ kind: "teamDetail", team })
-              }
+              onOpenTeamDetail={openTeamDetail}
             />
           )}
         </div>
       </div>
 
+      {/* TODO: Replace mock data with API queries when coordinator.api.ts is ready */}
       <EditEventDialogs
         dialog={dialog}
-        selectedIds={selectedIds}
-        newRoundName={newRoundName}
-        newRoundStart={newRoundStart}
-        newRoundEnd={newRoundEnd}
-        newTrackName={newTrackName}
-        newTrackDesc={newTrackDesc}
+        judges={availableJudges}
+        mentors={availableMentors}
+        criteria={availableScoreCriteria}
         onClose={closeDialog}
-        onToggleSelectId={toggleSelectId}
-        onSetNewRoundName={setNewRoundName}
-        onSetNewRoundStart={setNewRoundStart}
-        onSetNewRoundEnd={setNewRoundEnd}
-        onSetNewTrackName={setNewTrackName}
-        onSetNewTrackDesc={setNewTrackDesc}
         onConfirmAddTrack={confirmAddTrack}
+        onConfirmEditTrack={confirmEditTrack}
         onConfirmAddRound={confirmAddRound}
+        onConfirmEditRound={confirmEditRound}
         onConfirmAddJudge={confirmAddJudge}
         onConfirmAddMentor={confirmAddMentor}
         onConfirmEditCriteria={confirmEditCriteria}
-        onConfirmEditTrack={confirmEditTrack}
-        onConfirmEditRound={confirmEditRound}
       />
     </div>
   );

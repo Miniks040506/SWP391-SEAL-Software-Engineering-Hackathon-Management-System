@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { UserStatus } from "@/types/admin.types";
+import type { UserStatus } from "@/types/user.types";
 
 const ALL_ROLES = [
   "ADMIN",
