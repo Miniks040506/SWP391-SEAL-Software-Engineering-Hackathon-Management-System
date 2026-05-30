@@ -4,8 +4,7 @@ export type UserRole =
   | "JUDGE"
   | "MENTOR"
   | "PARTICIPANT"
-  | "STUDENT"
-  | "GUEST";
+  | "STUDENT";
 
 export type StudentType = "FPT" | "EXTERNAL";
 

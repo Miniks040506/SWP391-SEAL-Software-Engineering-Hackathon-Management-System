@@ -18,10 +18,9 @@ import { enqueueSnackbar } from "notistack";
 import {
   resetPasswordSchema,
   type ResetPasswordFormValues,
+  textFieldSx,
 } from "@/features/admin/schemas/admin.schema";
 import { useResetUserPasswordMutation } from "@/features/admin/hooks/useAdminMutations";
-
-const textFieldSx = { "& .MuiOutlinedInput-root": { borderRadius: "10px" } };
 
 export function UserResetPasswordDialog({
   user,
@@ -51,7 +50,10 @@ export function UserResetPasswordDialog({
 
   const onSubmit = async (values: ResetPasswordFormValues) => {
     try {
-      await resetMutation.mutateAsync({ userId: user.id, newPassword: values.newPassword });
+      await resetMutation.mutateAsync({
+        userId: user.id,
+        newPassword: values.newPassword,
+      });
       enqueueSnackbar("Password reset successfully.", { variant: "success" });
       handleClose();
     } catch (error: any) {
@@ -62,9 +64,11 @@ export function UserResetPasswordDialog({
     }
   };
 
-  const toggleIcon = showPassword
-    ? <VisibilityOffIcon fontSize="small" />
-    : <VisibilityIcon fontSize="small" />;
+  const toggleIcon = showPassword ? (
+    <VisibilityOffIcon fontSize="small" />
+  ) : (
+    <VisibilityIcon fontSize="small" />
+  );
 
   return (
     <Dialog open={Boolean(user)} onClose={handleClose} maxWidth="xs" fullWidth>
@@ -76,7 +80,9 @@ export function UserResetPasswordDialog({
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent className="space-y-4">
           <TextField
-            fullWidth size="small" label="New Password"
+            fullWidth
+            size="small"
+            label="New Password"
             type={showPassword ? "text" : "password"}
             {...register("newPassword")}
             error={Boolean(errors.newPassword)}
@@ -86,7 +92,10 @@ export function UserResetPasswordDialog({
               input: {
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton size="small" type="button" onClick={() => setShowPassword((s) => !s)}>
+                    <IconButton
+                      size="small"
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}>
                       {toggleIcon}
                     </IconButton>
                   </InputAdornment>
@@ -95,7 +104,9 @@ export function UserResetPasswordDialog({
             }}
           />
           <TextField
-            fullWidth size="small" label="Confirm Password"
+            fullWidth
+            size="small"
+            label="Confirm Password"
             type={showPassword ? "text" : "password"}
             {...register("confirmPassword")}
             error={Boolean(errors.confirmPassword)}
@@ -105,12 +116,20 @@ export function UserResetPasswordDialog({
         </DialogContent>
 
         <DialogActions className="px-6 pb-4">
-          <Button onClick={handleClose} sx={{ textTransform: "none" }}>Cancel</Button>
+          <Button onClick={handleClose} sx={{ textTransform: "none" }}>
+            Cancel
+          </Button>
           <Button
-            type="submit" variant="contained" color="warning"
+            type="submit"
+            variant="contained"
+            color="warning"
             disabled={resetMutation.isPending}
-            sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px", boxShadow: "none" }}
-          >
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: "8px",
+              boxShadow: "none",
+            }}>
             {resetMutation.isPending ? "Resetting…" : "Reset Password"}
           </Button>
         </DialogActions>
