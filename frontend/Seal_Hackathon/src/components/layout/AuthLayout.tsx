@@ -1,21 +1,33 @@
-import { Outlet } from 'react-router-dom';
+import { useEffect } from "react";
+import { Outlet } from "react-router-dom";
 
-import { Navbar } from './Navbar';
-import BottomBar from './BottomBar';
+import BottomBar from "@/components/layout/BottomBar";
+import { useThemeStore } from "@/stores/themeStore";
+// import { ThemeTransitionLayer } from "./themeTransitionLayer";
+import { AppNavbar } from "./AppNarbar";
 
+export function AuthLayout() {
+  const initializeTheme = useThemeStore((state) => state.initializeTheme);
 
-export const AuthLayout = () => (
-  <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900">
-    <Navbar />
+  useEffect(() => {
+    initializeTheme();
+  }, [initializeTheme]);
 
-    <main className="max-w-6xl mx-auto px-6 py-12 md:py-16 min-h-[calc(100vh-280px)]">
-      <Outlet />
-    </main>
-    
-    <footer className="bg-gray-50/40 py-16">
-      <div className="max-w-6xl mx-auto px-6">
-        <BottomBar />
-      </div>
-    </footer>
-  </div>
-);
+  return (
+    <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-blue-100 selection:text-blue-900 dark:bg-[#020617] dark:text-slate-100">
+      {/* <ThemeTransitionLayer /> */}
+
+      <AppNavbar />
+
+      <main className="mx-auto min-h-[calc(100vh-280px)] max-w-6xl px-6 py-12 md:py-16">
+        <Outlet />
+      </main>
+
+      <footer className="bg-gray-50/40 py-16 dark:bg-slate-950">
+        <div className="mx-auto max-w-6xl px-6">
+          <BottomBar />
+        </div>
+      </footer>
+    </div>
+  );
+}

@@ -14,7 +14,6 @@ export function getDashboardPathByRole(role: UserRole): string {
     case "COORDINATOR":
       return "/coordinator/dashboard";
 
-      // vo day ne
     case "ADMIN":
       return "/admin/dashboard";
 
@@ -43,37 +42,28 @@ export function getUserRoles(user: AuthUser | null | undefined): UserRole[] {
   return [];
 }
 
-export function getRoleRedirectPath(user: AuthUser | null | undefined): string {
+export function getPrimaryRole(
+  user: AuthUser | null | undefined,
+): UserRole | null {
   const roles = getUserRoles(user);
 
-  if (roles.length === 0) {
+  if (roles.includes("ADMIN")) return "ADMIN";
+  if (roles.includes("COORDINATOR")) return "COORDINATOR";
+  if (roles.includes("JUDGE")) return "JUDGE";
+  if (roles.includes("MENTOR")) return "MENTOR";
+  if (roles.includes("STUDENT")) return "STUDENT";
+  if (roles.includes("PARTICIPANT")) return "PARTICIPANT";
+  if (roles.includes("GUEST")) return "GUEST";
+
+  return null;
+}
+
+export function getRoleRedirectPath(user: AuthUser | null | undefined): string {
+  const primaryRole = getPrimaryRole(user);
+
+  if (!primaryRole) {
     return "/login";
   }
 
-  // Ưu tiên role mạnh hơn nếu sau này user có nhiều role
-  if (roles.includes("ADMIN")) {
-    return getDashboardPathByRole("ADMIN");
-  }
-
-  if (roles.includes("COORDINATOR")) {
-    return getDashboardPathByRole("COORDINATOR");
-  }
-
-  if (roles.includes("JUDGE")) {
-    return getDashboardPathByRole("JUDGE");
-  }
-
-  if (roles.includes("MENTOR")) {
-    return getDashboardPathByRole("MENTOR");
-  }
-
-  if (roles.includes("STUDENT")) {
-    return getDashboardPathByRole("STUDENT");
-  }
-
-  if (roles.includes("PARTICIPANT")) {
-    return getDashboardPathByRole("PARTICIPANT");
-  }
-
-  return "/login";
+  return getDashboardPathByRole(primaryRole);
 }

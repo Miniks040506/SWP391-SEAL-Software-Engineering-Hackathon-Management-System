@@ -1,73 +1,47 @@
-import React from 'react';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { StatusBadge } from '@/components/common/StatusBadge';
-import type { Event } from '@/types/event.types';
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import EventIcon from "@mui/icons-material/Event";
+import { PublicStatusBadge } from "@/features/events/components/PublicStatusBadge";
+import { getSeasonLabel } from "@/features/events/utils/publicEventView";
+import type { EventSummaryResponse } from "@/types/event.types";
 
-interface EventCardProps {
-  event: Event;
-  onClick: (event: Event) => void;
-}
+type EventCardProps = {
+  event: EventSummaryResponse;
+  onClick: (event: EventSummaryResponse) => void;
+};
 
-const MAX_VISIBLE_TRACKS = 2;
-
-export const EventCard = ({ event, onClick }: EventCardProps) => {
-  const visibleTracks = event.tracks.slice(0, MAX_VISIBLE_TRACKS);
-  const hiddenCount = event.tracks.length - MAX_VISIBLE_TRACKS;
-
+export function EventCard({ event, onClick }: EventCardProps) {
   return (
-    <div
+    <button
+      type="button"
       onClick={() => onClick(event)}
-      className="group cursor-pointer bg-white border border-gray-200 hover:border-blue-400 hover:shadow-xl rounded-xl p-7 transition-all flex flex-col h-full"
+      className="group flex h-full cursor-pointer flex-col rounded-xl border border-gray-200 bg-white p-7 text-left transition-all hover:border-blue-400 hover:shadow-xl"
     >
-      {/* Top row: status + season */}
-      <div className="flex justify-between items-center mb-5">
-        <StatusBadge status={event.status} />
-        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-          {event.season}
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <PublicStatusBadge status={event.status} />
+
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+          {getSeasonLabel(event.season, event.year)}
         </span>
       </div>
 
-      {/* Title */}
-      <h3 className="text-base font-bold text-gray-900 mb-2 group-hover:text-blue-500 transition-colors">
-        {event.title}
+      <h3 className="mb-2 text-base font-bold text-gray-900 transition-colors group-hover:text-blue-500">
+        {event.name}
       </h3>
 
-      {/* Description */}
-      <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2">
-        {event.description}
+      <p className="mb-6 line-clamp-2 text-sm leading-relaxed text-gray-500">
+        Explore event details, tracks, rounds, prizes, and announcements.
       </p>
 
-      {/* ── Track chips ── */}
-      {event.tracks.length > 0 && (
-        <div className="flex items-center gap-1.5 mb-6 overflow-hidden whitespace-nowrap">
-          {visibleTracks.map((track) => (
-            <span
-              key={track.name}
-              title={track.name}
-              className="inline-block text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full truncate max-w-[110px]"
-            >
-              {track.name}
-            </span>
-          ))}
-          {hiddenCount > 0 && (
-            <span className="inline-block shrink-0 text-[11px] font-bold text-gray-400 bg-gray-50 border border-gray-200 px-2.5 py-0.5 rounded-full">
-              +{hiddenCount} more
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Footer: date + "Details" CTA */}
-      <div className="mt-auto flex items-center justify-between text-xs text-gray-400 font-semibold pt-5 border-t border-gray-50">
+      <div className="mt-auto flex items-center justify-between border-t border-gray-50 pt-5 text-xs font-semibold text-gray-400">
         <div className="flex items-center gap-2">
-          <AccessTimeIcon style={{ fontSize: 13 }} className="text-blue-500" />
-          <span>{event.startDate}</span>
+          <EventIcon style={{ fontSize: 13 }} className="text-blue-500" />
+          <span>{event.season} {event.year}</span>
         </div>
-        <div className="flex items-center gap-1 text-blue-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+
+        <div className="flex items-center gap-1 text-blue-500 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100">
           Details <ChevronRightIcon style={{ fontSize: 14 }} />
         </div>
       </div>
-    </div>
+    </button>
   );
-};
+}

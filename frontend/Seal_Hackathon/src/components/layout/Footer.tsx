@@ -5,7 +5,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import BottomBar from './BottomBar';
 
 export const Footer = () => (
-  <footer className="border-t border-gray-100 bg-gray-50/40 py-16">
+  <footer className="border-t border-gray-100 bg-gray-50/40 py-16 dark:border-slate-800 dark:bg-[#020617]">
     <div className="max-w-6xl mx-auto px-6">
 
       {/* 4-column grid */}
@@ -17,9 +17,9 @@ export const Footer = () => (
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-base shadow-sm">
               S
             </div>
-            <span className="text-lg font-bold text-gray-900 tracking-tighter italic">SEAL LEAGUE</span>
+            <span className="text-md font-medium leading-relaxed text-gray-500 dark:text-slate-400 italic">SEAL LEAGUE</span>
           </div>
-          <p className="text-sm text-gray-500 leading-relaxed font-medium">
+          <p className="text-sm font-medium leading-relaxed text-gray-500 dark:text-slate-400">
             The leading hackathon management platform for Software Engineering students.
             Empowering the next generation of innovators through competitive programming.
           </p>
@@ -35,22 +35,22 @@ export const Footer = () => (
 
         {/* Products */}
         <div>
-          <h4 className="text-sm font-bold text-gray-900 mb-6">Products</h4>
+          <h4 className="mb-6 text-sm font-bold text-gray-900 dark:text-white">Products</h4>
           <ul className="space-y-4 text-sm font-medium text-gray-500">
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Seasonal Rounds</a></li>
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Global Standings</a></li>
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Team Registration</a></li>
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Mentor Portal</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Seasonal Rounds</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Global Standings</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Team Registration</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Mentor Portal</a></li>
           </ul>
         </div>
 
         {/* Support */}
         <div>
-          <h4 className="text-sm font-bold text-gray-900 mb-6">Support</h4>
+          <h4 className="mb-6 text-sm font-bold text-gray-900 dark:text-white">Support</h4>
           <ul className="space-y-4 text-sm font-medium text-gray-500">
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Documentation</a></li>
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Help Center</a></li>
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Contact Us</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Documentation</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Help Center</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Contact Us</a></li>
             <li>
               <a href="#" className="flex items-center gap-2 hover:text-blue-600 transition-colors">
                 System Status <OpenInNewIcon style={{ fontSize: 12 }} />
@@ -61,12 +61,12 @@ export const Footer = () => (
 
         {/* Legal */}
         <div>
-          <h4 className="text-sm font-bold text-gray-900 mb-6">Legal</h4>
+          <h4 className="mb-6 text-sm font-bold text-gray-900 dark:text-white">Legal</h4>
           <ul className="space-y-4 text-sm font-medium text-gray-500">
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Terms of Service</a></li>
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Cookie Policy</a></li>
-            <li><a href="#" className="hover:text-blue-600 transition-colors">Compliance</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Privacy Policy</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Terms of Service</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Cookie Policy</a></li>
+            <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Compliance</a></li>
           </ul>
         </div>
       </div>
