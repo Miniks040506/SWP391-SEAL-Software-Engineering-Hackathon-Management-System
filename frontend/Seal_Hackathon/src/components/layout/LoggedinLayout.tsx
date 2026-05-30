@@ -35,9 +35,9 @@ export function LoggedinLayout({ sectionRole }: LoggedinLayoutProps) {
       ? {
           userId: "dev-user-id",
           email: "dev@seal.local",
-          fullName: "Dev Coordinator",
-          role: "COORDINATOR" as const,
-          roles: ["COORDINATOR" as const],
+          fullName: "Dev ADMIN",
+          role: "ADMIN" as const,
+          roles: ["ADMIN" as const],
           status: "ACTIVE",
         }
       : null;
