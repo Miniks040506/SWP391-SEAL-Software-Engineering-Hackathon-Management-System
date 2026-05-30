@@ -1,112 +1,129 @@
-import React, { useState, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import SearchIcon from '@mui/icons-material/Search';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import Pagination from '@mui/material/Pagination';
-import { StandingsTable } from '@/components/common/StandingsTable';
-import { TransparencyBanner } from '@/components/common/TransparencyBanner';
-import { RANKINGS_BY_EVENT } from '../mocks/rankings.mock';
-import { EVENTS } from '@/features/events/mocks/events.mock';
+import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import SearchIcon from "@mui/icons-material/Search";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import { CircularProgress, Pagination } from "@mui/material";
+import { usePublicEventDetailQuery, usePublicEventsQuery } from "@/features/events/hooks/usePublicEventQueries";
+import { isCompletedEvent } from "@/features/events/utils/publicEventView";
+import { Podium } from "@/features/ranking/components/Podium";
+import { StandingsTable } from "@/features/ranking/components/StandingsTable";
+import { TransparencyBanner } from "@/features/ranking/components/TransparencyBanner";
 import {
-  podiumStyles,
-  filterStyles,
+  usePublicCompletedEventRankingsQueries,
+  usePublicEventRankingQuery,
+} from "@/features/ranking/hooks/usePublicRankingQueries";
+import { leaderboardQuerySchema } from "@/features/ranking/schemas/publicRanking.schema";
+import {
+  filterRankings,
+  getRankingTrackOptions,
+  sortRankings,
+} from "@/features/ranking/utils/rankingView";
+import {
   backBtnStyle,
+  filterStyles,
   fullResultsBtnStyle,
   paginationSx,
-} from './LeaderboardPage.styles';
-import type { RankingEntry } from '@/types/ranking.types';
+} from "@/features/ranking/pages/LeaderboardPage.styles";
+import type { EventSummaryResponse } from "@/types/event.types";
 
 const EVENTS_PER_PAGE = 5;
 
-// Podium
-
-interface PodiumProps { top3: RankingEntry[] }
-
-const Podium = ({ top3 }: PodiumProps) => (
-  <section className={podiumStyles.wrapper}>
-    {/* 2nd place */}
-    <div className={`md:order-1 ${podiumStyles.sideCard}`}>
-      <div className={podiumStyles.secondDot}>2nd</div>
-      <div className="space-y-1">
-        <div className="font-bold text-gray-900 text-base">{top3[1]?.team}</div>
-        <div className="text-xs text-gray-400 font-bold uppercase tracking-widest">{top3[1]?.track}</div>
-      </div>
-      <div className="text-2xl font-mono font-bold text-slate-400">{top3[1]?.score.toFixed(1)}</div>
-    </div>
-
-    {/* 1st place */}
-    <div className={podiumStyles.firstCard}>
-      <div className={podiumStyles.goldBadge}>GOLD WINNER</div>
-      <div className={podiumStyles.firstDot}>1st</div>
-      <div className="space-y-1">
-        <div className="font-bold text-gray-900 text-xl">{top3[0]?.team}</div>
-        <div className="text-xs text-blue-500 font-bold uppercase tracking-widest">{top3[0]?.track}</div>
-      </div>
-      <div className="text-3xl font-mono font-bold text-blue-500">{top3[0]?.score.toFixed(1)}</div>
-    </div>
-
-    {/* 3rd place */}
-    <div className={`md:order-3 ${podiumStyles.sideCard}`}>
-      <div className={podiumStyles.thirdDot}>3rd</div>
-      <div className="space-y-1">
-        <div className="font-bold text-gray-900 text-base">{top3[2]?.team}</div>
-        <div className="text-xs text-gray-400 font-bold uppercase tracking-widest">{top3[2]?.track}</div>
-      </div>
-      <div className="text-2xl font-mono font-bold text-amber-600">{top3[2]?.score.toFixed(1)}</div>
-    </div>
-  </section>
-);
-
-// AllEventsStandings
-
-const AllEventsStandings = () => {
+function AllEventsStandings() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
 
-  // Only include ended events that have rankings published - avoids empty pages.
-  const eventsWithResults = EVENTS.filter(
-    (e) => e.status === 'Ended' && (RANKINGS_BY_EVENT[e.id]?.length ?? 0) > 0,
+  const eventsQuery = usePublicEventsQuery({
+    page: 0,
+    size: 50,
+  });
+
+  const completedEvents = useMemo(
+    () =>
+      (eventsQuery.data?.content ?? []).filter((event) =>
+        isCompletedEvent(event.status),
+      ),
+    [eventsQuery.data],
   );
-  const pageCount   = Math.ceil(eventsWithResults.length / EVENTS_PER_PAGE);
-  const pagedEvents = eventsWithResults.slice((page - 1) * EVENTS_PER_PAGE, page * EVENTS_PER_PAGE);
+
+  const rankingQueries = usePublicCompletedEventRankingsQueries(completedEvents);
+
+  const eventsWithResults = completedEvents.filter((_, index) => {
+    const rankings = rankingQueries[index]?.data ?? [];
+    return rankings.length > 0;
+  });
+
+  const pageCount = Math.ceil(eventsWithResults.length / EVENTS_PER_PAGE);
+
+  const pagedEvents = eventsWithResults.slice(
+    (page - 1) * EVENTS_PER_PAGE,
+    page * EVENTS_PER_PAGE,
+  );
+
+  const getRankingForEvent = (event: EventSummaryResponse) => {
+    const index = completedEvents.findIndex((item) => item.id === event.id);
+    return sortRankings(rankingQueries[index]?.data ?? []);
+  };
+
+  if (eventsQuery.isLoading) {
+    return (
+      <div className="flex justify-center py-24">
+        <CircularProgress />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <EmojiEventsIcon style={{ fontSize: 22 }} className="text-blue-500" />
-          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Global Standings</h1>
+
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
+            Global Standings
+          </h1>
         </div>
-        <p className="text-sm text-gray-400 font-medium">
-          Official results from all concluded SEAL Hackathon events.
+
+        <p className="text-sm font-medium text-gray-400">
+          Official public results from concluded SEAL Hackathon events.
         </p>
       </div>
 
       {eventsWithResults.length === 0 ? (
-        <div className="text-center py-24 text-gray-400 font-semibold text-sm uppercase tracking-widest">
+        <div className="py-24 text-center text-sm font-semibold uppercase tracking-widest text-gray-400">
           No results published yet.
         </div>
       ) : (
         <>
           <div className="space-y-12">
             {pagedEvents.map((event) => {
-              const rankings = RANKINGS_BY_EVENT[event.id]!;
+              const rankings = getRankingForEvent(event);
+
               return (
                 <div key={event.id} className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+                  <div className="flex flex-col justify-between gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center">
                     <div className="space-y-0.5">
-                      <h2 className="text-base font-bold text-gray-900">{event.title}</h2>
-                      <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">
-                        {event.startDate} – {event.endDate}
+                      <h2 className="text-base font-bold text-gray-900">
+                        {event.name}
+                      </h2>
+
+                      <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+                        {event.season} {event.year}
                       </p>
                     </div>
-                    <button onClick={() => navigate(`/standings?eventId=${event.id}`)} className={fullResultsBtnStyle}>
-                      Full Results <ArrowForwardIcon style={{ fontSize: 14 }} />
+
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/standings?eventId=${event.id}`)}
+                      className={fullResultsBtnStyle}
+                    >
+                      Full Results
+                      <ArrowForwardIcon style={{ fontSize: 14 }} />
                     </button>
                   </div>
+
                   <StandingsTable rankings={rankings} variant="compact" />
                 </div>
               );
@@ -120,7 +137,7 @@ const AllEventsStandings = () => {
                 page={page}
                 onChange={(_, value) => {
                   setPage(value);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 variant="outlined"
                 shape="rounded"
@@ -134,53 +151,82 @@ const AllEventsStandings = () => {
       <TransparencyBanner />
     </div>
   );
-};
+}
 
-// SingleEventLeaderboard
-
-interface SingleEventLeaderboardProps { eventId: string }
-
-const SingleEventLeaderboard = ({ eventId }: SingleEventLeaderboardProps) => {
+function SingleEventLeaderboard({
+  eventId,
+  roundId,
+  trackId,
+}: {
+  eventId: string;
+  roundId?: string | null;
+  trackId?: string | null;
+}) {
   const navigate = useNavigate();
-  const [filterTrack, setFilterTrack] = useState('All');
-  const [searchTerm, setSearchTerm]   = useState('');
 
-  const selectedEvent = EVENTS.find((e) => e.id === eventId) ?? null;
-  const rankings: RankingEntry[] = RANKINGS_BY_EVENT[eventId] ?? [];
+  const [filterTrack, setFilterTrack] = useState(trackId || "All");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const eventQuery = usePublicEventDetailQuery(eventId);
+
+  const rankingQuery = usePublicEventRankingQuery({
+    eventId,
+    roundId,
+    trackId: filterTrack === "All" ? undefined : filterTrack,
+  });
+
+  const event = eventQuery.data ?? null;
+
+  const rankings = useMemo(
+    () => sortRankings(rankingQuery.data ?? []),
+    [rankingQuery.data],
+  );
+
   const top3 = rankings.slice(0, 3);
 
   const trackOptions = useMemo(
-    () => ['All', ...new Set(rankings.map((r) => r.track))],
-    [rankings],
+    () => getRankingTrackOptions(rankings, event?.tracks ?? []),
+    [rankings, event?.tracks],
   );
 
-  const filteredRankings = useMemo(() => rankings.filter(
-    (r) => (
-      filterTrack === 'All' || r.track === filterTrack) &&
-      r.team.toLowerCase().includes(searchTerm.toLowerCase()),
-    ),
-    [rankings, filterTrack, searchTerm],
+  const filteredRankings = useMemo(
+    () => filterRankings(rankings, searchTerm, filterTrack),
+    [rankings, searchTerm, filterTrack],
   );
+
+  if (rankingQuery.isLoading || eventQuery.isLoading) {
+    return (
+      <div className="flex justify-center py-24">
+        <CircularProgress />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
       <button
-        onClick={() => (selectedEvent ? navigate(`/events/${selectedEvent.id}`) : navigate('/'))}
-        className={backBtnStyle}>
+        type="button"
+        onClick={() =>
+          event ? navigate(`/events/${event.id}`) : navigate("/events")
+        }
+        className={backBtnStyle}
+      >
         <ArrowBackIcon style={{ fontSize: 15 }} />
-        Back to {selectedEvent ? selectedEvent.title : 'Dashboard'}
+        Back to {event ? event.name : "Events"}
       </button>
 
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <EmojiEventsIcon style={{ fontSize: 22 }} className="text-blue-500" />
-          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-            {selectedEvent?.title ?? 'Event Results'}
+
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
+            {event?.name ?? "Event Results"}
           </h1>
         </div>
-        {selectedEvent && (
-          <p className="text-sm text-gray-400 font-semibold">
-            {selectedEvent.startDate} – {selectedEvent.endDate}
+
+        {event && (
+          <p className="text-sm font-semibold text-gray-400">
+            {event.season} {event.year}
           </p>
         )}
       </div>
@@ -188,54 +234,84 @@ const SingleEventLeaderboard = ({ eventId }: SingleEventLeaderboardProps) => {
       <Podium top3={top3} />
 
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-6">
+        <div className="flex flex-col justify-between gap-6 border-b border-gray-100 pb-6 md:flex-row md:items-end">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <VerifiedUserIcon style={{ fontSize: 18 }} className="text-blue-500" />
-              <h2 className="text-lg font-bold text-gray-900 uppercase tracking-widest">Public Standings</h2>
+              <VerifiedUserIcon
+                style={{ fontSize: 18 }}
+                className="text-blue-500"
+              />
+
+              <h2 className="text-lg font-bold uppercase tracking-widest text-gray-900">
+                Public Standings
+              </h2>
             </div>
-            <p className="text-sm text-gray-400 font-medium">
-              Verified results for {selectedEvent?.title ?? 'this event'}
+
+            <p className="text-sm font-medium text-gray-400">
+              Verified results for {event?.name ?? "this event"}
             </p>
           </div>
 
           <div className={filterStyles.wrapper}>
             <div className={filterStyles.searchWrap}>
-              <SearchIcon style={{ fontSize: 14 }} className={filterStyles.searchIcon} />
+              <SearchIcon
+                style={{ fontSize: 14 }}
+                className={filterStyles.searchIcon}
+              />
+
               <input
                 type="text"
                 placeholder="Search team name..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(event) => setSearchTerm(event.target.value)}
                 className={filterStyles.searchInput}
               />
             </div>
+
             <select
               value={filterTrack}
-              onChange={(e) => setFilterTrack(e.target.value)}
+              onChange={(event) => setFilterTrack(event.target.value)}
               className={filterStyles.select}
             >
               {trackOptions.map((track) => (
-                <option key={track} value={track}>
-                  {track === 'All' ? 'All Categories' : track}
+                <option key={track.value} value={track.value}>
+                  {track.label}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        <StandingsTable rankings={filteredRankings} variant="full" emptyMessage="No results found" />
+        <StandingsTable
+          rankings={filteredRankings}
+          variant="full"
+          emptyMessage="No results found"
+        />
+
         <TransparencyBanner />
       </div>
     </div>
   );
-};
+}
 
-// LeaderboardPage
-export const LeaderboardPage = () => {
+export function LeaderboardPage() {
   const [searchParams] = useSearchParams();
-  const eventId = searchParams.get('eventId');
 
-  if (eventId) return <SingleEventLeaderboard eventId={eventId} />;
+  const query = leaderboardQuerySchema.parse({
+    eventId: searchParams.get("eventId"),
+    roundId: searchParams.get("roundId"),
+    trackId: searchParams.get("trackId"),
+  });
+
+  if (query.eventId) {
+    return (
+      <SingleEventLeaderboard
+        eventId={query.eventId}
+        roundId={query.roundId}
+        trackId={query.trackId}
+      />
+    );
+  }
+
   return <AllEventsStandings />;
-};
+}

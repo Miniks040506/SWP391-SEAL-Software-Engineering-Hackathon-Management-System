@@ -1,36 +1,58 @@
-import React from "react";
 import EventIcon from "@mui/icons-material/Event";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
 import GroupIcon from "@mui/icons-material/Group";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
+import { formatDateTime } from "@/features/events/utils/publicEventView";
+import type { EventDetailResponse } from "@/types/event.types";
 
-interface EventMetaGridProps {
-  startDate: string;
-}
+type EventMetaGridProps = {
+  event: EventDetailResponse;
+};
 
-export const EventMetaGrid = ({ startDate }: EventMetaGridProps) => {
+export function EventMetaGrid({ event }: EventMetaGridProps) {
   const items = [
-    { label: "Start Date", val: startDate, Icon: EventIcon },
-    { label: "Venue", val: "FPT Uni HCM", Icon: LocationOnIcon },
-    { label: "Audience", val: "SE Faculty", Icon: GroupIcon },
-    { label: "Awards", val: "Certified", Icon: WorkspacePremiumIcon },
+    {
+      label: "Registration",
+      val: `${formatDateTime(event.registrationStartAt)} → ${formatDateTime(
+        event.registrationEndAt,
+      )}`,
+      Icon: EventIcon,
+    },
+    {
+      label: "Venue",
+      val: "FPT Uni HCM",
+      Icon: LocationOnIcon,
+    },
+    {
+      label: "Tracks",
+      val: String(event.tracks?.length ?? 0),
+      Icon: GroupIcon,
+    },
+    {
+      label: "Awards",
+      val: "Certified",
+      Icon: WorkspacePremiumIcon,
+    },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
+    <div className="grid grid-cols-2 gap-4 pt-6 md:grid-cols-4">
       {items.map(({ label, val, Icon }) => (
         <div
           key={label}
-          className="bg-gray-50 p-4 rounded-lg border border-gray-100 hover:bg-white transition-all">
-          <Icon style={{ fontSize: 18 }} className="text-blue-500 mb-3" />
-          <span className="text-xs text-gray-400 block uppercase font-bold tracking-widest mb-1">
+          className="rounded-lg border border-gray-100 bg-gray-50 p-4 transition-all hover:bg-white"
+        >
+          <Icon style={{ fontSize: 18 }} className="mb-3 text-blue-500" />
+
+          <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-gray-400">
             {label}
           </span>
-          <span className="text-gray-800 font-bold text-sm truncate block">
+
+          <span className="block truncate text-sm font-bold text-gray-800">
             {val}
           </span>
         </div>
       ))}
     </div>
   );
-};
+}

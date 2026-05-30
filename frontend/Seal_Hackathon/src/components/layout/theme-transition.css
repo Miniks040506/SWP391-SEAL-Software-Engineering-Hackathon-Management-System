@@ -1,0 +1,170 @@
+::view-transition-group(root) {
+  animation-duration: 1050ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 1050ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+  mix-blend-mode: normal;
+}
+
+/* Snapshot cũ đứng yên ở dưới */
+html.theme-wave-transitioning::view-transition-old(root) {
+  z-index: 1;
+  animation: none;
+}
+
+/*
+  Snapshot theme mới hiện ra từ góc trên bên phải.
+  Không còn polygon nhọn nên không bị răng cưa/tam giác.
+*/
+html.theme-wave-transitioning::view-transition-new(root) {
+  z-index: 2;
+  animation-name: seal-smooth-water-reveal;
+}
+
+/* Sóng tràn từ top-right xuống bottom-left */
+@keyframes seal-smooth-water-reveal {
+  0% {
+    clip-path: circle(0vmax at 100% 0%);
+  }
+
+  22% {
+    clip-path: circle(38vmax at 100% 0%);
+  }
+
+  48% {
+    clip-path: circle(72vmax at 100% 0%);
+  }
+
+  76% {
+    clip-path: circle(112vmax at 100% 0%);
+  }
+
+  100% {
+    clip-path: circle(155vmax at 100% 0%);
+  }
+}
+
+/*
+  Lớp bọt nước chạy cùng mép sóng.
+  Chỉ trang trí, không che theme thật.
+*/
+html.theme-wave-transitioning::before {
+  content: "";
+  position: fixed;
+  top: -24vh;
+  right: -22vw;
+  z-index: 99999;
+  width: 48vw;
+  min-width: 520px;
+  height: 155vh;
+  pointer-events: none;
+  border-radius: 48% 52% 45% 55%;
+  transform: rotate(23deg) translate3d(0, 0, 0);
+  opacity: 0;
+  filter: blur(10px);
+  animation: seal-water-foam-diagonal 1050ms cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+}
+
+html.theme-wave-to-light.theme-wave-transitioning::before {
+  background:
+    radial-gradient(circle at 40% 20%, rgba(96, 165, 250, 0.22), transparent 0 28%),
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(147, 197, 253, 0.16) 18%,
+      rgba(255, 255, 255, 0.72) 48%,
+      rgba(96, 165, 250, 0.18) 70%,
+      transparent 100%
+    );
+}
+
+html.theme-wave-to-dark.theme-wave-transitioning::before {
+  background:
+    radial-gradient(circle at 40% 20%, rgba(96, 165, 250, 0.18), transparent 0 28%),
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(37, 99, 235, 0.12) 18%,
+      rgba(15, 23, 42, 0.72) 48%,
+      rgba(96, 165, 250, 0.16) 70%,
+      transparent 100%
+    );
+}
+
+/* Bọt nhỏ / ripple nhẹ */
+html.theme-wave-transitioning::after {
+  content: "";
+  position: fixed;
+  top: -16vh;
+  right: -18vw;
+  z-index: 99999;
+  width: 36vw;
+  min-width: 420px;
+  height: 130vh;
+  pointer-events: none;
+  transform: rotate(23deg);
+  opacity: 0;
+  background-image:
+    radial-gradient(circle, rgba(96, 165, 250, 0.42) 0 2px, transparent 3px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.72) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle, rgba(96, 165, 250, 0.26) 0 1px, transparent 2px);
+  background-size: 46px 46px, 64px 64px, 82px 82px;
+  animation: seal-water-bubbles-diagonal 1050ms cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+}
+
+@keyframes seal-water-foam-diagonal {
+  0% {
+    opacity: 0;
+    transform: translate3d(42vw, -18vh, 0) rotate(23deg) scaleX(0.85);
+  }
+
+  12% {
+    opacity: 0.9;
+  }
+
+  48% {
+    opacity: 0.75;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(-145vw, 120vh, 0) rotate(23deg) scaleX(1.24);
+  }
+}
+
+@keyframes seal-water-bubbles-diagonal {
+  0% {
+    opacity: 0;
+    transform: translate3d(38vw, -12vh, 0) rotate(23deg);
+  }
+
+  18% {
+    opacity: 0.75;
+  }
+
+  68% {
+    opacity: 0.35;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(-135vw, 112vh, 0) rotate(23deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  html.theme-wave-transitioning::before,
+  html.theme-wave-transitioning::after {
+    animation-duration: 1ms;
+  }
+}
