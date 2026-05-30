@@ -4,11 +4,13 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.user.*;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.user.*;
+import com.t7.seal.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -17,6 +19,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/users")
 public class UserController {
+
+    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<PageResponse<UserSummaryResponse>> getUsers(
@@ -37,9 +41,10 @@ public class UserController {
         return null;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
-    public ResponseEntity<ProfileResponse> getMyProfile() {
-        return null;
+    public ResponseEntity<ProfileResponse> getMyProfile(Authentication authentication) {
+        return ResponseEntity.ok(userService.getMyProfile(authentication));
     }
 
     @GetMapping("/{userId}")
@@ -93,17 +98,23 @@ public class UserController {
         return null;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/me")
     public ResponseEntity<ProfileResponse> updateMyProfile(
+            Authentication authentication,
             @Valid @RequestBody UpdateMyProfileRequest request
     ) {
-        return null;
+        return ResponseEntity.ok(userService.updateMyProfile(authentication, request));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/me/password")
     public ResponseEntity<Void> changeMyPassword(
-            @Valid @RequestBody ChangePasswordRequest request
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
     ) {
-        return null;
+        userService.changeMyPassword(authentication, request, authorizationHeader);
+        return ResponseEntity.noContent().build();
     }
 }

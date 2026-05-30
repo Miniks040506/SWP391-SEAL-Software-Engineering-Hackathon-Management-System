@@ -48,7 +48,7 @@ public class EventController {
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "6") int size
     ) {
         return ResponseEntity.ok(eventService.getPublicEvent(season, year, status, size, page));
     }
