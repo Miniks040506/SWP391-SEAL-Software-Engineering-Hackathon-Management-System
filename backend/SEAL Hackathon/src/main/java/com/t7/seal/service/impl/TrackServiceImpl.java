@@ -16,8 +16,10 @@ import com.t7.seal.request.track.UpdateTrackRequest;
 import com.t7.seal.response.track.MentorAssignmentResponse;
 import com.t7.seal.response.track.TrackDetailResponse;
 import com.t7.seal.response.track.TrackResponse;
+import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.TrackService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,9 +35,14 @@ public class TrackServiceImpl implements TrackService {
     private final TeamRepository teamRepository;
     private final MentorAssignmentRepository mentorAssignmentRepository;
 
+    private final CurrentUserService currentUserService;
+
     @Transactional
     @Override
-    public TrackResponse createTrack(UUID eventId, CreateTrackRequest request) {
+    public TrackResponse createTrack(UUID eventId, CreateTrackRequest request, Authentication authentication) {
+
+        currentUserService.getCurrentUser(authentication);
+
         HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
@@ -95,7 +102,9 @@ public class TrackServiceImpl implements TrackService {
 
     @Transactional
     @Override
-    public TrackResponse updateTrack(UUID trackId, UpdateTrackRequest request) {
+    public TrackResponse updateTrack(UUID trackId, UpdateTrackRequest request, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
         Track track = trackRepository.findPublicById(trackId)
                 .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
 
@@ -143,7 +152,9 @@ public class TrackServiceImpl implements TrackService {
 
     @Transactional
     @Override
-    public void deleteTrack(UUID trackId) {
+    public void deleteTrack(UUID trackId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
         Track track = trackRepository.findPublicById(trackId)
                 .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
 

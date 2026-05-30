@@ -6,7 +6,8 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-
+import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
+import KeyboardArrowUpOutlinedIcon from "@mui/icons-material/KeyboardArrowUpOutlined";
 import { SectionCard } from "../../components/SectionCard";
 import { UserPill } from "../../components/UserPill";
 import {
@@ -14,9 +15,7 @@ import {
   availableMentors,
   availableScoreCriteria,
 } from "../../mocks/coordinatorEditEvent.mock";
-import type { EditEventData } from "../../types/coordinator.types";
-
-// Types
+import type { EditEventData } from "../../mocks/coordinatorEditEvent.mock";
 
 interface TracksTabProps {
   event: EditEventData;
@@ -34,11 +33,10 @@ interface TracksTabProps {
   onOpenAddTrack: () => void;
 }
 
-// Component
-
 export const TracksTab = ({
   event,
   expandedTracks,
+  onToggleExpand,
   onRemoveTrack,
   onRemoveRound,
   onRemoveUser,
@@ -46,6 +44,7 @@ export const TracksTab = ({
   onOpenAddMentor,
   onOpenAddRound,
   onOpenEditTrack,
+  onOpenEditRound,
   onOpenEditCriteria,
   onOpenAddTrack,
 }: TracksTabProps) => (
@@ -55,29 +54,45 @@ export const TracksTab = ({
         key={track.id}
         className="overflow-hidden border-slate-200 p-0 transition-all hover:shadow-md"
       >
-        {/* Track header */}
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-  <IconButton
-    onClick={(e) => { e.stopPropagation(); onOpenEditTrack(track.id); }}
-    size="small"
-    className="!text-slate-400 hover:!bg-blue-50 hover:!text-blue-500"
-  >
-    <EditOutlinedIcon fontSize="small" />
-  </IconButton>
-  <IconButton
-    onClick={(e) => { e.stopPropagation(); onRemoveTrack(track.id); }}
-    size="small"
-    className="!text-slate-400 hover:!bg-red-50 hover:!text-red-500"
-  >
-    <DeleteOutlineOutlinedIcon fontSize="small" />
-  </IconButton>
-</div>
+        <div
+          className="flex cursor-pointer items-center justify-between bg-white px-6 py-4 transition-colors hover:bg-slate-50"
+          onClick={() => onToggleExpand(track.id)}
+        >
+          <div className="flex items-center gap-3">
+            {expandedTracks[track.id] ? (
+              <KeyboardArrowUpOutlinedIcon className="text-slate-400" />
+            ) : (
+              <KeyboardArrowDownOutlinedIcon className="text-slate-400" />
+            )}
+            <h3 className="text-lg font-bold text-slate-800">{track.name}</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenEditTrack(track.id);
+              }}
+              size="small"
+              className="!bg-white !text-blue-600 shadow-sm hover:!bg-blue-50"
+            >
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemoveTrack(track.id);
+              }}
+              size="small"
+              className="!bg-white !text-rose-600 shadow-sm hover:!bg-rose-50"
+            >
+              <DeleteOutlineOutlinedIcon fontSize="small" />
+            </IconButton>
+          </div>
+        </div>
 
-        {/* Track body */}
         {expandedTracks[track.id] && (
           <div className="space-y-8 border-t border-slate-200 bg-white px-6 py-6">
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-              {/* Judges */}
               <div>
                 <div className="mb-3 flex items-center gap-2 font-semibold text-slate-700">
                   <GradingOutlinedIcon fontSize="small" className="text-indigo-500" />
@@ -103,7 +118,6 @@ export const TracksTab = ({
                 </div>
               </div>
 
-              {/* Mentors */}
               <div>
                 <div className="mb-3 flex items-center gap-2 font-semibold text-slate-700">
                   <SchoolOutlinedIcon fontSize="small" className="text-teal-500" />
@@ -130,7 +144,6 @@ export const TracksTab = ({
               </div>
             </div>
 
-            {/* Rounds */}
             <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
               <div className="mb-4 flex items-center justify-between">
                 <h4 className="font-bold text-slate-700">Track Rounds</h4>
@@ -181,12 +194,20 @@ export const TracksTab = ({
                           </button>
                         </div>
                       </div>
-                      <IconButton
-                        onClick={() => onRemoveRound(track.id, round.id)}
-                        className="!text-slate-300 hover:!bg-red-50 hover:!text-red-500 self-start sm:self-auto"
-                      >
-                        <DeleteOutlineOutlinedIcon fontSize="small" />
-                      </IconButton>
+                      <div className="flex items-center gap-2 self-start sm:self-auto">
+                        <IconButton
+                          onClick={() => onOpenEditRound(track.id, round.id)}
+                          className="!text-slate-400 hover:!bg-blue-50 hover:!text-blue-600"
+                        >
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => onRemoveRound(track.id, round.id)}
+                          className="!text-slate-400 hover:!bg-red-50 hover:!text-red-500"
+                        >
+                          <DeleteOutlineOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -197,7 +218,6 @@ export const TracksTab = ({
       </SectionCard>
     ))}
 
-    {/* Add Track button */}
     <button
       type="button"
       onClick={onOpenAddTrack}
@@ -211,7 +231,6 @@ export const TracksTab = ({
   </div>
 );
 
-// Local helpers
 const AddUserButton = ({
   label,
   colorClass,

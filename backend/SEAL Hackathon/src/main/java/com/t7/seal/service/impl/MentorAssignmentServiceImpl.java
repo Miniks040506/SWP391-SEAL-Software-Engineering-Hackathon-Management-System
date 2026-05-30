@@ -9,13 +9,16 @@ import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.MentorAssignmentRepository;
+import com.t7.seal.repository.RoundJudgeAssignmentRepository;
 import com.t7.seal.repository.TrackRepository;
 import com.t7.seal.repository.UserRepository;
 import com.t7.seal.request.track.AssignMentorRequest;
 import com.t7.seal.response.track.MentorAssignmentResponse;
+import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.MentorAssignmentService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,11 +33,13 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
     private final TrackRepository trackRepository;
     private final UserRepository userRepository;
     private final MentorAssignmentRepository assignmentRepository;
+    private final CurrentUserService currentUserService;
+    private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
 
     @Override
     @Transactional(readOnly = true)
     public List<MentorAssignmentResponse> getMentorAssignments(UUID trackId) {
-        findTrack(trackId);
+//        findTrack(trackId);
         return assignmentRepository.findByTrackIdOrderByAssignedAtAsc(trackId)
                 .stream()
                 .map(this::toMentorAssignmentResponse)
@@ -43,7 +48,9 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
 
     @Override
     @Transactional
-    public MentorAssignmentResponse assignMentor(UUID trackId, AssignMentorRequest request) {
+    public MentorAssignmentResponse assignMentor(UUID trackId, AssignMentorRequest request, Authentication authentication) {
+        User assignedBy = currentUserService.getCurrentUser(authentication);
+
         Track track = findTrack(trackId);
         User mentor = findUser(request.mentorUserId());
 
@@ -57,11 +64,21 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
             throw new ConflictException("This mentor is already assigned to this track.");
         }
 
+        boolean conflict = roundJudgeAssignmentRepository.existsJudgeAssignedToTrackInSameEvent(
+                mentor.getId(),
+                track.getEvent().getId(),
+                trackId
+        );
+
+        if (conflict) {
+            throw new ConflictException("This user is already assigned as judge in this track/event.");
+        }
+
         MentorAssignment assignment = new MentorAssignment();
         assignment.setTrack(track);
         assignment.setUser(mentor);
 
-        assignment.setAssignedBy(track.getEvent().getCreatedBy());
+        assignment.setAssignedBy(assignedBy);
 
         assignment.setAssignedAt(LocalDateTime.now());
 
@@ -70,9 +87,11 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
 
     @Override
     @Transactional
-    public void removeMentorAssignment(UUID trackId, UUID assignmentId) {
-        findTrack(trackId);
-        MentorAssignment assignment = assignmentRepository.findById(assignmentId)
+    public void removeMentorAssignment(UUID trackId, UUID assignmentId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+//        findTrack(trackId);
+        MentorAssignment assignment = assignmentRepository.findByIdAndTrackId(assignmentId, trackId)
                 .orElseThrow(() -> new NotFoundException("Mentor assignment not found."));
 
         if (!assignment.getTrack().getId().equals(trackId)) {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { UserStatus } from "@/types/admin.types";
+import type { UserStatus } from "@/types/user.types";
 
 const ALL_ROLES = [
   "ADMIN",
@@ -27,17 +27,6 @@ const passwordSchema = z
   .regex(/[a-z]/, "Must contain at least one lowercase letter.")
   .regex(/[0-9]/, "Must contain at least one number.");
 
-// Reused across create + edit
-const graduationYearSchema = z
-  .string()
-  .trim()
-  .optional()
-  .or(z.literal(""))
-  .refine((v) => !v || /^\d{4}$/.test(v), {
-    message: "Graduation year must be 4 digits.",
-  })
-  .transform((v) => (v ? Number(v) : undefined));
-
 // Create
 
 export const createUserSchema = z.object({
@@ -55,48 +44,32 @@ export const createUserSchema = z.object({
 
   role: z.enum(ALL_ROLES, { message: "Role is required." }),
 
-  studentType: z.enum(["FPT", "EXTERNAL"]).optional(),
-
-  studentCode: z.string().trim().max(50).optional().or(z.literal("")),
-
-  universityName: z.string().trim().max(200).optional().or(z.literal("")),
-
-  major: z.string().trim().max(200).optional().or(z.literal("")),
-
-  graduationYear: graduationYearSchema,
+  status: z.enum(ALL_STATUSES, { message: "Status is required." }),
 });
 
 export type CreateUserFormInput = z.input<typeof createUserSchema>;
 export type CreateUserFormValues = z.output<typeof createUserSchema>;
 
-// ─── Edit ─────────────────────────────────────────────────────────────────────
+// Edit
 
 export const editUserSchema = z.object({
   fullName: z
     .string()
     .trim()
     .min(2, "Full name must be at least 2 characters.")
-    .max(200),
+    .max(200, "Full name must be less than 200 characters."),
 
   phone: z.string().trim().max(20).optional().or(z.literal("")),
 
   role: z.enum(ALL_ROLES, { message: "Role is required." }),
 
   status: z.enum(ALL_STATUSES, { message: "Status is required." }),
-
-  studentCode: z.string().trim().max(50).optional().or(z.literal("")),
-
-  universityName: z.string().trim().max(200).optional().or(z.literal("")),
-
-  major: z.string().trim().max(200).optional().or(z.literal("")),
-
-  graduationYear: graduationYearSchema,
 });
 
 export type EditUserFormInput = z.input<typeof editUserSchema>;
 export type EditUserFormValues = z.output<typeof editUserSchema>;
 
-// ─── Reset Password ───────────────────────────────────────────────────────────
+// Reset Password
 
 export const resetPasswordSchema = z
   .object({

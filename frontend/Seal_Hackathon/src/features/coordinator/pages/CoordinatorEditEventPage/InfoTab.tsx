@@ -1,17 +1,15 @@
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-
 import { SectionCard } from "../../components/SectionCard";
-import type { EditEventData, EventFormErrors } from "../../types/coordinator.types";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
+import type { EditEventData } from "../../mocks/coordinatorEditEvent.mock";
+import type { EventFormErrors } from "../../hooks/useEditEventMutation";
 
 const SEASONS = ["Spring", "Summer", "Fall"] as const;
 
 export const formInputSx = {
   "& .MuiOutlinedInput-root": {
-    borderRadius: "10px",
+    borderRadius: "12px",
     backgroundColor: "#f8fafc",
     transition: "all 0.2s",
     "& fieldset": { borderColor: "transparent" },
@@ -22,33 +20,27 @@ export const formInputSx = {
   "& .MuiInputLabel-root.Mui-focused": { color: "#3b82f6" },
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type EventField = keyof EditEventData;
-
 interface InfoTabProps {
   event: EditEventData;
   errors: EventFormErrors;
-  onChange: (field: EventField, value: string) => void;
+  onChange: (field: keyof EditEventData, value: string) => void;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export const InfoTab = ({ event, errors, onChange }: InfoTabProps) => (
-  <SectionCard className="max-w-4xl">
+  <SectionCard className="w-full">
     <div className="mb-8 flex items-center gap-3">
       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
         <CalendarTodayOutlinedIcon fontSize="small" />
       </div>
       <div>
         <h2 className="text-lg font-bold text-slate-800">Event Details</h2>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm font-medium text-slate-500">
           Manage the core information for this event.
         </p>
       </div>
     </div>
 
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
       <TextField
         label="Event Name"
         value={event.name}
@@ -91,7 +83,7 @@ export const InfoTab = ({ event, errors, onChange }: InfoTabProps) => (
         error={!!errors.startDate}
         helperText={errors.startDate}
         slotProps={{ inputLabel: { shrink: true } }}
-        sx={formInputSx}
+        sx={{ ...formInputSx, maxWidth: { sm: "320px" } }}
       />
       <TextField
         label="End Date"
@@ -102,7 +94,7 @@ export const InfoTab = ({ event, errors, onChange }: InfoTabProps) => (
         error={!!errors.endDate}
         helperText={errors.endDate}
         slotProps={{ inputLabel: { shrink: true } }}
-        sx={formInputSx}
+        sx={{ ...formInputSx, maxWidth: { sm: "320px" } }}
       />
     </div>
   </SectionCard>

@@ -21,6 +21,7 @@ import com.t7.seal.response.event.EventSummaryResponse;
 import com.t7.seal.response.round.RoundResponse;
 import com.t7.seal.response.track.TrackResponse;
 import com.t7.seal.security.guard.CurrentUser;
+import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -42,6 +43,7 @@ public class EventServiceImpl implements EventService {
     private final TrackRepository trackRepository;
     private final RoundRepository roundRepository;
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     private static final int MAX_PAGE_SIZE = 50;
 
@@ -86,9 +88,13 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventDetailResponse createEvent(CreateEventRequest event, Authentication authentication) {
 
-        UUID userId = CurrentUser.id(authentication);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        User user = currentUserService.getCurrentUser(authentication);
+
+//        take user from authentication instead of from request
+
+//        UUID userId = CurrentUser.id(authentication);
+//        User user = userRepository.findById(userId)
+//                .orElseThrow(() -> new NotFoundException("User not found"));
 
         validateRequest(event);
 
@@ -117,7 +123,9 @@ public class EventServiceImpl implements EventService {
 
     @Transactional
     @Override
-    public EventDetailResponse updateEvent(UUID eventId, UpdateEventRequest request) {
+    public EventDetailResponse updateEvent(UUID eventId, UpdateEventRequest request, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
         HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
@@ -152,7 +160,9 @@ public class EventServiceImpl implements EventService {
 
     @Transactional
     @Override
-    public void deleteEvent(UUID eventId) {
+    public void deleteEvent(UUID eventId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
         HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 

@@ -9,7 +9,8 @@ import ReplayOutlinedIcon from "@mui/icons-material/ReplayOutlined";
 import { SectionCard } from "../../components/SectionCard";
 import { TeamStatusBadge } from "../../components/TeamStatusBadge";
 import { avatarColor } from "@/utils/avatarColor";
-import type { EditEventData, EventTeam, TeamStatus } from "../../types/coordinator.types";
+import type { EditEventData, EventTeam } from "../../mocks/coordinatorEditEvent.mock";
+import type { TeamStatus } from "../../hooks/useEditEventMutation";
 
 // Types
 
@@ -67,7 +68,7 @@ export const TeamsTab = ({
                 sx={{ ...checkboxSx, "&.MuiCheckbox-indeterminate": { color: "#3b82f6" } }}
               />
               <GroupsOutlinedIcon className="text-slate-400" />
-              <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-700">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
                 {track.name}
               </h3>
               <span className="ml-2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">
@@ -77,7 +78,7 @@ export const TeamsTab = ({
 
             {selectedInTrack.length > 0 && (
               <div className="animate-in fade-in zoom-in-95 flex items-center gap-2 px-2 duration-200">
-                <span className="mr-2 text-xs font-bold text-slate-500">
+                <span className="mr-2 text-xs font-medium text-slate-500">
                   {selectedInTrack.length} selected
                 </span>
                 <button
@@ -114,7 +115,7 @@ export const TeamsTab = ({
                     sx={checkboxSx}
                   />
                   <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 text-lg font-black shadow-sm ${avatarColor(team.name[0])}`}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 text-lg font-bold shadow-sm ${avatarColor(team.name[0])}`}
                   >
                     {team.name[0]}
                   </div>
@@ -188,7 +189,7 @@ const TeamActions = ({
         <button
           type="button"
           onClick={() => onUpdate("REJECTED")}
-          className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200 transition-colors hover:bg-rose-50 hover:text-rose-600 hover:ring-rose-200"
+          className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200 transition-colors hover:bg-rose-50 hover:text-rose-600 hover:ring-rose-200"
         >
           <CloseOutlinedIcon sx={{ fontSize: 14 }} /> Reject Team
         </button>
@@ -196,7 +197,7 @@ const TeamActions = ({
         <button
           type="button"
           onClick={() => onUpdate("APPROVED")}
-          className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200 transition-colors hover:bg-emerald-50 hover:text-emerald-600 hover:ring-emerald-200"
+          className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200 transition-colors hover:bg-emerald-50 hover:text-emerald-600 hover:ring-emerald-200"
         >
           <CheckOutlinedIcon sx={{ fontSize: 14 }} /> Approve Team
         </button>
@@ -204,7 +205,7 @@ const TeamActions = ({
       <button
         type="button"
         onClick={() => onUpdate("PENDING")}
-        className="inline-flex items-center gap-1 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+        className="inline-flex items-center gap-1 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
       >
         <ReplayOutlinedIcon sx={{ fontSize: 14 }} /> Reset to Pending
       </button>

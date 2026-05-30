@@ -24,11 +24,59 @@ public interface PrizeRepository extends JpaRepository<Prize, UUID> {
             @Param("eventId") UUID eventId);
 
     @Query("""
-                    SELECT p FROM Prize p 
-                        JOIN p.event e 
+                    SELECT p FROM Prize p
+                        JOIN p.event e
                             WHERE p.id = :prizeId
-                                AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED')                     
+                                AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED')
             """)
     Optional<Prize> findPublicById(
             @Param("prizeId") UUID prizeId);
+
+    @Query("""
+            SELECT COUNT(p) > 0
+            FROM Prize p
+            WHERE p.event.id = :eventId
+              AND p.rankPosition = :rankPosition
+              AND (
+                    (:trackId IS NULL AND p.track IS NULL)
+                    OR (:trackId IS NOT NULL AND p.track.id = :trackId)
+              )
+            """)
+    boolean existsSameRank(
+            @Param("eventId") UUID eventId,
+            @Param("trackId") UUID trackId,
+            @Param("rankPosition") Integer rankPosition
+    );
+
+    @Query("""
+            SELECT COUNT(p) > 0
+            FROM Prize p
+            WHERE p.event.id = :eventId
+              AND p.rankPosition = :rankPosition
+              AND p.id <> :prizeId
+              AND (
+                    (:trackId IS NULL AND p.track IS NULL)
+                    OR (:trackId IS NOT NULL AND p.track.id = :trackId)
+              )
+            """)
+    boolean existsSameRankExceptSelf(
+            @Param("prizeId") UUID prizeId,
+            @Param("eventId") UUID eventId,
+            @Param("trackId") UUID trackId,
+            @Param("rankPosition") Integer rankPosition
+    );
+
+    @Query("""
+            SELECT p FROM Prize p
+                        JOIN p.event e 
+                        JOIN p.track t 
+                        WHERE :prizeId IS NOT NULL AND p.id = :prizeId 
+                                    AND :eventId IS NOT NULL AND p.event.id = :eventId
+                                    AND :trackId IS NOT NULL AND p.track.id = :trackId
+            
+            """)
+    Optional<Prize> findPrizeByIdInEventAndTrack(
+            @Param("prizeId") UUID prizeId,
+            @Param("eventId") UUID eventId,
+            @Param("trackId") UUID trackId);
 }

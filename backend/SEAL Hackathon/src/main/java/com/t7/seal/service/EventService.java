@@ -16,7 +16,7 @@ public interface EventService {
 
     EventDetailResponse createEvent(CreateEventRequest event, Authentication authentication);
 
-    EventDetailResponse updateEvent(UUID eventId, UpdateEventRequest request);
+    EventDetailResponse updateEvent(UUID eventId, UpdateEventRequest request, Authentication authentication);
 
-    void deleteEvent(UUID eventId);
+    void deleteEvent(UUID eventId, Authentication authentication);
 }

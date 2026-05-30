@@ -17,6 +17,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,12 +33,14 @@ public class TrackController {
     private final MentorAssignmentService mentorAssignmentService;
 //    private final TeamService teamService;
 
+    @PreAuthorize("@eventSecurity.canCreateTrack(#eventId, authentication)")
     @PostMapping("/events/{eventId}/tracks")
     public ResponseEntity<TrackResponse> createTrack(
             @PathVariable UUID eventId,
-            @Valid @RequestBody CreateTrackRequest request
+            @Valid @RequestBody CreateTrackRequest request,
+            Authentication authentication
     ) {
-        TrackResponse response = trackService.createTrack(eventId, request);
+        TrackResponse response = trackService.createTrack(eventId, request, authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -54,31 +58,38 @@ public class TrackController {
         return ResponseEntity.ok(trackService.getTrackById(trackId));
     }
 
+    @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
     @PatchMapping("/tracks/{trackId}")
     public ResponseEntity<TrackResponse> updateTrack(
             @PathVariable UUID trackId,
-            @Valid @RequestBody UpdateTrackRequest request
+            @Valid @RequestBody UpdateTrackRequest request,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(trackService.updateTrack(trackId, request));
+        return ResponseEntity.ok(trackService.updateTrack(trackId, request, authentication));
     }
 
+    @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
     @DeleteMapping("/tracks/{trackId}")
     public ResponseEntity<Void> deleteTrack(
-            @PathVariable UUID trackId
+            @PathVariable UUID trackId,
+            Authentication authentication
     ) {
-        trackService.deleteTrack(trackId);
+        trackService.deleteTrack(trackId, authentication);
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
     @PostMapping("/tracks/{trackId}/mentor-assignments")
     public ResponseEntity<MentorAssignmentResponse> assignMentor(
             @PathVariable UUID trackId,
-            @Valid @RequestBody AssignMentorRequest request
+            @Valid @RequestBody AssignMentorRequest request,
+            Authentication authentication
     ) {
-        MentorAssignmentResponse response = mentorAssignmentService.assignMentor(trackId, request);
+        MentorAssignmentResponse response = mentorAssignmentService.assignMentor(trackId, request, authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
     @GetMapping("/tracks/{trackId}/mentor-assignments")
     public ResponseEntity<List<MentorAssignmentResponse>> getMentorAssignments(
             @PathVariable UUID trackId
@@ -86,11 +97,14 @@ public class TrackController {
         return ResponseEntity.ok(mentorAssignmentService.getMentorAssignments(trackId));
     }
 
+    @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
     @DeleteMapping("/tracks/{trackId}/mentor-assignments/{assignmentId}")
     public ResponseEntity<Void> removeMentorAssignment(
             @PathVariable UUID trackId,
-            @PathVariable UUID assignmentId
+            @PathVariable UUID assignmentId,
+            Authentication authentication
     ) {
+        mentorAssignmentService.removeMentorAssignment(trackId, assignmentId, authentication);
         return ResponseEntity.noContent().build();
     }
 

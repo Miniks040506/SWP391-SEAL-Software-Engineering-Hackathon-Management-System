@@ -1,26 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-
-import { useEditEvent } from "../../hooks/useEditEvent";
-import type { TabId } from "../../types/coordinator.types";
-
+import { useEditEventMutation } from "../../hooks/useEditEventMutation";
 import { EditEventDialogs } from "./EditEventDialogs";
 import { InfoTab } from "./InfoTab";
 import { TeamsTab } from "./TeamsTab";
 import { TracksTab } from "./TracksTab";
+import {
+  availableJudges,
+  availableMentors,
+  availableScoreCriteria,
+} from "../../mocks/coordinatorEditEvent.mock";
 
-// Constants
+const TABS = ["info", "tracks", "teams"] as const;
+
+export type TabId = typeof TABS[number];
 
 const TAB_LABELS: Record<TabId, string> = {
   info: "Basic Information",
   tracks: "Tracks & Rounds",
   teams: "Participating Teams",
 };
-
-const TABS = ["info", "tracks", "teams"] as const;
-
-// Page
 
 export const CoordinatorEditEventPage = () => {
   const navigate = useNavigate();
@@ -31,23 +31,26 @@ export const CoordinatorEditEventPage = () => {
     teams,
     expandedTracks,
     dialog,
-    setDialog,
-    selectedIds,
     selectedTeamIds,
-    newRoundName,
-    setNewRoundName,
-    newRoundStart,
-    setNewRoundStart,
-    newRoundEnd,
-    setNewRoundEnd,
-    newTrackName,
-    setNewTrackName,
-    newTrackDesc,
-    setNewTrackDesc,
     isSaving,
     errors,
     pendingCount,
     closeDialog,
+    openAddTrack,
+    openEditTrack,
+    openAddRound,
+    openEditRound,
+    openAddJudge,
+    openAddMentor,
+    openEditCriteria,
+    openTeamDetail,
+    confirmAddTrack,
+    confirmEditTrack,
+    confirmAddRound,
+    confirmEditRound,
+    confirmAddJudge,
+    confirmAddMentor,
+    confirmEditCriteria,
     handleSave,
     handleDiscard,
     handleEventChange,
@@ -55,28 +58,14 @@ export const CoordinatorEditEventPage = () => {
     removeTrack,
     removeRound,
     removeUser,
-    openAddJudge,
-    openAddMentor,
-    openEditCriteria,
-    openAddRound,
-    openAddTrack,
-    confirmAddRound,
-    confirmAddTrack,
-    confirmAddJudge,
-    confirmAddMentor,
-    confirmEditCriteria,
-    toggleSelectId,
     updateTeamStatus,
     handleSelectAllTrackTeams,
     handleToggleSelectTeam,
     handleBulkTeamStatusUpdate,
-    openEditTrack,
-    openEditRound,
-  } = useEditEvent();
+  } = useEditEventMutation();
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-12 font-sans text-slate-900">
-      {/* Header */}
+    <div className="w-full bg-slate-50/50 pb-8 font-sans text-slate-900">
       <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 px-6 py-4 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-4">
@@ -143,7 +132,6 @@ export const CoordinatorEditEventPage = () => {
       </div>
 
       <div className="mx-auto max-w-6xl px-6 pt-8">
-        {/* Tabs */}
         <div className="mb-8 flex space-x-1 border-b border-slate-200">
           {TABS.map((id) => {
             const isActive = activeTab === id;
@@ -210,31 +198,23 @@ export const CoordinatorEditEventPage = () => {
               onSelectAll={handleSelectAllTrackTeams}
               onToggleSelect={handleToggleSelectTeam}
               onBulkUpdate={handleBulkTeamStatusUpdate}
-              onOpenTeamDetail={(team) =>
-                setDialog({ kind: "teamDetail", team })
-              }
+              onOpenTeamDetail={openTeamDetail}
             />
           )}
         </div>
       </div>
 
+      {/* TODO: Replace mock data with API queries when coordinator.api.ts is ready */}
       <EditEventDialogs
         dialog={dialog}
-        selectedIds={selectedIds}
-        newRoundName={newRoundName}
-        newRoundStart={newRoundStart}
-        newRoundEnd={newRoundEnd}
-        newTrackName={newTrackName}
-        newTrackDesc={newTrackDesc}
+        judges={availableJudges}
+        mentors={availableMentors}
+        criteria={availableScoreCriteria}
         onClose={closeDialog}
-        onToggleSelectId={toggleSelectId}
-        onSetNewRoundName={setNewRoundName}
-        onSetNewRoundStart={setNewRoundStart}
-        onSetNewRoundEnd={setNewRoundEnd}
-        onSetNewTrackName={setNewTrackName}
-        onSetNewTrackDesc={setNewTrackDesc}
         onConfirmAddTrack={confirmAddTrack}
+        onConfirmEditTrack={confirmEditTrack}
         onConfirmAddRound={confirmAddRound}
+        onConfirmEditRound={confirmEditRound}
         onConfirmAddJudge={confirmAddJudge}
         onConfirmAddMentor={confirmAddMentor}
         onConfirmEditCriteria={confirmEditCriteria}

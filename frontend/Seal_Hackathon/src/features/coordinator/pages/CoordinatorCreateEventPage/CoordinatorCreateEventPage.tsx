@@ -10,6 +10,9 @@ import { StepProgress } from "@/features/auth/components/StepProgress";
 
 import { EventDetailsStep } from "./1_EventDetails";
 import { TracksRoundsStep } from "./2_TracksRounds";
+import { PrizesStep } from "./3_Prizes";
+import { MentorsJudgesStep } from "./4_MentorsJudges";
+import { EventCriteriaStep } from "./5_EventCriteria";
 
 import { useCreateEventFlowMutation } from "../../hooks/useCreateEventFlow";
 
@@ -125,7 +128,11 @@ export const CoordinatorCreateEventPage = () => {
           }))}
         />
 
-        {activeStep === 1 && <EventDetailsStep onNext={handleNextStep} />}
+        {activeStep === 1 && 
+          <EventDetailsStep 
+            onNext={handleNextStep} 
+          />
+        }
 
         {activeStep === 2 && (
           <TracksRoundsStep
@@ -135,92 +142,24 @@ export const CoordinatorCreateEventPage = () => {
         )}
 
         {activeStep === 3 && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
-            <h2 className="text-lg font-extrabold text-gray-900">
-              Step 3: Prizes
-            </h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Prize configuration will be added later.
-            </p>
-
-            <div className="mt-6 flex justify-between">
-              <button
-                type="button"
-                onClick={handlePreviousStep}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-bold text-gray-600"
-              >
-                Back
-              </button>
-
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white"
-              >
-                Next Step
-              </button>
-            </div>
-          </section>
+          <PrizesStep 
+            onBack={handlePreviousStep} 
+            onNext={handleNextStep} 
+          />
         )}
 
         {activeStep === 4 && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
-            <h2 className="text-lg font-extrabold text-gray-900">
-              Step 4: Mentors & Judges
-            </h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Mentor and judge assignment will be added later.
-            </p>
-
-            <div className="mt-6 flex justify-between">
-              <button
-                type="button"
-                onClick={handlePreviousStep}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-bold text-gray-600"
-              >
-                Back
-              </button>
-
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white"
-              >
-                Next Step
-              </button>
-            </div>
-          </section>
+          <MentorsJudgesStep 
+            onBack={handlePreviousStep} 
+            onNext={handleNextStep} 
+          />
         )}
 
         {activeStep === 5 && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
-            <h2 className="text-lg font-extrabold text-gray-900">
-              Step 5: Event Criteria
-            </h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Scoring criteria configuration will be added later.
-            </p>
-
-            <div className="mt-6 flex justify-between">
-              <button
-                type="button"
-                onClick={handlePreviousStep}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-bold text-gray-600"
-              >
-                Back
-              </button>
-
-              <button
-                type="submit"
-                disabled={createEventFlowMutation.isPending}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {createEventFlowMutation.isPending
-                  ? "Creating..."
-                  : "Create Event"}
-              </button>
-            </div>
-          </section>
+          <EventCriteriaStep 
+            onBack={handlePreviousStep} 
+            isSubmitting={createEventFlowMutation.isPending} 
+          />
         )}
       </form>
     </FormProvider>
