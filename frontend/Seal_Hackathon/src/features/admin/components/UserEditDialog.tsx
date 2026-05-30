@@ -17,6 +17,9 @@ import {
   editUserSchema,
   type EditUserFormInput,
   type EditUserFormValues,
+  ALL_ROLES,
+  ALL_STATUSES,
+  textFieldSx,
 } from "@/features/admin/schemas/admin.schema";
 import {
   useAdminUserQuery,
@@ -24,12 +27,6 @@ import {
 } from "@/features/admin/hooks/useAdminMutations";
 import type { UserRole } from "@/types/auth.types";
 import type { UserStatus } from "@/types/user.types";
-
-const ALL_ROLES: UserRole[] = [
-  "ADMIN", "COORDINATOR", "JUDGE", "MENTOR", "PARTICIPANT", "STUDENT", "GUEST",
-];
-const ALL_STATUSES: UserStatus[] = ["ACTIVE", "INACTIVE", "PENDING", "BANNED"];
-const textFieldSx = { "& .MuiOutlinedInput-root": { borderRadius: "10px" } };
 
 export function UserEditDialog({
   userId,
@@ -49,7 +46,12 @@ export function UserEditDialog({
   } = useForm<EditUserFormInput, unknown, EditUserFormValues>({
     resolver: zodResolver(editUserSchema),
     values: user
-      ? { fullName: user.fullName, phone: user.phone ?? "", role: user.role as UserRole, status: user.status as UserStatus }
+      ? {
+          fullName: user.fullName,
+          phone: user.phone ?? "",
+          role: user.role as UserRole,
+          status: user.status as UserStatus,
+        }
       : undefined,
   });
 
@@ -74,7 +76,9 @@ export function UserEditDialog({
     <Dialog open={Boolean(userId)} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle className="font-black text-slate-800">
         Edit User
-        {user && <div className="text-sm font-normal text-slate-400">{user.email}</div>}
+        {user && (
+          <div className="text-sm font-normal text-slate-400">{user.email}</div>
+        )}
       </DialogTitle>
 
       {isLoading || !user ? (
@@ -88,14 +92,18 @@ export function UserEditDialog({
           <DialogContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <TextField
-                fullWidth size="small" label="Full Name *"
+                fullWidth
+                size="small"
+                label="Full Name *"
                 {...register("fullName")}
                 error={Boolean(errors.fullName)}
                 helperText={errors.fullName?.message}
                 sx={textFieldSx}
               />
               <TextField
-                fullWidth size="small" label="Phone"
+                fullWidth
+                size="small"
+                label="Phone"
                 {...register("phone")}
                 sx={textFieldSx}
               />
@@ -103,23 +111,45 @@ export function UserEditDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <Controller
-                control={control} name="role"
+                control={control}
+                name="role"
                 render={({ field }) => (
                   <div>
-                    <div className="mb-1 text-xs font-bold text-slate-500">Role</div>
-                    <Select {...field} size="small" fullWidth sx={{ borderRadius: "10px" }}>
-                      {ALL_ROLES.map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
+                    <div className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-300">
+                      Role
+                    </div>
+                    <Select
+                      {...field}
+                      size="small"
+                      fullWidth
+                      sx={{ borderRadius: "10px" }}>
+                      {ALL_ROLES.map((r) => (
+                        <MenuItem key={r} value={r}>
+                          {r}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </div>
                 )}
               />
               <Controller
-                control={control} name="status"
+                control={control}
+                name="status"
                 render={({ field }) => (
                   <div>
-                    <div className="mb-1 text-xs font-bold text-slate-500">Status</div>
-                    <Select {...field} size="small" fullWidth sx={{ borderRadius: "10px" }}>
-                      {ALL_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                    <div className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-300">
+                      Status
+                    </div>
+                    <Select
+                      {...field}
+                      size="small"
+                      fullWidth
+                      sx={{ borderRadius: "10px" }}>
+                      {ALL_STATUSES.map((s) => (
+                        <MenuItem key={s} value={s}>
+                          {s}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </div>
                 )}
@@ -128,12 +158,19 @@ export function UserEditDialog({
           </DialogContent>
 
           <DialogActions className="px-6 pb-4">
-            <Button onClick={onClose} sx={{ textTransform: "none" }}>Cancel</Button>
+            <Button onClick={onClose} sx={{ textTransform: "none" }}>
+              Cancel
+            </Button>
             <Button
-              type="submit" variant="contained"
+              type="submit"
+              variant="contained"
               disabled={updateMutation.isPending}
-              sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px", boxShadow: "none" }}
-            >
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: "8px",
+                boxShadow: "none",
+              }}>
               {updateMutation.isPending ? "Saving…" : "Save Changes"}
             </Button>
           </DialogActions>

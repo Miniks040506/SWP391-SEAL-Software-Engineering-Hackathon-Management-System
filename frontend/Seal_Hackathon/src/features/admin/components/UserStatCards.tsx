@@ -12,18 +12,17 @@ function StatCard({
   loading: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
       <div className={`text-xs font-extrabold uppercase tracking-widest ${accent}`}>
         {label}
       </div>
-      <div className="mt-1 text-3xl font-black text-slate-800">
+      <div className="mt-1 text-3xl font-black text-slate-800 dark:text-slate-100">
         {loading ? (
-          <span className="inline-block h-8 w-10 animate-pulse rounded bg-slate-100" />
-        ) : (
-          count
-        )}
+          <span className="inline-block h-8 w-10 animate-pulse rounded bg-slate-100 dark:bg-slate-700" />
+        ) : (count)
+        }
       </div>
-      <div className="text-xs text-slate-400">{sub}</div>
+      <div className="text-xs text-slate-400 dark:text-slate-300">{sub}</div>
     </div>
   );
 }

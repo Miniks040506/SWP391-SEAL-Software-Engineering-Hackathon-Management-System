@@ -13,14 +13,22 @@ import PersonIcon from "@mui/icons-material/Person";
 
 import { useAdminUserQuery } from "@/features/admin/hooks/useAdminMutations";
 import { RoleBadge, StatusDot } from "./UserBadges";
+import type { UserRole } from "@/types/auth.types";
+import type { UserStatus } from "@/types/user.types";
 
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
   return (
     <div>
-      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-400">
         {label}
       </div>
-      <div className="mt-0.5 text-sm text-slate-700">{value}</div>
+      <div className="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{value}</div>
     </div>
   );
 }
@@ -54,8 +62,8 @@ export function UserViewDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200 text-slate-400">
+            <div className="flex items-center gap-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 p-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-600 text-slate-400 dark:text-slate-300">
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
@@ -67,12 +75,12 @@ export function UserViewDialog({
                 )}
               </div>
               <div>
-                <div className="text-base font-bold text-slate-800">
+                <div className="text-base font-bold text-slate-800 dark:text-slate-100">
                   {user.fullName}
                 </div>
                 <div className="mt-1 flex items-center gap-2">
-                  <RoleBadge role={user.role} />
-                  <StatusDot status={user.status} />
+                  <RoleBadge role={user.role as UserRole} />
+                  <StatusDot status={user.status as UserStatus} />
                 </div>
               </div>
             </div>
@@ -94,7 +102,9 @@ export function UserViewDialog({
                 label="Last Login"
                 value={
                   user.lastLoginAt
-                    ? new Date(user.lastLoginAt).toLocaleString("sv-SE").slice(0, 16)
+                    ? new Date(user.lastLoginAt)
+                        .toLocaleString("sv-SE")
+                        .slice(0, 16)
                     : "Never"
                 }
               />

@@ -21,16 +21,11 @@ import {
   createUserSchema,
   type CreateUserFormInput,
   type CreateUserFormValues,
+  ALL_ROLES,
+  ALL_STATUSES,
+  textFieldSx,
 } from "@/features/admin/schemas/admin.schema";
 import { useCreateUserMutation } from "@/features/admin/hooks/useAdminMutations";
-import type { UserRole } from "@/types/auth.types";
-import type { UserStatus } from "@/types/user.types";
-
-const ALL_ROLES: UserRole[] = [
-  "ADMIN", "COORDINATOR", "JUDGE", "MENTOR", "PARTICIPANT", "STUDENT", "GUEST",
-];
-const ALL_STATUSES: UserStatus[] = ["ACTIVE", "INACTIVE", "PENDING", "BANNED"];
-const textFieldSx = { "& .MuiOutlinedInput-root": { borderRadius: "10px" } };
 
 export function UserCreateDialog({
   open,
@@ -92,14 +87,18 @@ export function UserCreateDialog({
         <DialogContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <TextField
-              fullWidth size="small" label="Full Name *"
+              fullWidth
+              size="small"
+              label="Full Name *"
               {...register("fullName")}
               error={Boolean(errors.fullName)}
               helperText={errors.fullName?.message}
               sx={textFieldSx}
             />
             <TextField
-              fullWidth size="small" label="Email *"
+              fullWidth
+              size="small"
+              label="Email *"
               {...register("email")}
               error={Boolean(errors.email)}
               helperText={errors.email?.message}
@@ -109,7 +108,9 @@ export function UserCreateDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <TextField
-              fullWidth size="small" label="Password *"
+              fullWidth
+              size="small"
+              label="Password *"
               type={showPassword ? "text" : "password"}
               {...register("password")}
               error={Boolean(errors.password)}
@@ -119,8 +120,16 @@ export function UserCreateDialog({
                 input: {
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton size="small" type="button" onClick={() => setShowPassword((s) => !s)}>
-                        {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                      <IconButton
+                        size="small"
+                        type="button"
+                        onClick={() => setShowPassword((s) => !s)}
+                      >
+                        {showPassword ? (
+                          <VisibilityOffIcon fontSize="small" />
+                        ) : (
+                          <VisibilityIcon fontSize="small" />
+                        )}
                       </IconButton>
                     </InputAdornment>
                   ),
@@ -128,7 +137,10 @@ export function UserCreateDialog({
               }}
             />
             <TextField
-              fullWidth size="small" label="Phone" placeholder="Optional"
+              fullWidth
+              size="small"
+              label="Phone"
+              placeholder="Optional"
               {...register("phone")}
               error={Boolean(errors.phone)}
               helperText={errors.phone?.message}
@@ -138,26 +150,59 @@ export function UserCreateDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <Controller
-              control={control} name="role"
+              control={control}
+              name="role"
               render={({ field }) => (
                 <div>
-                  <div className="mb-1 text-xs font-bold text-slate-500">Role *</div>
-                  <Select {...field} size="small" fullWidth displayEmpty sx={{ borderRadius: "10px" }}>
-                    {ALL_ROLES.map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
+                  <div className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-300">
+                    Role *
+                  </div>
+                  <Select
+                    {...field}
+                    size="small"
+                    fullWidth
+                    displayEmpty
+                    sx={{ borderRadius: "10px" }}
+                  >
+                    {ALL_ROLES.map((r) => (
+                      <MenuItem key={r} value={r}>
+                        {r}
+                      </MenuItem>
+                    ))}
                   </Select>
-                  {errors.role && <p className="mt-1 text-xs text-red-600">{errors.role.message}</p>}
+                  {errors.role && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {errors.role.message}
+                    </p>
+                  )}
                 </div>
               )}
             />
             <Controller
-              control={control} name="status"
+              control={control}
+              name="status"
               render={({ field }) => (
                 <div>
-                  <div className="mb-1 text-xs font-bold text-slate-500">Status *</div>
-                  <Select {...field} size="small" fullWidth sx={{ borderRadius: "10px" }}>
-                    {ALL_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                  <div className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-300">
+                    Status *
+                  </div>
+                  <Select
+                    {...field}
+                    size="small"
+                    fullWidth
+                    sx={{ borderRadius: "10px" }}
+                  >
+                    {ALL_STATUSES.map((s) => (
+                      <MenuItem key={s} value={s}>
+                        {s}
+                      </MenuItem>
+                    ))}
                   </Select>
-                  {errors.status && <p className="mt-1 text-xs text-red-600">{errors.status.message}</p>}
+                  {errors.status && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {errors.status.message}
+                    </p>
+                  )}
                 </div>
               )}
             />
@@ -165,11 +210,19 @@ export function UserCreateDialog({
         </DialogContent>
 
         <DialogActions className="px-6 pb-4">
-          <Button onClick={handleClose} sx={{ textTransform: "none" }}>Cancel</Button>
+          <Button onClick={handleClose} sx={{ textTransform: "none" }}>
+            Cancel
+          </Button>
           <Button
-            type="submit" variant="contained"
+            type="submit"
+            variant="contained"
             disabled={createMutation.isPending}
-            sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px", boxShadow: "none" }}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: "8px",
+              boxShadow: "none",
+            }}
           >
             {createMutation.isPending ? "Creating…" : "Create User"}
           </Button>

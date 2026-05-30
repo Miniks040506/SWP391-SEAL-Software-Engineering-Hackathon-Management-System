@@ -2,20 +2,18 @@ import type { UserRole } from "@/types/auth.types";
 import type { UserStatus } from "@/types/user.types";
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  ADMIN: "bg-red-100 text-red-700",
-  COORDINATOR: "bg-purple-100 text-purple-700",
-  JUDGE: "bg-yellow-100 text-yellow-700",
-  MENTOR: "bg-pink-100 text-pink-700",
-  PARTICIPANT: "bg-blue-100 text-blue-700",
-  STUDENT: "bg-green-100 text-green-700",
-  GUEST: "bg-slate-100 text-slate-500",
+  ADMIN: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
+  COORDINATOR: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400",
+  JUDGE: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400",
+  MENTOR: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400",
+  PARTICIPANT: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+  STUDENT: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
 };
 
 export function RoleBadge({ role }: { role: UserRole }) {
   return (
     <span
-      className={`rounded-md px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider ${ROLE_COLORS[role]}`}
-    >
+      className={`rounded-md px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider ${ROLE_COLORS[role]}`}>
       {role}
     </span>
   );
@@ -32,7 +30,7 @@ export function StatusDot({ status }: { status: UserStatus }) {
           : "bg-slate-400";
 
   return (
-    <span className="flex items-center gap-1.5 text-xs text-slate-600">
+    <span className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
       <span className={`h-2 w-2 rounded-full ${dotColor}`} />
       {status.charAt(0) + status.slice(1).toLowerCase()}
     </span>

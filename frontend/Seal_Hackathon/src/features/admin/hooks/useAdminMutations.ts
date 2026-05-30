@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { adminApi } from "@/api/admin.api";
-import type { AdminUserListParams, UpdateUserRequest } from "@/types/admin.types";
+import { adminApi } from "@/api/user.api";
+import type {
+  AdminUserListParams,
+  UpdateUserRequest,
+} from "@/types/user.types";
 
 const ADMIN_USERS_KEY = "admin-users";
 
@@ -31,8 +34,13 @@ export function useCreateUserMutation() {
 export function useUpdateUserMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, payload }: { userId: string; payload: UpdateUserRequest }) =>
-      adminApi.updateUser(userId, payload),
+    mutationFn: ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: UpdateUserRequest;
+    }) => adminApi.updateUser(userId, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: [ADMIN_USERS_KEY] }),
   });
 }
@@ -56,7 +64,12 @@ export function useActivateUserMutation() {
 
 export function useResetUserPasswordMutation() {
   return useMutation({
-    mutationFn: ({ userId, newPassword }: { userId: string; newPassword: string }) =>
-      adminApi.resetPassword(userId, newPassword),
+    mutationFn: ({
+      userId,
+      newPassword,
+    }: {
+      userId: string;
+      newPassword: string;
+    }) => adminApi.resetPassword(userId, newPassword),
   });
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Button,
   CircularProgress,
@@ -33,7 +33,7 @@ import type { UserStatus } from "@/types/user.types";
 import type { UserRole } from "@/types/auth.types";
 
 const ALL_ROLES: UserRole[] = [
-  "ADMIN", "COORDINATOR", "JUDGE", "MENTOR", "PARTICIPANT", "STUDENT", "GUEST",
+  "ADMIN", "COORDINATOR", "JUDGE", "MENTOR", "PARTICIPANT", "STUDENT",
 ];
 const ALL_STATUSES: UserStatus[] = ["ACTIVE", "INACTIVE", "PENDING", "BANNED"];
 const PAGE_SIZE = 10;
@@ -89,13 +89,33 @@ export function AdminUsersPage() {
   const handleRoleFilter = (value: UserRole | "") => { setRoleFilter(value); setPage(1); };
   const handleStatusFilter = (value: UserStatus | "") => { setStatusFilter(value); setPage(1); };
 
+  const [isDark, setIsDark] = useState(
+    () => typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, { attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  const filterSx = {
+    color: isDark ? "#e2e8f0" : undefined,
+    bg: isDark ? "#1e293b" : "transparent",
+    border: isDark ? "#475569" : "rgba(0,0,0,0.23)",
+    borderHover: isDark ? "#94a3b8" : "rgba(0,0,0,0.87)",
+    placeholder: isDark ? "#94a3b8" : undefined,
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-800">Manage Users & Permissions</h1>
-          <p className="text-sm text-slate-400">{total} users total</p>
+          <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100">Manage Users & Permissions</h1>
+          <p className="text-sm text-slate-400 dark:text-slate-300">{total} users total</p>
         </div>
         <Button
           variant="contained"
@@ -116,20 +136,31 @@ export function AdminUsersPage() {
       />
 
       {/* Table card */}
-      <div className="rounded-2xl border border-slate-200 bg-white">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-slate-700 p-4">
           <TextField
             size="small"
             placeholder="Search by name, email or ID…"
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
-            sx={{ width: 300, "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
+            sx={{
+              width: 300,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                backgroundColor: filterSx.bg,
+                color: filterSx.color,
+                "& fieldset": { borderColor: filterSx.border },
+                "&:hover fieldset": { borderColor: filterSx.borderHover },
+              },
+              "& .MuiInputBase-input::placeholder": { color: filterSx.placeholder, opacity: 1 },
+              "& .MuiInputBase-input": { color: filterSx.color },
+            }}
             slotProps={{
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon fontSize="small" className="text-slate-400" />
+                    <SearchIcon fontSize="small" className="text-slate-400 dark:text-slate-400" />
                   </InputAdornment>
                 ),
               },
@@ -138,7 +169,15 @@ export function AdminUsersPage() {
           <Select
             size="small" displayEmpty value={roleFilter}
             onChange={(e) => handleRoleFilter(e.target.value as UserRole | "")}
-            sx={{ minWidth: 140, borderRadius: "10px" }}
+            sx={{
+              minWidth: 140,
+              borderRadius: "10px",
+              backgroundColor: filterSx.bg,
+              color: filterSx.color,
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.border },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.borderHover },
+              "& .MuiSvgIcon-root": { color: filterSx.color },
+            }}
           >
             <MenuItem value="">All Roles</MenuItem>
             {ALL_ROLES.map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
@@ -146,7 +185,15 @@ export function AdminUsersPage() {
           <Select
             size="small" displayEmpty value={statusFilter}
             onChange={(e) => handleStatusFilter(e.target.value as UserStatus | "")}
-            sx={{ minWidth: 140, borderRadius: "10px" }}
+            sx={{
+              minWidth: 140,
+              borderRadius: "10px",
+              backgroundColor: filterSx.bg,
+              color: filterSx.color,
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.border },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.borderHover },
+              "& .MuiSvgIcon-root": { color: filterSx.color },
+            }}
           >
             <MenuItem value="">All Statuses</MenuItem>
             {ALL_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
@@ -157,9 +204,9 @@ export function AdminUsersPage() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-slate-100 text-left">
+              <tr className="border-b border-slate-100 dark:border-slate-700 text-left">
                 {["User Details", "Role", "ID", "Status", "Actions"].map((h) => (
-                  <th key={h} className="px-5 py-3 text-xs font-extrabold uppercase tracking-widest text-slate-400">
+                  <th key={h} className="px-5 py-3 text-xs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-400">
                     {h}
                   </th>
                 ))}
@@ -174,22 +221,22 @@ export function AdminUsersPage() {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center text-sm text-slate-400">
+                  <td colSpan={6} className="py-16 text-center text-sm text-slate-400 dark:text-slate-400">
                     No users found.
                   </td>
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className="border-b border-slate-50 transition hover:bg-slate-50/60">
+                  <tr key={user.id} className="border-b border-slate-50 dark:border-slate-700/50 transition hover:bg-slate-50/60 dark:hover:bg-slate-700/40">
                     <td className="px-5 py-3.5">
                       <button type="button" className="text-left" onClick={() => setViewUserId(user.id)}>
-                        <div className="font-semibold text-slate-800 hover:underline">{user.fullName}</div>
-                        <div className="text-xs text-slate-400">{user.email}</div>
+                        <div className="font-semibold text-slate-800 dark:text-slate-100 hover:underline">{user.fullName}</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-400">{user.email}</div>
                       </button>
                     </td>
                     <td className="px-5 py-3.5"><RoleBadge role={user.role as UserRole} /></td>
                     <td className="px-5 py-3.5">
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600">
+                      <span className="rounded-md bg-slate-100 dark:bg-slate-700 px-2 py-0.5 font-mono text-xs text-slate-600 dark:text-slate-300">
                         {user.id.slice(0, 8).toUpperCase()}
                       </span>
                     </td>
@@ -228,8 +275,8 @@ export function AdminUsersPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-            <span className="text-xs text-slate-400">
+          <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 px-5 py-3">
+            <span className="text-xs text-slate-400 dark:text-slate-400">
               Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total} users
             </span>
             <Pagination
