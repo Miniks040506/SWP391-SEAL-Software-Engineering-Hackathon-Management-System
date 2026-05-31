@@ -21,9 +21,11 @@ import {
   createUserSchema,
   type CreateUserFormInput,
   type CreateUserFormValues,
-  ALL_ROLES,
-  ALL_STATUSES,
+  CREATE_ROLES,
+  CREATE_STATUSES,
   textFieldSx,
+  selectSx,
+  menuPropsDark,
 } from "@/features/admin/schemas/admin.schema";
 import { useCreateUserMutation } from "@/features/admin/hooks/useAdminMutations";
 
@@ -46,8 +48,8 @@ export function UserCreateDialog({
   } = useForm<CreateUserFormInput, unknown, CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
-      role: "STUDENT",
-      status: "PENDING",
+      role: "ADMIN",
+      status: "ACTIVE",
       fullName: "",
       email: "",
       password: "",
@@ -78,8 +80,19 @@ export function UserCreateDialog({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle className="font-black text-slate-800">
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      classes={{
+        paper: "bg-white dark:bg-slate-800 dark:text-slate-200",
+      }}
+      sx={{
+        "& .MuiDialog-paper": { backgroundImage: "none" },
+      }}
+    >
+      <DialogTitle className="font-bold text-slate-800 dark:text-slate-100">
         Create New User
       </DialogTitle>
 
@@ -162,9 +175,10 @@ export function UserCreateDialog({
                     size="small"
                     fullWidth
                     displayEmpty
-                    sx={{ borderRadius: "10px" }}
+                    sx={selectSx}
+                    MenuProps={menuPropsDark}
                   >
-                    {ALL_ROLES.map((r) => (
+                    {CREATE_ROLES.map((r) => (
                       <MenuItem key={r} value={r}>
                         {r}
                       </MenuItem>
@@ -190,9 +204,10 @@ export function UserCreateDialog({
                     {...field}
                     size="small"
                     fullWidth
-                    sx={{ borderRadius: "10px" }}
+                    sx={selectSx}
+                    MenuProps={menuPropsDark}
                   >
-                    {ALL_STATUSES.map((s) => (
+                    {CREATE_STATUSES.map((s) => (
                       <MenuItem key={s} value={s}>
                         {s}
                       </MenuItem>

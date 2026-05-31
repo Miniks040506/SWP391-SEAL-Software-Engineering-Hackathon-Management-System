@@ -13,12 +13,12 @@ function StatCard({
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
-      <div className={`text-xs font-extrabold uppercase tracking-widest ${accent}`}>
+      <div className={`text-xs font-bold uppercase tracking-widest ${accent}`}>
         {label}
       </div>
-      <div className="mt-1 text-3xl font-black text-slate-800 dark:text-slate-100">
+      <div className="mt-1 text-3xl font-bold text-slate-800 dark:text-slate-300">
         {loading ? (
-          <span className="inline-block h-8 w-10 animate-pulse rounded bg-slate-100 dark:bg-slate-700" />
+          <span className="inline-block h-8 w-10 animate-pulse rounded bg-slate-200 dark:bg-slate-700/50" />
         ) : (count)
         }
       </div>
@@ -32,41 +32,50 @@ export function UserStatCards({
   studentStats,
   mentorStats,
   judgeStats,
+  coordinatorStats,
 }: {
   adminStats: { totalElements: number } | undefined;
   studentStats: { totalElements: number } | undefined;
   mentorStats: { totalElements: number } | undefined;
   judgeStats: { totalElements: number } | undefined;
+  coordinatorStats: { totalElements: number } | undefined;
 }) {
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
       <StatCard
         label="Administrators"
         count={adminStats?.totalElements ?? 0}
         sub="Active"
-        accent="text-red-500"
+        accent="text-red-600 dark:text-red-400"
         loading={!adminStats}
       />
       <StatCard
         label="Students"
         count={studentStats?.totalElements ?? 0}
         sub="Registered"
-        accent="text-green-600"
+        accent="text-green-600 dark:text-green-400"
         loading={!studentStats}
       />
       <StatCard
         label="Mentors"
         count={mentorStats?.totalElements ?? 0}
         sub="Assigned"
-        accent="text-pink-600"
+        accent="text-pink-600 dark:text-pink-400"
         loading={!mentorStats}
       />
       <StatCard
         label="Judges"
         count={judgeStats?.totalElements ?? 0}
         sub="Invited"
-        accent="text-yellow-600"
+        accent="text-yellow-600 dark:text-yellow-400"
         loading={!judgeStats}
+      />
+      <StatCard
+        label="Event Coordinators"
+        count={coordinatorStats?.totalElements ?? 0}
+        sub="Assigned"
+        accent="text-indigo-600 dark:text-indigo-400"
+        loading={!coordinatorStats}
       />
     </div>
   );

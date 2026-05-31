@@ -104,7 +104,12 @@ export type GetUsersParams = {
 };
 
 // admin
-export type UserStatus = "ACTIVE" | "INACTIVE" | "PENDING" | "BANNED";
+export type UserStatus =
+  | "UNVERIFIED"
+  | "PENDING_APPROVAL"
+  | "ACTIVE"
+  | "SUSPENDED"
+  | "DEACTIVATED";
 
 export type AdminUserListParams = {
   search?: string;
@@ -112,8 +117,4 @@ export type AdminUserListParams = {
   status?: UserStatus | "";
   page?: number;
   pageSize?: number;
-};
-
-export type AdminResetPasswordRequest = {
-  newPassword: string;
 };
