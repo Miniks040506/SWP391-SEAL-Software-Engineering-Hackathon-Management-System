@@ -32,6 +32,7 @@ import {
 } from "@/features/coordinator";
 
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
+import { PersonalProfilePage } from "@/features/profile";
 
 export const router = createBrowserRouter([
   {
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
       { path: "/oauth/callback", element: <OAuthCallbackPage /> },
       { path: "/forgot-password", element: <ForgotPasswordPage /> },
       { path: "/reset-password", element: <ResetPasswordPage /> },
+      { path: "/personal", element: <PersonalProfilePage /> },
     ],
   },
 
@@ -77,7 +79,7 @@ export const router = createBrowserRouter([
       { path: "notifications", element: <NotFoundPage /> },
       { path: "schedule", element: <NotFoundPage /> },
       { path: "reports", element: <NotFoundPage /> },
-      { path: "profile", element: <NotFoundPage /> },
+      { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
     ],
   },
@@ -100,7 +102,7 @@ export const router = createBrowserRouter([
       { path: "criteria", element: <NotFoundPage /> },
       { path: "criteria/:id/edit", element: <NotFoundPage /> },
       { path: "exports", element: <NotFoundPage /> },
-      { path: "profile", element: <NotFoundPage /> },
+      { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
     ],
   },
@@ -115,7 +117,7 @@ export const router = createBrowserRouter([
       { path: "scoring", element: <NotFoundPage /> },
       { path: "calibration", element: <NotFoundPage /> },
       { path: "notifications", element: <NotFoundPage /> },
-      { path: "profile", element: <NotFoundPage /> },
+      { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
     ],
   },
@@ -129,7 +131,7 @@ export const router = createBrowserRouter([
       { path: "teams", element: <NotFoundPage /> },
       { path: "feedback", element: <NotFoundPage /> },
       { path: "notifications", element: <NotFoundPage /> },
-      { path: "profile", element: <NotFoundPage /> },
+      { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
     ],
   },

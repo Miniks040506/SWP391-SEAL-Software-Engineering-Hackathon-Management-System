@@ -72,6 +72,14 @@ export const userApi = {
   changeMyPassword(payload: ChangePasswordRequest) {
     return apiRequest.patch<void>("/users/me/password", payload);
   },
+  
+  uploadMyAvatar(file: File) {
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    return apiRequest.postForm<MyProfileResponse>("/users/me/avatar", formData);
+  },
 };
 
 // admin

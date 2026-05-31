@@ -9,13 +9,14 @@ export type UserRole =
 export type StudentType = "FPT" | "EXTERNAL";
 
 export type AuthUser = {
-  id: string;
+  id?: string;
+  userId?: string;
   email: string;
-  fullName?: string;
-  avatarUrl?: string;
+  fullName: string;
   role?: UserRole;
   roles?: UserRole[];
   status?: string;
+  avatarUrl?: string | null;
 };
 
 export type RegisterRequest = {
@@ -65,6 +66,7 @@ export type LoginResponse = {
   fullName: string;
   role: UserRole;
   status: string;
+  avatarUrl?: string | null;
   accessToken: string;
   refreshToken: string;
   accessTokenExpiresInMs: number;

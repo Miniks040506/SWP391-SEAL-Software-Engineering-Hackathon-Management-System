@@ -25,7 +25,7 @@ function getAvatarLetter(user: AuthUser) {
 
 export function UserAvatarMenu({
   user,
-  profilePath,
+  profilePath = "/personal",
   settingsPath,
   onLogout,
 }: UserAvatarMenuProps) {
@@ -38,6 +38,7 @@ export function UserAvatarMenu({
 
   const displayName = user.fullName || user.email || "User";
   const roleLabel = primaryRole || user.role || "USER";
+  const avatarUrl = user.avatarUrl || "";
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
@@ -62,10 +63,11 @@ export function UserAvatarMenu({
         type="button"
         onClick={() => setOpen((current) => !current)}
         className="rounded-full outline-none ring-blue-200 transition-all focus-visible:ring-4"
+        title={displayName}
       >
         <Avatar
           alt={displayName}
-          src=""
+          src={avatarUrl}
           sx={{
             width: 34,
             height: 34,
@@ -83,15 +85,33 @@ export function UserAvatarMenu({
       {open && (
         <div className="absolute right-0 z-50 mt-3 w-64 overflow-hidden rounded-2xl border border-gray-100 bg-white py-2 shadow-xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40">
           <div className="px-4 py-3">
-            <p className="truncate text-sm font-bold text-gray-900 dark:text-white">
-              {displayName}
-            </p>
+            <div className="flex items-center gap-3">
+              <Avatar
+                alt={displayName}
+                src={avatarUrl}
+                sx={{
+                  width: 42,
+                  height: 42,
+                  bgcolor: "#3b82f6",
+                  fontSize: 16,
+                  fontWeight: 900,
+                }}
+              >
+                {getAvatarLetter(user)}
+              </Avatar>
 
-            <p className="mt-0.5 truncate text-xs font-semibold text-gray-400">
-              {user.email}
-            </p>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-gray-900 dark:text-white">
+                  {displayName}
+                </p>
 
-            <span className="mt-2 inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                <p className="mt-0.5 truncate text-xs font-semibold text-gray-400">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+
+            <span className="mt-3 inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
               {roleLabel}
             </span>
           </div>
@@ -107,16 +127,14 @@ export function UserAvatarMenu({
             Dashboard
           </button>
 
-          {profilePath && (
-            <button
-              type="button"
-              onClick={() => go(profilePath)}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-            >
-              <PersonOutlineOutlinedIcon fontSize="small" />
-              Profile
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => go(profilePath)}
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+          >
+            <PersonOutlineOutlinedIcon fontSize="small" />
+            Profile
+          </button>
 
           {settingsPath && (
             <button

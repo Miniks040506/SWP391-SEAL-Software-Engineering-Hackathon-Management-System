@@ -200,6 +200,7 @@ public class AuthServiceImpl implements AuthService {
                 user.getFullName(),
                 user.getRole().name(),
                 user.getStatus().name(),
+                user.getAvatarUrl(),
                 accessToken,
                 refreshToken,
                 jwtService.getAccessTokenExpirationMs(),

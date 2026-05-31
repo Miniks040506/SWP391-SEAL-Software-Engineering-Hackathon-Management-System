@@ -1,8 +1,8 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import Avatar from '@mui/material/Avatar';
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import { useLocation, useNavigate } from "react-router-dom";
+import Avatar from "@mui/material/Avatar";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import { useAuthStore } from "@/stores/authStore";
 
 type NavbarLink = {
   label: string;
@@ -18,36 +18,47 @@ type NavbarLoggedinProps = {
   profilePath?: string;
 };
 
+function getAvatarLetter(fullName?: string | null, email?: string | null) {
+  const source = fullName || email || "U";
+  return source.charAt(0).toUpperCase();
+}
+
 export const NavbarLoggedin = ({
   homePath,
-  currentEventLabel = 'Current: Spring 2024',
+  currentEventLabel = "Current: Spring 2024",
   navLinks = [],
   notificationPath,
   settingsPath,
-  profilePath,
+  profilePath = "/personal",
 }: NavbarLoggedinProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);;
+  const user = useAuthStore((state) => state.user);
+
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
+
+  const displayName = user?.fullName || user?.email || "User";
+  const avatarUrl = user?.avatarUrl || "";
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 h-16 flex items-center shadow-sm">
-<div className="max-w-6xl mx-auto w-full px-6 flex items-center justify-between">        
+    <nav className="sticky top-0 z-50 flex h-16 items-center border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/90">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6">
         {/* Logo */}
         <div
-          className="flex items-center gap-3 cursor-pointer group active:scale-95 transition-transform"
+          className="group flex cursor-pointer items-center gap-3 transition-transform active:scale-95"
           onClick={() => navigate(homePath)}
         >
-          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-xl shadow-blue-500/20 group-hover:rotate-3 transition-transform">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500 text-2xl font-bold text-white shadow-xl shadow-blue-500/20 transition-transform group-hover:rotate-3">
             S
           </div>
 
           <div className="flex flex-col -space-y-1">
-            <span className="text-xl font-bold text-gray-900 tracking-tighter italic">
+            <span className="text-xl font-bold italic tracking-tighter text-gray-900 dark:text-white">
               SEAL
             </span>
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+            <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">
               Hackathon System
             </span>
           </div>
@@ -60,22 +71,24 @@ export const NavbarLoggedin = ({
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
-                className={`text-sm font-medium transition-all px-4 py-2 rounded-lg ${isActive(link.path)
-                    ? 'text-blue-600 bg-blue-50'
-                    : 'text-gray-500 hover:text-gray-900'
-                  }`}
+                className={[
+                  "rounded-lg px-4 py-2 text-sm font-medium transition-all",
+                  isActive(link.path)
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"
+                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white",
+                ].join(" ")}
               >
                 {link.label}
               </button>
             ))}
           </div>
 
-          <div className="w-px h-5 bg-gray-200 mx-2 hidden sm:block" />
+          <div className="mx-2 hidden h-5 w-px bg-gray-200 dark:bg-slate-700 sm:block" />
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(homePath)}
-              className="hidden sm:block rounded-md bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition-colors"
+              className="hidden rounded-md bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20 sm:block"
             >
               {currentEventLabel}
             </button>
@@ -83,7 +96,7 @@ export const NavbarLoggedin = ({
             {notificationPath && (
               <button
                 onClick={() => navigate(notificationPath)}
-                className="hidden sm:flex text-gray-500 hover:text-gray-900 transition-colors"
+                className="hidden text-gray-500 transition-colors hover:text-gray-900 dark:text-slate-400 dark:hover:text-white sm:flex"
               >
                 <NotificationsNoneOutlinedIcon fontSize="small" />
               </button>
@@ -92,33 +105,33 @@ export const NavbarLoggedin = ({
             {settingsPath && (
               <button
                 onClick={() => navigate(settingsPath)}
-                className="hidden sm:flex text-gray-500 hover:text-gray-900 transition-colors"
+                className="hidden text-gray-500 transition-colors hover:text-gray-900 dark:text-slate-400 dark:hover:text-white sm:flex"
               >
                 <SettingsOutlinedIcon fontSize="small" />
               </button>
             )}
 
-            {profilePath && (
-              <button
-                onClick={() => navigate(profilePath)}
-                className="hidden sm:block"
+            <button
+              onClick={() => navigate(profilePath)}
+              className="hidden rounded-full outline-none ring-blue-200 transition-all focus-visible:ring-4 sm:block"
+              title="Profile"
+            >
+              <Avatar
+                alt={displayName}
+                src={avatarUrl}
+                sx={{
+                  width: 34,
+                  height: 34,
+                  border: "2px solid #bfdbfe",
+                  bgcolor: "#2563eb",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
               >
-                <Avatar
-                  alt="User Avatar"
-                  src=""
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    border: '2px solid #bbf7d0',
-                    bgcolor: '#2563eb',
-                    fontSize: 13,
-                    fontWeight: 700,
-                  }}
-                >
-                  U
-                </Avatar>
-              </button>
-            )}
+                {getAvatarLetter(user?.fullName, user?.email)}
+              </Avatar>
+            </button>
           </div>
         </div>
       </div>

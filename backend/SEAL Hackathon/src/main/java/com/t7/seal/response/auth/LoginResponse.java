@@ -8,6 +8,7 @@ public record LoginResponse(
         String fullName,
         String role,
         String status,
+        String avatarUrl,
         String accessToken,
         String refreshToken,
         long accessTokenExpiresInMs,

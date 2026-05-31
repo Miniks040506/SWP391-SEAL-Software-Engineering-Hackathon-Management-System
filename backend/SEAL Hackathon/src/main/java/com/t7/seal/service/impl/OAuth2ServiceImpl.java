@@ -114,6 +114,7 @@ public class OAuth2ServiceImpl implements OAuth2Service {
                 user.getFullName(),
                 user.getRole().name(),
                 user.getStatus().name(),
+                user.getAvatarUrl(),
                 accessToken,
                 refreshToken,
                 jwtService.getAccessTokenExpirationMs(),

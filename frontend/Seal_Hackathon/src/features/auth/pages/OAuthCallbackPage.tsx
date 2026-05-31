@@ -20,6 +20,7 @@ export function OAuthCallbackPage() {
     const email = searchParams.get("email") || "";
     const fullName = searchParams.get("fullName") || email;
     const userId = searchParams.get("userId") || "";
+    const avatarUrl = searchParams.get("avatarUrl") || null;
 
     if (oauthError) {
       const errorKey = `oauth-error:${oauthError}`;
@@ -65,6 +66,7 @@ export function OAuthCallbackPage() {
       status,
       accessToken,
       refreshToken,
+      avatarUrl,
       accessTokenExpiresInMs: 0,
       refreshTokenExpiresInMs: 0,
     };
