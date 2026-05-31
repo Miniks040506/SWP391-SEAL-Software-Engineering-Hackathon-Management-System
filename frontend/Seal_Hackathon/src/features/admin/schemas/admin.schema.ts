@@ -7,19 +7,54 @@ export const ALL_ROLES: readonly UserRole[] = [
   "COORDINATOR",
   "JUDGE",
   "MENTOR",
-  "PARTICIPANT",
   "STUDENT",
 ] as const;
 
+export const CREATE_ROLES = [
+  "ADMIN",
+  "COORDINATOR",
+  "JUDGE",
+  "MENTOR",
+] as const;
+
 export const ALL_STATUSES = [
+  "UNVERIFIED",
+  "PENDING_APPROVAL",
   "ACTIVE",
-  "INACTIVE",
-  "PENDING",
-  "BANNED",
+  "SUSPENDED",
+  "DEACTIVATED",
+] as const satisfies readonly [UserStatus, ...UserStatus[]];
+
+export const CREATE_STATUSES = [
+  "ACTIVE",
+  "PENDING_APPROVAL",
 ] as const satisfies readonly [UserStatus, ...UserStatus[]];
 
 export const textFieldSx = {
   "& .MuiOutlinedInput-root": { borderRadius: "10px" },
+  ".dark & .MuiInputBase-input": { color: "#cbd5e1" },
+  ".dark & .MuiInputLabel-root": { color: "#94a3b8" },
+  ".dark & .MuiOutlinedInput-notchedOutline": { borderColor: "#475569" },
+  ".dark &:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#64748b" },
+  ".dark & .MuiIconButton-root": { color: "#94a3b8" }, 
+};
+
+export const selectSx = {
+  borderRadius: "10px",
+  ".dark &": { color: "#cbd5e1" },
+  ".dark & .MuiOutlinedInput-notchedOutline": { borderColor: "#475569" },
+  ".dark &:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#64748b" },
+  ".dark & .MuiSvgIcon-root": { color: "#94a3b8" },
+};
+
+export const menuPropsDark = {
+  sx: {
+    ".dark & .MuiPaper-root": {
+      bgcolor: "#1e293b",
+      color: "#f1f5f9",
+      border: "1px solid #334155",
+    }
+  }
 };
 
 const passwordSchema = z
@@ -39,8 +74,8 @@ export const createUserSchema = z.object({
   email: z.string().trim().min(1, "Email is required.").email("Invalid email."),
   password: passwordSchema,
   phone: z.string().trim().max(20).optional().or(z.literal("")),
-  role: z.enum(ALL_ROLES, { message: "Role is required." }),
-  status: z.enum(ALL_STATUSES, { message: "Status is required." }),
+  role: z.enum(CREATE_ROLES, { message: "Role is required." }),
+  status: z.enum(CREATE_STATUSES, { message: "Status is required." }),
 });
 
 export type CreateUserFormInput = z.input<typeof createUserSchema>;

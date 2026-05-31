@@ -13,4 +13,5 @@ public record LoginResponse(
         String refreshToken,
         long accessTokenExpiresInMs,
         long refreshTokenExpiresInMs
-) {}
+) {
+}

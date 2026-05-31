@@ -1,0 +1,81 @@
+package com.t7.seal.service.impl;
+
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.t7.seal.config.CloudinaryProperties;
+import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.service.CloudinaryStorageService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.parameters.P;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
+
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/webp"
+    );
+
+    private final Cloudinary cloudinary;
+    private final CloudinaryProperties cloudinaryProperties;
+
+    @Override
+    public String uploadUserAvatar(UUID userId, MultipartFile file) {
+        validateAvatar(file);
+
+        try {
+            String publicId = "user_" + userId + "_avatar";
+
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", cloudinaryProperties.avatarFolder(),
+                            "public_id", publicId,
+                            "overwrite", true,
+                            "resource_type", "image",
+                            "unique_filename", false,
+                            "use_filename", false,
+                            "allowed_formats", new String[]{"jpg", "png", "webp", "jpeg"}
+                    )
+            );
+
+            Object secureUrl = uploadResult.get("secure_url");
+
+            if (secureUrl == null) {
+                throw new BadRequestException("Cannot upload avatar to Cloudinary");
+            }
+
+            return secureUrl.toString();
+
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Cannot upload avatar to Cloudinary");
+        }
+    }
+
+    //HELPERS
+    private void validateAvatar(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Avatar is required");
+        }
+
+        String contentType = file.getContentType();
+
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new BadRequestException("Avatar must be a JPEG, PNG, or WEBP image");
+        }
+
+        long maxSizeBytes = cloudinaryProperties.avatarMaxSizeMb() * 1024 * 1024;
+
+        if (file.getSize() > maxSizeBytes) {
+            throw new BadRequestException("Avatar must be less than " + cloudinaryProperties.avatarMaxSizeMb() + "MB");
+        }
+    }
+}

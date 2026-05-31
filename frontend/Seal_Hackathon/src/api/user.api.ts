@@ -1,8 +1,6 @@
 import { apiRequest } from "@/api/apiRequest";
 import type { PageResponse, UUID } from "@/types/common.types";
 import type {
-  AdminResetPasswordRequest,
-  AdminUserListParams,
   ChangePasswordRequest,
   CreateGuestJudgeRequest,
   CreateUserRequest,
@@ -81,28 +79,3 @@ export const userApi = {
     return apiRequest.postForm<MyProfileResponse>("/users/me/avatar", formData);
   },
 };
-
-// admin
-
-export const adminApi = {
-  listUsers(params: AdminUserListParams): Promise<PageResponse<UserSummaryResponse>> {
-    const { page = 1, pageSize, ...rest } = params;
-    return apiRequest.get("/users", {
-      params: {
-        ...rest,
-        page: page - 1, // Spring is 0-based
-        size: pageSize,
-      },
-    });
-  },
- 
-  getUser: (userId: string): Promise<UserDetailResponse> =>
-    userApi.getUserById(userId),
-  createUser: userApi.createUser,
-  updateUser: userApi.updateUser,
-  deactivateUser: userApi.deactivateUser,
-  resetPassword(userId: string, newPassword: string): Promise<void> {
-    return apiRequest.post(`/users/${userId}/reset-password`, { newPassword } satisfies AdminResetPasswordRequest);
-  },
-};
- 

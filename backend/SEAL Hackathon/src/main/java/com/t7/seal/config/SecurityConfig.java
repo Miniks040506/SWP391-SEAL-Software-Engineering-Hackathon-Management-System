@@ -107,6 +107,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, API + "/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, API + "/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, API + "/users/me/password").authenticated()
+                        .requestMatchers(HttpMethod.POST, API + "/users/me/avatar").authenticated()
 
                         // Admin only
                         .requestMatchers(API + "/system/config/**").hasRole("ADMIN")

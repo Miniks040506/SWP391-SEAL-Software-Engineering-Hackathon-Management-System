@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  Tooltip,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import LockResetIcon from "@mui/icons-material/LockReset";
@@ -46,12 +47,21 @@ export function UserViewDialog({
 }) {
   const { data: user, isLoading } = useAdminUserQuery(userId);
 
+  const isAdmin = user?.role === "ADMIN";
+
   return (
-    <Dialog open={Boolean(userId)} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle className="font-black text-slate-800">
+    <Dialog 
+      open={Boolean(userId)} 
+      onClose={onClose} 
+      maxWidth="sm" 
+      fullWidth
+      classes={{ paper: "bg-white dark:bg-slate-800 dark:text-slate-200" }}
+      sx={{ "& .MuiDialog-paper": { backgroundImage: "none" } }}
+    >
+      <DialogTitle className="font-bold text-slate-800 dark:text-slate-100">
         User Profile
         {user && (
-          <div className="text-sm font-normal text-slate-400">{user.email}</div>
+          <div className="text-sm font-normal text-slate-500 dark:text-slate-400">{user.email}</div>
         )}
       </DialogTitle>
 
@@ -61,7 +71,7 @@ export function UserViewDialog({
             <CircularProgress size={28} />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 pt-2">
             <div className="flex items-center gap-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 p-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-600 text-slate-400 dark:text-slate-300">
                 {user.avatarUrl ? (
@@ -85,7 +95,7 @@ export function UserViewDialog({
               </div>
             </div>
 
-            <Divider />
+            <Divider className="dark:border-slate-700" />
 
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               <DetailRow label="Email" value={user.email} />
@@ -102,9 +112,7 @@ export function UserViewDialog({
                 label="Last Login"
                 value={
                   user.lastLoginAt
-                    ? new Date(user.lastLoginAt)
-                        .toLocaleString("sv-SE")
-                        .slice(0, 16)
+                    ? new Date(user.lastLoginAt).toLocaleString("sv-SE").slice(0, 16)
                     : "Never"
                 }
               />
@@ -119,34 +127,44 @@ export function UserViewDialog({
         </Button>
         {user && (
           <>
-            <Button
-              variant="outlined"
-              color="warning"
-              startIcon={<LockResetIcon />}
-              onClick={() => {
-                onResetPassword(user);
-                onClose();
-              }}
-              sx={{ textTransform: "none", borderRadius: "8px" }}
-            >
-              Reset Password
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              onClick={() => {
-                onEdit(user.id);
-                onClose();
-              }}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: "8px",
-                boxShadow: "none",
-              }}
-            >
-              Edit User
-            </Button>
+            <Tooltip title={isAdmin ? "Cannot reset Admin" : ""}>
+              <span>
+                <Button
+                  variant="outlined"
+                  disabled={isAdmin}
+                  startIcon={<LockResetIcon />}
+                  onClick={() => {
+                    onResetPassword(user);
+                    onClose();
+                  }}
+                  sx={{ textTransform: "none", borderRadius: "8px" }}
+                >
+                  Reset Password
+                </Button>
+              </span>
+            </Tooltip>
+            
+            <Tooltip title={isAdmin ? "Cannot edit Admin" : ""}>
+              <span>
+                <Button
+                  variant="contained"
+                  disabled={isAdmin}
+                  startIcon={<EditIcon />}
+                  onClick={() => {
+                    onEdit(user.id);
+                    onClose();
+                  }}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 700,
+                    borderRadius: "8px",
+                    boxShadow: "none",
+                  }}
+                >
+                  Edit User
+                </Button>
+              </span>
+            </Tooltip>
           </>
         )}
       </DialogActions>

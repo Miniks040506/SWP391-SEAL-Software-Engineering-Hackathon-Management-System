@@ -20,7 +20,6 @@ import {
   type ResetPasswordFormValues,
   textFieldSx,
 } from "@/features/admin/schemas/admin.schema";
-import { useResetUserPasswordMutation } from "@/features/admin/hooks/useAdminMutations";
 
 export function UserResetPasswordDialog({
   user,
@@ -29,7 +28,10 @@ export function UserResetPasswordDialog({
   user: { id: string; email: string } | null;
   onClose: () => void;
 }) {
-  const resetMutation = useResetUserPasswordMutation();
+  // TODO: Restore once backend confirms admin reset-password endpoint.
+  // Verified endpoints: PATCH /users/me/password, POST /auth/forgot-password, POST /auth/reset-password
+  // None support admin resetting another user's password by userId.
+  const resetMutation = { isPending: false };
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -48,20 +50,12 @@ export function UserResetPasswordDialog({
 
   if (!user) return null;
 
-  const onSubmit = async (values: ResetPasswordFormValues) => {
-    try {
-      await resetMutation.mutateAsync({
-        userId: user.id,
-        newPassword: values.newPassword,
-      });
-      enqueueSnackbar("Password reset successfully.", { variant: "success" });
-      handleClose();
-    } catch (error: any) {
-      enqueueSnackbar(
-        error?.response?.data?.message || "Failed to reset password.",
-        { variant: "error" },
-      );
-    }
+  const onSubmit = async (_values: ResetPasswordFormValues) => {
+    // TODO: Implement once backend confirms admin reset-password endpoint.
+    // Do not call any unverified endpoint here.
+    enqueueSnackbar("Reset password is not yet available.", {
+      variant: "warning",
+    });
   };
 
   const toggleIcon = showPassword ? (
@@ -71,8 +65,19 @@ export function UserResetPasswordDialog({
   );
 
   return (
-    <Dialog open={Boolean(user)} onClose={handleClose} maxWidth="xs" fullWidth>
-      <DialogTitle className="font-black text-slate-800">
+    <Dialog
+      open={Boolean(user)}
+      onClose={handleClose}
+      maxWidth="xs"
+      fullWidth
+      classes={{
+        paper: "bg-white dark:bg-slate-800 dark:text-slate-200",
+      }}
+      sx={{
+        "& .MuiDialog-paper": { backgroundImage: "none" },
+      }}
+    >
+      <DialogTitle className="font-bold text-slate-800 dark:text-slate-100">
         Reset Password
         <div className="text-sm font-normal text-slate-400">{user.email}</div>
       </DialogTitle>
@@ -95,7 +100,8 @@ export function UserResetPasswordDialog({
                     <IconButton
                       size="small"
                       type="button"
-                      onClick={() => setShowPassword((s) => !s)}>
+                      onClick={() => setShowPassword((s) => !s)}
+                    >
                       {toggleIcon}
                     </IconButton>
                   </InputAdornment>
@@ -122,14 +128,14 @@ export function UserResetPasswordDialog({
           <Button
             type="submit"
             variant="contained"
-            color="warning"
             disabled={resetMutation.isPending}
             sx={{
               textTransform: "none",
-              fontWeight: 700,
+              fontWeight: 600,
               borderRadius: "8px",
               boxShadow: "none",
-            }}>
+            }}
+          >
             {resetMutation.isPending ? "Resetting…" : "Reset Password"}
           </Button>
         </DialogActions>
