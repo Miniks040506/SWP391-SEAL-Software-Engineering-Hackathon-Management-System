@@ -30,11 +30,13 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: payload.refreshToken,
           user: {
             id: payload.userId,
+            userId: payload.userId,
             email: payload.email,
             fullName: payload.fullName,
             role: payload.role,
             status: payload.status,
-          },
+            avatarUrl: payload.avatarUrl ?? null,
+          }
         });
       },
 
