@@ -20,6 +20,8 @@ import {
   ALL_ROLES,
   ALL_STATUSES,
   textFieldSx,
+  selectSx,
+  menuPropsDark,
 } from "@/features/admin/schemas/admin.schema";
 import {
   useAdminUserQuery,
@@ -45,6 +47,12 @@ export function UserEditDialog({
     formState: { errors },
   } = useForm<EditUserFormInput, unknown, EditUserFormValues>({
     resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      fullName: "",
+      phone: "",
+      role: "STUDENT" as UserRole,
+      status: "UNVERIFIED" as UserStatus,
+    },
     values: user
       ? {
           fullName: user.fullName,
@@ -73,11 +81,18 @@ export function UserEditDialog({
   };
 
   return (
-    <Dialog open={Boolean(userId)} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle className="font-black text-slate-800">
+    <Dialog 
+      open={Boolean(userId)} 
+      onClose={onClose} 
+      maxWidth="sm" 
+      fullWidth
+      classes={{ paper: "bg-white dark:bg-slate-800 dark:text-slate-200" }}
+      sx={{ "& .MuiDialog-paper": { backgroundImage: "none" } }}
+    >
+      <DialogTitle className="font-bold text-slate-800 dark:text-slate-100">
         Edit User
         {user && (
-          <div className="text-sm font-normal text-slate-400">{user.email}</div>
+          <div className="text-sm font-normal text-slate-500 dark:text-slate-400">{user.email}</div>
         )}
       </DialogTitle>
 
@@ -89,7 +104,7 @@ export function UserEditDialog({
         </DialogContent>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogContent className="space-y-4">
+          <DialogContent className="space-y-4 pt-2">
             <div className="grid grid-cols-2 gap-4">
               <TextField
                 fullWidth
@@ -120,9 +135,12 @@ export function UserEditDialog({
                     </div>
                     <Select
                       {...field}
+                      value={field.value || ""}
                       size="small"
                       fullWidth
-                      sx={{ borderRadius: "10px" }}>
+                      sx={selectSx}
+                      MenuProps={menuPropsDark}
+                    >
                       {ALL_ROLES.map((r) => (
                         <MenuItem key={r} value={r}>
                           {r}
@@ -142,9 +160,12 @@ export function UserEditDialog({
                     </div>
                     <Select
                       {...field}
+                      value={field.value || ""}
                       size="small"
                       fullWidth
-                      sx={{ borderRadius: "10px" }}>
+                      sx={selectSx}
+                      MenuProps={menuPropsDark}
+                    >
                       {ALL_STATUSES.map((s) => (
                         <MenuItem key={s} value={s}>
                           {s}

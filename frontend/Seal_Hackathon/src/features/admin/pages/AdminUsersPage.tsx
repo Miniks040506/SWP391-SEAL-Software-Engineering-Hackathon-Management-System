@@ -32,10 +32,8 @@ import { UserResetPasswordDialog } from "@/features/admin/components/UserResetPa
 import type { UserStatus } from "@/types/user.types";
 import type { UserRole } from "@/types/auth.types";
 
-const ALL_ROLES: UserRole[] = [
-  "ADMIN", "COORDINATOR", "JUDGE", "MENTOR", "PARTICIPANT", "STUDENT",
-];
-const ALL_STATUSES: UserStatus[] = ["ACTIVE", "INACTIVE", "PENDING", "BANNED"];
+const ALL_ROLES: UserRole[] = ["ADMIN", "COORDINATOR", "JUDGE", "MENTOR", "STUDENT"];
+const ALL_STATUSES: UserStatus[] = ["UNVERIFIED", "PENDING_APPROVAL", "ACTIVE", "SUSPENDED", "DEACTIVATED"];
 const PAGE_SIZE = 10;
 
 export function AdminUsersPage() {
@@ -60,11 +58,11 @@ export function AdminUsersPage() {
     pageSize: PAGE_SIZE,
   });
 
-  // Stat card queries
   const { data: adminStats } = useAdminUsersQuery({ role: "ADMIN", status: "ACTIVE", pageSize: 1 });
   const { data: studentStats } = useAdminUsersQuery({ role: "STUDENT", pageSize: 1 });
   const { data: mentorStats } = useAdminUsersQuery({ role: "MENTOR", pageSize: 1 });
   const { data: judgeStats } = useAdminUsersQuery({ role: "JUDGE", pageSize: 1 });
+  const { data: coordinatorStats } = useAdminUsersQuery({ role: "COORDINATOR", pageSize: 1 });
 
   const users = data?.content ?? [];
   const total = data?.totalElements ?? 0;
@@ -90,10 +88,14 @@ export function AdminUsersPage() {
   const handleStatusFilter = (value: UserStatus | "") => { setStatusFilter(value); setPage(1); };
 
   const [isDark, setIsDark] = useState(
-    () => typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+    () =>
+      typeof document !== "undefined" &&
+      (document.documentElement.classList.contains("dark") ||
+        localStorage.getItem("theme") === "dark")
   );
 
   useEffect(() => {
+    setIsDark(document.documentElement.classList.contains("dark"));
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains("dark"));
     });
@@ -102,20 +104,47 @@ export function AdminUsersPage() {
   }, []);
 
   const filterSx = {
-    color: isDark ? "#e2e8f0" : undefined,
-    bg: isDark ? "#1e293b" : "transparent",
-    border: isDark ? "#475569" : "rgba(0,0,0,0.23)",
-    borderHover: isDark ? "#94a3b8" : "rgba(0,0,0,0.87)",
-    placeholder: isDark ? "#94a3b8" : undefined,
+    color: isDark ? "#cbd5e1" : "#1e293b",
+    bg: "transparent",
+    border: isDark ? "#334155" : "rgba(0,0,0,0.23)",
+    borderHover: isDark ? "#475569" : "rgba(0,0,0,0.87)",
+    placeholder: isDark ? "#64748b" : "#94a3b8",
+  };
+
+  const paginationSx = {
+    "& .MuiPaginationItem-root": {
+      color: isDark ? "#cbd5e1" : "#334155",
+      borderColor: isDark ? "#334155" : "#e2e8f0",
+      fontWeight: 600,
+      borderRadius: "8px",
+      minWidth: "32px",
+      height: "32px",
+      margin: "0 2px",
+    },
+    "& .MuiPaginationItem-root:hover": {
+      backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+      borderColor: isDark ? "#3b82f6" : "#3b82f6",
+      color: isDark ? "#60a5fa" : "#2563eb",
+    },
+    "& .MuiPaginationItem-root.Mui-selected": {
+      backgroundColor: "#3b82f6",
+      borderColor: "#3b82f6",
+      color: "#ffffff",
+      "&:hover": {
+        backgroundColor: "#2563eb",
+      },
+    },
+    "& .MuiPaginationItem-ellipsis": {
+      color: isDark ? "#64748b" : "#94a3b8",
+    },
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
-      {/* Header */}
+    <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-slate-800/40">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100">Manage Users & Permissions</h1>
-          <p className="text-sm text-slate-400 dark:text-slate-300">{total} users total</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-300">Manage Users & Permissions</h1>
+          <p className="text-sm text-slate-400 dark:text-slate-400">{total} users total</p>
         </div>
         <Button
           variant="contained"
@@ -127,21 +156,20 @@ export function AdminUsersPage() {
         </Button>
       </div>
 
-      {/* Stat Cards */}
       <UserStatCards
         adminStats={adminStats}
         studentStats={studentStats}
         mentorStats={mentorStats}
         judgeStats={judgeStats}
+        coordinatorStats={coordinatorStats}
       />
 
-      {/* Table card */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-        {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-slate-700 p-4">
           <TextField
             size="small"
-            placeholder="Search by name, email or ID…"
+            label="Search..."
+            placeholder="Name, email or ID…"
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             sx={{
@@ -150,63 +178,97 @@ export function AdminUsersPage() {
                 borderRadius: "10px",
                 backgroundColor: filterSx.bg,
                 color: filterSx.color,
+                transition: "border-color 0.2s ease",
                 "& fieldset": { borderColor: filterSx.border },
-                "&:hover fieldset": { borderColor: filterSx.borderHover },
+                "&:hover:not(.Mui-focused) fieldset": { borderColor: filterSx.borderHover },
+                "&.Mui-focused fieldset": { borderColor: isDark ? "#3b82f6" : "#2563eb" },
               },
-              "& .MuiInputBase-input::placeholder": { color: filterSx.placeholder, opacity: 1 },
               "& .MuiInputBase-input": { color: filterSx.color },
+              "& .MuiInputBase-input::placeholder": {
+                color: isDark ? "#64748b" : "#94a3b8",
+                opacity: 1,
+              },
+              "& .MuiInputLabel-root": {
+                color: isDark ? "#64748b" : "#94a3b8",
+              },
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: isDark ? "#93c5fd" : "#3b82f6",
+              },
             }}
             slotProps={{
               input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" className="text-slate-400 dark:text-slate-400" />
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <SearchIcon fontSize="small" sx={{ color: isDark ? "#475569" : "#94a3b8" }} />
                   </InputAdornment>
                 ),
               },
             }}
           />
-          <Select
-            size="small" displayEmpty value={roleFilter}
-            onChange={(e) => handleRoleFilter(e.target.value as UserRole | "")}
-            sx={{
-              minWidth: 140,
-              borderRadius: "10px",
-              backgroundColor: filterSx.bg,
-              color: filterSx.color,
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.border },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.borderHover },
-              "& .MuiSvgIcon-root": { color: filterSx.color },
-            }}
-          >
-            <MenuItem value="">All Roles</MenuItem>
-            {ALL_ROLES.map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
-          </Select>
-          <Select
-            size="small" displayEmpty value={statusFilter}
-            onChange={(e) => handleStatusFilter(e.target.value as UserStatus | "")}
-            sx={{
-              minWidth: 140,
-              borderRadius: "10px",
-              backgroundColor: filterSx.bg,
-              color: filterSx.color,
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.border },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.borderHover },
-              "& .MuiSvgIcon-root": { color: filterSx.color },
-            }}
-          >
-            <MenuItem value="">All Statuses</MenuItem>
-            {ALL_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-          </Select>
+          
+          <div className="ml-auto flex items-center gap-3">
+            <Select
+              size="small" displayEmpty value={roleFilter}
+              onChange={(e) => handleRoleFilter(e.target.value as UserRole | "")}
+              sx={{
+                minWidth: 140,
+                borderRadius: "10px",
+                backgroundColor: filterSx.bg,
+                color: filterSx.color,
+                "& .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.border },
+                "&:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.borderHover },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: isDark ? "#3b82f6" : "#2563eb" },
+                "& .MuiSvgIcon-root": { color: filterSx.color },
+              }}
+              MenuProps={{
+                sx: {
+                  "& .MuiPaper-root": {
+                    bgcolor: isDark ? "#1e293b" : "#ffffff",
+                    color: isDark ? "#f1f5f9" : "#0f172a",
+                    border: isDark ? "1px solid #334155" : "1px solid #e2e8f0",
+                  }
+                }
+              }}
+            >
+              <MenuItem value="">All Roles</MenuItem>
+              {ALL_ROLES.map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
+            </Select>
+
+            <Select
+              size="small" displayEmpty value={statusFilter}
+              onChange={(e) => handleStatusFilter(e.target.value as UserStatus | "")}
+              sx={{
+                minWidth: 140,
+                borderRadius: "10px",
+                backgroundColor: filterSx.bg,
+                color: filterSx.color,
+                "& .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.border },
+                "&:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline": { borderColor: filterSx.borderHover },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: isDark ? "#3b82f6" : "#2563eb" },
+                "& .MuiSvgIcon-root": { color: filterSx.color },
+              }}
+              MenuProps={{
+                sx: {
+                  "& .MuiPaper-root": {
+                    bgcolor: isDark ? "#1e293b" : "#ffffff",
+                    color: isDark ? "#f1f5f9" : "#0f172a",
+                    border: isDark ? "1px solid #334155" : "1px solid #e2e8f0",
+                  }
+                }
+              }}
+            >
+              <MenuItem value="">All Statuses</MenuItem>
+              {ALL_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+            </Select>
+          </div>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-700 text-left">
                 {["User Details", "Role", "ID", "Status", "Actions"].map((h) => (
-                  <th key={h} className="px-5 py-3 text-xs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-400">
+                  <th key={h} className="px-5 py-3 text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-400">
                     {h}
                   </th>
                 ))}
@@ -226,54 +288,65 @@ export function AdminUsersPage() {
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
-                  <tr key={user.id} className="border-b border-slate-50 dark:border-slate-700/50 transition hover:bg-slate-50/60 dark:hover:bg-slate-700/40">
-                    <td className="px-5 py-3.5">
-                      <button type="button" className="text-left" onClick={() => setViewUserId(user.id)}>
-                        <div className="font-semibold text-slate-800 dark:text-slate-100 hover:underline">{user.fullName}</div>
-                        <div className="text-xs text-slate-400 dark:text-slate-400">{user.email}</div>
-                      </button>
-                    </td>
-                    <td className="px-5 py-3.5"><RoleBadge role={user.role as UserRole} /></td>
-                    <td className="px-5 py-3.5">
-                      <span className="rounded-md bg-slate-100 dark:bg-slate-700 px-2 py-0.5 font-mono text-xs text-slate-600 dark:text-slate-300">
-                        {user.id.slice(0, 8).toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5"><StatusDot status={user.status as UserStatus} /></td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1">
-                        <Tooltip title="Edit user">
-                          <IconButton size="small" onClick={() => setEditUserId(user.id)}>
-                            <EditIcon fontSize="small" className="text-slate-500" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Reset password">
-                          <IconButton size="small" onClick={() => setResetUser(user)}>
-                            <LockResetIcon fontSize="small" className="text-slate-500" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={user.status === "ACTIVE" ? "Deactivate user" : "Activate user"}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleToggleStatus(user)}
-                            disabled={deactivateMutation.isPending || activateMutation.isPending}
-                          >
-                            {user.status === "ACTIVE"
-                              ? <BlockIcon fontSize="small" className="text-red-400" />
-                              : <CheckCircleIcon fontSize="small" className="text-green-500" />}
-                          </IconButton>
-                        </Tooltip>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                users.map((user) => {
+                  const isAdmin = user.role === "ADMIN";
+
+                  return (
+                    <tr key={user.id} className="border-b border-slate-50 dark:border-slate-700/50 transition hover:bg-slate-50/60 dark:hover:bg-slate-700/40">
+                      <td className="px-5 py-3.5">
+                        <button type="button" className="text-left" onClick={() => setViewUserId(user.id)}>
+                          <div className="font-semibold text-slate-800 dark:text-slate-300 hover:underline">{user.fullName}</div>
+                          <div className="text-xs text-slate-400 dark:text-slate-400">{user.email}</div>
+                        </button>
+                      </td>
+                      <td className="px-5 py-3.5"><RoleBadge role={user.role as UserRole} /></td>
+                      <td className="px-5 py-3.5">
+                        <span className="rounded-md bg-slate-100 dark:bg-slate-700 px-2 py-0.5 font-mono text-xs text-slate-600 dark:text-slate-400">
+                          {user.id.slice(0, 8).toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5"><StatusDot status={user.status as UserStatus} /></td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-1">
+                          <Tooltip title={isAdmin ? "Cannot edit Admin" : "Edit user"}>
+                            <span>
+                              <IconButton size="small" onClick={() => setEditUserId(user.id)} disabled={isAdmin}>
+                                <EditIcon fontSize="small" className={!isAdmin ? "text-slate-500" : "text-slate-300 dark:text-slate-600"} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+
+                          <Tooltip title={isAdmin ? "Cannot reset Admin" : "Reset password"}>
+                            <span>
+                              <IconButton size="small" onClick={() => setResetUser(user)} disabled={isAdmin}>
+                                <LockResetIcon fontSize="small" className={!isAdmin ? "text-slate-500" : "text-slate-300 dark:text-slate-600"} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+
+                          <Tooltip title={isAdmin ? "Admin is always active" : (user.status === "ACTIVE" ? "Deactivate user" : "Activate user")}>
+                            <span> 
+                              <IconButton
+                                size="small"
+                                onClick={() => handleToggleStatus(user)}
+                                disabled={isAdmin || deactivateMutation.isPending || activateMutation.isPending}
+                              >
+                                {user.status === "ACTIVE"
+                                  ? <BlockIcon fontSize="small" className={!isAdmin ? "text-red-400" : "text-slate-300 dark:text-slate-600"} />
+                                  : <CheckCircleIcon fontSize="small" className={!isAdmin ? "text-green-500" : "text-slate-300 dark:text-slate-600"} />}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 px-5 py-3">
             <span className="text-xs text-slate-400 dark:text-slate-400">
@@ -283,12 +356,13 @@ export function AdminUsersPage() {
               count={totalPages} page={page}
               onChange={(_, p) => setPage(p)}
               size="small" shape="rounded"
+              variant="outlined"
+              sx={paginationSx}
             />
           </div>
         )}
       </div>
 
-      {/* Dialogs */}
       <UserViewDialog
         userId={viewUserId}
         onClose={() => setViewUserId(null)}
