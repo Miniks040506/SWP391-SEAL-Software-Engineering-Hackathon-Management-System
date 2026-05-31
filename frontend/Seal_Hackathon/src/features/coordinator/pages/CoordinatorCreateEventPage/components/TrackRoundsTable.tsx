@@ -1,16 +1,20 @@
-import { IconButton } from "@mui/material";
+import Chip from "@mui/material/Chip";
+import IconButton from "@mui/material/IconButton";
 
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
-import type { TrackFormValues } from "@/features/coordinator/schemas/createEvent.schema";
+import type { TrackFormValues } from "../../../schemas/createEvent.schema";
 
 type TrackRoundsTableProps = {
   tracks: TrackFormValues[];
+  onEditTrack: (trackIndex: number) => void;
   onDeleteTrack: (trackIndex: number) => void;
 };
 
 export const TrackRoundsTable = ({
   tracks,
+  onEditTrack,
   onDeleteTrack,
 }: TrackRoundsTableProps) => {
   if (tracks.length === 0) {
@@ -29,7 +33,7 @@ export const TrackRoundsTable = ({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="grid grid-cols-[1.4fr_2fr_100px_80px] bg-blue-500 px-6 py-4 text-sm font-extrabold uppercase tracking-wide text-white">
+      <div className="grid grid-cols-[1.4fr_2fr_100px_120px] bg-blue-500 px-6 py-4 text-sm font-extrabold uppercase tracking-wide text-white">
         <div>Track</div>
         <div>Rounds</div>
         <div>Total</div>
@@ -39,25 +43,66 @@ export const TrackRoundsTable = ({
       {tracks.map((track, trackIndex) => (
         <div
           key={track.id}
-          className="grid grid-cols-[1.4fr_2fr_100px_80px] items-start border-t border-gray-100 px-6 py-5"
+          className="grid grid-cols-[1.4fr_2fr_100px_120px] items-start border-t border-gray-100 px-6 py-5"
         >
           <div>
             <p className="font-extrabold text-gray-900">{track.trackName}</p>
+
             <p className="mt-1 line-clamp-2 text-sm text-gray-500">
               {track.description || "No description"}
             </p>
+
+            <p className="mt-2 text-xs font-semibold text-gray-400">
+              Max teams: {track.maxTeams || "No limit"}
+            </p>
+
+            <div className="mt-2 flex flex-wrap gap-1">
+              {track.requiredLinkTypes.length === 0 ? (
+                <Chip
+                  size="small"
+                  label="No required links"
+                  sx={{ fontWeight: 700 }}
+                />
+              ) : (
+                track.requiredLinkTypes.map((linkType) => (
+                  <Chip
+                    key={linkType}
+                    size="small"
+                    label={linkType}
+                    sx={{ fontWeight: 700 }}
+                  />
+                ))
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
-            {track.rounds.map((round, roundIndex) => (
+            {track.rounds.length === 0 && (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-slate-50 px-4 py-3">
+                <p className="text-sm font-semibold text-gray-500">
+                  No rounds added for this track.
+                </p>
+              </div>
+            )}
+
+            {track.rounds.map((round) => (
               <div
                 key={round.id}
                 className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3"
               >
                 <div className="flex flex-wrap items-center gap-3">
                   <p className="font-bold text-gray-900">
-                    {roundIndex + 1}. {round.roundName}
+                    {round.orderIndex}. {round.roundName}
                   </p>
+
+                  {round.isFinal && (
+                    <Chip
+                      size="small"
+                      label="Final"
+                      color="success"
+                      sx={{ fontWeight: 800 }}
+                    />
+                  )}
 
                   <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-600">
                     {round.advancementRuleType}
@@ -80,7 +125,11 @@ export const TrackRoundsTable = ({
             {track.rounds.length} round(s)
           </div>
 
-          <div className="text-right">
+          <div className="flex justify-end gap-1">
+            <IconButton color="primary" onClick={() => onEditTrack(trackIndex)}>
+              <EditOutlinedIcon />
+            </IconButton>
+
             <IconButton color="error" onClick={() => onDeleteTrack(trackIndex)}>
               <DeleteOutlineOutlinedIcon />
             </IconButton>

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import Dialog from "@mui/material/Dialog";
@@ -13,7 +13,6 @@ import MenuItem from "@mui/material/MenuItem";
 import {
   createEmptyPrize,
   createEventPrizeSchema,
-  prizeRankOptions,
   prizeCurrencyOptions,
   type PrizeFormValues,
   type TrackFormValues,
@@ -23,17 +22,27 @@ type PrizeCreateModalProps = {
   open: boolean;
   tracks: TrackFormValues[];
   initialPrize?: PrizeFormValues | null;
+
+  /**
+   * null = không khóa track, user được chọn Whole Event hoặc track.
+   * "" = khóa Whole Event.
+   * "track-id" = khóa track cụ thể.
+   */
+  lockedTrackId: string | null;
+
+  isTrackLocked: boolean;
   onClose: () => void;
   onSave: (prize: PrizeFormValues) => void;
 };
 
 const WHOLE_EVENT_VALUE = "__WHOLE_EVENT__";
-const WHOLE_TRACK_VALUE = "__WHOLE_TRACK__";
 
 export const PrizeCreateModal = ({
   open,
   tracks,
   initialPrize,
+  lockedTrackId,
+  isTrackLocked,
   onClose,
   onSave,
 }: PrizeCreateModalProps) => {
@@ -50,22 +59,8 @@ export const PrizeCreateModal = ({
     control,
     handleSubmit,
     reset,
-    setValue,
     formState: { errors },
   } = methods;
-
-  const selectedTrackId = useWatch({
-    control,
-    name: "targetTrackId",
-  });
-
-  const selectedCurrency = useWatch({
-    control,
-    name: "currency",
-  });
-
-  const selectedTrack = tracks.find((track) => track.id === selectedTrackId);
-  const roundOptions = selectedTrack?.rounds ?? [];
 
   useEffect(() => {
     if (!open) return;
@@ -75,11 +70,17 @@ export const PrizeCreateModal = ({
       return;
     }
 
-    reset(createEmptyPrize());
-  }, [open, initialPrize, reset]);
+    reset(createEmptyPrize(isTrackLocked ? (lockedTrackId ?? "") : ""));
+  }, [open, initialPrize, lockedTrackId, isTrackLocked, reset]);
 
   const handleSave = handleSubmit((values) => {
-    onSave(values);
+    const finalTrackId = isTrackLocked ? (lockedTrackId ?? "") : values.trackId;
+
+    onSave({
+      ...values,
+      trackId: finalTrackId,
+    });
+
     onClose();
   });
 
@@ -92,26 +93,23 @@ export const PrizeCreateModal = ({
       <FormProvider {...methods}>
         <DialogContent dividers>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <Controller
-              name="rank"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  select
-                  label="Rank"
-                  error={Boolean(errors.rank)}
-                  helperText={errors.rank?.message}
-                  fullWidth
-                  size="small"
-                >
-                  {prizeRankOptions.map((rank) => (
-                    <MenuItem key={rank} value={rank}>
-                      {rank}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
+            <TextField
+              label="Rank Position"
+              placeholder="e.g. 1"
+              type="number"
+              error={Boolean(errors.rankPosition)}
+              helperText={errors.rankPosition?.message}
+              fullWidth
+              required
+              size="small"
+              slotProps={{
+                input: {
+                  inputProps: {
+                    min: 1,
+                  },
+                },
+              }}
+              {...register("rankPosition")}
             />
 
             <TextField
@@ -125,55 +123,40 @@ export const PrizeCreateModal = ({
               {...register("title")}
             />
 
-            <TextField
-              label="Prize Value"
-              placeholder="e.g. 5000000"
-              error={Boolean(errors.value)}
-              helperText={errors.value?.message}
-              fullWidth
-              required
-              size="small"
-              type="number"
-              slotProps={{
-                input: {
-                  inputProps: {
-                    min: 1,
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_150px]">
+              <TextField
+                label="Prize Value"
+                placeholder="e.g. 5000000"
+                type="number"
+                error={Boolean(errors.value)}
+                helperText={errors.value?.message}
+                fullWidth
+                required
+                size="small"
+                slotProps={{
+                  input: {
+                    inputProps: {
+                      min: 1,
+                    },
                   },
-                },
-              }}
-              {...register("value")}
-            />
+                }}
+                {...register("value")}
+              />
 
-            <div
-              className={
-                selectedCurrency === "Other"
-                  ? "grid grid-cols-1 gap-3 md:grid-cols-[180px_1fr]"
-                  : "grid grid-cols-1"
-              }
-            >
               <Controller
                 name="currency"
                 control={control}
                 render={({ field }) => (
                   <TextField
-                    {...field}
                     select
                     label="Currency"
+                    value={field.value}
+                    onChange={field.onChange}
                     error={Boolean(errors.currency)}
                     helperText={errors.currency?.message}
                     fullWidth
                     required
                     size="small"
-                    onChange={(event) => {
-                      field.onChange(event.target.value);
-
-                      if (event.target.value !== "Other") {
-                        setValue("customCurrency", "", {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        });
-                      }
-                    }}
                   >
                     {prizeCurrencyOptions.map((currency) => (
                       <MenuItem key={currency} value={currency}>
@@ -183,95 +166,60 @@ export const PrizeCreateModal = ({
                   </TextField>
                 )}
               />
-
-              {selectedCurrency === "Other" && (
-                <TextField
-                  label="Custom Unit"
-                  placeholder="e.g. Laptop, Scholarship"
-                  error={Boolean(errors.customCurrency)}
-                  helperText={errors.customCurrency?.message}
-                  fullWidth
-                  required
-                  size="small"
-                  {...register("customCurrency")}
-                />
-              )}
             </div>
 
             <Controller
-              name="targetTrackId"
+              name="trackId"
               control={control}
-              render={({ field }) => (
-                <TextField
-                  select
-                  label="Track"
-                  value={field.value || WHOLE_EVENT_VALUE}
-                  onChange={(event) => {
-                    const selectedValue = event.target.value;
+              render={({ field }) => {
+                const selectedValue =
+                  isTrackLocked
+                    ? lockedTrackId || WHOLE_EVENT_VALUE
+                    : field.value || WHOLE_EVENT_VALUE;
 
-                    field.onChange(
-                      selectedValue === WHOLE_EVENT_VALUE ? "" : selectedValue,
-                    );
-
-                    setValue("targetRoundId", "", {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                  }}
-                  error={Boolean(errors.targetTrackId)}
-                  fullWidth
-                  size="small"
-                >
-                  <MenuItem value={WHOLE_EVENT_VALUE}>Whole Event</MenuItem>
-
-                  {tracks.map((track) => (
-                    <MenuItem key={track.id} value={track.id}>
-                      {track.trackName}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
-            />
-
-            {selectedTrackId && (
-              <Controller
-                name="targetRoundId"
-                control={control}
-                render={({ field }) => (
+                return (
                   <TextField
                     select
-                    label="Round"
-                    value={field.value || WHOLE_TRACK_VALUE}
+                    label="Track"
+                    value={selectedValue}
+                    disabled={isTrackLocked}
                     onChange={(event) => {
-                      const selectedValue = event.target.value;
+                      const value = event.target.value;
 
                       field.onChange(
-                        selectedValue === WHOLE_TRACK_VALUE
-                          ? ""
-                          : selectedValue,
+                        value === WHOLE_EVENT_VALUE ? "" : value,
                       );
                     }}
-                    error={Boolean(errors.targetRoundId)}
+                    error={Boolean(errors.trackId)}
+                    helperText={
+                      isTrackLocked
+                        ? "This prize target is locked."
+                        : "Choose Whole Event or a specific track."
+                    }
                     fullWidth
                     size="small"
                   >
-                    <MenuItem value={WHOLE_TRACK_VALUE}>Whole Track</MenuItem>
+                    <MenuItem value={WHOLE_EVENT_VALUE}>Whole Event</MenuItem>
 
-                    {roundOptions.length === 0 && (
-                      <MenuItem disabled value="__NO_ROUNDS__">
-                        No rounds in this track
-                      </MenuItem>
-                    )}
-
-                    {roundOptions.map((round, index) => (
-                      <MenuItem key={round.id} value={round.id}>
-                        {index + 1}. {round.roundName || "Unnamed Round"}
+                    {tracks.map((track) => (
+                      <MenuItem key={track.id} value={track.id}>
+                        {track.trackName}
                       </MenuItem>
                     ))}
                   </TextField>
-                )}
-              />
-            )}
+                );
+              }}
+            />
+
+            <TextField
+              label="Sponsor Name"
+              placeholder="e.g. FPT Software"
+              error={Boolean(errors.sponsorName)}
+              helperText={errors.sponsorName?.message}
+              fullWidth
+              size="small"
+              {...register("sponsorName")}
+            />
 
             <TextField
               label="Description"

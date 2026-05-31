@@ -27,11 +27,10 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
     null,
   );
 
-  const {
-    append: appendPrize,
-    remove: removePrize,
-    update: updatePrize,
-  } = useFieldArray({
+  const [lockedTrackId, setLockedTrackId] = useState<string | null>(null);
+  const [isTrackLocked, setIsTrackLocked] = useState(false);
+
+  const { append: appendPrize, update: updatePrize } = useFieldArray({
     control,
     name: "prizes",
     keyName: "fieldId",
@@ -49,22 +48,43 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
 
   const currentPrizes = prizes ?? [];
   const currentTracks = tracks ?? [];
+
   const editingPrize =
     editingPrizeIndex !== null ? currentPrizes[editingPrizeIndex] : null;
 
-  const handleOpenCreateModal = () => {
+  const handleOpenGlobalCreateModal = () => {
     setEditingPrizeIndex(null);
+
+    if (currentTracks.length === 0) {
+      setLockedTrackId("");
+      setIsTrackLocked(true);
+    } else {
+      setLockedTrackId(null);
+      setIsTrackLocked(false);
+    }
+
+    setIsPrizeModalOpen(true);
+  };
+
+  const handleOpenTrackPrizeModal = (trackId: string) => {
+    setEditingPrizeIndex(null);
+    setLockedTrackId(trackId);
+    setIsTrackLocked(true);
     setIsPrizeModalOpen(true);
   };
 
   const handleOpenEditModal = (prizeIndex: number) => {
     setEditingPrizeIndex(prizeIndex);
+    setLockedTrackId(null);
+    setIsTrackLocked(false);
     setIsPrizeModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsPrizeModalOpen(false);
     setEditingPrizeIndex(null);
+    setLockedTrackId(null);
+    setIsTrackLocked(false);
   };
 
   const handleSavePrize = (prize: PrizeFormValues) => {
@@ -85,8 +105,8 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
           </h2>
 
           <p className="mt-1 text-sm text-gray-500">
-            Create prize configurations through a modal, then review all prizes
-            below.
+            Add event-level or track-specific prizes. Track row actions will
+            lock the prize to that track.
           </p>
         </div>
 
@@ -94,7 +114,7 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
           type="button"
           variant="contained"
           startIcon={<AddOutlinedIcon />}
-          onClick={handleOpenCreateModal}
+          onClick={handleOpenGlobalCreateModal}
           sx={{
             bgcolor: "white",
             color: "#2563eb",
@@ -115,8 +135,8 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
         <PrizeTable
           prizes={currentPrizes}
           tracks={currentTracks}
+          onAddTrackPrize={handleOpenTrackPrizeModal}
           onEditPrize={handleOpenEditModal}
-          onDeletePrize={removePrize}
         />
       </div>
 
@@ -149,6 +169,8 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
         open={isPrizeModalOpen}
         tracks={currentTracks}
         initialPrize={editingPrize}
+        lockedTrackId={lockedTrackId}
+        isTrackLocked={isTrackLocked}
         onClose={handleCloseModal}
         onSave={handleSavePrize}
       />
