@@ -6,6 +6,7 @@ import com.t7.seal.repository.UserRepository;
 import com.t7.seal.request.user.ChangePasswordRequest;
 import com.t7.seal.request.user.UpdateMyProfileRequest;
 import com.t7.seal.response.user.ProfileResponse;
+import com.t7.seal.service.CloudinaryStorageService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.TokenBlacklistService;
 import com.t7.seal.service.UserService;
@@ -14,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenBlacklistService tokenBlacklistService;
+    private final CloudinaryStorageService cloudinaryStorageService;
 
     @Override
     @Transactional(readOnly = true)
@@ -70,6 +73,19 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         blacklistCurrentToken(authorizationHeader);
+    }
+
+
+    @Override
+    @Transactional
+    public ProfileResponse uploadFileAvatar(MultipartFile file, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+
+        String avatarUrl = cloudinaryStorageService.uploadUserAvatar(user.getId(), file);
+
+        user.setAvatarUrl(avatarUrl);
+
+        return toProfileResponse(userRepository.save(user));
     }
 
     //HELPERS
