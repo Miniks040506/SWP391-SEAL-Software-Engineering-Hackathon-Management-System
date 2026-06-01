@@ -72,26 +72,24 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
           />
 
           <TextField
-            label="Registration Open"
-            type="date"
-            error={Boolean(errors.registrationOpen)}
-            helperText={errors.registrationOpen?.message}
+            label="Year"
+            placeholder="e.g. 2026"
+            error={Boolean(errors.year)}
+            helperText={errors.year?.message}
             required
             fullWidth
             size="small"
-            slotProps={{
-              inputLabel: {
-                shrink: true,
-              },
+            inputProps={{
+              maxLength: 4,
             }}
-            {...register("registrationOpen")}
+            {...register("year")}
           />
 
           <TextField
-            label="Registration Close"
+            label="Registration Start At"
             type="date"
-            error={Boolean(errors.registrationClose)}
-            helperText={errors.registrationClose?.message}
+            error={Boolean(errors.registrationStartAt)}
+            helperText={errors.registrationStartAt?.message}
             required
             fullWidth
             size="small"
@@ -100,14 +98,14 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
                 shrink: true,
               },
             }}
-            {...register("registrationClose")}
+            {...register("registrationStartAt")}
           />
 
           <TextField
-            label="Competition Start Date"
+            label="Registration End At"
             type="date"
-            error={Boolean(errors.competitionStartDate)}
-            helperText={errors.competitionStartDate?.message}
+            error={Boolean(errors.registrationEndAt)}
+            helperText={errors.registrationEndAt?.message}
             required
             fullWidth
             size="small"
@@ -116,29 +114,15 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
                 shrink: true,
               },
             }}
-            {...register("competitionStartDate")}
-          />
-
-          <TextField
-            label="Competition End Date"
-            type="date"
-            error={Boolean(errors.competitionEndDate)}
-            helperText={errors.competitionEndDate?.message}
-            required
-            fullWidth
-            size="small"
-            slotProps={{
-              inputLabel: {
-                shrink: true,
-              },
-            }}
-            {...register("competitionEndDate")}
+            {...register("registrationEndAt")}
           />
         </div>
 
         <TextField
           label="Description"
           placeholder="Brief description about the event"
+          error={Boolean(errors.description)}
+          helperText={errors.description?.message}
           multiline
           minRows={4}
           fullWidth

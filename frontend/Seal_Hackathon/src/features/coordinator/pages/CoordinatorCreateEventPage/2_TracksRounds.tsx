@@ -83,8 +83,7 @@ export const TracksRoundsStep = ({ onNext, onBack }: TracksRoundsStepProps) => {
           </h2>
 
           <p className="mt-1 text-sm text-gray-500">
-            Create a track through a modal, add its rounds, then review all
-            tracks below.
+              Create a track with max teams, required submission links, and rounds.
           </p>
 
           {tracksRootError && (

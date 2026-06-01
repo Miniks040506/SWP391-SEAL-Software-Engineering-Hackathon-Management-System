@@ -1,7 +1,8 @@
+import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import { IconButton } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
 
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
 import type {
@@ -12,121 +13,203 @@ import type {
 type PrizeTableProps = {
   prizes: PrizeFormValues[];
   tracks: TrackFormValues[];
+  onAddTrackPrize: (trackId: string) => void;
   onEditPrize: (prizeIndex: number) => void;
-  onDeletePrize: (prizeIndex: number) => void;
 };
 
-function getPrizeTargetLabel(
-  prize: PrizeFormValues,
-  tracks: TrackFormValues[],
-) {
-  if (prize.targetTrackId === "Event") {
-    return "Whole Event";
-  }
+type PrizeWithIndex = {
+  prize: PrizeFormValues;
+  index: number;
+};
 
-  const track = tracks.find((item) => item.id === prize.targetTrackId);
+function formatPrizeValue(prize: PrizeFormValues) {
+  const amount = Number(prize.value);
 
- if (!track) {
-    return "Unknown Track";
-  }
+  if (Number.isNaN(amount)) return "-";
 
-  if (!prize.targetRoundId) {
-    return track.trackName;
-  }
-
-  const round = track.rounds.find((item) => item.id === prize.targetRoundId);
-
-  if (!round) {
-    return `${track.trackName} · Unknown Round`;
-  }
-
-  return `${track.trackName} · ${round.roundName}`;
+  return `${amount.toLocaleString("vi-VN")} ${prize.currency}`;
 }
 
-function getPrizeScopeLabel(prize: PrizeFormValues) {
-  if (!prize.targetTrackId) return "Event";
-  if (!prize.targetRoundId) return "Track";
-  return "Round";
+function getPrizesByTrackId(prizes: PrizeFormValues[], trackId: string) {
+  return prizes
+    .map((prize, index) => ({
+      prize,
+      index,
+    }))
+    .filter((item) => item.prize.trackId === trackId);
 }
 
-export const PrizeTable = ({
-  prizes,
-  tracks,
-  onEditPrize,
-  onDeletePrize,
-}: PrizeTableProps) => {
-  if (prizes.length === 0) {
+function getEventPrizes(prizes: PrizeFormValues[]) {
+  return prizes
+    .map((prize, index) => ({
+      prize,
+      index,
+    }))
+    .filter((item) => !item.prize.trackId);
+}
+
+type PrizeListProps = {
+  items: PrizeWithIndex[];
+  onEditPrize: (prizeIndex: number) => void;
+};
+
+const PrizeList = ({ items, onEditPrize }: PrizeListProps) => {
+  if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-slate-50 px-6 py-12 text-center">
+      <div className="rounded-xl border border-dashed border-gray-200 bg-slate-50 px-4 py-3">
         <p className="text-sm font-semibold text-gray-500">
           No prizes added yet.
-        </p>
-
-        <p className="mt-1 text-sm text-gray-400">
-          Click Add Prize to configure awards, or skip this step.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="grid grid-cols-[1.1fr_1.4fr_1.4fr_120px] bg-blue-500 px-6 py-4 text-sm font-extrabold uppercase tracking-wide text-white">
-        <div>Rank</div>
-        <div>Prize</div>
-        <div>Applies To</div>
-        <div className="text-right">Action</div>
-      </div>
-
-      {prizes.map((prize, index) => (
+    <div className="space-y-2">
+      {items.map(({ prize, index }) => (
         <div
           key={prize.id}
-          className="grid grid-cols-[1.1fr_1.4fr_1.4fr_120px] items-start border-t border-gray-100 px-6 py-5"
+          className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3"
         >
-          <div>
-            <Chip
-              label={prize.rank}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip
+                  label={`#${prize.rankPosition}`}
+                  color="primary"
+                  size="small"
+                  sx={{ fontWeight: 800 }}
+                />
+
+                <p className="font-extrabold text-gray-900">{prize.title}</p>
+              </div>
+
+              <p className="mt-1 text-sm font-semibold text-gray-600">
+                {formatPrizeValue(prize)}
+              </p>
+
+              {prize.sponsorName && (
+                <p className="mt-1 text-xs font-semibold text-gray-400">
+                  Sponsor: {prize.sponsorName}
+                </p>
+              )}
+
+              {prize.description && (
+                <p className="mt-1 line-clamp-2 text-sm text-gray-400">
+                  {prize.description}
+                </p>
+              )}
+            </div>
+
+            <IconButton
               color="primary"
               size="small"
-              sx={{ fontWeight: 800 }}
-            />
-          </div>
-
-          <div>
-            <p className="font-extrabold text-gray-900">{prize.title}</p>
-
-            <p className="mt-1 text-sm text-gray-500">
-              {prize.value || "No value"}
-            </p>
-
-            {prize.description && (
-              <p className="mt-1 line-clamp-2 text-sm text-gray-400">
-                {prize.description}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <p className="font-bold text-gray-900">
-              {getPrizeTargetLabel(prize, tracks)}
-            </p>
-
-            <p className="mt-1 text-xs font-semibold text-gray-400">
-              Scope: {getPrizeScopeLabel(prize)}
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-1">
-            <IconButton color="primary" onClick={() => onEditPrize(index)}>
-              <EditOutlinedIcon />
-            </IconButton>
-
-            <IconButton color="error" onClick={() => onDeletePrize(index)}>
-              <DeleteOutlineOutlinedIcon />
+              onClick={() => onEditPrize(index)}
+            >
+              <EditOutlinedIcon fontSize="small" />
             </IconButton>
           </div>
         </div>
       ))}
+    </div>
+  );
+};
+
+export const PrizeTable = ({
+  prizes,
+  tracks,
+  onAddTrackPrize,
+  onEditPrize,
+}: PrizeTableProps) => {
+  const eventPrizes = getEventPrizes(prizes);
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="grid grid-cols-[220px_180px_120px_minmax(0,1fr)] bg-blue-500 px-6 py-4 text-sm font-extrabold uppercase tracking-wide text-white">
+        <div>Track</div>
+        <div></div>
+        <div>Total</div>
+        <div>Prizes</div>
+      </div>
+
+      {eventPrizes.length !== 0 && (
+        <div className="grid grid-cols-[220px_180px_120px_minmax(0,1fr)] items-start border-t border-gray-100 px-6 py-5">
+          <div>
+            <p className="font-extrabold text-gray-900">Whole Event</p>
+            <p className="mt-1 text-sm text-gray-500">Event-level prizes.</p>
+          </div>
+
+          <div className="flex justify-start">
+            <Button
+              type="button"
+              variant="outlined"
+              size="small"
+              startIcon={<AddOutlinedIcon />}
+              onClick={() => onAddTrackPrize("")}
+              sx={{ fontWeight: 800 }}
+            >
+              Add Prize
+            </Button>
+          </div>
+
+          <div className="text-sm font-bold text-gray-700">
+            {eventPrizes.length} prize(s)
+          </div>
+
+          <PrizeList items={eventPrizes} onEditPrize={onEditPrize} />
+        </div>
+      )}
+
+      {tracks.map((track) => {
+        const trackPrizes = getPrizesByTrackId(prizes, track.id);
+
+        return (
+          <div
+            key={track.id}
+            className="grid grid-cols-[220px_180px_120px_minmax(0,1fr)] items-start border-t border-gray-100 px-6 py-5"
+          >
+            <div>
+              <p className="font-extrabold text-gray-900">{track.trackName}</p>
+
+              <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+                {track.description || "No description"}
+              </p>
+
+              <p className="mt-2 text-xs font-semibold text-gray-400">
+                Max teams: {track.maxTeams || "No limit"}
+              </p>
+            </div>
+
+            <div className="flex justify-start">
+              <Button
+                type="button"
+                variant="outlined"
+                size="small"
+                startIcon={<AddOutlinedIcon />}
+                onClick={() => onAddTrackPrize(track.id)}
+                sx={{ fontWeight: 800 }}
+              >
+                Add Prize
+              </Button>
+            </div>
+
+            <div className="text-sm font-bold text-gray-700">
+              {trackPrizes.length} prize(s)
+            </div>
+
+            <PrizeList items={trackPrizes} onEditPrize={onEditPrize} />
+          </div>
+        );
+      })}
+
+      {tracks.length === 0 && eventPrizes.length === 0 && (
+        <div className="border-t border-gray-100 px-6 py-8 text-center">
+          <p className="text-sm font-semibold text-gray-500">
+            No tracks created. You can only create event-level prizes from the
+            top Add Prize button.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

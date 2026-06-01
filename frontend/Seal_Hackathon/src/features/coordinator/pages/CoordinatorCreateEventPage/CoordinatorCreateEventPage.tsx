@@ -48,10 +48,9 @@ export const CoordinatorCreateEventPage = () => {
         [
           "eventName",
           "season",
-          "registrationOpen",
-          "registrationClose",
-          "competitionStartDate",
-          "competitionEndDate",
+          "year",
+          "registrationStartAt",
+          "registrationEndAt",
           "description",
           "bannerFile",
         ],
@@ -128,11 +127,7 @@ export const CoordinatorCreateEventPage = () => {
           }))}
         />
 
-        {activeStep === 1 && 
-          <EventDetailsStep 
-            onNext={handleNextStep} 
-          />
-        }
+        {activeStep === 1 && <EventDetailsStep onNext={handleNextStep} />}
 
         {activeStep === 2 && (
           <TracksRoundsStep
@@ -142,23 +137,20 @@ export const CoordinatorCreateEventPage = () => {
         )}
 
         {activeStep === 3 && (
-          <PrizesStep 
-            onBack={handlePreviousStep} 
-            onNext={handleNextStep} 
-          />
+          <PrizesStep onBack={handlePreviousStep} onNext={handleNextStep} />
         )}
 
         {activeStep === 4 && (
-          <MentorsJudgesStep 
-            onBack={handlePreviousStep} 
-            onNext={handleNextStep} 
+          <MentorsJudgesStep
+            onBack={handlePreviousStep}
+            onNext={handleNextStep}
           />
         )}
 
         {activeStep === 5 && (
-          <EventCriteriaStep 
-            onBack={handlePreviousStep} 
-            isSubmitting={createEventFlowMutation.isPending} 
+          <EventCriteriaStep
+            onBack={handlePreviousStep}
+            isSubmitting={createEventFlowMutation.isPending}
           />
         )}
       </form>

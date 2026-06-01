@@ -8,8 +8,16 @@ export const ADVANCEMENT_RULE_TYPES = [
   "Manual Selection",
 ] as const;
 
-export const prizeRankOptions = ["1st", "2nd", "3rd", "Consolation"] as const;
-export const prizeCurrencyOptions = ["VND", "USD", "Other"] as const;
+export const SUBMISSION_LINK_TYPES = [
+  "REPOSITORY",
+  "DEMO",
+  "SLIDE",
+  "REPORT",
+  "VIDEO",
+  "OTHER",
+] as const;
+
+export const prizeCurrencyOptions = ["VND", "USD", "EUR", "JPY"] as const;
 export const mentorJudgeRoleOptions = ["Mentor", "Judge"] as const;
 
 export const criteriaTypeOptions = [
@@ -25,6 +33,13 @@ export const createEventRoundSchema = z
   .object({
     id: z.string(),
     roundName: z.string().min(1, "Round name is required").max(200),
+    orderIndex: z
+      .string()
+      .min(1, "Order index is required")
+      .refine((value) => Number(value) > 0, {
+        message: "Order index must be greater than 0",
+      }),
+    isFinal: z.boolean(),
     submissionDeadline: z.string().min(1, "Submission deadline is required"),
     judgingDeadline: z.string().min(1, "Judging deadline is required"),
     advancementRuleType: z.enum(ADVANCEMENT_RULE_TYPES),
@@ -58,39 +73,45 @@ export const createEventRoundSchema = z
 export const createEventTrackSchema = z.object({
   id: z.string(),
   trackName: z.string().min(1, "Track name is required").max(200),
-  description: z.string().optional().or(z.literal("")),
+  description: z.string().max(2000).optional().or(z.literal("")),
+  maxTeams: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((value) => !value || Number(value) > 0, {
+      message: "Max teams must be greater than 0",
+    }),
+  requiredLinkTypes: z.array(z.enum(SUBMISSION_LINK_TYPES)),
   rounds: z.array(createEventRoundSchema),
 });
 
-export const createEventPrizeSchema = z
-  .object({
-    id: z.string(),
-    rank: z.enum(prizeRankOptions),
-    title: z.string().min(1, "Prize title is required").max(200),
+export const createEventPrizeSchema = z.object({
+  id: z.string(),
 
-    value: z
-      .string()
-      .min(1, "Prize value is required")
-      .refine((value) => Number(value) > 0, {
-        message: "Prize value must be greater than 0",
-      }),
+  rankPosition: z
+    .string()
+    .min(1, "Rank position is required")
+    .refine((value) => Number(value) > 0, {
+      message: "Rank position must be greater than 0",
+    }),
 
-    currency: z.enum(prizeCurrencyOptions),
-    customCurrency: z.string().optional().or(z.literal("")),
+  title: z.string().min(1, "Prize title is required").max(200),
 
-    description: z.string().optional().or(z.literal("")),
-    targetTrackId: z.string().optional().or(z.literal("")),
-    targetRoundId: z.string().optional().or(z.literal("")),
-  })
-  .superRefine((data, ctx) => {
-    if (data.currency === "Other" && !data.customCurrency?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["customCurrency"],
-        message: "Currency unit is required.",
-      });
-    }
-  });
+  description: z.string().max(2000).optional().or(z.literal("")),
+
+  value: z
+    .string()
+    .min(1, "Prize value is required")
+    .refine((value) => Number(value) > 0, {
+      message: "Prize value must be greater than 0",
+    }),
+
+  currency: z.string().min(1, "Currency is required"),
+
+  sponsorName: z.string().max(200).optional().or(z.literal("")),
+
+  trackId: z.string().optional().or(z.literal("")),
+});
 
 export const createEventMentorJudgeSchema = z.object({
   id: z.string(),
@@ -131,16 +152,18 @@ export const createEventDetailsSchema = z
         message: "Season is required",
       }),
 
-    registrationOpen: z.string().min(1, "Registration open date is required"),
-    registrationClose: z.string().min(1, "Registration close date is required"),
-
-    competitionStartDate: z
+    year: z
       .string()
-      .min(1, "Competition start date is required"),
+      .min(1, "Year is required")
+      .regex(/^\d{4}$/, "Year must be a 4-digit year"),
 
-    competitionEndDate: z.string().min(1, "Competition end date is required"),
+    registrationStartAt: z
+      .string()
+      .min(1, "Registration start time is required"),
 
-    description: z.string().optional().or(z.literal("")),
+    registrationEndAt: z.string().min(1, "Registration end time is required"),
+
+    description: z.string().max(2000).optional().or(z.literal("")),
 
     bannerFile: z
       .custom<File | null>(
@@ -151,40 +174,14 @@ export const createEventDetailsSchema = z
   })
   .superRefine((data, ctx) => {
     if (
-      data.registrationOpen &&
-      data.registrationClose &&
-      data.registrationOpen >= data.registrationClose
+      data.registrationStartAt &&
+      data.registrationEndAt &&
+      data.registrationStartAt >= data.registrationEndAt
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["registrationClose"],
-        message:
-          "Registration close date must be after registration open date.",
-      });
-    }
-
-    if (
-      data.competitionStartDate &&
-      data.competitionEndDate &&
-      data.competitionStartDate >= data.competitionEndDate
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["competitionEndDate"],
-        message: "Competition end date must be after competition start date.",
-      });
-    }
-
-    if (
-      data.registrationClose &&
-      data.competitionStartDate &&
-      data.registrationClose >= data.competitionStartDate
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["competitionStartDate"],
-        message:
-          "Competition start date must be after registration close date.",
+        path: ["registrationEndAt"],
+        message: "Registration end time must be after registration start time.",
       });
     }
   });
@@ -207,9 +204,11 @@ export type MentorJudgeFormValues = z.infer<
 >;
 export type CriteriaFormValues = z.infer<typeof createEventCriteriaSchema>;
 
-export const createEmptyRound = (): RoundFormValues => ({
+export const createEmptyRound = (orderIndex = 1): RoundFormValues => ({
   id: crypto.randomUUID(),
   roundName: "",
+  orderIndex: String(orderIndex),
+  isFinal: false,
   submissionDeadline: "",
   judgingDeadline: "",
   advancementRuleType: "Top-N Teams",
@@ -220,19 +219,20 @@ export const createEmptyTrack = (): TrackFormValues => ({
   id: crypto.randomUUID(),
   trackName: "",
   description: "",
+  maxTeams: "",
+  requiredLinkTypes: [],
   rounds: [],
 });
 
-export const createEmptyPrize = (): PrizeFormValues => ({
+export const createEmptyPrize = (trackId = ""): PrizeFormValues => ({
   id: crypto.randomUUID(),
-  rank: "1st",
+  rankPosition: "",
   title: "",
+  description: "",
   value: "",
   currency: "VND",
-  customCurrency: "",
-  description: "",
-  targetTrackId: "",
-  targetRoundId: "",
+  sponsorName: "",
+  trackId,
 });
 
 export const createMentorJudgeAssignment = (values: {
@@ -261,10 +261,9 @@ export const createEmptyCriteria = (): CriteriaFormValues => ({
 export const initialCreateEventFormValues: CreateEventFormValues = {
   eventName: "",
   season: "",
-  registrationOpen: "",
-  registrationClose: "",
-  competitionStartDate: "",
-  competitionEndDate: "",
+  year: "",
+  registrationStartAt: "",
+  registrationEndAt: "",
   description: "",
   bannerFile: null,
   tracks: [],
