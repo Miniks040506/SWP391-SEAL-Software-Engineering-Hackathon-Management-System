@@ -30,7 +30,11 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
   const [lockedTrackId, setLockedTrackId] = useState<string | null>(null);
   const [isTrackLocked, setIsTrackLocked] = useState(false);
 
-  const { append: appendPrize, update: updatePrize } = useFieldArray({
+  const { 
+    append: appendPrize, 
+    update: updatePrize,
+    remove: removePrize, 
+  } = useFieldArray({
     control,
     name: "prizes",
     keyName: "fieldId",
@@ -137,6 +141,7 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
           tracks={currentTracks}
           onAddTrackPrize={handleOpenTrackPrizeModal}
           onEditPrize={handleOpenEditModal}
+          onDeletePrize={removePrize}
         />
       </div>
 

@@ -18,6 +18,7 @@ import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNone
 import RuleOutlinedIcon from "@mui/icons-material/RuleOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
+import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 
 export type SidebarItem = {
   label: string;
@@ -141,14 +142,19 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <UploadFileOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Judging",
-            path: "/coordinator/judging",
+            label: "Grading",
+            path: "/coordinator/grading",
             icon: <GavelOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Prizes",
-            path: "/coordinator/prizes",
+            label: "Results",
+            path: "/coordinator/results",
             icon: <EmojiEventsOutlinedIcon fontSize="small" />,
+          },
+          {
+            label: "Criteria",
+            path: "/coordinator/criteria",
+            icon: <VerifiedUserOutlinedIcon fontSize="small" />,
           },
         ],
       },

@@ -5,19 +5,19 @@ import { eventApi } from "@/api/event.api";
 import type { CreateEventRequest } from "@/types/event.types";
 
 export const useCreateEventMutation = () => {
-    const { enqueuceSnackbar } = useSnackbar();
+    const { enqueueSnackbar } = useSnackbar();
 
     return useMutation({
         mutationFn: (payload: CreateEventRequest) => eventApi.createEvent(payload),
 
         onSuccess: () => {
-            enqueuceSnackbar("Event created successfully.", {
-                variant: "sucess",
+            enqueueSnackbar("Event created successfully.", {
+                variant: "success",
             });
         },
 
         onError: () => {
-            enqueuceSnackbar("Failed to create event. Please try again.", {
+            enqueueSnackbar("Failed to create event. Please try again.", {
                 variant: "error",
             });
         },
