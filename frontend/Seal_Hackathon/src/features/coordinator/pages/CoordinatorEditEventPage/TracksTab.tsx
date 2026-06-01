@@ -135,55 +135,62 @@ export const TracksTab = ({
                   {track.rounds.map((round) => (
                     <div
                       key={round.id}
-                      className="group flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-[#1e293b]"
+                      className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-[#1e293b]"
                     >
-                      <div className="flex items-start justify-between border-b border-slate-100 pb-4 dark:border-slate-700/50">
-                        <div>
-                          <h5 className="font-bold text-slate-800 dark:text-slate-200">{round.name}</h5>
-                          <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {round.startDate}&nbsp;→&nbsp;{round.endDate}
-                          </p>
+                      <div className="flex flex-col sm:flex-row gap-6">
+                        
+                        {/* LEFT COLUMN: Info & Actions */}
+                        <div className="flex flex-1 flex-col justify-between">
+                          <div>
+                            <h5 className="font-bold text-slate-800 dark:text-slate-200">{round.name}</h5>
+                            <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                              {round.startDate}&nbsp;→&nbsp;{round.endDate}
+                            </p>
+                          </div>
+                          
+                          <div className="mt-4 flex items-center gap-2">
+                            <IconButton
+                              onClick={() => onOpenEditRound(track.id, round.id)}
+                              className="text-slate-400! hover:bg-blue-50! hover:text-blue-600! dark:hover:bg-slate-800! dark:hover:text-blue-400!"
+                            >
+                              <EditOutlinedIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              onClick={() => onRemoveRound(track.id, round.id)}
+                              className="text-slate-400! hover:bg-red-50! hover:text-red-500! dark:hover:bg-slate-800! dark:hover:text-rose-400!"
+                            >
+                              <DeleteOutlineOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <IconButton
-                            onClick={() => onOpenEditRound(track.id, round.id)}
-                            className="text-slate-400! hover:bg-blue-50! hover:text-blue-600! dark:hover:bg-slate-800! dark:hover:text-blue-400!"
-                          >
-                            <EditOutlinedIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => onRemoveRound(track.id, round.id)}
-                            className="text-slate-400! hover:bg-red-50! hover:text-red-500! dark:hover:bg-slate-800! dark:hover:text-rose-400!"
-                          >
-                            <DeleteOutlineOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </div>
-                      </div>
 
-                      {/* --- THÊM PHẦN JUDGES VÀO TRONG ROUND --- */}
-                      <div className="pt-1">
-                        <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                          <GradingOutlinedIcon sx={{ fontSize: 14 }} className="text-indigo-500 dark:text-indigo-400" />
-                          Assigned Judges
+                        {/* RIGHT COLUMN: Assigned Judges */}
+                        <div className="sm:w-64 shrink-0 border-t sm:border-t-0 sm:border-l border-slate-100 pt-4 sm:pt-0 sm:pl-6 dark:border-slate-700/50">
+                          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                            <GradingOutlinedIcon sx={{ fontSize: 14 }} className="text-indigo-500 dark:text-indigo-400" />
+                            Assigned Judges
+                          </div>
+                          {/* Sửa thành flex-col để các Pill xếp dọc (xuống dòng) thay vì dàn ngang */}
+                          <div className="flex flex-col items-start gap-2">
+                            {round.judgeIds.map((jid) => {
+                              const user = availableJudges.find((j) => j.id === jid);
+                              return user ? (
+                                <UserPill
+                                  key={jid}
+                                  name={user.name}
+                                  initials={user.avatar}
+                                  onRemove={() => onRemoveJudge(track.id, round.id, jid)}
+                                />
+                              ) : null;
+                            })}
+                            <AddUserButton
+                              label="Add Judge"
+                              colorClass="hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:border-indigo-500/50 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400"
+                              onClick={() => onOpenAddJudge(track.id, round.id)}
+                            />
+                          </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {round.judgeIds.map((jid) => {
-                            const user = availableJudges.find((j) => j.id === jid);
-                            return user ? (
-                              <UserPill
-                                key={jid}
-                                name={user.name}
-                                initials={user.avatar}
-                                onRemove={() => onRemoveJudge(track.id, round.id, jid)}
-                              />
-                            ) : null;
-                          })}
-                          <AddUserButton
-                            label="Add Judge"
-                            colorClass="hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:border-indigo-500/50 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400"
-                            onClick={() => onOpenAddJudge(track.id, round.id)}
-                          />
-                        </div>
+
                       </div>
                     </div>
                   ))}
