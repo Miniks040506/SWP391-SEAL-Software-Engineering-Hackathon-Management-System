@@ -10,9 +10,8 @@ import {
   type EventTrack,
 } from "../mocks/coordinatorEditEvent.mock";
 
-// ─── TYPES ───────────────────────────────────────────────────────────────────
-
-export type TabId = "info" | "tracks" | "teams";
+// Đã thêm "criteria" vào đây để pass TypeScript Error
+export type TabId = "info" | "tracks" | "criteria" | "teams";
 
 export type TeamStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -24,7 +23,13 @@ export type EventFormErrors = {
 
 export type DialogState =
   | {
-      kind: "addJudge" | "addMentor";
+      kind: "addJudge";
+      trackId: string;
+      roundId: string;
+      initialSelectedIds: string[];
+    }
+  | {
+      kind: "addMentor";
       trackId: string;
       initialSelectedIds: string[];
     }
@@ -80,8 +85,6 @@ function patchTrack(
 export function useEditEventMutation() {
   const navigate = useNavigate();
 
-  // ── Core state ──────────────────────────────────────────────────────────────
-
   const [activeTab, setActiveTab] = useState<TabId>("info");
   const [event, setEvent] = useState<EditEventData>(editEventMock);
   const [teams, setTeams] = useState<EventTeam[]>(eventTeamsMock);
@@ -98,13 +101,9 @@ export function useEditEventMutation() {
     [teams],
   );
 
-  // ── Dialog openers ──────────────────────────────────────────────────────────
-
   const closeDialog = () => setDialog(null);
 
-  const openAddTrack = () => {
-    setDialog({ kind: "addTrack" });
-  };
+  const openAddTrack = () => setDialog({ kind: "addTrack" });
 
   const openEditTrack = (trackId: string) => {
     const track = event.tracks.find((t) => t.id === trackId);
@@ -117,9 +116,7 @@ export function useEditEventMutation() {
     });
   };
 
-  const openAddRound = (trackId: string) => {
-    setDialog({ kind: "addRound", trackId });
-  };
+  const openAddRound = (trackId: string) => setDialog({ kind: "addRound", trackId });
 
   const openEditRound = (trackId: string, roundId: string) => {
     const round = event.tracks
@@ -136,11 +133,11 @@ export function useEditEventMutation() {
     });
   };
 
-  const openAddJudge = (trackId: string) => {
+  const openAddJudge = (trackId: string, roundId: string) => {
     const initialSelectedIds = [
-      ...(event.tracks.find((t) => t.id === trackId)?.judgeIds ?? []),
+      ...(event.tracks.find((t) => t.id === trackId)?.rounds.find((r) => r.id === roundId)?.judgeIds ?? []),
     ];
-    setDialog({ kind: "addJudge", trackId, initialSelectedIds });
+    setDialog({ kind: "addJudge", trackId, roundId, initialSelectedIds });
   };
 
   const openAddMentor = (trackId: string) => {
@@ -159,11 +156,9 @@ export function useEditEventMutation() {
     setDialog({ kind: "editCriteria", trackId, roundId, initialSelectedIds });
   };
 
-  const openTeamDetail = (team: EventTeam) => {
-    setDialog({ kind: "teamDetail", team });
-  };
+  const openTeamDetail = (team: EventTeam) => setDialog({ kind: "teamDetail", team });
 
-  // ── Dialog confirms (values received as arguments from EditEventDialogs) ────
+  // ── Dialog confirms ────
 
   const confirmAddTrack = (name: string, desc: string) => {
     if (!name.trim()) return;
@@ -171,7 +166,6 @@ export function useEditEventMutation() {
       id: `track-${Date.now()}`,
       name,
       description: desc,
-      judgeIds: [],
       mentorIds: [],
       rounds: [],
     };
@@ -197,6 +191,7 @@ export function useEditEventMutation() {
       startDate: start,
       endDate: end,
       criteriaIds: [],
+      judgeIds: [],
     };
     setEvent((prev) => ({
       ...prev,
@@ -234,7 +229,16 @@ export function useEditEventMutation() {
     if (dialog?.kind !== "addJudge") return;
     setEvent((prev) => ({
       ...prev,
-      tracks: patchTrack(prev.tracks, dialog.trackId, { judgeIds: ids }),
+      tracks: prev.tracks.map((t) =>
+        t.id === dialog.trackId
+          ? {
+              ...t,
+              rounds: t.rounds.map((r) =>
+                r.id === dialog.roundId ? { ...r, judgeIds: ids } : r,
+              ),
+            }
+          : t,
+      ),
     }));
     closeDialog();
   };
@@ -276,7 +280,6 @@ export function useEditEventMutation() {
       return;
     }
     setIsSaving(true);
-    // TODO: Replace with real API mutation chain (updateEvent + tracks + rounds).
     await new Promise<void>((resolve) => setTimeout(resolve, 1000));
     setIsSaving(false);
     navigate("/coordinator/events");
@@ -295,7 +298,7 @@ export function useEditEventMutation() {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  // ── Track handlers ──────────────────────────────────────────────────────────
+  // ── Track/Round handlers ──────────────────────────────────────────────────────────
 
   const toggleExpand = (id: string) =>
     setExpandedTracks((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -316,16 +319,29 @@ export function useEditEventMutation() {
       ),
     }));
 
-  const removeUser = (
-    trackId: string,
-    userId: string,
-    field: "judgeIds" | "mentorIds",
-  ) =>
+  const removeMentor = (trackId: string, userId: string) =>
     setEvent((prev) => ({
       ...prev,
       tracks: prev.tracks.map((t) =>
         t.id === trackId
-          ? { ...t, [field]: t[field].filter((id) => id !== userId) }
+          ? { ...t, mentorIds: t.mentorIds.filter((id) => id !== userId) }
+          : t,
+      ),
+    }));
+
+  const removeJudge = (trackId: string, roundId: string, userId: string) =>
+    setEvent((prev) => ({
+      ...prev,
+      tracks: prev.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              rounds: t.rounds.map((r) =>
+                r.id === roundId
+                  ? { ...r, judgeIds: r.judgeIds.filter((id) => id !== userId) }
+                  : r,
+              ),
+            }
           : t,
       ),
     }));
@@ -366,10 +382,7 @@ export function useEditEventMutation() {
     setSelectedTeamIds((prev) => prev.filter((id) => !toUpdate.includes(id)));
   };
 
-  // ── Return ──────────────────────────────────────────────────────────────────
-
   return {
-    // State
     activeTab,
     setActiveTab,
     event,
@@ -380,7 +393,6 @@ export function useEditEventMutation() {
     isSaving,
     errors,
     pendingCount,
-    // Dialog
     closeDialog,
     openAddTrack,
     openEditTrack,
@@ -390,7 +402,6 @@ export function useEditEventMutation() {
     openAddMentor,
     openEditCriteria,
     openTeamDetail,
-    // Confirm
     confirmAddTrack,
     confirmEditTrack,
     confirmAddRound,
@@ -398,16 +409,14 @@ export function useEditEventMutation() {
     confirmAddJudge,
     confirmAddMentor,
     confirmEditCriteria,
-    // Event
     handleSave,
     handleDiscard,
     handleEventChange,
-    // Track
     toggleExpand,
     removeTrack,
     removeRound,
-    removeUser,
-    // Team
+    removeMentor,
+    removeJudge,
     updateTeamStatus,
     handleSelectAllTrackTeams,
     handleToggleSelectTeam,

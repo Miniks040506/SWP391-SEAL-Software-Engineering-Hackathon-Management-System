@@ -168,7 +168,7 @@ export function AdminUsersPage() {
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-slate-700 p-4">
           <TextField
             size="small"
-            label="Search..."
+            label="Search"
             placeholder="Name, email or ID…"
             value={search}
             onChange={(e) => handleSearch(e.target.value)}

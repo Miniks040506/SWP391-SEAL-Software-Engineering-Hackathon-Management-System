@@ -17,13 +17,13 @@ const paginationSx = {
   "& .MuiPaginationItem-root": {
     fontWeight: 700,
     fontSize: "0.75rem",
-    borderColor: "#e5e7eb",
-    color: "#6b7280",
+    borderColor: "var(--mui-palette-divider, #475569)",
+    color: "inherit",
   },
   "& .MuiPaginationItem-root.Mui-selected": {
     backgroundColor: "#2563eb",
     borderColor: "#2563eb",
-    color: "#fff",
+    color: "#e2e8f0", 
     "&:hover": { backgroundColor: "#1d4ed8" },
   },
 };
@@ -58,8 +58,10 @@ export const CoordinatorEventsPage = () => {
     <div className="space-y-8">
       <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800">Event Management</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-300">
+            Event Management
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
             Manage all hackathon events, timelines, and configurations.
           </p>
         </div>
@@ -74,6 +76,7 @@ export const CoordinatorEventsPage = () => {
             fontWeight: 600,
             borderRadius: "8px",
             boxShadow: "none",
+            color: "#e2e8f0",
             "&:hover": { boxShadow: "none", bgcolor: "#1d4ed8" },
           }}
         >
@@ -82,15 +85,15 @@ export const CoordinatorEventsPage = () => {
       </section>
 
       <div className="flex items-center gap-3">
-        <div className="flex rounded-lg bg-gray-100 p-1">
+        <div className="flex rounded-lg bg-gray-100 dark:bg-slate-800/50 p-1">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f}
               onClick={() => handleFilterChange(f)}
               className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-all ${
                 activeFilter === f
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-400"
+                  : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
               }`}
             >
               {f === "All" ? "All" : f.charAt(0) + f.slice(1).toLowerCase()}
@@ -98,7 +101,7 @@ export const CoordinatorEventsPage = () => {
           ))}
         </div>
 
-        <span className="text-sm text-gray-400">
+        <span className="text-sm text-gray-400 dark:text-slate-500">
           {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -115,9 +118,9 @@ export const CoordinatorEventsPage = () => {
           ))}
         </section>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 py-20 text-center">
-          <p className="text-sm font-semibold text-gray-400">No events found</p>
-          <p className="mt-1 text-xs text-gray-300">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 dark:border-slate-700 py-20 text-center">
+          <p className="text-sm font-semibold text-gray-400 dark:text-slate-500">No events found</p>
+          <p className="mt-1 text-xs text-gray-300 dark:text-slate-600">
             Try a different filter or create a new event.
           </p>
         </div>
@@ -125,14 +128,16 @@ export const CoordinatorEventsPage = () => {
 
       {pageCount > 1 && (
         <div className="flex justify-center pt-2">
-          <Pagination
-            count={pageCount}
-            page={page}
-            onChange={(_, value) => setPage(value)}
-            variant="outlined"
-            shape="rounded"
-            sx={paginationSx}
-          />
+          <div className="dark:text-slate-400">
+            <Pagination
+              count={pageCount}
+              page={page}
+              onChange={(_, value) => setPage(value)}
+              variant="outlined"
+              shape="rounded"
+              sx={paginationSx}
+            />
+          </div>
         </div>
       )}
     </div>
