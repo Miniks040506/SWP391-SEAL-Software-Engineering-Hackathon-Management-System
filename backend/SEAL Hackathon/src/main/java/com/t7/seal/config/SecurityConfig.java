@@ -127,9 +127,9 @@ public class SecurityConfig {
                         .requestMatchers(API + "/exports/**").hasAnyRole("ADMIN", "COORDINATOR")
 
                         // Coordinator account review
-                        .requestMatchers(HttpMethod.GET, API + "/users/pending-approval").hasRole("COORDINATOR")
-                        .requestMatchers(HttpMethod.POST, API + "/users/*/approve").hasRole("COORDINATOR")
-                        .requestMatchers(HttpMethod.POST, API + "/users/*/reject").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/users/pending-approval").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/users/*/approve").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/users/*/reject").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/users/guest-judge").hasRole("COORDINATOR")
 
                         // Coordinator event operations
