@@ -33,6 +33,7 @@ import {
 
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
 import { PersonalProfilePage } from "@/features/profile";
+import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
 
 export const router = createBrowserRouter([
   {
@@ -89,7 +90,7 @@ export const router = createBrowserRouter([
     element: <LoggedinLayout sectionRole="ADMIN" />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: "dashboard", element: <Navigate to="../users" replace /> },
+      { path: "dashboard", element: <AdminDashboardPage /> },
       { path: "users", element: <AdminUsersPage /> },
       { path: "users/create", element: <NotFoundPage /> },
       { path: "users/:id", element: <NotFoundPage /> },

@@ -118,3 +118,38 @@ export type AdminUserListParams = {
   page?: number;
   pageSize?: number;
 };
+
+export type AdminUserStats = {
+  adminCount: number;
+  studentCount: number;
+  mentorCount: number;
+  judgeCount: number;
+  coordinatorCount: number;
+  totalCount: number;
+  pendingApprovalCount: number;
+  suspendedCount: number;
+};
+
+export type RecentActivity = {
+  id: string;
+  timestamp: string;
+  title: string;
+  description: string;
+  type: "USER_CREATED" | "USER_APPROVED" | "USER_SUSPENDED" | "USER_ACTIVATED" | "ROLE_CHANGED";
+};
+
+export type PendingAction = {
+  id: string;
+  title: string;
+  description: string;
+  priority: "HIGH" | "MEDIUM" | "LOW";
+  count: number;
+  actionLabel: string;
+  route: string;
+};
+
+export type AdminDashboardData = {
+  stats: AdminUserStats;
+  recentActivity: RecentActivity[];
+  pendingActions: PendingAction[];
+};
