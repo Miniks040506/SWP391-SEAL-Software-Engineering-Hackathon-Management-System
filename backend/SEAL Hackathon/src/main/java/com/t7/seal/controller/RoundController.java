@@ -37,16 +37,18 @@ public class RoundController {
 
     @GetMapping("/events/{eventId}/rounds")
     public ResponseEntity<List<RoundResponse>> getRoundsByEvent(
-            @PathVariable UUID eventId
+            @PathVariable UUID eventId,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(roundService.getRoundsByEvent(eventId));
+        return ResponseEntity.ok(roundService.getRoundsByEvent(eventId, authentication));
     }
 
     @GetMapping("/rounds/{roundId}")
     public ResponseEntity<RoundDetailResponse> getRoundById(
-            @PathVariable UUID roundId
+            @PathVariable UUID roundId,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(roundService.getRoundById(roundId));
+        return ResponseEntity.ok(roundService.getRoundById(roundId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")

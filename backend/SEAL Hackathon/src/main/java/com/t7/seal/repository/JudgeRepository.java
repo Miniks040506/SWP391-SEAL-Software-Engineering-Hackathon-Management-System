@@ -19,4 +19,6 @@ public interface JudgeRepository extends JpaRepository<Judge, UUID> {
             WHERE j.id = :judgeId
             """)
     Optional<Judge> findByIdWithUser(@Param("judgeId") UUID judgeId);
+
+    Optional<Judge> findByUserId(UUID userId);
 }

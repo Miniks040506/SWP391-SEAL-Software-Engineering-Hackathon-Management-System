@@ -53,10 +53,22 @@ public class EventController {
         return ResponseEntity.ok(eventService.getPublicEvent(season, year, status, size, page));
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<PageResponse<EventSummaryResponse>> getAllEvents(
+            @RequestParam(required = false) String season,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size) {
+        return ResponseEntity.ok(eventService.getAllEvents(season, year, status, size, page));
+    }
+
     @GetMapping("/{eventId}")
-    public ResponseEntity<EventDetailResponse> getEventById(@PathVariable UUID eventId
+    public ResponseEntity<EventDetailResponse> getEventById(
+            @PathVariable UUID eventId,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(eventService.getEventById(eventId));
+        return ResponseEntity.ok(eventService.getEventById(eventId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
@@ -71,7 +83,7 @@ public class EventController {
     }
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
-    @DeleteMapping("/{eventId}")
+    @PostMapping("/{eventId}")
     public ResponseEntity<Void> deleteEvent(
             @PathVariable UUID eventId,
             Authentication authentication) {
