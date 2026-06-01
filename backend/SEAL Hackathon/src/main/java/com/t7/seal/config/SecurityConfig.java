@@ -115,9 +115,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, API + "/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, API + "/users/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, API + "/users/*/deactivate").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, API + "/criteria").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, API + "/criteria/*").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, API + "/criteria/*/deactivate").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, API + "/criteria").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.PATCH, API + "/criteria/*").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.PATCH, API + "/criteria/*/deactivate").hasAnyRole("ADMIN", "COORDINATOR")
 
                         // Admin + Coordinator
                         .requestMatchers(HttpMethod.GET, API + "/users").hasAnyRole("ADMIN", "COORDINATOR")

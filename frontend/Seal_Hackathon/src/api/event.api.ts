@@ -20,8 +20,12 @@ export const eventApi = {
   createEvent(payload: CreateEventRequest) {
     return apiRequest.post<EventDetailResponse>("/events", payload);
   },
+  
+  getAllEvents(params?: GetEventsParams) {
+    return apiRequest.get<EventSummaryResponse[]>("/events/all", {params});
+  },
 
-  getEvents(params?: GetEventsParams) {
+  getPublicEvents(params?: GetEventsParams) {
     return apiRequest.get<PageResponse<EventSummaryResponse>>("/events", {params});
   },
 

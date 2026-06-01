@@ -24,7 +24,7 @@ export const publicEventKeys = {
 export function usePublicEventsQuery(params?: GetEventsParams) {
   return useQuery({
     queryKey: publicEventKeys.list(params),
-    queryFn: () => eventApi.getEvents(params),
+    queryFn: () => eventApi.getPublicEvents(params),
   });
 }
 
