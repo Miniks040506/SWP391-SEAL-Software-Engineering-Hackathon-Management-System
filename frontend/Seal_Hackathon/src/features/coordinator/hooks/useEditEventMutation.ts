@@ -10,7 +10,8 @@ import {
   type EventTrack,
 } from "../mocks/coordinatorEditEvent.mock";
 
-// Đã thêm "criteria" vào đây để pass TypeScript Error
+// ─── TYPES ───────────────────────────────────────────────────────────────────
+
 export type TabId = "info" | "tracks" | "criteria" | "teams";
 
 export type TeamStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -135,7 +136,9 @@ export function useEditEventMutation() {
 
   const openAddJudge = (trackId: string, roundId: string) => {
     const initialSelectedIds = [
-      ...(event.tracks.find((t) => t.id === trackId)?.rounds.find((r) => r.id === roundId)?.judgeIds ?? []),
+      ...(event.tracks
+        .find((t) => t.id === trackId)
+        ?.rounds.find((r) => r.id === roundId)?.judgeIds ?? []),
     ];
     setDialog({ kind: "addJudge", trackId, roundId, initialSelectedIds });
   };
@@ -166,7 +169,7 @@ export function useEditEventMutation() {
       id: `track-${Date.now()}`,
       name,
       description: desc,
-      mentorIds: [],
+      mentorIds: [], // Đã xóa judgeIds khỏi Track
       rounds: [],
     };
     setEvent((prev) => ({ ...prev, tracks: [...prev.tracks, newTrack] }));
@@ -191,7 +194,7 @@ export function useEditEventMutation() {
       startDate: start,
       endDate: end,
       criteriaIds: [],
-      judgeIds: [],
+      judgeIds: [], // Đã bổ sung judgeIds vào Round
     };
     setEvent((prev) => ({
       ...prev,
@@ -298,7 +301,7 @@ export function useEditEventMutation() {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  // ── Track/Round handlers ──────────────────────────────────────────────────────────
+  // ── Track/Round handlers ────────────────────────────────────────────────────
 
   const toggleExpand = (id: string) =>
     setExpandedTracks((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -353,29 +356,25 @@ export function useEditEventMutation() {
       prev.map((t) => (t.id === teamId ? { ...t, status } : t)),
     );
 
-  const handleSelectAllTrackTeams = (trackId: string, checked: boolean) => {
-    const trackTeamIds = teams
-      .filter((t) => t.trackId === trackId)
-      .map((t) => t.id);
+  const handleSelectAllTrackTeams = (teamIds: string[], checked: boolean) => {
     setSelectedTeamIds((prev) =>
       checked
-        ? Array.from(new Set([...prev, ...trackTeamIds]))
-        : prev.filter((id) => !trackTeamIds.includes(id)),
+        ? Array.from(new Set([...prev, ...teamIds]))
+        : prev.filter((id) => !teamIds.includes(id)),
     );
   };
 
-  const handleToggleSelectTeam = (teamId: string) =>
+  // Đã bổ sung lại hàm bị thiếu
+  const handleToggleSelectTeam = (teamId: string) => {
     setSelectedTeamIds((prev) =>
       prev.includes(teamId)
         ? prev.filter((id) => id !== teamId)
         : [...prev, teamId],
     );
+  };
 
-  const handleBulkTeamStatusUpdate = (trackId: string, status: TeamStatus) => {
-    const trackTeamIds = teams
-      .filter((t) => t.trackId === trackId)
-      .map((t) => t.id);
-    const toUpdate = selectedTeamIds.filter((id) => trackTeamIds.includes(id));
+  const handleBulkTeamStatusUpdate = (teamIds: string[], status: TeamStatus) => {
+    const toUpdate = selectedTeamIds.filter((id) => teamIds.includes(id));
     setTeams((prev) =>
       prev.map((t) => (toUpdate.includes(t.id) ? { ...t, status } : t)),
     );
