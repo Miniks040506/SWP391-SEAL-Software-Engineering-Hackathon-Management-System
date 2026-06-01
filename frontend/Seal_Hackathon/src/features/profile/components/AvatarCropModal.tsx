@@ -78,7 +78,7 @@ export function AvatarCropModal({
     >
       <div className="bg-[#2b2d31] text-white">
         <div className="flex items-center justify-between px-6 py-5">
-          <h2 className="text-xl font-black">Chỉnh sửa Hình ảnh</h2>
+          <h2 className="text-xl font-black">Edit Avatar Image</h2>
 
           <IconButton
             onClick={onClose}
@@ -148,7 +148,7 @@ export function AvatarCropModal({
             disabled={isApplying}
             className="text-sm font-bold text-indigo-300 transition hover:underline disabled:opacity-60"
           >
-            Đặt lại
+            Reset
           </button>
 
           <div className="flex items-center gap-3">
@@ -187,7 +187,7 @@ export function AvatarCropModal({
                 },
               }}
             >
-              {isApplying ? "Đang lưu..." : "Apply"}
+              {isApplying ? "Saving..." : "Apply"}
             </Button>
           </div>
         </div>
