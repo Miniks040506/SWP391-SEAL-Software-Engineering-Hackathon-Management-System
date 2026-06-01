@@ -33,17 +33,17 @@ export const TrackRoundsTable = ({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="grid grid-cols-[1.4fr_2fr_100px_120px] bg-blue-500 px-6 py-4 text-sm font-extrabold uppercase tracking-wide text-white">
+      <div className="grid grid-cols-[1.4fr_100px_2fr_120px] bg-blue-500 px-6 py-4 text-sm font-extrabold uppercase tracking-wide text-white">
         <div>Track</div>
-        <div>Rounds</div>
         <div>Total</div>
+        <div>Rounds</div>
         <div className="text-right">Action</div>
       </div>
 
       {tracks.map((track, trackIndex) => (
         <div
           key={track.id}
-          className="grid grid-cols-[1.4fr_2fr_100px_120px] items-start border-t border-gray-100 px-6 py-5"
+          className="grid grid-cols-[1.4fr_100px_2fr_120px] items-start border-t border-gray-100 px-6 py-5"
         >
           <div>
             <p className="font-extrabold text-gray-900">{track.trackName}</p>
@@ -74,6 +74,10 @@ export const TrackRoundsTable = ({
                 ))
               )}
             </div>
+          </div>
+
+          <div className="text-sm font-bold text-gray-700">
+            {track.rounds.length} round(s)
           </div>
 
           <div className="space-y-2">
@@ -119,10 +123,6 @@ export const TrackRoundsTable = ({
                 </p>
               </div>
             ))}
-          </div>
-
-          <div className="text-sm font-bold text-gray-700">
-            {track.rounds.length} round(s)
           </div>
 
           <div className="flex justify-end gap-1">
