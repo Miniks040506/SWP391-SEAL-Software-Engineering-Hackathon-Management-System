@@ -4,6 +4,7 @@ import IconButton from "@mui/material/IconButton";
 
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
 import type {
   PrizeFormValues,
@@ -15,6 +16,7 @@ type PrizeTableProps = {
   tracks: TrackFormValues[];
   onAddTrackPrize: (trackId: string) => void;
   onEditPrize: (prizeIndex: number) => void;
+  onDeletePrize: (prizeIndex: number) => void;
 };
 
 type PrizeWithIndex = {
@@ -51,9 +53,10 @@ function getEventPrizes(prizes: PrizeFormValues[]) {
 type PrizeListProps = {
   items: PrizeWithIndex[];
   onEditPrize: (prizeIndex: number) => void;
+  onDeletePrize: (prizeIndex: number) => void;
 };
 
-const PrizeList = ({ items, onEditPrize }: PrizeListProps) => {
+const PrizeList = ({ items, onEditPrize, onDeletePrize }: PrizeListProps) => {
   if (items.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-gray-200 bg-slate-50 px-4 py-3">
@@ -101,13 +104,23 @@ const PrizeList = ({ items, onEditPrize }: PrizeListProps) => {
               )}
             </div>
 
-            <IconButton
-              color="primary"
-              size="small"
-              onClick={() => onEditPrize(index)}
-            >
-              <EditOutlinedIcon fontSize="small" />
-            </IconButton>
+            <div className="flex flex-col items-center gap-2">
+              <IconButton
+                color="primary"
+                size="small"
+                onClick={() => onEditPrize(index)}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+
+              <IconButton
+                color="error"
+                size="small"
+                onClick={() => onDeletePrize(index)}
+              >
+                <DeleteOutlineOutlinedIcon fontSize="small" />
+              </IconButton>
+            </div>
           </div>
         </div>
       ))}
@@ -120,6 +133,7 @@ export const PrizeTable = ({
   tracks,
   onAddTrackPrize,
   onEditPrize,
+  onDeletePrize,
 }: PrizeTableProps) => {
   const eventPrizes = getEventPrizes(prizes);
 
@@ -156,7 +170,11 @@ export const PrizeTable = ({
             {eventPrizes.length} prize(s)
           </div>
 
-          <PrizeList items={eventPrizes} onEditPrize={onEditPrize} />
+          <PrizeList
+            items={eventPrizes}
+            onEditPrize={onEditPrize}
+            onDeletePrize={onDeletePrize}
+          />
         </div>
       )}
 
@@ -197,7 +215,11 @@ export const PrizeTable = ({
               {trackPrizes.length} prize(s)
             </div>
 
-            <PrizeList items={trackPrizes} onEditPrize={onEditPrize} />
+            <PrizeList
+              items={trackPrizes}
+              onEditPrize={onEditPrize}
+              onDeletePrize={onDeletePrize}
+            />
           </div>
         );
       })}
