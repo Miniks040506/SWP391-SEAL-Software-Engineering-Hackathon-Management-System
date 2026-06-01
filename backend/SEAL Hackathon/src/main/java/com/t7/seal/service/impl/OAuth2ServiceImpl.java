@@ -133,7 +133,7 @@ public class OAuth2ServiceImpl implements OAuth2Service {
     private User updateExistingOAuthUser(User user, OAuth2UserInfo info) {
         user.setOAuthIdentity(info.provider(), info.providerId());
 
-        if (info.avatarUrl() != null) {
+        if (isBlank(user.getAvatarUrl()) && !isBlank(info.avatarUrl())) {
             user.setAvatarUrl(info.avatarUrl());
         }
 
@@ -147,6 +147,10 @@ public class OAuth2ServiceImpl implements OAuth2Service {
         }
 
         return user;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isBlank();
     }
 
     private User createNewOAuthUser(OAuth2UserInfo info) {

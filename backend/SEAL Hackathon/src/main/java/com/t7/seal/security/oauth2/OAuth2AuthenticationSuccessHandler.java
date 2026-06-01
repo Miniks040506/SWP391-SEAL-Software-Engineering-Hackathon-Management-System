@@ -55,10 +55,14 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                     .fromUriString(frontendUrl + successPath)
                     .queryParam("accessToken", loginResponse.accessToken())
                     .queryParam("refreshToken", loginResponse.refreshToken())
+                    .queryParam("userId", loginResponse.userId())
+                    .queryParam("email", loginResponse.email())
+                    .queryParam("fullName", loginResponse.fullName())
                     .queryParam("role", loginResponse.role())
                     .queryParam("status", loginResponse.status())
-                    .queryParam("email", loginResponse.email())
+                    .queryParam("avatarUrl", loginResponse.avatarUrl() == null ? "" : loginResponse.avatarUrl())
                     .build()
+                    .encode()
                     .toUriString();
 
             response.sendRedirect(redirectUrl);

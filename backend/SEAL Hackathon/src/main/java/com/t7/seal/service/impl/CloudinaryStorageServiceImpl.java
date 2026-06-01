@@ -56,6 +56,7 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
         } catch (BadRequestException e) {
             throw e;
         } catch (Exception e) {
+            e.printStackTrace();
             throw new BadRequestException("Cannot upload avatar to Cloudinary");
         }
     }
