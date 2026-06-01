@@ -32,12 +32,7 @@ import {
   type UpdateMyProfileFormValues,
 } from "@/features/profile/schemas/profile.schema";
 import { useAuthStore } from "@/stores/authStore";
-
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "12px",
-  },
-};
+import { dividerSx, infoAlertSx, tabsSx, textFieldSx } from "../utils/componentSx";
 
 function getInitialLetter(fullName?: string | null, email?: string | null) {
   const source = fullName || email || "U";
@@ -186,7 +181,7 @@ export function PersonalProfilePage() {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             {/* Chừa khoảng bên trái cho avatar ở desktop */}
             <div className="min-w-0 sm:pl-40">
-              <h1 className="break-words text-3xl font-black leading-tight tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+              <h1 className="wrap-break-word text-3xl font-black leading-tight tracking-tight text-gray-900 dark:text-white sm:text-4xl">
                 {profile.fullName}
               </h1>
 
@@ -231,18 +226,8 @@ export function PersonalProfilePage() {
           <AvatarUploadCard profile={profile} />
         </div>
 
-        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-8">
-          <Tabs
-            value={tab}
-            onChange={(_, value) => setTab(value)}
-            sx={{
-              mb: 3,
-              "& .MuiTab-root": {
-                textTransform: "none",
-                fontWeight: 900,
-              },
-            }}
-          >
+        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-black/30 lg:col-span-8">
+          <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={tabsSx}>
             <Tab
               icon={<PersonOutlineOutlinedIcon />}
               iconPosition="start"
@@ -256,7 +241,7 @@ export function PersonalProfilePage() {
             />
           </Tabs>
 
-          <Divider sx={{ mb: 3 }} />
+          <Divider sx={dividerSx} />
 
           {tab === 0 && (
             <form
@@ -346,8 +331,10 @@ export function PersonalProfilePage() {
               onSubmit={passwordForm.handleSubmit(onChangePassword)}
               className="space-y-5"
             >
-              <Alert severity="info">After changing password, you should sign in again.</Alert>
-
+              <Alert severity="info" sx={infoAlertSx}>
+                After changing password, you should sign in again.
+              </Alert>
+            
               <Controller
                 name="currentPassword"
                 control={passwordForm.control}
