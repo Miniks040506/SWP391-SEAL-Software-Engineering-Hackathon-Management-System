@@ -9,9 +9,16 @@ export const updateMyProfileSchema = z.object({
     .min(1, "Full name is required.")
     .max(200, "Full name must not exceed 200 characters."),
 
-  phone: optionalTrimmedString.refine((value) => !value || value.length <= 20, {
-    message: "Phone must not exceed 20 characters.",
-  }),
+  phone: optionalTrimmedString
+    .refine((value) => !value || /^\d+$/.test(value), {
+      message: "Phone must contain numbers only.",
+    })
+    .refine((value) => !value || value.length >= 10, {
+      message: "Phone must be at least 10 digits.",
+    })
+    .refine((value) => !value || value.length <= 11, {
+      message: "Phone must not exceed 11 digits.",
+    }),
 
   avatarUrl: optionalTrimmedString.refine((value) => !value || value.length <= 500, {
     message: "Avatar URL must not exceed 500 characters.",
