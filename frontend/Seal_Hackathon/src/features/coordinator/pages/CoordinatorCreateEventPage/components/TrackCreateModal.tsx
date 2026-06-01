@@ -83,7 +83,12 @@ export const TrackCreateModal = ({
     if (!open) return;
 
     if (initialTrack) {
-      reset(initialTrack);
+      reset({
+        ...createEmptyTrack(),
+        ...initialTrack,
+        requiredLinkTypes: initialTrack.requiredLinkTypes ?? [],
+        rounds: initialTrack.rounds ?? [],
+      });
       return;
     }
     reset(createEmptyTrack());
@@ -166,57 +171,76 @@ export const TrackCreateModal = ({
                     ? field.value
                     : [];
 
+                  const handleToggleLinkType = (linkType: typeof SUBMISSION_LINK_TYPES[number]) => {
+                    const nextValues = selectedValues.includes(linkType)
+                      ? selectedValues.filter((value) => value !== linkType)
+                      : [...selectedValues, linkType];
+
+                    field.onChange(nextValues);
+                  };
+
                   return (
-                    <TextField
-                      select
-                      label="Required Submission Links"
-                      value={selectedValues}
-                      onChange={(event) => {
-                        const value = event.target.value;
+                    <div className="md:col-span-2">
+                      <p className="mb-2 text-sm font-semibold text-gray-700">
+                        Required Submission Links
+                      </p>
 
-                        field.onChange(
-                          typeof value === "string" ? value.split(",") : value,
-                        );
-                      }}
-                      SelectProps={{
-                        multiple: true,
-                        renderValue: (selected) => {
-                          const values = selected as string[];
-
-                          if (values.length === 0) {
-                            return "No required links";
-                          }
+                      <div className="grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {SUBMISSION_LINK_TYPES.map((linkType) => {
+                          const checked = selectedValues.includes(linkType);
 
                           return (
-                            <div className="flex flex-wrap gap-1">
-                              {values.map((value) => (
-                                <Chip
-                                  key={value}
-                                  label={value}
-                                  size="small"
-                                  sx={{ fontWeight: 700 }}
-                                />
-                              ))}
-                            </div>
+                            <button
+                              key={linkType}
+                              type="button"
+                              onClick={() => handleToggleLinkType(linkType)}
+                              className={[
+                                "flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all",
+                                checked
+                                  ? "border-blue-300 bg-blue-50 text-blue-700"
+                                  : "border-gray-200 bg-white text-gray-600 hover:border-blue-200 hover:bg-blue-50/40",
+                              ].join(" ")}
+                            >
+                              <Checkbox
+                                checked={checked}
+                                tabIndex={-1}
+                                disableRipple
+                                sx={{
+                                  p: 0,
+                                  color: "#94a3b8",
+                                  "&.Mui-checked": {
+                                    color: "#2563eb",
+                                  },
+                                }}
+                              />
+
+                              <span className="text-sm">
+                                {linkType}
+                              </span>
+                            </button>
                           );
-                        },
-                      }}
-                      error={Boolean(errors.requiredLinkTypes)}
-                      helperText={errors.requiredLinkTypes?.message}
-                      fullWidth
-                      size="small"
-                      className="md:col-span-2"
-                    >
-                      {SUBMISSION_LINK_TYPES.map((linkType) => (
-                        <MenuItem key={linkType} value={linkType}>
-                          <Checkbox
-                            size="small"
-                            checked={selectedValues.includes(linkType)}
-                          />
-                          {linkType}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                        })}
+                      </div>
+
+                      {selectedValues.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {selectedValues.map((value) => (
+                            <Chip
+                              key={value}
+                              label={value}
+                              size="small"
+                              sx={{ fontWeight: 700 }}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {errors.requiredLinkTypes?.message && (
+                        <p className="mt-2 text-sm font-semibold text-red-600">
+                          {errors.requiredLinkTypes.message}
+                        </p>
+                      )}
+                    </div>
                   );
                 }}
               />
