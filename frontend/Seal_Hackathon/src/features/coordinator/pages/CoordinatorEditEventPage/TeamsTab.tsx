@@ -12,8 +12,6 @@ import { avatarColor } from "@/utils/avatarColor";
 import type { EditEventData, EventTeam } from "../../mocks/coordinatorEditEvent.mock";
 import type { TeamStatus } from "../../hooks/useEditEventMutation";
 
-// Types
-
 interface TeamsTabProps {
   event: EditEventData;
   teams: EventTeam[];
@@ -31,8 +29,6 @@ const checkboxSx = {
     color: "#3b82f6",
   },
 };
-
-// Component
 
 export const TeamsTab = ({
   event,
@@ -57,9 +53,8 @@ export const TeamsTab = ({
         selectedInTrack.length > 0 && selectedInTrack.length < trackTeamIds.length;
 
       return (
-        <SectionCard key={track.id} className="overflow-hidden p-0">
-          {/* Track header */}
-          <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <SectionCard key={track.id} className="overflow-hidden p-0 dark:bg-[#1e293b]">
+          <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-800/50 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={isAllSelected}
@@ -67,31 +62,31 @@ export const TeamsTab = ({
                 onChange={(e) => onSelectAll(track.id, e.target.checked)}
                 sx={{ ...checkboxSx, "&.MuiCheckbox-indeterminate": { color: "#3b82f6" } }}
               />
-              <GroupsOutlinedIcon className="text-slate-400" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+              <GroupsOutlinedIcon className="text-slate-400 dark:text-slate-500" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 {track.name}
               </h3>
-              <span className="ml-2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">
+              <span className="ml-2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                 {trackTeams.length}
               </span>
             </div>
 
             {selectedInTrack.length > 0 && (
               <div className="animate-in fade-in zoom-in-95 flex items-center gap-2 px-2 duration-200">
-                <span className="mr-2 text-xs font-medium text-slate-500">
+                <span className="mr-2 text-xs font-medium text-slate-500 dark:text-slate-400">
                   {selectedInTrack.length} selected
                 </span>
                 <button
                   type="button"
                   onClick={() => onBulkUpdate(track.id, "APPROVED")}
-                  className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
+                  className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30"
                 >
                   <DoneAllOutlinedIcon sx={{ fontSize: 14 }} /> Approve All
                 </button>
                 <button
                   type="button"
                   onClick={() => onBulkUpdate(track.id, "REJECTED")}
-                  className="inline-flex items-center gap-1 rounded-xl bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-100"
+                  className="inline-flex items-center gap-1 rounded-xl bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20"
                 >
                   <BlockOutlinedIcon sx={{ fontSize: 14 }} /> Reject All
                 </button>
@@ -99,13 +94,14 @@ export const TeamsTab = ({
             )}
           </div>
 
-          {/* Team rows */}
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
             {trackTeams.map((team) => (
               <div
                 key={team.id}
                 className={`flex flex-col gap-4 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between ${
-                  selectedTeamIds.includes(team.id) ? "bg-blue-50/30" : "hover:bg-slate-50/50"
+                  selectedTeamIds.includes(team.id)
+                    ? "bg-blue-50/30 dark:bg-blue-500/10"
+                    : "hover:bg-slate-50/50 dark:hover:bg-slate-800/40"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -115,7 +111,7 @@ export const TeamsTab = ({
                     sx={checkboxSx}
                   />
                   <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 text-lg font-bold shadow-sm ${avatarColor(team.name[0])}`}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 text-lg font-bold shadow-sm dark:border-slate-700/50 ${avatarColor(team.name[0])}`}
                   >
                     {team.name[0]}
                   </div>
@@ -123,11 +119,11 @@ export const TeamsTab = ({
                     <button
                       type="button"
                       onClick={() => onOpenTeamDetail(team)}
-                      className="text-left text-base font-bold text-slate-900 transition-colors hover:text-blue-600"
+                      className="text-left text-base font-bold text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-200 dark:hover:text-blue-400"
                     >
                       {team.name}
                     </button>
-                    <div className="mt-1 flex items-center gap-2 text-xs font-medium text-slate-500">
+                    <div className="mt-1 flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
                       <span>{team.members.length} Members</span>
                       <span>•</span>
                       <span>Registered {team.registeredAt}</span>
@@ -153,8 +149,6 @@ export const TeamsTab = ({
   </div>
 );
 
-// Local helpers
-
 const TeamActions = ({
   status,
   onUpdate,
@@ -168,14 +162,14 @@ const TeamActions = ({
         <button
           type="button"
           onClick={() => onUpdate("APPROVED")}
-          className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
+          className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30"
         >
           <CheckOutlinedIcon sx={{ fontSize: 14 }} /> Approve
         </button>
         <button
           type="button"
           onClick={() => onUpdate("REJECTED")}
-          className="inline-flex items-center gap-1 rounded-xl bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-100"
+          className="inline-flex items-center gap-1 rounded-xl bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20"
         >
           <CloseOutlinedIcon sx={{ fontSize: 14 }} /> Reject
         </button>
@@ -189,7 +183,7 @@ const TeamActions = ({
         <button
           type="button"
           onClick={() => onUpdate("REJECTED")}
-          className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200 transition-colors hover:bg-rose-50 hover:text-rose-600 hover:ring-rose-200"
+          className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200 transition-colors hover:bg-rose-50 hover:text-rose-600 hover:ring-rose-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-rose-500/20 dark:hover:text-rose-400 dark:hover:ring-transparent"
         >
           <CloseOutlinedIcon sx={{ fontSize: 14 }} /> Reject Team
         </button>
@@ -197,7 +191,7 @@ const TeamActions = ({
         <button
           type="button"
           onClick={() => onUpdate("APPROVED")}
-          className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200 transition-colors hover:bg-emerald-50 hover:text-emerald-600 hover:ring-emerald-200"
+          className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200 transition-colors hover:bg-emerald-50 hover:text-emerald-600 hover:ring-emerald-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-emerald-500/20 dark:hover:text-emerald-400 dark:hover:ring-transparent"
         >
           <CheckOutlinedIcon sx={{ fontSize: 14 }} /> Approve Team
         </button>
@@ -205,7 +199,7 @@ const TeamActions = ({
       <button
         type="button"
         onClick={() => onUpdate("PENDING")}
-        className="inline-flex items-center gap-1 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+        className="inline-flex items-center gap-1 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:bg-slate-800/80 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
       >
         <ReplayOutlinedIcon sx={{ fontSize: 14 }} /> Reset to Pending
       </button>
