@@ -1,9 +1,11 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.SubmissionLinkType;
+import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.MentorAssignment;
 import com.t7.seal.entities.Track;
+import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
@@ -43,7 +45,7 @@ public class TrackServiceImpl implements TrackService {
 
         currentUserService.getCurrentUser(authentication);
 
-        HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
+        HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
         validateCreateTrackRequest(request);
@@ -68,18 +70,37 @@ public class TrackServiceImpl implements TrackService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<TrackResponse> getTracksByEvent(UUID eventId) {
-        return trackRepository.findPublicByEventIdOrderByNameAsc(eventId)
-                .stream()
+    public List<TrackResponse> getTracksByEvent(UUID eventId, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+
+        List<Track> tracks;
+
+        if (user.getRole() == UserRole.COORDINATOR) {
+            tracks = trackRepository.findByEventIdOrderByNameAsc(eventId);
+        } else {
+            tracks = trackRepository.findPublicByEventIdOrderByNameAsc(eventId);
+        }
+
+
+        return tracks.stream()
                 .map(this::toTrackResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     @Override
-    public TrackDetailResponse getTrackById(UUID trackId) {
-        Track track = trackRepository.findPublicById(trackId)
-                .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
+    public TrackDetailResponse getTrackById(UUID trackId, Authentication authentication) {
+        Track track;
+
+        User user = currentUserService.getCurrentUser(authentication);
+
+        if (user.getRole() == UserRole.COORDINATOR) {
+            track = trackRepository.findById(trackId)
+                    .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
+        } else {
+            track = trackRepository.findPublicById(trackId)
+                    .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
+        }
 
         int registerdTeamCount = teamRepository.CountActiveTeamByTrackId(trackId);
 
@@ -105,7 +126,7 @@ public class TrackServiceImpl implements TrackService {
     public TrackResponse updateTrack(UUID trackId, UpdateTrackRequest request, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Track track = trackRepository.findPublicById(trackId)
+        Track track = trackRepository.findById(trackId)
                 .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
 
         if (request.name() != null) {
@@ -155,7 +176,7 @@ public class TrackServiceImpl implements TrackService {
     public void deleteTrack(UUID trackId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Track track = trackRepository.findPublicById(trackId)
+        Track track = trackRepository.findById(trackId)
                 .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
 
         if (teamRepository.CountActiveTeamByTrackId(trackId) > 0) {

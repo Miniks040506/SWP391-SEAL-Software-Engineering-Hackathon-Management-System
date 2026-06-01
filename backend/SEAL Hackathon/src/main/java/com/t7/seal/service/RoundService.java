@@ -12,9 +12,9 @@ import java.util.UUID;
 public interface RoundService {
     RoundResponse createRound(UUID eventId, CreateRoundRequest request, Authentication authentication);
 
-    List<RoundResponse> getRoundsByEvent(UUID eventId);
+    List<RoundResponse> getRoundsByEvent(UUID eventId, Authentication authentication);
 
-    RoundDetailResponse getRoundById(UUID roundId);
+    RoundDetailResponse getRoundById(UUID roundId, Authentication authentication);
 
     RoundResponse updateRound(UUID roundId, UpdateRoundRequest request, Authentication authentication);
 

@@ -2,6 +2,7 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.HackathonSeason;
 import com.t7.seal.domain.RegistrationStatus;
+import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.Track;
@@ -78,9 +79,48 @@ public class EventServiceImpl implements EventService {
 
     @Transactional(readOnly = true)
     @Override
-    public EventDetailResponse getEventById(UUID eventId) {
-        HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+    public PageResponse<EventSummaryResponse> getAllEvents(
+            String season, Integer year, String status, int size, int page) {
+
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+
+        Page<HackathonEvent> events = hackathonEventRepository.searchAllEvents(
+                normalize(status),
+                normalize(season),
+                year,
+                PageRequest.of(safePage, safeSize));
+
+        List<EventSummaryResponse> content = events.getContent()
+                .stream()
+                .map(this::toEventSummaryResponse)
+                .toList();
+
+        return new PageResponse<>(
+                content,
+                events.getNumber(),
+                events.getSize(),
+                events.getTotalElements(),
+                events.getTotalPages(),
+                events.isLast()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public EventDetailResponse getEventById(UUID eventId, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+
+        HackathonEvent event;
+
+        if (user.getRole() == UserRole.COORDINATOR) {
+            event = hackathonEventRepository.findById(eventId)
+                    .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+        } else {
+            event = hackathonEventRepository.findPublicEventById(eventId)
+                    .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+        }
+
         return buildEventDetailResponse(event);
     }
 
@@ -115,6 +155,7 @@ public class EventServiceImpl implements EventService {
         newEvent.setStatus(event.status() == null || event.status().isBlank() ?
                 RegistrationStatus.DRAFT :
                 parseEnum(RegistrationStatus.class, event.status(), "status"));
+        newEvent.setSlug(getSlug(event.name()));
 
         HackathonEvent saved = hackathonEventRepository.save(newEvent);
 
@@ -126,7 +167,7 @@ public class EventServiceImpl implements EventService {
     public EventDetailResponse updateEvent(UUID eventId, UpdateEventRequest request, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
+        HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
         if (request.name() != null) {
@@ -153,6 +194,8 @@ public class EventServiceImpl implements EventService {
             event.setStatus(parseEnum(RegistrationStatus.class, request.status(), "status"));
         }
 
+        event.setUpdatedAt(LocalDateTime.now());
+
         HackathonEvent saved = hackathonEventRepository.save(event);
 
         return buildEventDetailResponse(saved);
@@ -163,7 +206,7 @@ public class EventServiceImpl implements EventService {
     public void deleteEvent(UUID eventId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
+        HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
         if (event.getResultPublishedAt() != null) {
@@ -285,6 +328,16 @@ public class EventServiceImpl implements EventService {
         if (value != null) {
             setter.accept(value);
         }
+    }
+
+    private String getSlug(String eventName) {
+        if (eventName == null || eventName.isBlank()) {
+            throw new BadRequestException("Event name is required");
+        }
+
+        eventName = eventName.toLowerCase().replace(" ", "-");
+
+        return eventName;
     }
 }
 

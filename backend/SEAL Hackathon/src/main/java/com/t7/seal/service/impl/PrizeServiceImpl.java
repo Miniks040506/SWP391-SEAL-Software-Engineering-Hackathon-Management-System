@@ -146,7 +146,7 @@ public class PrizeServiceImpl implements PrizeService {
         if (trackId == null) {
             return null;
         }
-        Track track = trackRepository.findPublicById(trackId)
+        Track track = trackRepository.findById(trackId)
                 .orElseThrow(() -> new NotFoundException("Track not found."));
         if (!track.getEvent().getId().equals(eventId)) {
             throw new BadRequestException("Track does not belong to this event.");

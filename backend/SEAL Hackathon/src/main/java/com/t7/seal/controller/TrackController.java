@@ -46,16 +46,18 @@ public class TrackController {
 
     @GetMapping("/events/{eventId}/tracks")
     public ResponseEntity<List<TrackResponse>> getTracksByEvent(
-            @PathVariable UUID eventId
+            @PathVariable UUID eventId,
+            Authentication authentications
     ) {
-        return ResponseEntity.ok(trackService.getTracksByEvent(eventId));
+        return ResponseEntity.ok(trackService.getTracksByEvent(eventId, authentications));
     }
 
     @GetMapping("/tracks/{trackId}")
     public ResponseEntity<TrackDetailResponse> getTrackById(
-            @PathVariable UUID trackId
+            @PathVariable UUID trackId,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(trackService.getTrackById(trackId));
+        return ResponseEntity.ok(trackService.getTrackById(trackId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")

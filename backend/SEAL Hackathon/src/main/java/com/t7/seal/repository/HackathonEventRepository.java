@@ -37,6 +37,20 @@ public interface HackathonEventRepository extends JpaRepository<HackathonEvent, 
             Pageable pageable
     );
 
+    @Query("""
+                SELECT e FROM HackathonEvent e
+                        WHERE( :season IS NULL OR CAST(e.season AS STRING) = :season)
+                                AND (:status IS NULL OR CAST(e.status AS STRING) = :status)
+                                        AND (:year IS NULL OR e.year = :year)
+                                                ORDER BY e.year DESC, e.registrationOpen DESC
+            """)
+    Page<HackathonEvent> searchAllEvents(
+            @Param("status") String status,
+            @Param("season") String season,
+            @Param("year") Integer year,
+            Pageable pageable
+    );
+
     boolean existsByNameIgnoreCaseAndYear(
             String name, Integer year);
 
@@ -46,5 +60,5 @@ public interface HackathonEventRepository extends JpaRepository<HackathonEvent, 
                             AND CAST(e.status AS STRING)  IN  ('DRAFT', 'REGISTRATION')
             """)
     Optional<HackathonEvent> findByIdCanAssignedPrize(
-            @Param("id") UUID id);
+            @Param("eventId") UUID id);
 }

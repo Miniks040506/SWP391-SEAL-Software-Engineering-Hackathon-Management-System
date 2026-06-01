@@ -12,7 +12,9 @@ import java.util.UUID;
 public interface EventService {
     PageResponse<EventSummaryResponse> getPublicEvent(String season, Integer year, String status, int size, int page);
 
-    EventDetailResponse getEventById(UUID eventId);
+    PageResponse<EventSummaryResponse> getAllEvents(String season, Integer year, String status, int size, int page);
+
+    EventDetailResponse getEventById(UUID eventId, Authentication authentication);
 
     EventDetailResponse createEvent(CreateEventRequest event, Authentication authentication);
 

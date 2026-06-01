@@ -65,7 +65,7 @@ public class HackathonEvent {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "update_at", nullable = false)
+    @Column(name = "update_at")
     private LocalDateTime updatedAt;
 
     @OneToMany(

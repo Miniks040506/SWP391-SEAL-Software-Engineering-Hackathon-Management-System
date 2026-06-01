@@ -2,8 +2,10 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.RoundStatus;
+import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Round;
+import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
@@ -17,6 +19,7 @@ import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +40,7 @@ public class RoundServiceImpl implements RoundService {
     public RoundResponse createRound(UUID eventId, CreateRoundRequest request, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        HackathonEvent event = hackathonEventRepository.findPublicEventById(eventId)
+        HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
         validateCreateRoundRequest(request);
@@ -66,18 +69,37 @@ public class RoundServiceImpl implements RoundService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<RoundResponse> getRoundsByEvent(UUID eventId) {
-        return roundRepository.findPublicByEventIdOrderByOrderIndexAsc(eventId)
-                .stream()
+    public List<RoundResponse> getRoundsByEvent(UUID eventId, Authentication authentication) {
+
+        User user = currentUserService.getCurrentUser(authentication);
+
+        List<Round> round;
+
+        if (user.getRole() == UserRole.COORDINATOR) {
+            round = roundRepository.findByEventIdOrderByOrderIndexAsc(eventId);
+        } else {
+            round = roundRepository.findPublicByEventIdOrderByOrderIndexAsc(eventId);
+        }
+
+        return round.stream()
                 .map(this::toRoundResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     @Override
-    public RoundDetailResponse getRoundById(UUID roundId) {
-        Round round = roundRepository.findPublicById(roundId)
-                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+    public RoundDetailResponse getRoundById(UUID roundId, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+
+        Round round;
+
+        if (user.getRole() == UserRole.COORDINATOR) {
+            round = roundRepository.findById(roundId)
+                    .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+        } else {
+            round = roundRepository.findPublicById(roundId)
+                    .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+        }
 
         return new RoundDetailResponse(
                 round.getId(),
@@ -99,7 +121,7 @@ public class RoundServiceImpl implements RoundService {
     public RoundResponse updateRound(UUID roundId, UpdateRoundRequest request, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Round round = roundRepository.findPublicById(roundId)
+        Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
 
 
@@ -169,7 +191,7 @@ public class RoundServiceImpl implements RoundService {
     public void deleteRound(UUID roundId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Round round = roundRepository.findPublicById(roundId)
+        Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
 
         if (round.getSubmissionLockedAt() != null

@@ -12,9 +12,9 @@ import java.util.UUID;
 public interface TrackService {
     TrackResponse createTrack(UUID eventId, CreateTrackRequest request, Authentication authentication);
 
-    List<TrackResponse> getTracksByEvent(UUID eventId);
+    List<TrackResponse> getTracksByEvent(UUID eventId, Authentication authentication);
 
-    TrackDetailResponse getTrackById(UUID trackId);
+    TrackDetailResponse getTrackById(UUID trackId, Authentication authentication);
 
     TrackResponse updateTrack(UUID trackId, UpdateTrackRequest request, Authentication authentication);
 

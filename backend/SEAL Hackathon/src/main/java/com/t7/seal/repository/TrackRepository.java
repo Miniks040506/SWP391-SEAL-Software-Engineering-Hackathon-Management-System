@@ -33,4 +33,13 @@ public interface TrackRepository extends JpaRepository<Track, UUID> {
             """)
     Optional<Track> findPublicById(
             @Param("trackId") UUID trackId);
+
+    @Query("""
+            SELECT t FROM Track t 
+                JOIN t.event e 
+                    WHERE e.id = :eventId
+                            ORDER BY t.name ASC 
+            """)
+    List<Track> findByEventIdOrderByNameAsc(
+            @Param("eventId") UUID eventId);
 }

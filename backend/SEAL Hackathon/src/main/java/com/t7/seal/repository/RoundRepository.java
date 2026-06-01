@@ -37,4 +37,13 @@ public interface RoundRepository extends JpaRepository<Round, UUID> {
             """)
     Optional<Round> findPublicById(
             @Param("roundId") UUID roundId);
+
+    @Query("""
+            SELECT r FROM Round r
+                JOIN r.event e 
+                    WHERE e.id = :eventId
+                            ORDER BY r.orderIndex
+            """)
+    List<Round> findByEventIdOrderByOrderIndexAsc(
+            @Param("eventId") UUID eventId);
 }

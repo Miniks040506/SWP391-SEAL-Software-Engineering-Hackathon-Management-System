@@ -45,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
     public RegisterResponse register(RegisterRequest request) {
         String email = normalizeEmail(request.email());
 
-        if (userRepository.existsByEmail(email)) {
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Email already exists.");
         }
 
