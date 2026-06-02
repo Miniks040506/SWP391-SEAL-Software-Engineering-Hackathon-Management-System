@@ -104,6 +104,48 @@ export type GetUsersParams = {
 };
 
 // admin
+export type GetAuditLogsParams = {
+  actorId?: UUID;
+  actionType?: string;
+  targetTable?: string;
+  targetId?: UUID | null;
+  from?: string;
+  to?: string;
+  page?: number;
+  size?: number;
+};
+
+export type AuditLogResponse = {
+  id: UUID;
+  actorId: UUID;
+  actorName: string;
+  actionType: string;
+  targetTable: string;
+  targetId: UUID | null;
+  beforeState: unknown;
+  afterState: unknown;
+  context: unknown;
+  createdAt: string;
+};
+
+export type AuditLogEntry = {
+  id: string;
+  timestamp: string;
+  action: string;
+  details: string;
+  actor: string;
+  type: "CREATE" | "UPDATE" | "DELETE" | "AUTH" | "SYSTEM";
+};
+
+export type PendingRequest = {
+  id: string;
+  name: string;
+  email: string;
+  type: "STUDENT_REGISTRATION" | "ROLE_UPGRADE" | "JUDGE_APPROVAL";
+  submittedAt: string;
+  status: "PENDING";
+};
+
 export type UserStatus =
   | "UNVERIFIED"
   | "PENDING_APPROVAL"
