@@ -24,10 +24,10 @@ export const Footer = () => (
             Empowering the next generation of innovators through competitive programming.
           </p>
           <div className="flex gap-4">
-            <button className="p-2 bg-white border border-gray-200 rounded-lg hover:border-blue-500 transition-all text-gray-400 hover:text-blue-500">
+            <button className="p-2 bg-white border border-gray-200 rounded-lg hover:border-blue-500 transition-all text-gray-400 hover:text-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:text-blue-400">
               <PublicIcon style={{ fontSize: 18 }} />
             </button>
-            <button className="p-2 bg-white border border-gray-200 rounded-lg hover:border-blue-500 transition-all text-gray-400 hover:text-blue-500">
+            <button className="p-2 bg-white border border-gray-200 rounded-lg hover:border-blue-500 transition-all text-gray-400 hover:text-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:text-blue-400">
               <MailIcon style={{ fontSize: 18 }} />
             </button>
           </div>
@@ -35,7 +35,7 @@ export const Footer = () => (
 
         {/* Products */}
         <div>
-          <h4 className="mb-6 text-sm font-bold text-gray-900 dark:text-white">Products</h4>
+          <h4 className="mb-6 text-sm font-bold text-gray-900 dark:text-slate-300">Products</h4>
           <ul className="space-y-4 text-sm font-medium text-gray-500">
             <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Seasonal Rounds</a></li>
             <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Global Standings</a></li>
@@ -46,7 +46,7 @@ export const Footer = () => (
 
         {/* Support */}
         <div>
-          <h4 className="mb-6 text-sm font-bold text-gray-900 dark:text-white">Support</h4>
+          <h4 className="mb-6 text-sm font-bold text-gray-900 dark:text-slate-300">Support</h4>
           <ul className="space-y-4 text-sm font-medium text-gray-500">
             <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Documentation</a></li>
             <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Help Center</a></li>
@@ -61,7 +61,7 @@ export const Footer = () => (
 
         {/* Legal */}
         <div>
-          <h4 className="mb-6 text-sm font-bold text-gray-900 dark:text-white">Legal</h4>
+          <h4 className="mb-6 text-sm font-bold text-gray-900 dark:text-slate-300">Legal</h4>
           <ul className="space-y-4 text-sm font-medium text-gray-500">
             <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Privacy Policy</a></li>
             <li><a href="#" className="transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300">Terms of Service</a></li>

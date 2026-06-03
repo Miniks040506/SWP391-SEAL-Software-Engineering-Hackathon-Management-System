@@ -54,7 +54,7 @@ export function StepProgress({
 
   return (
     <section className="mx-auto mb-10 w-full max-w-155">
-      <h2 className="mb-8 text-sm font-extrabold uppercase tracking-[0.35em] text-slate-700">
+      <h2 className="mb-8 text-sm font-extrabold uppercase tracking-[0.35em] text-slate-700 dark:text-slate-400">
         {title}
       </h2>
 
@@ -62,7 +62,7 @@ export function StepProgress({
         <div
           className={[
             "h-0.75",
-            isLineActive(0) ? "bg-blue-500" : "bg-slate-800",
+            isLineActive(0) ? "bg-blue-500" : "bg-slate-800 dark:bg-slate-700",
           ].join(" ")}
         />
 
@@ -77,7 +77,7 @@ export function StepProgress({
                 <div
                   className={[
                     "h-0.75",
-                    isLineActive(index + 1) ? "bg-blue-500" : "bg-slate-800",
+                    isLineActive(index + 1) ? "bg-blue-500" : "bg-slate-800 dark:bg-slate-700",
                   ].join(" ")}
                 />
               )}
@@ -88,7 +88,7 @@ export function StepProgress({
         <div
           className={[
             "h-0.75",
-            isLineActive(steps.length) ? "bg-blue-500" : "bg-slate-800",
+            isLineActive(steps.length) ? "bg-blue-500" : "bg-slate-800 dark:bg-slate-700",
           ].join(" ")}
         />
       </div>
@@ -113,7 +113,7 @@ export function StepProgress({
                   : index === steps.length - 1
                     ? "text-right"
                     : "text-center",
-                isBlue ? "text-blue-500" : "text-slate-700",
+                isBlue ? "text-blue-500" : "text-slate-700 dark:text-slate-400",
               ].join(" ")}
             >
               {step.label}

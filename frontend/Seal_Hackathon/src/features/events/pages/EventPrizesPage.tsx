@@ -44,11 +44,11 @@ export function EventPrizesPage() {
         Back to event
       </button>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+      <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:bg-slate-800 dark:border-slate-700">
         <div className="flex items-center gap-2">
           <EmojiEventsIcon style={{ fontSize: 24 }} className="text-blue-500" />
 
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-slate-300">
             {event.name} Prizes
           </h1>
         </div>

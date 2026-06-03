@@ -31,8 +31,9 @@ export function EventDetailPage() {
 
   const [selectedAnnouncement, setSelectedAnnouncement] =
     useState<PublicAnnouncementView | null>(null);
-  const [selectedAnnouncementIndex, setSelectedAnnouncementIndex] =
-    useState<number | null>(null);
+  const [selectedAnnouncementIndex, setSelectedAnnouncementIndex] = useState<
+    number | null
+  >(null);
   const [showAnnouncementsList, setShowAnnouncementsList] = useState(false);
   const [cameFromList, setCameFromList] = useState(false);
 
@@ -140,7 +141,7 @@ export function EventDetailPage() {
 
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
         <div className="flex flex-col gap-8 lg:col-span-8">
-          <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm md:p-10">
+          <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm md:p-10 dark:bg-slate-800 dark:border-slate-700">
             <div className="flex flex-wrap items-center gap-3">
               <PublicStatusBadge status={event.status} />
 
@@ -156,11 +157,11 @@ export function EventDetailPage() {
               </span>
             </div>
 
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-slate-300">
               {event.name}
             </h1>
 
-            <p className="text-base leading-relaxed text-gray-600">
+            <p className="text-base leading-relaxed text-gray-600 dark:text-slate-400">
               {getEventDescription(event)}
             </p>
 
@@ -192,7 +193,7 @@ export function EventDetailPage() {
                   <button
                     type="button"
                     onClick={() => viewResults(event.id)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-6 py-2.5 text-sm font-bold text-gray-600 shadow-sm transition-all hover:border-blue-400 hover:text-blue-500"
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-6 py-2.5 text-sm font-bold text-gray-600 shadow-sm transition-all hover:border-blue-400 hover:text-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                   >
                     <LeaderboardIcon style={{ fontSize: 16 }} />
                     View Results

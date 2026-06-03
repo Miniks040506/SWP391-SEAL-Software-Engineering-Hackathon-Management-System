@@ -130,20 +130,20 @@ export function EventsPage() {
 
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
-      <section className="relative space-y-6 overflow-hidden rounded-2xl border border-gray-200 bg-white p-10 text-center md:p-20">
+      <section className="relative space-y-6 overflow-hidden rounded-2xl border border-gray-200 bg-white p-10 text-center md:p-20 dark:bg-slate-800 dark:border-slate-700">
         <div className="absolute left-0 top-0 h-1 w-full bg-blue-500" />
 
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
           <CodeIcon style={{ fontSize: 24 }} className="text-blue-500" />
         </div>
 
         <div className="mx-auto max-w-3xl space-y-4">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl">
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl dark:text-slate-300">
             Build. Compete.{" "}
             <span className="font-bold text-blue-500">Innovate.</span>
           </h1>
 
-          <p className="text-lg leading-relaxed text-gray-500">
+          <p className="text-lg leading-relaxed text-gray-500 dark:text-gray-400">
             The ultimate software engineering challenge for FPT students.
             <br className="hidden md:block" />
             Turn your ideas into real-world technical solutions.
@@ -166,7 +166,7 @@ export function EventsPage() {
           <button
             type="button"
             onClick={() => navigate("/standings")}
-            className="rounded-lg border border-gray-200 bg-white px-8 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50"
+            className="rounded-lg border border-gray-200 bg-white px-8 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             View Standings
           </button>
@@ -186,12 +186,12 @@ export function EventsPage() {
           <div className="flex items-center gap-2">
             <AutoAwesomeIcon style={{ fontSize: 20 }} className="text-blue-500" />
 
-            <h2 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">
+            <h2 className="text-lg font-bold tracking-tight text-gray-900 dark:text-slate-300">
               Seasonal Events
             </h2>
           </div>
 
-          <div className="flex rounded-lg bg-gray-100 p-1">
+          <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-slate-800/50">
             {seasons.map((season) => (
               <button
                 key={season}
@@ -200,8 +200,8 @@ export function EventsPage() {
                 className={[
                   "rounded-md px-4 py-1.5 text-sm font-semibold transition-all",
                   activeSeason === season
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700",
+                    ? "bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-400"
+                    : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300",
                 ].join(" ")}
               >
                 {season === "All"

@@ -1,11 +1,6 @@
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Button,
-  IconButton,
-  InputAdornment,
-  TextField,
-} from "@mui/material";
+import { Button, IconButton, InputAdornment, TextField } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
@@ -30,6 +25,45 @@ const steps = [
 const textFieldSx = {
   "& .MuiOutlinedInput-root": {
     borderRadius: "12px",
+    ".dark & fieldset": {
+      borderColor: "#334155",
+    },
+    ".dark &:hover fieldset": {
+      borderColor: "#475569",
+    },
+    ".dark &.Mui-focused fieldset": {
+      borderColor: "#3b82f6",
+    },
+  },
+  "& .MuiInputLabel-root": {
+    ".dark &": {
+      color: "#94a3b8",
+    },
+    ".dark &.Mui-focused": {
+      color: "#3b82f6",
+    },
+  },
+  "& .MuiInputBase-input": {
+    ".dark &": {
+      color: "#f8fafc",
+    },
+    ".dark &::placeholder": {
+      color: "#64748b",
+      opacity: 1,
+    },
+  },
+  "& .MuiIconButton-root": {
+    ".dark &": {
+      color: "#94a3b8",
+    },
+  },
+  "& .MuiFormHelperText-root": {
+    ".dark &": {
+      color: "#94a3b8",
+    },
+    ".dark &.Mui-error": {
+      color: "#f43f5e",
+    },
   },
 };
 
@@ -156,9 +190,12 @@ export function RegisterPage() {
         `/verify-email?email=${encodeURIComponent(normalizedEmail)}&mode=register`,
       );
     } catch (error: any) {
-      enqueueSnackbar(error?.response?.data?.message || "Registration failed.", {
-        variant: "error",
-      });
+      enqueueSnackbar(
+        error?.response?.data?.message || "Registration failed.",
+        {
+          variant: "error",
+        },
+      );
     }
   };
 
@@ -301,12 +338,12 @@ export function RegisterPage() {
                     className={[
                       "min-h-24 rounded-2xl border p-5 text-left transition",
                       field.value === "FPT"
-                        ? "border-blue-500 bg-blue-50 shadow-[0_0_0_1px_rgba(59,130,246,0.25)]"
-                        : "border-slate-200 bg-white hover:bg-slate-50",
+                        ? "border-blue-500 bg-blue-50 shadow-[0_0_0_1px_rgba(59,130,246,0.25)] dark:bg-blue-900/20 dark:shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
+                        : "border-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:hover:bg-slate-800",
                     ].join(" ")}
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div className="text-lg font-extrabold text-slate-800">
+                      <div className="text-lg font-extrabold text-slate-800 dark:text-slate-200">
                         FPT University
                       </div>
 
@@ -335,12 +372,12 @@ export function RegisterPage() {
                     className={[
                       "min-h-24 rounded-2xl border p-5 text-left transition",
                       field.value === "EXTERNAL"
-                        ? "border-blue-500 bg-blue-50 shadow-[0_0_0_1px_rgba(59,130,246,0.25)]"
-                        : "border-slate-200 bg-white hover:bg-slate-50",
+                        ? "border-blue-500 bg-blue-50 shadow-[0_0_0_1px_rgba(59,130,246,0.25)] dark:bg-blue-900/20 dark:shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
+                        : "border-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:hover:bg-slate-800",
                     ].join(" ")}
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div className="text-lg font-extrabold text-slate-800">
+                      <div className="text-lg font-extrabold text-slate-800 dark:text-slate-200">
                         External
                       </div>
 
@@ -376,19 +413,37 @@ export function RegisterPage() {
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "12px",
-                backgroundColor:
-                  studentType === "FPT" ? "#F8FAFC" : "#FFFFFF",
-              },
+                backgroundColor: studentType === "FPT" ? "#F8FAFC" : "#FFFFFF",
 
+                "& fieldset": {
+                  borderColor: studentType === "FPT" ? "#CBD5E1" : undefined,
+                },
+
+                ".dark &": {
+                  backgroundColor:
+                    studentType === "FPT" ? "#0f172a" : "transparent",
+                },
+                ".dark & fieldset": {
+                  borderColor: studentType === "FPT" ? "#1e293b" : "#334155",
+                },
+                ".dark &:hover fieldset": {
+                  borderColor: studentType === "FPT" ? "#1e293b" : "#475569",
+                },
+              },
               "& .MuiInputBase-input": {
                 color: "#334155",
                 WebkitTextFillColor: "#334155",
                 fontWeight: studentType === "FPT" ? 700 : 400,
                 cursor: studentType === "FPT" ? "default" : "text",
+                ".dark &": {
+                  color: "#f8fafc",
+                  WebkitTextFillColor: "#f8fafc",
+                },
               },
-
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: studentType === "FPT" ? "#CBD5E1" : undefined,
+              "& .MuiInputLabel-root": {
+                ".dark &": {
+                  color: "#94a3b8",
+                },
               },
             }}
             slotProps={{
@@ -434,7 +489,9 @@ export function RegisterPage() {
               boxShadow: "none",
             }}
           >
-            {registerMutation.isPending ? "Creating account..." : "Create account"}
+            {registerMutation.isPending
+              ? "Creating account..."
+              : "Create account"}
           </Button>
 
           <p className="text-center text-xs text-slate-500">
