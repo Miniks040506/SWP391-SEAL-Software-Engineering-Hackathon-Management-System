@@ -77,6 +77,7 @@ export function SocialLoginButtons() {
         startIcon={<GoogleLogo />}
         onClick={authApi.loginWithGoogle}
         sx={socialButtonSx}
+        className="dark:!bg-slate-800 dark:!border-slate-700 dark:!text-slate-200 dark:hover:!bg-slate-700"
       >
         Google
       </Button>
@@ -102,6 +103,7 @@ export function SocialLoginButtons() {
             color: "#1d4ed8",
           },
         }}
+        className="dark:!bg-slate-800 dark:!border-slate-700 dark:!text-slate-200 dark:hover:!bg-slate-700"
       >
         GitHub
       </Button>

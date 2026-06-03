@@ -122,10 +122,10 @@ export function CodeInput({
           className={[
             "h-13 w-13.5 rounded-xl border bg-white text-center",
             "text-[22px] font-extrabold outline-none transition",
-            "disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400",
+            "disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-600",
             error
-              ? "border-rose-500 text-rose-500 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
-              : "border-slate-400 text-slate-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+              ? "border-rose-500 text-rose-500 focus:border-rose-500 focus:ring-4 focus:ring-rose-100 dark:focus:ring-rose-900/40"
+              : "border-slate-400 text-slate-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/40",
           ].join(" ")}
         />
       ))}
