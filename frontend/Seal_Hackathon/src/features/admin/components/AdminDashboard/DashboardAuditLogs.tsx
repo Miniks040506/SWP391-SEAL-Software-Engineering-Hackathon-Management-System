@@ -1,7 +1,7 @@
-import { Button, Card, CardContent } from "@mui/material";
+import { Button, Card, CardContent, Skeleton } from "@mui/material";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import { useNavigate } from "react-router-dom";
-import type { AuditLogEntry } from "@/features/admin/hooks/useAdminDashboardMutation";
+import type { AuditLogEntry } from "@/types/user.types";
 
 function getLogDotColor(type: AuditLogEntry["type"]) {
   switch (type) {
@@ -14,15 +14,17 @@ function getLogDotColor(type: AuditLogEntry["type"]) {
 
 export function DashboardAuditLogs({
   auditLogs,
+  isLoading,
 }: {
   auditLogs: AuditLogEntry[];
+  isLoading?: boolean;
 }) {
   const navigate = useNavigate();
 
   return (
     <Card
       variant="outlined"
-      className="border-slate-100 dark:border-slate-700 !bg-white dark:!bg-slate-800 shadow-sm rounded-xl h-full"
+      className="border-slate-100 dark:border-slate-700 bg-white! dark:bg-slate-800! shadow-sm rounded-xl h-full"
     >
       <CardContent className="p-6 flex flex-col h-full">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -38,7 +40,7 @@ export function DashboardAuditLogs({
             variant="text"
             size="small"
             endIcon={<ArrowForwardOutlinedIcon fontSize="small" />}
-            className="!text-slate-500 dark:!text-slate-400 hover:!bg-slate-50 dark:hover:!bg-slate-700/50 !font-semibold !normal-case !tracking-normal"
+            className="text-slate-500! dark:text-slate-400! hover:bg-slate-50! dark:hover:bg-slate-700/50! font-semibold! normal-case! tracking-normal!"
             onClick={() => navigate("/admin/audit-logs")}
           >
             View Full Logs
@@ -46,7 +48,16 @@ export function DashboardAuditLogs({
         </div>
 
         <div className="flex-1 space-y-6">
-          {auditLogs.length === 0 ? (
+          {isLoading ? (
+            // Skeleton entries while fetching
+            Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="pl-4 border-l border-slate-200 dark:border-slate-700">
+                <Skeleton variant="text" width={120} height={16} className="dark:bg-slate-600 mt-1" />
+                <Skeleton variant="text" width={180} height={20} className="dark:bg-slate-600 mt-1" />
+                <Skeleton variant="text" width="90%" height={16} className="dark:bg-slate-600 mt-1" />
+              </div>
+            ))
+          ) : auditLogs.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">
               No audit logs available.
             </p>
@@ -57,7 +68,7 @@ export function DashboardAuditLogs({
                 className="relative border-l border-slate-200 dark:border-slate-700 pl-4"
               >
                 <div
-                  className={`absolute -left-[5px] top-1.5 h-2 w-2 rounded-full ${getLogDotColor(log.type)}`}
+                  className={`absolute -left-1.25 top-1.5 h-2 w-2 rounded-full ${getLogDotColor(log.type)}`}
                 />
                 <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                   {new Date(log.timestamp).toLocaleTimeString([], {

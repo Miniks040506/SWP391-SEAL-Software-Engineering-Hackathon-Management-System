@@ -1,7 +1,6 @@
 import { apiRequest } from "@/api/apiRequest";
 import type { PageResponse, UUID } from "@/types/common.types";
 import type {
-  AuditLogResponse,
   ChangePasswordRequest,
   CreateGuestJudgeRequest,
   CreateUserRequest,
@@ -78,9 +77,5 @@ export const userApi = {
     formData.append("file", file);
 
     return apiRequest.postForm<MyProfileResponse>("/users/me/avatar", formData);
-  },
-
-  getAuditLogs(params?: { page?: number; size?: number }) {
-    return apiRequest.get<PageResponse<AuditLogResponse>>("/system/audit-logs", { params });
   },
 };

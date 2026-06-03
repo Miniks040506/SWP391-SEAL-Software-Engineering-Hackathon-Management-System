@@ -17,8 +17,8 @@ type UseUserFiltersReturn = UserFilters & {
 };
 
 /**
- * Quản lý state filter/search/pagination cho trang Users.
- * Mỗi khi thay đổi filter (search/role/status), tự reset page về 1.
+ * Manage state filter/search/pagination for user list in admin page.
+ * Whenever the filter (search/role/status) changes, automatically reset the page to 1.
  */
 export function useUserFilters(): UseUserFiltersReturn {
   const [search, setSearchRaw] = useState("");
