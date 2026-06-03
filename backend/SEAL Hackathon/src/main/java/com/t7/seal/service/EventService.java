@@ -20,5 +20,7 @@ public interface EventService {
 
     EventDetailResponse updateEvent(UUID eventId, UpdateEventRequest request, Authentication authentication);
 
+    EventDetailResponse advanceEventStatus(UUID eventId, Authentication authentication);
+
     void deleteEvent(UUID eventId, Authentication authentication);
 }

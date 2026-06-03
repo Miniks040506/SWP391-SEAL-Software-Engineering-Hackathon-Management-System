@@ -13,7 +13,7 @@ public interface PrizeService {
 
     PrizeResponse updatePrize(UUID prizeId, UpdatePrizeRequest request, Authentication authentication);
 
-    void deletePrize(UUID prizeId, UUID eventId, UUID trackId, Authentication authentication);
+    void deletePrize(UUID prizeId, Authentication authentication);
 
     List<PrizeResponse> getPrizesByEvent(UUID eventId);
 

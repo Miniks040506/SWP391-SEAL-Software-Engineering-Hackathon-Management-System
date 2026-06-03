@@ -66,7 +66,7 @@ public class PrizeServiceImpl implements PrizeService {
     public PrizeResponse updatePrize(UUID prizeId, UpdatePrizeRequest request, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Prize prize = findPrize(prizeId, request.eventId(), request.trackId());
+        Prize prize = findPrize(prizeId, null, null);
 
         UUID trackId = prize.getTrack() == null ? null : prize.getTrack().getId();
         Integer newRank = request.rankPosition() == null ? prize.getRankPosition() : request.rankPosition();
@@ -106,10 +106,10 @@ public class PrizeServiceImpl implements PrizeService {
 
     @Transactional
     @Override
-    public void deletePrize(UUID prizeId, UUID eventId, UUID trackId, Authentication authentication) {
+    public void deletePrize(UUID prizeId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Prize prize = findPrize(prizeId, eventId, trackId);
+        Prize prize = findPrize(prizeId, null, null);
         if (prize.getAwardedTeam() != null) {
             throw new ConflictException("Cannot delete prize after it has been awarded. Clear award first.");
         }
@@ -119,7 +119,7 @@ public class PrizeServiceImpl implements PrizeService {
     @Transactional(readOnly = true)
     @Override
     public List<PrizeResponse> getPrizesByEvent(UUID eventId) {
-        return prizeRepository.findPublicByEventId(eventId)
+        return prizeRepository.findByEventIdOrderByTrackNameAndRankPositionAsc(eventId)
                 .stream()
                 .map(this::toPrizeResponse)
                 .toList();
@@ -128,8 +128,7 @@ public class PrizeServiceImpl implements PrizeService {
     @Transactional(readOnly = true)
     @Override
     public PrizeResponse getPrizeById(UUID prizeId) {
-        Prize prize = prizeRepository.findPublicById(prizeId)
-                .orElseThrow(() -> new NotFoundException("Prize not found " + prizeId));
+        Prize prize = findPrize(prizeId, null, null);
         return toPrizeResponse(prize);
     }
 

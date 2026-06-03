@@ -109,19 +109,17 @@ public class EventServiceImpl implements EventService {
     @Transactional(readOnly = true)
     @Override
     public EventDetailResponse getEventById(UUID eventId, Authentication authentication) {
-        User user = currentUserService.getCurrentUser(authentication);
+        User user = authentication == null ? null : currentUserService.getCurrentUser(authentication);
+        boolean canManageEvent = user != null
+                && (user.getRole() == UserRole.COORDINATOR || user.getRole() == UserRole.ADMIN);
 
-        HackathonEvent event;
+        HackathonEvent event = canManageEvent
+                ? hackathonEventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found " + eventId))
+                : hackathonEventRepository.findPublicEventById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
-        if (user.getRole() == UserRole.COORDINATOR) {
-            event = hackathonEventRepository.findById(eventId)
-                    .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
-        } else {
-            event = hackathonEventRepository.findPublicEventById(eventId)
-                    .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
-        }
-
-        return buildEventDetailResponse(event);
+        return buildEventDetailResponse(event, canManageEvent);
     }
 
     @Transactional
@@ -159,7 +157,7 @@ public class EventServiceImpl implements EventService {
 
         HackathonEvent saved = hackathonEventRepository.save(newEvent);
 
-        return buildEventDetailResponse(saved);
+        return buildEventDetailResponse(saved, true);
     }
 
     @Transactional
@@ -176,6 +174,15 @@ public class EventServiceImpl implements EventService {
             }
 
             event.setName(request.name().trim());
+            event.setSlug(getSlug(request.name()));
+        }
+
+        if (request.season() != null && !request.season().isBlank()) {
+            event.setSeason(parseEnum(HackathonSeason.class, request.season(), "season"));
+        }
+
+        if (request.year() != null) {
+            event.setYear(request.year());
         }
 
         applyIfNotNull(request.description(), v -> event.setDescription(trimToNull(v)));
@@ -190,15 +197,38 @@ public class EventServiceImpl implements EventService {
         if (request.bannerUrl() != null) {
             event.setBannerUrl(trimToNull(request.bannerUrl()));
         }
-        if (request.status() != null) {
-            event.setStatus(parseEnum(RegistrationStatus.class, request.status(), "status"));
+        if (request.status() != null && !request.status().isBlank()) {
+            changeEventStatus(event, parseEnum(RegistrationStatus.class, request.status(), "status"));
         }
 
         event.setUpdatedAt(LocalDateTime.now());
 
         HackathonEvent saved = hackathonEventRepository.save(event);
 
-        return buildEventDetailResponse(saved);
+        return buildEventDetailResponse(saved, true);
+    }
+
+    @Transactional
+    @Override
+    public EventDetailResponse advanceEventStatus(UUID eventId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        HackathonEvent event = hackathonEventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+
+        RegistrationStatus nextStatus = switch (event.getStatus()) {
+            case DRAFT -> RegistrationStatus.REGISTRATION;
+            case REGISTRATION -> RegistrationStatus.ONGOING;
+            case ONGOING -> RegistrationStatus.JUDGING;
+            case JUDGING -> RegistrationStatus.COMPLETED;
+            case COMPLETED, CANCELLED -> throw new ConflictException("Event has no next status.");
+        };
+
+        changeEventStatus(event, nextStatus);
+        event.setUpdatedAt(LocalDateTime.now());
+
+        HackathonEvent saved = hackathonEventRepository.save(event);
+        return buildEventDetailResponse(saved, true);
     }
 
     @Transactional
@@ -237,7 +267,9 @@ public class EventServiceImpl implements EventService {
                 round.getName(),
                 round.getOrderIndex(),
                 round.getIsFinal(),
-                round.getStatus().name()
+                round.getStatus().name(),
+                round.getSubmissionDeadline(),
+                round.getJudgingDeadline()
         );
     }
 
@@ -298,14 +330,20 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private EventDetailResponse buildEventDetailResponse(HackathonEvent event) {
-        List<TrackResponse> tracks = trackRepository.findPublicByEventIdOrderByNameAsc(event.getId())
-                .stream()
+    private EventDetailResponse buildEventDetailResponse(HackathonEvent event, boolean includeAllChildren) {
+        List<Track> trackEntities = includeAllChildren
+                ? trackRepository.findByEventIdOrderByNameAsc(event.getId())
+                : trackRepository.findPublicByEventIdOrderByNameAsc(event.getId());
+
+        List<TrackResponse> tracks = trackEntities.stream()
                 .map(this::toTrackResponse)
                 .toList();
 
-        List<RoundResponse> rounds = roundRepository.findPublicByEventIdOrderByOrderIndexAsc(event.getId())
-                .stream()
+        List<Round> roundEntities = includeAllChildren
+                ? roundRepository.findByEventIdOrderByOrderIndexAsc(event.getId())
+                : roundRepository.findPublicByEventIdOrderByOrderIndexAsc(event.getId());
+
+        List<RoundResponse> rounds = roundEntities.stream()
                 .map(this::toRoundResponse)
                 .toList();
 
@@ -322,6 +360,29 @@ public class EventServiceImpl implements EventService {
                 tracks,
                 rounds
         );
+    }
+
+    private void changeEventStatus(HackathonEvent event, RegistrationStatus requestedStatus) {
+        if (requestedStatus == event.getStatus()) {
+            return;
+        }
+
+        if (requestedStatus == RegistrationStatus.CANCELLED) {
+            if (event.getStatus() == RegistrationStatus.COMPLETED) {
+                throw new ConflictException("Completed event cannot be cancelled.");
+            }
+            event.setStatus(RegistrationStatus.CANCELLED);
+            return;
+        }
+
+        switch (requestedStatus) {
+            case REGISTRATION -> event.openRegistration();
+            case ONGOING -> event.startEvent();
+            case JUDGING -> event.startJudging();
+            case COMPLETED -> event.complete();
+            case DRAFT -> throw new BadRequestException("Event status cannot move back to DRAFT.");
+            case CANCELLED -> throw new BadRequestException("Invalid status transition.");
+        }
     }
 
     private <T> void applyIfNotNull(T value, Consumer<T> setter) {

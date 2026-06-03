@@ -53,6 +53,8 @@ export type RoundResponse = {
   orderIndex: number;
   isFinal: boolean;
   status: string;
+  submissionDeadline?: ISODateTime;
+  judgingDeadline?: ISODateTime;
 };
 
 export type RoundDetailResponse = {

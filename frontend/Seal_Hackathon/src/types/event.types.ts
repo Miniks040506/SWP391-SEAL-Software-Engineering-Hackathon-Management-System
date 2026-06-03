@@ -61,6 +61,8 @@ export type CreateEventRequest = {
 export type UpdateEventRequest = {
   name?: string;
   description?: string | null;
+  season?: string;
+  year?: number;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
   bannerUrl?: string | null;

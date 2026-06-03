@@ -90,7 +90,7 @@ public class UserServiceImpl implements UserService {
     private AssignableUserResponse toAssignableUserResponse(User user) {
         return new AssignableUserResponse(
                 user.getId(),
-                user.getRole() == UserRole.JUDGE ? user.getId() : null,
+                user.getRole() == UserRole.JUDGE ? user.getJudge().getId() : null,
                 user.getEmail(),
                 user.getFullName(),
                 user.getRole(),

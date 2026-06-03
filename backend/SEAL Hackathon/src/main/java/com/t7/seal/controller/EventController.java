@@ -135,4 +135,13 @@ public class EventController {
     ) {
         return null;
     }
+
+    @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
+    @PostMapping("/{eventId}/advance-status")
+    public ResponseEntity<EventDetailResponse> advanceEventStatus(
+            @PathVariable UUID eventId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(eventService.advanceEventStatus(eventId, authentication));
+    }
 }

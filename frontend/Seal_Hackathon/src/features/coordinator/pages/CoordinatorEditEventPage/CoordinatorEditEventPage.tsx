@@ -1,227 +1,224 @@
-import { useNavigate } from "react-router-dom";
-import IconButton from "@mui/material/IconButton";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import { useEditEventMutation } from "../../hooks/useEditEventMutation";
-import { EditEventDialogs } from "./EditEventDialogs";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import MilitaryTechOutlinedIcon from "@mui/icons-material/MilitaryTechOutlined";
+import RouteOutlinedIcon from "@mui/icons-material/RouteOutlined";
+import SchemaOutlinedIcon from "@mui/icons-material/SchemaOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import { Button, CircularProgress } from "@mui/material";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+
+import { eventApi } from "@/api/event.api";
+import { prizeApi } from "@/api/prize.api";
+import { roundApi } from "@/api/round.api";
+import { trackApi } from "@/api/track.api";
+import type { UUID } from "@/types/common.types";
+
+import { AssignmentsTab } from "./AssignmentsTab";
 import { InfoTab } from "./InfoTab";
-import { TeamsTab } from "./TeamsTab";
+import { PrizesTab } from "./PrizesTab";
+import { RoundsTab } from "./RoundsTab";
 import { TracksTab } from "./TracksTab";
-import { CriteriaTab } from "./CriteriaTab";
-import type { TabId } from "../../hooks/useEditEventMutation";
-import {
-  availableJudges,
-  availableMentors,
-  availableScoreCriteria,
-} from "../../mocks/coordinatorEditEvent.mock";
 
-const TABS: TabId[] = ["info", "tracks", "criteria", "teams"];
+type EditTab = "INFO" | "TRACKS" | "ROUNDS" | "ASSIGNMENTS" | "PRIZES";
 
-const TAB_LABELS: Record<TabId, string> = {
-  info: "Basic Information",
-  tracks: "Tracks & Rounds",
-  criteria: "Scoring Criteria",
-  teams: "Participating Teams",
-};
+const tabs: Array<{
+  value: EditTab;
+  label: string;
+  icon: typeof InfoOutlinedIcon;
+}> = [
+  { value: "INFO", label: "Info", icon: InfoOutlinedIcon },
+  { value: "TRACKS", label: "Tracks", icon: RouteOutlinedIcon },
+  { value: "ROUNDS", label: "Rounds", icon: SchemaOutlinedIcon },
+  { value: "ASSIGNMENTS", label: "Mentors & Judges", icon: GroupsOutlinedIcon },
+  { value: "PRIZES", label: "Prizes", icon: MilitaryTechOutlinedIcon },
+];
 
-export const CoordinatorEditEventPage = () => {
+function getEventName(event: unknown) {
+  const raw = event as { name?: string; eventName?: string; title?: string };
+  return raw?.name ?? raw?.eventName ?? raw?.title ?? "Edit Event";
+}
+
+function getBannerUrl(event: unknown) {
+  return (event as { bannerUrl?: string | null })?.bannerUrl ?? null;
+}
+
+export function CoordinatorEditEventPage() {
   const navigate = useNavigate();
-  const {
-    activeTab,
-    setActiveTab,
-    event,
-    teams,
-    expandedTracks,
-    dialog,
-    selectedTeamIds,
-    isSaving,
-    errors,
-    pendingCount,
-    closeDialog,
-    openAddTrack,
-    openEditTrack,
-    openAddRound,
-    openEditRound,
-    openAddJudge,
-    openAddMentor,
-    openEditCriteria,
-    openTeamDetail,
-    confirmAddTrack,
-    confirmEditTrack,
-    confirmAddRound,
-    confirmEditRound,
-    confirmAddJudge,
-    confirmAddMentor,
-    confirmEditCriteria,
-    handleSave,
-    handleDiscard,
-    handleEventChange,
-    toggleExpand,
-    removeTrack,
-    removeRound,
-    removeMentor,
-    removeJudge,
-    updateTeamStatus,
-    handleSelectAllTrackTeams,
-    handleToggleSelectTeam,
-    handleBulkTeamStatusUpdate,
-  } = useEditEventMutation();
+  const queryClient = useQueryClient();
+  const { eventId } = useParams<{ eventId: UUID }>();
+  const [activeTab, setActiveTab] = useState<EditTab>("INFO");
+
+  const enabled = Boolean(eventId);
+
+  const eventQuery = useQuery({
+    queryKey: ["coordinator-event-detail", eventId],
+    queryFn: () => eventApi.getEventById(eventId as UUID),
+    enabled,
+  });
+
+  const tracksQuery = useQuery({
+    queryKey: ["coordinator-event-tracks", eventId],
+    queryFn: () => trackApi.getTracksByEvent(eventId as UUID),
+    enabled,
+  });
+
+  const roundsQuery = useQuery({
+    queryKey: ["coordinator-event-rounds", eventId],
+    queryFn: () => roundApi.getRoundsByEvent(eventId as UUID),
+    enabled,
+  });
+
+  const prizesQuery = useQuery({
+    queryKey: ["coordinator-event-prizes", eventId],
+    queryFn: () => prizeApi.getPrizesByEvent(eventId as UUID),
+    enabled,
+  });
+
+  const eventName = useMemo(() => getEventName(eventQuery.data), [eventQuery.data]);
+  const bannerUrl = useMemo(() => getBannerUrl(eventQuery.data), [eventQuery.data]);
+
+  const invalidateEditData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["coordinator-event-detail", eventId] }),
+      queryClient.invalidateQueries({ queryKey: ["coordinator-event-tracks", eventId] }),
+      queryClient.invalidateQueries({ queryKey: ["coordinator-event-rounds", eventId] }),
+      queryClient.invalidateQueries({ queryKey: ["coordinator-event-prizes", eventId] }),
+    ]);
+  };
+
+  if (!eventId) {
+    return (
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 font-bold text-rose-600">
+        Missing event id.
+      </div>
+    );
+  }
+
+  if (eventQuery.isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <CircularProgress />
+      </div>
+    );
+  }
+
+  if (eventQuery.isError) {
+    return (
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 font-bold text-rose-600">
+        Failed to load event detail.
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full bg-slate-50/50 pb-8 font-sans text-slate-900 dark:bg-transparent dark:text-slate-200 min-h-[calc(100vh-4rem)]">
-      <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 px-6 py-4 backdrop-blur-xl dark:border-slate-800/50 dark:bg-transparent">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div className="flex items-center gap-4">
-            <IconButton
-              onClick={() => navigate("/coordinator/events")}
-              className="bg-slate-100! text-slate-600! hover:bg-slate-200! dark:bg-slate-800! dark:text-slate-400! dark:hover:bg-slate-700! transition-colors"
-              size="small"
-            >
-              <ArrowBackOutlinedIcon fontSize="small" />
-            </IconButton>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                Event Editor
-              </p>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-300">
-                {event.name}
-              </h1>
+    <div className="space-y-7">
+      <header className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="aspect-21/9 max-h-80 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+          {bannerUrl ? (
+            <img
+              src={bannerUrl}
+              alt={eventName}
+              className="h-full w-full object-cover object-center"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-linear-to-br from-blue-500 via-cyan-400 to-violet-600 font-black text-white">
+              SEAL EVENT
             </div>
-          </div>
+          )}
+        </div>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleDiscard}
-              className="rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 transition-all hover:bg-slate-50 dark:bg-transparent dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"
+        <div className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <Button
+              startIcon={<ArrowBackOutlinedIcon />}
+              onClick={() => navigate("/coordinator/events")}
+              sx={{ mb: 1, textTransform: "none", fontWeight: 800 }}
             >
-              Discard
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70 dark:bg-blue-500! dark:text-white! dark:hover:bg-blue-400!"
-            >
-              {isSaving ? (
-                <>
-                  <svg
-                    className="h-4 w-4 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    />
-                  </svg>
-                  Saving…
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </button>
+              Back to Events
+            </Button>
+
+            <h1 className="text-3xl font-black text-slate-950 dark:text-white">
+              {eventName}
+            </h1>
+
+            <p className="mt-1 text-sm font-medium text-slate-500">
+              Edit event information, tracks, rounds, mentors, judges, and prizes.
+            </p>
           </div>
         </div>
+      </header>
+
+      <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setActiveTab(tab.value)}
+              className={[
+                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition",
+                activeTab === tab.value
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white",
+              ].join(" ")}
+            >
+              <Icon fontSize="small" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="mx-auto max-w-6xl px-6 pt-8">
-        <div className="mb-8 flex space-x-1 border-b border-slate-200 dark:border-slate-700">
-          {TABS.map((id) => {
-            const isActive = activeTab === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setActiveTab(id)}
-                className={`relative px-5 py-3 text-sm font-bold transition-colors ${
-                  isActive
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {TAB_LABELS[id]}
-                  {id === "teams" && pendingCount > 0 && (
-                    <span className="flex h-5 items-center justify-center rounded-full bg-blue-100 px-2 text-[10px] font-black text-blue-600 dark:bg-blue-500/20! dark:text-blue-400!">
-                      {pendingCount} NEW
-                    </span>
-                  )}
-                </div>
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 h-0.5 w-full rounded-t-full bg-blue-600 dark:bg-blue-500" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+      {activeTab === "INFO" && (
+        <InfoTab
+          eventId={eventId}
+          event={eventQuery.data}
+          onUpdated={invalidateEditData}
+        />
+      )}
 
-        <div className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
-          {activeTab === "info" && (
-            <InfoTab
-              event={event}
-              errors={errors}
-              onChange={handleEventChange}
-            />
-          )}
+      {activeTab === "TRACKS" && (
+        <TracksTab
+          eventId={eventId}
+          tracks={tracksQuery.data ?? []}
+          isLoading={tracksQuery.isLoading}
+          onChanged={invalidateEditData}
+        />
+      )}
 
-          {activeTab === "tracks" && (
-            <TracksTab
-              event={event}
-              expandedTracks={expandedTracks}
-              onToggleExpand={toggleExpand}
-              onRemoveTrack={removeTrack}
-              onRemoveRound={removeRound}
-              onRemoveMentor={removeMentor}
-              onRemoveJudge={removeJudge}
-              onOpenAddJudge={openAddJudge}
-              onOpenAddMentor={openAddMentor}
-              onOpenAddRound={openAddRound}
-              onOpenEditTrack={openEditTrack}
-              onOpenEditRound={openEditRound}
-              onOpenAddTrack={openAddTrack}
-            />
-          )}
+      {activeTab === "ROUNDS" && (
+        <RoundsTab
+          eventId={eventId}
+          tracks={tracksQuery.data ?? []}
+          rounds={roundsQuery.data ?? []}
+          isLoading={roundsQuery.isLoading}
+          onChanged={invalidateEditData}
+        />
+      )}
 
-          {activeTab === "criteria" && <CriteriaTab />}
+      {activeTab === "ASSIGNMENTS" && (
+        <AssignmentsTab
+          tracks={tracksQuery.data ?? []}
+          rounds={roundsQuery.data ?? []}
+          onChanged={invalidateEditData}
+        />
+      )}
 
-          {activeTab === "teams" && (
-            <TeamsTab
-              event={event}
-              teams={teams}
-              selectedTeamIds={selectedTeamIds}
-              onUpdateTeamStatus={updateTeamStatus}
-              onSelectAll={handleSelectAllTrackTeams}
-              onToggleSelect={handleToggleSelectTeam}
-              onBulkUpdate={handleBulkTeamStatusUpdate}
-              onOpenTeamDetail={openTeamDetail}
-            />
-          )}
-        </div>
-      </div>
-
-      <EditEventDialogs
-        dialog={dialog}
-        judges={availableJudges}
-        mentors={availableMentors}
-        criteria={availableScoreCriteria}
-        onClose={closeDialog}
-        onConfirmAddTrack={confirmAddTrack}
-        onConfirmEditTrack={confirmEditTrack}
-        onConfirmAddRound={confirmAddRound}
-        onConfirmEditRound={confirmEditRound}
-        onConfirmAddJudge={confirmAddJudge}
-        onConfirmAddMentor={confirmAddMentor}
-        onConfirmEditCriteria={confirmEditCriteria}
-      />
+      {activeTab === "PRIZES" && (
+        <PrizesTab
+          eventId={eventId}
+          tracks={tracksQuery.data ?? []}
+          prizes={prizesQuery.data ?? []}
+          isLoading={prizesQuery.isLoading}
+          onChanged={invalidateEditData}
+        />
+      )}
     </div>
   );
-};
+}
+
+export default CoordinatorEditEventPage;

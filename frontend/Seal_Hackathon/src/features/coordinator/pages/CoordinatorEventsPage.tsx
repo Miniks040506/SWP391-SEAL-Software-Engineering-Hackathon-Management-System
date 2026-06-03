@@ -1,99 +1,320 @@
-import { useState } from "react";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
+import StackedLineChartOutlinedIcon from "@mui/icons-material/StackedLineChartOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import { Button, CircularProgress } from "@mui/material";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-
-import Button from "@mui/material/Button";
-import CircularProgress from "@mui/material/CircularProgress";
-import Pagination from "@mui/material/Pagination";
-
-import { CoordinatorEventCard } from "../components/CoordinatorEventCard";
-import { useCoordinatorEventsQuery } from "../hooks/useCoordinatorEventQueries";
-
+import { eventApi } from "@/api/event.api";
+import { trackApi } from "@/api/track.api";
+import type { UUID } from "@/types/common.types";
 import type { EventSummaryResponse } from "@/types/event.types";
 
-const PAGE_SIZE = 6;
+type EventStatusFilter =
+  | "ALL"
+  | "ONGOING"
+  | "REGISTRATION"
+  | "DRAFT"
+  | "COMPLETED"
+  | "ENDED"
+  | "CANCELLED";
 
-const STATUS_FILTERS = [
-  "All",
-  "ONGOING",
-  "REGISTRATION",
-  "DRAFT",
-  "COMPLETED",
-  "ENDED",
-  "CANCELLED",
-] as const;
-
-type StatusFilter = (typeof STATUS_FILTERS)[number];
-
-type EventWithOptionalCounts = EventSummaryResponse & {
-  tracks?: unknown[] | null;
-  approvedTeams?: number | null;
+type EventCard = EventSummaryResponse & {
+  id: UUID;
+  name?: string;
+  eventName?: string;
+  title?: string;
+  status?: string | null;
+  season?: string | null;
+  year?: number | null;
+  bannerUrl?: string | null;
+  trackCount?: number | null;
+  totalTracks?: number | null;
   approvedTeamCount?: number | null;
+  approvedTeams?: number | null;
   teamCount?: number | null;
+  tracks?: unknown[];
 };
 
-const paginationSx = {
-  "& .MuiPaginationItem-root": {
-    fontWeight: 700,
-    fontSize: "0.75rem",
-    borderColor: "var(--mui-palette-divider, #475569)",
-    color: "inherit",
-  },
-  "& .MuiPaginationItem-root.Mui-selected": {
-    backgroundColor: "#2563eb",
-    borderColor: "#2563eb",
-    color: "#e2e8f0",
-    "&:hover": {
-      backgroundColor: "#1d4ed8",
-    },
-  },
-};
+const statusTabs: Array<{ label: string; value: EventStatusFilter }> = [
+  { label: "All", value: "ALL" },
+  { label: "Ongoing", value: "ONGOING" },
+  { label: "Registration", value: "REGISTRATION" },
+  { label: "Draft", value: "DRAFT" },
+  { label: "Completed", value: "COMPLETED" },
+  { label: "Ended", value: "ENDED" },
+  { label: "Cancelled", value: "CANCELLED" },
+];
 
-function getTrackCount(event: EventWithOptionalCounts) {
-  return Array.isArray(event.tracks) ? event.tracks.length : "—";
+function getEventId(event: EventSummaryResponse): UUID {
+  const raw = event as Partial<EventCard>;
+  return (raw.id ?? (raw as { eventId?: UUID }).eventId) as UUID;
 }
 
-function getApprovedTeamCount(event: EventWithOptionalCounts) {
-  return event.approvedTeamCount ?? event.approvedTeams ?? event.teamCount ?? "—";
+function getEventName(event: EventSummaryResponse) {
+  const raw = event as EventCard;
+  return raw.name ?? raw.eventName ?? raw.title ?? "Untitled event";
 }
 
-function formatStatusLabel(filter: StatusFilter) {
-  if (filter === "All") return "All";
-  return filter.charAt(0) + filter.slice(1).toLowerCase();
+function getEventStatus(event: EventSummaryResponse) {
+  const raw = event as EventCard;
+  return (raw.status ?? "DRAFT").toUpperCase();
 }
 
-export const CoordinatorEventsPage = () => {
+function getEventSeason(event: EventSummaryResponse) {
+  const raw = event as EventCard;
+  return raw.season ?? "";
+}
+
+function getTrackCount(
+  event: EventSummaryResponse,
+  fetchedTrackCounts: Map<UUID, number>,
+) {
+  const raw = event as EventCard;
+  const eventId = getEventId(event);
+
+  if (typeof raw.trackCount === "number") return raw.trackCount;
+  if (typeof raw.totalTracks === "number") return raw.totalTracks;
+  if (Array.isArray(raw.tracks)) return raw.tracks.length;
+
+  const fetched = fetchedTrackCounts.get(eventId);
+  return typeof fetched === "number" ? fetched : null;
+}
+
+function getApprovedTeamCount(event: EventSummaryResponse) {
+  const raw = event as EventCard;
+
+  return (
+    raw.approvedTeamCount ??
+    raw.approvedTeams ??
+    raw.teamCount ??
+    null
+  );
+}
+
+function isApiPageResponse(value: unknown): value is { content: EventSummaryResponse[] } {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      "content" in value &&
+      Array.isArray((value as { content?: unknown }).content),
+  );
+}
+
+function normalizeEvents(value: unknown): EventSummaryResponse[] {
+  if (Array.isArray(value)) return value as EventSummaryResponse[];
+  if (isApiPageResponse(value)) return value.content;
+  return [];
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const className =
+    status === "ONGOING"
+      ? "border-blue-200 bg-blue-50 text-blue-600"
+      : status === "REGISTRATION"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+        : status === "DRAFT"
+          ? "border-amber-200 bg-amber-50 text-amber-600"
+          : status === "COMPLETED"
+            ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+            : status === "CANCELLED"
+              ? "border-rose-200 bg-rose-50 text-rose-600"
+              : "border-slate-200 bg-slate-50 text-slate-500";
+
+  return (
+    <span
+      className={[
+        "inline-flex rounded-lg border px-3 py-1 text-xs font-black tracking-[0.18em]",
+        className,
+      ].join(" ")}
+    >
+      {status}
+    </span>
+  );
+}
+
+function EventManagementCard({
+  event,
+  trackCount,
+}: {
+  event: EventSummaryResponse;
+  trackCount: number | null;
+}) {
   const navigate = useNavigate();
 
-  const [activeFilter, setActiveFilter] = useState<StatusFilter>("All");
-  const [page, setPage] = useState(1);
+  const eventId = getEventId(event);
+  const name = getEventName(event);
+  const status = getEventStatus(event);
+  const season = getEventSeason(event);
+  const bannerUrl = (event as EventCard).bannerUrl;
+  const approvedTeamCount = getApprovedTeamCount(event);
 
-  const eventsQuery = useCoordinatorEventsQuery({
-    status: activeFilter === "All" ? undefined : activeFilter,
-    page: page - 1,
-    size: PAGE_SIZE,
+  return (
+    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+      <div className="aspect-21/9 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+        {bannerUrl ? (
+          <img
+            src={bannerUrl}
+            alt={name}
+            className="h-full w-full object-cover object-center"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-blue-500 via-cyan-400 to-violet-600 text-sm font-black text-white">
+            SEAL EVENT
+          </div>
+        )}
+      </div>
+
+      <div className="p-6">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <StatusBadge status={status} />
+
+          <span className="text-sm font-black uppercase tracking-[0.24em] text-slate-400">
+            {season}
+          </span>
+        </div>
+
+        <h3 className="min-h-14 text-lg font-black leading-snug text-slate-950 dark:text-white">
+          {name}
+        </h3>
+
+        <div className="my-5 h-px bg-slate-100 dark:bg-slate-800" />
+
+        <div className="space-y-3 text-slate-600 dark:text-slate-300">
+          <div className="flex items-center gap-3">
+            <StackedLineChartOutlinedIcon fontSize="small" className="text-slate-400" />
+
+            <span>
+              <b className="text-slate-950 dark:text-white">
+                {trackCount ?? "—"}
+              </b>{" "}
+              Tracks
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <GroupsOutlinedIcon fontSize="small" className="text-slate-400" />
+
+            <span>
+              <b className="text-slate-950 dark:text-white">
+                {approvedTeamCount ?? "—"}
+              </b>{" "}
+              Approved Teams
+            </span>
+          </div>
+        </div>
+
+        <div className="my-5 h-px bg-slate-100 dark:bg-slate-800" />
+
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="outlined"
+            startIcon={<EditOutlinedIcon />}
+            onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
+            sx={{
+              borderRadius: "12px",
+              textTransform: "none",
+              fontWeight: 900,
+            }}
+          >
+            Edit
+          </Button>
+
+          <Button
+            variant="outlined"
+            startIcon={<RemoveRedEyeOutlinedIcon />}
+            onClick={() => navigate(`/coordinator/events/${eventId}/view`)}
+            sx={{
+              borderRadius: "12px",
+              textTransform: "none",
+              fontWeight: 900,
+            }}
+          >
+            View
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export function CoordinatorEventsPage() {
+  const navigate = useNavigate();
+  const [activeFilter, setActiveFilter] = useState<EventStatusFilter>("ALL");
+
+  const eventsQuery = useQuery({
+    queryKey: ["coordinator-events"],
+    queryFn: async () => {
+      try {
+        return await eventApi.getAllEvents();
+      } catch {
+        return await eventApi.getPublicEvents({ page: 0, size: 100 });
+      }
+    },
   });
 
-  const events = (eventsQuery.data?.content ?? []) as EventWithOptionalCounts[];
-  const totalElements = eventsQuery.data?.totalElements ?? events.length;
-  const pageCount = Math.max(1, eventsQuery.data?.totalPages ?? 1);
+  const apiEvents = useMemo(
+    () => normalizeEvents(eventsQuery.data),
+    [eventsQuery.data],
+  );
 
-  const handleFilterChange = (filter: StatusFilter) => {
-    setActiveFilter(filter);
-    setPage(1);
-  };
+  const trackCountQueries = useQueries({
+    queries: apiEvents.map((event) => {
+      const eventId = getEventId(event);
+
+      return {
+        queryKey: ["coordinator-event-track-count", eventId],
+        queryFn: () => trackApi.getTracksByEvent(eventId),
+        enabled: Boolean(eventId),
+        staleTime: 30_000,
+        retry: false,
+      };
+    }),
+  });
+
+  const fetchedTrackCounts = useMemo(() => {
+    const map = new Map<UUID, number>();
+
+    apiEvents.forEach((event, index) => {
+      const eventId = getEventId(event);
+      const data = trackCountQueries[index]?.data;
+
+      if (Array.isArray(data)) {
+        map.set(eventId, data.length);
+      }
+    });
+
+    return map;
+  }, [apiEvents, trackCountQueries]);
+
+  const filteredEvents = useMemo(() => {
+    if (activeFilter === "ALL") return apiEvents;
+
+    return apiEvents.filter((event) => {
+      const status = getEventStatus(event);
+
+      if (activeFilter === "ENDED") {
+        return status === "ENDED" || status === "COMPLETED";
+      }
+
+      return status === activeFilter;
+    });
+  }, [activeFilter, apiEvents]);
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-300">
+          <h1 className="text-3xl font-black text-slate-950 dark:text-white">
             Event Management
           </h1>
 
-          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-            Manage all hackathon events, timelines, and configurations.
+          <p className="mt-2 text-base font-medium text-slate-500 dark:text-slate-400">
+            Manage all hackathon events, timelines, tracks, and configurations.
           </p>
         </div>
 
@@ -102,42 +323,38 @@ export const CoordinatorEventsPage = () => {
           startIcon={<AddOutlinedIcon />}
           onClick={() => navigate("/coordinator/events/create")}
           sx={{
-            bgcolor: "#2563eb",
+            borderRadius: "12px",
+            px: 3,
+            py: 1.2,
             textTransform: "none",
-            fontWeight: 600,
-            borderRadius: "8px",
-            boxShadow: "none",
-            color: "#e2e8f0",
-            "&:hover": {
-              boxShadow: "none",
-              bgcolor: "#1d4ed8",
-            },
+            fontWeight: 900,
           }}
         >
           Create New Event
         </Button>
-      </section>
+      </header>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap rounded-lg bg-gray-100 p-1 dark:bg-slate-800/50">
-          {STATUS_FILTERS.map((filter) => (
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+          {statusTabs.map((tab) => (
             <button
-              key={filter}
+              key={tab.value}
               type="button"
-              onClick={() => handleFilterChange(filter)}
-              className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-all ${
-                activeFilter === filter
-                  ? "bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-400"
-                  : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
-              }`}
+              onClick={() => setActiveFilter(tab.value)}
+              className={[
+                "rounded-lg px-5 py-2 text-sm font-bold transition",
+                activeFilter === tab.value
+                  ? "bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-300"
+                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+              ].join(" ")}
             >
-              {formatStatusLabel(filter)}
+              {tab.label}
             </button>
           ))}
         </div>
 
-        <span className="text-sm text-gray-400 dark:text-slate-500">
-          {eventsQuery.isLoading ? "Loading..." : `${totalElements} event(s)`}
+        <span className="ml-2 text-sm font-medium text-slate-400">
+          {filteredEvents.length} event(s)
         </span>
       </div>
 
@@ -148,53 +365,38 @@ export const CoordinatorEventsPage = () => {
       )}
 
       {eventsQuery.isError && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm font-bold text-rose-600 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
-          Cannot load events from API. Please check backend, endpoint, token, or
-          security config.
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm font-bold text-rose-600">
+          Failed to load events. Check coordinator event API/security.
         </div>
       )}
 
-      {!eventsQuery.isLoading && !eventsQuery.isError && events.length > 0 && (
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => (
-            <CoordinatorEventCard
-              key={event.id}
+      {!eventsQuery.isLoading && filteredEvents.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-900">
+          <p className="text-lg font-black text-slate-700 dark:text-white">
+            No events found.
+          </p>
+
+          <p className="mt-2 text-sm text-slate-400">
+            Create a new event to start setting up tracks and rounds.
+          </p>
+        </div>
+      )}
+
+      <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+        {filteredEvents.map((event) => {
+          const eventId = getEventId(event);
+
+          return (
+            <EventManagementCard
+              key={eventId}
               event={event}
-              trackCount={getTrackCount(event)}
-              approvedTeams={getApprovedTeamCount(event)}
-              onEdit={(id) => navigate(`/coordinator/events/${id}/edit`)}
-              onView={(id) => navigate(`/coordinator/events/${id}/view`)}
+              trackCount={getTrackCount(event, fetchedTrackCounts)}
             />
-          ))}
-        </section>
-      )}
-
-      {!eventsQuery.isLoading && !eventsQuery.isError && events.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 py-20 text-center dark:border-slate-700">
-          <p className="text-sm font-semibold text-gray-400 dark:text-slate-500">
-            No events found
-          </p>
-
-          <p className="mt-1 text-xs text-gray-300 dark:text-slate-600">
-            Try a different filter or create a new event.
-          </p>
-        </div>
-      )}
-
-      {!eventsQuery.isLoading && !eventsQuery.isError && pageCount > 1 && (
-        <div className="flex justify-center pt-2">
-          <div className="dark:text-slate-400">
-            <Pagination
-              count={pageCount}
-              page={page}
-              onChange={(_, value) => setPage(value)}
-              variant="outlined"
-              shape="rounded"
-              sx={paginationSx}
-            />
-          </div>
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
-};
+}
+
+export default CoordinatorEventsPage;

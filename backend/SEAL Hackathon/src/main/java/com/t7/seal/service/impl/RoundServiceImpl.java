@@ -245,7 +245,9 @@ public class RoundServiceImpl implements RoundService {
                 round.getName(),
                 round.getOrderIndex(),
                 round.getIsFinal(),
-                round.getStatus().name()
+                round.getStatus().name(),
+                round.getSubmissionDeadline(),
+                round.getJudgingDeadline()
         );
     }
 }
