@@ -63,11 +63,9 @@ public class PrizeController {
     @DeleteMapping("/{prizeId}")
     public ResponseEntity<Void> deletePrize(
             @PathVariable("prizeId") UUID prizeId,
-            @RequestParam("eventId") UUID eventId,
-            @RequestParam("trackId") UUID trackId,
             Authentication authentication
     ) {
-        prizeService.deletePrize(prizeId, eventId, trackId, authentication);
+        prizeService.deletePrize(prizeId, authentication);
         return ResponseEntity.noContent().build();
     }
 

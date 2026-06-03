@@ -90,7 +90,7 @@ export function EventBannerCropUpload({
         />
 
         <div className="grid gap-5 md:grid-cols-[1fr_240px] md:items-center">
-          <div className="h-44 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+          <div className="aspect-21/9 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
             {previewUrl ? (
               <img
                 src={previewUrl}
@@ -148,7 +148,7 @@ export function EventBannerCropUpload({
           title="Chỉnh sửa banner"
           imageUrl={cropImageUrl}
           fileName={cropFileName}
-          aspect={16 / 9}
+          aspect={21 / 9}
           cropShape="rect"
           outputType="image/jpeg"
           onClose={closeCropModal}

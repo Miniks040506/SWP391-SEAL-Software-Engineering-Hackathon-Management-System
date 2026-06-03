@@ -37,6 +37,10 @@ export const eventApi = {
     return apiRequest.patch<EventDetailResponse>(`/events/${eventId}`, payload);
   },
 
+  advanceEventStatus(eventId: UUID) {
+    return apiRequest.post<EventDetailResponse>(`/events/${eventId}/advance-status`);
+  },
+
   deleteEvent(eventId: UUID) {
     return apiRequest.delete<void>(`/events/${eventId}`);
   },

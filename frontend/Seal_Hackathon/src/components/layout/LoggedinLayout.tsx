@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { SidebarLoggedin } from "@/components/layout/SidebarLoggedin";
 import {
@@ -26,6 +26,7 @@ function canUseSection(userRole: UserRole | null, sectionRole: UserRole) {
 
 export function LoggedinLayout({ sectionRole }: LoggedinLayoutProps) {
   const initializeTheme = useThemeStore((state) => state.initializeTheme);
+  const location = useLocation();
 
   const storedUser = useAuthStore((state) => state.user);
   const storedAccessToken = useAuthStore((state) => state.accessToken);
@@ -49,6 +50,10 @@ export function LoggedinLayout({ sectionRole }: LoggedinLayoutProps) {
   useEffect(() => {
     initializeTheme();
   }, [initializeTheme]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+  }, [location.pathname]);
 
   if (!accessToken || !user) {
     return <Navigate to="/login" replace />;
@@ -77,7 +82,7 @@ export function LoggedinLayout({ sectionRole }: LoggedinLayoutProps) {
 
       <SidebarLoggedin sections={layoutConfig.sidebar} />
 
-      <main className="ml-64 px-8 py-8">
+      <main className="ml-64 px-8 py-8 pb-20">
         <Outlet />
       </main>
     </div>

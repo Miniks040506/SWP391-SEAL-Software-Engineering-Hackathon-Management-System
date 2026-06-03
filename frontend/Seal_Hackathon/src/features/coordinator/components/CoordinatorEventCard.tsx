@@ -17,33 +17,27 @@ type CoordinatorEventCardProps = {
 
 const STATUS_STYLES: Record<string, { classes: string; label: string }> = {
   ONGOING: {
-    classes:
-      "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300",
+    classes: "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300",
     label: "ONGOING",
   },
   REGISTRATION: {
-    classes:
-      "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+    classes: "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
     label: "REGISTRATION",
   },
   DRAFT: {
-    classes:
-      "border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+    classes: "border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
     label: "DRAFT",
   },
   COMPLETED: {
-    classes:
-      "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300",
+    classes: "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300",
     label: "COMPLETED",
   },
   ENDED: {
-    classes:
-      "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300",
+    classes: "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300",
     label: "ENDED",
   },
   CANCELLED: {
-    classes:
-      "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
+    classes: "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
     label: "CANCELLED",
   },
 };
@@ -54,13 +48,10 @@ function normalizeStatus(status?: string | null) {
 
 function StatusBadge({ status }: { status?: string | null }) {
   const key = normalizeStatus(status);
-  const style =
-    STATUS_STYLES[key] ??
-    {
-      classes:
-        "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300",
-      label: key,
-    };
+  const style = STATUS_STYLES[key] ?? {
+    classes: "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300",
+    label: key,
+  };
 
   return (
     <span
@@ -82,72 +73,37 @@ function StatusBadge({ status }: { status?: string | null }) {
   );
 }
 
-function Stat({
-  icon,
-  value,
-  label,
-}: {
-  icon: React.ReactNode;
-  value: CountValue;
-  label: string;
-}) {
+function Stat({ icon, value, label }: { icon: React.ReactNode; value: CountValue; label: string }) {
   return (
     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
       <span className="text-slate-400 dark:text-slate-500">{icon}</span>
       <span>
-        <strong className="font-bold text-gray-900 dark:text-slate-200">
-          {value ?? "—"}
-        </strong>{" "}
-        {label}
+        <strong className="font-bold text-gray-900 dark:text-slate-200">{value ?? "—"}</strong> {label}
       </span>
     </div>
   );
 }
 
-export function CoordinatorEventCard({
-  event,
-  trackCount,
-  approvedTeams,
-  onEdit,
-  onView,
-}: CoordinatorEventCardProps) {
+export function CoordinatorEventCard({ event, trackCount, approvedTeams, onEdit, onView }: CoordinatorEventCardProps) {
   const status = normalizeStatus(event.status);
   const isHighlighted = status === "ONGOING" || status === "REGISTRATION";
 
   return (
     <div className="relative flex min-h-75 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-[#1e293b]">
-      {event.bannerUrl && (
-        <img
-          src={event.bannerUrl}
-          alt={event.name}
-          className="-mx-6 -mt-6 mb-5 h-32 w-[calc(100%+3rem)] object-cover"
-        />
-      )}
+      {event.bannerUrl && <img src={event.bannerUrl} alt={event.name} className="-mx-6 -mt-6 mb-5 aspect-21/9 w-[calc(100%+3rem)] object-cover" />}
 
       <div className="flex items-center justify-between gap-3">
         <StatusBadge status={event.status} />
 
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-slate-500">
-          {event.season}
-        </span>
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-slate-500">{event.season}</span>
       </div>
 
-      <h2 className="mt-5 line-clamp-2 text-base font-bold text-gray-900 dark:text-white">
-        {event.name}
-      </h2>
+      <h2 className="mt-5 line-clamp-2 text-base font-bold text-gray-900 dark:text-white">{event.name}</h2>
 
       <div className="mt-5 space-y-3 border-y border-gray-100 py-5 dark:border-slate-700">
-        <Stat
-          icon={<LayersOutlinedIcon sx={{ fontSize: 16 }} />}
-          value={trackCount ?? "—"}
-          label="Tracks"
-        />
+        <Stat icon={<LayersOutlinedIcon sx={{ fontSize: 16 }} />} value={trackCount ?? "—"} label="Tracks" />
 
-        <Stat
-          icon={<GroupsOutlinedIcon sx={{ fontSize: 16 }} />}
-          value={approvedTeams ?? "—"}
-          label="Approved Teams"
-        />
+        <Stat icon={<GroupsOutlinedIcon sx={{ fontSize: 16 }} />} value={approvedTeams ?? "—"} label="Approved Teams" />
       </div>
 
       <div className="mt-auto grid grid-cols-2 gap-2 pt-5">

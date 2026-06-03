@@ -29,7 +29,7 @@ export function EventBannerUpload({
   return (
     <div className="rounded-2xl border border-dashed border-slate-300 p-4 dark:border-slate-700">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
-        <div className="h-36 flex-1 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+        <div className="aspect-21/9 flex-1 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
           {previewUrl ? (
             <img src={previewUrl} alt="Event banner preview" className="h-full w-full object-cover" />
           ) : (
