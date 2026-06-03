@@ -52,9 +52,9 @@ export function DashboardAuditLogs({
             // Skeleton entries while fetching
             Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="pl-4 border-l border-slate-200 dark:border-slate-700">
-                <Skeleton variant="text" width={120} height={16} />
-                <Skeleton variant="text" width={180} height={20} className="mt-1" />
-                <Skeleton variant="text" width="90%" height={16} className="mt-1" />
+                <Skeleton variant="text" width={120} height={16} className="dark:bg-slate-600 mt-1" />
+                <Skeleton variant="text" width={180} height={20} className="dark:bg-slate-600 mt-1" />
+                <Skeleton variant="text" width="90%" height={16} className="dark:bg-slate-600 mt-1" />
               </div>
             ))
           ) : auditLogs.length === 0 ? (

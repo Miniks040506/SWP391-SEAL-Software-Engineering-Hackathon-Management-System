@@ -58,14 +58,14 @@ export function DashboardPendingUsers({
                 className="flex justify-between items-center py-4 border-b border-slate-100 dark:border-slate-700/50 last:border-0"
               >
                 <div>
-                  <Skeleton variant="text" width={160} height={20} />
-                  <Skeleton variant="text" width={110} height={16} className="mt-1" />
+                  <Skeleton variant="text" width={160} height={20} className="dark:bg-slate-600 mt-1"/>
+                  <Skeleton variant="text" width={110} height={16} className="dark:bg-slate-600 mt-1" />
                 </div>
-                <Skeleton variant="rounded" width={90} height={22} />
+                <Skeleton variant="rounded" width={90} height={22} className="dark:bg-slate-600 mt-1" />
               </div>
             ))
           ) : pendingRequests.length === 0 ? (
-            <div className="py-8 text-center text-sm text-gray-500 dark:text-slate-400">
+            <div className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">
               No pending users. You're all caught up!
             </div>
           ) : (

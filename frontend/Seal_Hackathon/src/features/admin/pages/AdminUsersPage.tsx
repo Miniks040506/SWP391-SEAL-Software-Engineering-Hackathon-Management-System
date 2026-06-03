@@ -28,7 +28,10 @@ export function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [viewUserId, setViewUserId] = useState<string | null>(null);
   const [editUserId, setEditUserId] = useState<string | null>(null);
-  const [resetUser, setResetUser] = useState<{ id: string; email: string } | null>(null);
+  const [resetUser, setResetUser] = useState<{
+    id: string;
+    email: string;
+  } | null>(null);
 
   const { data, isLoading } = useAdminUsersQuery({
     search: search || undefined,
@@ -39,15 +42,30 @@ export function AdminUsersPage() {
   });
 
   // Stat card queries - size: 1 to only fetch totalElements
-  const { data: adminStats, isLoading: isAdminLoading } = useAdminUsersQuery({ role: "ADMIN", status: "ACTIVE", pageSize: 1 });
-  const { data: studentStats, isLoading: isStudentLoading } = useAdminUsersQuery({ role: "STUDENT", pageSize: 1 });
-  const { data: mentorStats, isLoading: isMentorLoading } = useAdminUsersQuery({ role: "MENTOR", pageSize: 1 });
-  const { data: judgeStats, isLoading: isJudgeLoading } = useAdminUsersQuery({ role: "JUDGE", pageSize: 1 });
-  const { data: coordinatorStats, isLoading: isCoordinatorLoading } = useAdminUsersQuery({ role: "COORDINATOR", pageSize: 1 });
+  const { data: adminStats, isLoading: isAdminLoading } = useAdminUsersQuery({
+    role: "ADMIN",
+    status: "ACTIVE",
+    pageSize: 1,
+  });
+  const { data: studentStats, isLoading: isStudentLoading } =
+    useAdminUsersQuery({ role: "STUDENT", pageSize: 1 });
+  const { data: mentorStats, isLoading: isMentorLoading } = useAdminUsersQuery({
+    role: "MENTOR",
+    pageSize: 1,
+  });
+  const { data: judgeStats, isLoading: isJudgeLoading } = useAdminUsersQuery({
+    role: "JUDGE",
+    pageSize: 1,
+  });
+  const { data: coordinatorStats, isLoading: isCoordinatorLoading } =
+    useAdminUsersQuery({ role: "COORDINATOR", pageSize: 1 });
 
   const isStatsLoading =
-    isAdminLoading || isStudentLoading || isMentorLoading ||
-    isJudgeLoading || isCoordinatorLoading;
+    isAdminLoading ||
+    isStudentLoading ||
+    isMentorLoading ||
+    isJudgeLoading ||
+    isCoordinatorLoading;
 
   const deactivateMutation = useDeactivateUserMutation();
   const activateMutation = useActivateUserMutation();
@@ -56,7 +74,9 @@ export function AdminUsersPage() {
     try {
       if (user.status === "ACTIVE") {
         await deactivateMutation.mutateAsync(user.id);
-        enqueueSnackbar("User deactivated successfully.", { variant: "success" });
+        enqueueSnackbar("User deactivated successfully.", {
+          variant: "success",
+        });
       } else {
         await activateMutation.mutateAsync(user.id);
         enqueueSnackbar("User activated successfully.", { variant: "success" });
@@ -84,7 +104,13 @@ export function AdminUsersPage() {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setShowCreate(true)}
-          sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px", boxShadow: "none", height: 40 }}
+          sx={{
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: "10px",
+            boxShadow: "none",
+            height: 40,
+          }}
         >
           Create New User
         </Button>
@@ -122,7 +148,8 @@ export function AdminUsersPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 px-5 py-3">
             <span className="text-xs text-slate-400">
-              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total} users
+              Showing {(page - 1) * PAGE_SIZE + 1}–
+              {Math.min(page * PAGE_SIZE, total)} of {total} users
             </span>
             <Pagination
               count={totalPages}
@@ -137,10 +164,21 @@ export function AdminUsersPage() {
         )}
       </div>
 
-      <UserViewDialog userId={viewUserId} onClose={() => setViewUserId(null)} onEdit={setEditUserId} onResetPassword={setResetUser} />
-      <UserCreateDialog open={showCreate} onClose={() => setShowCreate(false)} />
+      <UserViewDialog
+        userId={viewUserId}
+        onClose={() => setViewUserId(null)}
+        onEdit={setEditUserId}
+        onResetPassword={setResetUser}
+      />
+      <UserCreateDialog
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+      />
       <UserEditDialog userId={editUserId} onClose={() => setEditUserId(null)} />
-      <UserResetPasswordDialog user={resetUser} onClose={() => setResetUser(null)} />
+      <UserResetPasswordDialog
+        user={resetUser}
+        onClose={() => setResetUser(null)}
+      />
     </div>
   );
 }

@@ -1,9 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { userApi } from "@/api/user.api";
+import { systemApi } from "@/api/system.api";
+import type {
+  AuditLogResponse,
+} from "@/types/system.types";
+
 import type {
   AdminUserStats,
   AuditLogEntry,
-  AuditLogResponse,
   PendingRequest,
   UserApprovalResponse,
 } from "@/types/user.types";
@@ -94,7 +98,7 @@ export function useAdminDashboard() {
 
   const auditLogsQ = useQuery({
     queryKey: [DASHBOARD_AUDIT_KEY],
-    queryFn: () => userApi.getAuditLogs({ page: 0, size: 4 }),
+    queryFn: () => systemApi.getAuditLogs({ page: 0, size: 4 }),
     staleTime: LOGS_STALE,
     select: (d): AuditLogEntry[] => (d.content ?? []).map(toAuditLogEntry),
   });

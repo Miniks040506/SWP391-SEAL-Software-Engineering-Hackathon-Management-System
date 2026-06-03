@@ -18,7 +18,7 @@ function SystemMenuCard({
   return (
     <Card
       variant="outlined"
-      className="border-slate-100 dark:border-slate-700 !bg-white dark:!bg-slate-800 shadow-sm rounded-xl cursor-pointer hover:!bg-slate-50 dark:hover:!bg-slate-700/50 hover:border-blue-200 dark:hover:border-blue-500/50 transition-all group"
+      className="border-slate-100 dark:border-slate-700 bg-white! dark:bg-slate-800! shadow-sm rounded-xl cursor-pointer hover:bg-slate-50! dark:hover:bg-slate-700/50! hover:border-blue-200 dark:hover:border-blue-500/50 transition-all group"
       onClick={onClick}
     >
       <CardContent className="p-4 flex flex-col items-center justify-center gap-2 text-center h-full">
