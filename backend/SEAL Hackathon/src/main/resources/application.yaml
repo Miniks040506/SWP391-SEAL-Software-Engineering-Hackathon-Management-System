@@ -53,7 +53,7 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     properties:
       hibernate:
         format_sql: true
@@ -133,3 +133,5 @@ cloudinary:
   api-secret: ${CLOUDINARY_API_SECRET}
   avatar-folder: seal/users/avatars
   avatar-max-size-mb: 3
+  banner-folder: seal/events/banners
+  banner-max-size-mb: 5

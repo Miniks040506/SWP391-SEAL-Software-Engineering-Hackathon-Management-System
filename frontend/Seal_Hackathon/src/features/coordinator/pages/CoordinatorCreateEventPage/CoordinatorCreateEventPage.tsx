@@ -1,50 +1,111 @@
-import { useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
+import { Button } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
+import { useState } from "react";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 
-import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+import { useAuthStore } from "@/stores/authStore";
 
-import { StepProgress } from "@/features/auth/components/StepProgress";
-
-import { EventDetailsStep } from "./1_EventDetails";
-import { TracksRoundsStep } from "./2_TracksRounds";
-import { PrizesStep } from "./3_Prizes";
-import { MentorsJudgesStep } from "./4_MentorsJudges";
-import { EventCriteriaStep } from "./5_EventCriteria";
-
-import { useCreateEventFlowMutation } from "../../hooks/useCreateEventFlow";
-
+import { useCreateEventFlowMutation } from "@/features/coordinator/hooks/useCreateEventFlow";
 import {
   createEventSchema,
   initialCreateEventFormValues,
   type CreateEventFormValues,
-  type CreateEventPayload,
-} from "../../schemas/createEvent.schema";
+} from "@/features/coordinator/schemas/createEvent.schema";
+
+import { EventDetailsStep } from "./1_EventDetails";
+import { TracksStep } from "./2_Tracks";
+import { PrizesStep } from "./3_Prizes";
+import { RoundsStep } from "./5_Rounds";
+import { MentorsJudgesStep } from "./4_MentorsJudges";
+import { EventCriteriaStep } from "./6_EventCriteria";
 
 const steps = [
-  { number: 1, label: "Event Details" },
-  { number: 2, label: "Track & Round" },
-  { number: 3, label: "Prizes" },
-  { number: 4, label: "Mentors & Judges" },
-  { number: 5, label: "Event Criteria" },
+  "Event Details",
+  "Track",
+  "Prizes",
+  "Round",
+  "Mentors & Judges",
+  "Event Criteria",
 ];
+
+function Stepper({ activeStep }: { activeStep: number }) {
+  return (
+    <div className="mx-auto w-full max-w-5xl">
+      <div className="flex items-start justify-between">
+        {steps.map((step, index) => {
+          const stepNumber = index + 1;
+          const done = stepNumber < activeStep;
+          const active = stepNumber === activeStep;
+
+          return (
+            <div key={step} className="flex flex-1 items-start">
+              <div className="flex flex-1 flex-col items-center">
+                <div
+                  className={[
+                    "flex h-9 w-9 items-center justify-center rounded-full text-sm font-black transition",
+                    done || active
+                      ? "bg-blue-500 text-white"
+                      : "bg-slate-900 text-white dark:bg-slate-700",
+                  ].join(" ")}
+                >
+                  {done ? "✓" : stepNumber}
+                </div>
+
+                <p
+                  className={[
+                    "mt-2 max-w-28 text-center text-[11px] font-black uppercase tracking-widest",
+                    done || active
+                      ? "text-blue-500"
+                      : "text-slate-800 dark:text-slate-300",
+                  ].join(" ")}
+                >
+                  {step}
+                </p>
+              </div>
+
+              {index < steps.length - 1 && (
+                <div
+                  className={[
+                    "mt-4 h-0.5 flex-1",
+                    stepNumber < activeStep
+                      ? "bg-blue-500"
+                      : "bg-slate-300 dark:bg-slate-700",
+                  ].join(" ")}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export const CoordinatorCreateEventPage = () => {
   const navigate = useNavigate();
-  const [activeStep, setActiveStep] = useState(1);
   const createEventFlowMutation = useCreateEventFlowMutation();
 
-  const methods = useForm<CreateEventFormValues, unknown, CreateEventPayload>({
+  const [activeStep, setActiveStep] = useState(1);
+
+  const methods = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventSchema),
     defaultValues: initialCreateEventFormValues,
-    mode: "onSubmit",
+    mode: "onTouched",
+    reValidateMode: "onChange",
   });
 
-  const handleNextStep = async () => {
+  const tracks = useWatch({ control: methods.control, name: "tracks" }) ?? [];
+  const rounds = useWatch({ control: methods.control, name: "rounds" }) ?? [];
+
+  const handlePreviousStep = () => {
+    setActiveStep((step) => Math.max(1, step - 1));
+  };
+
+  const validateCurrentStep = async () => {
     if (activeStep === 1) {
-      const isValid = await methods.trigger(
+      return methods.trigger(
         [
           "eventName",
           "season",
@@ -56,98 +117,110 @@ export const CoordinatorCreateEventPage = () => {
         ],
         { shouldFocus: true },
       );
+    }
 
-      if (!isValid) return;
+    if (activeStep === 2) return methods.trigger("tracks", { shouldFocus: true });
+    if (activeStep === 3) return methods.trigger("prizes", { shouldFocus: true });
+    if (activeStep === 4) return methods.trigger("rounds", { shouldFocus: true });
+    if (activeStep === 5) return methods.trigger("mentorJudgeAssignments", { shouldFocus: true });
 
-      setActiveStep(2);
+    return true;
+  };
+
+  const handleNextStep = async () => {
+    const valid = await validateCurrentStep();
+
+    if (!valid) {
+      enqueueSnackbar("Please fix the highlighted form errors.", {
+        variant: "error",
+        preventDuplicate: true,
+      });
+
       return;
     }
 
-    if (activeStep === 2) {
-      const isValid = await methods.trigger("tracks", {
-        shouldFocus: true,
-      });
-
-      if (!isValid) return;
-
-      setActiveStep(3);
-      return;
-    }
-
-    setActiveStep((prev) => Math.min(prev + 1, steps.length));
+    setActiveStep((step) => Math.min(6, step + 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handlePreviousStep = () => {
-    setActiveStep((prev) => Math.max(prev - 1, 1));
-  };
+  const handleSubmit = methods.handleSubmit(async (values) => {
+    const accessToken = useAuthStore.getState().accessToken;
 
-  const handleCreateEvent = methods.handleSubmit(async (values) => {
-    try {
-      await createEventFlowMutation.mutateAsync(values);
-
-      enqueueSnackbar("Event created successfully.", {
-        variant: "success",
-      });
-
-      navigate("/coordinator/dashboard");
-    } catch (error: any) {
+    if (!accessToken || accessToken === "dev-token") {
       enqueueSnackbar(
-        error?.response?.data?.message ||
-          "Failed to create event. Please try again.",
-        {
-          variant: "error",
-        },
+        "You must sign in with a real coordinator/admin account before creating an event.",
+        { variant: "error" },
       );
+
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const createdEvent = await createEventFlowMutation.mutateAsync(values);
+
+      enqueueSnackbar("Event created successfully.", { variant: "success" });
+
+      navigate(`/coordinator/events/${createdEvent.id}/edit`, { replace: true });
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Cannot create event. Please check API and token.";
+
+      enqueueSnackbar(message, { variant: "error" });
     }
   });
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleCreateEvent} className="space-y-6">
-        <button
-          type="button"
-          onClick={() => navigate("/coordinator/dashboard")}
-          className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 transition-colors hover:text-blue-600"
-        >
-          <ArrowBackOutlinedIcon fontSize="small" />
-          Back to Dashboard
-        </button>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <section className="space-y-4">
+          <Button
+            type="button"
+            variant="text"
+            onClick={() => navigate("/coordinator/dashboard")}
+            sx={{ textTransform: "none", fontWeight: 800 }}
+          >
+            ← Back to Dashboard
+          </Button>
 
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Create New Event
-          </h1>
-        </div>
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+              Create New Event
+            </h1>
 
-        <StepProgress
-          title=""
-          currentStep={activeStep}
-          steps={steps.map((step) => ({
-            label: step.label,
-          }))}
-        />
+            <Stepper activeStep={activeStep} />
+          </div>
+        </section>
 
         {activeStep === 1 && <EventDetailsStep onNext={handleNextStep} />}
 
         {activeStep === 2 && (
-          <TracksRoundsStep
-            onBack={handlePreviousStep}
-            onNext={handleNextStep}
-          />
+          <TracksStep onBack={handlePreviousStep} onNext={handleNextStep} />
         )}
 
         {activeStep === 3 && (
-          <PrizesStep onBack={handlePreviousStep} onNext={handleNextStep} />
-        )}
-
-        {activeStep === 4 && (
-          <MentorsJudgesStep
+          <PrizesStep
             onBack={handlePreviousStep}
             onNext={handleNextStep}
           />
         )}
 
+        {activeStep === 4 && (
+          <RoundsStep tracks={tracks} onBack={handlePreviousStep} onNext={handleNextStep} />
+        )}
+
         {activeStep === 5 && (
+          <MentorsJudgesStep
+            tracks={tracks}
+            rounds={rounds}
+            onBack={handlePreviousStep}
+            onNext={handleNextStep}
+          />
+        )}
+
+        {activeStep === 6 && (
           <EventCriteriaStep
             onBack={handlePreviousStep}
             isSubmitting={createEventFlowMutation.isPending}

@@ -6,9 +6,13 @@ import com.t7.seal.response.user.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface UserService {
+
+    List<AssignableUserResponse> getAssignableUsers(String role, String search);
+
     ProfileResponse getMyProfile(Authentication authentication);
 
     ProfileResponse updateMyProfile(Authentication authentication, UpdateMyProfileRequest request);

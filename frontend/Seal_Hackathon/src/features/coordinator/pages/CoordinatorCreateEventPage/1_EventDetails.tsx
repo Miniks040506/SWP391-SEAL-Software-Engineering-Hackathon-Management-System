@@ -1,50 +1,69 @@
 import { Controller, useFormContext } from "react-hook-form";
 
-import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
-
-import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
+import Button from "@mui/material/Button";
+import MenuItem from "@mui/material/MenuItem";
+import TextField from "@mui/material/TextField";
 
+import { EventBannerCropUpload } from "@/features/coordinator/pages/CoordinatorCreateEventPage/components/EventBannerCropUpload";
 import {
   EVENT_SEASONS,
   type CreateEventFormValues,
-} from "../../schemas/createEvent.schema";
+} from "@/features/coordinator/schemas/createEvent.schema";
 
 type EventDetailsStepProps = {
   onNext: () => void;
+};
+
+const textFieldSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "14px",
+  },
+};
+
+const dateTimeFieldSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "14px",
+  },
+  "& .MuiInputLabel-root": {
+    backgroundColor: "white",
+    paddingInline: "4px",
+  },
+  ".dark & .MuiInputLabel-root": {
+    backgroundColor: "#1e293b",
+  },
 };
 
 export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
   const {
     register,
     control,
-    setValue,
-    watch,
     formState: { errors },
   } = useFormContext<CreateEventFormValues>();
 
-  const bannerFile = watch("bannerFile");
-
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-gray-100 px-7 py-5">
-        <h2 className="text-lg font-extrabold text-gray-900">
+    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
+      <div className="border-b border-gray-100 px-7 py-5 dark:border-slate-700">
+        <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
           Step 1: Event Details
         </h2>
+
+        <p className="mt-2 text-sm font-medium text-gray-500 dark:text-slate-400">
+          Setup event information and registration period.
+        </p>
       </div>
 
       <div className="space-y-6 px-7 py-6">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <TextField
-            label="Event Name"
-            placeholder="e.g. Spring 2024 Hackathon"
+            label="Event name"
+            placeholder="e.g. Spring 2026 Hackathon"
             error={Boolean(errors.eventName)}
             helperText={errors.eventName?.message}
             required
             fullWidth
             size="small"
+            sx={textFieldSx}
             {...register("eventName")}
           />
 
@@ -53,6 +72,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             control={control}
             render={({ field }) => (
               <TextField
+                {...field}
                 select
                 label="Season"
                 error={Boolean(errors.season)}
@@ -60,7 +80,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
                 required
                 fullWidth
                 size="small"
-                {...field}
+                sx={textFieldSx}
               >
                 {EVENT_SEASONS.map((season) => (
                   <MenuItem key={season} value={season}>
@@ -79,41 +99,43 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             required
             fullWidth
             size="small"
-            inputProps={{
-              maxLength: 4,
-            }}
+            inputProps={{ maxLength: 4 }}
+            sx={textFieldSx}
             {...register("year")}
           />
 
           <TextField
+            label="Status"
+            value="Draft"
+            disabled
+            fullWidth
+            size="small"
+            sx={textFieldSx}
+          />
+
+          <TextField
             label="Registration Start At"
-            type="date"
+            type="datetime-local"
             error={Boolean(errors.registrationStartAt)}
             helperText={errors.registrationStartAt?.message}
             required
             fullWidth
             size="small"
-            slotProps={{
-              inputLabel: {
-                shrink: true,
-              },
-            }}
+            sx={dateTimeFieldSx}
+            InputLabelProps={{ shrink: true }}
             {...register("registrationStartAt")}
           />
 
           <TextField
             label="Registration End At"
-            type="date"
+            type="datetime-local"
             error={Boolean(errors.registrationEndAt)}
             helperText={errors.registrationEndAt?.message}
             required
             fullWidth
             size="small"
-            slotProps={{
-              inputLabel: {
-                shrink: true,
-              },
-            }}
+            sx={dateTimeFieldSx}
+            InputLabelProps={{ shrink: true }}
             {...register("registrationEndAt")}
           />
         </div>
@@ -126,31 +148,22 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
           multiline
           minRows={4}
           fullWidth
+          sx={textFieldSx}
           {...register("description")}
         />
 
-        <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-slate-50 text-center transition hover:border-blue-300 hover:bg-blue-50/40">
-          <CloudUploadOutlinedIcon className="text-gray-400" />
+        <Controller
+          name="bannerFile"
+          control={control}
+          render={({ field }) => (
+            <EventBannerCropUpload
+              file={field.value ?? null}
+              onChange={(file) => field.onChange(file)}
+            />
+          )}
+        />
 
-          <span className="mt-2 text-sm font-medium text-gray-600">
-            {bannerFile ? bannerFile.name : "Upload Event Banner"}
-          </span>
-
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0] || null;
-              setValue("bannerFile", file, {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-            }}
-          />
-        </label>
-
-        <div className="flex justify-end border-t border-gray-100 px-7 py-5">
+        <div className="flex justify-end border-t border-gray-100 pt-5 dark:border-slate-700">
           <Button
             type="button"
             variant="contained"
@@ -162,8 +175,11 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
               borderRadius: 2,
               bgcolor: "#2563eb",
               fontWeight: 800,
+              textTransform: "none",
+              boxShadow: "none",
               "&:hover": {
                 bgcolor: "#1d4ed8",
+                boxShadow: "none",
               },
             }}
           >

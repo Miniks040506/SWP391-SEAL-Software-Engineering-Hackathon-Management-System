@@ -61,6 +61,28 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
         }
     }
 
+    @Override
+    public String uploadEventBanner(MultipartFile file) {
+        validateImage(file, "Banner", cloudinaryProperties.bannerMaxSizeMb());
+        try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", cloudinaryProperties.bannerFolder(),
+                            "resource_type", "image",
+                            "allowed_formats", new String[]{"jpg", "jpeg", "png", "webp"}
+                    )
+            );
+            Object secureUrl = uploadResult.get("secure_url");
+            if (secureUrl == null) throw new BadRequestException("Cloudinary upload failed.");
+            return secureUrl.toString();
+        } catch (BadRequestException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new BadRequestException("Cannot upload event banner to Cloudinary.");
+        }
+    }
+
     //HELPERS
     private void validateAvatar(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -77,6 +99,24 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
 
         if (file.getSize() > maxSizeBytes) {
             throw new BadRequestException("Avatar must be less than " + cloudinaryProperties.avatarMaxSizeMb() + "MB");
+        }
+    }
+
+    private void validateImage(MultipartFile file, String label, long maxSizeMb) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException(label + " file is required.");
+        }
+
+        String contentType = file.getContentType();
+
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new BadRequestException(label + " must be JPG, PNG, or WEBP.");
+        }
+
+        long maxSizeBytes = maxSizeMb * 1024 * 1024;
+
+        if (file.getSize() > maxSizeBytes) {
+            throw new BadRequestException(label + " must not exceed " + maxSizeMb + "MB.");
         }
     }
 }

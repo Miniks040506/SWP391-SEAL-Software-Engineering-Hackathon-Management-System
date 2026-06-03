@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -48,6 +49,54 @@ public class UserServiceImpl implements UserService {
     private final CloudinaryStorageService cloudinaryStorageService;
 
     private final SecureRandom secureRandom = new SecureRandom();
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AssignableUserResponse> getAssignableUsers(String role, String search) {
+        UserRole parsedRole;
+
+        try {
+            parsedRole = UserRole.valueOf(role.toUpperCase());
+        } catch (Exception exception) {
+            throw new BadRequestException("Invalid assignable role.");
+        }
+
+        if (parsedRole != UserRole.MENTOR && parsedRole != UserRole.JUDGE) {
+            throw new BadRequestException("Assignable role must be MENTOR or JUDGE.");
+        }
+
+        String keyword = search == null ? "" : search.trim().toLowerCase();
+
+        List<User> users;
+
+        if (keyword.isBlank()) {
+            users = userRepository.findByRoleAndStatusOrderByFullNameAsc(
+                    parsedRole,
+                    UserStatus.ACTIVE
+            );
+        } else {
+            users = userRepository.searchAssignableUsers(
+                    parsedRole,
+                    UserStatus.ACTIVE,
+                    keyword
+            );
+        }
+
+        return users.stream()
+                .map(this::toAssignableUserResponse)
+                .toList();
+    }
+
+    private AssignableUserResponse toAssignableUserResponse(User user) {
+        return new AssignableUserResponse(
+                user.getId(),
+                user.getRole() == UserRole.JUDGE ? user.getId() : null,
+                user.getEmail(),
+                user.getFullName(),
+                user.getRole(),
+                user.getStatus()
+        );
+    }
 
     @Override
     @Transactional(readOnly = true)

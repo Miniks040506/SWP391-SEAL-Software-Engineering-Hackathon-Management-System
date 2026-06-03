@@ -5,20 +5,24 @@ import com.t7.seal.request.event.UpdateEventRequest;
 import com.t7.seal.request.results.PublishResultsRequest;
 import com.t7.seal.request.event.CreateEventRequest;
 import com.t7.seal.response.PageResponse;
+import com.t7.seal.response.UploadFileResponse;
 import com.t7.seal.response.event.EventDetailResponse;
 import com.t7.seal.response.event.EventSummaryResponse;
 import com.t7.seal.response.results.PublishResultsResponse;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.system.VarianceDashboardResponse;
+import com.t7.seal.service.CloudinaryStorageService;
 import com.t7.seal.service.EventService;
 import com.t7.seal.service.RankingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -30,6 +34,20 @@ public class EventController {
 
     private final EventService eventService;
     private final RankingService rankingService;
+    private final CloudinaryStorageService cloudinaryStorageService;
+
+    @PreAuthorize("@eventSecurity.canCreateEvent(authentication)")
+    @PostMapping(
+            value = "/banner",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<UploadFileResponse> uploadEventBanner(
+            @RequestPart("file") MultipartFile file
+    ) {
+        return ResponseEntity.ok(
+                new UploadFileResponse(
+                        cloudinaryStorageService.uploadEventBanner(file)));
+    }
 
     @PreAuthorize("@eventSecurity.canCreateEvent(authentication)")
     @PostMapping
@@ -83,7 +101,7 @@ public class EventController {
     }
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
-    @PostMapping("/{eventId}")
+    @DeleteMapping("/{eventId}")
     public ResponseEntity<Void> deleteEvent(
             @PathVariable UUID eventId,
             Authentication authentication) {

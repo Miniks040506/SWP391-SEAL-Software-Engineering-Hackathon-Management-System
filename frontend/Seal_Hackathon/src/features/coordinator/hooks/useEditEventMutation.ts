@@ -12,7 +12,7 @@ import {
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
-export type TabId = "info" | "tracks" | "criteria" | "teams";
+export type TabId = "info" | "tracks" | "rounds" | "prizes" | "assignments" | "criteria" | "teams";
 
 export type TeamStatus = "PENDING" | "APPROVED" | "REJECTED";
 

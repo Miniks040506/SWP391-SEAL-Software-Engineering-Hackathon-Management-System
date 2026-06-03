@@ -8,6 +8,8 @@ public record CloudinaryProperties(
         String apiKey,
         String apiSecret,
         String avatarFolder,
-        Long avatarMaxSizeMb
+        Long avatarMaxSizeMb,
+        String bannerFolder,
+        Long bannerMaxSizeMb
 ) {
 }

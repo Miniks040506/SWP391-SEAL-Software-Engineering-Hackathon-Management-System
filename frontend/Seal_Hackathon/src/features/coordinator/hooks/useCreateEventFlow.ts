@@ -1,71 +1,42 @@
 import { useMutation } from "@tanstack/react-query";
 
+import { eventAssetApi } from "@/api/eventAsset.api";
 import { eventApi } from "@/api/event.api";
-import { trackApi } from "@/api/track.api";
+import { prizeApi } from "@/api/prize.api";
 import { roundApi } from "@/api/round.api";
+import { trackApi } from "@/api/track.api";
 
-import type { CreateEventRequest } from "@/types/event.types";
-import type { CreateTrackRequest } from "@/types/track.types";
-import type {
-  CreateAdvanceRuleRequest,
-  CreateRoundRequest,
-} from "@/types/round.types";
+import type { CreateEventFormValues } from "@/features/coordinator/schemas/createEvent.schema";
 
-import type { CreateEventPayload } from "../schemas/createEvent.schema";
-
-const toLocalDateTime = (value?: string) => {
+function toLocalDateTime(value?: string | null) {
   if (!value) return undefined;
-
   return value.length === 16 ? `${value}:00` : value;
-};
+}
 
-const mapEventPayload = (values: CreateEventPayload): CreateEventRequest => {
-  return {
-    name: values.eventName,
-    description: values.description || undefined,
-    season: values.season,
-    year: Number(values.year),
-    registrationStartAt: toLocalDateTime(values.registrationStartAt),
-    registrationEndAt: toLocalDateTime(values.registrationEndAt),
-    bannerUrl: undefined,
-    status: "DRAFT",
-  };
-};
+function nullIfBlank(value?: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
 
-const mapTrackPayload = (
-  track: CreateEventPayload["tracks"][number],
-): CreateTrackRequest => {
-  return {
-    name: track.trackName,
-    description: track.description || undefined,
-    maxTeams: track.maxTeams ? Number(track.maxTeams) : undefined,
-    requiredLinkTypes: track.requiredLinkTypes,
-  };
-};
+function numberOrUndefined(value: unknown) {
+  if (value === "" || value === null || value === undefined) return undefined;
 
-const mapRoundPayload = (
-  round: CreateEventPayload["tracks"][number]["rounds"][number],
-): CreateRoundRequest => {
-  return {
-    name: round.roundName,
-    orderIndex: Number(round.orderIndex),
-    isFinal: round.isFinal,
-    submissionDeadline: toLocalDateTime(round.submissionDeadline),
-    judgingDeadline: toLocalDateTime(round.judgingDeadline),
-  };
-};
+  const numberValue = Number(value);
 
-const mapAdvanceRulePayload = (
-  round: CreateEventPayload["tracks"][number]["rounds"][number],
+  return Number.isNaN(numberValue) ? undefined : numberValue;
+}
+
+function mapAdvanceRule(
+  round: CreateEventFormValues["rounds"][number],
   trackId: string,
-): CreateAdvanceRuleRequest => {
-  const numericValue = Number(round.advancementRuleValue);
+) {
+  const numericValue = numberOrUndefined(round.advancementRuleValue);
 
   if (round.advancementRuleType === "Top-N Teams") {
     return {
       ruleType: "TOP_N",
       trackId,
-      topN: Number.isNaN(numericValue) ? undefined : numericValue,
+      topN: numericValue,
       description: "Advance top N teams for this track.",
     };
   }
@@ -74,7 +45,7 @@ const mapAdvanceRulePayload = (
     return {
       ruleType: "MIN_SCORE",
       trackId,
-      minScore: Number.isNaN(numericValue) ? undefined : numericValue,
+      minScore: numericValue,
       description: "Advance teams that reach the minimum score.",
     };
   }
@@ -84,27 +55,105 @@ const mapAdvanceRulePayload = (
     trackId,
     description: "Manual advancement selection.",
   };
-};
+}
 
-async function createEventFlow(values: CreateEventPayload) {
-  const createdEvent = await eventApi.createEvent(mapEventPayload(values));
+async function createEventFlow(values: CreateEventFormValues) {
+  let bannerUrl: string | undefined;
+
+  if (values.bannerFile) {
+    const uploaded = await eventAssetApi.uploadEventBanner(values.bannerFile);
+    bannerUrl = uploaded.url;
+  }
+
+  const createdEvent = await eventApi.createEvent({
+    name: values.eventName.trim(),
+    description: nullIfBlank(values.description),
+    season: values.season,
+    year: Number(values.year),
+    registrationStartAt: toLocalDateTime(values.registrationStartAt),
+    registrationEndAt: toLocalDateTime(values.registrationEndAt),
+    bannerUrl,
+    status: "DRAFT",
+  });
+
+  const trackIdMap = new Map<string, string>();
+  const roundIdMap = new Map<string, string>();
 
   for (const track of values.tracks) {
-    const createdTrack = await trackApi.createTrack(
-      createdEvent.id,
-      mapTrackPayload(track),
-    );
+    const createdTrack = await trackApi.createTrack(createdEvent.id, {
+      name: track.trackName.trim(),
+      description: nullIfBlank(track.description),
+      maxTeams: numberOrUndefined(track.maxTeams),
+      requiredLinkTypes: track.requiredLinkTypes,
+    });
 
-    for (const round of track.rounds) {
-      const createdRound = await roundApi.createRound(
-        createdEvent.id,
-        mapRoundPayload(round),
-      );
+    trackIdMap.set(track.id, createdTrack.id);
+  }
+
+  for (const prize of values.prizes) {
+    const mappedTrackId = prize.trackId ? trackIdMap.get(prize.trackId) : undefined;
+
+    await prizeApi.createPrize({
+      eventId: createdEvent.id,
+      trackId: mappedTrackId,
+      rankPosition: numberOrUndefined(prize.rankPosition),
+      title: prize.title.trim(),
+      description: nullIfBlank(prize.description),
+      value: numberOrUndefined(prize.value),
+      currency: nullIfBlank(prize.currency),
+      sponsorName: nullIfBlank(prize.sponsorName),
+    });
+  }
+
+  for (const round of values.rounds) {
+    const createdRound = await roundApi.createRound(createdEvent.id, {
+      name: round.roundName.trim(),
+      orderIndex: Number(round.orderIndex),
+      isFinal: round.isFinal,
+      submissionDeadline: toLocalDateTime(round.submissionDeadline),
+      judgingDeadline: toLocalDateTime(round.judgingDeadline),
+    });
+
+    roundIdMap.set(round.id, createdRound.id);
+
+    for (const track of values.tracks) {
+      const mappedTrackId = trackIdMap.get(track.id);
+      if (!mappedTrackId) continue;
 
       await roundApi.createAdvanceRule(
         createdRound.id,
-        mapAdvanceRulePayload(round, createdTrack.id),
+        mapAdvanceRule(round, mappedTrackId),
       );
+    }
+  }
+
+  for (const assignment of values.mentorJudgeAssignments) {
+    if (assignment.role === "MENTOR") {
+      for (const localTrackId of assignment.assignedTrackIds) {
+        const mappedTrackId = trackIdMap.get(localTrackId);
+        if (!mappedTrackId) continue;
+
+        await trackApi.assignMentor(mappedTrackId, {
+          mentorUserId: assignment.userId,
+        });
+      }
+    }
+
+    if (assignment.role === "JUDGE") {
+      const judgeId = assignment.judgeId || assignment.userId;
+
+      for (const pair of assignment.judgeRoundAssignments) {
+        const mappedTrackId = trackIdMap.get(pair.trackId);
+        const mappedRoundId = roundIdMap.get(pair.roundId);
+
+        if (!mappedTrackId || !mappedRoundId) continue;
+
+        await roundApi.assignJudge(mappedRoundId, {
+          judgeId,
+          trackId: mappedTrackId,
+          totalToScore: numberOrUndefined(pair.totalToScore),
+        });
+      }
     }
   }
 
