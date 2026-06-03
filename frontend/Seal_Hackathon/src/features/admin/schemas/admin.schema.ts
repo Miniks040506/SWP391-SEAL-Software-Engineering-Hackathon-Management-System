@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { UserRole } from "@/types/auth.types";
 import type { UserStatus } from "@/types/user.types";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// Constants
 
 export const ALL_ROLES: readonly UserRole[] = [
   "ADMIN",
@@ -32,9 +32,7 @@ export const CREATE_STATUSES = [
   "PENDING_APPROVAL",
 ] as const satisfies readonly [UserStatus, ...UserStatus[]];
 
-// ─── MUI sx Presets ───────────────────────────────────────────────────────────
-// Dùng `.dark &` Tailwind prefix để tránh phải detect dark mode thủ công trong component.
-
+// MUI sx Presets
 export const textFieldSx = {
   "& .MuiOutlinedInput-root": { borderRadius: "10px" },
   ".dark & .MuiInputBase-input": { color: "#cbd5e1" },
@@ -44,7 +42,7 @@ export const textFieldSx = {
   ".dark & .MuiIconButton-root": { color: "#94a3b8" },
 };
 
-/** Dùng cho Search TextField trong filter bar (có thêm focused state) */
+/* Use for Search TextField in filter bar */
 export const filterTextFieldSx = {
   "& .MuiOutlinedInput-root": { borderRadius: "10px" },
   "& .MuiInputBase-input": { color: "#1e293b" },
@@ -73,7 +71,7 @@ export const selectSx = {
   ".dark & .MuiSvgIcon-root": { color: "#94a3b8" },
 };
 
-/** Dùng cho filter Select (light mode cần explicit color) */
+/* Use for filter Select */
 export const filterSelectSx = {
   borderRadius: "10px",
   color: "#1e293b",
@@ -101,7 +99,7 @@ export const menuPropsDark = {
   },
 };
 
-/** MenuProps cho cả light và dark mode (dùng trong filter bar) */
+/* MenuProps for light and dark mode */
 export const menuPropsAll = {
   sx: {
     "& .MuiPaper-root": {
@@ -151,7 +149,7 @@ export const paginationSx = {
   ".dark & .MuiPaginationItem-ellipsis": { color: "#64748b" },
 };
 
-// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+// Zod Schemas
 
 const passwordSchema = z
   .string()

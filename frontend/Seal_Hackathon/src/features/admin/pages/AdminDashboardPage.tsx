@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Button, CircularProgress } from "@mui/material";
+import { Button } from "@mui/material";
 
 import { useAdminDashboard } from "@/features/admin/hooks/useAdminDashboardMutation";
 import { DashboardRoleCards } from "@/features/admin/components/AdminDashboard/DashboardRoleCards";
@@ -9,19 +9,12 @@ import { DashboardSystemModules } from "@/features/admin/components/AdminDashboa
 
 export function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { isLoading, stats, auditLogs, pendingRequests } = useAdminDashboard();
-
-  if (isLoading) {
-    return (
-      <div className="flex h-[calc(100vh-64px)] items-center justify-center bg-slate-50 dark:bg-transparent">
-        <CircularProgress />
-      </div>
-    );
-  }
+  const { isStatsLoading, isPendingLoading, isAuditLoading, stats, auditLogs, pendingRequests } =
+    useAdminDashboard();
 
   return (
     <div className="space-y-8 p-6 bg-slate-50 dark:bg-transparent min-h-[calc(100vh-64px)] transition-colors">
-      <section className="flex flex-col gap-4 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-7 text-white shadow-sm md:flex-row md:items-center md:justify-between">
+      <section className="flex flex-col gap-4 rounded-3xl bg-linear-to-r from-blue-600 to-indigo-600 px-8 py-7 text-white shadow-sm md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-widest text-blue-200">
             System Administration
@@ -36,7 +29,7 @@ export function AdminDashboardPage() {
         <div className="flex flex-wrap gap-3">
           <Button
             variant="contained"
-            className="!bg-white !text-blue-600 hover:!bg-blue-50 !normal-case !rounded-lg !font-semibold"
+            className="bg-white! text-blue-600! hover:bg-blue-50! normal-case! rounded-lg! font-semibold!"
             onClick={() => navigate("/admin/users")}
           >
             Manage Users
@@ -44,13 +37,13 @@ export function AdminDashboardPage() {
         </div>
       </section>
 
-      <DashboardRoleCards stats={stats} />
+      <DashboardRoleCards stats={stats} isLoading={isStatsLoading} />
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <DashboardPendingUsers pendingRequests={pendingRequests} />
+          <DashboardPendingUsers pendingRequests={pendingRequests} isLoading={isPendingLoading} />
         </div>
-        <DashboardAuditLogs auditLogs={auditLogs} />
+        <DashboardAuditLogs auditLogs={auditLogs} isLoading={isAuditLoading} />
       </section>
 
       <DashboardSystemModules />

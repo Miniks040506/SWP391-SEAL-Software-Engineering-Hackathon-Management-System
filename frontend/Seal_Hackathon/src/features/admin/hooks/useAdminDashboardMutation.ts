@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { userApi } from "@/api/user.api";
-import type { AdminUserStats, AuditLogEntry, AuditLogResponse, PendingRequest } from "@/types/user.types";
+import type {
+  AdminUserStats,
+  AuditLogEntry,
+  AuditLogResponse,
+  PendingRequest,
+  UserApprovalResponse,
+} from "@/types/user.types";
 
 const DASHBOARD_STATS_KEY = "admin-dashboard-stat";
 const DASHBOARD_PENDING_KEY = "admin-dashboard-pending-users";
@@ -34,6 +40,7 @@ function toAuditLogEntry(log: AuditLogResponse): AuditLogEntry {
   };
 }
 
+// Fetches total user count for a given role
 function useRoleCount(role: string) {
   return useQuery({
     queryKey: [DASHBOARD_STATS_KEY, role],
@@ -43,6 +50,7 @@ function useRoleCount(role: string) {
   });
 }
 
+// Fetches total user count for a given status
 function useStatusCount(status: string) {
   return useQuery({
     queryKey: [DASHBOARD_STATS_KEY, status],
@@ -74,7 +82,7 @@ export function useAdminDashboard() {
     queryFn: () => userApi.getPendingApprovalUsers({ page: 0, size: 5 }),
     staleTime: STATS_STALE,
     select: (d): PendingRequest[] =>
-      (d.content ?? []).map((u) => ({
+      (d.content ?? []).map((u: UserApprovalResponse) => ({
         id: String(u.id),
         name: u.fullName,
         email: u.email,
@@ -91,11 +99,13 @@ export function useAdminDashboard() {
     select: (d): AuditLogEntry[] => (d.content ?? []).map(toAuditLogEntry),
   });
 
-  const isLoading =
+  // Each section tracks its own loading state for progressive rendering
+  const isStatsLoading =
     adminQ.isLoading || studentQ.isLoading || mentorQ.isLoading ||
     judgeQ.isLoading || coordinatorQ.isLoading || totalQ.isLoading ||
-    pendingCountQ.isLoading || suspendedCountQ.isLoading ||
-    pendingUsersQ.isLoading || auditLogsQ.isLoading;
+    pendingCountQ.isLoading || suspendedCountQ.isLoading;
+  const isPendingLoading = pendingUsersQ.isLoading;
+  const isAuditLoading = auditLogsQ.isLoading;
 
   const stats: AdminUserStats = {
     adminCount: adminQ.data ?? 0,
@@ -109,7 +119,10 @@ export function useAdminDashboard() {
   };
 
   return {
-    isLoading,
+    isLoading: isStatsLoading || isPendingLoading || isAuditLoading,
+    isStatsLoading,
+    isPendingLoading,
+    isAuditLoading,
     stats,
     auditLogs: auditLogsQ.data ?? [],
     pendingRequests: pendingUsersQ.data ?? [],

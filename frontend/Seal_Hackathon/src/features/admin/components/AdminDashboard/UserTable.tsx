@@ -134,8 +134,6 @@ function UserTableRow({
   );
 }
 
-// ─── Table ────────────────────────────────────────────────────────────────────
-
 export function UserTable({
   users,
   isLoading,

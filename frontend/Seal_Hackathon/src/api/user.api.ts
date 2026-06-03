@@ -5,6 +5,7 @@ import type {
   ChangePasswordRequest,
   CreateGuestJudgeRequest,
   CreateUserRequest,
+  GetAuditLogsParams,
   GetUsersParams,
   GuestJudgeResponse,
   MyProfileResponse,
@@ -80,7 +81,7 @@ export const userApi = {
     return apiRequest.postForm<MyProfileResponse>("/users/me/avatar", formData);
   },
 
-  getAuditLogs(params?: { page?: number; size?: number }) {
+  getAuditLogs(params?: GetAuditLogsParams) {
     return apiRequest.get<PageResponse<AuditLogResponse>>("/system/audit-logs", { params });
   },
 };
