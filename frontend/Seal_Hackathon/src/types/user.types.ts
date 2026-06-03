@@ -171,3 +171,14 @@ export type AdminDashboardData = {
   recentActivity: RecentActivity[];
   pendingActions: PendingAction[];
 };
+
+export type AssignableUserRole = "MENTOR" | "JUDGE";
+
+export type AssignableUserResponse = {
+  userId: UUID;
+  judgeId?: UUID | null;
+  email: string;
+  fullName: string;
+  role: AssignableUserRole;
+  status: string;
+};

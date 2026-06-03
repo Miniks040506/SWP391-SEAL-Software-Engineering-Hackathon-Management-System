@@ -135,10 +135,12 @@ export const MentorJudgeAssignmentTable = ({
 
                         field.onChange(nextValue);
                       }}
-                      SelectProps={{
-                        multiple: true,
-                        renderValue: (selected) =>
-                          getTrackNames(selected as string[], tracks),
+                      slotProps={{
+                        select: {
+                          multiple: true,
+                          renderValue: (selected) =>
+                            getTrackNames(selected as string[], tracks),
+                        },
                       }}
                     >
                       {tracks.length === 0 && (

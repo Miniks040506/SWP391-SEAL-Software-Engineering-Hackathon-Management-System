@@ -49,22 +49,22 @@ import type { TrackResponse } from "@/types/track.types";
 
 export type CreateEventRequest = {
   name: string;
-  description?: string;
+  description?: string | null;
   season: string;
   year: number;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
-  bannerUrl?: string;
-  status?: string;
+  bannerUrl?: string | null;
+  status?: string | null;
 };
 
 export type UpdateEventRequest = {
   name?: string;
-  description?: string;
+  description?: string | null;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
-  bannerUrl?: string;
-  status?: string;
+  bannerUrl?: string | null;
+  status?: string | null;
 };
 
 export type EventSummaryResponse = {
@@ -73,17 +73,17 @@ export type EventSummaryResponse = {
   season: string;
   year: number;
   status: string;
-  bannerUrl?: string;
+  bannerUrl?: string | null;
 };
 
 export type EventDetailResponse = {
   id: UUID;
   name: string;
-  description?: string;
+  description?: string | null;
   season: string;
   year: number;
   status: string;
-  bannerUrl?: string;
+  bannerUrl?: string | null;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
   tracks: TrackResponse[];
@@ -93,7 +93,7 @@ export type EventDetailResponse = {
 export type GetEventsParams = {
   season?: string;
   year?: number;
-  status?: string;
+  status?: string | null;
   page?: number;
   size?: number;
 };

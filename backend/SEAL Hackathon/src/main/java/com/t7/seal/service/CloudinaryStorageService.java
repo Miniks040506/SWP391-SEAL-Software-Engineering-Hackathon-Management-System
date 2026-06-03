@@ -6,5 +6,5 @@ import java.util.UUID;
 
 public interface CloudinaryStorageService {
     String uploadUserAvatar(UUID userId, MultipartFile file);
-    
+    String uploadEventBanner(MultipartFile file);
 }

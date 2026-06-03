@@ -42,7 +42,7 @@ export type UpdateAdvanceRuleRequest = {
 
 export type AssignJudgeRequest = {
   judgeId: UUID;
-  trackId?: UUID;
+  trackId: UUID;
   totalToScore?: number;
 };
 

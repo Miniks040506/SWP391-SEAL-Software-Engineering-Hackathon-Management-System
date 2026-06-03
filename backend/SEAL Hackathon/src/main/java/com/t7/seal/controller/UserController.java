@@ -15,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -23,6 +24,15 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+
+    @GetMapping("/assignable")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    public ResponseEntity<List<AssignableUserResponse>> getAssignableUsers(
+            @RequestParam String role,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(userService.getAssignableUsers(role, search));
+    }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @GetMapping

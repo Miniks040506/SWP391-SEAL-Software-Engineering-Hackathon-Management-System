@@ -22,6 +22,22 @@ export const axiosClient = axios.create({
   },
 });
 
+function isAuthEndpoint(url?: string) {
+  if (!url) return false;
+
+  return (
+    url.includes("/auth/login") ||
+    url.includes("/auth/register") ||
+    url.includes("/auth/refresh-token") ||
+    url.includes("/auth/logout") ||
+    url.includes("/auth/oauth")
+  );
+}
+
+function getStatus(error: unknown) {
+  return (error as AxiosError | undefined)?.response?.status;
+}
+
 axiosClient.interceptors.request.use((config) => {
   const accessToken = useAuthStore.getState().accessToken;
 
@@ -37,14 +53,19 @@ axiosClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryableRequestConfig | undefined;
 
-    if (!originalRequest || error.response?.status !== 401 || originalRequest._retry) {
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    const status = error.response?.status;
+
+    if (status !== 401 || originalRequest._retry || isAuthEndpoint(originalRequest.url)) {
       return Promise.reject(error);
     }
 
     const refreshToken = useAuthStore.getState().refreshToken;
 
     if (!refreshToken) {
-      useAuthStore.getState().clearAuth();
       return Promise.reject(error);
     }
 
@@ -64,7 +85,12 @@ axiosClient.interceptors.response.use(
 
       return axiosClient(originalRequest);
     } catch (refreshError) {
-      useAuthStore.getState().clearAuth();
+      const refreshStatus = getStatus(refreshError);
+
+      if (refreshStatus === 401 || refreshStatus === 403) {
+        useAuthStore.getState().clearAuth();
+      }
+
       return Promise.reject(refreshError);
     }
   },
