@@ -41,7 +41,7 @@ public class CriteriaController {
         ));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PostMapping("/criteria")
     public ResponseEntity<ScoringCriteriaResponse> createScoringCriteria(
             @Valid @RequestBody CreateScoringCriteriaRequest request,
@@ -59,7 +59,7 @@ public class CriteriaController {
         return ResponseEntity.ok(criteriaService.getScoringCriteriaById(criteriaId));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PatchMapping("/criteria/{criteriaId}")
     public ResponseEntity<ScoringCriteriaResponse> updateScoringCriteria(
             @PathVariable UUID criteriaId,
@@ -70,7 +70,7 @@ public class CriteriaController {
                 .body(criteriaService.updateScoringCriteria(criteriaId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PatchMapping("/criteria/{criteriaId}/deactivate")
     public ResponseEntity<ScoringCriteriaResponse> deactivateScoringCriteria(
             @PathVariable UUID criteriaId,
@@ -79,7 +79,7 @@ public class CriteriaController {
         return ResponseEntity.ok(criteriaService.deactivateScoringCriteria(criteriaId, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PatchMapping("/criteria/{criteriaId}/activate")
     public ResponseEntity<ScoringCriteriaResponse> activateScoringCriteria(
             @PathVariable UUID criteriaId,
@@ -88,7 +88,7 @@ public class CriteriaController {
         return ResponseEntity.ok(criteriaService.activateScoringCriteria(criteriaId, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @DeleteMapping("/criteria/{criteriaId}")
     public ResponseEntity<Void> deleteScoringCriteria(
             @PathVariable UUID criteriaId,

@@ -118,14 +118,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, API + "/criteria").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.PATCH, API + "/criteria/*").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.PATCH, API + "/criteria/*/deactivate").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.PATCH, API + "/criteria/*/activate").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.DELETE, API + "/criteria/*").hasAnyRole("ADMIN", "COORDINATOR")
 
                         // Admin + Coordinator
-
                         .requestMatchers(HttpMethod.GET, API + "/users/assignable").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/users").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/users/*").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/system/audit-logs").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/criteria").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/criteria/*").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(API + "/exports/**").hasAnyRole("ADMIN", "COORDINATOR")
 
                         // Coordinator account review
@@ -175,6 +177,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, API + "/events/*/criteria").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.PATCH, API + "/event-criteria/*").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.DELETE, API + "/event-criteria/*").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/rounds/*/criteria").hasAnyRole("JUDGE", "COORDINATOR", "ADMIN")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/criteria").hasAnyRole("JUDGE", "COORDINATOR")
 
                         // Calibration
