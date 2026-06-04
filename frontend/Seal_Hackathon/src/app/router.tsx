@@ -6,6 +6,8 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
 import { RootLayout } from "@/components/layout/RootLayout";
 
+import { JudgeDashboardPage } from "@/features/judge";
+
 import {
   ForgotPasswordPage,
   LoginPage,
@@ -113,13 +115,15 @@ export const router = createBrowserRouter([
     element: <LoggedinLayout sectionRole="JUDGE" />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: "dashboard", element: <NotFoundPage /> },
+      { path: "dashboard", element: <JudgeDashboardPage /> },
+      { path: "events", element: <NotFoundPage /> },
       { path: "submissions", element: <NotFoundPage /> },
       { path: "scoring", element: <NotFoundPage /> },
       { path: "calibration", element: <NotFoundPage /> },
       { path: "notifications", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
+      { path: "schedule", element: <NotFoundPage /> },
     ],
   },
 
@@ -134,6 +138,7 @@ export const router = createBrowserRouter([
       { path: "notifications", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
+      { path: "schedule", element: <NotFoundPage /> },
     ],
   },
 

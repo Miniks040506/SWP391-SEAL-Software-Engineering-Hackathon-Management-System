@@ -218,6 +218,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             path: "/judge/calibration",
             icon: <FactCheckOutlinedIcon fontSize="small" />,
           },
+          {
+            label: "Schedule",
+            path: "/judge/schedule",
+            icon: <CalendarMonthOutlinedIcon fontSize="small" />,
+          },
         ],
       },
     ],
@@ -249,6 +254,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Feedback",
             path: "/mentor/feedback",
             icon: <FactCheckOutlinedIcon fontSize="small" />,
+          },
+          {
+            label: "Schedule",
+            path: "/mentor/schedule",
+            icon: <CalendarMonthOutlinedIcon fontSize="small" />,
           },
         ],
       },
