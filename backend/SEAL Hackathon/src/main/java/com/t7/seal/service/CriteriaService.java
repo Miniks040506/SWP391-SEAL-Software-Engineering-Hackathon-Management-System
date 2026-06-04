@@ -20,4 +20,6 @@ public interface CriteriaService {
     ScoringCriteriaResponse deactivateScoringCriteria(UUID criteriaId, Authentication authentication);
 
     ScoringCriteriaResponse activateScoringCriteria(UUID criteriaId, Authentication authentication);
+
+    void deleteScoringCriteria(UUID criteriaId, Authentication authentication);
 }

@@ -216,6 +216,7 @@ public class CriteriaServiceImpl implements CriteriaService {
         return toScoringCriteriaResponse(scoringCriteriaRepository.save(criteria));
     }
 
+    @Transactional
     @Override
     public ScoringCriteriaResponse activateScoringCriteria(UUID criteriaId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
@@ -225,6 +226,24 @@ public class CriteriaServiceImpl implements CriteriaService {
         criteria.activate();
 
         return toScoringCriteriaResponse(scoringCriteriaRepository.save(criteria));
+    }
+
+    @Transactional
+    @Override
+    public void deleteScoringCriteria(UUID criteriaId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        ScoringCriteria criteria = findScoringCriteria(criteriaId);
+
+        long usageCount = eventCriteriaRepository.countByCriteriaId(criteriaId);
+
+        if (usageCount > 0) {
+            criteria.deactivate();
+            scoringCriteriaRepository.save(criteria);
+            return;
+        }
+
+        scoringCriteriaRepository.delete(criteria);
     }
 
 
