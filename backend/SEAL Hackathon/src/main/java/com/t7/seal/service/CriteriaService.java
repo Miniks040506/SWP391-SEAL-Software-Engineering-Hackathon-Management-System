@@ -17,5 +17,7 @@ public interface CriteriaService {
 
     ScoringCriteriaResponse updateScoringCriteria(UUID criteriaId, UpdateScoringCriteriaRequest request, Authentication authentication);
 
-    UpdateScoringCriteriaRequest deactivateScoringCriteria(UUID criteriaId, Authentication authentication);
+    ScoringCriteriaResponse deactivateScoringCriteria(UUID criteriaId, Authentication authentication);
+
+    ScoringCriteriaResponse activateScoringCriteria(UUID criteriaId, Authentication authentication);
 }

@@ -76,7 +76,7 @@ public class CriteriaController {
             @PathVariable UUID criteriaId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(criteriaService.deactivateScoringCriteria(criteriaId, authentication));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -85,7 +85,7 @@ public class CriteriaController {
             @PathVariable UUID criteriaId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(criteriaService.activateScoringCriteria(criteriaId, authentication));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

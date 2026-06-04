@@ -206,10 +206,25 @@ public class CriteriaServiceImpl implements CriteriaService {
 
     @Transactional
     @Override
-    public UpdateScoringCriteriaRequest deactivateScoringCriteria(UUID criteriaId, Authentication authentication) {
+    public ScoringCriteriaResponse deactivateScoringCriteria(UUID criteriaId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        return null;
+        ScoringCriteria criteria = findScoringCriteria(criteriaId);
+
+        criteria.deactivate();
+
+        return toScoringCriteriaResponse(scoringCriteriaRepository.save(criteria));
+    }
+
+    @Override
+    public ScoringCriteriaResponse activateScoringCriteria(UUID criteriaId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        ScoringCriteria criteria = findScoringCriteria(criteriaId);
+
+        criteria.activate();
+
+        return toScoringCriteriaResponse(scoringCriteriaRepository.save(criteria));
     }
 
 
