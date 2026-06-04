@@ -8,10 +8,13 @@ import com.t7.seal.request.criteria.UpdateScoringCriteriaRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.criteria.EventCriteriaResponse;
 import com.t7.seal.response.criteria.ScoringCriteriaResponse;
+import com.t7.seal.service.CriteriaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +25,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CriteriaController {
 
+    private final CriteriaService criteriaService;
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @GetMapping("/criteria")
     public ResponseEntity<PageResponse<ScoringCriteriaResponse>> getScoringCriteria(
             @RequestParam(required = false) Boolean isActive,
@@ -30,38 +36,68 @@ public class CriteriaController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return null;
+        return ResponseEntity.ok(criteriaService.getScoringCriteria(
+                isActive, isTechnical, category, page, size
+        ));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/criteria")
     public ResponseEntity<ScoringCriteriaResponse> createScoringCriteria(
-            @Valid @RequestBody CreateScoringCriteriaRequest request
+            @Valid @RequestBody CreateScoringCriteriaRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(criteriaService.createScoringCriteria(request, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @GetMapping("/criteria/{criteriaId}")
     public ResponseEntity<ScoringCriteriaResponse> getScoringCriteriaById(
             @PathVariable UUID criteriaId
     ) {
-        return null;
+        return ResponseEntity.ok(criteriaService.getScoringCriteriaById(criteriaId));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/criteria/{criteriaId}")
     public ResponseEntity<ScoringCriteriaResponse> updateScoringCriteria(
             @PathVariable UUID criteriaId,
-            @Valid @RequestBody UpdateScoringCriteriaRequest request
+            @Valid @RequestBody UpdateScoringCriteriaRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(criteriaService.updateScoringCriteria(criteriaId, request, authentication));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/criteria/{criteriaId}/deactivate")
     public ResponseEntity<ScoringCriteriaResponse> deactivateScoringCriteria(
-            @PathVariable UUID criteriaId
+            @PathVariable UUID criteriaId,
+            Authentication authentication
     ) {
         return null;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/criteria/{criteriaId}/activate")
+    public ResponseEntity<ScoringCriteriaResponse> activateScoringCriteria(
+            @PathVariable UUID criteriaId,
+            Authentication authentication
+    ) {
+        return null;
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/criteria/{criteriaId}")
+    public ResponseEntity<Void> deleteScoringCriteria(
+            @PathVariable UUID criteriaId,
+            Authentication authentication
+    ) {
+        return null;
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR', 'JUDGE')")
     @GetMapping("/events/{eventId}/criteria")
     public ResponseEntity<List<EventCriteriaResponse>> getEventCriteria(
             @PathVariable UUID eventId,
@@ -71,29 +107,36 @@ public class CriteriaController {
         return null;
     }
 
+    @PreAuthorize("hasRole('COORDINATOR')")
     @PostMapping("/events/{eventId}/criteria")
     public ResponseEntity<EventCriteriaResponse> createEventCriteria(
             @PathVariable UUID eventId,
-            @Valid @RequestBody CreateEventCriteriaRequest request
+            @Valid @RequestBody CreateEventCriteriaRequest request,
+            Authentication authentication
     ) {
         return null;
     }
 
+    @PreAuthorize("hasRole('COORDINATOR')")
     @PatchMapping("/event-criteria/{eventCriteriaId}")
     public ResponseEntity<EventCriteriaResponse> updateEventCriteria(
             @PathVariable UUID eventCriteriaId,
-            @Valid @RequestBody UpdateEventCriteriaRequest request
+            @Valid @RequestBody UpdateEventCriteriaRequest request,
+            Authentication authentication
     ) {
         return null;
     }
 
+    @PreAuthorize("hasRole('COORDINATOR')")
     @DeleteMapping("/event-criteria/{eventCriteriaId}")
     public ResponseEntity<Void> deleteEventCriteria(
-            @PathVariable UUID eventCriteriaId
+            @PathVariable UUID eventCriteriaId,
+            Authentication authentication
     ) {
         return null;
     }
 
+    @PreAuthorize("hasAnyRole('JUDGE', 'COORDINATOR')")
     @GetMapping("/rounds/{roundId}/criteria")
     public ResponseEntity<List<EventCriteriaResponse>> getCriteriaByRound(
             @PathVariable UUID roundId

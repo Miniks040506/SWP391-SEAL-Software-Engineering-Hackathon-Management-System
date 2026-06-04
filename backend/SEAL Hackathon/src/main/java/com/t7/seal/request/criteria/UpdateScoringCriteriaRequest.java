@@ -4,5 +4,6 @@ public record UpdateScoringCriteriaRequest(
         String name, String description,
         String rubric, Double maxScore,
         Double defaultWeight, String category,
-        Boolean isTechnical, Boolean isActive
-) {}
+        Boolean isTechnical, Boolean isDefault, Boolean isActive
+) {
+}
