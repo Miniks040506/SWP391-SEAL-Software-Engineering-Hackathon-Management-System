@@ -1,7 +1,16 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
-import { Button, Checkbox, CircularProgress, FormControlLabel, IconButton, TextField } from "@mui/material";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  CircularProgress,
+  FormControlLabel,
+  IconButton,
+  TextField,
+} from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 
@@ -31,6 +40,8 @@ type TracksTabProps = {
   tracks: TrackResponse[];
   isLoading: boolean;
   onChanged: () => void | Promise<void>;
+  canEdit: boolean;
+  readonlyReason?: string;
 };
 
 const emptyTrack: TrackForm = {
@@ -45,6 +56,10 @@ const textFieldSx = {
     borderRadius: "12px",
   },
 };
+
+function getId(track: TrackResponse) {
+  return (track as EditableTrack).id;
+}
 
 function getTrackName(track: TrackResponse) {
   const raw = track as EditableTrack;
@@ -77,16 +92,20 @@ export function TracksTab({
   tracks,
   isLoading,
   onChanged,
+  canEdit,
+  readonlyReason,
 }: TracksTabProps) {
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newTrack, setNewTrack] = useState<TrackForm>(emptyTrack);
   const [editing, setEditing] = useState<Record<string, TrackForm>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditing((current) => {
       const next: Record<string, TrackForm> = {};
 
       tracks.forEach((track) => {
-        const id = (track as EditableTrack).id;
+        const id = getId(track);
         next[id] = current[id] ?? createTrackForm(track);
       });
 
@@ -107,6 +126,8 @@ export function TracksTab({
   };
 
   const handleCreate = async () => {
+    if (!canEdit) return;
+
     if (!newTrack.name.trim()) {
       enqueueSnackbar("Track name is required.", { variant: "error" });
       return;
@@ -121,6 +142,7 @@ export function TracksTab({
       });
 
       setNewTrack(emptyTrack);
+      setShowAddForm(false);
       enqueueSnackbar("Track created.", { variant: "success" });
       await onChanged();
     } catch {
@@ -129,8 +151,10 @@ export function TracksTab({
   };
 
   const handleUpdate = async (track: TrackResponse) => {
-    const raw = track as EditableTrack;
-    const values = editing[raw.id];
+    if (!canEdit) return;
+
+    const id = getId(track);
+    const values = editing[id];
 
     if (!values?.name?.trim()) {
       enqueueSnackbar("Track name is required.", { variant: "error" });
@@ -138,7 +162,7 @@ export function TracksTab({
     }
 
     try {
-      await trackApi.updateTrack(raw.id, {
+      await trackApi.updateTrack(id, {
         name: values.name.trim(),
         description: values.description.trim() || undefined,
         maxTeams: values.maxTeams ? Number(values.maxTeams) : undefined,
@@ -153,6 +177,8 @@ export function TracksTab({
   };
 
   const handleDelete = async (trackId: UUID) => {
+    if (!canEdit) return;
+
     try {
       await trackApi.deleteTrack(trackId);
       enqueueSnackbar("Track deleted.", { variant: "success" });
@@ -165,100 +191,142 @@ export function TracksTab({
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="border-b border-slate-100 px-7 py-5 dark:border-slate-700">
-        <h2 className="text-lg font-extrabold text-slate-950 dark:text-white">
-          Tracks
-        </h2>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-950 dark:text-white">
+              Tracks
+            </h2>
 
-        <p className="mt-2 text-sm font-medium text-slate-500">
-          Create and manage event tracks. This layout matches the create-event track step.
-        </p>
+            <p className="mt-2 text-sm font-medium text-slate-500">
+              Create and manage event tracks. Track structure is locked from
+              ONGOING onward.
+            </p>
+          </div>
+
+          {canEdit && !showAddForm && (
+            <Button
+              variant="contained"
+              startIcon={<AddOutlinedIcon />}
+              onClick={() => setShowAddForm(true)}
+              sx={{
+                borderRadius: "12px",
+                textTransform: "none",
+                fontWeight: 900,
+              }}
+            >
+              Add Track
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-5 px-7 py-6">
-        <div className="rounded-2xl border border-dashed border-slate-200 p-5 dark:border-slate-700">
-          <h3 className="mb-4 font-black text-slate-800 dark:text-white">
-            Add Track
-          </h3>
+        {!canEdit && readonlyReason && (
+          <Alert severity="warning">{readonlyReason}</Alert>
+        )}
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <TextField
-              label="Track name"
-              value={newTrack.name}
-              onChange={(event) =>
-                setNewTrack((current) => ({ ...current, name: event.target.value }))
-              }
-              size="small"
-              sx={textFieldSx}
-            />
+        {canEdit && showAddForm && (
+          <div className="rounded-2xl border border-dashed border-slate-200 p-5 dark:border-slate-700">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="font-black text-slate-800 dark:text-white">
+                Add Track
+              </h3>
+              <IconButton onClick={() => setShowAddForm(false)}>
+                <CloseOutlinedIcon />
+              </IconButton>
+            </div>
 
-            <TextField
-              label="Max teams"
-              type="number"
-              value={newTrack.maxTeams}
-              onChange={(event) =>
-                setNewTrack((current) => ({
-                  ...current,
-                  maxTeams: event.target.value,
-                }))
-              }
-              size="small"
-              sx={textFieldSx}
-            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextField
+                label="Track name"
+                value={newTrack.name}
+                onChange={(event) =>
+                  setNewTrack((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={textFieldSx}
+              />
 
-            <TextField
-              label="Description"
-              value={newTrack.description}
-              onChange={(event) =>
-                setNewTrack((current) => ({
-                  ...current,
-                  description: event.target.value,
-                }))
-              }
-              multiline
-              minRows={3}
-              className="md:col-span-2"
-              size="small"
-              sx={textFieldSx}
-            />
+              <TextField
+                label="Max teams"
+                type="number"
+                value={newTrack.maxTeams}
+                onChange={(event) =>
+                  setNewTrack((current) => ({
+                    ...current,
+                    maxTeams: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={textFieldSx}
+              />
 
-            <div className="md:col-span-2">
-              <p className="mb-2 text-sm font-black text-slate-700 dark:text-slate-300">
-                Required submission links
-              </p>
+              <TextField
+                label="Description"
+                value={newTrack.description}
+                onChange={(event) =>
+                  setNewTrack((current) => ({
+                    ...current,
+                    description: event.target.value,
+                  }))
+                }
+                multiline
+                minRows={3}
+                className="md:col-span-2"
+                size="small"
+                sx={textFieldSx}
+              />
 
-              <div className="flex flex-wrap gap-3">
-                {REQUIRED_LINK_TYPES.map((type) => (
-                  <FormControlLabel
-                    key={type}
-                    label={type}
-                    control={
-                      <Checkbox
-                        checked={newTrack.requiredLinkTypes.includes(type)}
-                        onChange={(_, checked) =>
-                          setNewTrack((current) => ({
-                            ...current,
-                            requiredLinkTypes: toggleRequiredLinkType(current, type, checked),
-                          }))
-                        }
-                      />
-                    }
-                  />
-                ))}
+              <div className="md:col-span-2">
+                <p className="mb-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                  Required submission links
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  {REQUIRED_LINK_TYPES.map((type) => (
+                    <FormControlLabel
+                      key={type}
+                      label={type}
+                      control={
+                        <Checkbox
+                          checked={newTrack.requiredLinkTypes.includes(type)}
+                          onChange={(_, checked) =>
+                            setNewTrack((current) => ({
+                              ...current,
+                              requiredLinkTypes: toggleRequiredLinkType(
+                                current,
+                                type,
+                                checked,
+                              ),
+                            }))
+                          }
+                        />
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <Button
+                  variant="outlined"
+                  startIcon={<AddOutlinedIcon />}
+                  onClick={handleCreate}
+                  sx={{
+                    borderRadius: "12px",
+                    textTransform: "none",
+                    fontWeight: 900,
+                  }}
+                >
+                  Add Track
+                </Button>
               </div>
             </div>
-
-            <div className="md:col-span-2">
-              <Button
-                variant="outlined"
-                startIcon={<AddOutlinedIcon />}
-                onClick={handleCreate}
-                sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
-              >
-                Add Track
-              </Button>
-            </div>
           </div>
-        </div>
+        )}
 
         {isLoading && (
           <div className="flex justify-center py-12">
@@ -267,12 +335,12 @@ export function TracksTab({
         )}
 
         {tracks.map((track, index) => {
-          const raw = track as EditableTrack;
-          const values = editing[raw.id] ?? createTrackForm(track);
+          const id = getId(track);
+          const values = editing[id] ?? createTrackForm(track);
 
           return (
             <div
-              key={raw.id}
+              key={id}
               className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700"
             >
               <div className="mb-4 flex items-center justify-between">
@@ -280,9 +348,11 @@ export function TracksTab({
                   Track {index + 1}
                 </h3>
 
-                <IconButton color="error" onClick={() => handleDelete(raw.id)}>
-                  <DeleteOutlineOutlinedIcon />
-                </IconButton>
+                {canEdit && (
+                  <IconButton color="error" onClick={() => handleDelete(id)}>
+                    <DeleteOutlineOutlinedIcon />
+                  </IconButton>
+                )}
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -292,11 +362,12 @@ export function TracksTab({
                   onChange={(event) =>
                     setEditing((current) => ({
                       ...current,
-                      [raw.id]: { ...values, name: event.target.value },
+                      [id]: { ...values, name: event.target.value },
                     }))
                   }
                   size="small"
                   sx={textFieldSx}
+                  disabled={!canEdit}
                 />
 
                 <TextField
@@ -306,11 +377,12 @@ export function TracksTab({
                   onChange={(event) =>
                     setEditing((current) => ({
                       ...current,
-                      [raw.id]: { ...values, maxTeams: event.target.value },
+                      [id]: { ...values, maxTeams: event.target.value },
                     }))
                   }
                   size="small"
                   sx={textFieldSx}
+                  disabled={!canEdit}
                 />
 
                 <TextField
@@ -319,7 +391,7 @@ export function TracksTab({
                   onChange={(event) =>
                     setEditing((current) => ({
                       ...current,
-                      [raw.id]: { ...values, description: event.target.value },
+                      [id]: { ...values, description: event.target.value },
                     }))
                   }
                   multiline
@@ -327,6 +399,7 @@ export function TracksTab({
                   className="md:col-span-2"
                   size="small"
                   sx={textFieldSx}
+                  disabled={!canEdit}
                 />
 
                 <div className="md:col-span-2">
@@ -342,12 +415,17 @@ export function TracksTab({
                         control={
                           <Checkbox
                             checked={values.requiredLinkTypes.includes(type)}
+                            disabled={!canEdit}
                             onChange={(_, checked) =>
                               setEditing((current) => ({
                                 ...current,
-                                [raw.id]: {
+                                [id]: {
                                   ...values,
-                                  requiredLinkTypes: toggleRequiredLinkType(values, type, checked),
+                                  requiredLinkTypes: toggleRequiredLinkType(
+                                    values,
+                                    type,
+                                    checked,
+                                  ),
                                 },
                               }))
                             }
@@ -358,16 +436,22 @@ export function TracksTab({
                   </div>
                 </div>
 
-                <div className="md:col-span-2">
-                  <Button
-                    variant="contained"
-                    startIcon={<SaveOutlinedIcon />}
-                    onClick={() => handleUpdate(track)}
-                    sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
-                  >
-                    Save Track
-                  </Button>
-                </div>
+                {canEdit && (
+                  <div className="md:col-span-2">
+                    <Button
+                      variant="contained"
+                      startIcon={<SaveOutlinedIcon />}
+                      onClick={() => handleUpdate(track)}
+                      sx={{
+                        borderRadius: "12px",
+                        textTransform: "none",
+                        fontWeight: 900,
+                      }}
+                    >
+                      Save Track
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           );

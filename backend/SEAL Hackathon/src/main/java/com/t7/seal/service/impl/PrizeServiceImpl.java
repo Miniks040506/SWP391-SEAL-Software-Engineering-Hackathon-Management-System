@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Prize;
 import com.t7.seal.entities.Track;
@@ -40,6 +41,7 @@ public class PrizeServiceImpl implements PrizeService {
         validateCreatePrizeRequest(request);
 
         HackathonEvent event = findEvent(request.eventId());
+        assertPrizeEditable(event);
         Track track = resolveTrack(event.getId(), request.trackId());
 
         if (prizeRepository.existsSameRank(event.getId(), request.trackId(), request.rankPosition())) {
@@ -67,6 +69,7 @@ public class PrizeServiceImpl implements PrizeService {
         currentUserService.getCurrentUser(authentication);
 
         Prize prize = findPrize(prizeId, null, null);
+        assertPrizeEditable(prize.getEvent());
 
         UUID trackId = prize.getTrack() == null ? null : prize.getTrack().getId();
         Integer newRank = request.rankPosition() == null ? prize.getRankPosition() : request.rankPosition();
@@ -110,6 +113,7 @@ public class PrizeServiceImpl implements PrizeService {
         currentUserService.getCurrentUser(authentication);
 
         Prize prize = findPrize(prizeId, null, null);
+        assertPrizeEditable(prize.getEvent());
         if (prize.getAwardedTeam() != null) {
             throw new ConflictException("Cannot delete prize after it has been awarded. Clear award first.");
         }
@@ -133,6 +137,17 @@ public class PrizeServiceImpl implements PrizeService {
     }
 
     //HELPERS
+
+    private void assertPrizeEditable(HackathonEvent event) {
+        RegistrationStatus status = event.getStatus();
+
+        if (status == RegistrationStatus.JUDGING
+                || status == RegistrationStatus.COMPLETED
+                || status == RegistrationStatus.CANCELLED) {
+            throw new ConflictException("Prizes are locked in event status " + status + ".");
+        }
+    }
+
     private HackathonEvent findEvent(UUID eventId) {
         if (eventId == null) {
             throw new BadRequestException("Event id is required.");

@@ -43,6 +43,8 @@ public class RoundServiceImpl implements RoundService {
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
+        assertTrackRoundEditable(event);
+
         validateCreateRoundRequest(request);
 
         if (roundRepository.existsByEventIdAndOrderIndex(eventId, request.orderIndex())) {
@@ -124,6 +126,7 @@ public class RoundServiceImpl implements RoundService {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
 
+        assertTrackRoundEditable(round.getEvent());
 
         if (request.name() != null) {
             String name = trimToNull(request.name());
@@ -194,6 +197,8 @@ public class RoundServiceImpl implements RoundService {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
 
+        assertTrackRoundEditable(round.getEvent());
+
         if (round.getSubmissionLockedAt() != null
                 || round.getGradingLockedAt() != null
                 || round.getAdvancementConfirmedAt() != null) {
@@ -204,6 +209,15 @@ public class RoundServiceImpl implements RoundService {
     }
 
     //HELPERS
+
+    private void assertTrackRoundEditable(HackathonEvent event) {
+        RegistrationStatus status = event.getStatus();
+
+        if (status != RegistrationStatus.DRAFT && status != RegistrationStatus.REGISTRATION) {
+            throw new ConflictException("Rounds are locked in event status " + status + ".");
+        }
+    }
+
     private void validateCreateRoundRequest(CreateRoundRequest request) {
         if (trimToNull(request.name()) == null) {
             throw new BadRequestException("Round name is required");

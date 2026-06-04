@@ -20,9 +20,6 @@ export function getDashboardPathByRole(role: UserRole): string {
     case "PARTICIPANT":
       return "/events";
 
-    case "GUEST":
-      return "/login";
-
     default:
       return "/login";
   }
@@ -53,7 +50,6 @@ export function getPrimaryRole(
   if (roles.includes("MENTOR")) return "MENTOR";
   if (roles.includes("STUDENT")) return "STUDENT";
   if (roles.includes("PARTICIPANT")) return "PARTICIPANT";
-  if (roles.includes("GUEST")) return "GUEST";
 
   return null;
 }

@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.SubmissionLinkType;
 import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.HackathonEvent;
@@ -47,6 +48,8 @@ public class TrackServiceImpl implements TrackService {
 
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+
+        assertTrackRoundEditable(event);
 
         validateCreateTrackRequest(request);
 
@@ -129,6 +132,8 @@ public class TrackServiceImpl implements TrackService {
         Track track = trackRepository.findById(trackId)
                 .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
 
+        assertTrackRoundEditable(track.getEvent());
+
         if (request.name() != null) {
 
             String name = request.name().trim();
@@ -179,6 +184,8 @@ public class TrackServiceImpl implements TrackService {
         Track track = trackRepository.findById(trackId)
                 .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
 
+        assertTrackRoundEditable(track.getEvent());
+
         if (teamRepository.CountActiveTeamByTrackId(trackId) > 0) {
             throw new ConflictException("Cannot delete track that has active teams");
         }
@@ -187,6 +194,15 @@ public class TrackServiceImpl implements TrackService {
     }
 
     //HELPERS
+
+    private void assertTrackRoundEditable(HackathonEvent event) {
+        RegistrationStatus status = event.getStatus();
+
+        if (status != RegistrationStatus.DRAFT && status != RegistrationStatus.REGISTRATION) {
+            throw new ConflictException("Tracks are locked in event status " + status + ".");
+        }
+    }
+
     private void validateCreateTrackRequest(CreateTrackRequest request) {
         if (request.name() == null || request.name().isBlank()) {
             throw new BadRequestException("Track name is required");

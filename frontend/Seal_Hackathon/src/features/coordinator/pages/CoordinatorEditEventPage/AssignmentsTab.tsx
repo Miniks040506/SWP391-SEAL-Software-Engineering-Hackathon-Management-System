@@ -2,22 +2,42 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
-import { Alert, Button, Chip, CircularProgress, IconButton, InputAdornment, TextField } from "@mui/material";
+import {
+  Alert,
+  Button,
+  Chip,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  TextField,
+} from "@mui/material";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { useMemo, useState } from "react";
 
-import { assignableUserApi, type AssignableUserResponse, type AssignableUserRole } from "@/api/assignableUser.api";
+import {
+  assignableUserApi,
+  type AssignableUserResponse,
+  type AssignableUserRole,
+} from "@/api/assignableUser.api";
 import { roundApi } from "@/api/round.api";
 import { trackApi } from "@/api/track.api";
 import type { UUID } from "@/types/common.types";
-import type { JudgeAssignmentResponse, RoundResponse } from "@/types/round.types";
-import type { MentorAssignmentResponse, TrackResponse } from "@/types/track.types";
+import type {
+  JudgeAssignmentResponse,
+  RoundResponse,
+} from "@/types/round.types";
+import type {
+  MentorAssignmentResponse,
+  TrackResponse,
+} from "@/types/track.types";
 
 type AssignmentsTabProps = {
   tracks: TrackResponse[];
   rounds: RoundResponse[];
   onChanged: () => void | Promise<void>;
+  canEdit: boolean;
+  readonlyReason?: string;
 };
 
 function getId(value: unknown) {
@@ -35,7 +55,10 @@ function getRoundName(round: RoundResponse) {
 }
 
 function getAssignmentId(value: unknown) {
-  return (value as { id?: UUID; assignmentId?: UUID }).id ?? (value as { assignmentId?: UUID }).assignmentId;
+  return (
+    (value as { id?: UUID; assignmentId?: UUID }).id ??
+    (value as { assignmentId?: UUID }).assignmentId
+  );
 }
 
 function getAssignmentUserName(value: unknown) {
@@ -46,7 +69,13 @@ function getAssignmentUserName(value: unknown) {
     email?: string;
   };
 
-  return raw.fullName ?? raw.mentorName ?? raw.judgeName ?? raw.email ?? "Assigned user";
+  return (
+    raw.fullName ??
+    raw.mentorName ??
+    raw.judgeName ??
+    raw.email ??
+    "Assigned user"
+  );
 }
 
 function getMentorUserId(value: unknown) {
@@ -73,12 +102,22 @@ function matchesTargetJudgeAssignment(
   return assignment.roundId === roundId && assignment.trackId === trackId;
 }
 
-export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProps) {
+export function AssignmentsTab({
+  tracks,
+  rounds,
+  onChanged,
+  canEdit,
+  readonlyReason,
+}: AssignmentsTabProps) {
   const queryClient = useQueryClient();
   const [activeRole, setActiveRole] = useState<AssignableUserRole>("MENTOR");
   const [search, setSearch] = useState("");
-  const [selectedTrackId, setSelectedTrackId] = useState<UUID | "">(tracks[0]?.id ?? "");
-  const [selectedRoundId, setSelectedRoundId] = useState<UUID | "">(rounds[0]?.id ?? "");
+  const [selectedTrackId, setSelectedTrackId] = useState<UUID | "">(
+    tracks[0]?.id ?? "",
+  );
+  const [selectedRoundId, setSelectedRoundId] = useState<UUID | "">(
+    rounds[0]?.id ?? "",
+  );
   const [totalToScore, setTotalToScore] = useState("10");
 
   const usersQuery = useQuery({
@@ -106,7 +145,8 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
 
   const mentorAssignments = useMemo(() => {
     return tracks.flatMap((track, index) => {
-      const data = (mentorAssignmentQueries[index]?.data ?? []) as MentorAssignmentResponse[];
+      const data = (mentorAssignmentQueries[index]?.data ??
+        []) as MentorAssignmentResponse[];
 
       return data.map((assignment) => ({
         assignment,
@@ -117,7 +157,8 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
 
   const judgeAssignments = useMemo(() => {
     return rounds.flatMap((round, index) => {
-      const data = (judgeAssignmentQueries[index]?.data ?? []) as JudgeAssignmentResponse[];
+      const data = (judgeAssignmentQueries[index]?.data ??
+        []) as JudgeAssignmentResponse[];
 
       return data.map((assignment) => ({
         assignment,
@@ -126,8 +167,12 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
     });
   }, [judgeAssignmentQueries, rounds]);
 
-  const selectedTrack = tracks.find((track) => getId(track) === selectedTrackId);
-  const selectedRound = rounds.find((round) => getId(round) === selectedRoundId);
+  const selectedTrack = tracks.find(
+    (track) => getId(track) === selectedTrackId,
+  );
+  const selectedRound = rounds.find(
+    (round) => getId(round) === selectedRoundId,
+  );
 
   const assignedMentorIdsForTarget = useMemo(() => {
     if (!selectedTrackId) return new Set<UUID>();
@@ -145,7 +190,13 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
 
     return new Set(
       judgeAssignments
-        .filter(({ assignment }) => matchesTargetJudgeAssignment(assignment, selectedTrackId, selectedRoundId))
+        .filter(({ assignment }) =>
+          matchesTargetJudgeAssignment(
+            assignment,
+            selectedTrackId,
+            selectedRoundId,
+          ),
+        )
         .map(({ assignment }) => getJudgeAssignmentJudgeId(assignment))
         .filter((id): id is UUID => Boolean(id)),
     );
@@ -153,22 +204,33 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
 
   const refreshAssignments = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["edit-track-mentor-assignments"] }),
-      queryClient.invalidateQueries({ queryKey: ["edit-round-judge-assignments"] }),
+      queryClient.invalidateQueries({
+        queryKey: ["edit-track-mentor-assignments"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["edit-round-judge-assignments"],
+      }),
       onChanged(),
     ]);
   };
 
   const handleAssignMentor = async (user: AssignableUserResponse) => {
+    if (!canEdit) return;
+
     const mentorUserId = user.userId;
 
     if (!mentorUserId || !selectedTrackId) {
-      enqueueSnackbar("Select a track before assigning mentor.", { variant: "error" });
+      enqueueSnackbar("Select a track before assigning mentor.", {
+        variant: "error",
+      });
       return;
     }
 
     if (assignedMentorIdsForTarget.has(mentorUserId)) {
-      enqueueSnackbar("This mentor is already assigned to the selected track.", { variant: "warning" });
+      enqueueSnackbar(
+        "This mentor is already assigned to the selected track.",
+        { variant: "warning" },
+      );
       return;
     }
 
@@ -182,6 +244,8 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
   };
 
   const handleAssignJudge = async (user: AssignableUserResponse) => {
+    if (!canEdit) return;
+
     const judgeId = getJudgeId(user);
 
     if (!judgeId || !selectedTrackId || !selectedRoundId) {
@@ -192,7 +256,10 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
     }
 
     if (assignedJudgeIdsForTarget.has(judgeId)) {
-      enqueueSnackbar("This judge is already assigned to the selected track-round pair.", { variant: "warning" });
+      enqueueSnackbar(
+        "This judge is already assigned to the selected track-round pair.",
+        { variant: "warning" },
+      );
       return;
     }
 
@@ -211,27 +278,36 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
   };
 
   const handleRemoveMentor = async (trackId: UUID, assignmentId: UUID) => {
+    if (!canEdit) return;
+
     try {
       await trackApi.removeMentorAssignment(trackId, assignmentId);
       enqueueSnackbar("Mentor assignment removed.", { variant: "success" });
       await refreshAssignments();
     } catch {
-      enqueueSnackbar("Failed to remove mentor assignment.", { variant: "error" });
+      enqueueSnackbar("Failed to remove mentor assignment.", {
+        variant: "error",
+      });
     }
   };
 
   const handleRemoveJudge = async (roundId: UUID, assignmentId: UUID) => {
+    if (!canEdit) return;
+
     try {
       await roundApi.removeJudgeAssignment(roundId, assignmentId);
       enqueueSnackbar("Judge assignment removed.", { variant: "success" });
       await refreshAssignments();
     } catch {
-      enqueueSnackbar("Failed to remove judge assignment.", { variant: "error" });
+      enqueueSnackbar("Failed to remove judge assignment.", {
+        variant: "error",
+      });
     }
   };
 
   const roleNeedsRound = activeRole === "JUDGE";
-  const missingTarget = !selectedTrackId || (roleNeedsRound && !selectedRoundId);
+  const missingTarget =
+    !selectedTrackId || (roleNeedsRound && !selectedRoundId);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -243,7 +319,8 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
             </h2>
 
             <p className="mt-2 text-sm font-medium text-slate-500">
-              Mentors are assigned to tracks. Judges are assigned to exact track-round pairs.
+              Mentors are assigned to tracks. Judges are assigned to exact
+              track-round pairs.
             </p>
           </div>
 
@@ -268,13 +345,23 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
       </div>
 
       <div className="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.4fr)]">
+        {!canEdit && readonlyReason && (
+          <div className="xl:col-span-2">
+            <Alert severity="warning">{readonlyReason}</Alert>
+          </div>
+        )}
+
         <aside className="space-y-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
           {tracks.length === 0 && (
-            <Alert severity="warning">Create at least one track before assigning mentors or judges.</Alert>
+            <Alert severity="warning">
+              Create at least one track before assigning mentors or judges.
+            </Alert>
           )}
 
           {activeRole === "JUDGE" && rounds.length === 0 && (
-            <Alert severity="warning">Create at least one round before assigning judges.</Alert>
+            <Alert severity="warning">
+              Create at least one round before assigning judges.
+            </Alert>
           )}
 
           <div>
@@ -295,7 +382,9 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
                   ].join(" ")}
                 >
                   <span>{getTrackName(track)}</span>
-                  {selectedTrackId === getId(track) && <CheckCircleOutlineOutlinedIcon fontSize="small" />}
+                  {selectedTrackId === getId(track) && (
+                    <CheckCircleOutlineOutlinedIcon fontSize="small" />
+                  )}
                 </button>
               ))}
             </div>
@@ -320,7 +409,9 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
                     ].join(" ")}
                   >
                     <span>{getRoundName(round)}</span>
-                    {selectedRoundId === getId(round) && <CheckCircleOutlineOutlinedIcon fontSize="small" />}
+                    {selectedRoundId === getId(round) && (
+                      <CheckCircleOutlineOutlinedIcon fontSize="small" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -339,8 +430,10 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
           )}
 
           <div className="rounded-xl bg-slate-50 p-3 text-sm font-semibold text-slate-500 dark:bg-slate-800/50">
-            Current target: {selectedTrack ? getTrackName(selectedTrack) : "No track"}
-            {activeRole === "JUDGE" && ` · ${selectedRound ? getRoundName(selectedRound) : "No round"}`}
+            Current target:{" "}
+            {selectedTrack ? getTrackName(selectedTrack) : "No track"}
+            {activeRole === "JUDGE" &&
+              ` · ${selectedRound ? getRoundName(selectedRound) : "No round"}`}
           </div>
 
           <TextField
@@ -377,7 +470,11 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
                   ? assignedMentorIdsForTarget.has(user.userId)
                   : assignedJudgeIdsForTarget.has(getJudgeId(user));
 
-              const disabled = missingTarget || alreadyAssigned || (activeRole === "JUDGE" && !getJudgeId(user));
+              const disabled =
+                !canEdit ||
+                missingTarget ||
+                alreadyAssigned ||
+                (activeRole === "JUDGE" && !getJudgeId(user));
 
               return (
                 <div
@@ -389,30 +486,59 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
                       <p className="truncate font-black text-slate-950 dark:text-white">
                         {user.fullName}
                       </p>
-                      <p className="mt-1 truncate text-sm text-slate-500">{user.email}</p>
+                      <p className="mt-1 truncate text-sm text-slate-500">
+                        {user.email}
+                      </p>
                     </div>
-                    <Chip label={user.role} size="small" sx={{ fontWeight: 800 }} />
+                    <Chip
+                      label={user.role}
+                      size="small"
+                      sx={{ fontWeight: 800 }}
+                    />
                   </div>
 
                   <Button
                     fullWidth
                     variant={alreadyAssigned ? "outlined" : "contained"}
-                    startIcon={alreadyAssigned ? <CheckCircleOutlineOutlinedIcon /> : <AddOutlinedIcon />}
-                    onClick={() => activeRole === "MENTOR" ? handleAssignMentor(user) : handleAssignJudge(user)}
+                    startIcon={
+                      alreadyAssigned ? (
+                        <CheckCircleOutlineOutlinedIcon />
+                      ) : (
+                        <AddOutlinedIcon />
+                      )
+                    }
+                    onClick={() =>
+                      activeRole === "MENTOR"
+                        ? handleAssignMentor(user)
+                        : handleAssignJudge(user)
+                    }
                     disabled={disabled}
-                    sx={{ mt: 2, borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
+                    sx={{
+                      mt: 2,
+                      borderRadius: "12px",
+                      textTransform: "none",
+                      fontWeight: 900,
+                    }}
                   >
-                    {alreadyAssigned ? "Assigned" : missingTarget ? "Select target first" : "Assign"}
+                    {!canEdit
+                      ? "Locked"
+                      : alreadyAssigned
+                        ? "Assigned"
+                        : missingTarget
+                          ? "Select target first"
+                          : "Assign"}
                   </Button>
                 </div>
               );
             })}
 
-            {!usersQuery.isLoading && !usersQuery.isError && (usersQuery.data ?? []).length === 0 && (
-              <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm font-semibold text-slate-400">
-                No {activeRole.toLowerCase()} found.
-              </div>
-            )}
+            {!usersQuery.isLoading &&
+              !usersQuery.isError &&
+              (usersQuery.data ?? []).length === 0 && (
+                <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm font-semibold text-slate-400">
+                  No {activeRole.toLowerCase()} found.
+                </div>
+              )}
           </div>
         </aside>
 
@@ -440,8 +566,13 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
                       </p>
                     </div>
 
-                    {assignmentId && (
-                      <IconButton color="error" onClick={() => handleRemoveMentor(getId(track), assignmentId)}>
+                    {assignmentId && canEdit && (
+                      <IconButton
+                        color="error"
+                        onClick={() =>
+                          handleRemoveMentor(getId(track), assignmentId)
+                        }
+                      >
                         <DeleteOutlineOutlinedIcon />
                       </IconButton>
                     )}
@@ -465,7 +596,9 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
             <div className="mt-4 space-y-3">
               {judgeAssignments.map(({ assignment, round }) => {
                 const assignmentId = getAssignmentId(assignment);
-                const track = tracks.find((item) => getId(item) === assignment.trackId);
+                const track = tracks.find(
+                  (item) => getId(item) === assignment.trackId,
+                );
 
                 return (
                   <div
@@ -477,12 +610,18 @@ export function AssignmentsTab({ tracks, rounds, onChanged }: AssignmentsTabProp
                         {getAssignmentUserName(assignment)}
                       </p>
                       <p className="mt-1 text-sm text-slate-500">
-                        Track: {track ? getTrackName(track) : "—"} · Round: {getRoundName(round)}
+                        Track: {track ? getTrackName(track) : "—"} · Round:{" "}
+                        {getRoundName(round)}
                       </p>
                     </div>
 
-                    {assignmentId && (
-                      <IconButton color="error" onClick={() => handleRemoveJudge(getId(round), assignmentId)}>
+                    {assignmentId && canEdit && (
+                      <IconButton
+                        color="error"
+                        onClick={() =>
+                          handleRemoveJudge(getId(round), assignmentId)
+                        }
+                      >
                         <DeleteOutlineOutlinedIcon />
                       </IconButton>
                     )}

@@ -1,7 +1,14 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
-import { Button, CircularProgress, IconButton, MenuItem, TextField } from "@mui/material";
+import {
+  Alert,
+  Button,
+  CircularProgress,
+  IconButton,
+  MenuItem,
+  TextField,
+} from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import { useMemo, useState } from "react";
 
@@ -17,6 +24,8 @@ type PrizesTabProps = {
   prizes: PrizeResponse[];
   isLoading: boolean;
   onChanged: () => void | Promise<void>;
+  canEdit: boolean;
+  readonlyReason?: string;
 };
 
 type PrizeForm = {
@@ -55,7 +64,11 @@ function getTrackName(track: TrackResponse) {
 }
 
 function getPrizeTitle(prize: PrizeResponse) {
-  return (prize as { title?: string; name?: string }).title ?? (prize as { name?: string }).name ?? "Untitled prize";
+  return (
+    (prize as { title?: string; name?: string }).title ??
+    (prize as { name?: string }).name ??
+    "Untitled prize"
+  );
 }
 
 function formatPrizeValue(prize: PrizeResponse) {
@@ -87,6 +100,8 @@ export function PrizesTab({
   prizes,
   isLoading,
   onChanged,
+  canEdit,
+  readonlyReason,
 }: PrizesTabProps) {
   const [form, setForm] = useState<PrizeForm>(emptyPrizeForm);
 
@@ -96,13 +111,17 @@ export function PrizesTab({
   );
 
   const handleCreate = async () => {
+    if (!canEdit) return;
+
     if (!form.title.trim()) {
       enqueueSnackbar("Prize title is required.", { variant: "error" });
       return;
     }
 
     if (!form.rankPosition || Number(form.rankPosition) < 1) {
-      enqueueSnackbar("Rank position must be greater than 0.", { variant: "error" });
+      enqueueSnackbar("Rank position must be greater than 0.", {
+        variant: "error",
+      });
       return;
     }
 
@@ -127,6 +146,8 @@ export function PrizesTab({
   };
 
   const handleDelete = async (prizeId: UUID) => {
+    if (!canEdit) return;
+
     try {
       await prizeApi.deletePrize(prizeId);
       enqueueSnackbar("Prize deleted.", { variant: "success" });
@@ -179,9 +200,14 @@ export function PrizesTab({
               )}
             </div>
 
-            <IconButton color="error" onClick={() => handleDelete(getId(prize))}>
-              <DeleteOutlineOutlinedIcon />
-            </IconButton>
+            {canEdit && (
+              <IconButton
+                color="error"
+                onClick={() => handleDelete(getId(prize))}
+              >
+                <DeleteOutlineOutlinedIcon />
+              </IconButton>
+            )}
           </div>
         ))}
       </div>
@@ -196,125 +222,152 @@ export function PrizesTab({
         </h2>
 
         <p className="mt-2 text-sm font-medium text-slate-500">
-          Manage prizes for the whole event or a specific track. Saved prizes are grouped below.
+          Manage prizes for the whole event or a specific track. Saved prizes
+          are grouped below.
         </p>
       </div>
 
       <div className="space-y-6 px-7 py-6">
-        <div className="rounded-2xl border border-dashed border-slate-200 p-5 dark:border-slate-700">
-          <h3 className="mb-4 font-black text-slate-800 dark:text-white">Add Prize</h3>
+        {!canEdit && readonlyReason && (
+          <Alert severity="warning">{readonlyReason}</Alert>
+        )}
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <TextField
-              label="Prize title"
-              value={form.title}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, title: event.target.value }))
-              }
-              size="small"
-              sx={textFieldSx}
-            />
-
-            <TextField
-              label="Track"
-              select
-              value={form.trackId}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, trackId: event.target.value }))
-              }
-              size="small"
-              sx={textFieldSx}
-            >
-              <MenuItem value="">Whole event prize</MenuItem>
-              {tracks.map((track) => (
-                <MenuItem key={getId(track)} value={getId(track)}>
-                  {getTrackName(track)}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              label="Rank position"
-              type="number"
-              value={form.rankPosition}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  rankPosition: event.target.value,
-                }))
-              }
-              size="small"
-              sx={textFieldSx}
-              required
-            />
-
-            <TextField
-              label="Value"
-              type="number"
-              value={form.value}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, value: event.target.value }))
-              }
-              size="small"
-              sx={textFieldSx}
-            />
-
-            <TextField
-              label="Currency"
-              select
-              value={form.currency}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, currency: event.target.value }))
-              }
-              size="small"
-              sx={textFieldSx}
-            >
-              {prizeCurrencyOptions.map((currency) => (
-                <MenuItem key={currency} value={currency}>{currency}</MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              label="Sponsor"
-              value={form.sponsorName}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  sponsorName: event.target.value,
-                }))
-              }
-              size="small"
-              sx={textFieldSx}
-            />
-
-            <TextField
-              label="Description"
-              value={form.description}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  description: event.target.value,
-                }))
-              }
-              multiline
-              minRows={3}
-              className="lg:col-span-2"
-              size="small"
-              sx={textFieldSx}
-            />
-          </div>
-
-          <div className="mt-4 flex justify-end">
-            <Button
-              variant="outlined"
-              startIcon={<AddOutlinedIcon />}
-              onClick={handleCreate}
-              sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
-            >
+        {canEdit && (
+          <div className="rounded-2xl border border-dashed border-slate-200 p-5 dark:border-slate-700">
+            <h3 className="mb-4 font-black text-slate-800 dark:text-white">
               Add Prize
-            </Button>
+            </h3>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <TextField
+                label="Prize title"
+                value={form.title}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    title: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={textFieldSx}
+              />
+
+              <TextField
+                label="Track"
+                select
+                value={form.trackId}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    trackId: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={textFieldSx}
+              >
+                <MenuItem value="">Whole event prize</MenuItem>
+                {tracks.map((track) => (
+                  <MenuItem key={getId(track)} value={getId(track)}>
+                    {getTrackName(track)}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                label="Rank position"
+                type="number"
+                value={form.rankPosition}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    rankPosition: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={textFieldSx}
+                required
+              />
+
+              <TextField
+                label="Value"
+                type="number"
+                value={form.value}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    value: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={textFieldSx}
+              />
+
+              <TextField
+                label="Currency"
+                select
+                value={form.currency}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    currency: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={textFieldSx}
+              >
+                {prizeCurrencyOptions.map((currency) => (
+                  <MenuItem key={currency} value={currency}>
+                    {currency}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                label="Sponsor"
+                value={form.sponsorName}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    sponsorName: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={textFieldSx}
+              />
+
+              <TextField
+                label="Description"
+                value={form.description}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    description: event.target.value,
+                  }))
+                }
+                multiline
+                minRows={3}
+                className="lg:col-span-2"
+                size="small"
+                sx={textFieldSx}
+              />
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="outlined"
+                startIcon={<AddOutlinedIcon />}
+                onClick={handleCreate}
+                sx={{
+                  borderRadius: "12px",
+                  textTransform: "none",
+                  fontWeight: 900,
+                }}
+              >
+                Add Prize
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {isLoading && (
           <div className="flex justify-center py-12">
@@ -329,9 +382,14 @@ export function PrizesTab({
 
           <div className="border-t border-slate-100 px-6 py-5 dark:border-slate-700">
             <div className="mb-4 flex items-center gap-2">
-              <EmojiEventsOutlinedIcon fontSize="small" className="text-blue-500" />
+              <EmojiEventsOutlinedIcon
+                fontSize="small"
+                className="text-blue-500"
+              />
               <div>
-                <p className="font-extrabold text-slate-900 dark:text-white">Whole Event</p>
+                <p className="font-extrabold text-slate-900 dark:text-white">
+                  Whole Event
+                </p>
                 <p className="text-sm text-slate-500">Event-level prizes.</p>
               </div>
             </div>
@@ -340,13 +398,17 @@ export function PrizesTab({
           </div>
 
           {groupedPrizes.trackGroups.map(({ track, prizes: trackPrizes }) => (
-            <div key={getId(track)} className="border-t border-slate-100 px-6 py-5 dark:border-slate-700">
+            <div
+              key={getId(track)}
+              className="border-t border-slate-100 px-6 py-5 dark:border-slate-700"
+            >
               <div className="mb-4">
                 <p className="font-extrabold text-slate-900 dark:text-white">
                   {getTrackName(track)}
                 </p>
                 <p className="mt-1 line-clamp-2 text-sm text-slate-500">
-                  {(track as { description?: string }).description || "No description"}
+                  {(track as { description?: string }).description ||
+                    "No description"}
                 </p>
                 <p className="mt-2 text-xs font-semibold text-slate-400">
                   {trackPrizes.length} prize(s)
