@@ -3,7 +3,6 @@ import type { UserRole } from "@/types/auth.types";
 import type { UserStatus } from "@/types/user.types";
 
 // Constants
-
 export const ALL_ROLES: readonly UserRole[] = [
   "ADMIN",
   "COORDINATOR",
