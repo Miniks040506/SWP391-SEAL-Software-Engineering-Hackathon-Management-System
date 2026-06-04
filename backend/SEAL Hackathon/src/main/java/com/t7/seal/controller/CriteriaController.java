@@ -94,7 +94,8 @@ public class CriteriaController {
             @PathVariable UUID criteriaId,
             Authentication authentication
     ) {
-        return null;
+        criteriaService.deleteScoringCriteria(criteriaId, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR', 'JUDGE')")
@@ -104,7 +105,7 @@ public class CriteriaController {
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(required = false) Boolean isTechnical
     ) {
-        return null;
+        return ResponseEntity.ok(criteriaService.getEventCriteria(eventId, isActive, isTechnical));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")

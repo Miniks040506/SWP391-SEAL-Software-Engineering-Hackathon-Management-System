@@ -1,14 +1,18 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.CriteriaCategory;
+import com.t7.seal.entities.EventCriteria;
 import com.t7.seal.entities.ScoringCriteria;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.*;
+import com.t7.seal.request.criteria.CreateEventCriteriaRequest;
 import com.t7.seal.request.criteria.CreateScoringCriteriaRequest;
+import com.t7.seal.request.criteria.UpdateEventCriteriaRequest;
 import com.t7.seal.request.criteria.UpdateScoringCriteriaRequest;
 import com.t7.seal.response.PageResponse;
+import com.t7.seal.response.criteria.EventCriteriaResponse;
 import com.t7.seal.response.criteria.ScoringCriteriaResponse;
 import com.t7.seal.service.CriteriaService;
 import com.t7.seal.service.CurrentUserService;
@@ -20,6 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.SortArgumentResolver;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -246,6 +251,50 @@ public class CriteriaServiceImpl implements CriteriaService {
         scoringCriteriaRepository.delete(criteria);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public List<EventCriteriaResponse> getEventCriteria(UUID eventId, Boolean isActive, Boolean isTechnical) {
+        if (eventId == null) {
+            throw new BadRequestException("Event id is required");
+        }
+
+        if (!hackathonEventRepository.existsById(eventId)) {
+            throw new NotFoundException("Event not found");
+        }
+
+
+        return eventCriteriaRepository.findByEventIdOrderByDisplayOrderAsc(eventId)
+                .stream().filter(cr -> isActive == null
+                        || Boolean.TRUE.equals(cr.getIsActive()) == isActive)
+                .filter(cr -> isTechnical == null || Boolean.TRUE.equals(cr.getEffectiveIsTechnical()))
+                .map(this::toEventCriteriaResponse)
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public EventCriteriaResponse createEventCriteria(UUID eventId, CreateEventCriteriaRequest request, Authentication authentication) {
+        return null;
+    }
+
+    @Transactional
+    @Override
+    public EventCriteriaResponse updateEventCriteria(UUID criteriaId, UpdateEventCriteriaRequest request, Authentication authentication) {
+        return null;
+    }
+
+    @Transactional
+    @Override
+    public EventCriteriaResponse deleteEventCriteria(UUID criteriaId, Authentication authentication) {
+        return null;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<EventCriteriaResponse> getCriteriaByRound(UUID roundId) {
+        return List.of();
+    }
+
 
     //HELPERS
     private CriteriaCategory parseCategoryOrNull(String category) {
@@ -327,5 +376,33 @@ public class CriteriaServiceImpl implements CriteriaService {
 
         return scoringCriteriaRepository.findById(criteriaId)
                 .orElseThrow(() -> new NotFoundException("Scoring criteria not found"));
+    }
+
+    private EventCriteriaResponse toEventCriteriaResponse(EventCriteria criteria) {
+        ScoringCriteria template = criteria.getCriteria();
+
+        return new EventCriteriaResponse(
+                criteria.getId(),
+                criteria.getEvent().getId(),
+                template == null ? null : template.getId(),
+                template == null ? null : template.getName(),
+                template == null ? null : template.getCategory().name(),
+                criteria.isCustomCriteria(),
+                criteria.getNameOverride(),
+                criteria.getDescriptionOverride(),
+                criteria.getRubricOverride(),
+                criteria.getWeightOverride() == null ? null : criteria.getWeightOverride().doubleValue(),
+                criteria.getMaxScoreOverride() == null ? null : criteria.getMaxScoreOverride().doubleValue(),
+                criteria.getIsTechnicalOverride(),
+                criteria.getEffectiveName(),
+                criteria.getEffectiveDescription(),
+                criteria.getEffectiveRubric(),
+                criteria.getEffectiveWeight() == null ? null : criteria.getEffectiveWeight().doubleValue(),
+                criteria.getEffectiveMaxScore() == null ? null : criteria.getEffectiveMaxScore().doubleValue(),
+                criteria.getEffectiveIsTechnical(),
+                criteria.getAppliesToRoundIds(),
+                criteria.getDisplayOrder(),
+                criteria.getIsActive()
+        );
     }
 }
