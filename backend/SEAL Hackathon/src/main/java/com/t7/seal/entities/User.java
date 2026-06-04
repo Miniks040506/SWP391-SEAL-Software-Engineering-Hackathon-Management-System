@@ -52,7 +52,6 @@ public class User {
     @Column(name = "email", nullable = false, unique = true, length = 255, updatable = false)
     private String email;
 
-
     // BCrypt password hash.
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;

@@ -41,6 +41,10 @@ export const eventApi = {
     return apiRequest.post<EventDetailResponse>(`/events/${eventId}/advance-status`);
   },
 
+  cancelEvent(eventId: UUID) {
+    return apiRequest.post<EventDetailResponse>(`/events/${eventId}/cancel`);
+  },
+
   deleteEvent(eventId: UUID) {
     return apiRequest.delete<void>(`/events/${eventId}`);
   },

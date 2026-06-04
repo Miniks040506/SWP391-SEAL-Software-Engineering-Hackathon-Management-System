@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import java.util.UUID;
 
 public interface EventService {
+
     PageResponse<EventSummaryResponse> getPublicEvent(String season, Integer year, String status, int size, int page);
 
     PageResponse<EventSummaryResponse> getAllEvents(String season, Integer year, String status, int size, int page);
@@ -23,4 +24,7 @@ public interface EventService {
     EventDetailResponse advanceEventStatus(UUID eventId, Authentication authentication);
 
     void deleteEvent(UUID eventId, Authentication authentication);
+
+    EventDetailResponse cancelEvent(UUID eventId, Authentication authentication);
+
 }

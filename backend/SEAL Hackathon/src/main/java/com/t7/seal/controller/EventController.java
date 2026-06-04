@@ -101,6 +101,24 @@ public class EventController {
     }
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
+    @PostMapping("/{eventId}/advance-status")
+    public ResponseEntity<EventDetailResponse> advanceEventStatus(
+            @PathVariable UUID eventId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(eventService.advanceEventStatus(eventId, authentication));
+    }
+
+    @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
+    @PostMapping("/{eventId}/cancel")
+    public ResponseEntity<EventDetailResponse> cancelEvent(
+            @PathVariable UUID eventId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(eventService.cancelEvent(eventId, authentication));
+    }
+
+    @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @DeleteMapping("/{eventId}")
     public ResponseEntity<Void> deleteEvent(
             @PathVariable UUID eventId,
@@ -134,14 +152,5 @@ public class EventController {
             @RequestParam(required = false) String judgeType
     ) {
         return null;
-    }
-
-    @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
-    @PostMapping("/{eventId}/advance-status")
-    public ResponseEntity<EventDetailResponse> advanceEventStatus(
-            @PathVariable UUID eventId,
-            Authentication authentication
-    ) {
-        return ResponseEntity.ok(eventService.advanceEventStatus(eventId, authentication));
     }
 }

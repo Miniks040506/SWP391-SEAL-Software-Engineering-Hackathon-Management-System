@@ -101,6 +101,7 @@ export const CoordinatorDashboardPage = () => {
     size: 100,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const apiEvents = (eventsQuery.data?.content ?? []) as EventSummaryResponse[];
 
   const activeEvents = useMemo(

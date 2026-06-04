@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.entities.Judge;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.RoundJudgeAssignment;
@@ -57,6 +58,8 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found."));
 
+        assertAssignmentEditable(round.getEvent().getStatus());
+
         Judge judge = judgeRepository.findByIdWithUser(request.judgeId())
                 .orElseThrow(() -> new NotFoundException("Judge not found."));
 
@@ -100,7 +103,18 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         RoundJudgeAssignment assignment = assignmentRepository.findByIdAndRoundId(assignmentId, roundId)
                 .orElseThrow(() -> new NotFoundException("Judge assignment not found."));
 
+        assertAssignmentEditable(assignment.getRound().getEvent().getStatus());
+
         assignmentRepository.delete(assignment);
+    }
+
+
+    private void assertAssignmentEditable(RegistrationStatus status) {
+        if (status == RegistrationStatus.JUDGING
+                || status == RegistrationStatus.COMPLETED
+                || status == RegistrationStatus.CANCELLED) {
+            throw new ConflictException("Judge assignments are locked in event status " + status + ".");
+        }
     }
 
     private JudgeAssignmentResponse toResponse(RoundJudgeAssignment assignment) {

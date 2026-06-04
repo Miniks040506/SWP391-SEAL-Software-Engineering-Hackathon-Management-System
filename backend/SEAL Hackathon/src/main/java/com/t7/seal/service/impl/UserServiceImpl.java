@@ -22,6 +22,7 @@ import com.t7.seal.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
@@ -416,10 +418,37 @@ public class UserServiceImpl implements UserService {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
-        Page<User> result = userRepository.searchUsers(
-                normalize(role),
-                normalize(status),
-                trimToNull(search),
+        UserRole parsedRole = parseNullableEnum(UserRole.class, normalize(role), "role");
+        UserStatus parsedStatus = parseNullableEnum(UserStatus.class, normalize(status), "status");
+        String keyword = trimToNull(search);
+
+        Specification<User> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+
+            if (parsedRole != null) {
+                predicates.add(cb.equal(root.get("role"), parsedRole));
+            }
+
+            if (parsedStatus != null) {
+                predicates.add(cb.equal(root.get("status"), parsedStatus));
+            }
+
+            if (keyword != null) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("email")), pattern),
+                        cb.like(cb.lower(root.get("fullName")), pattern)
+                ));
+            }
+
+            return predicates.isEmpty()
+                    ? cb.conjunction()
+                    : cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        Page<User> result = userRepository.findAll(
+                spec,
                 PageRequest.of(safePage, safeSize)
         );
 
@@ -623,6 +652,14 @@ public class UserServiceImpl implements UserService {
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Invalid " + fieldName + ": " + value);
         }
+    }
+
+    private <E extends Enum<E>> E parseNullableEnum(Class<E> enumType, String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return parseEnum(enumType, value, fieldName);
     }
 
     private String trimToNull(String value) {

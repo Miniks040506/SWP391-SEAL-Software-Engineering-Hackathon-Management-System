@@ -1,8 +1,17 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
-import { Alert, Button, Checkbox, CircularProgress, FormControlLabel, IconButton, TextField } from "@mui/material";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  CircularProgress,
+  FormControlLabel,
+  IconButton,
+  TextField,
+} from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 
@@ -35,6 +44,8 @@ type RoundsTabProps = {
   rounds: RoundResponse[];
   isLoading: boolean;
   onChanged: () => void | Promise<void>;
+  canEdit: boolean;
+  readonlyReason?: string;
 };
 
 const emptyRound: RoundForm = {
@@ -106,11 +117,15 @@ export function RoundsTab({
   rounds,
   isLoading,
   onChanged,
+  canEdit,
+  readonlyReason,
 }: RoundsTabProps) {
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newRound, setNewRound] = useState<RoundForm>(emptyRound);
   const [editing, setEditing] = useState<Record<string, RoundForm>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditing((current) => {
       const next: Record<string, RoundForm> = {};
 
@@ -124,6 +139,8 @@ export function RoundsTab({
   }, [rounds]);
 
   const handleCreate = async () => {
+    if (!canEdit) return;
+
     if (!newRound.name.trim()) {
       enqueueSnackbar("Round name is required.", { variant: "error" });
       return;
@@ -145,6 +162,7 @@ export function RoundsTab({
       });
 
       setNewRound(emptyRound);
+      setShowAddForm(false);
       enqueueSnackbar("Round created.", { variant: "success" });
       await onChanged();
     } catch {
@@ -153,6 +171,8 @@ export function RoundsTab({
   };
 
   const handleUpdate = async (round: RoundResponse) => {
+    if (!canEdit) return;
+
     const id = getId(round);
     const values = editing[id];
 
@@ -182,6 +202,8 @@ export function RoundsTab({
   };
 
   const handleDelete = async (roundId: UUID) => {
+    if (!canEdit) return;
+
     try {
       await roundApi.deleteRound(roundId);
       enqueueSnackbar("Round deleted.", { variant: "success" });
@@ -194,99 +216,140 @@ export function RoundsTab({
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="border-b border-slate-100 px-7 py-5 dark:border-slate-700">
-        <h2 className="text-lg font-extrabold text-slate-950 dark:text-white">
-          Rounds
-        </h2>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-950 dark:text-white">
+              Rounds
+            </h2>
 
-        <p className="mt-2 text-sm font-medium text-slate-500">
-          Create event-level round templates separately. Every track uses the same round list.
-        </p>
+            <p className="mt-2 text-sm font-medium text-slate-500">
+              Create event-level round templates separately. Round structure is
+              locked from ONGOING onward.
+            </p>
+          </div>
+
+          {canEdit && !showAddForm && (
+            <Button
+              variant="contained"
+              startIcon={<AddOutlinedIcon />}
+              onClick={() => setShowAddForm(true)}
+              sx={{
+                borderRadius: "12px",
+                textTransform: "none",
+                fontWeight: 900,
+              }}
+            >
+              Add Round
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
         <div className="space-y-5">
-          <div className="rounded-2xl border border-dashed border-slate-200 p-5 dark:border-slate-700">
-            <h3 className="mb-4 font-black text-slate-800 dark:text-white">
-              Add Round
-            </h3>
+          {!canEdit && readonlyReason && (
+            <Alert severity="warning">{readonlyReason}</Alert>
+          )}
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <TextField
-                label="Round name"
-                value={newRound.name}
-                onChange={(event) =>
-                  setNewRound((current) => ({ ...current, name: event.target.value }))
-                }
-                size="small"
-                sx={textFieldSx}
-              />
+          {canEdit && showAddForm && (
+            <div className="rounded-2xl border border-dashed border-slate-200 p-5 dark:border-slate-700">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h3 className="font-black text-slate-800 dark:text-white">
+                  Add Round
+                </h3>
+                <IconButton onClick={() => setShowAddForm(false)}>
+                  <CloseOutlinedIcon />
+                </IconButton>
+              </div>
 
-              <TextField
-                label="Order index"
-                type="number"
-                value={newRound.orderIndex}
-                onChange={(event) =>
-                  setNewRound((current) => ({
-                    ...current,
-                    orderIndex: event.target.value,
-                  }))
-                }
-                size="small"
-                sx={textFieldSx}
-              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <TextField
+                  label="Round name"
+                  value={newRound.name}
+                  onChange={(event) =>
+                    setNewRound((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                  size="small"
+                  sx={textFieldSx}
+                />
 
-              <TextField
-                label="Submission deadline"
-                type="datetime-local"
-                value={newRound.submissionDeadline}
-                onChange={(event) =>
-                  setNewRound((current) => ({
-                    ...current,
-                    submissionDeadline: event.target.value,
-                  }))
-                }
-                size="small"
-                sx={dateTimeFieldSx}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
+                <TextField
+                  label="Order index"
+                  type="number"
+                  value={newRound.orderIndex}
+                  onChange={(event) =>
+                    setNewRound((current) => ({
+                      ...current,
+                      orderIndex: event.target.value,
+                    }))
+                  }
+                  size="small"
+                  sx={textFieldSx}
+                />
 
-              <TextField
-                label="Judging deadline"
-                type="datetime-local"
-                value={newRound.judgingDeadline}
-                onChange={(event) =>
-                  setNewRound((current) => ({
-                    ...current,
-                    judgingDeadline: event.target.value,
-                  }))
-                }
-                size="small"
-                sx={dateTimeFieldSx}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
+                <TextField
+                  label="Submission deadline"
+                  type="datetime-local"
+                  value={newRound.submissionDeadline}
+                  onChange={(event) =>
+                    setNewRound((current) => ({
+                      ...current,
+                      submissionDeadline: event.target.value,
+                    }))
+                  }
+                  size="small"
+                  sx={dateTimeFieldSx}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
 
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={newRound.isFinal}
-                    onChange={(_, checked) =>
-                      setNewRound((current) => ({ ...current, isFinal: checked }))
-                    }
-                  />
-                }
-                label="Final round"
-              />
+                <TextField
+                  label="Judging deadline"
+                  type="datetime-local"
+                  value={newRound.judgingDeadline}
+                  onChange={(event) =>
+                    setNewRound((current) => ({
+                      ...current,
+                      judgingDeadline: event.target.value,
+                    }))
+                  }
+                  size="small"
+                  sx={dateTimeFieldSx}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
 
-              <Button
-                variant="outlined"
-                startIcon={<AddOutlinedIcon />}
-                onClick={handleCreate}
-                sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
-              >
-                Add Round
-              </Button>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={newRound.isFinal}
+                      onChange={(_, checked) =>
+                        setNewRound((current) => ({
+                          ...current,
+                          isFinal: checked,
+                        }))
+                      }
+                    />
+                  }
+                  label="Final round"
+                />
+
+                <Button
+                  variant="outlined"
+                  startIcon={<AddOutlinedIcon />}
+                  onClick={handleCreate}
+                  sx={{
+                    borderRadius: "12px",
+                    textTransform: "none",
+                    fontWeight: 900,
+                  }}
+                >
+                  Add Round
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           {isLoading && (
             <div className="flex justify-center py-12">
@@ -313,9 +376,11 @@ export function RoundsTab({
                     </p>
                   </div>
 
-                  <IconButton color="error" onClick={() => handleDelete(id)}>
-                    <DeleteOutlineOutlinedIcon />
-                  </IconButton>
+                  {canEdit && (
+                    <IconButton color="error" onClick={() => handleDelete(id)}>
+                      <DeleteOutlineOutlinedIcon />
+                    </IconButton>
+                  )}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -330,6 +395,7 @@ export function RoundsTab({
                     }
                     size="small"
                     sx={textFieldSx}
+                    disabled={!canEdit}
                   />
 
                   <TextField
@@ -344,6 +410,7 @@ export function RoundsTab({
                     }
                     size="small"
                     sx={textFieldSx}
+                    disabled={!canEdit}
                   />
 
                   <TextField
@@ -353,12 +420,16 @@ export function RoundsTab({
                     onChange={(event) =>
                       setEditing((current) => ({
                         ...current,
-                        [id]: { ...values, submissionDeadline: event.target.value },
+                        [id]: {
+                          ...values,
+                          submissionDeadline: event.target.value,
+                        },
                       }))
                     }
                     size="small"
                     sx={dateTimeFieldSx}
                     slotProps={{ inputLabel: { shrink: true } }}
+                    disabled={!canEdit}
                   />
 
                   <TextField
@@ -368,18 +439,23 @@ export function RoundsTab({
                     onChange={(event) =>
                       setEditing((current) => ({
                         ...current,
-                        [id]: { ...values, judgingDeadline: event.target.value },
+                        [id]: {
+                          ...values,
+                          judgingDeadline: event.target.value,
+                        },
                       }))
                     }
                     size="small"
                     sx={dateTimeFieldSx}
                     slotProps={{ inputLabel: { shrink: true } }}
+                    disabled={!canEdit}
                   />
 
                   <FormControlLabel
                     control={
                       <Checkbox
                         checked={values.isFinal}
+                        disabled={!canEdit}
                         onChange={(_, checked) =>
                           setEditing((current) => ({
                             ...current,
@@ -391,14 +467,20 @@ export function RoundsTab({
                     label="Final round"
                   />
 
-                  <Button
-                    variant="contained"
-                    startIcon={<SaveOutlinedIcon />}
-                    onClick={() => handleUpdate(round)}
-                    sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
-                  >
-                    Save Round
-                  </Button>
+                  {canEdit && (
+                    <Button
+                      variant="contained"
+                      startIcon={<SaveOutlinedIcon />}
+                      onClick={() => handleUpdate(round)}
+                      sx={{
+                        borderRadius: "12px",
+                        textTransform: "none",
+                        fontWeight: 900,
+                      }}
+                    >
+                      Save Round
+                    </Button>
+                  )}
                 </div>
               </div>
             );
@@ -414,7 +496,10 @@ export function RoundsTab({
         <aside className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 dark:border-slate-700 dark:bg-slate-900/20">
           <div className="mb-4">
             <h3 className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white">
-              <CalendarTodayOutlinedIcon fontSize="small" className="text-blue-500" />
+              <CalendarTodayOutlinedIcon
+                fontSize="small"
+                className="text-blue-500"
+              />
               Track-round preview
             </h3>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -423,7 +508,9 @@ export function RoundsTab({
           </div>
 
           {tracks.length === 0 && (
-            <Alert severity="warning">Create at least one track before reviewing rounds.</Alert>
+            <Alert severity="warning">
+              Create at least one track before reviewing rounds.
+            </Alert>
           )}
 
           {tracks.length > 0 && rounds.length === 0 && (

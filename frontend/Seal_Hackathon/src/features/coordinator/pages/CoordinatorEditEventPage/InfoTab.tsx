@@ -1,61 +1,29 @@
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
-import { Button, MenuItem, TextField } from "@mui/material";
+import { Alert, Button, MenuItem, TextField } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
 
 import { eventApi } from "@/api/event.api";
 import type { UUID } from "@/types/common.types";
 import type { EventDetailResponse } from "@/types/event.types";
+import {
+  EVENT_STATUS_STEPS,
+  getEventEditRules,
+  getNextEventStatus,
+  normalizeEventStatus,
+  type EditableEventStatus,
+} from "./eventEditRules";
 
 type InfoTabProps = {
   eventId: UUID;
   event: EventDetailResponse;
   onUpdated: () => void | Promise<void>;
+  canEdit: boolean;
+  readonlyReason?: string;
 };
-
-type EventStatus =
-  | "DRAFT"
-  | "REGISTRATION"
-  | "ONGOING"
-  | "JUDGING"
-  | "COMPLETED"
-  | "CANCELLED";
-
-type StatusStep = {
-  value: EventStatus;
-  label: string;
-  description: string;
-};
-
-const STATUS_STEPS: StatusStep[] = [
-  {
-    value: "DRAFT",
-    label: "Draft",
-    description: "Coordinator is preparing event information, tracks, rounds, and prizes.",
-  },
-  {
-    value: "REGISTRATION",
-    label: "Registration",
-    description: "Teams can register for the event during the configured registration period.",
-  },
-  {
-    value: "ONGOING",
-    label: "Ongoing",
-    description: "The hackathon is running and teams are working on submissions.",
-  },
-  {
-    value: "JUDGING",
-    label: "Judging",
-    description: "Submissions are locked and judges complete scorecards.",
-  },
-  {
-    value: "COMPLETED",
-    label: "Completed",
-    description: "Final results are ready and the event lifecycle is finished.",
-  },
-];
 
 const EVENT_SEASONS = ["SPRING", "SUMMER", "FALL"] as const;
 
@@ -107,42 +75,24 @@ function readNumber(event: EventDetailResponse, ...keys: string[]) {
   return new Date().getFullYear();
 }
 
-function normalizeStatus(status?: string | null): EventStatus {
-  const nextStatus = (status || "DRAFT").trim().toUpperCase();
-
-  if (
-    nextStatus === "DRAFT" ||
-    nextStatus === "REGISTRATION" ||
-    nextStatus === "ONGOING" ||
-    nextStatus === "JUDGING" ||
-    nextStatus === "COMPLETED" ||
-    nextStatus === "CANCELLED"
-  ) {
-    return nextStatus;
-  }
-
-  return "DRAFT";
-}
-
-function getNextStatus(status: EventStatus) {
-  if (status === "DRAFT") return "REGISTRATION";
-  if (status === "REGISTRATION") return "ONGOING";
-  if (status === "ONGOING") return "JUDGING";
-  if (status === "JUDGING") return "COMPLETED";
-  return null;
-}
-
 function StatusWorkflow({
   status,
   isAdvancing,
+  isCancelling,
   onAdvance,
+  onCancel,
 }: {
-  status: EventStatus;
+  status: EditableEventStatus;
   isAdvancing: boolean;
+  isCancelling: boolean;
   onAdvance: () => void;
+  onCancel: () => void;
 }) {
-  const currentIndex = STATUS_STEPS.findIndex((step) => step.value === status);
-  const nextStatus = getNextStatus(status);
+  const currentIndex = EVENT_STATUS_STEPS.findIndex(
+    (step) => step.value === status,
+  );
+  const nextStatus = getNextEventStatus(status);
+  const rules = getEventEditRules(status);
 
   if (status === "CANCELLED") {
     return (
@@ -169,26 +119,52 @@ function StatusWorkflow({
           </p>
           <h3 className="mt-2 flex items-center gap-2 text-xl font-black text-slate-950 dark:text-white">
             <FlagOutlinedIcon fontSize="small" className="text-blue-500" />
-            {STATUS_STEPS[currentIndex]?.label ?? status}
+            {EVENT_STATUS_STEPS[currentIndex]?.label ?? status}
           </h3>
           <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-            {STATUS_STEPS[currentIndex]?.description ?? "Current event status."}
+            {EVENT_STATUS_STEPS[currentIndex]?.description ??
+              "Current event status."}
           </p>
         </div>
 
-        <Button
-          variant="contained"
-          endIcon={<ArrowForwardOutlinedIcon />}
-          onClick={onAdvance}
-          disabled={!nextStatus || isAdvancing}
-          sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900, minWidth: 210 }}
-        >
-          {nextStatus ? `Move to ${nextStatus}` : "No next status"}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row xl:flex-col">
+          <Button
+            variant="contained"
+            endIcon={<ArrowForwardOutlinedIcon />}
+            onClick={onAdvance}
+            disabled={
+              !rules.canAdvance || !nextStatus || isAdvancing || isCancelling
+            }
+            sx={{
+              borderRadius: "12px",
+              textTransform: "none",
+              fontWeight: 900,
+              minWidth: 210,
+            }}
+          >
+            {nextStatus ? `Move to ${nextStatus}` : "No next status"}
+          </Button>
+
+          <Button
+            color="error"
+            variant="outlined"
+            startIcon={<CancelOutlinedIcon />}
+            onClick={onCancel}
+            disabled={!rules.canCancel || isAdvancing || isCancelling}
+            sx={{
+              borderRadius: "12px",
+              textTransform: "none",
+              fontWeight: 900,
+              minWidth: 210,
+            }}
+          >
+            Cancel event
+          </Button>
+        </div>
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-5">
-        {STATUS_STEPS.map((step, index) => {
+        {EVENT_STATUS_STEPS.map((step, index) => {
           const active = index === currentIndex;
           const done = currentIndex > index;
 
@@ -204,22 +180,35 @@ function StatusWorkflow({
                     : "border-slate-200 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-900/60",
               ].join(" ")}
             >
-              <p className="font-black">{index + 1}. {step.label}</p>
+              <p className="font-black">
+                {index + 1}. {step.label}
+              </p>
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-bold text-rose-600 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-300">
+        Cancelled is an exit state. Use Cancel event only when this event should
+        stop and become read-only.
       </div>
     </div>
   );
 }
 
-export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
+export function InfoTab({
+  eventId,
+  event,
+  onUpdated,
+  canEdit,
+  readonlyReason,
+}: InfoTabProps) {
   const initialValues = useMemo(
     () => ({
       name: readString(event, "name", "eventName", "title"),
       season: readString(event, "season") || "SPRING",
       year: readNumber(event, "year"),
-      status: normalizeStatus(readString(event, "status")),
+      status: normalizeEventStatus(readString(event, "status")),
       registrationStartAt: toDateTimeLocal(
         readString(event, "registrationStartAt", "registrationOpenAt"),
       ),
@@ -235,8 +224,10 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
   const [form, setForm] = useState(initialValues);
   const [isSaving, setIsSaving] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm(initialValues);
   }, [initialValues]);
 
@@ -248,6 +239,13 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
   };
 
   const handleSave = async () => {
+    if (!canEdit) {
+      enqueueSnackbar(readonlyReason || "This event is read-only.", {
+        variant: "warning",
+      });
+      return;
+    }
+
     if (!form.name.trim()) {
       enqueueSnackbar("Event name is required.", { variant: "error" });
       return;
@@ -283,12 +281,39 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
     try {
       setIsAdvancing(true);
       const updatedEvent = await eventApi.advanceEventStatus(eventId);
-      enqueueSnackbar(`Event moved to ${updatedEvent.status}.`, { variant: "success" });
+      enqueueSnackbar(`Event moved to ${updatedEvent.status}.`, {
+        variant: "success",
+      });
       await onUpdated();
     } catch {
-      enqueueSnackbar("Cannot move event to the next status.", { variant: "error" });
+      enqueueSnackbar("Cannot move event to the next status.", {
+        variant: "error",
+      });
     } finally {
       setIsAdvancing(false);
+    }
+  };
+
+  const handleCancelStatus = async () => {
+    if (
+      !window.confirm(
+        "Cancel this event? This will lock the event as CANCELLED.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setIsCancelling(true);
+      const updatedEvent = await eventApi.cancelEvent(eventId);
+      enqueueSnackbar(`Event moved to ${updatedEvent.status}.`, {
+        variant: "success",
+      });
+      await onUpdated();
+    } catch {
+      enqueueSnackbar("Cannot cancel this event.", { variant: "error" });
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -297,8 +322,14 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
       <StatusWorkflow
         status={form.status}
         isAdvancing={isAdvancing}
+        isCancelling={isCancelling}
         onAdvance={handleAdvanceStatus}
+        onCancel={handleCancelStatus}
       />
+
+      {!canEdit && readonlyReason && (
+        <Alert severity="warning">{readonlyReason}</Alert>
+      )}
 
       <div>
         <h2 className="text-xl font-black text-slate-950 dark:text-white">
@@ -306,7 +337,8 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
         </h2>
 
         <p className="mt-1 text-sm text-slate-500">
-          Update basic information here. Status is changed only through the sequential workflow above.
+          Update basic information here. Status is changed only through the
+          sequential workflow above.
         </p>
       </div>
 
@@ -318,6 +350,7 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
           fullWidth
           size="small"
           sx={textFieldSx}
+          disabled={!canEdit}
         />
 
         <TextField
@@ -328,6 +361,7 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
           fullWidth
           size="small"
           sx={textFieldSx}
+          disabled={!canEdit}
         >
           {EVENT_SEASONS.map((season) => (
             <MenuItem key={season} value={season}>
@@ -344,6 +378,7 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
           fullWidth
           size="small"
           sx={textFieldSx}
+          disabled={!canEdit}
         />
 
         <TextField
@@ -366,6 +401,7 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
           size="small"
           sx={dateTimeFieldSx}
           slotProps={{ inputLabel: { shrink: true } }}
+          disabled={!canEdit}
         />
 
         <TextField
@@ -379,6 +415,7 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
           size="small"
           sx={dateTimeFieldSx}
           slotProps={{ inputLabel: { shrink: true } }}
+          disabled={!canEdit}
         />
 
         <TextField
@@ -389,6 +426,7 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
           size="small"
           sx={textFieldSx}
           className="lg:col-span-2"
+          disabled={!canEdit}
         />
 
         <TextField
@@ -400,6 +438,7 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
           minRows={5}
           sx={textFieldSx}
           className="lg:col-span-2"
+          disabled={!canEdit}
         />
       </div>
 
@@ -408,7 +447,7 @@ export function InfoTab({ eventId, event, onUpdated }: InfoTabProps) {
           variant="contained"
           startIcon={<SaveOutlinedIcon />}
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={!canEdit || isSaving}
           sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
         >
           Save event

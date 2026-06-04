@@ -19,7 +19,7 @@ import { UserCreateDialog } from "@/features/admin/components/ManageUserPage/Use
 import { UserEditDialog } from "@/features/admin/components/ManageUserPage/UserEditDialog";
 import { UserResetPasswordDialog } from "@/features/admin/components/ManageUserPage/UserResetPasswordDialog";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 export function AdminUsersPage() {
   const { search, role, status, page, setSearch, setRole, setStatus, setPage } =

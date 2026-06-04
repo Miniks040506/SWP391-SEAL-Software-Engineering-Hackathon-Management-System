@@ -20,6 +20,7 @@ import { InfoTab } from "./InfoTab";
 import { PrizesTab } from "./PrizesTab";
 import { RoundsTab } from "./RoundsTab";
 import { TracksTab } from "./TracksTab";
+import { getEventEditRules, normalizeEventStatus } from "./eventEditRules";
 
 type EditTab = "INFO" | "TRACKS" | "ROUNDS" | "ASSIGNMENTS" | "PRIZES";
 
@@ -76,15 +77,33 @@ export function CoordinatorEditEventPage() {
     enabled,
   });
 
-  const eventName = useMemo(() => getEventName(eventQuery.data), [eventQuery.data]);
-  const bannerUrl = useMemo(() => getBannerUrl(eventQuery.data), [eventQuery.data]);
+  const eventName = useMemo(
+    () => getEventName(eventQuery.data),
+    [eventQuery.data],
+  );
+  const bannerUrl = useMemo(
+    () => getBannerUrl(eventQuery.data),
+    [eventQuery.data],
+  );
+  const eventStatus = normalizeEventStatus(
+    (eventQuery.data as { status?: string | null } | undefined)?.status,
+  );
+  const editRules = getEventEditRules(eventStatus);
 
   const invalidateEditData = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["coordinator-event-detail", eventId] }),
-      queryClient.invalidateQueries({ queryKey: ["coordinator-event-tracks", eventId] }),
-      queryClient.invalidateQueries({ queryKey: ["coordinator-event-rounds", eventId] }),
-      queryClient.invalidateQueries({ queryKey: ["coordinator-event-prizes", eventId] }),
+      queryClient.invalidateQueries({
+        queryKey: ["coordinator-event-detail", eventId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["coordinator-event-tracks", eventId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["coordinator-event-rounds", eventId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["coordinator-event-prizes", eventId],
+      }),
     ]);
   };
 
@@ -144,7 +163,8 @@ export function CoordinatorEditEventPage() {
             </h1>
 
             <p className="mt-1 text-sm font-medium text-slate-500">
-              Edit event information, tracks, rounds, mentors, judges, and prizes.
+              Edit event information, tracks, rounds, mentors, judges, and
+              prizes.
             </p>
           </div>
         </div>
@@ -178,6 +198,8 @@ export function CoordinatorEditEventPage() {
           eventId={eventId}
           event={eventQuery.data}
           onUpdated={invalidateEditData}
+          canEdit={editRules.canEditInfo}
+          readonlyReason={editRules.infoReason}
         />
       )}
 
@@ -187,6 +209,8 @@ export function CoordinatorEditEventPage() {
           tracks={tracksQuery.data ?? []}
           isLoading={tracksQuery.isLoading}
           onChanged={invalidateEditData}
+          canEdit={editRules.canEditTracksRounds}
+          readonlyReason={editRules.trackRoundReason}
         />
       )}
 
@@ -197,6 +221,8 @@ export function CoordinatorEditEventPage() {
           rounds={roundsQuery.data ?? []}
           isLoading={roundsQuery.isLoading}
           onChanged={invalidateEditData}
+          canEdit={editRules.canEditTracksRounds}
+          readonlyReason={editRules.trackRoundReason}
         />
       )}
 
@@ -205,6 +231,8 @@ export function CoordinatorEditEventPage() {
           tracks={tracksQuery.data ?? []}
           rounds={roundsQuery.data ?? []}
           onChanged={invalidateEditData}
+          canEdit={editRules.canEditAssignments}
+          readonlyReason={editRules.assignmentReason}
         />
       )}
 
@@ -215,6 +243,8 @@ export function CoordinatorEditEventPage() {
           prizes={prizesQuery.data ?? []}
           isLoading={prizesQuery.isLoading}
           onChanged={invalidateEditData}
+          canEdit={editRules.canEditPrizes}
+          readonlyReason={editRules.prizeReason}
         />
       )}
     </div>

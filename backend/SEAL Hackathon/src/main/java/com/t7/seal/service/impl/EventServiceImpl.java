@@ -13,7 +13,6 @@ import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.repository.TrackRepository;
-import com.t7.seal.repository.UserRepository;
 import com.t7.seal.request.event.CreateEventRequest;
 import com.t7.seal.request.event.UpdateEventRequest;
 import com.t7.seal.response.PageResponse;
@@ -21,7 +20,6 @@ import com.t7.seal.response.event.EventDetailResponse;
 import com.t7.seal.response.event.EventSummaryResponse;
 import com.t7.seal.response.round.RoundResponse;
 import com.t7.seal.response.track.TrackResponse;
-import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EventService;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +41,6 @@ public class EventServiceImpl implements EventService {
     private final HackathonEventRepository hackathonEventRepository;
     private final TrackRepository trackRepository;
     private final RoundRepository roundRepository;
-    private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
 
     private static final int MAX_PAGE_SIZE = 50;
@@ -150,9 +147,13 @@ public class EventServiceImpl implements EventService {
         newEvent.setRegistrationOpen(event.registrationStartAt());
         newEvent.setRegistrationClose(event.registrationEndAt());
         newEvent.setBannerUrl(trimToNull(event.bannerUrl()));
-        newEvent.setStatus(event.status() == null || event.status().isBlank() ?
-                RegistrationStatus.DRAFT :
-                parseEnum(RegistrationStatus.class, event.status(), "status"));
+
+        if (event.status() != null
+                && !event.status().isBlank()
+                && parseEnum(RegistrationStatus.class, event.status(), "status") != RegistrationStatus.DRAFT) {
+            throw new BadRequestException("New event must start from DRAFT status.");
+        }
+        newEvent.setStatus(RegistrationStatus.DRAFT);
         newEvent.setSlug(getSlug(event.name()));
 
         HackathonEvent saved = hackathonEventRepository.save(newEvent);
@@ -167,6 +168,12 @@ public class EventServiceImpl implements EventService {
 
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+
+        assertEventInfoEditable(event);
+
+        if (request.status() != null && !request.status().isBlank()) {
+            throw new BadRequestException("Event status must be changed through workflow endpoints.");
+        }
 
         if (request.name() != null) {
             if (request.name().isBlank()) {
@@ -197,10 +204,6 @@ public class EventServiceImpl implements EventService {
         if (request.bannerUrl() != null) {
             event.setBannerUrl(trimToNull(request.bannerUrl()));
         }
-        if (request.status() != null && !request.status().isBlank()) {
-            changeEventStatus(event, parseEnum(RegistrationStatus.class, request.status(), "status"));
-        }
-
         event.setUpdatedAt(LocalDateTime.now());
 
         HackathonEvent saved = hackathonEventRepository.save(event);
@@ -231,6 +234,22 @@ public class EventServiceImpl implements EventService {
         return buildEventDetailResponse(saved, true);
     }
 
+
+    @Transactional
+    @Override
+    public EventDetailResponse cancelEvent(UUID eventId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        HackathonEvent event = hackathonEventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+
+        changeEventStatus(event, RegistrationStatus.CANCELLED);
+        event.setUpdatedAt(LocalDateTime.now());
+
+        HackathonEvent saved = hackathonEventRepository.save(event);
+        return buildEventDetailResponse(saved, true);
+    }
+
     @Transactional
     @Override
     public void deleteEvent(UUID eventId, Authentication authentication) {
@@ -243,7 +262,8 @@ public class EventServiceImpl implements EventService {
             throw new ConflictException("Cannot delete event that has already published result");
         }
 
-        event.setStatus(RegistrationStatus.CANCELLED);
+        changeEventStatus(event, RegistrationStatus.CANCELLED);
+        event.setUpdatedAt(LocalDateTime.now());
 
         hackathonEventRepository.save(event);
     }
@@ -360,6 +380,17 @@ public class EventServiceImpl implements EventService {
                 tracks,
                 rounds
         );
+    }
+
+
+    private void assertEventInfoEditable(HackathonEvent event) {
+        RegistrationStatus status = event.getStatus();
+
+        if (status == RegistrationStatus.JUDGING
+                || status == RegistrationStatus.COMPLETED
+                || status == RegistrationStatus.CANCELLED) {
+            throw new ConflictException("Event information is locked in status " + status + ".");
+        }
     }
 
     private void changeEventStatus(HackathonEvent event, RegistrationStatus requestedStatus) {

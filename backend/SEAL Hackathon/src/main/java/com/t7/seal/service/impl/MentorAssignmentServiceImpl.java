@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.UserRole;
 import com.t7.seal.domain.UserStatus;
 import com.t7.seal.entities.MentorAssignment;
@@ -52,6 +53,7 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
         User assignedBy = currentUserService.getCurrentUser(authentication);
 
         Track track = findTrack(trackId);
+        assertAssignmentEditable(track.getEvent().getStatus());
         User mentor = findUser(request.mentorUserId());
 
         if (mentor.getRole() != UserRole.MENTOR) {
@@ -94,6 +96,8 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
         MentorAssignment assignment = assignmentRepository.findByIdAndTrackId(assignmentId, trackId)
                 .orElseThrow(() -> new NotFoundException("Mentor assignment not found."));
 
+        assertAssignmentEditable(assignment.getTrack().getEvent().getStatus());
+
         if (!assignment.getTrack().getId().equals(trackId)) {
             throw new BadRequestException("Mentor assignment does not belong to this track.");
         }
@@ -102,6 +106,15 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
     }
 
     //HELPERS
+
+    private void assertAssignmentEditable(RegistrationStatus status) {
+        if (status == RegistrationStatus.JUDGING
+                || status == RegistrationStatus.COMPLETED
+                || status == RegistrationStatus.CANCELLED) {
+            throw new ConflictException("Mentor assignments are locked in event status " + status + ".");
+        }
+    }
+
     private Track findTrack(UUID trackId) {
         if (trackId == null) throw new BadRequestException("Track id is required.");
         return trackRepository.findById(trackId)
