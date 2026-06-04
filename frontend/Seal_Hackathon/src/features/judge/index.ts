@@ -1,0 +1,1 @@
+export { JudgeDashboardPage } from "./pages/JudgeDashboardPage";
