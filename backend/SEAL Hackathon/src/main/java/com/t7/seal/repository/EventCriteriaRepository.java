@@ -10,4 +10,7 @@ import java.util.UUID;
 @Repository
 public interface EventCriteriaRepository extends JpaRepository<EventCriteria, UUID> {
 
+    int countByCriteriaId(UUID criteriaId);
+
+    List<EventCriteria> findByEventIdOrderByDisplayOrderAsc(UUID eventId);
 }
