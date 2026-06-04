@@ -132,6 +132,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <EventOutlinedIcon fontSize="small" />,
           },
           {
+            label: "Users",
+            path: "/coordinator/users",
+            icon: <ManageAccountsOutlinedIcon fontSize="small" />,
+          },
+          {
             label: "Teams",
             path: "/coordinator/teams",
             icon: <GroupsOutlinedIcon fontSize="small" />,
