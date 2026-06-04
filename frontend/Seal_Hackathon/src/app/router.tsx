@@ -31,6 +31,8 @@ import {
   CoordinatorEventsPage,
 } from "@/features/coordinator";
 
+import { CoordinatorUsersPage } from "@/features/coordinator/pages/CoordinatorUsersPage";
+
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
 import { PersonalProfilePage } from "@/features/profile";
 import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
@@ -72,6 +74,7 @@ export const router = createBrowserRouter([
       { path: "events/create", element: <CoordinatorCreateEventPage /> },
       { path: "events/:eventId/edit", element: <CoordinatorEditEventPage /> },
       { path: "events/:eventId/view", element: <EventDetailPage /> },
+      { path: "users", element: <CoordinatorUsersPage /> },
       { path: "teams", element: <NotFoundPage /> },
       { path: "submissions", element: <NotFoundPage /> },
       { path: "judging", element: <NotFoundPage /> },
