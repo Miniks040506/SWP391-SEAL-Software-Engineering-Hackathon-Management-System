@@ -136,7 +136,8 @@ public class CriteriaController {
             @PathVariable UUID eventCriteriaId,
             Authentication authentication
     ) {
-        return null;
+        criteriaService.deleteEventCriteria(eventCriteriaId, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasAnyRole('JUDGE', 'COORDINATOR')")
@@ -144,7 +145,7 @@ public class CriteriaController {
     public ResponseEntity<List<EventCriteriaResponse>> getCriteriaByRound(
             @PathVariable UUID roundId
     ) {
-        return null;
+        return ResponseEntity.ok(criteriaService.getCriteriaByRound(roundId));
     }
 }
 

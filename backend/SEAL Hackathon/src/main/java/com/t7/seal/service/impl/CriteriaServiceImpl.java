@@ -380,14 +380,37 @@ public class CriteriaServiceImpl implements CriteriaService {
 
     @Transactional
     @Override
-    public EventCriteriaResponse deleteEventCriteria(UUID criteriaId, Authentication authentication) {
-        return null;
+    public void deleteEventCriteria(UUID criteriaId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        EventCriteria eventCriteria = findEventCriteria(criteriaId);
+
+        assertEventCriteriaEditable(eventCriteria.getEvent());
+
+        long scoreCount = scoreRepository.countByEventCriteriaId(criteriaId);
+
+        if (scoreCount > 0) {
+            eventCriteria.deactivate();
+            eventCriteriaRepository.save(eventCriteria);
+            return;
+        }
+
+        eventCriteriaRepository.delete(eventCriteria);
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<EventCriteriaResponse> getCriteriaByRound(UUID roundId) {
-        return List.of();
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found"));
+
+
+        return eventCriteriaRepository
+                .findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
+                .stream()
+                .filter(criteria -> criteria.appliesToRound(roundId))
+                .map(this::toEventCriteriaResponse)
+                .toList();
     }
 
 

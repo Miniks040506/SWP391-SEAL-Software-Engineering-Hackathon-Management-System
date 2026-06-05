@@ -23,4 +23,6 @@ public interface EventCriteriaRepository extends JpaRepository<EventCriteria, UU
                 WHERE ec.event.id = :eventId
             """)
     Integer findMaxDisplayOrderByEventId(@Param("eventId") UUID eventId);
+
+    List<EventCriteria> findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(UUID eventId);
 }

@@ -33,7 +33,7 @@ public interface CriteriaService {
 
     EventCriteriaResponse updateEventCriteria(UUID criteriaId, UpdateEventCriteriaRequest request, Authentication authentication);
 
-    EventCriteriaResponse deleteEventCriteria(UUID criteriaId, Authentication authentication);
+    void deleteEventCriteria(UUID criteriaId, Authentication authentication);
 
     List<EventCriteriaResponse> getCriteriaByRound(UUID roundId);
 }
