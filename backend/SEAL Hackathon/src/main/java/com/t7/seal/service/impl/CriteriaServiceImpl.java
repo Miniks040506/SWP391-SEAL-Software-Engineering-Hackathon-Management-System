@@ -122,7 +122,7 @@ public class CriteriaServiceImpl implements CriteriaService {
 
         CriteriaCategory category = parseCategory(request.category());
 
-        String name = category.name().trim();
+        String name = request.name().trim();
 
         if (scoringCriteriaRepository.existsByNameIgnoreCase(name)) {
             throw new ConflictException("Criteria with this name already exists");
@@ -192,7 +192,7 @@ public class CriteriaServiceImpl implements CriteriaService {
             criteria.setDefaultWeight(toFloat(request.defaultWeight(), "defaultWeight"));
         }
 
-        if (request.category() != null || !request.category().isBlank()) {
+        if (request.category() != null && !request.category().isBlank()) {
             criteria.setCategory(parseCategory(request.category()));
         }
 
