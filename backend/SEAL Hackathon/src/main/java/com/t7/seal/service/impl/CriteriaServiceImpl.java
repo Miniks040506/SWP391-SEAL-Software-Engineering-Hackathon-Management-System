@@ -1,7 +1,10 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.CriteriaCategory;
+import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.entities.EventCriteria;
+import com.t7.seal.entities.HackathonEvent;
+import com.t7.seal.entities.Round;
 import com.t7.seal.entities.ScoringCriteria;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
@@ -28,9 +31,8 @@ import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -274,25 +276,141 @@ public class CriteriaServiceImpl implements CriteriaService {
     @Transactional
     @Override
     public EventCriteriaResponse createEventCriteria(UUID eventId, CreateEventCriteriaRequest request, Authentication authentication) {
-        return null;
+        currentUserService.getCurrentUser(authentication);
+
+        HackathonEvent event = findEvent(eventId);
+
+        assertEventCriteriaEditable(event);
+        validateEventCriteriaRequest(request);
+
+        ScoringCriteria template = null;
+        if (request.criteriaId() != null) {
+            template = findScoringCriteria(request.criteriaId());
+            if (Boolean.FALSE.equals(template.getIsActive())) {
+                throw new ConflictException("Scoring criteria is not active");
+            }
+
+            if (eventCriteriaRepository.existsByEventIdAndCriteriaIdAndIsActiveTrue(
+                    eventId,
+                    template.getId())
+            ) {
+                throw new ConflictException("This template is already active in this event criteria list");
+            }
+        }
+
+        List<UUID> roundIds = validateAndNormalizeRoundIds(eventId, request.appliesToRoundIds());
+
+        EventCriteria criteria = new EventCriteria();
+        criteria.setEvent(event);
+        criteria.setCriteria(template);
+        criteria.setNameOverride(trimToNull(request.nameOverride()));
+        criteria.setDescriptionOverride(trimToNull(request.descriptionOverride()));
+        criteria.setRubricOverride(trimToNull(request.rubricOverride()));
+        criteria.setWeightOverride(toNullableFloat(request.weightOverride(), "weightOverride"));
+        criteria.setMaxScoreOverride(toNullableFloat(request.maxScoreOverride(), "maxScoreOverride"));
+        criteria.setIsTechnicalOverride(request.isTechnicalOverride());
+        criteria.setAppliesToRoundIds(roundIds);
+        criteria.setDisplayOrder(request.displayOrder() == null
+                ? nextEventCriteriaOrder(eventId) : request.displayOrder());
+        criteria.setIsActive(true);
+
+        if (template == null || criteria.getMaxScoreOverride() == null) {
+            criteria.setMaxScoreOverride(10.0f);
+        }
+
+        if (template == null || criteria.getWeightOverride() == null) {
+            criteria.setWeightOverride(1.0f);
+        }
+
+        validateEventCriteriaEntityBeforeSave(criteria);
+
+        return toEventCriteriaResponse(eventCriteriaRepository.save(criteria));
     }
 
     @Transactional
     @Override
     public EventCriteriaResponse updateEventCriteria(UUID criteriaId, UpdateEventCriteriaRequest request, Authentication authentication) {
-        return null;
+        currentUserService.getCurrentUser(authentication);
+
+        EventCriteria eventCriteria = findEventCriteria(criteriaId);
+
+        assertEventCriteriaEditable(eventCriteria.getEvent());
+
+        if (request.nameOverride() != null) {
+            eventCriteria.setNameOverride(trimToNull(request.nameOverride()));
+        }
+
+        if (request.descriptionOverride() != null) {
+            eventCriteria.setDescriptionOverride(trimToNull(request.descriptionOverride()));
+        }
+
+        if (request.rubricOverride() != null) {
+            eventCriteria.setRubricOverride(trimToNull(request.rubricOverride()));
+        }
+
+        if (request.weightOverride() != null) {
+            eventCriteria.setWeightOverride(toFloat(request.weightOverride(), "weightOverride"));
+        }
+
+        if (request.maxScoreOverride() != null) {
+            eventCriteria.setMaxScoreOverride(toFloat(request.maxScoreOverride(), "maxScoreOverride"));
+        }
+
+        if (request.isTechnicalOverride() != null) {
+            eventCriteria.setIsTechnicalOverride(request.isTechnicalOverride());
+        }
+
+        if (request.isActive() != null) {
+            eventCriteria.setIsActive(request.isActive());
+        }
+
+        if (request.appliesToRoundIds() != null) {
+            eventCriteria.setAppliesToRoundIds(validateAndNormalizeRoundIds
+                    (eventCriteria.getEvent().getId(), request.appliesToRoundIds()));
+        }
+
+        if (request.displayOrder() != null) {
+            eventCriteria.setDisplayOrder(request.displayOrder());
+        }
+
+        validateEventCriteriaEntityBeforeSave(eventCriteria);
+
+        return toEventCriteriaResponse(eventCriteriaRepository.save(eventCriteria));
     }
 
     @Transactional
     @Override
-    public EventCriteriaResponse deleteEventCriteria(UUID criteriaId, Authentication authentication) {
-        return null;
+    public void deleteEventCriteria(UUID criteriaId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        EventCriteria eventCriteria = findEventCriteria(criteriaId);
+
+        assertEventCriteriaEditable(eventCriteria.getEvent());
+
+        long scoreCount = scoreRepository.countByEventCriteriaId(criteriaId);
+
+        if (scoreCount > 0) {
+            eventCriteria.deactivate();
+            eventCriteriaRepository.save(eventCriteria);
+            return;
+        }
+
+        eventCriteriaRepository.delete(eventCriteria);
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<EventCriteriaResponse> getCriteriaByRound(UUID roundId) {
-        return List.of();
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found"));
+
+
+        return eventCriteriaRepository
+                .findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
+                .stream()
+                .filter(criteria -> criteria.appliesToRound(roundId))
+                .map(this::toEventCriteriaResponse)
+                .toList();
     }
 
 
@@ -358,6 +476,10 @@ public class CriteriaServiceImpl implements CriteriaService {
         return result;
     }
 
+    private Float toNullableFloat(Double value, String fieldName) {
+        return value == null ? null : toFloat(value, fieldName);
+    }
+
     private String trimToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
@@ -404,5 +526,92 @@ public class CriteriaServiceImpl implements CriteriaService {
                 criteria.getDisplayOrder(),
                 criteria.getIsActive()
         );
+    }
+
+    private HackathonEvent findEvent(UUID eventId) {
+        if (eventId == null) {
+            throw new BadRequestException("Event id is required");
+        }
+
+        return hackathonEventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found"));
+    }
+
+    private void assertEventCriteriaEditable(HackathonEvent event) {
+        RegistrationStatus status = event.getStatus();
+        if (status == RegistrationStatus.JUDGING
+                || status == RegistrationStatus.COMPLETED
+                || status == RegistrationStatus.CANCELLED) {
+            throw new ConflictException("Event criteria cannot be modified in this status");
+        }
+    }
+
+    private void validateEventCriteriaRequest(CreateEventCriteriaRequest request) {
+        if (request.criteriaId() == null) {
+            if (request.nameOverride() == null || request.nameOverride().isBlank()) {
+                throw new BadRequestException("Custom event criteria name is required");
+            }
+
+            if (request.isTechnicalOverride() == null) {
+                throw new BadRequestException("Custom event criteria technical must define in technical override");
+            }
+        }
+
+        if (request.weightOverride() != null) {
+            toFloat(request.weightOverride(), "weightOverride");
+        }
+
+        if (request.maxScoreOverride() != null) {
+            toFloat(request.maxScoreOverride(), "maxScoreOverride");
+        }
+    }
+
+    private List<UUID> validateAndNormalizeRoundIds(UUID eventId, List<UUID> roundIds) {
+        if (roundIds == null || roundIds.isEmpty()) {
+            return null;
+        }
+
+        Set<UUID> uniqueIds = new HashSet<>(roundIds);
+
+        List<Round> eventRound = roundRepository.findByEventIdOrderByOrderIndexAsc(eventId);
+
+        Set<UUID> validRoundIds = eventRound
+                .stream()
+                .map(Round::getId)
+                .collect(Collectors.toSet());
+
+        for (UUID roundId : uniqueIds) {
+            if (!validRoundIds.contains(roundId)) {
+                throw new BadRequestException("Round id " + roundId + " does not belong to this event");
+            }
+        }
+
+        return new ArrayList<>(uniqueIds);
+    }
+
+    private int nextEventCriteriaOrder(UUID eventId) {
+        Integer maxOrder = eventCriteriaRepository.findMaxDisplayOrderByEventId(eventId);
+
+        return maxOrder == null ? 1 : maxOrder + 1;
+    }
+
+    private void validateEventCriteriaEntityBeforeSave(EventCriteria criteria) {
+        if (criteria.getCriteria() == null) {
+            if (criteria.getNameOverride() == null || criteria.getNameOverride().isBlank()) {
+                throw new BadRequestException("Custom event criteria name is required");
+            }
+
+            if (criteria.getIsTechnicalOverride() == null) {
+                throw new BadRequestException("Custom event criteria technical must define in technical override");
+            }
+        }
+    }
+
+    private EventCriteria findEventCriteria(UUID criteriaId) {
+        if (criteriaId == null) {
+            throw new BadRequestException("Event criteria id is required");
+        }
+        return eventCriteriaRepository.findById(criteriaId)
+                .orElseThrow(() -> new NotFoundException("Event criteria not found"));
     }
 }

@@ -10,5 +10,5 @@ import java.util.UUID;
 
 @Repository
 public interface ScoreRepository extends JpaRepository<Score, UUID> {
-
+    long countByEventCriteriaId(UUID eventCriteriaId);
 }

@@ -115,7 +115,8 @@ public class CriteriaController {
             @Valid @RequestBody CreateEventCriteriaRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(criteriaService.createEventCriteria(eventId, request, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
@@ -125,7 +126,8 @@ public class CriteriaController {
             @Valid @RequestBody UpdateEventCriteriaRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(criteriaService.updateEventCriteria(eventCriteriaId, request, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
@@ -134,7 +136,8 @@ public class CriteriaController {
             @PathVariable UUID eventCriteriaId,
             Authentication authentication
     ) {
-        return null;
+        criteriaService.deleteEventCriteria(eventCriteriaId, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasAnyRole('JUDGE', 'COORDINATOR')")
@@ -142,7 +145,7 @@ public class CriteriaController {
     public ResponseEntity<List<EventCriteriaResponse>> getCriteriaByRound(
             @PathVariable UUID roundId
     ) {
-        return null;
+        return ResponseEntity.ok(criteriaService.getCriteriaByRound(roundId));
     }
 }
 
