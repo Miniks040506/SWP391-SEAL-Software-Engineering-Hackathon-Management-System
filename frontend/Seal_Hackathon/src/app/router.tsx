@@ -8,6 +8,8 @@ import { RootLayout } from "@/components/layout/RootLayout";
 
 import { JudgeDashboardPage } from "@/features/judge";
 
+import { MentorDashboardPage } from "@/features/mentor";
+
 import {
   ForgotPasswordPage,
   LoginPage,
@@ -135,9 +137,10 @@ export const router = createBrowserRouter([
     element: <LoggedinLayout sectionRole="MENTOR" />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: "dashboard", element: <NotFoundPage /> },
+      { path: "dashboard", element: <MentorDashboardPage /> },
       { path: "teams", element: <NotFoundPage /> },
       { path: "feedback", element: <NotFoundPage /> },
+      { path: "submissions", element: <NotFoundPage /> },
       { path: "notifications", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
