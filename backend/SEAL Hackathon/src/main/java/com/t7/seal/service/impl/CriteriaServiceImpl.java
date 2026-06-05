@@ -321,7 +321,7 @@ public class CriteriaServiceImpl implements CriteriaService {
         if (template == null || criteria.getWeightOverride() == null) {
             criteria.setWeightOverride(1.0f);
         }
-        
+
         validateEventCriteriaEntityBeforeSave(criteria);
 
         return toEventCriteriaResponse(eventCriteriaRepository.save(criteria));
@@ -330,7 +330,52 @@ public class CriteriaServiceImpl implements CriteriaService {
     @Transactional
     @Override
     public EventCriteriaResponse updateEventCriteria(UUID criteriaId, UpdateEventCriteriaRequest request, Authentication authentication) {
-        return null;
+        currentUserService.getCurrentUser(authentication);
+
+        EventCriteria eventCriteria = findEventCriteria(criteriaId);
+
+        assertEventCriteriaEditable(eventCriteria.getEvent());
+
+        if (request.nameOverride() != null) {
+            eventCriteria.setNameOverride(trimToNull(request.nameOverride()));
+        }
+
+        if (request.descriptionOverride() != null) {
+            eventCriteria.setDescriptionOverride(trimToNull(request.descriptionOverride()));
+        }
+
+        if (request.rubricOverride() != null) {
+            eventCriteria.setRubricOverride(trimToNull(request.rubricOverride()));
+        }
+
+        if (request.weightOverride() != null) {
+            eventCriteria.setWeightOverride(toFloat(request.weightOverride(), "weightOverride"));
+        }
+
+        if (request.maxScoreOverride() != null) {
+            eventCriteria.setMaxScoreOverride(toFloat(request.maxScoreOverride(), "maxScoreOverride"));
+        }
+
+        if (request.isTechnicalOverride() != null) {
+            eventCriteria.setIsTechnicalOverride(request.isTechnicalOverride());
+        }
+
+        if (request.isActive() != null) {
+            eventCriteria.setIsActive(request.isActive());
+        }
+
+        if (request.appliesToRoundIds() != null) {
+            eventCriteria.setAppliesToRoundIds(validateAndNormalizeRoundIds
+                    (eventCriteria.getEvent().getId(), request.appliesToRoundIds()));
+        }
+
+        if (request.displayOrder() != null) {
+            eventCriteria.setDisplayOrder(request.displayOrder());
+        }
+
+        validateEventCriteriaEntityBeforeSave(eventCriteria);
+
+        return toEventCriteriaResponse(eventCriteriaRepository.save(eventCriteria));
     }
 
     @Transactional
@@ -537,5 +582,13 @@ public class CriteriaServiceImpl implements CriteriaService {
                 throw new BadRequestException("Custom event criteria technical must define in technical override");
             }
         }
+    }
+
+    private EventCriteria findEventCriteria(UUID criteriaId) {
+        if (criteriaId == null) {
+            throw new BadRequestException("Event criteria id is required");
+        }
+        return eventCriteriaRepository.findById(criteriaId)
+                .orElseThrow(() -> new NotFoundException("Event criteria not found"));
     }
 }

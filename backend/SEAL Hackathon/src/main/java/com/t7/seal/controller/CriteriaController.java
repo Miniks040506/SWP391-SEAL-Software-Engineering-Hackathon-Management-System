@@ -126,7 +126,8 @@ public class CriteriaController {
             @Valid @RequestBody UpdateEventCriteriaRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(criteriaService.updateEventCriteria(eventCriteriaId, request, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
