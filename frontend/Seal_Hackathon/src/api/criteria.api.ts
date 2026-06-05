@@ -1,71 +1,108 @@
-import { apiRequest } from "@/api/apiRequest";
-import type { PageResponse, UUID } from "@/types/common.types";
-import type {
-  CreateEventCriteriaRequest,
-  CreateScoringCriteriaRequest,
-  EventCriteriaResponse,
-  GetEventCriteriaParams,
-  GetScoringCriteriaParams,
-  ScoringCriteriaResponse,
-  UpdateEventCriteriaRequest,
-  UpdateScoringCriteriaRequest,
-} from "@/types/criteria.types";
+import type { UUID } from "@/types/common.types";
 
-export const criteriaApi = {
-  getScoringCriteria(params?: GetScoringCriteriaParams) {
-    return apiRequest.get<PageResponse<ScoringCriteriaResponse>>(
-      "/criteria",
-      {params},
-    );
-  },
+export const CRITERIA_CATEGORIES = [
+  "TECHNICAL",
+  "PRESENTATION",
+  "INNOVATION",
+  "BUSINESS",
+  "PROCESS",
+] as const;
 
-  createScoringCriteria(payload: CreateScoringCriteriaRequest) {
-    return apiRequest.post<ScoringCriteriaResponse>("/criteria", payload);
-  },
+export type CriteriaCategory = (typeof CRITERIA_CATEGORIES)[number];
 
-  getScoringCriteriaById(criteriaId: UUID) {
-    return apiRequest.get<ScoringCriteriaResponse>(`/criteria/${criteriaId}`);
-  },
+export type CreateScoringCriteriaRequest = {
+  name: string;
+  description?: string;
+  rubric?: string;
+  maxScore: number;
+  defaultWeight: number;
+  category: CriteriaCategory | string;
+  isTechnical?: boolean;
+  isDefault?: boolean;
+};
 
-  updateScoringCriteria(criteriaId: UUID, payload: UpdateScoringCriteriaRequest) {
-    return apiRequest.patch<ScoringCriteriaResponse>(
-      `/criteria/${criteriaId}`,
-      payload,
-    );
-  },
+export type UpdateScoringCriteriaRequest = {
+  name?: string;
+  description?: string;
+  rubric?: string;
+  maxScore?: number;
+  defaultWeight?: number;
+  category?: CriteriaCategory | string;
+  isTechnical?: boolean;
+  isDefault?: boolean;
+  isActive?: boolean;
+};
 
-  deactivateScoringCriteria(criteriaId: UUID) {
-    return apiRequest.patch<ScoringCriteriaResponse>(
-      `/criteria/${criteriaId}/deactivate`,
-    );
-  },
+export type CreateEventCriteriaRequest = {
+  criteriaId?: UUID;
+  nameOverride?: string;
+  descriptionOverride?: string;
+  rubricOverride?: string;
+  weightOverride?: number;
+  maxScoreOverride?: number;
+  isTechnicalOverride?: boolean;
+  appliesToRoundIds?: UUID[];
+  displayOrder?: number;
+};
 
-  getEventCriteria(eventId: UUID, params?: GetEventCriteriaParams) {
-    return apiRequest.get<EventCriteriaResponse[]>(
-      `/events/${eventId}/criteria`,
-      {params},
-    );
-  },
+export type UpdateEventCriteriaRequest = {
+  nameOverride?: string;
+  descriptionOverride?: string;
+  rubricOverride?: string;
+  weightOverride?: number;
+  maxScoreOverride?: number;
+  isTechnicalOverride?: boolean;
+  isActive?: boolean;
+  appliesToRoundIds?: UUID[];
+  displayOrder?: number;
+};
 
-  createEventCriteria(eventId: UUID, payload: CreateEventCriteriaRequest) {
-    return apiRequest.post<EventCriteriaResponse>(
-      `/events/${eventId}/criteria`,
-      payload,
-    );
-  },
+export type ScoringCriteriaResponse = {
+  id: UUID;
+  name: string;
+  description?: string | null;
+  rubric?: string | null;
+  maxScore: number;
+  defaultWeight: number;
+  category: CriteriaCategory | string;
+  isTechnical: boolean;
+  isDefault: boolean;
+  isActive: boolean;
+};
 
-  updateEventCriteria(eventCriteriaId: UUID, payload: UpdateEventCriteriaRequest) {
-    return apiRequest.patch<EventCriteriaResponse>(
-      `/event-criteria/${eventCriteriaId}`,
-      payload,
-    );
-  },
+export type EventCriteriaResponse = {
+  id: UUID;
+  eventId: UUID;
+  criteriaId?: UUID | null;
+  templateName?: string | null;
+  templateCategory?: CriteriaCategory | string | null;
+  isCustom: boolean;
+  nameOverride?: string | null;
+  descriptionOverride?: string | null;
+  rubricOverride?: string | null;
+  weightOverride?: number | null;
+  maxScoreOverride?: number | null;
+  isTechnicalOverride?: boolean | null;
+  effectiveName: string;
+  effectiveDescription?: string | null;
+  effectiveRubric?: string | null;
+  effectiveWeight: number;
+  effectiveMaxScore: number;
+  effectiveIsTechnical: boolean;
+  appliesToRoundIds?: UUID[] | null;
+  displayOrder?: number | null;
+  isActive: boolean;
+};
 
-  deleteEventCriteria(eventCriteriaId: UUID) {
-    return apiRequest.delete<void>(`/event-criteria/${eventCriteriaId}`);
-  },
+export type GetScoringCriteriaParams = {
+  isActive?: boolean;
+  isTechnical?: boolean;
+  category?: string;
+  page?: number;
+  size?: number;
+};
 
-  getCriteriaByRound(roundId: UUID) {
-    return apiRequest.get<EventCriteriaResponse[]>(`/rounds/${roundId}/criteria`);
-  },
+export type GetEventCriteriaParams = {
+  isActive?: boolean;
+  isTechnical?: boolean;
 };

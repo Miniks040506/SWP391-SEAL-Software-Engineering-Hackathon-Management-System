@@ -11,6 +11,6 @@ public record CreateScoringCriteriaRequest(
         @NotNull Double maxScore,
         @NotNull Double defaultWeight,
         @NotBlank String category,
-        @NotNull Boolean isTechnical,
+        Boolean isTechnical,
         Boolean isDefault
 ) {}
