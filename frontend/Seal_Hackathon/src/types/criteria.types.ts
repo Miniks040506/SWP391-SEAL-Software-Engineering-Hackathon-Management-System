@@ -138,3 +138,13 @@ export type EventCriteriaFormValues = {
   displayOrder: string;
   isActive: boolean;
 };
+
+export type ScoringCriteriaDialogState = {
+  mode: "CREATE" | "EDIT";
+  criteria?: ScoringCriteriaResponse | null;
+};
+
+export type EventCriteriaDialogState = {
+  mode: "CREATE" | "EDIT";
+  criteria?: EventCriteriaResponse | null;
+};
