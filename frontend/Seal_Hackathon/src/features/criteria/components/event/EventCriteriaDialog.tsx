@@ -1,6 +1,7 @@
 import type { EventCriteriaDialogState, RoundResponse, ScoringCriteriaResponse, UUID } from "@/types";
 import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { useEventCriteriaDialog } from "../../hooks/useEventCriteriaDialog";
+import { EventCriteriaDialogFields } from "./EventCriteriaDialogFields";
 
 type EventCriteriaDialogProps = {
     open: boolean;
@@ -9,7 +10,7 @@ type EventCriteriaDialogProps = {
     rounds: RoundResponse[];
     templateOptions: ScoringCriteriaResponse[];
     onClose: () => void;
-}
+};
 
 export function EventCriteriaDialog({
     open,
@@ -20,7 +21,7 @@ export function EventCriteriaDialog({
     onClose
 }: EventCriteriaDialogProps) {
     
-    const { isEdit } = useEventCriteriaDialog({ eventId, state, onClose })
+    const { isEdit, values, setValues, isSubmitting, handleSubmit } = useEventCriteriaDialog({ eventId, state, onClose });
     
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
@@ -28,8 +29,14 @@ export function EventCriteriaDialog({
                 {isEdit ? "Edit Event Criteria" : "Add Event Criteria"}
             </DialogTitle>
             
-            <DialogContent>
-                
+            <DialogContent dividers>
+                <EventCriteriaDialogFields
+                    values={values}
+                    setValues={setValues}
+                    isEdit={isEdit}
+                    rounds={rounds}
+                    templateOptions={templateOptions}
+                />
             </DialogContent>
             
             <DialogActions>
