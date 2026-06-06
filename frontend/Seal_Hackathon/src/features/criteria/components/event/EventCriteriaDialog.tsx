@@ -1,5 +1,5 @@
 import type { EventCriteriaDialogState, RoundResponse, ScoringCriteriaResponse, UUID } from "@/types";
-import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { useEventCriteriaDialog } from "../../hooks/useEventCriteriaDialog";
 import { EventCriteriaDialogFields } from "./EventCriteriaDialogFields";
 
@@ -39,9 +39,19 @@ export function EventCriteriaDialog({
                 />
             </DialogContent>
             
-            <DialogActions>
-                
+            <DialogActions sx={{ px: 3, py: 2 }}>
+                <Button onClick={onClose} sx={{ textTransform: "none", fontWeight: 800 }}>
+                    Cancel
+                </Button>
+                <Button
+                    variant="contained"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    sx={{ textTransform: "none", fontWeight: 900 }}
+                >
+                    {isSubmitting ? "Saving..." : isEdit ? "Save changes" : "Add criteria"}
+                </Button>
             </DialogActions>
         </Dialog>
-    )
+    );
 }
