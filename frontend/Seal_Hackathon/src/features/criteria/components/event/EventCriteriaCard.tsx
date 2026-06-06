@@ -1,7 +1,11 @@
 import type { EventCriteriaResponse } from "@/api";
 import type { UUID } from "@/types";
 import type { EventCriteriaDialogState } from "@/features/criteria/components/event/EventCriteriaDialog";
-import { Chip } from "@mui/material";
+import { Chip, IconButton, Tooltip } from "@mui/material";
+import { roundScopeText } from "../../utils/criteriaView";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
 type EventCriteriaCardProps = {
     criteria: EventCriteriaResponse;
@@ -55,8 +59,51 @@ export function EventCriteriaCard({
                     </p>
                     
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-                        
+                        <span className="rounded-full bg-white px-3 py-1 dark:bg-slate-900">
+                            Max score: {criteria.effectiveMaxScore}
+                        </span>
+                        <span className="rounded-full bg-white px-3 py-1 dark:bg-slate-900">
+                            Weight: {criteria.effectiveWeight}
+                        </span>
+                        <span className="rounded-full bg-white px-3 py-1 dark:bg-slate-900">
+                            Rounds: {roundScopeText(criteria.appliesToRoundIds, roundNameById)}
+                        </span>
+                        {criteria.templateName && (
+                            <span className="rounded-full bg-white px-3 py-1 dark:bg-slate-900">
+                                Template: {criteria.templateName}
+                            </span>
+                        )}
                     </div>
+                </div>
+                
+                <div className="flex shrink-0 items-center gap-1">
+                    <Tooltip title="View">
+                        <IconButton onClick={() => onView(criteria)}>
+                            <VisibilityOutlinedIcon />
+                        </IconButton>
+                    </Tooltip>
+                    
+                    {canEdit && (
+                        <>
+                            <Tooltip title="Edit">
+                                <IconButton
+                                    color="primary"
+                                    onClick={() => onEdit({ mode: "EDIT", criteria })}
+                                > 
+                                    <EditOutlinedIcon />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete or deactivate">
+                                <IconButton
+                                    color="error"
+                                    disabled={isDeleting}
+                                    onClick={() => onDelete(criteria.id)}
+                                >
+                                    <DeleteOutlineOutlinedIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

@@ -3,6 +3,8 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/
 import { useEventCriteriaDialog } from "../../hooks/useEventCriteriaDialog";
 import { EventCriteriaDialogFields } from "./EventCriteriaDialogFields";
 
+export type { EventCriteriaDialogState } from "@/types/criteria.types";
+
 type EventCriteriaDialogProps = {
     open: boolean;
     state: EventCriteriaDialogState | null;
