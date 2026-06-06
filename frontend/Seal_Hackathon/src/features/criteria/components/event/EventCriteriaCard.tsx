@@ -1,5 +1,6 @@
 import type { EventCriteriaResponse } from "@/api";
 import type { UUID } from "@/types";
+import type { EventCriteriaDialogState } from "@/features/criteria/components/event/EventCriteriaDialog";
 
 type EventCriteriaCardProps = {
     criteria: EventCriteriaResponse;
@@ -7,7 +8,7 @@ type EventCriteriaCardProps = {
     roundNameById: Map<UUID, string>;
     isDeleting?: boolean;
     onView: (criteria: EventCriteriaResponse) => void;
-    onEdit: (state) => void;
+    onEdit: (state: EventCriteriaDialogState) => void;
     onDelete: (criteriaId: UUID) => void;
 };
 
