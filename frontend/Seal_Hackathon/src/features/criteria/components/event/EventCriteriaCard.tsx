@@ -1,4 +1,4 @@
-import type { EventCriteriaResponse } from "@/api";
+import type { EventCriteriaResponse } from "@/types";
 import type { UUID } from "@/types";
 import type { EventCriteriaDialogState } from "@/features/criteria/components/event/EventCriteriaDialog";
 import { Chip, IconButton, Tooltip } from "@mui/material";
