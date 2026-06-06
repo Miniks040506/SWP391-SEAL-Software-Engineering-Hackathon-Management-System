@@ -9,7 +9,7 @@ type EventCriteriaListProps = {
     canEdit: boolean;
     isLoading: boolean;
     isError: boolean;
-    isDeleting: boolean;
+    isDeleting?: boolean;
     onCreate: () => void;
     onView: (criteria: EventCriteriaResponse) => void;
     onEdit: (state: EventCriteriaDialogState) => void;
