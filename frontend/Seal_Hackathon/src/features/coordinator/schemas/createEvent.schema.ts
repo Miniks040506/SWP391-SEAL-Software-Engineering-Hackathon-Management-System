@@ -127,6 +127,10 @@ export const createTrackSchema = z.object({
   maxTeams: optionalPositiveInt,
 
   requiredLinkTypes: z.array(z.enum(REQUIRED_LINK_TYPES)).default([]),
+
+  // Compatibility with older create-track modal/table components.
+  // The current create-event flow manages rounds in a separate top-level step.
+  rounds: z.array(z.any()).default([]),
 });
 
 export const createPrizeSchema = z.object({
@@ -254,26 +258,54 @@ export const createMentorJudgeAssignmentSchema = z
     }
   });
 
-export const createEventCriteriaSchema = z.object({
-  id: z.string(),
+export const CRITERIA_SOURCE_TYPES = ["TEMPLATE", "CUSTOM"] as const;
 
-  name: z
-    .string()
-    .trim()
-    .max(200, "Criteria name must not exceed 200 characters.")
-    .optional()
-    .or(z.literal("")),
+export const createEventCriteriaSchema = z
+  .object({
+    id: z.string(),
 
-  description: optionalTrimmedString,
+    sourceType: z.enum(CRITERIA_SOURCE_TYPES).default("TEMPLATE"),
 
-  maxScore: optionalPositiveNumber,
+    criteriaId: optionalTrimmedString,
 
-  weight: optionalPositiveNumber,
+    nameOverride: z
+      .string()
+      .trim()
+      .max(200, "Criteria name must not exceed 200 characters.")
+      .optional()
+      .or(z.literal("")),
 
-  category: optionalTrimmedString,
+    descriptionOverride: optionalTrimmedString,
 
-  isTechnical: z.boolean().default(false).optional(),
-});
+    rubricOverride: optionalTrimmedString,
+
+    maxScoreOverride: optionalPositiveNumber,
+
+    weightOverride: optionalPositiveNumber,
+
+    isTechnicalOverride: z.boolean().default(true),
+
+    appliesToRoundLocalIds: z.array(z.string()).default([]),
+
+    displayOrder: optionalPositiveInt,
+  })
+  .superRefine((values, ctx) => {
+    if (values.sourceType === "TEMPLATE" && !values.criteriaId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["criteriaId"],
+        message: "Choose a global scoring criteria template.",
+      });
+    }
+
+    if (values.sourceType === "CUSTOM" && !values.nameOverride) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["nameOverride"],
+        message: "Custom criteria name is required.",
+      });
+    }
+  });
 
 export const createEventSchema = createEventDetailsSchema.extend({
   tracks: z.array(createTrackSchema).min(1, "Create at least one track."),
@@ -307,6 +339,7 @@ export const createEmptyTrack = (): TrackFormValues => ({
   description: "",
   maxTeams: "",
   requiredLinkTypes: [],
+  rounds: [],
 });
 
 export const createEmptyPrize = (): PrizeFormValues => ({
@@ -334,12 +367,16 @@ export const createEmptyRound = (orderIndex = 0): RoundFormValues => ({
 
 export const createEmptyCriteria = (): EventCriteriaFormValues => ({
   id: crypto.randomUUID(),
-  name: "",
-  description: "",
-  maxScore: "",
-  weight: "",
-  category: "",
-  isTechnical: false,
+  sourceType: "TEMPLATE",
+  criteriaId: "",
+  nameOverride: "",
+  descriptionOverride: "",
+  rubricOverride: "",
+  maxScoreOverride: "",
+  weightOverride: "",
+  isTechnicalOverride: true,
+  appliesToRoundLocalIds: [],
+  displayOrder: "",
 });
 
 export const createMentorJudgeAssignment = (values: {
@@ -389,6 +426,10 @@ export const initialCreateEventFormValues: CreateEventFormValues = {
   mentorJudgeAssignments: [],
   criteria: [],
 };
+
+// Compatibility aliases for older create-event components.
+export const SUBMISSION_LINK_TYPES = REQUIRED_LINK_TYPES;
+export type MentorJudgeFormValues = MentorJudgeAssignmentFormValues;
 
 // Compatibility exports for old components.
 export const createEventTrackSchema = createTrackSchema;
