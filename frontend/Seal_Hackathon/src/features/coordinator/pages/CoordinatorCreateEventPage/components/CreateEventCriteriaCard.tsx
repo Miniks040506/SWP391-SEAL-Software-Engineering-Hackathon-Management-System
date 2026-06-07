@@ -1,7 +1,7 @@
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import type { CreateEventFormValues } from "@/features/coordinator/schemas/createEvent.schema";
 import type { ScoringCriteriaResponse } from "@/types";
-import { Chip, IconButton, MenuItem, TextField } from "@mui/material";
+import { Chip, FormControlLabel, IconButton, MenuItem, Switch, TextField } from "@mui/material";
 import { Controller, useFormContext } from "react-hook-form";
 import { criteriaTextFieldSx } from "@/features/criteria/constants/criteriaUi";
 
@@ -148,6 +148,48 @@ export function CreateEventCriteriaCard({
                     helperText={fieldErrors?.displayOrder?.message}
                     {...register(`criteria.${index}.displayOrder`)}
                 />
+                
+                <Controller
+                    name={`criteria.${index}.isTechnicalOverride`}
+                    control={control}
+                    render={({ field: technicalField }) => (
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={Boolean(technicalField.value)}
+                                    onChange={(event) => technicalField.onChange(event.target.checked)}
+                                />
+                            }
+                            label="Technical criteria"
+                        />
+                    )}
+                />
+            </div>
+            
+            <div className="mt-4 space-y-4">
+                <TextField
+                    label="Description override"
+                    multiline
+                    minRows={2}
+                    fullWidth
+                    sx={criteriaTextFieldSx}
+                    {...register(`criteria.${index}.descriptionOverride`)}
+                />
+
+                <TextField
+                    label="Rubric override"
+                    multiline
+                    minRows={3}
+                    fullWidth
+                    sx={criteriaTextFieldSx}
+                    {...register(`criteria.${index}.rubricOverride`)}
+                />
+
+                {/* <CreateEventCriteriaRoundScope
+                    criteriaIndex={index}
+                    rounds={rounds}
+                    selectedRoundIds={item?.appliesToRoundLocalIds ?? []}
+                /> */}
             </div>
         </div>
     );
