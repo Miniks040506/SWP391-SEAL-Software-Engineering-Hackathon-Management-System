@@ -112,9 +112,9 @@ public class SecurityConfig {
                         // Admin only
                         .requestMatchers(API + "/system/config/**").hasRole("ADMIN")
                         .requestMatchers(API + "/system/health").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, API + "/users").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, API + "/users/*").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, API + "/users/*/deactivate").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, API + "/users").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.PATCH, API + "/users/*").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.PATCH, API + "/users/*/deactivate").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/criteria").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.PATCH, API + "/criteria/*").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.PATCH, API + "/criteria/*/deactivate").hasAnyRole("ADMIN", "COORDINATOR")

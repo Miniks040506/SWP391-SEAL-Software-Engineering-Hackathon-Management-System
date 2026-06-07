@@ -75,7 +75,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(userId, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PostMapping
     public ResponseEntity<UserDetailResponse> createUser(
             @Valid @RequestBody CreateUserRequest request,
@@ -112,7 +112,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createGuestJudge(request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PatchMapping("/{userId}")
     public ResponseEntity<UserDetailResponse> updateUser(
             @PathVariable UUID userId,
@@ -122,7 +122,7 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(userId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PatchMapping("/{userId}/deactivate")
     public ResponseEntity<UserDetailResponse> deactivateUser(
             @PathVariable UUID userId,
