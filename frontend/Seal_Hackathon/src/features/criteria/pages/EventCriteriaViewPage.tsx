@@ -7,7 +7,7 @@ import { criteriaApi, eventApi, roundApi } from "@/api";
 import { EventCriteriaReadonlyList } from "../components/event/EventCriteriaReadonlyList";
 import { useMemo } from "react";
 
-export function EventcriteriaViewPage({ mode }: { mode?: "EVENT" | "ROUND" }) {
+export function EventCriteriaViewPage({ mode }: { mode?: "EVENT" | "ROUND" }) {
     const navigate = useNavigate();
     const { eventId, roundId } = useParams<{ eventId: UUID; roundId: UUID }>();
     const resolvedMode = mode ?? (roundId ? "ROUND" : "EVENT");

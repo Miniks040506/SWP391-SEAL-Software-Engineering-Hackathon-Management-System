@@ -41,7 +41,7 @@ import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
 import { PersonalProfilePage } from "@/features/profile";
 import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
 import { EventCriteriaManagementPage } from "@/features/criteria/pages/EventCriteriaManagementPage";
-import { EventcriteriaViewPage } from "@/features/criteria/pages/EventCriteriaViewPage";
+import { EventCriteriaViewPage } from "@/features/criteria/pages/EventCriteriaViewPage";
 import { ScoringCriteriaManagementPage } from "@/features/criteria/pages/ScoringCriteriaManagementPage";
 
 export const router = createBrowserRouter([
@@ -81,8 +81,8 @@ export const router = createBrowserRouter([
       { path: "events/create", element: <CoordinatorCreateEventPage /> },
       { path: "events/:eventId/edit", element: <CoordinatorEditEventPage /> },
       { path: "events/:eventId/criteria", element: <EventCriteriaManagementPage />},
-      { path: "events/:eventId/criteria/view", element: <EventcriteriaViewPage mode="EVENT" />},
-      { path: "rounds/:roundId/criteria", element: <EventcriteriaViewPage mode="ROUND" />},
+      { path: "events/:eventId/criteria/view", element: <EventCriteriaViewPage mode="EVENT" />},
+      { path: "rounds/:roundId/criteria", element: <EventCriteriaViewPage mode="ROUND" />},
       { path: "events/:eventId/view", element: <EventDetailPage /> },
       { path: "users", element: <CoordinatorUsersPage /> },
       { path: "teams", element: <NotFoundPage /> },
