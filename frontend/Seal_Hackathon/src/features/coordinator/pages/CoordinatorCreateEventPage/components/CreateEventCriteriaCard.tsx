@@ -111,7 +111,43 @@ export function CreateEventCriteriaCard({
                     />
                 )}
                 
+                {(isCustom || item?.nameOverride) && (
+                    <TextField
+                        label={isCustom ? " Custom criteria name" : "Name override"}
+                        error={Boolean(fieldErrors?.nameOverride)}
+                        helperText={fieldErrors?.nameOverride?.message}
+                        size="small"
+                        sx={criteriaTextFieldSx}
+                        {...register(`criteria.${index}.nameOverride`)}
+                    />
+                )}
                 
+                <TextField
+                    label="Weight override"
+                    error={Boolean(fieldErrors?.weightOverride)}
+                    helperText={fieldErrors?.weightOverride?.message || "Blank uses template default."}
+                    size="small"
+                    sx={criteriaTextFieldSx}
+                    {...register(`criteria.${index}.weightOverride`)}
+                />
+                
+                <TextField
+                    label="Max score override"
+                    size="small"
+                    sx={criteriaTextFieldSx}
+                    error={Boolean(fieldErrors?.maxScoreOverride)}
+                    helperText={fieldErrors?.maxScoreOverride?.message || "Blank uses template default."}
+                    {...register(`criteria.${index}.maxScoreOverride`)}
+                />
+
+                <TextField
+                    label="Display order"
+                    size="small"
+                    sx={criteriaTextFieldSx}
+                    error={Boolean(fieldErrors?.displayOrder)}
+                    helperText={fieldErrors?.displayOrder?.message}
+                    {...register(`criteria.${index}.displayOrder`)}
+                />
             </div>
         </div>
     );
