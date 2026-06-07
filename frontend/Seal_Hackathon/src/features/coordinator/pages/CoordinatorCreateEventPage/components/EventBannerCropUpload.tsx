@@ -9,7 +9,11 @@ import { ImageCropModal } from "@/components/common/ImageCropModal";
 
 type EventBannerCropUploadProps = {
   file: File | null;
+  bannerUrl?: string | null;
   onChange: (file: File | null) => void;
+  onRemove?: () => void;
+  disabled?: boolean;
+  helperText?: string;
 };
 
 const MAX_BANNER_SIZE_MB = 5;
@@ -30,7 +34,11 @@ function validateBannerFile(file: File) {
 
 export function EventBannerCropUpload({
   file,
+  bannerUrl,
   onChange,
+  onRemove,
+  disabled = false,
+  helperText,
 }: EventBannerCropUploadProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -38,15 +46,15 @@ export function EventBannerCropUpload({
   const [cropFileName, setCropFileName] = useState("event-banner.jpg");
 
   const previewUrl = useMemo(() => {
-    if (!file) return "";
+    if (!file) return bannerUrl || "";
     return URL.createObjectURL(file);
-  }, [file]);
+  }, [file, bannerUrl]);
 
   useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (file && previewUrl) URL.revokeObjectURL(previewUrl);
     };
-  }, [previewUrl]);
+  }, [file, previewUrl]);
 
   const closeCropModal = () => {
     if (cropImageUrl) URL.revokeObjectURL(cropImageUrl);
@@ -56,7 +64,7 @@ export function EventBannerCropUpload({
   };
 
   const handleSelectFile = (selectedFile: File | null) => {
-    if (!selectedFile) return;
+    if (!selectedFile || disabled) return;
 
     const validationMessage = validateBannerFile(selectedFile);
 
@@ -74,6 +82,13 @@ export function EventBannerCropUpload({
     closeCropModal();
   };
 
+  const handleRemoveBanner = () => {
+    if (disabled) return;
+
+    onChange(null);
+    onRemove?.();
+  };
+
   return (
     <>
       <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-5 transition-colors dark:border-slate-700 dark:bg-slate-900">
@@ -82,6 +97,7 @@ export function EventBannerCropUpload({
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
+          disabled={disabled}
           onChange={(event) => {
             const selectedFile = event.target.files?.[0] ?? null;
             handleSelectFile(selectedFile);
@@ -111,6 +127,7 @@ export function EventBannerCropUpload({
               variant="contained"
               startIcon={<CloudUploadOutlinedIcon />}
               onClick={() => inputRef.current?.click()}
+              disabled={disabled}
               sx={{
                 borderRadius: "12px",
                 textTransform: "none",
@@ -123,10 +140,10 @@ export function EventBannerCropUpload({
               Choose banner
             </Button>
 
-            {file && (
+            {(file || bannerUrl) && !disabled && (
               <button
                 type="button"
-                onClick={() => onChange(null)}
+                onClick={handleRemoveBanner}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 px-4 py-2 text-sm font-bold text-rose-500 transition-colors hover:bg-rose-50 dark:border-rose-500/30 dark:hover:bg-rose-500/10"
               >
                 <DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />
@@ -135,8 +152,8 @@ export function EventBannerCropUpload({
             )}
 
             <p className="text-center text-xs font-medium leading-5 text-slate-400">
-              JPG, PNG, WEBP. Max {MAX_BANNER_SIZE_MB}MB. You can crop and
-              reposition before creating event.
+              {helperText ||
+                `JPG, PNG, WEBP. Max ${MAX_BANNER_SIZE_MB}MB. You can crop and reposition before saving.`}
             </p>
           </div>
         </div>
