@@ -18,5 +18,5 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
                                     AND CAST(t.status AS string) <> 'DELETED' 
             """)
     int CountActiveTeamByTrackId(
-            @Param("track_id") UUID trackId);
+            @Param("trackId") UUID trackId);
 }
