@@ -14,7 +14,7 @@ function StatCard({
     accentClass?: string 
 }) {
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                 {label}
             </p>

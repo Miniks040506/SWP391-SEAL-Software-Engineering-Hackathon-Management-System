@@ -38,7 +38,7 @@ export function ScoringCriteriaManagementPage() {
             Scoring Criteria Templates
           </h1>
           <p className="mt-1 text-sm font-medium text-slate-500">
-            Global scoring templates used by events. Backend allows ADMIN and
+            Global scoring templates used by events. Only allows ADMIN and
             COORDINATOR to create, update, activate, deactivate, and delete them.
           </p>
         </div>
@@ -65,7 +65,7 @@ export function ScoringCriteriaManagementPage() {
 
       <ScoringCriteriaStats {...totals} />
 
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <ScoringCriteriaFilterBar
           category={category}
           active={active}
