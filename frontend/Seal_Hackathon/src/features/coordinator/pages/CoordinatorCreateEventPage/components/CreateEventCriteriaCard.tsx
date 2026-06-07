@@ -1,8 +1,9 @@
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import type { CreateEventFormValues } from "@/features/coordinator/schemas/createEvent.schema";
 import type { ScoringCriteriaResponse } from "@/types";
-import { Chip, IconButton } from "@mui/material";
-import { useFormContext } from "react-hook-form";
+import { Chip, IconButton, MenuItem, TextField } from "@mui/material";
+import { Controller, useFormContext } from "react-hook-form";
+import { criteriaTextFieldSx } from "@/features/criteria/constants/criteriaUi";
 
 type CreateEventCriteriaCardProps = {
     index: number;
@@ -52,6 +53,66 @@ export function CreateEventCriteriaCard({
                     <DeleteOutlineOutlinedIcon />
                 </IconButton>
             </div>
+            
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Controller 
+                    name={`criteria.${index}.sourceType`}
+                    control={control}
+                    render={({ field: sourceField }) => (
+                        <TextField
+                            {...sourceField}
+                            select
+                            label="Source"
+                            size="small"
+                            sx={criteriaTextFieldSx}
+                            onChange={(event) => {
+                                sourceField.onChange(event);
+                                setValue(`criteria.${index}.criteriaId`, "");
+                            }}
+                        >
+                            <MenuItem value="TEMPLATE">Use global template</MenuItem>
+                            <MenuItem value="CUSTOM">Custom event-only criteria</MenuItem>
+                        </TextField>
+                    )}
+                />
+                
+                {!isCustom && (
+                    <Controller 
+                        name={`criteria.${index}.criteriaId`}
+                        control={control}
+                        render={({ field: templateField }) => (
+                            <TextField
+                                {...templateField}
+                                select
+                                label="Global template"
+                                size="small"
+                                error={Boolean(fieldErrors?.criteriaId)}
+                                helperText={fieldErrors?.criteriaId?.message}
+                                sx={criteriaTextFieldSx}
+                                onChange={(event) => {
+                                    templateField.onChange(event);
+                                    const selected = templateOptions.find(
+                                        (template) => template.id === event.target.value,
+                                    );
+                                    if (selected) {
+                                        setValue(`criteria.${index}.weightOverride`, selected.defaultWeight);
+                                        setValue(`criteria.${index}.maxScoreOverride`, selected.maxScore);
+                                        setValue(`criteria.${index}.isTechnicalOverride`, selected.isTechnical);
+                                    }
+                                }}
+                            >
+                                {templateOptions.map((template) => (
+                                    <MenuItem key={template.id} value={template.id}>
+                                        {template.name} · {template.category}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        )}
+                    />
+                )}
+                
+                
+            </div>
         </div>
-    )
+    );
 }
