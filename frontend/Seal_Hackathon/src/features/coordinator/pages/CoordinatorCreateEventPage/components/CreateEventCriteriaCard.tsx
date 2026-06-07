@@ -4,6 +4,7 @@ import type { ScoringCriteriaResponse } from "@/types";
 import { Chip, FormControlLabel, IconButton, MenuItem, Switch, TextField } from "@mui/material";
 import { Controller, useFormContext } from "react-hook-form";
 import { criteriaTextFieldSx } from "@/features/criteria/constants/criteriaUi";
+import { CreateEventCriteriaRoundScope } from "./CreateEventCriteriaRoundScope";
 
 type CreateEventCriteriaCardProps = {
     index: number;
@@ -185,11 +186,11 @@ export function CreateEventCriteriaCard({
                     {...register(`criteria.${index}.rubricOverride`)}
                 />
 
-                {/* <CreateEventCriteriaRoundScope
+                <CreateEventCriteriaRoundScope
                     criteriaIndex={index}
                     rounds={rounds}
                     selectedRoundIds={item?.appliesToRoundLocalIds ?? []}
-                /> */}
+                />
             </div>
         </div>
     );
