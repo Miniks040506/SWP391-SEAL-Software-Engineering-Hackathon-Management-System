@@ -82,6 +82,7 @@ export function getEventEditRules(status: EditableEventStatus) {
     canEditTracksRounds: isDraft || isRegistration,
     canEditAssignments: isDraft || isRegistration || isOngoing,
     canEditPrizes: isDraft || isRegistration || isOngoing,
+    canEditCriteria: isDraft || isRegistration || isOngoing,
     canAdvance: isDraft || isRegistration || isOngoing || isJudging,
     canCancel: isDraft || isRegistration || isOngoing || isJudging,
     isReadOnly: isJudging || isCompleted || isCancelled,
@@ -107,6 +108,13 @@ export function getEventEditRules(status: EditableEventStatus) {
         ? "Event is COMPLETED, so prizes are read-only."
         : isCancelled
           ? "Event is CANCELLED, so prizes are read-only."
+          : "",
+    criteriaReason: isJudging
+      ? "Event is in JUDGING, so event criteria cannot be edited."
+      : isCompleted
+        ? "Event is COMPLETED, so event criteria are read-only."
+        : isCancelled 
+          ?"Event is CANCELLED, so event criteria are read-only."
           : "",
     infoReason: isJudging
       ? "Event is in JUDGING, so event information is locked."
