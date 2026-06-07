@@ -1,6 +1,7 @@
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import MilitaryTechOutlinedIcon from "@mui/icons-material/MilitaryTechOutlined";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import RouteOutlinedIcon from "@mui/icons-material/RouteOutlined";
 import SchemaOutlinedIcon from "@mui/icons-material/SchemaOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
@@ -20,9 +21,10 @@ import { InfoTab } from "./InfoTab";
 import { PrizesTab } from "./PrizesTab";
 import { RoundsTab } from "./RoundsTab";
 import { TracksTab } from "./TracksTab";
+import { CriteriaTab } from "./CriteriaTab";
 import { getEventEditRules, normalizeEventStatus } from "./eventEditRules";
 
-type EditTab = "INFO" | "TRACKS" | "ROUNDS" | "ASSIGNMENTS" | "PRIZES";
+type EditTab = "INFO" | "TRACKS" | "ROUNDS" | "ASSIGNMENTS" | "CRITERIA" | "PRIZES";
 
 const tabs: Array<{
   value: EditTab;
@@ -33,6 +35,7 @@ const tabs: Array<{
   { value: "TRACKS", label: "Tracks", icon: RouteOutlinedIcon },
   { value: "ROUNDS", label: "Rounds", icon: SchemaOutlinedIcon },
   { value: "ASSIGNMENTS", label: "Mentors & Judges", icon: GroupsOutlinedIcon },
+  { value: "CRITERIA", label: "Criteria", icon: FactCheckOutlinedIcon },
   { value: "PRIZES", label: "Prizes", icon: MilitaryTechOutlinedIcon },
 ];
 
@@ -103,6 +106,9 @@ export function CoordinatorEditEventPage() {
       }),
       queryClient.invalidateQueries({
         queryKey: ["coordinator-event-prizes", eventId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["event-criteria", eventId],
       }),
     ]);
   };
@@ -201,7 +207,7 @@ export function CoordinatorEditEventPage() {
           canEdit={editRules.canEditInfo}
           readonlyReason={editRules.infoReason}
         />
-      )}
+      )}s
 
       {activeTab === "TRACKS" && (
         <TracksTab
@@ -233,6 +239,16 @@ export function CoordinatorEditEventPage() {
           onChanged={invalidateEditData}
           canEdit={editRules.canEditAssignments}
           readonlyReason={editRules.assignmentReason}
+        />
+      )}
+      
+      {activeTab === "CRITERIA" && (
+        <CriteriaTab
+          eventId={eventId}
+          event={eventQuery.data}
+          rounds={roundsQuery.data ?? []}
+          canEdit={editRules.canEditCriteria}
+          readonlyReason={editRules.criteriaReason}
         />
       )}
 

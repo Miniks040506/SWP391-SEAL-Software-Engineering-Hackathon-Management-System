@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 
+import { criteriaApi } from "@/api/criteria.api";
 import { eventAssetApi } from "@/api/eventAsset.api";
 import { eventApi } from "@/api/event.api";
 import { prizeApi } from "@/api/prize.api";
@@ -24,6 +25,11 @@ function numberOrUndefined(value: unknown) {
   const numberValue = Number(value);
 
   return Number.isNaN(numberValue) ? undefined : numberValue;
+}
+
+function criteriaNumberOrNull(value: unknown) {
+  const parsed = numberOrUndefined(value);
+  return parsed === undefined ? null : parsed;
 }
 
 function mapAdvanceRule(
@@ -125,6 +131,28 @@ async function createEventFlow(values: CreateEventFormValues) {
         mapAdvanceRule(round, mappedTrackId),
       );
     }
+  }
+
+  for (const criteria of values.criteria) {
+    const appliesToRoundIds = criteria.appliesToRoundLocalIds
+      .map((localRoundId) => roundIdMap.get(localRoundId))
+      .filter((id): id is string => Boolean(id));
+
+    await criteriaApi.createEventCriteria(createdEvent.id, {
+      criteriaId: criteria.sourceType === "TEMPLATE" ? criteria.criteriaId || null : null,
+      nameOverride:
+        criteria.sourceType === "CUSTOM"
+          ? criteria.nameOverride.trim()
+          : nullIfBlank(criteria.nameOverride),
+      descriptionOverride: nullIfBlank(criteria.descriptionOverride),
+      rubricOverride: nullIfBlank(criteria.rubricOverride),
+      weightOverride: criteriaNumberOrNull(criteria.weightOverride),
+      maxScoreOverride: criteriaNumberOrNull(criteria.maxScoreOverride),
+      isTechnicalOverride:
+        criteria.sourceType === "CUSTOM" ? criteria.isTechnicalOverride : null,
+      appliesToRoundIds: appliesToRoundIds.length > 0 ? appliesToRoundIds : null,
+      displayOrder: numberOrUndefined(criteria.displayOrder),
+    });
   }
 
   for (const assignment of values.mentorJudgeAssignments) {

@@ -1,7 +1,7 @@
 # src/main/resources/application.yml
 
 server:
-  port: 3636
+  port: 8080
   servlet:
     context-path: /
 
