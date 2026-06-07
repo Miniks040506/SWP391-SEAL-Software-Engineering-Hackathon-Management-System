@@ -123,6 +123,7 @@ export const CoordinatorCreateEventPage = () => {
     if (activeStep === 3) return methods.trigger("prizes", { shouldFocus: true });
     if (activeStep === 4) return methods.trigger("rounds", { shouldFocus: true });
     if (activeStep === 5) return methods.trigger("mentorJudgeAssignments", { shouldFocus: true });
+    if (activeStep === 6) return methods.trigger("criteria", { shouldFocus: true });
 
     return true;
   };
@@ -162,6 +163,7 @@ export const CoordinatorCreateEventPage = () => {
       enqueueSnackbar("Event created successfully.", { variant: "success" });
 
       navigate(`/coordinator/events/${createdEvent.id}/edit`, { replace: true });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||
