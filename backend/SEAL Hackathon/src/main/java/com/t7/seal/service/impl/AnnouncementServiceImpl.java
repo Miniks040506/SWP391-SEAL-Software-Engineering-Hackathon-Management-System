@@ -2,6 +2,7 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.NotificationChannel;
 import com.t7.seal.domain.NotificationStatus;
+import com.t7.seal.domain.NotificationTargetScope;
 import com.t7.seal.domain.NotificationType;
 import com.t7.seal.entities.EventAnnouncement;
 import com.t7.seal.entities.HackathonEvent;
@@ -12,18 +13,21 @@ import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.EventAnnouncementRepository;
 import com.t7.seal.repository.HackathonEventRepository;
+import com.t7.seal.repository.NotificationRepository;
 import com.t7.seal.repository.UserRepository;
 import com.t7.seal.request.system.CreateAnnouncementRequest;
 import com.t7.seal.request.system.UpdateAnnouncementRequest;
 import com.t7.seal.response.system.AnnouncementResponse;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.AnnouncementService;
+import com.t7.seal.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,9 +35,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AnnouncementServiceImpl implements AnnouncementService {
 
+    private final NotificationRepository notificationRepository;
     private final EventAnnouncementRepository eventAnnouncementRepository;
     private final HackathonEventRepository hackathonEventRepository;
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     @Transactional(readOnly = true)
     @Override
@@ -59,8 +65,48 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     }
 
     @Override
-    public AnnouncementResponse createAnnouncement(UUID eventId, CreateAnnouncementRequest request, Authentication authentication) {
-        return null;
+    @Transactional
+    public AnnouncementResponse createAnnouncement(
+            UUID eventId,
+            CreateAnnouncementRequest request,
+            Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+        HackathonEvent event = getEvent(eventId);
+        User actor = currentUserService.getCurrentUser(authentication);
+
+        EventAnnouncement eventAnnouncement = EventAnnouncement.builder()
+                .event(event)
+                .title(request.title().trim())
+                .content(request.content().trim())
+                .isPinned(Boolean.TRUE.equals(request.pinned()))
+                .isResultAnnouncement(
+                        Boolean.TRUE.equals(request.resultAnnouncement()))
+                .sendEmail(Boolean.TRUE.equals(request.sendEmail()))
+                .sendInApp(request.sendInApp() == null
+                        || Boolean.TRUE.equals(request.sendInApp()))
+                .targetScope(request.targetScope() == null
+                        ? NotificationTargetScope.ALL : request.targetScope())
+                .targetId(request.targetId())
+                .targetTrackIds(request.targetTrackIds() == null
+                        ? new ArrayList<>() : new ArrayList<>(request.targetTrackIds()))
+                .targetRoleNames(request.targetRoleNames() == null
+                        ? new ArrayList<>() : new ArrayList<>(request.targetRoleNames()))
+                .createdBy(actor)
+                .build();
+
+        if (request.scheduledAt() != null) {
+            eventAnnouncement.schedule(request.scheduledAt());
+        } else if (Boolean.TRUE.equals(request.publishNow())) {
+            eventAnnouncement.publish(LocalDateTime.now());
+        }
+
+        EventAnnouncement saved = eventAnnouncementRepository.save(eventAnnouncement);
+        if (saved.isPublished()) {
+
+        }
+
+        return toAnnouncementResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -174,11 +220,6 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         if (!hackathonEventRepository.existsById(eventId)) {
             throw new NotFoundException("Event not found " + eventId);
         }
-    }
-
-    private User getCurrentUser(Authentication authentication) {
-        return userRepository.findById(CurrentUser.id(authentication))
-                .orElseThrow(() -> new NotFoundException("Current user not found."));
     }
 
     private AnnouncementResponse toAnnouncementResponse(EventAnnouncement announcement) {
