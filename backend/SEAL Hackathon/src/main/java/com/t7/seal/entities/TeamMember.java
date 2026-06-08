@@ -51,7 +51,6 @@ public class TeamMember {
         if (!isActive()) {
             throw new IllegalStateException("Team member has already left.");
         }
-
         leftAt = now;
         leftReason = reason;
     }
@@ -65,7 +64,7 @@ public class TeamMember {
     private User user;
 
     // N - 1 relationship with Team
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(
             name = "team_id",
             nullable = false
