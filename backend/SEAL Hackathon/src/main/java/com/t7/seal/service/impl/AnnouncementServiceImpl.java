@@ -130,8 +130,52 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     }
 
     @Override
-    public AnnouncementResponse updateAnnouncement(UUID announcementId, UpdateAnnouncementRequest request, Authentication authentication) {
-        return null;
+    public AnnouncementResponse updateAnnouncement(
+            UUID announcementId,
+            UpdateAnnouncementRequest request,
+            Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+        EventAnnouncement announcement = getAnnouncement(announcementId);
+        ensureEditable(announcement);
+
+        if (request.title() != null && !request.title().isBlank()) {
+            announcement.setTitle(request.title().trim());
+        }
+        if (request.content() != null && !request.content().isBlank()) {
+            announcement.setContent(request.content().trim());
+        }
+        if (request.pinned() != null) {
+            announcement.setIsPinned(request.pinned());
+        }
+        if (request.resultAnnouncement() != null) {
+            announcement.setIsResultAnnouncement(request.resultAnnouncement());
+        }
+        if (request.sendEmail() != null) {
+            announcement.setSendEmail(request.sendEmail());
+        }
+        if (request.sendInApp() != null) {
+            announcement.setSendInApp(request.sendInApp());
+        }
+        if (request.targetScope() != null) {
+            announcement.setTargetScope(request.targetScope());
+        }
+        if (request.targetId() != null) {
+            announcement.setTargetId(request.targetId());
+        }
+        if (request.targetTrackIds() != null) {
+            announcement.setTargetTrackIds(new ArrayList<>(request.targetTrackIds()));
+        }
+        if (request.targetRoleNames() != null) {
+            announcement.setTargetRoleNames(new ArrayList<>(request.targetRoleNames()));
+        }
+        if (request.scheduledAt() != null) {
+            announcement.schedule(request.scheduledAt());
+        }
+
+        EventAnnouncement saved = eventAnnouncementRepository.save(announcement);
+
+        return toAnnouncementResponse(saved);
     }
 
     @Override
