@@ -120,8 +120,13 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     }
 
     @Override
-    public AnnouncementResponse getAnnouncementByIdForManage(UUID announcementId, Authentication authentication) {
-        return null;
+    @Transactional(readOnly = true)
+    public AnnouncementResponse getAnnouncementByIdForManage(
+            UUID announcementId,
+            Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+        return toAnnouncementResponse(getAnnouncement(announcementId));
     }
 
     @Override
