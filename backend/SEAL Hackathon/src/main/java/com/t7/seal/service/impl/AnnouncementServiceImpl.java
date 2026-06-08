@@ -8,6 +8,7 @@ import com.t7.seal.entities.EventAnnouncement;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Notification;
 import com.t7.seal.entities.User;
+import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
@@ -139,6 +140,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         ensureCoordinator(authentication);
         EventAnnouncement announcement = getAnnouncement(announcementId);
         ensureEditable(announcement);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         if (request.title() != null && !request.title().isBlank()) {
             announcement.setTitle(request.title().trim());
@@ -176,7 +178,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
 
         EventAnnouncement saved = eventAnnouncementRepository.save(announcement);
 
-        createNotificationForAnnouncement(announcement, announcement.getCreatedBy());
+        createNotificationForAnnouncement(announcement, actor);
 
         return toAnnouncementResponse(saved);
     }
@@ -186,13 +188,14 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     public void deleteAnnouncement(UUID announcementId, Authentication authentication) {
         ensureCoordinator(authentication);
         EventAnnouncement announcement = getAnnouncement(announcementId);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         if (announcement.isPublished()) {
             throw new ConflictException(
                     "Published announcements cannot be deleted. Cancel or unpublish first.");
         }
 
-        createNotificationForAnnouncement(announcement, announcement.getCreatedBy());
+        createNotificationForAnnouncement(announcement, actor);
         eventAnnouncementRepository.delete(announcement);
     }
 
@@ -221,7 +224,19 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     @Override
     @Transactional
     public AnnouncementResponse scheduleAnnouncement(UUID announcementId, UpdateAnnouncementRequest request, Authentication authentication) {
-        return null;
+        ensureCoordinator(authentication);
+        EventAnnouncement announcement = getAnnouncement(announcementId);
+        ensureEditable(announcement);
+        User actor = currentUserService.getCurrentUser(authentication);
+
+        if (request.scheduledAt() == null) {
+            throw new BadRequestException("scheduledAt is required.");
+        }
+
+        announcement.schedule(request.scheduledAt());
+        createNotificationForAnnouncement(announcement, actor);
+
+        return toAnnouncementResponse(eventAnnouncementRepository.save(announcement));
     }
 
     @Override
