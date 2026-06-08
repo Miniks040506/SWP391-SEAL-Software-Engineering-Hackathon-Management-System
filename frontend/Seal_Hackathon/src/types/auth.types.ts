@@ -84,6 +84,18 @@ export type AuthMessageResponse = {
   message: string;
 };
 
+export type AuthLockoutErrorResponse = {
+  success: false;
+  status: 423;
+  error: string;
+  message: string;
+  path?: string;
+  timestamp?: string;
+  lockedUntil?: string;
+  remainingSeconds?: number;
+  maxFailedAttempts?: number;
+};
+
 export type ForgotPasswordRequest = {
   email: string;
 };

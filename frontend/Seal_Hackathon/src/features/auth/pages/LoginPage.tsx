@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, TextField } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthCard } from "@/features/auth/components/AuthCard";
@@ -13,7 +13,45 @@ import {
   type LoginFormValues,
 } from "@/features/auth/schemas/auth.schema";
 import { useAuthStore } from "@/stores/authStore";
+import type { AuthLockoutErrorResponse } from "@/types/auth.types";
 import { getRoleRedirectPath } from "@/utils/roleRedirect";
+
+
+type LoginLockoutState = {
+  message: string;
+  lockedUntil?: string;
+  remainingSeconds: number;
+};
+
+function formatRemainingTime(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.ceil(totalSeconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function getLockoutRemainingSeconds(lockout: LoginLockoutState | null) {
+  if (!lockout) return 0;
+
+  if (lockout.lockedUntil) {
+    const lockedUntilMs = new Date(lockout.lockedUntil).getTime();
+
+    if (!Number.isNaN(lockedUntilMs)) {
+      return Math.max(0, Math.ceil((lockedUntilMs - Date.now()) / 1000));
+    }
+  }
+
+  return Math.max(0, lockout.remainingSeconds);
+}
+
+function isLockoutErrorPayload(value: unknown): value is AuthLockoutErrorResponse {
+  return Boolean(
+    value
+      && typeof value === "object"
+      && "status" in value
+      && (value as { status?: unknown }).status === 423,
+  );
+}
 
 const textFieldSx = {
   "& .MuiOutlinedInput-root": {
@@ -65,8 +103,29 @@ export function LoginPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const loginMutation = useLoginMutation();
+  const [lockout, setLockout] = useState<LoginLockoutState | null>(null);
+  const [lockoutSecondsLeft, setLockoutSecondsLeft] = useState(0);
 
   const oauthError = useMemo(() => searchParams.get("oauthError"), [searchParams]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLockoutSecondsLeft(getLockoutRemainingSeconds(lockout));
+
+    if (!lockout) return undefined;
+
+    const timerId = window.setInterval(() => {
+      const secondsLeft = getLockoutRemainingSeconds(lockout);
+      setLockoutSecondsLeft(secondsLeft);
+
+      if (secondsLeft <= 0) {
+        setLockout(null);
+        window.clearInterval(timerId);
+      }
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [lockout]);
 
   const {
     register,
@@ -96,11 +155,34 @@ export function LoginPage() {
         variant: "success",
       });
 
+      setLockout(null);
+
       navigate(redirectPath, {
         replace: true,
       });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      enqueueSnackbar(error?.response?.data?.message || "Login failed.", {
+      const errorPayload = error?.response?.data;
+
+      if (error?.response?.status === 423 && isLockoutErrorPayload(errorPayload)) {
+        const remainingSeconds = errorPayload.remainingSeconds ?? 15 * 60;
+        const nextLockout: LoginLockoutState = {
+          message: errorPayload.message
+            || "Too many failed login attempts. Your account is temporarily locked.",
+          // eslint-disable-next-line react-hooks/purity
+          lockedUntil: new Date(Date.now() + remainingSeconds * 1000).toISOString(),
+          remainingSeconds,
+        };
+
+        setLockout(nextLockout);
+        enqueueSnackbar(nextLockout.message, {
+          variant: "error",
+        });
+        return;
+      }
+
+      setLockout(null);
+      enqueueSnackbar(errorPayload?.message || "Login failed.", {
         variant: "error",
       });
     }
@@ -116,6 +198,12 @@ export function LoginPage() {
           {oauthError && (
             <Alert severity="error">
               {oauthError}
+            </Alert>
+          )}
+
+          {lockout && lockoutSecondsLeft > 0 && (
+            <Alert severity="error">
+              {lockout.message} Try again in {formatRemainingTime(lockoutSecondsLeft)}.
             </Alert>
           )}
 
@@ -153,7 +241,7 @@ export function LoginPage() {
             type="submit"
             fullWidth
             variant="contained"
-            disabled={loginMutation.isPending}
+            disabled={loginMutation.isPending || lockoutSecondsLeft > 0}
             sx={{
               height: 46,
               borderRadius: "10px",
@@ -162,7 +250,11 @@ export function LoginPage() {
               boxShadow: "none",
             }}
           >
-            {loginMutation.isPending ? "Signing in..." : "Sign In"}
+            {loginMutation.isPending
+              ? "Signing in..."
+              : lockoutSecondsLeft > 0
+                ? `Locked (${formatRemainingTime(lockoutSecondsLeft)})`
+                : "Sign In"}
           </Button>
 
           <div className="flex items-center gap-4">

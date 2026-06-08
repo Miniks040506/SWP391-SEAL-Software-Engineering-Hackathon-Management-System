@@ -74,7 +74,7 @@ public class User {
     @Column(name = "email_verified_at")
     private LocalDateTime emailVerifiedAt;
 
-     // Random email verification token.
+    // Random email verification token.
     @Column(name = "email_verification_token", unique = true, length = 100)
     private String emailVerificationToken;
 
@@ -248,6 +248,28 @@ public class User {
         return lockedUntil != null && LocalDateTime.now().isBefore(lockedUntil);
     }
 
+    public boolean hasExpiredLock() {
+        return lockedUntil != null && !LocalDateTime.now().isBefore(lockedUntil);
+    }
+
+    public long getRemainingLockSeconds() {
+        if (!isLocked()) {
+            return 0;
+        }
+
+        return Math.max(
+                0,
+                java.time.Duration.between(LocalDateTime.now(), lockedUntil).getSeconds()
+        );
+    }
+
+    public void clearExpiredLockIfNecessary() {
+        if (hasExpiredLock()) {
+            failedLoginCount = 0;
+            lockedUntil = null;
+        }
+    }
+
     // Checks whether this user can log in.
     public boolean canLogin() {
         return isActive() && !isLocked();
@@ -288,24 +310,45 @@ public class User {
      */
     public void recordSuccessfulLogin() {
         this.lastLoginAt = LocalDateTime.now();
+        clearFailedLoginAttempts();
+    }
+
+    public void clearFailedLoginAttempts() {
         this.failedLoginCount = 0;
         this.lockedUntil = null;
     }
 
     /**
      * Records failed login attempt.
-     * When failed attempts reach 5, account is locked for 15 minutes.
+     * When failed attempts reach the threshold, account is locked for the configured duration.
      */
-    public void recordFailedLogin() {
+    public void recordFailedLogin(int maxFailedAttempts, int lockDurationMinutes) {
+        if (maxFailedAttempts <= 0) {
+            throw new IllegalArgumentException("Max failed attempts must be greater than 0.");
+        }
+
+        if (lockDurationMinutes <= 0) {
+            throw new IllegalArgumentException("Lock duration must be greater than 0.");
+        }
+
+        clearExpiredLockIfNecessary();
+
         if (this.failedLoginCount == null) {
             this.failedLoginCount = 0;
         }
 
         this.failedLoginCount++;
 
-        if (this.failedLoginCount >= 5) {
-            this.lockedUntil = LocalDateTime.now().plusMinutes(15);
+        if (this.failedLoginCount >= maxFailedAttempts) {
+            this.lockedUntil = LocalDateTime.now().plusMinutes(lockDurationMinutes);
         }
+    }
+
+    /**
+     * Backward-compatible default for existing internal calls.
+     */
+    public void recordFailedLogin() {
+        recordFailedLogin(5, 15);
     }
 
 

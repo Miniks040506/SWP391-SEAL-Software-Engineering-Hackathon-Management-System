@@ -5,6 +5,7 @@ import com.t7.seal.domain.UserRole;
 import com.t7.seal.domain.UserStatus;
 import com.t7.seal.entities.StudentProfile;
 import com.t7.seal.entities.User;
+import com.t7.seal.exception.AccountLockedException;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.UnauthorizedException;
@@ -39,6 +40,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Value("${app.password-reset-expiration-minutes:15}")
     private int passwordResetExpirationMinutes;
+
+    @Value("${app.login.max-failed-attempts:5}")
+    private int maxFailedLoginAttempts;
+
+    @Value("${app.login.lock-duration-minutes:15}")
+    private int loginLockDurationMinutes;
 
     @Override
     @Transactional
@@ -165,14 +172,41 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password."));
 
+        boolean hadExpiredLock = user.hasExpiredLock();
+        user.clearExpiredLockIfNecessary();
+
+        if (hadExpiredLock) {
+            userRepository.save(user);
+        }
+
         if (user.isLocked()) {
-            throw new UnauthorizedException("Account is temporarily locked. Please try again later.");
+            throwAccountLocked(user);
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            user.recordFailedLogin();
+            user.recordFailedLogin(maxFailedLoginAttempts, loginLockDurationMinutes);
             userRepository.save(user);
-            throw new UnauthorizedException("Invalid email or password.");
+
+            if (user.isLocked()) {
+                throwAccountLocked(user);
+            }
+
+            int remainingAttempts = Math.max(
+                    0,
+                    maxFailedLoginAttempts - user.getFailedLoginCount()
+            );
+
+            throw new UnauthorizedException(
+                    "Invalid email or password. " + remainingAttempts
+                            + " attempt(s) remaining before temporary lock."
+            );
+        }
+
+        // A correct password breaks the consecutive-failure chain even if the
+        // account is still not allowed to log in because of business status.
+        if (user.getFailedLoginCount() != null && user.getFailedLoginCount() > 0) {
+            user.clearFailedLoginAttempts();
+            userRepository.save(user);
         }
 
         if (user.isUnverified()) {
@@ -285,6 +319,16 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         return new AuthMessageResponse("Password has been reset successfully.");
+    }
+
+    private void throwAccountLocked(User user) {
+        throw new AccountLockedException(
+                "Too many failed login attempts. Your account is temporarily locked for "
+                        + loginLockDurationMinutes + " minutes.",
+                user.getLockedUntil(),
+                user.getRemainingLockSeconds(),
+                maxFailedLoginAttempts
+        );
     }
 
     private StudentType parseStudentType(String raw) {
