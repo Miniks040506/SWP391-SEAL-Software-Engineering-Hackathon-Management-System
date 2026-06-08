@@ -29,7 +29,7 @@ public class AnnouncementController {
             Authentication authentication
     ) {
         if (manage) {
-//            return ResponseEntity.ok(announcementService.getManageEventAnnouncements(eventId, authentication));
+            return ResponseEntity.ok(announcementService.getManageEventAnnouncements(eventId, authentication));
         }
         return ResponseEntity.ok(announcementService.getEventAnnouncements(eventId));
     }
@@ -53,7 +53,7 @@ public class AnnouncementController {
             Authentication authentication
     ) {
         if (manage) {
-//            return ResponseEntity.ok(announcementService.getAnnouncementByIdForManage(announcementId, authentication));
+            return ResponseEntity.ok(announcementService.getAnnouncementByIdForManage(announcementId, authentication));
         }
         return ResponseEntity.ok(announcementService.getAnnouncementById(announcementId));
     }
