@@ -3,9 +3,12 @@ package com.t7.seal.controller;
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.team.*;
 import com.t7.seal.response.team.*;
+import com.t7.seal.service.TeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,18 +19,25 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TeamController {
 
+    private final TeamService teamService;
+
+    //1
     @PostMapping
     public ResponseEntity<TeamResponse> createTeam(
-            @Valid @RequestBody CreateTeamRequest request
+            @Valid @RequestBody CreateTeamRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(teamService.createTeam(request, authentication));
     }
 
+    //2
     @GetMapping("/me")
     public ResponseEntity<List<TeamSummaryResponse>> getMyTeams() {
         return null;
     }
 
+    //3
     @GetMapping("/{teamId}")
     public ResponseEntity<TeamDetailResponse> getTeamById(
             @PathVariable UUID teamId
@@ -35,6 +45,7 @@ public class TeamController {
         return null;
     }
 
+    //4
     @PatchMapping("/{teamId}")
     public ResponseEntity<TeamResponse> updateTeam(
             @PathVariable UUID teamId,
@@ -51,6 +62,7 @@ public class TeamController {
         return null;
     }
 
+    //5
     @GetMapping("/{teamId}/members")
     public ResponseEntity<List<TeamMemberResponse>> getTeamMembers(
             @PathVariable UUID teamId
@@ -58,6 +70,7 @@ public class TeamController {
         return null;
     }
 
+    //6
     @DeleteMapping("/{teamId}/members/{memberId}")
     public ResponseEntity<Void> removeMember(
             @PathVariable UUID teamId,
@@ -82,6 +95,7 @@ public class TeamController {
         return null;
     }
 
+    //7
     @PostMapping("/{teamId}/transfer-leader")
     public ResponseEntity<TeamResponse> transferLeader(
             @PathVariable UUID teamId,
@@ -90,6 +104,7 @@ public class TeamController {
         return null;
     }
 
+    //8
     @PostMapping("/{teamId}/leave")
     public ResponseEntity<Void> leaveTeam(
             @PathVariable UUID teamId,

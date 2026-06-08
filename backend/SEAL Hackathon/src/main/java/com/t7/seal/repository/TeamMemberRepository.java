@@ -11,4 +11,5 @@ import java.util.UUID;
 @Repository
 public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
 
+    boolean existsByUserId(UUID userId);
 }

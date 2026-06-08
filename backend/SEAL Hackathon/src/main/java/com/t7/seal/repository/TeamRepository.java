@@ -12,6 +12,8 @@ import java.util.UUID;
 
 @Repository
 public interface TeamRepository extends JpaRepository<Team, UUID> {
+    Optional<Team> findByJoinCode(String joinCode);
+
     @Query("""
             SELECT COUNT(t) FROM Team t 
                         WHERE t.track.id = :trackId
