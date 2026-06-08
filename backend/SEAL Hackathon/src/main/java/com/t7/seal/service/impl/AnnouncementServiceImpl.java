@@ -223,7 +223,11 @@ public class AnnouncementServiceImpl implements AnnouncementService {
 
     @Override
     @Transactional
-    public AnnouncementResponse scheduleAnnouncement(UUID announcementId, UpdateAnnouncementRequest request, Authentication authentication) {
+    public AnnouncementResponse scheduleAnnouncement(
+            UUID announcementId,
+            UpdateAnnouncementRequest request,
+            Authentication authentication
+    ) {
         ensureCoordinator(authentication);
         EventAnnouncement announcement = getAnnouncement(announcementId);
         ensureEditable(announcement);
@@ -240,23 +244,67 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     }
 
     @Override
-    public AnnouncementResponse unpublishAnnouncement(UUID announcementId, Authentication authentication) {
-        return null;
+    @Transactional
+    public AnnouncementResponse unpublishAnnouncement(
+            UUID announcementId,
+            Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+        EventAnnouncement announcement = getAnnouncement(announcementId);
+        announcement.unpublish();
+        User actor = currentUserService.getCurrentUser(authentication);
+
+        createNotificationForAnnouncement(announcement, actor);
+
+        return toAnnouncementResponse(eventAnnouncementRepository.save(announcement));
     }
 
+    @Transactional
     @Override
-    public AnnouncementResponse pinAnnouncement(UUID announcementId, Authentication authentication) {
-        return null;
+    public AnnouncementResponse pinAnnouncement(
+            UUID announcementId,
+            Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+        EventAnnouncement announcement = getAnnouncement(announcementId);
+        announcement.pin();
+        User actor = currentUserService.getCurrentUser(authentication);
+
+        createNotificationForAnnouncement(announcement, actor);
+
+        return toAnnouncementResponse(eventAnnouncementRepository.save(announcement));
     }
 
+    @Transactional
     @Override
-    public AnnouncementResponse unpinAnnouncement(UUID announcementId, Authentication authentication) {
-        return null;
+    public AnnouncementResponse unpinAnnouncement(
+            UUID announcementId,
+            Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+        EventAnnouncement announcement = getAnnouncement(announcementId);
+        announcement.unpin();
+        User actor = currentUserService.getCurrentUser(authentication);
+
+        createNotificationForAnnouncement(announcement, actor);
+
+        return toAnnouncementResponse(eventAnnouncementRepository.save(announcement));
     }
 
+    @Transactional
     @Override
-    public AnnouncementResponse markResultAnnouncement(UUID announcementId, Authentication authentication) {
-        return null;
+    public AnnouncementResponse markResultAnnouncement(
+            UUID announcementId,
+            Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+        EventAnnouncement announcement = getAnnouncement(announcementId);
+        announcement.markAsResultAnnouncement();
+        User actor = currentUserService.getCurrentUser(authentication);
+
+        createNotificationForAnnouncement(announcement, actor);
+
+        return toAnnouncementResponse(eventAnnouncementRepository.save(announcement));
     }
 
     //HELPERS
