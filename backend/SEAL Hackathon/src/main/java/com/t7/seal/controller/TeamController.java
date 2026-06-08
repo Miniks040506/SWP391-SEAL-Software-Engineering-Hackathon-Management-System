@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ public class TeamController {
     private final TeamService teamService;
 
     //1
+    @PreAuthorize("hasAnyRole('STUDENT')")
     @PostMapping
     public ResponseEntity<TeamResponse> createTeam(
             @Valid @RequestBody CreateTeamRequest request,
@@ -32,6 +34,7 @@ public class TeamController {
     }
 
     //2
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ResponseEntity<List<TeamSummaryResponse>> getMyTeams(
             Authentication authentication
@@ -40,6 +43,7 @@ public class TeamController {
     }
 
     //3
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{teamId}")
     public ResponseEntity<TeamDetailResponse> getTeamById(
             @PathVariable UUID teamId,
