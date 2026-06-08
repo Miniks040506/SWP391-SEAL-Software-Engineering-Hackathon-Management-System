@@ -6,9 +6,11 @@ import { Alert, Button, MenuItem, TextField } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
 
+import { eventAssetApi } from "@/api/eventAsset.api";
 import { eventApi } from "@/api/event.api";
 import type { UUID } from "@/types/common.types";
 import type { EventDetailResponse } from "@/types/event.types";
+import { EventBannerCropUpload } from "@/features/coordinator/pages/CoordinatorCreateEventPage/components/EventBannerCropUpload";
 import {
   EVENT_STATUS_STEPS,
   getEventEditRules,
@@ -222,6 +224,7 @@ export function InfoTab({
   );
 
   const [form, setForm] = useState(initialValues);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -229,6 +232,7 @@ export function InfoTab({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm(initialValues);
+    setBannerFile(null);
   }, [initialValues]);
 
   const updateField = (field: keyof typeof form, value: string | number) => {
@@ -254,6 +258,13 @@ export function InfoTab({
     try {
       setIsSaving(true);
 
+      let nextBannerUrl = form.bannerUrl.trim();
+
+      if (bannerFile) {
+        const uploadedBanner = await eventAssetApi.uploadEventBanner(bannerFile);
+        nextBannerUrl = uploadedBanner.url;
+      }
+
       await eventApi.updateEvent(eventId, {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
@@ -265,9 +276,11 @@ export function InfoTab({
         registrationEndAt: form.registrationEndAt
           ? `${form.registrationEndAt}:00`
           : undefined,
-        bannerUrl: form.bannerUrl.trim() || undefined,
+        bannerUrl: nextBannerUrl,
       });
 
+      setBannerFile(null);
+      updateField("bannerUrl", nextBannerUrl);
       enqueueSnackbar("Event updated.", { variant: "success" });
       await onUpdated();
     } catch {
@@ -418,16 +431,35 @@ export function InfoTab({
           disabled={!canEdit}
         />
 
-        <TextField
-          label="Banner URL"
-          value={form.bannerUrl}
-          onChange={(event) => updateField("bannerUrl", event.target.value)}
-          fullWidth
-          size="small"
-          sx={textFieldSx}
-          className="lg:col-span-2"
-          disabled={!canEdit}
-        />
+        <div className="lg:col-span-2">
+          <p className="mb-2 text-sm font-black text-slate-700 dark:text-slate-200">
+            Event banner
+          </p>
+
+          <EventBannerCropUpload
+            file={bannerFile}
+            bannerUrl={form.bannerUrl}
+            onChange={(file) => setBannerFile(file)}
+            onRemove={() => updateField("bannerUrl", "")}
+            disabled={!canEdit}
+            helperText="JPG, PNG, WEBP. Max 5MB. Crop uses the same 21:9 frame as create event, event card, and event banner."
+          />
+
+          <TextField
+            label="Banner URL"
+            value={form.bannerUrl}
+            onChange={(event) => {
+              setBannerFile(null);
+              updateField("bannerUrl", event.target.value);
+            }}
+            fullWidth
+            size="small"
+            sx={textFieldSx}
+            disabled={!canEdit}
+            className="mt-4"
+            helperText="You can paste an external banner URL or choose an image above to upload and crop."
+          />
+        </div>
 
         <TextField
           label="Description"
