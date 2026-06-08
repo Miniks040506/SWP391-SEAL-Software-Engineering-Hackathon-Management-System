@@ -8,9 +8,13 @@ import type {
 
 export const announcementApi = {
   getEventAnnouncements(eventId: UUID) {
-    return apiRequest.get<AnnouncementResponse[]>(
-      `/events/${eventId}/announcements`,
-    );
+    return apiRequest.get<AnnouncementResponse[]>(`/events/${eventId}/announcements`);
+  },
+
+  getManageEventAnnouncements(eventId: UUID) {
+    return apiRequest.get<AnnouncementResponse[]>(`/events/${eventId}/announcements`, {
+      params: { manage: true },
+    });
   },
 
   createAnnouncement(eventId: UUID, payload: CreateAnnouncementRequest) {
@@ -20,10 +24,10 @@ export const announcementApi = {
     );
   },
 
-  getAnnouncementById(announcementId: UUID) {
-    return apiRequest.get<AnnouncementResponse>(
-      `/announcements/${announcementId}`,
-    );
+  getAnnouncementById(announcementId: UUID, manage = false) {
+    return apiRequest.get<AnnouncementResponse>(`/announcements/${announcementId}`, {
+      params: { manage },
+    });
   },
 
   updateAnnouncement(announcementId: UUID, payload: UpdateAnnouncementRequest) {
@@ -40,6 +44,13 @@ export const announcementApi = {
   publishAnnouncement(announcementId: UUID) {
     return apiRequest.post<AnnouncementResponse>(
       `/announcements/${announcementId}/publish`,
+    );
+  },
+
+  scheduleAnnouncement(announcementId: UUID, payload: UpdateAnnouncementRequest) {
+    return apiRequest.post<AnnouncementResponse>(
+      `/announcements/${announcementId}/schedule`,
+      payload,
     );
   },
 
