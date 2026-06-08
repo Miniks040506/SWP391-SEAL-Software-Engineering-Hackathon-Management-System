@@ -79,3 +79,27 @@ export type TeamDetailedScoreResponse = {
   totalScore: number;
   criteriaScores: CriterionAverageScoreResponse[];
 };
+
+// type for coordinator submission
+export type CoordinatorSubmissionListParams = {
+  eventId?: UUID;
+  roundId?: UUID;
+  trackId?: UUID;
+  status?: string;
+  search?: string;
+  page?: number;
+  size?: number;
+};
+
+export type CoordinatorSubmissionSummary = {
+  id: UUID;
+  teamId: UUID;
+  teamName: string;
+  roundId: UUID;
+  roundName: string;
+  trackId?: UUID;
+  trackName?: string;
+  status: string;
+  submissionNumber: number;
+  submittedAt?: ISODateTime;
+};
