@@ -6,11 +6,17 @@ import com.t7.seal.entities.Team;
 import com.t7.seal.entities.TeamMember;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.StudentProfileRepository;
 import com.t7.seal.repository.TeamMemberRepository;
 import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.request.team.CreateTeamRequest;
+import com.t7.seal.response.team.TeamDetailResponse;
+import com.t7.seal.response.team.TeamMemberResponse;
 import com.t7.seal.response.team.TeamResponse;
+import com.t7.seal.response.team.TeamSummaryResponse;
+import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.TeamService;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Locale;
-import java.util.Random;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -70,8 +77,42 @@ public class TeamServiceImpl implements TeamService {
         return toTeamResponse(saved);
     }
 
-    //HELPERS
+    @Transactional(readOnly = true)
+    @Override
+    public List<TeamSummaryResponse> getMyTeams(Authentication authentication) {
 
+        UUID currentUserId = CurrentUser.id(authentication);
+
+        return teamRepository.findActiveTeamByUserId(currentUserId)
+                .stream()
+                .map(t -> toTeamSummaryResponse(t, currentUserId))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public TeamDetailResponse getTeamById(UUID teamId, Authentication authentication) {
+
+        Team team = getTeam(teamId);
+
+        ensureTeamMemberForCoordinator(team, authentication);
+
+        List<TeamMember> members = activeMembers(team.getId());
+
+        return new TeamDetailResponse(
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                team.getDescription(),
+                team.getLeader() == null ? null : team.getLeader().getId(),
+                team.getLeader() == null ? null : team.getLeader().getFullName(),
+                team.getTrack() == null ? null : team.getTrack().getId(),
+                team.getStatus().name(),
+                members.stream().map(this::toTeamMemberResponse).toList()
+        );
+    }
+
+    //HELPERS
     private void ensureActiveStudent(User user) {
         if (!user.isStudent()) {
             throw new BadRequestException("Only students can create a team.");
@@ -122,5 +163,49 @@ public class TeamServiceImpl implements TeamService {
                 team.getStatus().name(),
                 team.getMemberCount() == null ? 0 : team.getMemberCount()
         );
+    }
+
+    private TeamMemberResponse toTeamMemberResponse(TeamMember m) {
+        return new TeamMemberResponse(
+                m.getUser().getId(),
+                m.getUser().getFullName(),
+                m.getUser().getEmail(),
+                m.getRole().name(),
+                m.getJoinedAt()
+        );
+    }
+
+    private TeamSummaryResponse toTeamSummaryResponse(Team team, UUID currentUserId) {
+        String role = teamMemberRepository.findByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUserId)
+                .map(m -> m.getRole().name())
+                .orElse("MEMBER");
+        return new TeamSummaryResponse(
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                team.getStatus().name(),
+                role
+        );
+    }
+
+    private void ensureTeamMemberForCoordinator(Team team, Authentication authentication) {
+        if (CurrentUser.isCoordinator(authentication) || CurrentUser.isAdmin(authentication)) {
+            return;
+        }
+
+        UUID currentUserId = CurrentUser.id(authentication);
+
+        if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUserId)) {
+            throw new UnauthorizedException("You don not have permission to access this team.");
+        }
+    }
+
+    private Team getTeam(UUID teamId) {
+        return teamRepository.findById(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found " + teamId));
+    }
+
+    private List<TeamMember> activeMembers(UUID teamId) {
+        return teamMemberRepository.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAsc(teamId);
     }
 }

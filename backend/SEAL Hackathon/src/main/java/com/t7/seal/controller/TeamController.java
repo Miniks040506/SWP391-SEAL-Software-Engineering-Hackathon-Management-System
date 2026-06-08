@@ -33,16 +33,19 @@ public class TeamController {
 
     //2
     @GetMapping("/me")
-    public ResponseEntity<List<TeamSummaryResponse>> getMyTeams() {
-        return null;
+    public ResponseEntity<List<TeamSummaryResponse>> getMyTeams(
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(teamService.getMyTeams(authentication));
     }
 
     //3
     @GetMapping("/{teamId}")
     public ResponseEntity<TeamDetailResponse> getTeamById(
-            @PathVariable UUID teamId
+            @PathVariable UUID teamId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(teamService.getTeamById(teamId, authentication));
     }
 
     //4
