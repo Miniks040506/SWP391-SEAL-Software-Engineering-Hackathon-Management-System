@@ -33,6 +33,7 @@ import {
   CoordinatorDashboardPage,
   CoordinatorEditEventPage,
   CoordinatorEventsPage,
+  CoordinatorAnnouncementPage,
 } from "@/features/coordinator";
 
 import { CoordinatorUsersPage } from "@/features/coordinator/pages/CoordinatorUsersPage";
@@ -91,7 +92,7 @@ export const router = createBrowserRouter([
       { path: "prizes", element: <NotFoundPage /> },
       { path: "criteria", element: <ScoringCriteriaManagementPage /> },
       { path: "analytics", element: <NotFoundPage /> },
-      { path: "announcement", element: <NotFoundPage /> },
+      { path: "announcement", element: <CoordinatorAnnouncementPage /> },
       { path: "schedule", element: <NotFoundPage /> },
       { path: "reports", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
