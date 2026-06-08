@@ -46,7 +46,15 @@ public class AnnouncementServiceImpl implements AnnouncementService {
                 announcement.getIsPinned(),
                 announcement.getIsResultAnnouncement(),
                 announcement.getPublishedAt(),
-                announcement.getCreatedBy().getId()
+                announcement.getCreatedBy().getId(),
+                announcement.getStatus().name(),
+                announcement.getSendEmail(),
+                announcement.getSendInApp(),
+                announcement.getScheduledAt(),
+                announcement.getTargetScope().name(),
+                announcement.getTargetId(),
+                announcement.getTargetTrackIds() == null ? List.of() : announcement.getTargetTrackIds(),
+                announcement.getTargetRoleNames() == null ? List.of() : announcement.getTargetRoleNames()
         );
     }
 }
