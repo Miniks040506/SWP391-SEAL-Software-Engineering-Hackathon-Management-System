@@ -1,1 +1,0 @@
-export { CoordinatorDashboardPage } from './pages/CoordinatorDashboardPage';
