@@ -190,10 +190,10 @@ function StatusWorkflow({
         })}
       </div>
 
-      <div className="mt-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-bold text-rose-600 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-300">
+      {/* <div className="mt-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-bold text-rose-600 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-300">
         Cancelled is an exit state. Use Cancel event only when this event should
         stop and become read-only.
-      </div>
+      </div> */}
     </div>
   );
 }
