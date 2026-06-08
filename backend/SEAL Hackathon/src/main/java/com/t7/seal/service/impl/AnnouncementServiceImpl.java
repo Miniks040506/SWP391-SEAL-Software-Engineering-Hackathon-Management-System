@@ -130,6 +130,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     }
 
     @Override
+    @Transactional
     public AnnouncementResponse updateAnnouncement(
             UUID announcementId,
             UpdateAnnouncementRequest request,
@@ -175,20 +176,50 @@ public class AnnouncementServiceImpl implements AnnouncementService {
 
         EventAnnouncement saved = eventAnnouncementRepository.save(announcement);
 
+        createNotificationForAnnouncement(announcement, announcement.getCreatedBy());
+
         return toAnnouncementResponse(saved);
     }
 
     @Override
+    @Transactional
     public void deleteAnnouncement(UUID announcementId, Authentication authentication) {
+        ensureCoordinator(authentication);
+        EventAnnouncement announcement = getAnnouncement(announcementId);
 
+        if (announcement.isPublished()) {
+            throw new ConflictException(
+                    "Published announcements cannot be deleted. Cancel or unpublish first.");
+        }
+
+        createNotificationForAnnouncement(announcement, announcement.getCreatedBy());
+        eventAnnouncementRepository.delete(announcement);
     }
 
     @Override
-    public AnnouncementResponse publishAnnouncement(UUID announcementId, Authentication authentication) {
-        return null;
+    @Transactional
+    public AnnouncementResponse publishAnnouncement(
+            UUID announcementId,
+            Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+        EventAnnouncement announcement = getAnnouncement(announcementId);
+        User actor = currentUserService.getCurrentUser(authentication);
+
+        if (announcement.isCancelled()) {
+            throw new ConflictException("Cancelled announcement cannot be published.");
+        }
+
+        announcement.publish(LocalDateTime.now());
+        createNotificationForAnnouncement(announcement, actor);
+
+        EventAnnouncement saved = eventAnnouncementRepository.save(announcement);
+
+        return toAnnouncementResponse(saved);
     }
 
     @Override
+    @Transactional
     public AnnouncementResponse scheduleAnnouncement(UUID announcementId, UpdateAnnouncementRequest request, Authentication authentication) {
         return null;
     }
