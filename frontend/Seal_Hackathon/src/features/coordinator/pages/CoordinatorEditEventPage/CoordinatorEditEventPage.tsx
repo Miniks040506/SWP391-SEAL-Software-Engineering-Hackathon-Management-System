@@ -207,7 +207,7 @@ export function CoordinatorEditEventPage() {
           canEdit={editRules.canEditInfo}
           readonlyReason={editRules.infoReason}
         />
-      )}s
+      )}
 
       {activeTab === "TRACKS" && (
         <TracksTab
