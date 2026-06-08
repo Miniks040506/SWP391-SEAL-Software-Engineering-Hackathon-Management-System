@@ -27,7 +27,7 @@ public class Team {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "track_id", nullable = false)
+    @JoinColumn(name = "track_id")
     private Track track;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -46,6 +46,9 @@ public class Team {
 
     @Column(name = "project_title", length = 300)
     private String projectTitle;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -143,4 +146,6 @@ public class Team {
             orphanRemoval = false //false due to UC26 constraint
     )
     private List<TeamMember> members = new ArrayList<>();
+
+
 }

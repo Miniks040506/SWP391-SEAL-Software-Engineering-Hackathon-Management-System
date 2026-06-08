@@ -12,6 +12,8 @@ import java.util.UUID;
 
 @Repository
 public interface TeamRepository extends JpaRepository<Team, UUID> {
+    Optional<Team> findByJoinCode(String joinCode);
+
     @Query("""
             SELECT COUNT(t) FROM Team t 
                         WHERE t.track.id = :trackId
@@ -19,4 +21,16 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
             """)
     int CountActiveTeamByTrackId(
             @Param("trackId") UUID trackId);
+
+
+    @Query("""
+            SELECT DISTINCT t FROM Team t 
+                JOIN t.members m 
+                    WHERE m.user.id = :userId
+                        AND m.leftAt IS NULL 
+                            ORDER BY t.createdAt DESC
+            """)
+    List<Team> findActiveTeamByUserId(
+            @Param("userId") UUID userId);
+
 }

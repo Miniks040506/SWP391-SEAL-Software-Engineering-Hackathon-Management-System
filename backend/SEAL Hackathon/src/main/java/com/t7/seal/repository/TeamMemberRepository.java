@@ -11,4 +11,9 @@ import java.util.UUID;
 @Repository
 public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
 
+    List<TeamMember> findByTeamIdAndLeftAtIsNullOrderByJoinedAtAsc(UUID teamId);
+
+    boolean existsByTeamIdAndUserIdAndLeftAtIsNull(UUID teamId, UUID userId);
+
+    Optional<TeamMember> findByTeamIdAndUserIdAndLeftAtIsNull(UUID teamId, UUID userId);
 }

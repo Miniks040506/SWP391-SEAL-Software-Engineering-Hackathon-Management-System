@@ -33,6 +33,7 @@ import {
   CoordinatorDashboardPage,
   CoordinatorEditEventPage,
   CoordinatorEventsPage,
+  CoordinatorAnnouncementPage,
 } from "@/features/coordinator";
 
 import { CoordinatorUsersPage } from "@/features/coordinator/pages/CoordinatorUsersPage";
@@ -43,6 +44,7 @@ import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
 import { EventCriteriaManagementPage } from "@/features/criteria/pages/EventCriteriaManagementPage";
 import { EventCriteriaViewPage } from "@/features/criteria/pages/EventCriteriaViewPage";
 import { ScoringCriteriaManagementPage } from "@/features/criteria/pages/ScoringCriteriaManagementPage";
+import { CoordinatorSubmissionsPage } from "@/features/submissions/pages/CoordinatorSubmissionsPage";
 
 export const router = createBrowserRouter([
   {
@@ -86,12 +88,13 @@ export const router = createBrowserRouter([
       { path: "events/:eventId/view", element: <EventDetailPage /> },
       { path: "users", element: <CoordinatorUsersPage /> },
       { path: "teams", element: <NotFoundPage /> },
-      { path: "submissions", element: <NotFoundPage /> },
+      { path: "submissions", element: <CoordinatorSubmissionsPage /> },
+      { path: "submissions/:submissionId", element: <CoordinatorSubmissionsPage /> },
       { path: "judging", element: <NotFoundPage /> },
       { path: "prizes", element: <NotFoundPage /> },
       { path: "criteria", element: <ScoringCriteriaManagementPage /> },
       { path: "analytics", element: <NotFoundPage /> },
-      { path: "notifications", element: <NotFoundPage /> },
+      { path: "announcement", element: <CoordinatorAnnouncementPage /> },
       { path: "schedule", element: <NotFoundPage /> },
       { path: "reports", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
