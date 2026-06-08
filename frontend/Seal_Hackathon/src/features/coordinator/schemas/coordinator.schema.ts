@@ -22,7 +22,7 @@ export type {
   ResetPasswordFormValues,
 } from "@/features/admin/schemas/admin.schema";
 
-// Override: Coordinators cannot create ADMIN users
+// Coordinators cannot create ADMIN users
 export const CREATE_ROLES = [
   "JUDGE",
   "MENTOR",
