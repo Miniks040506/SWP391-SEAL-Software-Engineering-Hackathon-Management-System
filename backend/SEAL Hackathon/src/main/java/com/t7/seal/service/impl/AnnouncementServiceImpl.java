@@ -103,7 +103,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
 
         EventAnnouncement saved = eventAnnouncementRepository.save(eventAnnouncement);
         if (saved.isPublished()) {
-
+            createNotificationForAnnouncement(saved, actor);
         }
 
         return toAnnouncementResponse(saved);
@@ -165,23 +165,23 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     }
 
     //HELPERS
-//    private void createNotificationForAnnouncement(EventAnnouncement announcement, User actor) {
-//        NotificationChannel channel = resolveChannel(announcement);
-//        Notification notification = Notification.builder()
-//                .event(announcement.getEvent())
-//                .createdBy(actor)
-//                .type(NotificationType.GENERAL)
-//                .title(announcement.getTitle())
-//                .body(announcement.getContent())
-//                .targetScope(announcement.getTargetScope())
-//                .targetId(announcement.getTargetId())
-//                .channel(channel)
-//                .status(NotificationStatus.SENT)
-//                .sentAt(LocalDateTime.now())
-//                .recipientCount(0)
-//                .build();
-//        notificationRepository.save(notification);
-//    }
+    private void createNotificationForAnnouncement(EventAnnouncement announcement, User actor) {
+        NotificationChannel channel = resolveChannel(announcement);
+        Notification notification = Notification.builder()
+                .event(announcement.getEvent())
+                .createdBy(actor)
+                .type(NotificationType.GENERAL)
+                .title(announcement.getTitle())
+                .body(announcement.getContent())
+                .targetScope(announcement.getTargetScope())
+                .targetId(announcement.getTargetId())
+                .channel(channel)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(0)
+                .build();
+        notificationRepository.save(notification);
+    }
 
     private NotificationChannel resolveChannel(EventAnnouncement announcement) {
         boolean email = Boolean.TRUE.equals(announcement.getSendEmail());

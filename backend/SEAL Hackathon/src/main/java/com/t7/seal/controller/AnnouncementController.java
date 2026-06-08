@@ -41,9 +41,8 @@ public class AnnouncementController {
             @Valid @RequestBody CreateAnnouncementRequest request,
             Authentication authentication
     ) {
-//        return ResponseEntity.status(HttpStatus.CREATED)
-//                .body(announcementService.createAnnouncement(eventId, request, authentication));
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(announcementService.createAnnouncement(eventId, request, authentication));
     }
 
     @GetMapping("/announcements/{announcementId}")
