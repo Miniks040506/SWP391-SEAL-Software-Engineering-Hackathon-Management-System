@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { userApi } from "@/api/user.api";
-import type { AdminUserListParams, UpdateUserRequest } from "@/types/user.types";
+import type {
+  AdminUserListParams,
+  UpdateUserRequest,
+} from "@/types/user.types";
 
 const COORDINATOR_USERS_KEY = "coordinator-users";
 
@@ -30,7 +33,8 @@ export function useCoordinatorCreateUserMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: userApi.createUser,
-    onSuccess: () => qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
   });
 }
 
@@ -44,7 +48,8 @@ export function useCoordinatorUpdateUserMutation() {
       userId: string;
       payload: UpdateUserRequest;
     }) => userApi.updateUser(userId, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
   });
 }
 
@@ -52,7 +57,8 @@ export function useCoordinatorDeactivateUserMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: userApi.deactivateUser,
-    onSuccess: () => qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
   });
 }
 
@@ -61,6 +67,7 @@ export function useCoordinatorActivateUserMutation() {
   return useMutation({
     mutationFn: (userId: string) =>
       userApi.updateUser(userId, { status: "ACTIVE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
   });
 }
