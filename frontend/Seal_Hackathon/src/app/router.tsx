@@ -91,7 +91,7 @@ export const router = createBrowserRouter([
       { path: "prizes", element: <NotFoundPage /> },
       { path: "criteria", element: <ScoringCriteriaManagementPage /> },
       { path: "analytics", element: <NotFoundPage /> },
-      { path: "notifications", element: <NotFoundPage /> },
+      { path: "announcement", element: <NotFoundPage /> },
       { path: "schedule", element: <NotFoundPage /> },
       { path: "reports", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },

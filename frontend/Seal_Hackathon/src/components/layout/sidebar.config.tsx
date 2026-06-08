@@ -172,8 +172,8 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <InsightsOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Notifications",
-            path: "/coordinator/notifications",
+            label: "Announcement",
+            path: "/coordinator/announcement",
             icon: <NotificationsNoneOutlinedIcon fontSize="small" />,
           },
           {
