@@ -12,6 +12,7 @@ import com.t7.seal.repository.StudentProfileRepository;
 import com.t7.seal.repository.TeamMemberRepository;
 import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.request.team.CreateTeamRequest;
+import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.response.team.TeamDetailResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
 import com.t7.seal.response.team.TeamResponse;
@@ -112,6 +113,32 @@ public class TeamServiceImpl implements TeamService {
         );
     }
 
+    @Transactional
+    @Override
+    public TeamResponse updateTeam(UUID teamId, UpdateTeamRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        ensureTeamLeader(team, authentication);
+
+        ensureTeamEditable(team);
+
+        if (request.name() != null || !request.name().isBlank()) {
+            team.setName(request.name().trim());
+        }
+
+        if (request.projectTitle() != null) {
+            team.setProjectTitle(blankToNull(request.projectTitle()));
+        }
+
+        if (request.description() != null) {
+            team.setDescription(blankToNull(request.description()));
+        }
+
+        team.setUpdatedAt(LocalDateTime.now());
+        
+        return toTeamResponse(teamRepository.save(team));
+    }
+
     //HELPERS
     private void ensureActiveStudent(User user) {
         if (!user.isStudent()) {
@@ -207,5 +234,19 @@ public class TeamServiceImpl implements TeamService {
 
     private List<TeamMember> activeMembers(UUID teamId) {
         return teamMemberRepository.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAsc(teamId);
+    }
+
+    private void ensureTeamLeader(Team team, Authentication authentication) {
+        UUID userId = CurrentUser.id(authentication);
+
+        if (team.getLeader() == null || !team.getLeader().getId().equals(userId)) {
+            throw new UnauthorizedException("You don not have permission to access this team.");
+        }
+    }
+
+    private void ensureTeamEditable(Team team) {
+        if (team.getStatus() != TeamStatus.FORMING) {
+            throw new BadRequestException("Team is not in forming status.");
+        }
     }
 }

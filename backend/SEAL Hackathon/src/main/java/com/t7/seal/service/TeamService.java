@@ -1,6 +1,7 @@
 package com.t7.seal.service;
 
 import com.t7.seal.request.team.CreateTeamRequest;
+import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.response.team.TeamDetailResponse;
 import com.t7.seal.response.team.TeamResponse;
 import com.t7.seal.response.team.TeamSummaryResponse;
@@ -15,4 +16,6 @@ public interface TeamService {
     List<TeamSummaryResponse> getMyTeams(Authentication authentication);
 
     TeamDetailResponse getTeamById(UUID teamId, Authentication authentication);
+
+    TeamResponse updateTeam(UUID teamId, UpdateTeamRequest request, Authentication authentication);
 }

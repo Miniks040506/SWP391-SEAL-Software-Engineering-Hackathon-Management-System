@@ -53,12 +53,14 @@ public class TeamController {
     }
 
     //4
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{teamId}")
     public ResponseEntity<TeamResponse> updateTeam(
             @PathVariable UUID teamId,
-            @Valid @RequestBody UpdateTeamRequest request
+            @Valid @RequestBody UpdateTeamRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(teamService.updateTeam(teamId, request, authentication));
     }
 
     @PostMapping("/{teamId}/invite")
@@ -70,6 +72,7 @@ public class TeamController {
     }
 
     //5
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{teamId}/members")
     public ResponseEntity<List<TeamMemberResponse>> getTeamMembers(
             @PathVariable UUID teamId
@@ -78,6 +81,7 @@ public class TeamController {
     }
 
     //6
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{teamId}/members/{memberId}")
     public ResponseEntity<Void> removeMember(
             @PathVariable UUID teamId,
@@ -103,6 +107,7 @@ public class TeamController {
     }
 
     //7
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/{teamId}/transfer-leader")
     public ResponseEntity<TeamResponse> transferLeader(
             @PathVariable UUID teamId,
@@ -112,6 +117,7 @@ public class TeamController {
     }
 
     //8
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/{teamId}/leave")
     public ResponseEntity<Void> leaveTeam(
             @PathVariable UUID teamId,
