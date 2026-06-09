@@ -93,7 +93,7 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error.", request);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
     }
 
     private FieldErrorResponse toFieldErrorResponse(FieldError error) {

@@ -22,6 +22,7 @@ public class TeamMember {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private MemberRole role = MemberRole.MEMBER;
@@ -33,6 +34,7 @@ public class TeamMember {
     @Column(name = "left_at")
     private LocalDateTime leftAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "left_reason")
     private LeftReason leftReason;
 
@@ -56,7 +58,7 @@ public class TeamMember {
     }
 
     // N - 1 relationship with User
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id",
             nullable = false,
             updatable = false

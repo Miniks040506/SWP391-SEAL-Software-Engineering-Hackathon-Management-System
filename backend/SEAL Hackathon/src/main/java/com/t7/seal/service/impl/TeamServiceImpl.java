@@ -126,7 +126,7 @@ public class TeamServiceImpl implements TeamService {
 
         ensureTeamEditable(team);
 
-        if (request.name() != null || !request.name().isBlank()) {
+        if (request.name() != null && !request.name().isBlank()) {
             team.setName(request.name().trim());
         }
 
@@ -207,6 +207,7 @@ public class TeamServiceImpl implements TeamService {
         return toTeamResponse(teamRepository.save(team));
     }
 
+    @Transactional
     @Override
     public void leaveTeam(UUID teamId, ReasonRequest request, Authentication authentication) {
         Team team = getTeam(teamId);
