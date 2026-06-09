@@ -1,7 +1,7 @@
 package com.t7.seal.response.submission;
 
 
-import com.t7.seal.infrastructure.RepositoryMetadata;
+import com.t7.seal.dto.RepositoryMetadata;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

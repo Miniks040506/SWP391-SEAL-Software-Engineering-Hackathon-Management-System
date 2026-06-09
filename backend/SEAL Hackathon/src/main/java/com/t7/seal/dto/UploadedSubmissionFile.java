@@ -1,4 +1,4 @@
-package com.t7.seal.infrastructure;
+package com.t7.seal.dto;
 
 public record UploadedSubmissionFile(
         String url,
