@@ -75,9 +75,10 @@ public class TeamController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{teamId}/members")
     public ResponseEntity<List<TeamMemberResponse>> getTeamMembers(
-            @PathVariable UUID teamId
+            @PathVariable UUID teamId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(teamService.getTeamMembers(teamId, authentication));
     }
 
     //6
@@ -86,9 +87,11 @@ public class TeamController {
     public ResponseEntity<Void> removeMember(
             @PathVariable UUID teamId,
             @PathVariable UUID memberId,
-            @RequestBody(required = false) ReasonRequest request
+            @RequestBody(required = false) ReasonRequest request,
+            Authentication authentication
     ) {
-        return null;
+        teamService.removeTeamMember(teamId, memberId, request, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/invitations/{invitationId}/accept")

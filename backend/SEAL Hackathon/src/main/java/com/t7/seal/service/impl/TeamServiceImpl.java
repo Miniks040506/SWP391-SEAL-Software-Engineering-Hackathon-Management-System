@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.LeftReason;
 import com.t7.seal.domain.MemberRole;
 import com.t7.seal.domain.TeamStatus;
 import com.t7.seal.entities.Team;
@@ -12,6 +13,7 @@ import com.t7.seal.repository.StudentProfileRepository;
 import com.t7.seal.repository.TeamMemberRepository;
 import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.request.team.CreateTeamRequest;
+import com.t7.seal.request.team.ReasonRequest;
 import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.response.team.TeamDetailResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
@@ -135,8 +137,48 @@ public class TeamServiceImpl implements TeamService {
         }
 
         team.setUpdatedAt(LocalDateTime.now());
-        
+
         return toTeamResponse(teamRepository.save(team));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<TeamMemberResponse> getTeamMembers(UUID teamId, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        ensureTeamMemberForCoordinator(team, authentication);
+
+        List<TeamMember> members = activeMembers(team.getId());
+
+        return members.stream().map(this::toTeamMemberResponse).toList();
+    }
+
+    @Transactional
+    @Override
+    public void removeTeamMember(UUID teamId, UUID memberId, ReasonRequest reason, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        ensureTeamLeader(team, authentication);
+        ensureTeamEditable(team);
+
+        TeamMember member = teamMemberRepository.findById(memberId)
+                .orElseThrow(() -> new NotFoundException("Team member not found."));
+
+        if (!member.getTeam().getId().equals(team.getId())) {
+            throw new BadRequestException("Member does not belong to this team.");
+        }
+
+        if (member.isLeader()) {
+            throw new BadRequestException("Leader cannot be removed from the team.");
+        }
+
+        if (!member.isActive()) {
+            throw new BadRequestException("Member is not active");
+        }
+
+        member.leave(LocalDateTime.now(), LeftReason.KICKED_BY_LEADER);
+        team.decrementMemberCount();
+        team.setUpdatedAt(LocalDateTime.now());
     }
 
     //HELPERS
