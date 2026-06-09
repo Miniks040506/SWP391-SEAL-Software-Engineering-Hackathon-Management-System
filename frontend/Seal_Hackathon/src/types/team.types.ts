@@ -83,3 +83,26 @@ export type TeamInvitationResponse = {
   status: string;
   expiresAt: ISODateTime;
 };
+
+// add
+
+export type CoordinatorTeamListParams = {
+  eventId?: UUID;
+  trackId?: UUID;
+  status?: string;
+  search?: string;
+  page?: number;
+  size?: number;
+};
+ 
+export type CoordinatorTeamSummary = {
+  id: UUID;
+  name: string;
+  projectTitle?: string;
+  leaderId: UUID;
+  leaderName: string;
+  trackId?: UUID;
+  trackName?: string;
+  status: string;
+  memberCount: number;
+};
