@@ -3,10 +3,8 @@ package com.t7.seal.service;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
-import com.t7.seal.response.submission.SubmissionDetailResponse;
-import com.t7.seal.response.submission.SubmissionLinkResponse;
-import com.t7.seal.response.submission.SubmissionResponse;
-import com.t7.seal.response.submission.SubmissionSummaryResponse;
+import com.t7.seal.response.PageResponse;
+import com.t7.seal.response.submission.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,4 +52,28 @@ public interface SubmissionService {
                                                 Authentication authentication);
 
     void deleteSubmissionLink(UUID linkId, Authentication authentication);
+
+    FileDownloadUrlResponse createSubmissionFileDownloadUrl(UUID linkId,
+                                                            Authentication authentication);
+
+    SubmissionResponse submitExistingSubmission(UUID submissionId,
+                                                Authentication authentication);
+
+    PageResponse<CoordinatorSubmissionSummaryResponse> getEventSubmissions(UUID eventId, UUID roundId,
+                                                                           UUID trackId, String status,
+                                                                           String search,
+                                                                           int page, int size,
+                                                                           Authentication authentication);
+
+    List<SubmissionSummaryResponse> getRoundSubmissions(UUID roundId,
+                                                        Authentication authentication);
+
+    List<SubmissionSummaryResponse> getTrackSubmissions(UUID trackId,
+                                                        Authentication authentication);
+
+    List<SubmissionSummaryResponse> getMentorTeamSubmissions(UUID teamId,
+                                                             Authentication authentication);
+
+    SubmissionDetailResponse getMentorSubmissionById(UUID submissionId,
+                                                     Authentication authentication);
 }
