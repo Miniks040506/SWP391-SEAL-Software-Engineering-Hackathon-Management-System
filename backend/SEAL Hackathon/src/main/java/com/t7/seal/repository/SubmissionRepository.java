@@ -13,6 +13,8 @@ import java.util.UUID;
 @Repository
 public interface SubmissionRepository extends JpaRepository<Submission, UUID> {
 
+    Optional<Submission> findByTeamIdAndRoundId(UUID teamId, UUID roundId);
+
     @Query("""
             SELECT DISTINCT s FROM Submission s
             LEFT JOIN FETCH s.submissionLinks l

@@ -1,5 +1,8 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.RoundStatus;
+import com.t7.seal.domain.SubmissionLinkType;
+import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.domain.TeamStatus;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.Submission;
@@ -22,8 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +51,17 @@ public class SubmissionServiceImpl implements SubmissionService {
         ensureRoundBelongToTeamEvent(team, round);
         ensureTeamLeader(team, authentication);
         ensureTeamCanSubmit(team);
+        ensureRoundCanAcceptSubmission(round);
+        validateRequiredLinks(team, request.links());
+
+        Submission submission = submissionRepository.findByTeamIdAndRoundId(teamId, roundId)
+                .orElseGet(() -> Submission.builder()
+                        .team(team)
+                        .round(round)
+                        .status(SubmissionStatus.DRAFT)
+                        .submissionNumber(1)
+                        .submissionLinks(new ArrayList<>())
+                        .build());
 
         return null;
     }
@@ -168,10 +182,53 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
     }
 
+    private void ensureRoundCanAcceptSubmission(Round round) {
+        if (round.getSubmissionLockedAt() != null) {
+            throw new ConflictException("ROUND_SUBMISSION_LOCKED: This round's submissions are locked.");
+        }
+        if (round.getStatus() != RoundStatus.OPEN) {
+            throw new ConflictException("Submissions are only allowed while the round is OPEN.");
+        }
+    }
+
     private void ensureTeamLeader(Team team, Authentication authentication) {
         UUID userId = CurrentUser.id(authentication);
         if (team.getLeader() == null || !team.getLeader().getId().equals(userId)) {
             throw new UnauthorizedException("Only the team leader can manage this submission.");
+        }
+    }
+
+    private void validateRequiredLinks(Team team, List<SubmissionLinkRequest> links) {
+        List<SubmissionLinkType> requiredTypes = team.getTrack() == null
+                ? List.of() : team.getTrack().getRequiredLinkTypes();
+
+        if (requiredTypes == null || requiredTypes.isEmpty()) {
+            return;
+        }
+
+        Set<SubmissionLinkType> submitted = links.stream()
+                .map(link -> parseLinkType(link.linkType()))
+                .collect(Collectors.toSet());
+
+        List<String> missing = requiredTypes.stream()
+                .filter(type -> !submitted.contains(type))
+                .map(Enum::name)
+                .toList();
+
+        if (!missing.isEmpty()) {
+            throw new BadRequestException("Missing required link types: " +
+                    String.join(", ", missing));
+        }
+    }
+
+    private SubmissionLinkType parseLinkType(String value) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException("Submission link type is required.");
+        }
+        try {
+            return SubmissionLinkType.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Unsupported submission link type: " + value);
         }
     }
 }
