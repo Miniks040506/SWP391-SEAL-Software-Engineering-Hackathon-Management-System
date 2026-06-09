@@ -1,6 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.*;
+import com.t7.seal.dto.UploadedSubmissionFile;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
@@ -14,6 +15,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.RepositoryMetadataService;
+import com.t7.seal.service.SubmissionFileStorageService;
 import com.t7.seal.service.SubmissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -36,6 +38,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final RoundRepository roundRepository;
     private final MentorAssignmentRepository mentorAssignmentRepository;
     private final RepositoryMetadataService repositoryMetadataService;
+    private final SubmissionFileStorageService submissionFileStorageService;
 
     @Override
     @Transactional
@@ -111,7 +114,18 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission saved = submissionRepository.save(submission);
 
         //Add upload file link
-        //TODO
+        addUploadedFileLink(saved, parseLinkType(linkType),
+                label, isPrimary, displayOrder, file);
+
+        if (Boolean.TRUE.equals(submitNow)) {
+            Submission refreshed = getSubmission(saved.getId());
+            validateRequiredLinksFromEntity(refreshed);
+            if (!refreshed.isDraft()) {
+                refreshed.increaseSubmissionNumber();
+            }
+            markSubmittedConsideringDeadline(refreshed, refreshed.getRound());
+            saved = submissionRepository.save(refreshed);
+        }
 
         return toSubmissionResponse(saved);
     }
@@ -299,6 +313,20 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
     }
 
+    private void validateRequiredLinksFromEntity(Submission submission) {
+        List<SubmissionLink> links = submissionLinkRepository
+                .findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(submission.getId());
+
+        List<SubmissionLinkRequest> requests = links.stream()
+                .map(link -> new SubmissionLinkRequest(
+                        link.getLinkType().name(), link.getUrl(),
+                        link.getLabel(), link.getIsPrimary(),
+                        link.getDisplayOrder()
+                )).toList();
+        
+        validateRequiredLinks(submission.getTeam(), requests);
+    }
+
     private void replaceLinks(Submission submission, List<SubmissionLinkRequest> links) {
         submissionLinkRepository.deleteBySubmissionId(submission.getId());
         List<SubmissionLink> entities = links.stream()
@@ -321,6 +349,40 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .displayOrder(request.displayOrder() == null ? 0 : request.displayOrder())
                 .build();
     }
+
+    private void addUploadedFileLink(
+            Submission submission,
+            SubmissionLinkType linkType,
+            String label, Boolean isPrimary,
+            Integer displayOrder, MultipartFile file
+    ) {
+        UUID eventId = submission.getRound().getEvent() == null
+                ? null : submission.getRound().getEvent().getId();
+
+        UploadedSubmissionFile uploaded = submissionFileStorageService.uploadSubmissionFile(
+                eventId,
+                submission.getTeam().getId(),
+                submission.getRound().getId(),
+                file
+        );
+
+        SubmissionLink link = SubmissionLink.builder()
+                .submission(submission)
+                .linkType(linkType)
+                .url(uploaded.url())
+                .label(blankToNull(label))
+                .storageProvider(SubmissionStorageProvider.AWS_S3)
+                .objectKey(uploaded.objectKey())
+                .originalFileName(uploaded.originalFileName())
+                .contentType(uploaded.contentType())
+                .fileSizeBytes(uploaded.fileSizeBytes())
+                .isPrimary(Boolean.TRUE.equals(isPrimary))
+                .displayOrder(displayOrder == null ? 0 : displayOrder)
+                .build();
+
+        submissionLinkRepository.save(link);
+    }
+
 
     private SubmissionStorageProvider detectStorageProvider(SubmissionLinkType linkType, String url) {
         if (url == null) {
