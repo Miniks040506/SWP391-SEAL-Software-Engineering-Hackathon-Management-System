@@ -1,0 +1,1 @@
+export { CoordinatorTeamsPage } from "./pages/CoordinatorTeamsPage";

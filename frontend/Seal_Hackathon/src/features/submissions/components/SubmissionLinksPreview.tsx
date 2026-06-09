@@ -34,6 +34,29 @@ export function SubmissionLinksPreview({ links }: Props) {
           >
             {link.url}
           </a>
+          {link.repoMetadata !== null &&
+            typeof link.repoMetadata === "object" &&
+            (() => {
+              const meta = link.repoMetadata as Record<string, unknown>;
+              return (
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                    Repository Metadata
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {Object.entries(meta).map(([key, value]) => (
+                      <div key={key} className="contents">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{key}</span>
+                        <span className="text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
+                          {String(value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()
+          }
         </li>
       ))}
     </ul>

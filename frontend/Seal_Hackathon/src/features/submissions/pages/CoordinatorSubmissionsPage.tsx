@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Pagination } from "@mui/material";
-import { useCoordinatorSubmissionsQuery } from "../hooks/useCoordinatorSubmissionMutations";
+import { apiRequest } from "@/api/apiRequest";
+import { useCoordinatorSubmissionsQuery } from "../hooks/useCoordinatorSubmissionQueries";
 import { SubmissionFilterBar } from "../components/SubmissionFilterBar";
 import { SubmissionTable } from "../components/SubmissionTable";
 import { SubmissionDetailDrawer } from "../components/SubmissionDetailDrawer";
@@ -9,6 +10,10 @@ import { paginationSx } from "../schemas/submissions.schema";
 import type { CoordinatorSubmissionListParams } from "@/types/submission.types";
 
 const PAGE_SIZE = 20;
+
+type EventOption = { id: string; name: string };
+type TrackOption = { id: string; name: string; eventId: string };
+type RoundOption = { id: string; name: string; trackId: string };
 
 export function CoordinatorSubmissionsPage() {
   const { submissionId } = useParams<{ submissionId: string }>();
@@ -19,15 +24,38 @@ export function CoordinatorSubmissionsPage() {
     size: PAGE_SIZE,
   });
 
+  const [events, setEvents] = useState<EventOption[]>([]);
+  const [tracks, setTracks] = useState<TrackOption[]>([]);
+  const [rounds, setRounds] = useState<RoundOption[]>([]);
+
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const [eventsRes, tracksRes, roundsRes] = await Promise.all([
+          apiRequest.get<EventOption[]>("/coordinator/events"),
+          apiRequest.get<TrackOption[]>("/coordinator/tracks"),
+          apiRequest.get<RoundOption[]>("/coordinator/rounds"),
+        ]);
+        setEvents(eventsRes);
+        setTracks(tracksRes);
+        setRounds(roundsRes);
+      } catch (error) {
+        console.error("Failed to fetch filter options:", error);
+      }
+    };
+
+    fetchFilterOptions();
+  }, []);
+
   const { data, loading } = useCoordinatorSubmissionsQuery(filters);
 
   const handleCloseDrawer = () => {
     navigate("/coordinator/submissions");
   };
 
-  const items = (data as any)?.content || (data as any)?.items || (data as any)?.data || [];
-  const total = (data as any)?.totalElements ?? 0;
-  const totalPages = (data as any)?.totalPages ?? 0;
+  const items = data?.content ?? [];
+  const total = data?.totalElements ?? 0;
+  const totalPages = data?.totalPages ?? 0;
 
   return (
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
@@ -43,7 +71,13 @@ export function CoordinatorSubmissionsPage() {
       </div>
 
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col overflow-hidden">
-        <SubmissionFilterBar filters={filters} onChange={setFilters} />
+        <SubmissionFilterBar
+          filters={filters}
+          onChange={setFilters}
+          events={events}
+          tracks={tracks}
+          rounds={rounds}
+        />
 
         <SubmissionTable submissions={items} loading={loading} />
 
