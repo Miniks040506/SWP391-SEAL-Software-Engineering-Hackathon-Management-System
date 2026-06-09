@@ -22,7 +22,6 @@ public class TeamController {
 
     private final TeamService teamService;
 
-    //1
     @PreAuthorize("hasAnyRole('STUDENT')")
     @PostMapping
     public ResponseEntity<TeamResponse> createTeam(
@@ -33,7 +32,6 @@ public class TeamController {
                 .body(teamService.createTeam(request, authentication));
     }
 
-    //2
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ResponseEntity<List<TeamSummaryResponse>> getMyTeams(
@@ -42,7 +40,6 @@ public class TeamController {
         return ResponseEntity.ok(teamService.getMyTeams(authentication));
     }
 
-    //3
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{teamId}")
     public ResponseEntity<TeamDetailResponse> getTeamById(
@@ -52,7 +49,6 @@ public class TeamController {
         return ResponseEntity.ok(teamService.getTeamById(teamId, authentication));
     }
 
-    //4
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{teamId}")
     public ResponseEntity<TeamResponse> updateTeam(
@@ -71,7 +67,6 @@ public class TeamController {
         return null;
     }
 
-    //5
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{teamId}/members")
     public ResponseEntity<List<TeamMemberResponse>> getTeamMembers(
@@ -81,7 +76,6 @@ public class TeamController {
         return ResponseEntity.ok(teamService.getTeamMembers(teamId, authentication));
     }
 
-    //6
     @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{teamId}/members/{memberId}")
     public ResponseEntity<Void> removeMember(
@@ -109,7 +103,6 @@ public class TeamController {
         return null;
     }
 
-    //7
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/{teamId}/transfer-leader")
     public ResponseEntity<TeamResponse> transferLeader(
@@ -120,14 +113,15 @@ public class TeamController {
         return ResponseEntity.ok(teamService.transferLeader(teamId, request, authentication));
     }
 
-    //8
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/{teamId}/leave")
     public ResponseEntity<Void> leaveTeam(
             @PathVariable UUID teamId,
-            @Valid @RequestBody ReasonRequest request
+            @Valid @RequestBody(required = false) ReasonRequest request,
+            Authentication authentication
     ) {
-        return null;
+        teamService.leaveTeam(teamId, request, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{teamId}/join-code")

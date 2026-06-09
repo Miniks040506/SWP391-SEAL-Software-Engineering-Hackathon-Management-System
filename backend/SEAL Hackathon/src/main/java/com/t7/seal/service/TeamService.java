@@ -27,4 +27,6 @@ public interface TeamService {
     void removeTeamMember(UUID teamId, UUID memberId, ReasonRequest reason, Authentication authentication);
 
     TeamResponse transferLeader(UUID teamId, TransferLeaderRequest request, Authentication authentication);
+
+    void leaveTeam(UUID teamId, ReasonRequest request, Authentication authentication);
 }

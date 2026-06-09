@@ -207,6 +207,26 @@ public class TeamServiceImpl implements TeamService {
         return toTeamResponse(teamRepository.save(team));
     }
 
+    @Override
+    public void leaveTeam(UUID teamId, ReasonRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        UUID currentUserId = CurrentUser.id(authentication);
+
+        TeamMember member = teamMemberRepository.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("You are not an active member of this team."));
+
+        ensureTeamEditable(team);
+
+        if (member.isLeader()) {
+            throw new BadRequestException("Transfer leadership to another member before leaving the team.");
+        }
+
+        member.leave(LocalDateTime.now(), LeftReason.SELF_LEFT);
+        team.decrementMemberCount();
+        team.setUpdatedAt(LocalDateTime.now());
+    }
+
     //HELPERS
     private void ensureActiveStudent(User user) {
         if (!user.isStudent()) {
