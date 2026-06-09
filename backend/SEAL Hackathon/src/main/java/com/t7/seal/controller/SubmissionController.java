@@ -89,4 +89,22 @@ public class SubmissionController {
     ) {
         return null;
     }
+
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORIDINATOR')")
+    @GetMapping("/mentor/teams/{teamId}/submissions")
+    public ResponseEntity<List<SubmissionSummaryResponse>> getMentorTeamSubmissions(
+            @PathVariable("teamId") UUID teamId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.getMentorTeamSubmissions(teamId, authentication));
+    }
+
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORIDINATOR')")
+    @GetMapping("/mentor/submissions/{submissionId}")
+    public ResponseEntity<SubmissionDetailResponse> getMentorSubmissionById(
+            @PathVariable("submissionId") UUID submissionId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.getMentorSubmissionById(submissionId, authentication));
+    }
 }
