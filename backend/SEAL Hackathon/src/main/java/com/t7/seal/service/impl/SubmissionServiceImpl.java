@@ -47,7 +47,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         Team team = getTeam(teamId);
         Round round = getRound(roundId);
 
-        ensureRoundBelongToTeamEvent(team, round);
+        ensureRoundBelongsToTeamEvent(team, round);
         ensureTeamLeader(team, authentication);
         ensureTeamCanSubmit(team);
         ensureRoundCanAcceptSubmission(round);
@@ -87,7 +87,33 @@ public class SubmissionServiceImpl implements SubmissionService {
             MultipartFile file,
             Authentication authentication
     ) {
-        return null;
+        Team team = getTeam(teamId);
+        Round round = getRound(roundId);
+
+        ensureRoundBelongsToTeamEvent(team, round);
+        ensureTeamLeader(team, authentication);
+        ensureTeamCanSubmit(team);
+        ensureRoundCanAcceptSubmission(round);
+
+        Submission submission = submissionRepository.findByTeamIdAndRoundId(teamId, roundId)
+                .orElseGet(() -> Submission.builder()
+                        .team(team)
+                        .round(round)
+                        .status(SubmissionStatus.DRAFT)
+                        .submissionNumber(1)
+                        .submissionLinks(new ArrayList<>())
+                        .build());
+
+        if (note != null) {
+            submission.setNote(blankToNull(note));
+        }
+
+        Submission saved = submissionRepository.save(submission);
+
+        //Add upload file link
+        //TODO
+
+        return toSubmissionResponse(saved);
     }
 
     @Override
@@ -198,7 +224,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .orElseThrow(() -> new NotFoundException("Submission not found."));
     }
 
-    private void ensureRoundBelongToTeamEvent(Team team, Round round) {
+    private void ensureRoundBelongsToTeamEvent(Team team, Round round) {
         if (team.getTrack() == null) {
             throw new BadRequestException("Team must register to a track before submitting deliverables.");
         }
