@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useSubmissionAdminDetailQuery } from "../hooks/useCoordinatorSubmissionMutations";
+import { useSubmissionAdminDetailQuery } from "../hooks/useCoordinatorSubmissionQueries";
 import { SubmissionLinksPreview } from "./SubmissionLinksPreview";
 import { getSubmissionStatusColor } from "../schemas/submissions.schema";
 import type { UUID } from "@/types/common.types";

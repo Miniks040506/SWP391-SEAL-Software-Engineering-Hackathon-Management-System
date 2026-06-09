@@ -45,6 +45,7 @@ import { EventCriteriaManagementPage } from "@/features/criteria/pages/EventCrit
 import { EventCriteriaViewPage } from "@/features/criteria/pages/EventCriteriaViewPage";
 import { ScoringCriteriaManagementPage } from "@/features/criteria/pages/ScoringCriteriaManagementPage";
 import { CoordinatorSubmissionsPage } from "@/features/submissions/pages/CoordinatorSubmissionsPage";
+import { CoordinatorTeamsPage } from "@/features/teams";
 
 export const router = createBrowserRouter([
   {
@@ -87,7 +88,8 @@ export const router = createBrowserRouter([
       { path: "rounds/:roundId/criteria", element: <EventCriteriaViewPage mode="ROUND" />},
       { path: "events/:eventId/view", element: <EventDetailPage /> },
       { path: "users", element: <CoordinatorUsersPage /> },
-      { path: "teams", element: <NotFoundPage /> },
+      { path: "teams", element: <CoordinatorTeamsPage /> },
+      { path: "teams/:teamId", element: <CoordinatorTeamsPage /> },
       { path: "submissions", element: <CoordinatorSubmissionsPage /> },
       { path: "submissions/:submissionId", element: <CoordinatorSubmissionsPage /> },
       { path: "judging", element: <NotFoundPage /> },

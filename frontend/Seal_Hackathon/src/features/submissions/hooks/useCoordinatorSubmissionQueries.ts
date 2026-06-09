@@ -27,6 +27,7 @@ export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionList
         const res = await apiRequest.get<PageResponse<CoordinatorSubmissionSummary>>(url, { params });
         setData(res);
       } catch (error) {
+        console.error("Failed to fetch submissions:", error);
       } finally {
         setLoading(false);
       }
@@ -51,6 +52,7 @@ export const useSubmissionAdminDetailQuery = (submissionId?: UUID) => {
         const res = await apiRequest.get<SubmissionDetailResponse>(`/submissions/${submissionId}/admin-view`);
         setDetail(res);
       } catch (error) {
+        console.error("Failed to fetch submission detail:", error);
       } finally {
         setLoading(false);
       }
