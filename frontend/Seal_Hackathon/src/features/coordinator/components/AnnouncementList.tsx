@@ -11,13 +11,13 @@ import UndoOutlinedIcon from "@mui/icons-material/UndoOutlined";
 
 import type { UUID } from "@/types/common.types";
 import type { AnnouncementResponse } from "@/types/announcement.types";
+import type { EventSummaryResponse } from "@/types/event.types";
 
-import type { AnnouncementEventOption } from "../mocks/coordinatorAnnouncements.mock";
 import { AnnouncementStatusChip } from "./AnnouncementStatusChip";
 
 type AnnouncementListProps = {
   announcements: AnnouncementResponse[];
-  events: AnnouncementEventOption[];
+  events: EventSummaryResponse[];
   isLoading: boolean;
   onEdit: (announcement: AnnouncementResponse) => void;
   onDelete: (announcementId: UUID) => void;
@@ -28,7 +28,17 @@ type AnnouncementListProps = {
   onMarkResult: (announcementId: UUID) => void;
 };
 
-function getEventName(events: AnnouncementEventOption[], eventId: string) {
+const targetScopeLabels: Record<string, string> = {
+  ALL: "All event users",
+  TRACK: "Specific track",
+  TEAM: "Specific team",
+  JUDGE: "Judges",
+  COORDINATION: "Coordinators",
+  STUDENT: "Students / Participants",
+  SINGLE_USER: "Single user",
+};
+
+function getEventName(events: EventSummaryResponse[], eventId: string) {
   return events.find((event) => event.id === eventId)?.name ?? "Unknown event";
 }
 
@@ -74,7 +84,10 @@ export const AnnouncementList = ({
   return (
     <div className="space-y-4">
       {announcements.map((announcement) => {
-        const isPublished = Boolean(announcement.publishedAt);
+        const isPublished = announcement.status === "PUBLISHED";
+        const canPublish =
+          announcement.status === "DRAFT" ||
+          announcement.status === "SCHEDULED";
 
         return (
           <Card key={announcement.id} variant="outlined">
@@ -116,19 +129,42 @@ export const AnnouncementList = ({
                   </p>
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {announcement.publishedAt && (
+                    <Chip
+                      size="small"
+                      label={`Audience: ${
+                        targetScopeLabels[announcement.targetScope]
+                      }`}
+                      sx={{ fontWeight: 700 }}
+                    />
+
+                    <Chip
+                      size="small"
+                      label={`Channel: ${[
+                        announcement.sendInApp ? "In-app" : null,
+                        announcement.sendEmail ? "Email" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" + ")}`}
+                      sx={{ fontWeight: 700 }}
+                    />
+
+                    {announcement.scheduledAt && (
                       <Chip
                         size="small"
-                        label={`Published: ${announcement.publishedAt}`}
+                        color="warning"
+                        label={`Scheduled: ${announcement.scheduledAt}`}
                         sx={{ fontWeight: 700 }}
                       />
                     )}
 
-                    <Chip
-                      size="small"
-                      label={`Created by: ${announcement.createdBy}`}
-                      sx={{ fontWeight: 700 }}
-                    />
+                    {announcement.publishedAt && (
+                      <Chip
+                        size="small"
+                        color="success"
+                        label={`Published: ${announcement.publishedAt}`}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -137,35 +173,11 @@ export const AnnouncementList = ({
                     variant="outlined"
                     size="small"
                     startIcon={<EditOutlinedIcon />}
+                    disabled={announcement.status === "PUBLISHED"}
                     onClick={() => onEdit(announcement)}
                     sx={{ fontWeight: 800 }}
                   >
                     Edit
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<PushPinOutlinedIcon />}
-                    onClick={() =>
-                      announcement.pinned
-                        ? onUnpin(announcement.id)
-                        : onPin(announcement.id)
-                    }
-                    sx={{ fontWeight: 800 }}
-                  >
-                    {announcement.pinned ? "Unpin" : "Pin"}
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    startIcon={<DeleteOutlineOutlinedIcon />}
-                    onClick={() => onDelete(announcement.id)}
-                    sx={{ fontWeight: 800 }}
-                  >
-                    Delete
                   </Button>
 
                   {isPublished ? (
@@ -182,6 +194,7 @@ export const AnnouncementList = ({
                     <Button
                       variant="contained"
                       size="small"
+                      disabled={!canPublish}
                       startIcon={<SendOutlinedIcon />}
                       onClick={() => onPublish(announcement.id)}
                       sx={{
@@ -195,6 +208,42 @@ export const AnnouncementList = ({
                       Publish
                     </Button>
                   )}
+
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<PushPinOutlinedIcon />}
+                    onClick={() =>
+                      announcement.pinned
+                        ? onUnpin(announcement.id)
+                        : onPin(announcement.id)
+                    }
+                    sx={{ fontWeight: 800 }}
+                  >
+                    {announcement.pinned ? "Unpin" : "Pin"}
+                  </Button>
+
+                  {!announcement.resultAnnouncement && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => onMarkResult(announcement.id)}
+                      sx={{ fontWeight: 800 }}
+                    >
+                      Mark Result
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    startIcon={<DeleteOutlineOutlinedIcon />}
+                    onClick={() => onDelete(announcement.id)}
+                    sx={{ fontWeight: 800 }}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </div>
             </CardContent>
