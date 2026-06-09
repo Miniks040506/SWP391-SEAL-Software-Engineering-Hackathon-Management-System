@@ -8,6 +8,7 @@ import com.t7.seal.response.submission.*;
 import com.t7.seal.service.SubmissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -29,13 +30,26 @@ public class SubmissionController {
             "/teams/{teamId}/rounds/{roundId}/submissions"
     })
     public ResponseEntity<SubmissionResponse> submitDeliverables(
-            @PathVariable("teamId") UUID teamId,
-            @PathVariable("roundId") UUID roundId,
+            @PathVariable UUID teamId,
+            @PathVariable UUID roundId,
             @Valid @RequestBody SubmitDeliverablesRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(submissionService.submitDeliverables(teamId, roundId, request, authentication));
+    }
 
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping(value = {
+            "/teams/{teamId}/rounds/{roundId}/submission/file",
+            "/teams/{teamId}/rounds/{roundId}/submissions/files"
+    }, consumes = "multipart/form-data")
+    public ResponseEntity<SubmissionResponse> uploadSubmissionFile(
+            @PathVariable UUID teamId,
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return null;
     }
 
     @GetMapping("/teams/{teamId}/submissions")

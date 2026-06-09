@@ -78,7 +78,15 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
-    public SubmissionResponse uploadSubmissionFile(UUID teamId, UUID roundId, String linkType, String note, String label, Boolean isPrimary, Integer displayOrder, Boolean submitNow, MultipartFile file, Authentication authentication) {
+    public SubmissionResponse uploadSubmissionFile(
+            UUID teamId, UUID roundId,
+            String linkType, String note,
+            String label, Boolean isPrimary,
+            Integer displayOrder,
+            Boolean submitNow,
+            MultipartFile file,
+            Authentication authentication
+    ) {
         return null;
     }
 
