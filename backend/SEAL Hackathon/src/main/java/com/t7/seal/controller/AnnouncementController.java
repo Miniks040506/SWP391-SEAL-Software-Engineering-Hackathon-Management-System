@@ -64,8 +64,8 @@ public class AnnouncementController {
             @Valid @RequestBody UpdateAnnouncementRequest request,
             Authentication authentication
     ) {
-//        return ResponseEntity.ok(announcementService.updateAnnouncement(announcementId, request, authentication));
-        return null;
+        return ResponseEntity.ok(announcementService
+                .updateAnnouncement(announcementId, request, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
@@ -74,7 +74,7 @@ public class AnnouncementController {
             @PathVariable UUID announcementId,
             Authentication authentication
     ) {
-//        announcementService.deleteAnnouncement(announcementId, authentication);
+        announcementService.deleteAnnouncement(announcementId, authentication);
         return ResponseEntity.noContent().build();
     }
 
@@ -84,8 +84,8 @@ public class AnnouncementController {
             @PathVariable UUID announcementId,
             Authentication authentication
     ) {
-//        return ResponseEntity.ok(announcementService.publishAnnouncement(announcementId, authentication));
-        return null;
+        return ResponseEntity.ok(
+                announcementService.publishAnnouncement(announcementId, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
@@ -95,8 +95,8 @@ public class AnnouncementController {
             @Valid @RequestBody UpdateAnnouncementRequest request,
             Authentication authentication
     ) {
-//        return ResponseEntity.ok(announcementService.scheduleAnnouncement(announcementId, request, authentication));
-        return null;
+        return ResponseEntity.ok(
+                announcementService.scheduleAnnouncement(announcementId, request, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
@@ -105,8 +105,8 @@ public class AnnouncementController {
             @PathVariable UUID announcementId,
             Authentication authentication
     ) {
-//        return ResponseEntity.ok(announcementService.unpublishAnnouncement(announcementId, authentication));
-        return null;
+        return ResponseEntity.ok(
+                announcementService.unpublishAnnouncement(announcementId, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
@@ -115,8 +115,8 @@ public class AnnouncementController {
             @PathVariable UUID announcementId,
             Authentication authentication
     ) {
-//        return ResponseEntity.ok(announcementService.pinAnnouncement(announcementId, authentication));
-        return null;
+        return ResponseEntity.ok(
+                announcementService.pinAnnouncement(announcementId, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
@@ -125,8 +125,8 @@ public class AnnouncementController {
             @PathVariable UUID announcementId,
             Authentication authentication
     ) {
-//        return ResponseEntity.ok(announcementService.unpinAnnouncement(announcementId, authentication));
-        return null;
+        return ResponseEntity.ok(
+                announcementService.unpinAnnouncement(announcementId, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
@@ -135,7 +135,7 @@ public class AnnouncementController {
             @PathVariable UUID announcementId,
             Authentication authentication
     ) {
-//        return ResponseEntity.ok(announcementService.markResultAnnouncement(announcementId, authentication));
-        return null;
+        return ResponseEntity.ok(
+                announcementService.markResultAnnouncement(announcementId, authentication));
     }
 }
