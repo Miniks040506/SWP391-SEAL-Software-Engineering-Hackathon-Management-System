@@ -1,14 +1,25 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.TeamStatus;
+import com.t7.seal.entities.Round;
+import com.t7.seal.entities.Submission;
+import com.t7.seal.entities.Team;
+import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
+import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.SubmissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -18,8 +29,26 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SubmissionServiceImpl implements SubmissionService {
 
+    private final SubmissionRepository submissionRepository;
+    private final SubmissionLinkRepository submissionLinkRepository;
+    private final TeamMemberRepository teamMemberRepository;
+    private final TeamRepository teamRepository;
+    private final RoundRepository roundRepository;
+
     @Override
-    public SubmissionResponse submitDeliverables(UUID teamId, UUID roundId, SubmitDeliverablesRequest request, Authentication authentication) {
+    @Transactional
+    public SubmissionResponse submitDeliverables(
+            UUID teamId, UUID roundId,
+            SubmitDeliverablesRequest request,
+            Authentication authentication
+    ) {
+        Team team = getTeam(teamId);
+        Round round = getRound(roundId);
+
+        ensureRoundBelongToTeamEvent(team, round);
+        ensureTeamLeader(team, authentication);
+        ensureTeamCanSubmit(team);
+
         return null;
     }
 
@@ -101,5 +130,48 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Override
     public SubmissionDetailResponse getMentorSubmissionById(UUID submissionId, Authentication authentication) {
         return null;
+    }
+
+    // HELPER METHODS
+    private Team getTeam(UUID teamId) {
+        return teamRepository.findById(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found."));
+    }
+
+    private Round getRound(UUID roundId) {
+        return roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found."));
+    }
+
+    private Submission getSubmission(UUID submissionId) {
+        return submissionRepository.findDetailById(submissionId)
+                .or(() -> submissionRepository.findById(submissionId))
+                .orElseThrow(() -> new NotFoundException("Submission not found."));
+    }
+
+    private void ensureRoundBelongToTeamEvent(Team team, Round round) {
+        if (team.getTrack() == null) {
+            throw new BadRequestException("Team must register to a track before submitting deliverables.");
+        }
+
+        UUID trackEventId = team.getTrack().getEvent() == null ? null : team.getTrack().getEvent().getId();
+        UUID roundEventId = round.getEvent() == null ? null : round.getEvent().getId();
+
+        if (trackEventId == null || roundEventId == null || !trackEventId.equals(roundEventId)) {
+            throw new BadRequestException("Round does not belong to the team's event.");
+        }
+    }
+
+    private void ensureTeamCanSubmit(Team team) {
+        if (team.getStatus() != TeamStatus.REGISTERED && team.getStatus() != TeamStatus.COMPETING) {
+            throw new ConflictException("Team must be registered or competing before submitting deliverables.");
+        }
+    }
+
+    private void ensureTeamLeader(Team team, Authentication authentication) {
+        UUID userId = CurrentUser.id(authentication);
+        if (team.getLeader() == null || !team.getLeader().getId().equals(userId)) {
+            throw new UnauthorizedException("Only the team leader can manage this submission.");
+        }
     }
 }
