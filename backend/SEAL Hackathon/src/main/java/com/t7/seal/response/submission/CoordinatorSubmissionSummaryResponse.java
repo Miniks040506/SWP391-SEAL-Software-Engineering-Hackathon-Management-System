@@ -3,8 +3,10 @@ package com.t7.seal.response.submission;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record SubmissionSummaryResponse(
+public record CoordinatorSubmissionSummaryResponse(
         UUID id,
+        UUID eventId,
+        String eventName,
         UUID teamId,
         String teamName,
         UUID trackId,
@@ -15,6 +17,7 @@ public record SubmissionSummaryResponse(
         Integer submissionNumber,
         LocalDateTime submittedAt,
         LocalDateTime updatedAt,
-        long linkCount
+        long linkCount,
+        boolean late
 ) {
 }
