@@ -37,6 +37,7 @@ export function SubmissionTable({ submissions, loading }: Props) {
             <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Round / Track</th>
             <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
             <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Submitted At</th>
+            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">#</th>
             <th className="px-6 py-5 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -58,6 +59,9 @@ export function SubmissionTable({ submissions, loading }: Props) {
               </td>
               <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
                 {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : "—"}
+              </td>
+              <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
+                {sub.submissionNumber}
               </td>
               <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
                 <button
