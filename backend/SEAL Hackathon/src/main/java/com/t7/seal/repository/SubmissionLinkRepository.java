@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface SubmissionLinkRepository extends JpaRepository<SubmissionLink, UUID> {
 
+    void deleteBySubmissionId(UUID submissionId);
 }

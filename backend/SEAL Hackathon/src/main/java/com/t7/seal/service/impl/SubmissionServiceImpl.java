@@ -6,6 +6,7 @@ import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.domain.TeamStatus;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.Submission;
+import com.t7.seal.entities.SubmissionLink;
 import com.t7.seal.entities.Team;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,6 +64,17 @@ public class SubmissionServiceImpl implements SubmissionService {
                         .submissionNumber(1)
                         .submissionLinks(new ArrayList<>())
                         .build());
+
+        boolean existed = submission.getId() != null;
+        submission.setNote(blankToNull(request.note()));
+        if (existed && !submission.isDraft()) {
+            submission.increaseSubmissionNumber();
+        }
+
+        markSubmittedConsideringDeadline(submission, round);
+
+        Submission saved = submissionRepository.save(submission);
+        saved = getSubmission(saved.getId());
 
         return null;
     }
@@ -221,6 +234,16 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
     }
 
+    private void replaceLinks(Submission submission, List<SubmissionLinkRequest> links) {
+        submissionLinkRepository.deleteBySubmissionId(submission.getId());
+        List<SubmissionLink> entities = links.stream()
+                .map(link -> toLinkEntity(submission, link))
+                .toList();
+        submissionLinkRepository.saveAll(entities);
+    }
+
+
+
     private SubmissionLinkType parseLinkType(String value) {
         if (value == null || value.isBlank()) {
             throw new BadRequestException("Submission link type is required.");
@@ -230,5 +253,19 @@ public class SubmissionServiceImpl implements SubmissionService {
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Unsupported submission link type: " + value);
         }
+    }
+
+    private void markSubmittedConsideringDeadline(Submission submission, Round round) {
+        boolean late = round.getSubmissionDeadline() != null
+                && LocalDateTime.now().isAfter(round.getSubmissionDeadline());
+        if (late) {
+            submission.markLate();
+        } else {
+            submission.markSubmitted();
+        }
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }
