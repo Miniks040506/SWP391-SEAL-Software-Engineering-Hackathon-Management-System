@@ -1,7 +1,7 @@
 export const SUBMISSION_STATUSES = ["SUBMITTED", "LATE", "MISSING", "DRAFT"];
 
 export const filterTextFieldSx = {
-  "& .MuiOutlinedInput-root": { 
+  "& .MuiOutlinedInput-root": {
     borderRadius: "12px",
     backgroundColor: "#f8fafc",
     transition: "all 0.2s ease",
@@ -9,28 +9,56 @@ export const filterTextFieldSx = {
   "& .MuiInputBase-input": { color: "#0f172a" },
   "& .MuiInputLabel-root": { color: "#64748b" },
   "& .MuiOutlinedInput-notchedOutline": { borderColor: "#e2e8f0" },
-  "&:hover .MuiOutlinedInput-root": { backgroundColor: "#f1f5f9" },
-  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#cbd5e1" },
+  "&:hover .MuiOutlinedInput-root:not(.Mui-disabled)": { backgroundColor: "#f1f5f9" },
+  "&:hover .MuiOutlinedInput-root:not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": { borderColor: "#cbd5e1" },
   "& .MuiInputLabel-root.Mui-focused": { color: "#2563eb" },
-  "& .MuiOutlinedInput-root.Mui-focused": { 
+  "& .MuiOutlinedInput-root.Mui-focused": {
     backgroundColor: "#ffffff",
-    boxShadow: "0 4px 12px -2px rgba(0, 0, 0, 0.05)"
+    boxShadow: "0 4px 12px -2px rgba(0, 0, 0, 0.05)",
   },
   "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
     borderColor: "#3b82f6",
-    borderWidth: "1px"
+    borderWidth: "1px",
+  },
+  "& .MuiInputBase-root.Mui-disabled": {
+    backgroundColor: "#f8fafc",
+  },
+  "& .MuiInputBase-root.Mui-disabled .MuiOutlinedInput-notchedOutline": {
+    borderColor: "#e2e8f0",
+    borderStyle: "dashed",
+  },
+  "& .MuiInputLabel-root.Mui-disabled": {
+    color: "#94a3b8",
+  },
+  "& .MuiInputBase-input.Mui-disabled": {
+    color: "#94a3b8",
+    WebkitTextFillColor: "#94a3b8",
   },
   ".dark & .MuiOutlinedInput-root": { backgroundColor: "#1e293b" },
   ".dark & .MuiInputBase-input": { color: "#f8fafc" },
   ".dark & .MuiInputLabel-root": { color: "#94a3b8" },
   ".dark & .MuiOutlinedInput-notchedOutline": { borderColor: "#334155" },
-  ".dark &:hover .MuiOutlinedInput-root": { backgroundColor: "#0f172a" },
-  ".dark &:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#475569" },
+  ".dark &:hover .MuiOutlinedInput-root:not(.Mui-disabled)": { backgroundColor: "#0f172a" },
+  ".dark &:hover .MuiOutlinedInput-root:not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": { borderColor: "#475569" },
   ".dark & .MuiInputLabel-root.Mui-focused": { color: "#60a5fa" },
   ".dark & .MuiOutlinedInput-root.Mui-focused": { backgroundColor: "#0f172a" },
   ".dark & .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
     borderColor: "#3b82f6",
-    borderWidth: "1px"
+    borderWidth: "1px",
+  },
+  ".dark & .MuiInputBase-root.Mui-disabled": {
+    backgroundColor: "#1e293b",
+  },
+  ".dark & .MuiInputBase-root.Mui-disabled .MuiOutlinedInput-notchedOutline": {
+    borderColor: "#475569",
+    borderStyle: "dashed",
+  },
+  ".dark & .MuiInputLabel-root.Mui-disabled": {
+    color: "#64748b",
+  },
+  ".dark & .MuiInputBase-input.Mui-disabled": {
+    color: "#64748b",
+    WebkitTextFillColor: "#64748b",
   },
 };
 
@@ -40,26 +68,54 @@ export const filterSelectSx = {
   color: "#0f172a",
   transition: "all 0.2s ease",
   "& .MuiOutlinedInput-notchedOutline": { borderColor: "#e2e8f0" },
-  "&:hover": { backgroundColor: "#f1f5f9" },
-  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#cbd5e1" },
-  "&.Mui-focused": { 
+  "&:hover:not(.Mui-disabled)": { backgroundColor: "#f1f5f9" },
+  "&:hover:not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": { borderColor: "#cbd5e1" },
+  "&.Mui-focused": {
     backgroundColor: "#ffffff",
-    boxShadow: "0 4px 12px -2px rgba(0, 0, 0, 0.05)"
+    boxShadow: "0 4px 12px -2px rgba(0, 0, 0, 0.05)",
   },
-  "&.Mui-focused .MuiOutlinedInput-notchedOutline": { 
+  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
     borderColor: "#3b82f6",
-    borderWidth: "1px"
+    borderWidth: "1px",
   },
-  ".dark &": { 
+  "&.Mui-disabled": {
+    backgroundColor: "#f8fafc",
+  },
+  "&.Mui-disabled .MuiOutlinedInput-notchedOutline": {
+    borderColor: "#e2e8f0",
+    borderStyle: "dashed",
+  },
+  "&.Mui-disabled .MuiSelect-select": {
+    color: "#94a3b8",
+    WebkitTextFillColor: "#94a3b8",
+  },
+  "&.Mui-disabled .MuiSvgIcon-root": {
+    color: "#cbd5e1",
+  },
+  ".dark &": {
     backgroundColor: "#1e293b",
-    color: "#f8fafc" 
+    color: "#f8fafc",
   },
   ".dark & .MuiOutlinedInput-notchedOutline": { borderColor: "#334155" },
-  ".dark &:hover": { backgroundColor: "#0f172a" },
-  ".dark &:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#475569" },
+  ".dark &:hover:not(.Mui-disabled)": { backgroundColor: "#0f172a" },
+  ".dark &:hover:not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": { borderColor: "#475569" },
   ".dark &.Mui-focused": { backgroundColor: "#0f172a" },
   ".dark &.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#3b82f6" },
   ".dark & .MuiSvgIcon-root": { color: "#cbd5e1" },
+  ".dark &.Mui-disabled": {
+    backgroundColor: "#1e293b",
+  },
+  ".dark &.Mui-disabled .MuiOutlinedInput-notchedOutline": {
+    borderColor: "#475569",
+    borderStyle: "dashed",
+  },
+  ".dark &.Mui-disabled .MuiSelect-select": {
+    color: "#64748b",
+    WebkitTextFillColor: "#64748b",
+  },
+  ".dark &.Mui-disabled .MuiSvgIcon-root": {
+    color: "#475569",
+  },
 };
 
 export const menuPropsAll = {
@@ -70,7 +126,7 @@ export const menuPropsAll = {
       borderRadius: "12px",
       border: "1px solid #e2e8f0",
       boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
-      marginTop: "8px"
+      marginTop: "8px",
     },
     ".dark & .MuiPaper-root": {
       bgcolor: "#1e293b",
@@ -90,7 +146,7 @@ export const paginationSx = {
     minWidth: "36px",
     height: "36px",
     margin: "0 4px",
-    transition: "all 0.2s ease"
+    transition: "all 0.2s ease",
   },
   "& .MuiPaginationItem-root:hover": {
     backgroundColor: "#f1f5f9",
