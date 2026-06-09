@@ -1,4 +1,4 @@
-import { TextField, InputAdornment, Select, MenuItem, FormControl } from "@mui/material";
+import { TextField, InputAdornment, Select, MenuItem, FormControl, type SelectChangeEvent } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import type { CoordinatorSubmissionListParams } from "@/types/submission.types";
 import { SUBMISSION_STATUSES, filterTextFieldSx, filterSelectSx, menuPropsAll } from "../schemas/submissions.schema";
@@ -14,7 +14,7 @@ export function SubmissionFilterBar({ filters, onChange }: Props) {
     onChange({ ...filters, [name]: value || undefined, page: 1 });
   };
 
-  const handleStatusChange = (e: any) => {
+  const handleStatusChange = (e: SelectChangeEvent<string>) => {
     onChange({ ...filters, status: e.target.value || undefined, page: 1 });
   };
 

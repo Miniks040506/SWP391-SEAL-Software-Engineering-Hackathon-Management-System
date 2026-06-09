@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Pagination } from "@mui/material";
-import { useCoordinatorSubmissionsQuery } from "../hooks/useCoordinatorSubmissionMutations";
+import { useCoordinatorSubmissionsQuery } from "../hooks/useCoordinatorSubmissionQueries";
 import { SubmissionFilterBar } from "../components/SubmissionFilterBar";
 import { SubmissionTable } from "../components/SubmissionTable";
 import { SubmissionDetailDrawer } from "../components/SubmissionDetailDrawer";
@@ -25,9 +25,9 @@ export function CoordinatorSubmissionsPage() {
     navigate("/coordinator/submissions");
   };
 
-  const items = (data as any)?.content || (data as any)?.items || (data as any)?.data || [];
-  const total = (data as any)?.totalElements ?? 0;
-  const totalPages = (data as any)?.totalPages ?? 0;
+  const items = data?.content ?? [];
+  const total = data?.totalElements ?? 0;
+  const totalPages = data?.totalPages ?? 0;
 
   return (
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
