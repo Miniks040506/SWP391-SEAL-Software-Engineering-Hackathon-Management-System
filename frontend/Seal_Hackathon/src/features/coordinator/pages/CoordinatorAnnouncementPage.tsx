@@ -16,11 +16,14 @@ export const CoordinatorAnnouncementPage = () => {
 
   const {
     events,
+    tracks,
+
     selectedEventId,
     setSelectedEventId,
 
     announcements,
     announcementsQuery,
+    eventsQuery,
 
     isDialogOpen,
     editingAnnouncement,
@@ -48,8 +51,8 @@ export const CoordinatorAnnouncementPage = () => {
           </h1>
 
           <p className="mt-2 max-w-3xl text-sm text-gray-500">
-            Create, edit, publish, pin, and manage event announcements. This
-            version follows the current backend announcement API.
+            Create, edit, schedule, publish, pin, and manage event
+            announcements.
           </p>
         </div>
 
@@ -57,6 +60,7 @@ export const CoordinatorAnnouncementPage = () => {
           variant="contained"
           startIcon={<AddOutlinedIcon />}
           onClick={openCreateDialog}
+          disabled={!selectedEventId}
           sx={{
             bgcolor: "#2563eb",
             fontWeight: 800,
@@ -65,7 +69,7 @@ export const CoordinatorAnnouncementPage = () => {
             },
           }}
         >
-          Create
+          Create Announcement
         </Button>
       </section>
 
@@ -77,6 +81,7 @@ export const CoordinatorAnnouncementPage = () => {
           onChange={(event) => setSelectedEventId(event.target.value)}
           fullWidth
           size="small"
+          disabled={eventsQuery.isLoading}
         >
           {events.map((event) => (
             <MenuItem key={event.id} value={event.id}>
@@ -102,6 +107,7 @@ export const CoordinatorAnnouncementPage = () => {
       <AnnouncementFormDialog
         open={isDialogOpen}
         events={events}
+        tracks={tracks}
         selectedEventId={selectedEventId}
         initialAnnouncement={editingAnnouncement}
         isSubmitting={isSubmitting}

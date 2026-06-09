@@ -9,13 +9,18 @@ type AnnouncementStatusChipProps = {
 export const AnnouncementStatusChip = ({
   announcement,
 }: AnnouncementStatusChipProps) => {
-  const isPublished = Boolean(announcement.publishedAt);
+  const colorMap = {
+    DRAFT: "default",
+    SCHEDULED: "warning",
+    PUBLISHED: "success",
+    CANCELLED: "error",
+  } as const;
 
   return (
     <Chip
       size="small"
-      label={isPublished ? "Published" : "Draft"}
-      color={isPublished ? "success" : "default"}
+      label={announcement.status}
+      color={colorMap[announcement.status]}
       sx={{ fontWeight: 800 }}
     />
   );
