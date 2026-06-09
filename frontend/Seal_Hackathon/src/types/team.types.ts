@@ -84,7 +84,7 @@ export type TeamInvitationResponse = {
   expiresAt: ISODateTime;
 };
 
-// add
+// Appended
 
 export type CoordinatorTeamListParams = {
   eventId?: UUID;
@@ -94,7 +94,7 @@ export type CoordinatorTeamListParams = {
   page?: number;
   size?: number;
 };
- 
+
 export type CoordinatorTeamSummary = {
   id: UUID;
   name: string;
