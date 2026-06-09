@@ -137,8 +137,8 @@ public class User {
     )
     private Judge judge;
 
-    @OneToOne(mappedBy = "user")
-    private TeamMember teamMemberships;
+    @OneToMany(mappedBy = "user")
+    private List<TeamMember> teamMemberships;
 
     @OneToMany(mappedBy = "leader")
     private List<Team> ledTeams;
