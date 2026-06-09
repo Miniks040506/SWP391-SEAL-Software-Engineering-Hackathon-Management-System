@@ -25,4 +25,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, UUID> {
             WHERE s.id = :submissionId
             """)
     Optional<Submission> findDetailById(@Param("submissionId") UUID submissionId);
+
+    List<Submission> findByTeamIdOrderByRoundOrderIndexAsc(UUID teamId);
 }

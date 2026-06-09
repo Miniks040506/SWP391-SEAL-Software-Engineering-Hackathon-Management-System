@@ -1,10 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.*;
-import com.t7.seal.entities.Round;
-import com.t7.seal.entities.Submission;
-import com.t7.seal.entities.SubmissionLink;
-import com.t7.seal.entities.Team;
+import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
@@ -37,6 +34,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
     private final RoundRepository roundRepository;
+    private final MentorAssignmentRepository mentorAssignmentRepository;
     private final RepositoryMetadataService repositoryMetadataService;
 
     @Override
@@ -149,14 +147,30 @@ public class SubmissionServiceImpl implements SubmissionService {
         return List.of();
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<SubmissionSummaryResponse> getMentorTeamSubmissions(UUID teamId, Authentication authentication) {
-        return List.of();
+    public List<SubmissionSummaryResponse> getMentorTeamSubmissions(
+            UUID teamId,
+            Authentication authentication
+    ) {
+        Team team = getTeam(teamId);
+
+        ensureMentorAssignToTeam(team, authentication);
+
+        return submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(teamId)
+                .stream()
+                .map(this::toSubmissionSummaryResponse)
+                .toList();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public SubmissionDetailResponse getMentorSubmissionById(UUID submissionId, Authentication authentication) {
-        return null;
+        Submission submission = getSubmission(submissionId);
+
+        ensureMentorAssignToTeam(submission.getTeam(), authentication);
+
+        return toSubmissionDetailResponse(submission);
     }
 
     // HELPER METHODS
@@ -209,6 +223,23 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (team.getLeader() == null || !team.getLeader().getId().equals(userId)) {
             throw new UnauthorizedException("Only the team leader can manage this submission.");
         }
+    }
+
+    private void ensureMentorAssignToTeam(Team team, Authentication authentication) {
+        UUID currentUserId = CurrentUser.id(authentication);
+
+        if (CurrentUser.isAdminOrCoordinator(authentication)) {
+            return;
+        }
+
+        if (!isMentorAssignToTeam(team, CurrentUser.id(authentication))) {
+            throw new UnauthorizedException("Mentor is not assigned to this team's track.");
+        }
+    }
+
+    private boolean isMentorAssignToTeam(Team team, UUID userId) {
+        return team.getTrack() != null && mentorAssignmentRepository
+                .existsByTrackIdAndUserId(team.getTrack().getId(), userId);
     }
 
     private void validateRequiredLinks(Team team, List<SubmissionLinkRequest> links) {
@@ -310,6 +341,55 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getSubmissionNumber(),
                 submission.getSubmittedAt(),
                 submission.getUpdatedAt(),
+                linkResponses(submission.getId())
+        );
+    }
+
+    private SubmissionSummaryResponse toSubmissionSummaryResponse(Submission submission) {
+        List<SubmissionLink> links = submissionLinkRepository.findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(submission.getId());
+
+        return new SubmissionSummaryResponse(
+                submission.getId(),
+                submission.getTeam().getId(),
+                submission.getTeam().getName(),
+                submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getId(),
+                submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getName(),
+                submission.getRound().getId(),
+                submission.getRound().getName(),
+                submission.getStatus().name(),
+                submission.getSubmissionNumber(),
+                submission.getSubmittedAt(),
+                submission.getUpdatedAt(),
+                links.size()
+        );
+    }
+
+    private SubmissionDetailResponse toSubmissionDetailResponse(Submission submission) {
+        Round round = submission.getRound();
+        Team team = submission.getTeam();
+        HackathonEvent event = round.getEvent();
+        Track track = team.getTrack();
+        User leader = team.getLeader();
+
+        return new SubmissionDetailResponse(
+                submission.getId(),
+                event == null ? null : event.getId(),
+                event == null ? null : event.getName(),
+                team.getId(),
+                team.getName(),
+                leader == null ? null : leader.getId(),
+                leader == null ? null : leader.getFullName(),
+                track == null ? null : track.getId(),
+                track == null ? null : track.getName(),
+                round.getId(),
+                round.getName(),
+                submission.getNote(),
+                submission.getStatus().name(),
+                submission.getSubmissionNumber(),
+                submission.getSubmittedAt(),
+                submission.getUpdatedAt(),
+                round.isSubmissionLocked(),
+                round.getSubmissionLockedAt(),
                 linkResponses(submission.getId())
         );
     }
