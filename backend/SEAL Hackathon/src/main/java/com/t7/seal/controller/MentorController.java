@@ -7,6 +7,7 @@ import com.t7.seal.response.mentor.MentorFeedbackResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,43 +15,71 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(ApiPaths.API_V1 + "/mentor-feedback")
+@RequestMapping(ApiPaths.API_V1)
 //none of the mentors have records attribute for now, check and add laters
 public class MentorController {
-    @PostMapping("/teams/{teamId}")
+
+    @PostMapping({
+            "/mentor/teams/{teamId}/feedback",
+            "/mentor-feedback/teams/{teamId}"
+    })
     public ResponseEntity<MentorFeedbackResponse> createFeedback(
             @PathVariable("teamId") UUID teamId,
-            @Valid @RequestBody CreateMentorFeedbackRequest request
+            @Valid @RequestBody CreateMentorFeedbackRequest request,
+            Authentication authentication
     ) {
         return null;
     }
 
     //request a query beside path variable
-    @GetMapping("/teams/{teamId}")
+    @GetMapping({
+            "/mentor/teams/{teamId}/feedback",
+            "/mentor-feedback/teams/{teamId}"
+    })
+    public ResponseEntity<List<MentorFeedbackResponse>> getMentorTeamFeedback(
+            @PathVariable("teamId") UUID teamId,
+            Authentication authentication
+    ) {
+        return null;
+    }
+
+    @GetMapping("/teams/{teamId}/feedback")
     public ResponseEntity<List<MentorFeedbackResponse>> getTeamFeedback(
-            @PathVariable("teamId") UUID teamId
+            @PathVariable("teamId") UUID teamId,
+            Authentication authentication
     ) {
         return null;
     }
 
-    @GetMapping("/{feedbackId}")
+    @GetMapping("/mentor-feedback/{feedbackId}")
     public ResponseEntity<MentorFeedbackResponse> getFeedbackById(
-            @PathVariable("feedbackId") UUID feedbackId
+            @PathVariable("feedbackId") UUID feedbackId,
+            Authentication authentication
     ) {
         return null;
     }
 
-    @PatchMapping("/{feedbackId}")
+    @PatchMapping("/mentor-feedback/{feedbackId}")
     public ResponseEntity<MentorFeedbackResponse> updateFeedback(
             @PathVariable("feedbackId") UUID feedbackId,
-            @Valid @RequestBody UpdateMentorFeedbackRequest request
+            @Valid @RequestBody UpdateMentorFeedbackRequest request,
+            Authentication authentication
     ) {
         return null;
     }
 
-    @DeleteMapping("/{feedbackId}")
+    @DeleteMapping("/mentor-feedback/{feedbackId}")
     public ResponseEntity<Void> deleteFeedback(
-            @PathVariable("feedbackId") UUID feedbackId
+            @PathVariable("feedbackId") UUID feedbackId,
+            Authentication authentication
+    ) {
+        return null;
+    }
+
+    @PostMapping("/mentor-feedback/{feedbackId}/publish")
+    public ResponseEntity<MentorFeedbackResponse> publishFeedback(
+            @PathVariable("feedbackId") UUID feedbackId,
+            Authentication authentication
     ) {
         return null;
     }

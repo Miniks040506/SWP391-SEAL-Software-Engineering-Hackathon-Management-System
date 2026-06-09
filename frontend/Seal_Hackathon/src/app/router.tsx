@@ -46,6 +46,8 @@ import { EventCriteriaViewPage } from "@/features/criteria/pages/EventCriteriaVi
 import { ScoringCriteriaManagementPage } from "@/features/criteria/pages/ScoringCriteriaManagementPage";
 import { CoordinatorSubmissionsPage } from "@/features/submissions/pages/CoordinatorSubmissionsPage";
 import { CoordinatorTeamsPage } from "@/features/teams";
+import { ParticipantSubmissionsPage } from "@/features/submissions/pages/ParticipantSubmissionsPage";
+import { SubmissionFormPage } from "@/features/submissions/pages/SubmissionFormPage";
 
 export const router = createBrowserRouter([
   {
@@ -159,6 +161,15 @@ export const router = createBrowserRouter([
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
       { path: "schedule", element: <NotFoundPage /> },
+    ],
+  },
+
+  {
+    path: "/participant",
+    element: <LoggedinLayout sectionRole="COORDINATOR" />, 
+    children: [
+      { path: "teams/:teamId/submissions", element: <ParticipantSubmissionsPage /> },
+      { path: "teams/:teamId/rounds/:roundId/submission", element: <SubmissionFormPage /> },
     ],
   },
 

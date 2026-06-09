@@ -5,9 +5,12 @@ import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.response.submission.*;
+import com.t7.seal.service.SubmissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,11 +20,19 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
 public class SubmissionController {
-    @PostMapping("/teams/{teamId}/rounds/{roundId}/submission")
+
+    private final SubmissionService submissionService;
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping({
+            "/teams/{teamId}/rounds/{roundId}/submission",
+            "/teams/{teamId}/rounds/{roundId}/submissions"
+    })
     public ResponseEntity<SubmissionResponse> submitDeliverables(
             @PathVariable("teamId") UUID teamId,
             @PathVariable("roundId") UUID roundId,
-            @Valid @RequestBody SubmitDeliverablesRequest request
+            @Valid @RequestBody SubmitDeliverablesRequest request,
+            Authentication authentication
     ) {
         return null;
 
@@ -77,5 +88,23 @@ public class SubmissionController {
             @PathVariable("submissionId") UUID submissionId
     ) {
         return null;
+    }
+
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORIDINATOR')")
+    @GetMapping("/mentor/teams/{teamId}/submissions")
+    public ResponseEntity<List<SubmissionSummaryResponse>> getMentorTeamSubmissions(
+            @PathVariable("teamId") UUID teamId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.getMentorTeamSubmissions(teamId, authentication));
+    }
+
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORIDINATOR')")
+    @GetMapping("/mentor/submissions/{submissionId}")
+    public ResponseEntity<SubmissionDetailResponse> getMentorSubmissionById(
+            @PathVariable("submissionId") UUID submissionId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.getMentorSubmissionById(submissionId, authentication));
     }
 }
