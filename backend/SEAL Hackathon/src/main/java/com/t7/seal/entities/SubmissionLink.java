@@ -1,6 +1,7 @@
 package com.t7.seal.entities;
 
 import com.t7.seal.domain.SubmissionLinkType;
+import com.t7.seal.domain.SubmissionStorageProvider;
 import com.t7.seal.infrastructure.RepositoryMetadata;
 import jakarta.persistence.*;
 import lombok.*;
@@ -57,6 +58,23 @@ public class SubmissionLink {
     @Column(name = "label", length = 200)
     private String label;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "storage_provider", nullable = false, length = 30)
+    @Builder.Default
+    private SubmissionStorageProvider storageProvider = SubmissionStorageProvider.EXTERNAL_URL;
+
+    @Column(name = "object_key", length = 1000)
+    private String objectKey;
+
+    @Column(name = "original_file_name", length = 300)
+    private String originalFileName;
+
+    @Column(name = "content_type", length = 150)
+    private String contentType;
+
+    @Column(name = "file_size_bytes")
+    private Long fileSizeBytes;
+
     /**
      * Repository metadata extracted from Git APIs.
      * This field should only be used when linkType is repository.
@@ -66,7 +84,7 @@ public class SubmissionLink {
     private RepositoryMetadata repoMetadata;
 
 
-     // Marks this link as the main link within the same link type.
+    // Marks this link as the main link within the same link type.
     @Column(name = "is_primary", nullable = false)
     @Builder.Default
     private Boolean isPrimary = false;
@@ -112,6 +130,10 @@ public class SubmissionLink {
 
         if (displayOrder == null) {
             displayOrder = 0;
+        }
+
+        if (storageProvider == null) {
+            storageProvider = SubmissionStorageProvider.EXTERNAL_URL;
         }
     }
 
@@ -163,6 +185,18 @@ public class SubmissionLink {
 
     public boolean isPrimaryLink() {
         return Boolean.TRUE.equals(isPrimary);
+    }
+
+    public boolean isUploadedFile() {
+        return storageProvider == SubmissionStorageProvider.AWS_S3;
+    }
+
+    public boolean isGoogleDriveLink() {
+        return storageProvider == SubmissionStorageProvider.GOOGLE_DRIVE;
+    }
+
+    public boolean isExternalUrl() {
+        return storageProvider == SubmissionStorageProvider.EXTERNAL_URL;
     }
 
     /**

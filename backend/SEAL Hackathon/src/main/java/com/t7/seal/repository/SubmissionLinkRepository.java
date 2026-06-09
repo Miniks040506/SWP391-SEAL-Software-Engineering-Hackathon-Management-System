@@ -10,5 +10,7 @@ import java.util.UUID;
 @Repository
 public interface SubmissionLinkRepository extends JpaRepository<SubmissionLink, UUID> {
 
+    List<SubmissionLink> findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(UUID submissionId);
+
     void deleteBySubmissionId(UUID submissionId);
 }

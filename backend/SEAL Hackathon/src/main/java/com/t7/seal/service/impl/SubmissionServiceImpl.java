@@ -1,9 +1,6 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.domain.RoundStatus;
-import com.t7.seal.domain.SubmissionLinkType;
-import com.t7.seal.domain.SubmissionStatus;
-import com.t7.seal.domain.TeamStatus;
+import com.t7.seal.domain.*;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.Submission;
 import com.t7.seal.entities.SubmissionLink;
@@ -19,6 +16,7 @@ import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import com.t7.seal.security.guard.CurrentUser;
+import com.t7.seal.service.RepositoryMetadataService;
 import com.t7.seal.service.SubmissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -39,6 +37,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
     private final RoundRepository roundRepository;
+    private final RepositoryMetadataService repositoryMetadataService;
 
     @Override
     @Transactional
@@ -74,9 +73,10 @@ public class SubmissionServiceImpl implements SubmissionService {
         markSubmittedConsideringDeadline(submission, round);
 
         Submission saved = submissionRepository.save(submission);
+        replaceLinks(saved, request.links());
         saved = getSubmission(saved.getId());
 
-        return null;
+        return toSubmissionResponse(saved);
     }
 
     @Override
@@ -242,6 +242,37 @@ public class SubmissionServiceImpl implements SubmissionService {
         submissionLinkRepository.saveAll(entities);
     }
 
+    private SubmissionLink toLinkEntity(Submission submission, SubmissionLinkRequest request) {
+        SubmissionLinkType parsedType = parseLinkType(request.linkType());
+        String trimmedUrl = request.url().trim();
+        return SubmissionLink.builder()
+                .submission(submission)
+                .linkType(parsedType)
+                .url(trimmedUrl)
+                .label(blankToNull(request.label()))
+                .storageProvider(detectStorageProvider(parsedType, trimmedUrl))
+                .repoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, trimmedUrl))
+                .isPrimary(Boolean.TRUE.equals(request.isPrimary()))
+                .displayOrder(request.displayOrder() == null ? 0 : request.displayOrder())
+                .build();
+    }
+
+    private SubmissionStorageProvider detectStorageProvider(SubmissionLinkType linkType, String url) {
+        if (url == null) {
+            return SubmissionStorageProvider.EXTERNAL_URL;
+        }
+        String lower = url.toLowerCase(Locale.ROOT);
+        if (lower.contains("drive.google.com") || lower.contains("docs.google.com")) {
+            return SubmissionStorageProvider.GOOGLE_DRIVE;
+        }
+        if (linkType == SubmissionLinkType.REPOSITORY && lower.contains("github.com")) {
+            return SubmissionStorageProvider.GITHUB;
+        }
+        if (linkType == SubmissionLinkType.REPOSITORY && lower.contains("gitlab")) {
+            return SubmissionStorageProvider.GITLAB;
+        }
+        return SubmissionStorageProvider.EXTERNAL_URL;
+    }
 
 
     private SubmissionLinkType parseLinkType(String value) {
@@ -263,6 +294,50 @@ public class SubmissionServiceImpl implements SubmissionService {
         } else {
             submission.markSubmitted();
         }
+    }
+
+    private SubmissionResponse toSubmissionResponse(Submission submission) {
+        return new SubmissionResponse(
+                submission.getId(),
+                submission.getTeam().getId(),
+                submission.getTeam().getName(),
+                submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getId(),
+                submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getName(),
+                submission.getRound().getId(),
+                submission.getRound().getName(),
+                submission.getNote(),
+                submission.getStatus().name(),
+                submission.getSubmissionNumber(),
+                submission.getSubmittedAt(),
+                submission.getUpdatedAt(),
+                linkResponses(submission.getId())
+        );
+    }
+
+    private List<SubmissionLinkResponse> linkResponses(UUID submissionId) {
+        return submissionLinkRepository.findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(submissionId)
+                .stream()
+                .map(this::toLinkResponse)
+                .toList();
+    }
+
+    private SubmissionLinkResponse toLinkResponse(SubmissionLink link) {
+        return new SubmissionLinkResponse(
+                link.getId(),
+                link.getLinkType().name(),
+                link.getUrl(),
+                link.getDisplayLabel(),
+                link.getStorageProvider() == null ? SubmissionStorageProvider.EXTERNAL_URL.name() : link.getStorageProvider().name(),
+                link.getObjectKey(),
+                link.getOriginalFileName(),
+                link.getContentType(),
+                link.getFileSizeBytes(),
+                link.getRepoMetadata(),
+                link.getIsPrimary(),
+                link.getDisplayOrder(),
+                link.getCreatedAt(),
+                link.getUpdatedAt()
+        );
     }
 
     private String blankToNull(String value) {
