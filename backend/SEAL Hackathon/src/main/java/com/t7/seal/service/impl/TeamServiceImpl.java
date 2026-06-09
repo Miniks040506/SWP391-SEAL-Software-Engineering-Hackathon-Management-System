@@ -1,17 +1,22 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.LeftReason;
 import com.t7.seal.domain.MemberRole;
 import com.t7.seal.domain.TeamStatus;
 import com.t7.seal.entities.Team;
 import com.t7.seal.entities.TeamMember;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.StudentProfileRepository;
 import com.t7.seal.repository.TeamMemberRepository;
 import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.request.team.CreateTeamRequest;
+import com.t7.seal.request.team.ReasonRequest;
+import com.t7.seal.request.team.TransferLeaderRequest;
+import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.response.team.TeamDetailResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
 import com.t7.seal.response.team.TeamResponse;
@@ -112,6 +117,116 @@ public class TeamServiceImpl implements TeamService {
         );
     }
 
+    @Transactional
+    @Override
+    public TeamResponse updateTeam(UUID teamId, UpdateTeamRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        ensureTeamLeader(team, authentication);
+
+        ensureTeamEditable(team);
+
+        if (request.name() != null || !request.name().isBlank()) {
+            team.setName(request.name().trim());
+        }
+
+        if (request.projectTitle() != null) {
+            team.setProjectTitle(blankToNull(request.projectTitle()));
+        }
+
+        if (request.description() != null) {
+            team.setDescription(blankToNull(request.description()));
+        }
+
+        team.setUpdatedAt(LocalDateTime.now());
+
+        return toTeamResponse(teamRepository.save(team));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<TeamMemberResponse> getTeamMembers(UUID teamId, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        ensureTeamMemberForCoordinator(team, authentication);
+
+        List<TeamMember> members = activeMembers(team.getId());
+
+        return members.stream().map(this::toTeamMemberResponse).toList();
+    }
+
+    @Transactional
+    @Override
+    public void removeTeamMember(UUID teamId, UUID memberId, ReasonRequest reason, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        ensureTeamLeader(team, authentication);
+        ensureTeamEditable(team);
+
+        TeamMember member = teamMemberRepository.findById(memberId)
+                .orElseThrow(() -> new NotFoundException("Team member not found."));
+
+        if (!member.getTeam().getId().equals(team.getId())) {
+            throw new BadRequestException("Member does not belong to this team.");
+        }
+
+        if (member.isLeader()) {
+            throw new BadRequestException("Leader cannot be removed from the team.");
+        }
+
+        if (!member.isActive()) {
+            throw new BadRequestException("Member is not active");
+        }
+
+        member.leave(LocalDateTime.now(), LeftReason.KICKED_BY_LEADER);
+        team.decrementMemberCount();
+        team.setUpdatedAt(LocalDateTime.now());
+    }
+
+    @Transactional
+    @Override
+    public TeamResponse transferLeader(UUID teamId, TransferLeaderRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        ensureTeamLeader(team, authentication);
+        ensureTeamEditable(team);
+
+        TeamMember oldLeader = teamMemberRepository
+                .findByTeamIdAndUserIdAndLeftAtIsNull(teamId, team.getLeader().getId())
+                .orElseThrow(() -> new ConflictException("Current leader membership was not found."));
+
+        TeamMember newLeader = teamMemberRepository
+                .findByTeamIdAndUserIdAndLeftAtIsNull(teamId, request.newLeaderUserId())
+                .orElseThrow(() -> new BadRequestException("New leader must be an active member."));
+
+        oldLeader.setRole(MemberRole.MEMBER);
+        newLeader.setRole(MemberRole.LEADER);
+        team.setUpdatedAt(LocalDateTime.now());
+        team.setLeader(newLeader.getUser());
+
+        return toTeamResponse(teamRepository.save(team));
+    }
+
+    @Override
+    public void leaveTeam(UUID teamId, ReasonRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        UUID currentUserId = CurrentUser.id(authentication);
+
+        TeamMember member = teamMemberRepository.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("You are not an active member of this team."));
+
+        ensureTeamEditable(team);
+
+        if (member.isLeader()) {
+            throw new BadRequestException("Transfer leadership to another member before leaving the team.");
+        }
+
+        member.leave(LocalDateTime.now(), LeftReason.SELF_LEFT);
+        team.decrementMemberCount();
+        team.setUpdatedAt(LocalDateTime.now());
+    }
+
     //HELPERS
     private void ensureActiveStudent(User user) {
         if (!user.isStudent()) {
@@ -207,5 +322,19 @@ public class TeamServiceImpl implements TeamService {
 
     private List<TeamMember> activeMembers(UUID teamId) {
         return teamMemberRepository.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAsc(teamId);
+    }
+
+    private void ensureTeamLeader(Team team, Authentication authentication) {
+        UUID userId = CurrentUser.id(authentication);
+
+        if (team.getLeader() == null || !team.getLeader().getId().equals(userId)) {
+            throw new UnauthorizedException("You don not have permission to access this team.");
+        }
+    }
+
+    private void ensureTeamEditable(Team team) {
+        if (team.getStatus() != TeamStatus.FORMING) {
+            throw new BadRequestException("Team is not in forming status.");
+        }
     }
 }
