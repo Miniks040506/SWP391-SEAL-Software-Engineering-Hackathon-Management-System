@@ -2,6 +2,7 @@ package com.t7.seal.service;
 
 import com.t7.seal.request.team.CreateTeamRequest;
 import com.t7.seal.request.team.ReasonRequest;
+import com.t7.seal.request.team.TransferLeaderRequest;
 import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.response.team.TeamDetailResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
@@ -24,4 +25,6 @@ public interface TeamService {
     List<TeamMemberResponse> getTeamMembers(UUID teamId, Authentication authentication);
 
     void removeTeamMember(UUID teamId, UUID memberId, ReasonRequest reason, Authentication authentication);
+
+    TeamResponse transferLeader(UUID teamId, TransferLeaderRequest request, Authentication authentication);
 }

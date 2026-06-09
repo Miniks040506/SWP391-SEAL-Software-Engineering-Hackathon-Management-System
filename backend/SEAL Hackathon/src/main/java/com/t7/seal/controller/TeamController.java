@@ -114,9 +114,10 @@ public class TeamController {
     @PostMapping("/{teamId}/transfer-leader")
     public ResponseEntity<TeamResponse> transferLeader(
             @PathVariable UUID teamId,
-            @Valid @RequestBody TransferLeaderRequest request
+            @Valid @RequestBody TransferLeaderRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(teamService.transferLeader(teamId, request, authentication));
     }
 
     //8

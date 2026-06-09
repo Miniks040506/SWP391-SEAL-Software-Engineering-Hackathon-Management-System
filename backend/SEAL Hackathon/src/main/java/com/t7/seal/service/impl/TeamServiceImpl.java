@@ -7,6 +7,7 @@ import com.t7.seal.entities.Team;
 import com.t7.seal.entities.TeamMember;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.StudentProfileRepository;
@@ -14,6 +15,7 @@ import com.t7.seal.repository.TeamMemberRepository;
 import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.request.team.CreateTeamRequest;
 import com.t7.seal.request.team.ReasonRequest;
+import com.t7.seal.request.team.TransferLeaderRequest;
 import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.response.team.TeamDetailResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
@@ -179,6 +181,30 @@ public class TeamServiceImpl implements TeamService {
         member.leave(LocalDateTime.now(), LeftReason.KICKED_BY_LEADER);
         team.decrementMemberCount();
         team.setUpdatedAt(LocalDateTime.now());
+    }
+
+    @Transactional
+    @Override
+    public TeamResponse transferLeader(UUID teamId, TransferLeaderRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+
+        ensureTeamLeader(team, authentication);
+        ensureTeamEditable(team);
+
+        TeamMember oldLeader = teamMemberRepository
+                .findByTeamIdAndUserIdAndLeftAtIsNull(teamId, team.getLeader().getId())
+                .orElseThrow(() -> new ConflictException("Current leader membership was not found."));
+
+        TeamMember newLeader = teamMemberRepository
+                .findByTeamIdAndUserIdAndLeftAtIsNull(teamId, request.newLeaderUserId())
+                .orElseThrow(() -> new BadRequestException("New leader must be an active member."));
+
+        oldLeader.setRole(MemberRole.MEMBER);
+        newLeader.setRole(MemberRole.LEADER);
+        team.setUpdatedAt(LocalDateTime.now());
+        team.setLeader(newLeader.getUser());
+
+        return toTeamResponse(teamRepository.save(team));
     }
 
     //HELPERS
