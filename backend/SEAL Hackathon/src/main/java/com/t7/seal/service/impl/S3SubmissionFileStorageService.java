@@ -11,8 +11,10 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.text.Normalizer;
@@ -73,12 +75,28 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
         String objectKey = buildObjectKey(eventId, teamId, roundId, originalFilename);
 
         try (S3Client s3Client = buildClient()) {
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(objectKey)
+                    .contentType(file.getContentType())
+                    .contentLength(file.getSize())
+                    .build();
 
-        } catch(IOException e) {
+            s3Client.putObject(request, RequestBody.fromInputStream(
+                    file.getInputStream(),
+                    file.getSize()
+            ));
+        } catch (IOException e) {
             throw new BadRequestException("Cannot read uploaded submission file.");
         }
 
-        return null;
+        return new UploadedSubmissionFile(
+                buildFileUrl(objectKey),
+                objectKey,
+                originalFilename,
+                file.getContentType(),
+                file.getSize()
+        );
     }
 
     @Override
@@ -145,6 +163,13 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                 UUID.randomUUID(),
                 fileName
         );
+    }
+
+    private String buildFileUrl(String objectKey) {
+        if (!isBlank(publicBaseUrl)) {
+            return publicBaseUrl.replaceAll("/+$", "") + "/" + objectKey;
+        }
+        return "s3://" + bucket + "/" + objectKey;
     }
 
     private String safeFileName(String originalFilename) {
