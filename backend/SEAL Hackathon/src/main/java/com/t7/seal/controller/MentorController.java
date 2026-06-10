@@ -80,7 +80,8 @@ public class MentorController {
             @PathVariable("feedbackId") UUID feedbackId,
             Authentication authentication
     ) {
-        return null;
+        mentorFeedbackService.deleteFeedback(feedbackId, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/mentor-feedback/{feedbackId}/publish")

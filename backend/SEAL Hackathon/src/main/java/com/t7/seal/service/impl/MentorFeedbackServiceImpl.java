@@ -159,9 +159,18 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
         return toMentorFeedbackResponse(mentorFeedbackRepository.save(feedback));
     }
 
+    @Transactional
     @Override
     public void deleteFeedback(UUID feedbackId, Authentication authentication) {
+        MentorFeedback feedback = getFeedback(feedbackId);
 
+        ensureFeedbackOwnerOrCoordinator(feedback, authentication);
+
+        if (feedback.isPublished() && !CurrentUser.isAdminOrCoordinator(authentication)) {
+            throw new ConflictException("Only coordinators/admin can delete published feedback.");
+        }
+
+        mentorFeedbackRepository.delete(feedback);
     }
 
     @Override
