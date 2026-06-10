@@ -14,7 +14,10 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.io.IOException;
 import java.text.Normalizer;
@@ -101,7 +104,27 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
 
     @Override
     public String createDownloadUrl(String objectKey, Duration ttl) {
-        return "";
+        validateConfiguration();
+
+        if (isBlank(objectKey)) {
+            throw new BadRequestException("Submission file object key is missing.");
+        }
+
+        try (S3Presigner presigner = buildPresigner()) {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(objectKey)
+                    .build();
+
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(ttl == null ? Duration.ofMinutes(10) : ttl)
+                    .getObjectRequest(getObjectRequest)
+                    .build();
+
+            return presigner.presignGetObject(presignRequest)
+                    .url()
+                    .toString();
+        }
     }
 
     private void validateConfiguration() {
@@ -139,6 +162,13 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
 
     private S3Client buildClient() {
         return S3Client.builder()
+                .region(Region.of(region))
+                .credentialsProvider(credentialsProvider())
+                .build();
+    }
+
+    private S3Presigner buildPresigner() {
+        return S3Presigner.builder()
                 .region(Region.of(region))
                 .credentialsProvider(credentialsProvider())
                 .build();
