@@ -4,9 +4,12 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.mentor.CreateMentorFeedbackRequest;
 import com.t7.seal.request.mentor.UpdateMentorFeedbackRequest;
 import com.t7.seal.response.mentor.MentorFeedbackResponse;
+import com.t7.seal.service.MentorFeedbackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +19,11 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
-//none of the mentors have records attribute for now, check and add laters
 public class MentorController {
 
+    private MentorFeedbackService mentorFeedbackService;
+
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @PostMapping({
             "/mentor/teams/{teamId}/feedback",
             "/mentor-feedback/teams/{teamId}"
@@ -28,7 +33,8 @@ public class MentorController {
             @Valid @RequestBody CreateMentorFeedbackRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(mentorFeedbackService.createFeedback(teamId, request, authentication));
     }
 
     //request a query beside path variable
