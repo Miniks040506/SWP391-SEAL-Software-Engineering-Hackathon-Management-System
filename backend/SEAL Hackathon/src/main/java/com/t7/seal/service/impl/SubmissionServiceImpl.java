@@ -39,6 +39,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final MentorAssignmentRepository mentorAssignmentRepository;
     private final RepositoryMetadataService repositoryMetadataService;
     private final SubmissionFileStorageService submissionFileStorageService;
+    private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
 
     @Override
     @Transactional
@@ -179,8 +180,13 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public SubmissionDetailResponse getSubmissionById(UUID submissionId, Authentication authentication) {
-        return null;
+        Submission submission = getSubmission(submissionId);
+
+        ensureCanViewSubmission(submission, authentication);
+
+        return toSubmissionDetailResponse(submission);
     }
 
     @Override
@@ -241,7 +247,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     ) {
         Team team = getTeam(teamId);
 
-        ensureMentorAssignToTeam(team, authentication);
+        ensureMentorAssignedToTeam(team, authentication);
 
         return submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(teamId)
                 .stream()
@@ -254,7 +260,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     public SubmissionDetailResponse getMentorSubmissionById(UUID submissionId, Authentication authentication) {
         Submission submission = getSubmission(submissionId);
 
-        ensureMentorAssignToTeam(submission.getTeam(), authentication);
+        ensureMentorAssignedToTeam(submission.getTeam(), authentication);
 
         return toSubmissionDetailResponse(submission);
     }
@@ -325,15 +331,32 @@ public class SubmissionServiceImpl implements SubmissionService {
         throw new UnauthorizedException("You do not have access to this team's submissions.");
     }
 
+    private void ensureCanViewSubmission(Submission submission, Authentication authentication) {
+        if (CurrentUser.isAdminOrCoordinator(authentication)) {
+            return;
+        }
+        UUID userId = CurrentUser.id(authentication);
+        Team team = submission.getTeam();
+        if (teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), userId)) {
+            return;
+        }
+        if (isMentorAssignedToTeam(team, userId)) {
+            return;
+        }
+        if (isJudgeAssignedToSubmission(submission, userId)) {
+            return;
+        }
+        throw new UnauthorizedException("You do not have access to this submission.");
+    }
 
-    private void ensureMentorAssignToTeam(Team team, Authentication authentication) {
+    private void ensureMentorAssignedToTeam(Team team, Authentication authentication) {
         UUID currentUserId = CurrentUser.id(authentication);
 
         if (CurrentUser.isAdminOrCoordinator(authentication)) {
             return;
         }
 
-        if (!isMentorAssignedToTeam(team, CurrentUser.id(authentication))) {
+        if (!isMentorAssignedToTeam(team, currentUserId)) {
             throw new UnauthorizedException("Mentor is not assigned to this team's track.");
         }
     }
@@ -341,6 +364,17 @@ public class SubmissionServiceImpl implements SubmissionService {
     private boolean isMentorAssignedToTeam(Team team, UUID userId) {
         return team.getTrack() != null && mentorAssignmentRepository
                 .existsByTrackIdAndUserId(team.getTrack().getId(), userId);
+    }
+
+    private boolean isJudgeAssignedToSubmission(Submission submission, UUID userId) {
+        return roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(submission.getRound().getId())
+                .stream()
+                .filter(a -> a.getJudge() != null && a.getJudge().getUser() != null)
+                .filter(a -> a.getJudge().getUser().getId().equals(userId))
+                .anyMatch(a -> a.canScore(
+                        submission.getRound().getId(),
+                        submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getId()
+                ));
     }
 
     private void validateRequiredLinks(Team team, List<SubmissionLinkRequest> links) {

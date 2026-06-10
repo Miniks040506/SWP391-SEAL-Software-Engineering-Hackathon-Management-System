@@ -96,11 +96,13 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getTeamSubmissions(teamId, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/submissions/{submissionId}")
     public ResponseEntity<SubmissionDetailResponse> getSubmissionById(
-            @PathVariable("submissionId") UUID submissionId
+            @PathVariable UUID submissionId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(submissionService.getSubmissionById(submissionId, authentication));
     }
 
     @PatchMapping("/submissions/{submissionId}")
