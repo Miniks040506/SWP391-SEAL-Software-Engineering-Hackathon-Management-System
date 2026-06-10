@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiRequest } from "@/api/apiRequest";
-import { submissionApi } from "@/api/submission.api";
 import { teamApi } from "@/api/team.api";
 import type { UUID } from "@/types/common.types";
 import type { 
@@ -31,12 +30,11 @@ export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
       if (currentTeam) setTeamInfo(currentTeam);
 
       // 2. Fetch submissions to find existing draft/submission for this round
-      const summaries = await submissionApi.getTeamSubmissions(teamId);
+      const summaries = await apiRequest.get<SubmissionSummaryResponse[]>(`/teams/${teamId}/submissions`);
       const roundSub = summaries.find((s) => s.roundId === roundId);
 
-      // 3. Get full details if submission exists
       if (roundSub) {
-        const detail = await submissionApi.getSubmissionById(roundSub.id);
+        const detail = await apiRequest.get<SubmissionDetailResponse>(`/submissions/${roundSub.id}`);
         setSubmission(detail);
       } else {
         setSubmission(null);
@@ -87,7 +85,7 @@ export const useTeamSubmissionsQuery = (teamId?: UUID) => {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const res = await submissionApi.getTeamSubmissions(teamId);
+        const res = await apiRequest.get<SubmissionSummaryResponse[]>(`/teams/${teamId}/submissions`);
         setSubmissions(res);
       } catch (error) {
         console.error("Failed to fetch team submissions", error);

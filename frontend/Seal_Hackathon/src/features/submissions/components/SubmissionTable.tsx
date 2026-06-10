@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import type { CoordinatorSubmissionSummary } from "@/types/submission.types";
+import type { CoordinatorSubmissionSummary } from "../hooks/useCoordinatorSubmissionQueries";
 import { getSubmissionStatusColor } from "../schemas/submissions.schema";
 
 type Props = {

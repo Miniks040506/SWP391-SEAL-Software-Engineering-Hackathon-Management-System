@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TextField } from "@mui/material";
 import { apiRequest } from "@/api/apiRequest";
-import { submissionApi } from "@/api/submission.api";
 import {
   useParticipantSubmissionData,
   useRequiredLinkConfigQuery,
@@ -51,7 +50,7 @@ export function SubmissionFormPage() {
           linkType: l.linkType,
           label: l.label || l.linkType, // Fixed TS error here
           url: l.url,
-          isPrimary: l.isPrimary,
+          isPrimary: l.isPrimary ?? false,
           isRequired: false,
           linkId: l.id,
         }));
@@ -96,12 +95,12 @@ export function SubmissionFormPage() {
     setErrorMsg(null);
     try {
       if (submission?.id) {
-        await submissionApi.updateSubmission(submission.id, { note: note.trim() });
+        await apiRequest.patch(`/submissions/${submission.id}`, { note: note.trim() });
         // NOTE: Trong thực tế, bạn cần loop qua các link để gọi addSubmissionLink / updateSubmissionLink theo API BE đã cung cấp. 
         // Để đơn giản gọn nhẹ form data, ta gọi thẳng PATCH payload.
         await apiRequest.patch(`/submissions/${submission.id}`, buildPayload());
       } else {
-        await submissionApi.submitDeliverables(teamId, roundId, buildPayload());
+        await apiRequest.post(`/teams/${teamId}/rounds/${roundId}/submissions`, buildPayload());
       }
       setSuccessMsg("Draft saved successfully.");
       refetch();
@@ -127,7 +126,7 @@ export function SubmissionFormPage() {
       if (submissionId) {
         await apiRequest.patch(`/submissions/${submissionId}`, buildPayload());
       } else {
-        const created = await submissionApi.submitDeliverables(teamId, roundId, buildPayload());
+        const created = await apiRequest.post<{ id: string }>(`/teams/${teamId}/rounds/${roundId}/submissions`, buildPayload());
         submissionId = created.id;
       }
       
@@ -156,7 +155,7 @@ export function SubmissionFormPage() {
           status: submission.status,
           submittedAt: submission.submittedAt ?? null,
           linkCount: submission.links?.length ?? 0,
-          note: submission.note,
+          note: submission.note ?? undefined,
         },
       ]
     : [];
