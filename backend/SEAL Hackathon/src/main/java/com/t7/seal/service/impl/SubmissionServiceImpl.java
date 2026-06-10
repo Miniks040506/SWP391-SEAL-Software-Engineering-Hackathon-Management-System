@@ -127,7 +127,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             saved = submissionRepository.save(refreshed);
         }
 
-        return toSubmissionResponse(saved);
+        return toSubmissionResponse(getSubmission(saved.getId()));
     }
 
     @Override
@@ -323,7 +323,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                         link.getLabel(), link.getIsPrimary(),
                         link.getDisplayOrder()
                 )).toList();
-        
+
         validateRequiredLinks(submission.getTeam(), requests);
     }
 

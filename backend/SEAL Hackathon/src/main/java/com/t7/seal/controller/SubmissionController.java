@@ -48,6 +48,7 @@ public class SubmissionController {
     public ResponseEntity<SubmissionResponse> uploadSubmissionFile(
             @PathVariable UUID teamId,
             @PathVariable UUID roundId,
+            @RequestParam String linkType,
             @RequestParam(required = false) String note,
             @RequestParam(required = false) String label,
             @RequestParam(required = false, defaultValue = "false") Boolean isPrimary,
@@ -56,7 +57,13 @@ public class SubmissionController {
             @RequestPart("file") MultipartFile file,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(submissionService.uploadSubmissionFile(
+                        teamId, roundId, linkType,
+                        note, label, isPrimary,
+                        displayOrder, submitNow,
+                        file, authentication
+                ));
     }
 
     @GetMapping("/teams/{teamId}/submissions")
