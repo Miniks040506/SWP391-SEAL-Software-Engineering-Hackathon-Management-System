@@ -2,7 +2,7 @@ package com.t7.seal.entities;
 
 import com.t7.seal.domain.SubmissionLinkType;
 import com.t7.seal.domain.SubmissionStorageProvider;
-import com.t7.seal.infrastructure.RepositoryMetadata;
+import com.t7.seal.dto.RepositoryMetadata;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
