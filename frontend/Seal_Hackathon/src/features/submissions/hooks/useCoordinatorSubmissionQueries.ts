@@ -1,11 +1,32 @@
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/api/apiRequest";
 import type { PageResponse, UUID } from "@/types/common.types";
-import type { 
-  CoordinatorSubmissionListParams, 
-  CoordinatorSubmissionSummary, 
-  SubmissionDetailResponse 
-} from "@/types/submission.types";
+import type { SubmissionDetailResponse } from "@/types/submission.types";
+
+export type CoordinatorSubmissionListParams = {
+  eventId?: string;
+  trackId?: string;
+  roundId?: string;
+  status?: string;
+  search?: string;
+  page?: number;
+  size?: number;
+};
+
+export type CoordinatorSubmissionSummary = {
+  id: string;
+  teamId: string;
+  teamName?: string | null;
+  trackId?: string | null;
+  trackName?: string | null;
+  roundId: string;
+  roundName: string;
+  status: string;
+  submissionNumber: number;
+  submittedAt?: string | null;
+  updatedAt?: string | null;
+  linkCount?: number;
+};
 
 export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionListParams) => {
   const [data, setData] = useState<PageResponse<CoordinatorSubmissionSummary> | null>(null);

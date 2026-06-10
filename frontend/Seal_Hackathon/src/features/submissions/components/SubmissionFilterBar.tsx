@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { TextField, InputAdornment, Select, MenuItem, FormControl, Button, type SelectChangeEvent } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
-import type { CoordinatorSubmissionListParams } from "@/types/submission.types";
+import type { CoordinatorSubmissionListParams } from "../hooks/useCoordinatorSubmissionQueries";
 import { SUBMISSION_STATUSES, filterTextFieldSx, filterSelectSx, menuPropsAll } from "../schemas/submissions.schema";
 
 type Props = {
