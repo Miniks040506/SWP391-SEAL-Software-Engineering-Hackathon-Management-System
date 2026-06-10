@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.text.Normalizer;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
@@ -62,7 +63,7 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
         validateFile(file);
 
         String originalFilename = safeFileName(file.getOriginalFilename());
-        String objectKey;
+        String objectKey = buildObjectKey(eventId, teamId, roundId, originalFilename);
 
         return null;
     }
@@ -103,6 +104,17 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                 throw new BadRequestException("Unsupported file type: " + contentType);
             }
         }
+    }
+
+    private String buildObjectKey(UUID eventId, UUID teamId, UUID roundId, String fileName) {
+        return "submissions/%s/event-%s/team-%s/round-%s/%s-%s".formatted(
+                LocalDate.now(),
+                eventId,
+                teamId,
+                roundId,
+                UUID.randomUUID(),
+                fileName
+        );
     }
 
     private String safeFileName(String originalFilename) {
