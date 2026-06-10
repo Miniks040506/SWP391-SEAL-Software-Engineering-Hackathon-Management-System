@@ -31,6 +31,7 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
     private final SubmissionRepository submissionRepository;
     private final RoundRepository roundRepository;
     private final NotificationRepository notificationRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
     @Transactional
     @Override
@@ -71,11 +72,30 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
         return toMentorFeedbackResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<MentorFeedbackResponse> getTeamFeedback(UUID teamId, Authentication authentication) {
-        return null;
+        Team team = getTeam(teamId);
+
+        if (CurrentUser.isAdminOrCoordinator(authentication)
+                || isMentorAssignedToTeam(team, CurrentUser.id(authentication))) {
+            return mentorFeedbackRepository.findByTeamIdOrderByCreatedAtDesc(teamId)
+                    .stream()
+                    .map(this::toMentorFeedbackResponse)
+                    .toList();
+        }
+
+        ensureActiveTeamMember(team, authentication);
+
+        return mentorFeedbackRepository
+                .findByTeamIdAndVisibilityOrderByCreatedAtDesc(teamId, MentorFeedbackVisibility.PUBLISHED)
+                .stream()
+                .filter(f -> Boolean.TRUE.equals(f.getVisibleToTeam()))
+                .map(this::toMentorFeedbackResponse)
+                .toList();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<MentorFeedbackResponse> getMentorTeamFeedback(UUID teamId, Authentication authentication) {
         Team team = getTeam(teamId);
@@ -247,5 +267,13 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
                 feedback.getUpdatedAt(),
                 feedback.getPublishedAt()
         );
+    }
+
+    private void ensureActiveTeamMember(Team team, Authentication authentication) {
+        UUID currentUserId = CurrentUser.id(authentication);
+
+        if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUserId)) {
+            throw new UnauthorizedException("You are not an active member of this team.");
+        }
     }
 }

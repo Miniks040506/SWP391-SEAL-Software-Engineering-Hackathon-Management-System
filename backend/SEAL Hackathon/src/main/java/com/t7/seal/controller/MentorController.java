@@ -55,7 +55,7 @@ public class MentorController {
             @PathVariable("teamId") UUID teamId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorFeedbackService.getTeamFeedback(teamId, authentication));
     }
 
     @GetMapping("/mentor-feedback/{feedbackId}")
