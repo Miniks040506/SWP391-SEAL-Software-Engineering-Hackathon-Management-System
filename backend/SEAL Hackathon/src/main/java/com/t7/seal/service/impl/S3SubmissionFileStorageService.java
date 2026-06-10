@@ -1,6 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.dto.UploadedSubmissionFile;
+import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.service.SubmissionFileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.UUID;
 
 @Service
@@ -45,7 +47,7 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
             "image/png," +
             "image/jpeg," +
             "text/plain}")
-    private String allowedContentType;
+    private String allowedContentTypes;
 
     @Override
     public UploadedSubmissionFile uploadSubmissionFile(
@@ -54,11 +56,51 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
             UUID roundId,
             MultipartFile file
     ) {
+        validateConfiguration();
+        validateFile(file);
+
         return null;
     }
 
     @Override
     public String createDownloadUrl(String objectKey, Duration ttl) {
         return "";
+    }
+
+    private void validateConfiguration() {
+        if (!"AWS_S3".equalsIgnoreCase(storageProvider)) {
+            throw new BadRequestException("Submission file upload is disabled. " +
+                    "Set app.submission.storage.provider=AWS_S3 to enable it.");
+        }
+        if (isBlank(region) || isBlank(bucket)) {
+            throw new BadRequestException("AWS S3 submission storage is not configured. " +
+                    "Missing aws.s3.region or aws.s3.bucket.");
+        }
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Submission file is required.");
+        }
+
+        long maxBytes = maxSizeMb * 1024L * 1024L;
+        if (file.getSize() > maxBytes) {
+            throw new BadRequestException("Submission file exceeds max size of " + maxBytes + "MB.");
+        }
+
+        String contentType = file.getContentType();
+        if (!isBlank(allowedContentTypes) && !isBlank(contentType)) {
+            boolean allowed = Arrays.stream(allowedContentTypes.split(","))
+                    .map(String::trim)
+                    .anyMatch(contentType::equalsIgnoreCase);
+
+            if (!allowed) {
+                throw new BadRequestException("Unsupported file type: " + contentType);
+            }
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
