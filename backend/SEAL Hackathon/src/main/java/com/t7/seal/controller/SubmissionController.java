@@ -105,6 +105,15 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getSubmissionById(submissionId, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @GetMapping("/submissions/{submissionId}/admin-view")
+    public ResponseEntity<SubmissionDetailResponse> getSubmissionAdminView(
+            @PathVariable UUID submissionId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.getSubmissionForAdmin(submissionId, authentication));
+    }
+
     @PatchMapping("/submissions/{submissionId}")
     public ResponseEntity<SubmissionResponse> updateSubmission(
             @PathVariable("submissionId") UUID submissionId,

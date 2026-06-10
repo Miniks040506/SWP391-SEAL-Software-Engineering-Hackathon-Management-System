@@ -192,6 +192,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public SubmissionDetailResponse getSubmissionForAdmin(
             UUID submissionId, Authentication authentication
     ) {
@@ -200,6 +201,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    @Transactional
     public SubmissionResponse updateSubmission(UUID submissionId, UpdateSubmissionRequest request, Authentication authentication) {
         return null;
     }
