@@ -173,9 +173,26 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
         mentorFeedbackRepository.delete(feedback);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public MentorFeedbackResponse publishFeedback(UUID feedbackId, Authentication authentication) {
-        return null;
+        MentorFeedback feedback = getFeedback(feedbackId);
+
+        ensureFeedbackOwnerOrCoordinator(feedback, authentication);
+
+        if (feedback.isPublished()) {
+            return toMentorFeedbackResponse(feedback);
+        }
+
+        if (!feedback.hasValidContentLength()) {
+            throw new BadRequestException("Feedback content must be at least 20 characters long.");
+        }
+
+        feedback.publish(LocalDateTime.now());
+        MentorFeedback saved = mentorFeedbackRepository.save(feedback);
+        createFeedbackNotification(saved);
+
+        return toMentorFeedbackResponse(saved);
     }
 
     //HELPERS

@@ -89,6 +89,6 @@ public class MentorController {
             @PathVariable("feedbackId") UUID feedbackId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorFeedbackService.publishFeedback(feedbackId, authentication));
     }
 }
