@@ -7,7 +7,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
+import java.io.IOException;
 import java.text.Normalizer;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -65,6 +72,12 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
         String originalFilename = safeFileName(file.getOriginalFilename());
         String objectKey = buildObjectKey(eventId, teamId, roundId, originalFilename);
 
+        try (S3Client s3Client = buildClient()) {
+
+        } catch(IOException e) {
+            throw new BadRequestException("Cannot read uploaded submission file.");
+        }
+
         return null;
     }
 
@@ -104,6 +117,23 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                 throw new BadRequestException("Unsupported file type: " + contentType);
             }
         }
+    }
+
+    private S3Client buildClient() {
+        return S3Client.builder()
+                .region(Region.of(region))
+                .credentialsProvider(credentialsProvider())
+                .build();
+    }
+
+    private AwsCredentialsProvider credentialsProvider() {
+        if (!isBlank(accessKey) && !isBlank(secretKey)) {
+            return StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(accessKey, secretKey)
+            );
+        }
+
+        return DefaultCredentialsProvider.create();
     }
 
     private String buildObjectKey(UUID eventId, UUID teamId, UUID roundId, String fileName) {
