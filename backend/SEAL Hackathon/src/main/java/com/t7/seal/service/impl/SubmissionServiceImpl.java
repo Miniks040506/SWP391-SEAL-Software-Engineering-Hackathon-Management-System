@@ -181,7 +181,9 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     @Override
     @Transactional(readOnly = true)
-    public SubmissionDetailResponse getSubmissionById(UUID submissionId, Authentication authentication) {
+    public SubmissionDetailResponse getSubmissionById(
+            UUID submissionId, Authentication authentication
+    ) {
         Submission submission = getSubmission(submissionId);
 
         ensureCanViewSubmission(submission, authentication);
@@ -190,8 +192,11 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
-    public SubmissionDetailResponse getSubmissionForAdmin(UUID submissionId, Authentication authentication) {
-        return null;
+    public SubmissionDetailResponse getSubmissionForAdmin(
+            UUID submissionId, Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+        return toSubmissionDetailResponse(getSubmission(submissionId));
     }
 
     @Override
@@ -375,6 +380,12 @@ public class SubmissionServiceImpl implements SubmissionService {
                         submission.getRound().getId(),
                         submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getId()
                 ));
+    }
+
+    private void ensureCoordinator(Authentication authentication) {
+        if (!CurrentUser.isAdminOrCoordinator(authentication)) {
+            throw new UnauthorizedException("Only coordinator or admin can access submission management.");
+        }
     }
 
     private void validateRequiredLinks(Team team, List<SubmissionLinkRequest> links) {
