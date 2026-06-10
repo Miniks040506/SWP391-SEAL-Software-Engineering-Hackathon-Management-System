@@ -108,9 +108,14 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public MentorFeedbackResponse getMentorFeedbackById(UUID feedbackId, Authentication authentication) {
-        return null;
+    public MentorFeedbackResponse getFeedbackById(UUID feedbackId, Authentication authentication) {
+        MentorFeedback feedback = getFeedback(feedbackId);
+
+        ensureCanViewFeedback(feedback, authentication);
+
+        return toMentorFeedbackResponse(feedback);
     }
 
     @Override
@@ -275,5 +280,35 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
         if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUserId)) {
             throw new UnauthorizedException("You are not an active member of this team.");
         }
+    }
+
+    private MentorFeedback getFeedback(UUID feedbackId) {
+        return mentorFeedbackRepository.findById(feedbackId)
+                .orElseThrow(() -> new NotFoundException("Mentor feedback not found " + feedbackId));
+    }
+
+    private void ensureCanViewFeedback(MentorFeedback feedback, Authentication authentication) {
+        if (CurrentUser.isAdminOrCoordinator(authentication)) {
+            return;
+        }
+
+        UUID currentUserId = CurrentUser.id(authentication);
+        if (feedback.getMentor() != null && feedback.getMentor().getId().equals(currentUserId)) {
+            return;
+        }
+
+        if (isMentorAssignedToTeam(feedback.getTeam(), currentUserId)) {
+            return;
+        }
+
+        if (feedback.isPublished()
+                && Boolean.TRUE.equals(feedback.getVisibleToTeam())
+                && teamMemberRepository
+                .existsByTeamIdAndUserIdAndLeftAtIsNull(feedback.getTeam().getId(), currentUserId)
+        ) {
+            return;
+        }
+
+        throw new UnauthorizedException("You are not authorized to view this feedback.");
     }
 }

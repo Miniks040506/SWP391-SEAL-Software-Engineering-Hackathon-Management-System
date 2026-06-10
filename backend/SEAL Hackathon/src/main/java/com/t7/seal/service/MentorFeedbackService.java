@@ -16,7 +16,7 @@ public interface MentorFeedbackService {
 
     List<MentorFeedbackResponse> getMentorTeamFeedback(UUID teamId, Authentication authentication);
 
-    MentorFeedbackResponse getMentorFeedbackById(UUID feedbackId, Authentication authentication);
+    MentorFeedbackResponse getFeedbackById(UUID feedbackId, Authentication authentication);
 
     MentorFeedbackResponse updateFeedback(UUID feedbackId,
                                           CreateMentorFeedbackRequest request,

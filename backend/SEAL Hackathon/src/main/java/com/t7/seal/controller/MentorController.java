@@ -63,7 +63,7 @@ public class MentorController {
             @PathVariable("feedbackId") UUID feedbackId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorFeedbackService.getFeedbackById(feedbackId, authentication));
     }
 
     @PatchMapping("/mentor-feedback/{feedbackId}")
