@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.text.Normalizer;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -59,6 +61,9 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
         validateConfiguration();
         validateFile(file);
 
+        String originalFilename = safeFileName(file.getOriginalFilename());
+        String objectKey;
+
         return null;
     }
 
@@ -98,6 +103,19 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                 throw new BadRequestException("Unsupported file type: " + contentType);
             }
         }
+    }
+
+    private String safeFileName(String originalFilename) {
+        String fallback = "submission-file";
+        String value = isBlank(originalFilename) ? fallback : originalFilename;
+
+        value = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[^A-Za-z0-9._-]", "-")
+                .replaceAll("-+", "-")
+                .toLowerCase(Locale.ROOT);
+
+        return value.isBlank() ? fallback : value;
     }
 
     private boolean isBlank(String value) {
