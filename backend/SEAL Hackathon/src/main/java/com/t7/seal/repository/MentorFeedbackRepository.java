@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface MentorFeedbackRepository extends JpaRepository<MentorFeedback, UUID> {
-
+    List<MentorFeedback> findByTeamIdOrderByCreatedAtDesc(UUID teamId);
 }

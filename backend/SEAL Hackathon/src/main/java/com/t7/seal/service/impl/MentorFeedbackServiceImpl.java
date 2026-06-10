@@ -73,7 +73,14 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
 
     @Override
     public List<MentorFeedbackResponse> getTeamFeedback(UUID teamId, Authentication authentication) {
-        return List.of();
+        Team team = getTeam(teamId);
+
+        ensureMentorAssignedToTeam(team, authentication);
+
+        return mentorFeedbackRepository.findByTeamIdOrderByCreatedAtDesc(teamId)
+                .stream()
+                .map(this::toMentorFeedbackResponse)
+                .toList();
     }
 
     @Override

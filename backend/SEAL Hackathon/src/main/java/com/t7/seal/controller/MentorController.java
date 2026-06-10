@@ -37,7 +37,7 @@ public class MentorController {
                 .body(mentorFeedbackService.createFeedback(teamId, request, authentication));
     }
 
-    //request a query beside path variable
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping({
             "/mentor/teams/{teamId}/feedback",
             "/mentor-feedback/teams/{teamId}"
@@ -46,7 +46,7 @@ public class MentorController {
             @PathVariable("teamId") UUID teamId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorFeedbackService.getMentorTeamFeedback(teamId, authentication));
     }
 
     @GetMapping("/teams/{teamId}/feedback")
