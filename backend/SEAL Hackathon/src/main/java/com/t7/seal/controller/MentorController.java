@@ -49,6 +49,7 @@ public class MentorController {
         return ResponseEntity.ok(mentorFeedbackService.getMentorTeamFeedback(teamId, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/teams/{teamId}/feedback")
     public ResponseEntity<List<MentorFeedbackResponse>> getTeamFeedback(
             @PathVariable("teamId") UUID teamId,
