@@ -81,6 +81,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    @Transactional
     public SubmissionResponse uploadSubmissionFile(
             UUID teamId, UUID roundId,
             String linkType, String note,
@@ -131,6 +132,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    @Transactional
     public SubmissionResponse uploadFileToSubmission(
             UUID submissionId, String linkType,
             String label, Boolean isPrimary,
@@ -140,7 +142,10 @@ public class SubmissionServiceImpl implements SubmissionService {
     ) {
         Submission submission = getSubmission(submissionId);
         Team team = submission.getTeam();
+        Round round = submission.getRound();
+
         ensureTeamLeader(team, authentication);
+        ensureRoundCanAcceptSubmission(round);
 
         addUploadedFileLink(submission, parseLinkType(linkType),
                 label, isPrimary, displayOrder, file);
@@ -159,8 +164,18 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
-    public List<SubmissionSummaryResponse> getTeamSubmissions(UUID teamId, Authentication authentication) {
-        return List.of();
+    @Transactional(readOnly = true)
+    public List<SubmissionSummaryResponse> getTeamSubmissions(
+            UUID teamId, Authentication authentication
+    ) {
+        Team team = getTeam(teamId);
+
+        ensureTeamMemberOrCoordinatorOrMentor(team, authentication);
+
+        return submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(teamId)
+                .stream()
+                .map(this::toSubmissionSummaryResponse)
+                .toList();
     }
 
     @Override
@@ -296,6 +311,21 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
     }
 
+    private void ensureTeamMemberOrCoordinatorOrMentor(Team team, Authentication authentication) {
+        if (CurrentUser.isAdminOrCoordinator(authentication)) {
+            return;
+        }
+        UUID userId = CurrentUser.id(authentication);
+        if (teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), userId)) {
+            return;
+        }
+        if (isMentorAssignedToTeam(team, userId)) {
+            return;
+        }
+        throw new UnauthorizedException("You do not have access to this team's submissions.");
+    }
+
+
     private void ensureMentorAssignToTeam(Team team, Authentication authentication) {
         UUID currentUserId = CurrentUser.id(authentication);
 
@@ -303,12 +333,12 @@ public class SubmissionServiceImpl implements SubmissionService {
             return;
         }
 
-        if (!isMentorAssignToTeam(team, CurrentUser.id(authentication))) {
+        if (!isMentorAssignedToTeam(team, CurrentUser.id(authentication))) {
             throw new UnauthorizedException("Mentor is not assigned to this team's track.");
         }
     }
 
-    private boolean isMentorAssignToTeam(Team team, UUID userId) {
+    private boolean isMentorAssignedToTeam(Team team, UUID userId) {
         return team.getTrack() != null && mentorAssignmentRepository
                 .existsByTrackIdAndUserId(team.getTrack().getId(), userId);
     }

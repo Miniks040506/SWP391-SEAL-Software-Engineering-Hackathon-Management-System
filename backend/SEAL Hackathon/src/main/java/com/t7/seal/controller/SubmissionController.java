@@ -87,11 +87,13 @@ public class SubmissionController {
                 ));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/teams/{teamId}/submissions")
     public ResponseEntity<List<SubmissionSummaryResponse>> getTeamSubmissions(
-            @PathVariable("teamId") UUID teamId
+            @PathVariable UUID teamId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(submissionService.getTeamSubmissions(teamId, authentication));
     }
 
     @GetMapping("/submissions/{submissionId}")
