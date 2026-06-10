@@ -72,7 +72,7 @@ public class MentorController {
             @Valid @RequestBody UpdateMentorFeedbackRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorFeedbackService.updateFeedback(feedbackId, request, authentication));
     }
 
     @DeleteMapping("/mentor-feedback/{feedbackId}")
@@ -80,7 +80,8 @@ public class MentorController {
             @PathVariable("feedbackId") UUID feedbackId,
             Authentication authentication
     ) {
-        return null;
+        mentorFeedbackService.deleteFeedback(feedbackId, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/mentor-feedback/{feedbackId}/publish")
@@ -88,6 +89,6 @@ public class MentorController {
             @PathVariable("feedbackId") UUID feedbackId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorFeedbackService.publishFeedback(feedbackId, authentication));
     }
 }

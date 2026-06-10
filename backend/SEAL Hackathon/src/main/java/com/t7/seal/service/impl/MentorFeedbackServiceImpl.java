@@ -3,10 +3,12 @@ package com.t7.seal.service.impl;
 import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.mentor.CreateMentorFeedbackRequest;
+import com.t7.seal.request.mentor.UpdateMentorFeedbackRequest;
 import com.t7.seal.response.mentor.MentorFeedbackResponse;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.MentorFeedbackService;
@@ -118,19 +120,79 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
         return toMentorFeedbackResponse(feedback);
     }
 
+    @Transactional
     @Override
-    public MentorFeedbackResponse updateFeedback(UUID feedbackId, CreateMentorFeedbackRequest request, Authentication authentication) {
-        return null;
+    public MentorFeedbackResponse updateFeedback(
+            UUID feedbackId,
+            UpdateMentorFeedbackRequest request,
+            Authentication authentication
+    ) {
+        MentorFeedback feedback = getFeedback(feedbackId);
+
+        ensureFeedbackOwnerOrCoordinator(feedback, authentication);
+
+        if (feedback.isPublished()) {
+            throw new ConflictException("Published feedback cannot be updated. Create a new feedback instead.");
+        }
+
+        if (request.category() != null) {
+            feedback.setCategory(parseCategory(request.category()));
+        }
+
+        if (request.content() != null) {
+            feedback.setContent(requiredContent(request.content()));
+        }
+
+        if (request.visibleToTeam() != null) {
+            feedback.setVisibleToTeam(request.visibleToTeam());
+        }
+
+        if (request.submissionId() != null) {
+            Submission submission = resovleSubmission(request.submissionId(), feedback.getTeam());
+            feedback.setSubmission(submission);
+            feedback.setRound(submission.getRound());
+        } else if (request.roundId() != null) {
+            Round round = resovleRound(request.roundId(), feedback.getSubmission(), feedback.getTeam());
+            feedback.setRound(round);
+        }
+
+        return toMentorFeedbackResponse(mentorFeedbackRepository.save(feedback));
     }
 
+    @Transactional
     @Override
     public void deleteFeedback(UUID feedbackId, Authentication authentication) {
+        MentorFeedback feedback = getFeedback(feedbackId);
 
+        ensureFeedbackOwnerOrCoordinator(feedback, authentication);
+
+        if (feedback.isPublished() && !CurrentUser.isAdminOrCoordinator(authentication)) {
+            throw new ConflictException("Only coordinators/admin can delete published feedback.");
+        }
+
+        mentorFeedbackRepository.delete(feedback);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public MentorFeedbackResponse publishFeedback(UUID feedbackId, Authentication authentication) {
-        return null;
+        MentorFeedback feedback = getFeedback(feedbackId);
+
+        ensureFeedbackOwnerOrCoordinator(feedback, authentication);
+
+        if (feedback.isPublished()) {
+            return toMentorFeedbackResponse(feedback);
+        }
+
+        if (!feedback.hasValidContentLength()) {
+            throw new BadRequestException("Feedback content must be at least 20 characters long.");
+        }
+
+        feedback.publish(LocalDateTime.now());
+        MentorFeedback saved = mentorFeedbackRepository.save(feedback);
+        createFeedbackNotification(saved);
+
+        return toMentorFeedbackResponse(saved);
     }
 
     //HELPERS
@@ -310,5 +372,16 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
         }
 
         throw new UnauthorizedException("You are not authorized to view this feedback.");
+    }
+
+    private void ensureFeedbackOwnerOrCoordinator(MentorFeedback feedback, Authentication authentication) {
+        if (CurrentUser.isAdminOrCoordinator(authentication)) {
+            return;
+        }
+
+        UUID currentUserId = CurrentUser.id(authentication);
+        if (feedback.getMentor() == null || !feedback.getMentor().getId().equals(currentUserId)) {
+            throw new UnauthorizedException("You are not authorized to edit this feedback.");
+        }
     }
 }

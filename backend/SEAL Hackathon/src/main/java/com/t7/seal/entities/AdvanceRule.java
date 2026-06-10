@@ -26,6 +26,7 @@ public class AdvanceRule {
     @JoinColumn(name = "track_id")
     private Track track;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "rule_type", nullable = false)
     private RuleType ruleType;
 
