@@ -72,7 +72,7 @@ public class MentorController {
             @Valid @RequestBody UpdateMentorFeedbackRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorFeedbackService.updateFeedback(feedbackId, request, authentication));
     }
 
     @DeleteMapping("/mentor-feedback/{feedbackId}")

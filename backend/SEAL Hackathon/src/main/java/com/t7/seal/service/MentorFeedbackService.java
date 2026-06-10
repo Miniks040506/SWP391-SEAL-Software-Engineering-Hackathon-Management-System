@@ -1,6 +1,7 @@
 package com.t7.seal.service;
 
 import com.t7.seal.request.mentor.CreateMentorFeedbackRequest;
+import com.t7.seal.request.mentor.UpdateMentorFeedbackRequest;
 import com.t7.seal.response.mentor.MentorFeedbackResponse;
 import org.springframework.security.core.Authentication;
 
@@ -19,7 +20,7 @@ public interface MentorFeedbackService {
     MentorFeedbackResponse getFeedbackById(UUID feedbackId, Authentication authentication);
 
     MentorFeedbackResponse updateFeedback(UUID feedbackId,
-                                          CreateMentorFeedbackRequest request,
+                                          UpdateMentorFeedbackRequest request,
                                           Authentication authentication);
 
     void deleteFeedback(UUID feedbackId, Authentication authentication);
