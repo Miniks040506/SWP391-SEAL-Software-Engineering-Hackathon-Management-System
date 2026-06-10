@@ -66,6 +66,27 @@ public class SubmissionController {
                 ));
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping(value = "/submissions/{submissionId}/files", consumes = "multipart/form-data")
+    public ResponseEntity<SubmissionResponse> uploadFileToSubmission(
+            @PathVariable UUID submissionId,
+            @RequestParam String linkType,
+            @RequestParam(required = false) String label,
+            @RequestParam(required = false, defaultValue = "false") Boolean isPrimary,
+            @RequestParam(required = false, defaultValue = "0") Integer displayOrder,
+            @RequestParam(required = false, defaultValue = "false") Boolean submitNow,
+            @RequestPart("file") MultipartFile file,
+            Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(submissionService.uploadFileToSubmission(
+                        submissionId, linkType,
+                        label, isPrimary,
+                        displayOrder, submitNow,
+                        file, authentication
+                ));
+    }
+
     @GetMapping("/teams/{teamId}/submissions")
     public ResponseEntity<List<SubmissionSummaryResponse>> getTeamSubmissions(
             @PathVariable("teamId") UUID teamId

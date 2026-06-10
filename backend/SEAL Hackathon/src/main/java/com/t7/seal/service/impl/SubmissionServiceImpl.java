@@ -131,8 +131,31 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
-    public SubmissionResponse uploadFileToSubmission(UUID submissionId, String linkType, String label, Boolean isPrimary, Integer displayOrder, Boolean submitNow, MultipartFile file, Authentication authentication) {
-        return null;
+    public SubmissionResponse uploadFileToSubmission(
+            UUID submissionId, String linkType,
+            String label, Boolean isPrimary,
+            Integer displayOrder, Boolean submitNow,
+            MultipartFile file,
+            Authentication authentication
+    ) {
+        Submission submission = getSubmission(submissionId);
+        Team team = submission.getTeam();
+        ensureTeamLeader(team, authentication);
+
+        addUploadedFileLink(submission, parseLinkType(linkType),
+                label, isPrimary, displayOrder, file);
+
+        if (Boolean.TRUE.equals(submitNow)) {
+            Submission refreshed = getSubmission(submissionId);
+            validateRequiredLinksFromEntity(refreshed);
+            if (!refreshed.isDraft()) {
+                refreshed.increaseSubmissionNumber();
+            }
+            markSubmittedConsideringDeadline(refreshed, refreshed.getRound());
+            submissionRepository.save(refreshed);
+        }
+
+        return toSubmissionResponse(getSubmission(submissionId));
     }
 
     @Override
