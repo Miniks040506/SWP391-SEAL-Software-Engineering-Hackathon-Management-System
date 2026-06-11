@@ -202,8 +202,42 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     @Override
     @Transactional
-    public SubmissionResponse updateSubmission(UUID submissionId, UpdateSubmissionRequest request, Authentication authentication) {
-        return null;
+    public SubmissionResponse updateSubmission(
+            UUID submissionId,
+            UpdateSubmissionRequest request,
+            Authentication authentication
+    ) {
+        Submission submission = getSubmission(submissionId);
+        ensureTeamLeader(submission.getTeam(), authentication);
+        ensureRoundCanAcceptSubmission(submission.getRound());
+
+        if (request.note() != null) {
+            submission.setNote(blankToNull(request.note()));
+        }
+
+        if (request.links() != null) {
+            if (request.links().isEmpty()) {
+                throw new BadRequestException("At least one submission link is required.");
+            }
+            validateRequiredLinks(submission.getTeam(), request.links());
+            replaceLinks(submission, request.links());
+        }
+
+        if (request.status() != null && !request.status().isBlank()) {
+            SubmissionStatus status = parseSubmissionStatus(request.status());
+            if (status == SubmissionStatus.SUBMITTED || status == SubmissionStatus.LATE) {
+                validateRequiredLinksFromEntity(submission);
+                submission.increaseSubmissionNumber();
+                markSubmittedConsideringDeadline(submission, submission.getRound());
+            } else if (status == SubmissionStatus.DRAFT) {
+                submission.setStatus(SubmissionStatus.DRAFT);
+            } else {
+                throw new BadRequestException("This submission status cannot be set from this endpoint.");
+            }
+        }
+
+        Submission saved = submissionRepository.save(submission);
+        return toSubmissionResponse(getSubmission(saved.getId()));
     }
 
     @Override
@@ -501,7 +535,6 @@ public class SubmissionServiceImpl implements SubmissionService {
         return SubmissionStorageProvider.EXTERNAL_URL;
     }
 
-
     private SubmissionLinkType parseLinkType(String value) {
         if (value == null || value.isBlank()) {
             throw new BadRequestException("Submission link type is required.");
@@ -510,6 +543,17 @@ public class SubmissionServiceImpl implements SubmissionService {
             return SubmissionLinkType.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Unsupported submission link type: " + value);
+        }
+    }
+
+    private SubmissionStatus parseSubmissionStatus(String value) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException("Submission status is required.");
+        }
+        try {
+            return SubmissionStatus.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Unsupported submission status: " + value);
         }
     }
 

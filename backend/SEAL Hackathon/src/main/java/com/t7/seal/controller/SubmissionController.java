@@ -102,7 +102,8 @@ public class SubmissionController {
             @PathVariable UUID submissionId,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(submissionService.getSubmissionById(submissionId, authentication));
+        return ResponseEntity.ok(submissionService.
+                getSubmissionById(submissionId, authentication));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
@@ -111,15 +112,19 @@ public class SubmissionController {
             @PathVariable UUID submissionId,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(submissionService.getSubmissionForAdmin(submissionId, authentication));
+        return ResponseEntity.ok(submissionService.
+                getSubmissionForAdmin(submissionId, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/submissions/{submissionId}")
     public ResponseEntity<SubmissionResponse> updateSubmission(
-            @PathVariable("submissionId") UUID submissionId,
-            @Valid @RequestBody UpdateSubmissionRequest request
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody UpdateSubmissionRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(submissionService.
+                updateSubmission(submissionId, request, authentication));
     }
 
     @PostMapping("/submissions/{submissionId}/links")
