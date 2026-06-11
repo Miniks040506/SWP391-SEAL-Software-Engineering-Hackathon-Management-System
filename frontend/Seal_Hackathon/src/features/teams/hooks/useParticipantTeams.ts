@@ -5,26 +5,25 @@ import { teamApi } from "@/api/team.api";
 import type { UUID } from "@/types/common.types";
 import type {
   CreateTeamRequest,
+  InviteMemberRequest,
   LeaveTeamRequest,
   RemoveMemberRequest,
   TeamDetailResponse,
-  TeamMemberResponse,
+  TeamInvitationResponse,
   TeamResponse,
   TeamSummaryResponse,
   TransferLeaderRequest,
   UpdateTeamRequest,
 } from "@/types/team.types";
 
-/**
- * true  = dùng mock, không gọi BE
- * false = gọi API BE thật qua teamApi
- */
-const USE_MOCK_TEAMS = true;
+const USE_MOCK_TEAMS = false;
 
 export const participantTeamQueryKeys = {
   myTeams: ["participant-my-teams"] as const,
   detail: (teamId?: string) => ["participant-team-detail", teamId] as const,
   members: (teamId?: string) => ["participant-team-members", teamId] as const,
+  invitations: (teamId?: string) =>
+    ["participant-team-invitations", teamId] as const,
 };
 
 type TeamSummaryWithMemberCount = TeamSummaryResponse & {
@@ -32,10 +31,6 @@ type TeamSummaryWithMemberCount = TeamSummaryResponse & {
 };
 
 const currentUserId = "11111111-1111-1111-1111-111111111111" as UUID;
-
-/* =========================================================
- * MOCK DATA
- * ======================================================= */
 
 let mockTeams: TeamDetailResponse[] = [
   {
@@ -50,6 +45,7 @@ let mockTeams: TeamDetailResponse[] = [
     status: "APPROVED",
     members: [
       {
+        memberId: "member-aaaaaaaa-0001-0001-0001-000000000001" as UUID,
         userId: currentUserId,
         fullName: "Nguyen Van A",
         email: "nguyenvana@fpt.edu.vn",
@@ -57,6 +53,7 @@ let mockTeams: TeamDetailResponse[] = [
         joinedAt: "2026-05-18T09:00:00",
       },
       {
+        memberId: "member-aaaaaaaa-0002-0002-0002-000000000002" as UUID,
         userId: "22222222-2222-2222-2222-222222222222" as UUID,
         fullName: "Tran Minh B",
         email: "tranminhb@fpt.edu.vn",
@@ -64,26 +61,18 @@ let mockTeams: TeamDetailResponse[] = [
         joinedAt: "2026-05-18T09:20:00",
       },
       {
+        memberId: "member-aaaaaaaa-0003-0003-0003-000000000003" as UUID,
         userId: "33333333-3333-3333-3333-333333333333" as UUID,
         fullName: "Le Hoang C",
         email: "lehoangc@student.hcmut.edu.vn",
         memberRole: "MEMBER",
         joinedAt: "2026-05-18T10:00:00",
       },
-      {
-        userId: "44444444-4444-4444-4444-444444444444" as UUID,
-        fullName: "Pham Gia D",
-        email: "phamgiad@fpt.edu.vn",
-        memberRole: "MEMBER",
-        joinedAt: "2026-05-19T08:30:00",
-      },
     ],
   },
 ];
 
-/* =========================================================
- * MOCK HELPERS
- * ======================================================= */
+let mockInvitations: TeamInvitationResponse[] = [];
 
 function createMockId() {
   return crypto.randomUUID() as UUID;
@@ -91,6 +80,13 @@ function createMockId() {
 
 function getNowLocalDateTime() {
   return new Date().toISOString().slice(0, 19);
+}
+
+function getMockExpiresAt() {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+
+  return date.toISOString().slice(0, 19);
 }
 
 async function mockDelay() {
@@ -127,11 +123,6 @@ function toTeamResponse(team: TeamDetailResponse): TeamResponse {
   };
 }
 
-/* =========================================================
- * MOCK SERVICE
- * Phần này giả lập BE.
- * ======================================================= */
-
 const mockTeamService = {
   async getMyTeams() {
     await mockDelay();
@@ -163,6 +154,15 @@ const mockTeamService = {
     return team.members;
   },
 
+  async getTeamInvitations(teamId: UUID) {
+    await mockDelay();
+
+    return mockInvitations.filter(
+      (invitation) =>
+        invitation.teamId === teamId && invitation.status !== "CANCELLED",
+    );
+  },
+
   async createTeam(payload: CreateTeamRequest) {
     await mockDelay();
 
@@ -173,9 +173,11 @@ const mockTeamService = {
       description: payload.description,
       leaderId: currentUserId,
       leaderName: "Nguyen Van A",
+      trackId: null,
       status: "DRAFT",
       members: [
         {
+          memberId: createMockId(),
           userId: currentUserId,
           fullName: "Nguyen Van A",
           email: "nguyenvana@fpt.edu.vn",
@@ -215,6 +217,42 @@ const mockTeamService = {
     return toTeamResponse(updatedTeam);
   },
 
+  async inviteMember(teamId: UUID, payload: InviteMemberRequest) {
+    await mockDelay();
+
+    const team = findMockTeam(teamId);
+
+    if (!team) {
+      throw new Error("Team not found.");
+    }
+
+    if (team.members.length >= 5) {
+      throw new Error("Your team is full.");
+    }
+
+    const invitation: TeamInvitationResponse = {
+      id: createMockId(),
+      teamId,
+      invitedEmail: payload.email,
+      status: "PENDING",
+      expiresAt: getMockExpiresAt(),
+    };
+
+    mockInvitations = [invitation, ...mockInvitations];
+
+    return invitation;
+  },
+
+  async cancelInvitation(invitationId: UUID) {
+    await mockDelay();
+
+    mockInvitations = mockInvitations.map((invitation) =>
+      invitation.id === invitationId
+        ? { ...invitation, status: "CANCELLED" }
+        : invitation,
+    );
+  },
+
   async removeMember(
     teamId: UUID,
     memberId: UUID,
@@ -228,7 +266,15 @@ const mockTeamService = {
       throw new Error("Team not found.");
     }
 
-    if (team.leaderId === memberId) {
+    const targetMember = team.members.find(
+      (member) => member.memberId === memberId,
+    );
+
+    if (!targetMember) {
+      throw new Error("Member not found.");
+    }
+
+    if (targetMember.userId === team.leaderId) {
       throw new Error("Cannot remove team leader.");
     }
 
@@ -237,7 +283,7 @@ const mockTeamService = {
 
       return {
         ...item,
-        members: item.members.filter((member) => member.userId !== memberId),
+        members: item.members.filter((member) => member.memberId !== memberId),
       };
     });
   },
@@ -306,34 +352,21 @@ const mockTeamService = {
   },
 };
 
-/* =========================================================
- * API SERVICE
- * Phần này gọi BE thật.
- * ======================================================= */
-
 const apiTeamService = {
   getMyTeams: teamApi.getMyTeams,
   getTeamById: teamApi.getTeamById,
   getTeamMembers: teamApi.getTeamMembers,
+  getTeamInvitations: teamApi.getTeamInvitations,
   createTeam: teamApi.createTeam,
   updateTeam: teamApi.updateTeam,
+  inviteMember: teamApi.inviteMember,
+  cancelInvitation: teamApi.cancelInvitation,
   removeMember: teamApi.removeMember,
   transferLeader: teamApi.transferLeader,
   leaveTeam: teamApi.leaveTeam,
 };
 
-/* =========================================================
- * ACTIVE SERVICE
- * Đổi USE_MOCK_TEAMS ở đầu file để chuyển mock/API.
- * ======================================================= */
-
 const activeTeamService = USE_MOCK_TEAMS ? mockTeamService : apiTeamService;
-
-/* =========================================================
- * PUBLIC HOOKS
- * Các page chỉ import các hook bên dưới.
- * Không đổi tên hook để tránh sửa nhiều file.
- * ======================================================= */
 
 export function useMyTeamsQuery() {
   return useQuery({
@@ -358,6 +391,14 @@ export function useTeamMembersQuery(teamId?: string) {
   });
 }
 
+export function useTeamInvitationsQuery(teamId?: string) {
+  return useQuery({
+    queryKey: participantTeamQueryKeys.invitations(teamId),
+    queryFn: () => activeTeamService.getTeamInvitations(teamId as UUID),
+    enabled: Boolean(teamId),
+  });
+}
+
 export function useCreateTeamMutation() {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
@@ -375,18 +416,16 @@ export function useCreateTeamMutation() {
         USE_MOCK_TEAMS
           ? "Mock: Team created successfully. You are now the Team Leader."
           : "Team created successfully. You are now the Team Leader.",
-        {
-          variant: "success",
-        },
+        { variant: "success" },
       );
     },
 
     onError: () => {
       enqueueSnackbar(
-        USE_MOCK_TEAMS ? "Mock: Failed to create team." : "Failed to create team.",
-        {
-          variant: "error",
-        },
+        USE_MOCK_TEAMS
+          ? "Mock: Failed to create team."
+          : "Failed to create team.",
+        { variant: "error" },
       );
     },
   });
@@ -413,18 +452,80 @@ export function useUpdateTeamMutation(teamId?: string) {
         USE_MOCK_TEAMS
           ? "Mock: Team updated successfully."
           : "Team updated successfully.",
-        {
-          variant: "success",
-        },
+        { variant: "success" },
       );
     },
 
     onError: () => {
       enqueueSnackbar(
-        USE_MOCK_TEAMS ? "Mock: Failed to update team." : "Failed to update team.",
-        {
-          variant: "error",
-        },
+        USE_MOCK_TEAMS
+          ? "Mock: Failed to update team."
+          : "Failed to update team.",
+        { variant: "error" },
+      );
+    },
+  });
+}
+
+export function useInviteTeamMemberMutation(teamId?: string) {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: (payload: InviteMemberRequest) =>
+      activeTeamService.inviteMember(teamId as UUID, payload),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: participantTeamQueryKeys.invitations(teamId),
+      });
+
+      enqueueSnackbar(
+        USE_MOCK_TEAMS
+          ? "Mock: Invitation sent successfully."
+          : "Invitation sent successfully.",
+        { variant: "success" },
+      );
+    },
+
+    onError: () => {
+      enqueueSnackbar(
+        USE_MOCK_TEAMS
+          ? "Mock: Failed to send invitation."
+          : "Failed to send invitation.",
+        { variant: "error" },
+      );
+    },
+  });
+}
+
+export function useCancelTeamInvitationMutation(teamId?: string) {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: (invitationId: UUID) =>
+      activeTeamService.cancelInvitation(invitationId),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: participantTeamQueryKeys.invitations(teamId),
+      });
+
+      enqueueSnackbar(
+        USE_MOCK_TEAMS
+          ? "Mock: Invitation cancelled successfully."
+          : "Invitation cancelled successfully.",
+        { variant: "success" },
+      );
+    },
+
+    onError: () => {
+      enqueueSnackbar(
+        USE_MOCK_TEAMS
+          ? "Mock: Failed to cancel invitation."
+          : "Failed to cancel invitation.",
+        { variant: "error" },
       );
     },
   });
@@ -460,9 +561,7 @@ export function useRemoveTeamMemberMutation(teamId?: string) {
         USE_MOCK_TEAMS
           ? "Mock: Member removed successfully."
           : "Member removed successfully.",
-        {
-          variant: "success",
-        },
+        { variant: "success" },
       );
     },
 
@@ -471,9 +570,7 @@ export function useRemoveTeamMemberMutation(teamId?: string) {
         USE_MOCK_TEAMS
           ? "Mock: Failed to remove member."
           : "Failed to remove member.",
-        {
-          variant: "error",
-        },
+        { variant: "error" },
       );
     },
   });
@@ -500,9 +597,7 @@ export function useTransferTeamLeaderMutation(teamId?: string) {
         USE_MOCK_TEAMS
           ? "Mock: Team leader transferred successfully."
           : "Team leader transferred successfully.",
-        {
-          variant: "success",
-        },
+        { variant: "success" },
       );
     },
 
@@ -511,9 +606,7 @@ export function useTransferTeamLeaderMutation(teamId?: string) {
         USE_MOCK_TEAMS
           ? "Mock: Failed to transfer team leader."
           : "Failed to transfer team leader.",
-        {
-          variant: "error",
-        },
+        { variant: "error" },
       );
     },
   });
@@ -540,18 +633,16 @@ export function useLeaveTeamMutation(teamId?: string) {
         USE_MOCK_TEAMS
           ? "Mock: You left the team successfully."
           : "You left the team successfully.",
-        {
-          variant: "success",
-        },
+        { variant: "success" },
       );
     },
 
     onError: () => {
       enqueueSnackbar(
-        USE_MOCK_TEAMS ? "Mock: Failed to leave team." : "Failed to leave team.",
-        {
-          variant: "error",
-        },
+        USE_MOCK_TEAMS
+          ? "Mock: Failed to leave team."
+          : "Failed to leave team.",
+        { variant: "error" },
       );
     },
   });

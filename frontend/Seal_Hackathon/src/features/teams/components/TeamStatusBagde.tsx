@@ -63,8 +63,9 @@ export const TeamStatusBadge = ({
       {typeof memberCount === "number" && (
         <Chip
           size="small"
-          label={`Members: ${memberCount}/${maxMembers}`}
+          label={`${memberCount}/${maxMembers} members`}
           variant="outlined"
+          color={colorMap[normalized as keyof typeof colorMap] ?? "default"}
           sx={{ fontWeight: 800 }}
         />
       )}
