@@ -1,48 +1,73 @@
 import Chip from "@mui/material/Chip";
 
-import type {
-  InvitationStatus,
-  TeamMemberRole,
-  TeamStatus,
-} from "../schemas/team.schema";
-
 type TeamStatusBadgeProps = {
-  status: TeamStatus | InvitationStatus | TeamMemberRole;
+  status?: string;
+  memberCount?: number;
+  maxMembers?: number;
 };
 
-const labelMap: Record<string, string> = {
-  NOT_REGISTERED: "Not Registered",
-  PENDING_APPROVAL: "Pending Approval",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-  PENDING: "Pending",
-  ACCEPTED: "Accepted",
-  CANCELLED: "Cancelled",
-  EXPIRED: "Expired",
-  LEADER: "Leader",
-  MEMBER: "Member",
-};
+function normalizeStatus(status?: string) {
+  if (!status) return "UNKNOWN";
 
-export const TeamStatusBadge = ({ status }: TeamStatusBadgeProps) => {
+  return status.toUpperCase();
+}
+
+function getStatusLabel(status?: string) {
+  const normalized = normalizeStatus(status);
+
+  const labelMap: Record<string, string> = {
+    APPROVED: "Approved",
+    PENDING: "Pending",
+    PENDING_APPROVAL: "Pending Approval",
+    REJECTED: "Rejected",
+    ACTIVE: "Active",
+    INACTIVE: "Inactive",
+    LEADER: "Leader",
+    MEMBER: "Member",
+    TEAM_LEADER: "Team Leader",
+    UNKNOWN: "Unknown",
+  };
+
+  return labelMap[normalized] ?? status;
+}
+
+export const TeamStatusBadge = ({
+  status,
+  memberCount,
+  maxMembers = 5,
+}: TeamStatusBadgeProps) => {
+  const normalized = normalizeStatus(status);
+
   const colorMap = {
-    NOT_REGISTERED: "default",
-    PENDING_APPROVAL: "warning",
     APPROVED: "success",
-    REJECTED: "error",
+    ACTIVE: "success",
     PENDING: "warning",
-    ACCEPTED: "success",
-    CANCELLED: "default",
-    EXPIRED: "error",
+    PENDING_APPROVAL: "warning",
+    REJECTED: "error",
+    INACTIVE: "default",
     LEADER: "primary",
+    TEAM_LEADER: "primary",
     MEMBER: "default",
+    UNKNOWN: "default",
   } as const;
 
   return (
-    <Chip
-      size="small"
-      label={labelMap[status]}
-      color={colorMap[status]}
-      sx={{ fontWeight: 800 }}
-    />
+    <div className="flex flex-wrap items-center gap-2">
+      <Chip
+        size="small"
+        label={getStatusLabel(status)}
+        color={colorMap[normalized as keyof typeof colorMap] ?? "default"}
+        sx={{ fontWeight: 800 }}
+      />
+
+      {typeof memberCount === "number" && (
+        <Chip
+          size="small"
+          label={`Members: ${memberCount}/${maxMembers}`}
+          variant="outlined"
+          sx={{ fontWeight: 800 }}
+        />
+      )}
+    </div>
   );
 };
