@@ -48,6 +48,8 @@ import { EventCriteriaViewPage } from "@/features/criteria/pages/EventCriteriaVi
 import { ScoringCriteriaManagementPage } from "@/features/criteria/pages/ScoringCriteriaManagementPage";
 import { CoordinatorSubmissionsPage } from "@/features/submissions/pages/CoordinatorSubmissionsPage";
 import { CoordinatorTeamsPage } from "@/features/teams";
+import { ParticipantSubmissionsPage } from "@/features/submissions/pages/ParticipantSubmissionsPage";
+import { SubmissionFormPage } from "@/features/submissions/pages/SubmissionFormPage";
 
 export const router = createBrowserRouter([
   {
@@ -84,6 +86,8 @@ export const router = createBrowserRouter([
       { path: "teams", element: <MyTeamsPage /> },
       { path: "teams/create", element: <CreateTeamPage /> },
       { path: "teams/:teamId", element: <TeamDetailPage /> },
+      { path: "teams/:teamId/submissions", element: <ParticipantSubmissionsPage /> },
+      { path: "teams/:teamId/rounds/:roundId/submission", element: <SubmissionFormPage /> },
     ],
   },
 

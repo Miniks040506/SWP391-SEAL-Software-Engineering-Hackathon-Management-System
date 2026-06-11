@@ -1,19 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { apiRequest } from "@/api/apiRequest";
+import { submissionApi } from "@/api/submission.api";
 import { teamApi } from "@/api/team.api";
+import { apiRequest } from "@/api/apiRequest";
 import type { UUID } from "@/types/common.types";
-import type { 
-  SubmissionDetailResponse, 
-  SubmissionSummaryResponse 
+import type {
+  RequiredLinkConfig,
+  SubmissionDetailResponse,
+  SubmissionSummaryResponse,
 } from "@/types/submission.types";
 import type { TeamSummaryResponse } from "@/types/team.types";
-
-export type RequiredLinkConfig = {
-  linkType: string;
-  label: string;
-  isRequired: boolean;
-  isPrimary: boolean;
-};
 
 export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
   const [submission, setSubmission] = useState<SubmissionDetailResponse | null>(null);
@@ -24,17 +19,17 @@ export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
     if (!teamId || !roundId) return;
     setLoading(true);
     try {
-      // 1. Fetch team summary to verify Role and Status
-      const teams = await teamApi.getMyTeams();
+      const [teams, summaries] = await Promise.all([
+        teamApi.getMyTeams(),
+        submissionApi.getTeamSubmissions(teamId),
+      ]);
+
       const currentTeam = teams.find((t) => t.id === teamId);
       if (currentTeam) setTeamInfo(currentTeam);
 
-      // 2. Fetch submissions to find existing draft/submission for this round
-      const summaries = await apiRequest.get<SubmissionSummaryResponse[]>(`/teams/${teamId}/submissions`);
       const roundSub = summaries.find((s) => s.roundId === roundId);
-
       if (roundSub) {
-        const detail = await apiRequest.get<SubmissionDetailResponse>(`/submissions/${roundSub.id}`);
+        const detail = await submissionApi.getSubmissionById(roundSub.id);
         setSubmission(detail);
       } else {
         setSubmission(null);
@@ -62,7 +57,9 @@ export const useRequiredLinkConfigQuery = (roundId?: UUID) => {
     const fetchConfigs = async () => {
       setLoading(true);
       try {
-        const res = await apiRequest.get<RequiredLinkConfig[]>(`/rounds/${roundId}/required-links`);
+        const res = await apiRequest.get<RequiredLinkConfig[]>(
+          `/rounds/${roundId}/required-links`,
+        );
         setConfigs(res);
       } catch {
         console.error("Failed to fetch required link config");
@@ -85,10 +82,10 @@ export const useTeamSubmissionsQuery = (teamId?: UUID) => {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const res = await apiRequest.get<SubmissionSummaryResponse[]>(`/teams/${teamId}/submissions`);
+        const res = await submissionApi.getTeamSubmissions(teamId);
         setSubmissions(res);
-      } catch (error) {
-        console.error("Failed to fetch team submissions", error);
+      } catch (err) {
+        console.error("Failed to fetch team submissions", err);
       } finally {
         setLoading(false);
       }
