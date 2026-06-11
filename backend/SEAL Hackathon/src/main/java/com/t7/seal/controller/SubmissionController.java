@@ -192,16 +192,7 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getRoundSubmissions(roundId, authentication));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
-    @GetMapping("/tracks/{trackId}/submissions")
-    public ResponseEntity<List<SubmissionSummaryResponse>> getTrackSubmissions(
-            @PathVariable UUID trackId,
-            Authentication authentication
-    ) {
-        return ResponseEntity.ok(submissionService.getTrackSubmissions(trackId, authentication));
-    }
-
-    @PreAuthorize("hasAnyRole('MENTOR','ADMIN','COORDINATOR')")
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping("/mentor/teams/{teamId}/submissions")
     public ResponseEntity<List<SubmissionSummaryResponse>> getMentorTeamSubmissions(
             @PathVariable UUID teamId,
@@ -210,7 +201,7 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getMentorTeamSubmissions(teamId, authentication));
     }
 
-    @PreAuthorize("hasAnyRole('MENTOR','ADMIN','COORDINATOR')")
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping("/mentor/submissions/{submissionId}")
     public ResponseEntity<SubmissionDetailResponse> getMentorSubmissionById(
             @PathVariable UUID submissionId,
