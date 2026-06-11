@@ -405,13 +405,21 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SubmissionSummaryResponse> getRoundSubmissions(UUID roundId, Authentication authentication) {
-        return List.of();
+        ensureCoordinator(authentication);
+        return submissionRepository.findByRoundIdOrderBySubmittedAtDesc(roundId).stream()
+                .map(this::toSubmissionSummaryResponse)
+                .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SubmissionSummaryResponse> getTrackSubmissions(UUID trackId, Authentication authentication) {
-        return List.of();
+        ensureCoordinator(authentication);
+        return submissionRepository.findByTrackIdOrderBySubmittedAtDesc(trackId).stream()
+                .map(this::toSubmissionSummaryResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)

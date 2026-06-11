@@ -28,4 +28,8 @@ public interface SubmissionRepository extends JpaRepository<Submission, UUID>, J
     Optional<Submission> findDetailById(@Param("submissionId") UUID submissionId);
 
     List<Submission> findByTeamIdOrderByRoundOrderIndexAsc(UUID teamId);
+
+    List<Submission> findByRoundIdOrderBySubmittedAtDesc(UUID roundId);
+
+    List<Submission> findByTrackIdOrderBySubmittedAtDesc(UUID trackId);
 }
