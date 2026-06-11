@@ -141,3 +141,31 @@ export type TeamDetailedScoreResponse = {
   totalScore: number;
   criteriaScores: CriterionAverageScoreResponse[];
 };
+
+// Added more
+export type SubmissionHistoryEntry = {
+  id: string;
+  submissionNumber: number;
+  status: string;
+  submittedAt: string | null;
+  linkCount: number;
+  note?: string;
+};
+ 
+export type RequiredLinkConfig = {
+  linkType: string;
+  label: string;
+  isRequired: boolean;
+  isPrimary: boolean;
+};
+ 
+export type LinkFieldValue = {
+  linkType: string;
+  label: string;
+  url: string;
+  file?: File | null;
+  inputType: "url" | "file";
+  isPrimary: boolean;
+  isRequired: boolean;
+  linkId?: string;
+};

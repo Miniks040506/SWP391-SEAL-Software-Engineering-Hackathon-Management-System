@@ -1,9 +1,6 @@
-type LinkTypeStatus = {
-  linkType: string;
-  label: string;
-  isFilled: boolean;
-  isRequired: boolean;
-};
+import type { RequiredLinkConfig } from "@/types/submission.types";
+
+type LinkTypeStatus = RequiredLinkConfig & { isFilled: boolean };
 
 type Props = {
   linkTypes: LinkTypeStatus[];

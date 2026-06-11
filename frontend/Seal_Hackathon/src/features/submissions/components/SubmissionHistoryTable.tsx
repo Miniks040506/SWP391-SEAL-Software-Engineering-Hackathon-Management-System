@@ -1,13 +1,5 @@
+import type { SubmissionHistoryEntry } from "@/types/submission.types";
 import { SubmissionStatusBadge } from "./SubmissionStatusBadge";
-
-export type SubmissionHistoryEntry = {
-  id: string;
-  submissionNumber: number;
-  status: string;
-  submittedAt: string | null;
-  linkCount: number;
-  note?: string;
-};
 
 type Props = {
   history: SubmissionHistoryEntry[];
