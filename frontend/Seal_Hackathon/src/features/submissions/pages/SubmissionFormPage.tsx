@@ -4,9 +4,9 @@ import { TextField, Button } from "@mui/material";
 import { submissionApi } from "@/api/submission.api";
 import { useParticipantSubmissionData } from "../hooks/useParticipantSubmissionQueries";
 import { SubmissionStatusBadge } from "../components/SubmissionStatusBadge";
-import { SubmissionHistoryTable, type SubmissionHistoryEntry } from "../components/SubmissionHistoryTable";
+import { SubmissionHistoryTable } from "../components/SubmissionHistoryTable";
 import { filterTextFieldSx } from "../schemas/submissions.schema";
-import type { CreateSubmissionLinkRequest } from "@/types/submission.types";
+import type { CreateSubmissionLinkRequest, SubmissionHistoryEntry } from "@/types/submission.types";
 
 type StorageItem = {
   id: string;
