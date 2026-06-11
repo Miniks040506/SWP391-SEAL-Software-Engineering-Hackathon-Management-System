@@ -316,7 +316,20 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     @Override
     public SubmissionResponse submitExistingSubmission(UUID submissionId, Authentication authentication) {
-        return null;
+        Submission submission = getSubmission(submissionId);
+
+        ensureTeamLeader(submission.getTeam(), authentication);
+        ensureRoundCanAcceptSubmission(submission.getRound());
+        validateRequiredLinksFromEntity(submission);
+
+        if (!submission.isDraft()) {
+            submission.increaseSubmissionNumber();
+
+        }
+
+        markSubmittedConsideringDeadline(submission, submission.getRound());
+
+        return toSubmissionResponse(submissionRepository.save(submission));
     }
 
     @Override
