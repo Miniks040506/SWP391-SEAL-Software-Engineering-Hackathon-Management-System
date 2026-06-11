@@ -240,11 +240,19 @@ public class SubmissionServiceImpl implements SubmissionService {
         return toSubmissionResponse(getSubmission(saved.getId()));
     }
 
+    @Transactional
     @Override
     public SubmissionResponse addSubmissionLinks(UUID submissionId, SubmissionLinkRequest request, Authentication authentication) {
-        return null;
+        Submission submission = getSubmission(submissionId);
+        ensureTeamLeader(submission.getTeam(), authentication);
+        ensureRoundCanAcceptSubmission(submission.getRound());
+
+        SubmissionLink link = toLinkEntity(submission, request);
+        submissionLinkRepository.save(link);
+        return toSubmissionResponse(getSubmission(submissionId));
     }
 
+    @Transactional
     @Override
     public SubmissionLinkResponse updateSubmissionLink(UUID linkId, SubmissionLinkRequest request, Authentication authentication) {
         return null;
