@@ -17,7 +17,12 @@ import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.RepositoryMetadataService;
 import com.t7.seal.service.SubmissionFileStorageService;
 import com.t7.seal.service.SubmissionService;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +36,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SubmissionServiceImpl implements SubmissionService {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final SubmissionRepository submissionRepository;
     private final SubmissionLinkRepository submissionLinkRepository;
@@ -284,6 +291,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         return toLinkResponse(submissionLinkRepository.save(link));
     }
 
+    @Transactional
     @Override
     public void deleteSubmissionLink(UUID linkId, Authentication authentication) {
         SubmissionLink link = submissionLinkRepository.findById(linkId)
@@ -296,6 +304,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         submissionLinkRepository.delete(link);
     }
 
+    @Transactional
     @Override
     public FileDownloadUrlResponse createSubmissionFileDownloadUrl(UUID linkId, Authentication authentication) {
         SubmissionLink link = submissionLinkRepository.findById(linkId)
@@ -314,6 +323,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         return new FileDownloadUrlResponse(url, LocalDateTime.now().plusMinutes(10));
     }
 
+    @Transactional
     @Override
     public SubmissionResponse submitExistingSubmission(UUID submissionId, Authentication authentication) {
         Submission submission = getSubmission(submissionId);
@@ -333,8 +343,65 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
-    public PageResponse<CoordinatorSubmissionSummaryResponse> getEventSubmissions(UUID eventId, UUID roundId, UUID trackId, String status, String search, int page, int size, Authentication authentication) {
-        return null;
+    @Transactional(readOnly = true)
+    public PageResponse<CoordinatorSubmissionSummaryResponse> getEventSubmissions(
+            UUID eventId, UUID roundId,
+            UUID trackId, String status,
+            String search,
+            int page, int size,
+            Authentication authentication
+    ) {
+        ensureCoordinator(authentication);
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+
+        SubmissionStatus parsedStatus = status == null || status.isBlank()
+                ? null : parseSubmissionStatus(status);
+        String keyword = search == null || search.isBlank()
+                ? null : search.trim().toLowerCase(Locale.ROOT);
+
+        Specification<Submission> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (eventId != null) {
+                predicates.add(cb.equal(root.get("round").get("event").get("id"), eventId));
+            }
+            if (roundId != null) {
+                predicates.add(cb.equal(root.get("round").get("id"), roundId));
+            }
+            if (trackId != null) {
+                predicates.add(cb.equal(root.get("team").get("track").get("id"), trackId));
+            }
+            if (parsedStatus != null) {
+                predicates.add(cb.equal(root.get("status"), parsedStatus));
+            }
+            if (keyword != null) {
+                String pattern = "%" + keyword + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("team").get("name")), pattern),
+                        cb.like(cb.lower(root.get("team").get("projectTitle")), pattern),
+                        cb.like(cb.lower(root.get("round").get("name")), pattern)
+                ));
+            }
+            return predicates.isEmpty()
+                    ? cb.conjunction()
+                    : cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Submission> result = submissionRepository.findAll(spec, PageRequest.of(
+                safePage,
+                safeSize,
+                Sort.by(Sort.Direction.DESC, "submittedAt")
+        ));
+
+        return new PageResponse<>(
+                result.getContent().stream().map(this::toCoordinatorSummaryResponse).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
     }
 
     @Override
@@ -668,6 +735,30 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getSubmittedAt(),
                 submission.getUpdatedAt(),
                 links.size()
+        );
+    }
+
+    private CoordinatorSubmissionSummaryResponse toCoordinatorSummaryResponse(Submission submission) {
+        HackathonEvent event = submission.getRound().getEvent();
+
+        List<SubmissionLink> links = submissionLinkRepository.findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(submission.getId());
+
+        return new CoordinatorSubmissionSummaryResponse(
+                submission.getId(),
+                event == null ? null : event.getId(),
+                event == null ? null : event.getName(),
+                submission.getTeam().getId(),
+                submission.getTeam().getName(),
+                submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getId(),
+                submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getName(),
+                submission.getRound().getId(),
+                submission.getRound().getName(),
+                submission.getStatus().name(),
+                submission.getSubmissionNumber(),
+                submission.getSubmittedAt(),
+                submission.getUpdatedAt(),
+                links.size(),
+                submission.isLate()
         );
     }
 
