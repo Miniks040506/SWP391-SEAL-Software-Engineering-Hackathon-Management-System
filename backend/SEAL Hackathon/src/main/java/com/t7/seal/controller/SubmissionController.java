@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
+import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import com.t7.seal.service.SubmissionService;
 import jakarta.validation.Valid;
@@ -102,51 +103,99 @@ public class SubmissionController {
             @PathVariable UUID submissionId,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(submissionService.getSubmissionById(submissionId, authentication));
+        return ResponseEntity.ok(submissionService.
+                getSubmissionById(submissionId, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @GetMapping("/submissions/{submissionId}/admin-view")
+    public ResponseEntity<SubmissionDetailResponse> getSubmissionAdminView(
+            @PathVariable UUID submissionId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.
+                getSubmissionForAdmin(submissionId, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/submissions/{submissionId}")
     public ResponseEntity<SubmissionResponse> updateSubmission(
-            @PathVariable("submissionId") UUID submissionId,
-            @Valid @RequestBody UpdateSubmissionRequest request
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody UpdateSubmissionRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(submissionService.
+                updateSubmission(submissionId, request, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/submissions/{submissionId}/submit")
+    public ResponseEntity<SubmissionResponse> submitExistingSubmission(
+            @PathVariable UUID submissionId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.submitExistingSubmission(submissionId, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/submissions/{submissionId}/links")
     public ResponseEntity<SubmissionResponse> addSubmissionLinks(
-            @PathVariable("submissionId") UUID submissionId,
-            @Valid @RequestBody SubmissionLinkRequest request
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody SubmissionLinkRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(submissionService.addSubmissionLinks(submissionId, request, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/submission-links/{linkId}")
     public ResponseEntity<SubmissionLinkResponse> updateSubmissionLink(
-            @PathVariable("linkId") UUID linkId,
-            @Valid @RequestBody SubmissionLinkRequest request
+            @PathVariable UUID linkId,
+            @Valid @RequestBody SubmissionLinkRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(submissionService.updateSubmissionLink(linkId, request, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/submission-links/{linkId}")
     public ResponseEntity<Void> deleteSubmissionLink(
-            @PathVariable("linkId") UUID linkId
+            @PathVariable UUID linkId,
+            Authentication authentication
     ) {
-        return null;
+        submissionService.deleteSubmissionLink(linkId, authentication);
+        return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/submissions/{submissionId}/scores/me")
-    public ResponseEntity<TeamDetailedScoreResponse> getMyTeamDetailedScores(
-            @PathVariable("submissionId") UUID submissionId
+    @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @GetMapping("/events/{eventId}/submissions")
+    public ResponseEntity<PageResponse<CoordinatorSubmissionSummaryResponse>> getEventSubmissions(
+            @PathVariable UUID eventId,
+            @RequestParam(required = false) UUID roundId,
+            @RequestParam(required = false) UUID trackId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(submissionService.getEventSubmissions(eventId, roundId, trackId, status, search, page, size, authentication));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @GetMapping("/rounds/{roundId}/submissions")
+    public ResponseEntity<List<SubmissionSummaryResponse>> getRoundSubmissions(
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.getRoundSubmissions(roundId, authentication));
     }
 
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping("/mentor/teams/{teamId}/submissions")
     public ResponseEntity<List<SubmissionSummaryResponse>> getMentorTeamSubmissions(
-            @PathVariable("teamId") UUID teamId,
+            @PathVariable UUID teamId,
             Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.getMentorTeamSubmissions(teamId, authentication));
@@ -155,9 +204,26 @@ public class SubmissionController {
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping("/mentor/submissions/{submissionId}")
     public ResponseEntity<SubmissionDetailResponse> getMentorSubmissionById(
-            @PathVariable("submissionId") UUID submissionId,
+            @PathVariable UUID submissionId,
             Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.getMentorSubmissionById(submissionId, authentication));
+    }
+
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/submission-links/{linkId}/download-url")
+    public ResponseEntity<FileDownloadUrlResponse> createSubmissionFileDownloadUrl(
+            @PathVariable UUID linkId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.createSubmissionFileDownloadUrl(linkId, authentication));
+    }
+
+    @GetMapping("/submissions/{submissionId}/scores/me")
+    public ResponseEntity<TeamDetailedScoreResponse> getMyTeamDetailedScores(
+            @PathVariable UUID submissionId
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 }
