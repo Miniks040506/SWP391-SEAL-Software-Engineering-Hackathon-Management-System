@@ -7,7 +7,7 @@ type TeamStatusBadgeProps = {
 };
 
 function normalizeStatus(status?: string) {
-  if (!status) return "UNKNOWN";
+  if (!status) return "";
 
   return status.toUpperCase();
 }
@@ -25,7 +25,6 @@ function getStatusLabel(status?: string) {
     LEADER: "Leader",
     MEMBER: "Member",
     TEAM_LEADER: "Team Leader",
-    UNKNOWN: "Unknown",
   };
 
   return labelMap[normalized] ?? status;
@@ -48,17 +47,18 @@ export const TeamStatusBadge = ({
     LEADER: "primary",
     TEAM_LEADER: "primary",
     MEMBER: "default",
-    UNKNOWN: "default",
   } as const;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Chip
-        size="small"
-        label={getStatusLabel(status)}
-        color={colorMap[normalized as keyof typeof colorMap] ?? "default"}
-        sx={{ fontWeight: 800 }}
-      />
+      {status && (
+        <Chip
+          size="small"
+          label={getStatusLabel(status)}
+          color={colorMap[normalized as keyof typeof colorMap] ?? "default"}
+          sx={{ fontWeight: 800 }}
+        />
+      )}
 
       {typeof memberCount === "number" && (
         <Chip

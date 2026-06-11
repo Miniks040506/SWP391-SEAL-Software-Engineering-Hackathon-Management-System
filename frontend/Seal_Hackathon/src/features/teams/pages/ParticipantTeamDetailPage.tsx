@@ -180,7 +180,6 @@ export const TeamDetailPage = () => {
                 />
               </section>
 
-
               <div className="flex flex-wrap gap-3">
                 {currentUserIsLeader ? (
                   <Button
