@@ -31,5 +31,11 @@ public interface SubmissionRepository extends JpaRepository<Submission, UUID>, J
 
     List<Submission> findByRoundIdOrderBySubmittedAtDesc(UUID roundId);
 
-    List<Submission> findByTrackIdOrderBySubmittedAtDesc(UUID trackId);
+    @Query("""
+            SELECT s FROM Submission s
+            JOIN s.team t
+            WHERE t.track.id = :trackId
+            ORDER BY s.submittedAt DESC
+            """)
+    List<Submission> findByTrackIdOrderBySubmittedAtDesc(@Param("trackId") UUID trackId);
 }
