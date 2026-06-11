@@ -279,13 +279,20 @@ public class SubmissionServiceImpl implements SubmissionService {
             link.setContentType(null);
             link.setFileSizeBytes(null);
         }
-        
+
         return toLinkResponse(submissionLinkRepository.save(link));
     }
 
     @Override
     public void deleteSubmissionLink(UUID linkId, Authentication authentication) {
+        SubmissionLink link = submissionLinkRepository.findById(linkId)
+                .orElseThrow(() -> new NotFoundException("Submission link not found."));
+        Submission submission = getSubmission(link.getSubmission().getId());
 
+        ensureTeamLeader(submission.getTeam(), authentication);
+        ensureRoundCanAcceptSubmission(submission.getRound());
+
+        submissionLinkRepository.delete(link);
     }
 
     @Override
