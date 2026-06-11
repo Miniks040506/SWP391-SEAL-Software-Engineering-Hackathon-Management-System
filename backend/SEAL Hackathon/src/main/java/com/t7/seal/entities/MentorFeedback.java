@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -88,7 +87,7 @@ public class MentorFeedback {
     public void publish(LocalDateTime now) {
         this.visibility = MentorFeedbackVisibility.PUBLISHED;
         this.visibleToTeam = true;
-        this.updatedAt = now;
+        this.publishedAt = now;
     }
 
     public boolean isPublished() {

@@ -173,7 +173,7 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
         mentorFeedbackRepository.delete(feedback);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Override
     public MentorFeedbackResponse publishFeedback(UUID feedbackId, Authentication authentication) {
         MentorFeedback feedback = getFeedback(feedbackId);
