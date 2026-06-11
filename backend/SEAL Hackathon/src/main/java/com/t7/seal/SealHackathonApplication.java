@@ -9,5 +9,5 @@ public class SealHackathonApplication {
     public static void main(String[] args) {
         SpringApplication.run(SealHackathonApplication.class, args);
     }
-
+    
 }

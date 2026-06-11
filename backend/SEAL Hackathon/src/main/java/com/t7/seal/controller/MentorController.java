@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequestMapping(ApiPaths.API_V1)
 public class MentorController {
 
-    private MentorFeedbackService mentorFeedbackService;
+    private final MentorFeedbackService mentorFeedbackService;
 
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @PostMapping({
@@ -58,6 +58,7 @@ public class MentorController {
         return ResponseEntity.ok(mentorFeedbackService.getTeamFeedback(teamId, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping("/mentor-feedback/{feedbackId}")
     public ResponseEntity<MentorFeedbackResponse> getFeedbackById(
             @PathVariable("feedbackId") UUID feedbackId,
@@ -66,6 +67,7 @@ public class MentorController {
         return ResponseEntity.ok(mentorFeedbackService.getFeedbackById(feedbackId, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @PatchMapping("/mentor-feedback/{feedbackId}")
     public ResponseEntity<MentorFeedbackResponse> updateFeedback(
             @PathVariable("feedbackId") UUID feedbackId,
@@ -75,6 +77,7 @@ public class MentorController {
         return ResponseEntity.ok(mentorFeedbackService.updateFeedback(feedbackId, request, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @DeleteMapping("/mentor-feedback/{feedbackId}")
     public ResponseEntity<Void> deleteFeedback(
             @PathVariable("feedbackId") UUID feedbackId,
@@ -84,6 +87,7 @@ public class MentorController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @PostMapping("/mentor-feedback/{feedbackId}/publish")
     public ResponseEntity<MentorFeedbackResponse> publishFeedback(
             @PathVariable("feedbackId") UUID feedbackId,
