@@ -34,10 +34,15 @@ export const teamApi = {
   },
 
   inviteMember(teamId: UUID, payload: InviteMemberRequest) {
-    return apiRequest.post<TeamInvitationResponse>(
-      `/teams/${teamId}/invite`,
-      payload,
-    );
+    return apiRequest.post<TeamInvitationResponse>(`/teams/${teamId}/invite`, payload);
+  },
+
+  getTeamInvitations(teamId: UUID) {
+    return apiRequest.get<TeamInvitationResponse[]>(`/teams/${teamId}/invitations`);
+  },
+
+  getMyInvitations() {
+    return apiRequest.get<TeamInvitationResponse[]>("/teams/invitations/me");
   },
 
   getTeamMembers(teamId: UUID) {
@@ -45,31 +50,37 @@ export const teamApi = {
   },
 
   removeMember(teamId: UUID, memberId: UUID, payload?: RemoveMemberRequest) {
-    return apiRequest.delete<void>(`/teams/${teamId}/members/${memberId}`, { data: payload });
+    return apiRequest.delete<void>(`/teams/${teamId}/members/${memberId}`, {
+      data: payload,
+    });
   },
 
   acceptInvitation(invitationId: UUID) {
-    return apiRequest.post<TeamMemberResponse>(
-      `/teams/invitations/${invitationId}/accept`,
-    );
+    return apiRequest.post<TeamMemberResponse>(`/teams/invitations/${invitationId}/accept`);
   },
 
-  rejectInvitation(invitationId: UUID, payload: RejectInvitationRequest) {
-    return apiRequest.post<void>(
-      `/teams/invitations/${invitationId}/reject`,
-      payload,
-    );
+  acceptInvitationByToken(token: string) {
+    return apiRequest.post<TeamMemberResponse>(`/teams/invitations/token/${token}/accept`);
+  },
+
+  rejectInvitation(invitationId: UUID, payload?: RejectInvitationRequest) {
+    return apiRequest.post<void>(`/teams/invitations/${invitationId}/reject`, payload ?? {});
+  },
+
+  rejectInvitationByToken(token: string, payload?: RejectInvitationRequest) {
+    return apiRequest.post<void>(`/teams/invitations/token/${token}/reject`, payload ?? {});
+  },
+
+  cancelInvitation(invitationId: UUID) {
+    return apiRequest.post<void>(`/teams/invitations/${invitationId}/cancel`);
   },
 
   transferLeader(teamId: UUID, payload: TransferLeaderRequest) {
-    return apiRequest.post<TeamResponse>(
-      `/teams/${teamId}/transfer-leader`,
-      payload,
-    );
+    return apiRequest.post<TeamResponse>(`/teams/${teamId}/transfer-leader`, payload);
   },
 
-  leaveTeam(teamId: UUID, payload: LeaveTeamRequest) {
-    return apiRequest.post<void>(`/teams/${teamId}/leave`, payload);
+  leaveTeam(teamId: UUID, payload?: LeaveTeamRequest) {
+    return apiRequest.post<void>(`/teams/${teamId}/leave`, payload ?? {});
   },
 
   toggleJoinCode(teamId: UUID, payload: ToggleJoinCodeRequest) {
