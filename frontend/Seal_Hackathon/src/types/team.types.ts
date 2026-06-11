@@ -40,10 +40,10 @@ export type ToggleJoinCodeRequest = {
 export type TeamResponse = {
   id: UUID;
   name: string;
-  projectTitle?: string;
+  projectTitle?: string | null;
   leaderId: UUID;
   leaderName: string;
-  trackId?: UUID;
+  trackId?: UUID | null;
   status: string;
   memberCount: number;
 };
@@ -51,12 +51,13 @@ export type TeamResponse = {
 export type TeamSummaryResponse = {
   id: UUID;
   name: string;
-  projectTitle?: string;
+  projectTitle?: string | null;
   status: string;
   roleInTeam: string;
 };
 
 export type TeamMemberResponse = {
+  memberId: UUID;
   userId: UUID;
   fullName: string;
   email: string;
@@ -67,11 +68,11 @@ export type TeamMemberResponse = {
 export type TeamDetailResponse = {
   id: UUID;
   name: string;
-  projectTitle?: string;
-  description?: string;
+  projectTitle?: string | null;
+  description?: string | null;
   leaderId: UUID;
   leaderName: string;
-  trackId?: UUID;
+  trackId?: UUID | null;
   status: string;
   members: TeamMemberResponse[];
 };
@@ -82,27 +83,4 @@ export type TeamInvitationResponse = {
   invitedEmail: string;
   status: string;
   expiresAt: ISODateTime;
-};
-
-// Appended
-
-export type CoordinatorTeamListParams = {
-  eventId?: UUID;
-  trackId?: UUID;
-  status?: string;
-  search?: string;
-  page?: number;
-  size?: number;
-};
-
-export type CoordinatorTeamSummary = {
-  id: UUID;
-  name: string;
-  projectTitle?: string;
-  leaderId: UUID;
-  leaderName: string;
-  trackId?: UUID;
-  trackName?: string;
-  status: string;
-  memberCount: number;
 };
