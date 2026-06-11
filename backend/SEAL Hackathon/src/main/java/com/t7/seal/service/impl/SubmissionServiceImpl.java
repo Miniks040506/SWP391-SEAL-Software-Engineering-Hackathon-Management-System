@@ -244,18 +244,43 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Override
     public SubmissionResponse addSubmissionLinks(UUID submissionId, SubmissionLinkRequest request, Authentication authentication) {
         Submission submission = getSubmission(submissionId);
+
         ensureTeamLeader(submission.getTeam(), authentication);
         ensureRoundCanAcceptSubmission(submission.getRound());
 
         SubmissionLink link = toLinkEntity(submission, request);
         submissionLinkRepository.save(link);
+
         return toSubmissionResponse(getSubmission(submissionId));
     }
 
     @Transactional
     @Override
     public SubmissionLinkResponse updateSubmissionLink(UUID linkId, SubmissionLinkRequest request, Authentication authentication) {
-        return null;
+        SubmissionLink link = submissionLinkRepository.findById(linkId)
+                .orElseThrow(() -> new NotFoundException("Submission link not found."));
+        Submission submission = getSubmission(link.getSubmission().getId());
+
+        ensureTeamLeader(submission.getTeam(), authentication);
+        ensureRoundCanAcceptSubmission(submission.getRound());
+
+        SubmissionLinkType parsedType = parseLinkType(request.linkType());
+        link.setLinkType(parsedType);
+        link.setUrl(request.url().trim());
+        link.setLabel(blankToNull(request.label()));
+        link.setIsPrimary(Boolean.TRUE.equals(request.isPrimary()));
+        link.setDisplayOrder(request.displayOrder() == null ? 0 : request.displayOrder());
+        link.setStorageProvider(detectStorageProvider(parsedType, request.url()));
+        link.setRepoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, request.url()));
+
+        if (link.getStorageProvider() != SubmissionStorageProvider.AWS_S3) {
+            link.setObjectKey(null);
+            link.setOriginalFileName(null);
+            link.setContentType(null);
+            link.setFileSizeBytes(null);
+        }
+        
+        return toLinkResponse(submissionLinkRepository.save(link));
     }
 
     @Override
