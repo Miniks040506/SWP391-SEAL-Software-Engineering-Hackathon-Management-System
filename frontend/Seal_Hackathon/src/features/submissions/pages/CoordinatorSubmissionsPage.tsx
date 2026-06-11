@@ -7,7 +7,7 @@ import { SubmissionFilterBar } from "../components/SubmissionFilterBar";
 import { SubmissionTable } from "../components/SubmissionTable";
 import { SubmissionDetailDrawer } from "../components/SubmissionDetailDrawer";
 import { paginationSx } from "../schemas/submissions.schema";
-import type { CoordinatorSubmissionListParams } from "@/types/submission.types";
+import type { CoordinatorSubmissionListParams } from "../hooks/useCoordinatorSubmissionQueries";
 
 const PAGE_SIZE = 20;
 

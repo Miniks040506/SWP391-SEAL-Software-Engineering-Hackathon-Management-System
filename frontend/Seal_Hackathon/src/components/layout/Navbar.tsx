@@ -1,11 +1,50 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Avatar from "@mui/material/Avatar";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import LeaderboardOutlinedIcon from "@mui/icons-material/LeaderboardOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import { useAuth } from "@/hooks/useAuth";
+
+const publicExploreLinks = [
+  {
+    label: "Dashboard",
+    path: "/events#dashboard",
+    description: "Season overview",
+    icon: DashboardOutlinedIcon,
+  },
+  {
+    label: "Standings",
+    path: "/standings",
+    description: "Public rankings",
+    icon: LeaderboardOutlinedIcon,
+  },
+  {
+    label: "Teams",
+    path: "/events#teams",
+    description: "Registration flow",
+    icon: GroupsOutlinedIcon,
+  },
+  {
+    label: "Projects",
+    path: "/events#projects",
+    description: "Scoring model",
+    icon: RocketLaunchOutlinedIcon,
+  },
+  {
+    label: "Schedule",
+    path: "/events#schedule",
+    description: "Season rounds",
+    icon: CalendarMonthOutlinedIcon,
+  },
+];
 
 const Logo = ({ onClick }: { onClick: () => void }) => (
   <div
@@ -30,32 +69,96 @@ const Logo = ({ onClick }: { onClick: () => void }) => (
 const NavLinks = ({
   isActive,
   navigate,
+  pathname,
+  hash,
 }: {
   isActive: (p: string) => boolean;
   navigate: (p: string) => void;
-}) => (
-  <div className="flex items-center">
-    <button
-      onClick={() => navigate("/events")}
-      className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-        isActive("/") || location.pathname.startsWith("/events") ? "text-blue-500" : "text-gray-500 hover:text-gray-900"
-      }`}
-    >
-      Explore
-    </button>
+  pathname: string;
+  hash: string;
+}) => {
+  const isExploreActive =
+    pathname.startsWith("/events") ||
+    publicExploreLinks.some((link) => {
+      if (link.path.includes("#")) {
+        const [targetPath, targetHash] = link.path.split("#");
+        return (
+          pathname === targetPath &&
+          (hash === `#${targetHash}` || (targetHash === "dashboard" && !hash))
+        );
+      }
 
-    <button
-      onClick={() => navigate("/standings")}
-      className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-        isActive("/standings")
-          ? "text-blue-500"
-          : "text-gray-500 hover:text-gray-900"
-      }`}
-    >
-      Standings
-    </button>
-  </div>
-);
+      return isActive(link.path);
+    });
+
+  const navigateTo = (path: string) => {
+    navigate(path);
+
+    if (!path.includes("#")) return;
+
+    window.setTimeout(() => {
+      document
+        .getElementById(path.split("#")[1])
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  };
+
+  return (
+    <div className="flex items-center">
+      <div className="group relative">
+        <button
+          type="button"
+          onClick={() => navigateTo("/events#dashboard")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+            isExploreActive
+              ? "bg-blue-50 text-blue-500"
+              : "text-gray-500 hover:text-gray-900"
+          }`}
+          aria-haspopup="menu"
+        >
+          Explore
+          <KeyboardArrowDownRoundedIcon
+            fontSize="small"
+            className="transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
+          />
+        </button>
+
+        <div className="invisible absolute left-1/2 top-full w-72 -translate-x-1/2 translate-y-3 pt-3 opacity-0 transition-all duration-200 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-xl shadow-blue-950/10 ring-1 ring-black/5">
+            {publicExploreLinks.map((link) => {
+              const Icon = link.icon;
+
+              return (
+                <button
+                  key={link.path}
+                  type="button"
+                  onClick={() => navigateTo(link.path)}
+                  className={[
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all",
+                    isActive(link.path)
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-950",
+                  ].join(" ")}
+                  role="menuitem"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                    <Icon fontSize="small" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold">{link.label}</span>
+                    <span className="block truncate text-xs font-medium text-gray-400">
+                      {link.description}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const GuestActions = ({ navigate }: { navigate: (p: string) => void }) => (
   <div className="flex items-center gap-3">
@@ -213,7 +316,17 @@ export const Navbar = () => {
   const location = useLocation();
   const { isAuthenticated, user, logout } = useAuth();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path.includes("#")) {
+      const [pathname, hash] = path.split("#");
+      return (
+        location.pathname === pathname &&
+        (location.hash === `#${hash}` || (hash === "dashboard" && !location.hash))
+      );
+    }
+
+    return location.pathname === path;
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -226,7 +339,12 @@ export const Navbar = () => {
         <Logo onClick={() => navigate("/")} />
 
         <div className="flex items-center gap-2 md:gap-8">
-          <NavLinks isActive={isActive} navigate={navigate} />
+          <NavLinks
+            isActive={isActive}
+            navigate={navigate}
+            pathname={location.pathname}
+            hash={location.hash}
+          />
 
           <div className="mx-2 hidden h-5 w-px bg-gray-200 sm:block" />
 

@@ -81,8 +81,8 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:30MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:30MB}
 
 jwt:
   secret: ${JWT_SECRET:}
@@ -100,14 +100,30 @@ app:
   oauth2:
     success-path: /oauth/callback
     failure-path: /login
+  submission:
+    storage:
+      provider: ${SUBMISSION_STORAGE_PROVIDER:AWS_S3}
+    upload:
+      max-size-mb: ${SUBMISSION_UPLOAD_MAX_SIZE_MB:25}
+      allowed-content-types: ${SUBMISSION_UPLOAD_ALLOWED_CONTENT_TYPES:application/pdf,application/zip,application/x-zip-compressed,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,image/png,image/jpeg,text/plain}
+    repo-metadata:
+      enabled: ${REPO_METADATA_ENABLED:true}
 
 github:
   api-base-url: https://api.github.com
   token: ${GITHUB_TOKEN:}
 
-#gitlab:
-#  api-base-url: https://gitlab.com/api/v4
-#  token: ${GITLAB_TOKEN:}
+gitlab:
+  api-base-url: ${GITLAB_API_BASE_URL:https://gitlab.com/api/v4}
+  token: ${GITLAB_TOKEN:}
+
+aws:
+  s3:
+    region: ${AWS_REGION:}
+    bucket: ${AWS_S3_BUCKET:}
+    public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}
 
 springdoc:
   api-docs:

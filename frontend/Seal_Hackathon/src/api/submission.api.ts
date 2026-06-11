@@ -2,6 +2,7 @@ import { apiRequest } from "@/api/apiRequest";
 import type { UUID } from "@/types/common.types";
 import type {
   CreateSubmissionLinkRequest,
+  FileDownloadUrlResponse,
   SubmissionDetailResponse,
   SubmissionLinkResponse,
   SubmissionResponse,
@@ -20,6 +21,20 @@ export const submissionApi = {
     );
   },
 
+  uploadSubmissionFile(teamId: UUID, roundId: UUID, formData: FormData) {
+    return apiRequest.postForm<SubmissionResponse>(
+      `/teams/${teamId}/rounds/${roundId}/submission/file`,
+      formData,
+    );
+  },
+
+  uploadFileToSubmission(submissionId: UUID, formData: FormData) {
+    return apiRequest.postForm<SubmissionResponse>(
+      `/submissions/${submissionId}/files`,
+      formData,
+    );
+  },
+
   getTeamSubmissions(teamId: UUID) {
     return apiRequest.get<SubmissionSummaryResponse[]>(
       `/teams/${teamId}/submissions`,
@@ -28,6 +43,18 @@ export const submissionApi = {
 
   getSubmissionById(submissionId: UUID) {
     return apiRequest.get<SubmissionDetailResponse>(`/submissions/${submissionId}`);
+  },
+
+  getMentorTeamSubmissions(teamId: UUID) {
+    return apiRequest.get<SubmissionSummaryResponse[]>(
+      `/mentor/teams/${teamId}/submissions`,
+    );
+  },
+
+  getMentorSubmissionById(submissionId: UUID) {
+    return apiRequest.get<SubmissionDetailResponse>(
+      `/mentor/submissions/${submissionId}`,
+    );
   },
 
   updateSubmission(submissionId: UUID, payload: UpdateSubmissionRequest) {
@@ -53,6 +80,12 @@ export const submissionApi = {
 
   deleteSubmissionLink(linkId: UUID) {
     return apiRequest.delete<void>(`/submission-links/${linkId}`);
+  },
+
+  createSubmissionFileDownloadUrl(linkId: UUID) {
+    return apiRequest.get<FileDownloadUrlResponse>(
+      `/submission-links/${linkId}/download-url`,
+    );
   },
 
   getMyTeamDetailedScores(submissionId: UUID) {

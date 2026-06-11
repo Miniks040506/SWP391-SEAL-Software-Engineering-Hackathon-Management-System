@@ -1,7 +1,40 @@
 import type { ISODateTime, UUID } from "@/types/common.types";
 
+export type SubmissionLinkType =
+  | "REPOSITORY"
+  | "DEMO"
+  | "SLIDE"
+  | "REPORT"
+  | "VIDEO"
+  | "OTHER";
+
+export type SubmissionStatus = "DRAFT" | "SUBMITTED" | "LATE" | "DISQUALIFIED" | string;
+
+export type SubmissionStorageProvider =
+  | "EXTERNAL_URL"
+  | "GOOGLE_DRIVE"
+  | "GITHUB"
+  | "GITLAB"
+  | "AWS_S3"
+  | string;
+
+export type RepositoryMetadata = {
+  platform?: string;
+  repoName?: string;
+  owner?: string;
+  defaultBranch?: string;
+  primaryLanguage?: string;
+  lastPushAt?: ISODateTime;
+  stars?: number;
+  forks?: number;
+  isPrivate?: boolean;
+  url?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
 export type CreateSubmissionLinkRequest = {
-  linkType: string;
+  linkType: SubmissionLinkType | string;
   url: string;
   label?: string;
   isPrimary?: boolean;
@@ -19,7 +52,7 @@ export type UpdateSubmissionRequest = {
 };
 
 export type UpdateSubmissionLinkRequest = {
-  linkType?: string;
+  linkType?: SubmissionLinkType | string;
   url?: string;
   label?: string;
   isPrimary?: boolean;
@@ -30,40 +63,69 @@ export type SubmissionResponse = {
   id: UUID;
   teamId: UUID;
   roundId: UUID;
-  status: string;
+  status: SubmissionStatus;
   submissionNumber: number;
-  submittedAt?: ISODateTime;
+  submittedAt?: ISODateTime | null;
 };
 
 export type SubmissionSummaryResponse = {
   id: UUID;
+  teamId: UUID;
+  teamName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
   roundId: UUID;
   roundName: string;
-  status: string;
+  status: SubmissionStatus;
   submissionNumber: number;
-  submittedAt?: ISODateTime;
+  submittedAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
+  linkCount?: number;
 };
 
 export type SubmissionLinkResponse = {
   id: UUID;
-  submissionId: UUID;
-  linkType: string;
+  submissionId?: UUID;
+  linkType: SubmissionLinkType | string;
   url: string;
-  label?: string;
-  isPrimary: boolean;
-  displayOrder?: number;
-  repoMetadata?: unknown;
+  label?: string | null;
+  storageProvider?: SubmissionStorageProvider | null;
+  objectKey?: string | null;
+  originalFileName?: string | null;
+  contentType?: string | null;
+  fileSizeBytes?: number | null;
+  repoMetadata?: RepositoryMetadata | null;
+  isPrimary?: boolean;
+  displayOrder?: number | null;
+  createdAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
 };
 
 export type SubmissionDetailResponse = {
   id: UUID;
+  eventId?: UUID | null;
+  eventName?: string | null;
   teamId: UUID;
+  teamName?: string | null;
+  leaderId?: UUID | null;
+  leaderName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
   roundId: UUID;
-  note?: string;
-  status: string;
+  roundName?: string | null;
+  note?: string | null;
+  status: SubmissionStatus;
   submissionNumber: number;
-  submittedAt?: ISODateTime;
+  submittedAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
+  roundSubmissionLocked?: boolean | null;
+  roundSubmissionLockedAt?: ISODateTime | null;
   links: SubmissionLinkResponse[];
+};
+
+export type FileDownloadUrlResponse = {
+  downloadUrl: string;
+  expiresAt?: ISODateTime | null;
 };
 
 export type CriterionAverageScoreResponse = {
@@ -78,28 +140,4 @@ export type TeamDetailedScoreResponse = {
   teamId: UUID;
   totalScore: number;
   criteriaScores: CriterionAverageScoreResponse[];
-};
-
-// type for coordinator submission
-export type CoordinatorSubmissionListParams = {
-  eventId?: UUID;
-  roundId?: UUID;
-  trackId?: UUID;
-  status?: string;
-  search?: string;
-  page?: number;
-  size?: number;
-};
-
-export type CoordinatorSubmissionSummary = {
-  id: UUID;
-  teamId: UUID;
-  teamName: string;
-  roundId: UUID;
-  roundName: string;
-  trackId?: UUID;
-  trackName?: string;
-  status: string;
-  submissionNumber: number;
-  submittedAt?: ISODateTime;
 };
