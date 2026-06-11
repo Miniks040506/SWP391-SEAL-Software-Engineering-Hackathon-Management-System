@@ -36,6 +36,8 @@ import {
   CoordinatorAnnouncementPage,
 } from "@/features/coordinator";
 
+import { CreateTeamPage, MyTeamsPage, TeamDetailPage } from "@/features/teams";
+
 import { CoordinatorUsersPage } from "@/features/coordinator/pages/CoordinatorUsersPage";
 
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
@@ -46,8 +48,6 @@ import { EventCriteriaViewPage } from "@/features/criteria/pages/EventCriteriaVi
 import { ScoringCriteriaManagementPage } from "@/features/criteria/pages/ScoringCriteriaManagementPage";
 import { CoordinatorSubmissionsPage } from "@/features/submissions/pages/CoordinatorSubmissionsPage";
 import { CoordinatorTeamsPage } from "@/features/teams";
-import { ParticipantSubmissionsPage } from "@/features/submissions/pages/ParticipantSubmissionsPage";
-import { SubmissionFormPage } from "@/features/submissions/pages/SubmissionFormPage";
 
 export const router = createBrowserRouter([
   {
@@ -77,6 +77,17 @@ export const router = createBrowserRouter([
   },
 
   {
+    path: "/participant",
+    element: <RootLayout />,
+    children: [
+      { index: true, element: <Navigate to="teams" replace /> },
+      { path: "teams", element: <MyTeamsPage /> },
+      { path: "teams/create", element: <CreateTeamPage /> },
+      { path: "teams/:teamId", element: <TeamDetailPage /> },
+    ],
+  },
+
+  {
     path: "/coordinator",
     element: <LoggedinLayout sectionRole="COORDINATOR" />,
     children: [
@@ -85,15 +96,27 @@ export const router = createBrowserRouter([
       { path: "events", element: <CoordinatorEventsPage /> },
       { path: "events/create", element: <CoordinatorCreateEventPage /> },
       { path: "events/:eventId/edit", element: <CoordinatorEditEventPage /> },
-      { path: "events/:eventId/criteria", element: <EventCriteriaManagementPage />},
-      { path: "events/:eventId/criteria/view", element: <EventCriteriaViewPage mode="EVENT" />},
-      { path: "rounds/:roundId/criteria", element: <EventCriteriaViewPage mode="ROUND" />},
+      {
+        path: "events/:eventId/criteria",
+        element: <EventCriteriaManagementPage />,
+      },
+      {
+        path: "events/:eventId/criteria/view",
+        element: <EventCriteriaViewPage mode="EVENT" />,
+      },
+      {
+        path: "rounds/:roundId/criteria",
+        element: <EventCriteriaViewPage mode="ROUND" />,
+      },
       { path: "events/:eventId/view", element: <EventDetailPage /> },
       { path: "users", element: <CoordinatorUsersPage /> },
       { path: "teams", element: <CoordinatorTeamsPage /> },
       { path: "teams/:teamId", element: <CoordinatorTeamsPage /> },
       { path: "submissions", element: <CoordinatorSubmissionsPage /> },
-      { path: "submissions/:submissionId", element: <CoordinatorSubmissionsPage /> },
+      {
+        path: "submissions/:submissionId",
+        element: <CoordinatorSubmissionsPage />,
+      },
       { path: "judging", element: <NotFoundPage /> },
       { path: "prizes", element: <NotFoundPage /> },
       { path: "criteria", element: <ScoringCriteriaManagementPage /> },
@@ -139,8 +162,14 @@ export const router = createBrowserRouter([
       { path: "submissions", element: <NotFoundPage /> },
       { path: "scoring", element: <NotFoundPage /> },
       { path: "calibration", element: <NotFoundPage /> },
-      { path: "rounds/:roundId/criteria", element: <EventCriteriaViewPage mode="ROUND" /> },
-      { path: "events/:eventId/criteria", element: <EventCriteriaViewPage mode="EVENT" /> },
+      {
+        path: "rounds/:roundId/criteria",
+        element: <EventCriteriaViewPage mode="ROUND" />,
+      },
+      {
+        path: "events/:eventId/criteria",
+        element: <EventCriteriaViewPage mode="EVENT" />,
+      },
       { path: "notifications", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
@@ -161,15 +190,6 @@ export const router = createBrowserRouter([
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
       { path: "schedule", element: <NotFoundPage /> },
-    ],
-  },
-
-  {
-    path: "/participant",
-    element: <LoggedinLayout sectionRole="COORDINATOR" />, 
-    children: [
-      { path: "teams/:teamId/submissions", element: <ParticipantSubmissionsPage /> },
-      { path: "teams/:teamId/rounds/:roundId/submission", element: <SubmissionFormPage /> },
     ],
   },
 

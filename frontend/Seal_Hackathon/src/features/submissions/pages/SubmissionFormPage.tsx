@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TextField, Button } from "@mui/material";
-import { apiRequest } from "@/api/apiRequest";
 import { submissionApi } from "@/api/submission.api";
 import { useParticipantSubmissionData } from "../hooks/useParticipantSubmissionQueries";
 import { SubmissionStatusBadge } from "../components/SubmissionStatusBadge";
 import { SubmissionHistoryTable, type SubmissionHistoryEntry } from "../components/SubmissionHistoryTable";
 import { filterTextFieldSx } from "../schemas/submissions.schema";
+import type { CreateSubmissionLinkRequest } from "@/types/submission.types";
 
 type StorageItem = {
   id: string;
@@ -20,6 +20,13 @@ type StorageItem = {
   path: string;
 };
 
+function detectLinkType(url: string): string {
+  if (url.includes("github.com")) return "GITHUB";
+  if (url.includes("gitlab.com")) return "GITLAB";
+  if (url.includes("drive.google.com")) return "GOOGLE_DRIVE";
+  return "EXTERNAL_URL";
+}
+
 export function SubmissionFormPage() {
   const { teamId, roundId } = useParams<{ teamId: string; roundId: string }>();
   const navigate = useNavigate();
@@ -30,10 +37,10 @@ export function SubmissionFormPage() {
   const [currentPath, setCurrentPath] = useState("/");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"icon" | "list" | "tree">("icon");
-  
+
   const [linkUrl, setLinkUrl] = useState("");
   const [note, setNote] = useState("");
-  
+
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -41,7 +48,7 @@ export function SubmissionFormPage() {
   const [activeTab, setActiveTab] = useState<"form" | "history">("form");
 
   const [dragActive, setDragActive] = useState(false);
-  
+
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTab, setPickerTab] = useState<"local" | "drive">("local");
   const [tempFile, setTempFile] = useState<File | null>(null);
@@ -116,7 +123,7 @@ export function SubmissionFormPage() {
     if (tempFile) {
       const finalName = tempSaveAs.trim() || tempFile.name;
       const fileToSave = new File([tempFile], finalName, { type: tempFile.type });
-      
+
       const newItem: StorageItem = {
         id: generateId(),
         type: "file",
@@ -128,7 +135,7 @@ export function SubmissionFormPage() {
         license: tempLicense,
         path: currentPath
       };
-      
+
       setItems(prev => [...prev, newItem]);
       setIsPickerOpen(false);
     }
@@ -221,39 +228,35 @@ export function SubmissionFormPage() {
     setLinkUrl(`https://github.com/organization/${teamInfo?.name?.replace(/\s+/g, '-') || 'project'}`);
   };
 
-  const buildPayload = () => {
-    const links = [];
-    if (linkUrl.trim()) {
-      let type = "EXTERNAL_URL";
-      if (linkUrl.includes("github.com")) type = "GITHUB";
-      else if (linkUrl.includes("gitlab.com")) type = "GITLAB";
-      else if (linkUrl.includes("drive.google.com")) type = "GOOGLE_DRIVE";
-
-      links.push({ 
-        linkType: type, 
-        label: "Resource Link", 
-        url: linkUrl.trim(), 
-        isPrimary: true 
-      });
-    }
-    return { links, note: note.trim() || undefined };
+  const buildLinks = (): CreateSubmissionLinkRequest[] => {
+    if (!linkUrl.trim()) return [];
+    return [{
+      linkType: detectLinkType(linkUrl),
+      label: "Resource Link",
+      url: linkUrl.trim(),
+      isPrimary: true,
+    }];
   };
 
   const handleSaveDraft = async () => {
     if (!teamId || !roundId) return;
-    setSaving(true); setSuccessMsg(null); setErrorMsg(null);
+    setSaving(true);
+    setSuccessMsg(null);
+    setErrorMsg(null);
     try {
+      const payload = { links: buildLinks(), note: note.trim() || undefined };
       if (submission?.id) {
         await submissionApi.updateSubmission(submission.id, { note: note.trim() || undefined });
-        await apiRequest.patch(`/submissions/${submission.id}`, buildPayload());
       } else {
-        await submissionApi.submitDeliverables(teamId, roundId, buildPayload());
+        await submissionApi.submitDeliverables(teamId, roundId, payload);
       }
       setSuccessMsg("Draft saved successfully.");
       refetch();
     } catch (err: unknown) {
       setErrorMsg((err as { message?: string })?.message || "Failed to save draft.");
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -263,23 +266,27 @@ export function SubmissionFormPage() {
       setErrorMsg("Please provide at least a link or upload a file.");
       return;
     }
-    setSubmitting(true); setSuccessMsg(null); setErrorMsg(null);
+    setSubmitting(true);
+    setSuccessMsg(null);
+    setErrorMsg(null);
     try {
+      const payload = { links: buildLinks(), note: note.trim() || undefined };
       let submissionId = submission?.id;
       if (submissionId) {
         await submissionApi.updateSubmission(submissionId, { note: note.trim() || undefined });
-        await apiRequest.patch(`/submissions/${submissionId}`, buildPayload());
       } else {
-        const created = await submissionApi.submitDeliverables(teamId, roundId, buildPayload());
+        const created = await submissionApi.submitDeliverables(teamId, roundId, payload);
         submissionId = created.id;
       }
-      await apiRequest.post(`/submissions/${submissionId}/submit`, {});
+      await submissionApi.submitDeliverables(teamId, roundId, payload);
       setSuccessMsg("Submission confirmed! Reviewers have been notified.");
       refetch();
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message;
       setErrorMsg(msg?.includes("deadline") ? "Deadline exceeded. Submission is blocked." : (msg || "Failed to submit."));
-    } finally { setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatDate = (ts: number) => {
