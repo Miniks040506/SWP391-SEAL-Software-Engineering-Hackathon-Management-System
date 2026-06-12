@@ -209,8 +209,7 @@ public class SubmissionController {
     ) {
         return ResponseEntity.ok(submissionService.getMentorSubmissionById(submissionId, authentication));
     }
-
-
+    
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/submission-links/{linkId}/download-url")
     public ResponseEntity<FileDownloadUrlResponse> createSubmissionFileDownloadUrl(

@@ -46,9 +46,15 @@ export type SubmitDeliverablesRequest = {
   links: CreateSubmissionLinkRequest[];
 };
 
+export type SaveSubmissionDraftRequest = {
+  note?: string;
+  links?: CreateSubmissionLinkRequest[];
+};
+
 export type UpdateSubmissionRequest = {
   note?: string;
-  status?: string;
+  status?: SubmissionStatus | string;
+  links?: CreateSubmissionLinkRequest[];
 };
 
 export type UpdateSubmissionLinkRequest = {
@@ -62,10 +68,17 @@ export type UpdateSubmissionLinkRequest = {
 export type SubmissionResponse = {
   id: UUID;
   teamId: UUID;
+  teamName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
   roundId: UUID;
+  roundName?: string | null;
+  note?: string | null;
   status: SubmissionStatus;
   submissionNumber: number;
   submittedAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
+  links?: SubmissionLinkResponse[];
 };
 
 export type SubmissionSummaryResponse = {
@@ -126,6 +139,34 @@ export type SubmissionDetailResponse = {
 export type FileDownloadUrlResponse = {
   downloadUrl: string;
   expiresAt?: ISODateTime | null;
+};
+
+export type CoordinatorSubmissionSummaryResponse = {
+  id: UUID;
+  eventId?: UUID | null;
+  eventName?: string | null;
+  teamId: UUID;
+  teamName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  roundId: UUID;
+  roundName: string;
+  status: SubmissionStatus;
+  submissionNumber: number;
+  submittedAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
+  linkCount: number;
+  late?: boolean;
+};
+
+export type GetCoordinatorSubmissionsParams = {
+  eventId?: UUID;
+  roundId?: UUID;
+  trackId?: UUID;
+  status?: SubmissionStatus | string;
+  search?: string;
+  page?: number;
+  size?: number;
 };
 
 export type CriterionAverageScoreResponse = {
