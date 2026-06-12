@@ -23,19 +23,28 @@ export type ConfirmAdvancementRequest = {
   note?: string;
 };
 
+export type AdvanceRuleType = "TOP_N" | "TOP_PERCENT" | "MIN_SCORE" | "WILDCARD" | string;
+
 export type CreateAdvanceRuleRequest = {
-  ruleType: string;
-  trackId?: UUID;
+  ruleType: AdvanceRuleType;
+  trackId?: UUID | null;
   topN?: number;
   minScore?: number;
   topPercent?: number;
+  wildcardSlots?: number;
+  priority?: number;
   description?: string;
 };
 
 export type UpdateAdvanceRuleRequest = {
+  ruleType?: AdvanceRuleType;
+  trackId?: UUID | null;
+  global?: boolean;
   topN?: number;
   minScore?: number;
   topPercent?: number;
+  wildcardSlots?: number;
+  priority?: number;
   description?: string;
   active?: boolean;
 };
@@ -109,12 +118,16 @@ export type ConfirmAdvancementResponse = {
 export type AdvanceRuleResponse = {
   id: UUID;
   roundId: UUID;
-  trackId?: UUID;
-  ruleType: string;
-  topN?: number;
-  minScore?: number;
-  topPercent?: number;
+  trackId?: UUID | null;
+  ruleType: AdvanceRuleType;
+  topN?: number | null;
+  minScore?: number | null;
+  topPercent?: number | null;
+  wildcardSlots?: number | null;
   active: boolean;
+  value: number;
+  priority: number;
+  description?: string | null;
 };
 
 export type JudgeAssignmentResponse = {

@@ -230,12 +230,19 @@ const mockTeamService = {
       throw new Error("Your team is full.");
     }
 
+    const invitationId = createMockId();
+    const token = createMockId();
+
     const invitation: TeamInvitationResponse = {
-      id: createMockId(),
+      id: invitationId,
       teamId,
+      teamName: team.name,
       invitedEmail: payload.email,
       status: "PENDING",
       expiresAt: getMockExpiresAt(),
+      token,
+      acceptUrl: `/invitations/accept?token=${token}`,
+      rejectUrl: `/invitations/reject?token=${token}`,
     };
 
     mockInvitations = [invitation, ...mockInvitations];
