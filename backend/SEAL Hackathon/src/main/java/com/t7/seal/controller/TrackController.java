@@ -114,16 +114,18 @@ public class TrackController {
     public ResponseEntity<PageResponse<TrackTeamProgressResponse>> getTrackTeams(
             @PathVariable UUID trackId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(trackService.getTrackTeams(trackId, page, size, authentication));
     }
 
     @PostMapping("/teams/{teamId}/register-track")
     public ResponseEntity<TeamResponse> registerTeamForTrack(
             @PathVariable UUID teamId,
-            @Valid @RequestBody RegisterTeamTrackRequest request
+            @Valid @RequestBody RegisterTeamTrackRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(trackService.registerTeamForTrack(teamId, request, authentication));
     }
 }

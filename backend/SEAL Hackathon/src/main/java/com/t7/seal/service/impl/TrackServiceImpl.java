@@ -150,8 +150,6 @@ public class TrackServiceImpl implements TrackService {
 
         if (request.name() != null) {
 
-            
-
             String name = request.name().trim();
 
             if (name.isBlank()) {
