@@ -8,7 +8,11 @@ import { RootLayout } from "@/components/layout/RootLayout";
 
 import { JudgeDashboardPage } from "@/features/judge";
 
-import { MentorDashboardPage } from "@/features/mentor";
+import { 
+  MentorDashboardPage,
+  MentorSubmissionPage,
+  MentorSubmissionDetailPage,
+} from "@/features/mentor";
 
 import {
   ForgotPasswordPage,
@@ -189,7 +193,8 @@ export const router = createBrowserRouter([
       { path: "dashboard", element: <MentorDashboardPage /> },
       { path: "teams", element: <NotFoundPage /> },
       { path: "feedback", element: <NotFoundPage /> },
-      { path: "submissions", element: <NotFoundPage /> },
+      { path: "submissions", element: <MentorSubmissionPage /> },
+      { path: "submissions/:submissionId", element: <MentorSubmissionDetailPage /> },
       { path: "notifications", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
