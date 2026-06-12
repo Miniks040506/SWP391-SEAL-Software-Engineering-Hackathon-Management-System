@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface AdvanceRuleRepository extends JpaRepository<AdvanceRule, UUID> {
 
+    List<AdvanceRule> findByRoundIdOrderByPriorityAscRuleTypeAsc(UUID roundId);
 }

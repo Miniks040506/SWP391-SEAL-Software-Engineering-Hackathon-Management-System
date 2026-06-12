@@ -86,12 +86,16 @@ public class RoundController {
     }
 
     @GetMapping("/rounds/{roundId}/scoring-progress")
-    public ResponseEntity<ScoringProgressResponse> getScoringProgress(@PathVariable UUID roundId) {
+    public ResponseEntity<ScoringProgressResponse> getScoringProgress(
+            @PathVariable UUID roundId
+    ) {
         return null;
     }
 
     @GetMapping("/rounds/{roundId}/advancement-preview")
-    public ResponseEntity<AdvancementPreviewResponse> getAdvancementPreview(@PathVariable UUID roundId) {
+    public ResponseEntity<AdvancementPreviewResponse> getAdvancementPreview(
+            @PathVariable UUID roundId
+    ) {
         return null;
     }
 
@@ -104,8 +108,11 @@ public class RoundController {
     }
 
     @GetMapping("/rounds/{roundId}/advance-rules")
-    public ResponseEntity<List<AdvanceRuleResponse>> getAdvanceRules(@PathVariable UUID roundId) {
-        return null;
+    public ResponseEntity<List<AdvanceRuleResponse>> getAdvanceRules(
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(roundService.getAdvanceRules(roundId, authentication));
     }
 
     @PostMapping("/rounds/{roundId}/advance-rules")

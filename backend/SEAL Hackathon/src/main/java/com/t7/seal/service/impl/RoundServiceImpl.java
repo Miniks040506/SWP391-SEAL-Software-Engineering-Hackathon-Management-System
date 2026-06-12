@@ -3,16 +3,21 @@ package com.t7.seal.service.impl;
 import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.RoundStatus;
 import com.t7.seal.domain.UserRole;
+import com.t7.seal.entities.AdvanceRule;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.repository.AdvanceRuleRepository;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
+import com.t7.seal.request.round.CreateAdvanceRuleRequest;
 import com.t7.seal.request.round.CreateRoundRequest;
+import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
 import com.t7.seal.request.round.UpdateRoundRequest;
+import com.t7.seal.response.round.AdvanceRuleResponse;
 import com.t7.seal.response.round.RoundDetailResponse;
 import com.t7.seal.response.round.RoundResponse;
 import com.t7.seal.service.CurrentUserService;
@@ -34,6 +39,7 @@ public class RoundServiceImpl implements RoundService {
     private final HackathonEventRepository hackathonEventRepository;
     private final RoundRepository roundRepository;
     private final CurrentUserService currentUserService;
+    private final AdvanceRuleRepository advanceRuleRepository;
 
     @Transactional
     @Override
@@ -208,6 +214,33 @@ public class RoundServiceImpl implements RoundService {
         roundRepository.delete(round);
     }
 
+    @Override
+    public List<AdvanceRuleResponse> getAdvanceRules(UUID roundId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        ensureRoundExist(roundId);
+
+        return advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId)
+                .stream()
+                .map(this::toAdvanceRuleResponse)
+                .toList();
+    }
+
+    @Override
+    public AdvanceRuleResponse createAdvanceRule(UUID roundId, CreateAdvanceRuleRequest request, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public AdvanceRuleResponse updateAdvanceRule(UUID advanceRuleId, UpdateAdvanceRuleRequest request, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public void deleteAdvanceRule(UUID advanceRuleId, Authentication authentication) {
+
+    }
+
     //HELPERS
 
     private void assertTrackRoundEditable(HackathonEvent event) {
@@ -262,6 +295,43 @@ public class RoundServiceImpl implements RoundService {
                 round.getStatus().name(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline()
+        );
+    }
+
+    private void ensureRoundExist(UUID roundId) {
+        if (!roundRepository.existsById(roundId)) {
+            throw new NotFoundException("Round not found " + roundId);
+        }
+    }
+
+    private AdvanceRuleResponse toAdvanceRuleResponse(AdvanceRule advanceRule) {
+        Integer topN = null;
+        Double topPercent = null;
+        Double minScore = null;
+        Integer wildCardSlots = null;
+
+        if (advanceRule.getValue() != null) {
+            switch (advanceRule.getRuleType()) {
+                case TOP_N -> topN = Math.round(advanceRule.getValue());
+                case TOP_PERCENT -> topPercent = advanceRule.getValue().doubleValue();
+                case MIN_SCORE -> minScore = advanceRule.getValue().doubleValue();
+                case WILDCARD -> wildCardSlots = Math.round(advanceRule.getValue());
+            }
+        }
+
+        return new AdvanceRuleResponse(
+                advanceRule.getId(),
+                advanceRule.getRound().getId(),
+                advanceRule.getTrack() == null ? null : advanceRule.getTrack().getId(),
+                advanceRule.getRuleType().name(),
+                topN,
+                topPercent,
+                minScore,
+                wildCardSlots,
+                Boolean.TRUE,
+                advanceRule.getValue(),
+                advanceRule.getPriority(),
+                advanceRule.getDescription()
         );
     }
 }
