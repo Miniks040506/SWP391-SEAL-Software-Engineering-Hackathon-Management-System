@@ -139,9 +139,11 @@ public class RoundController {
 
     @DeleteMapping("/advance-rules/{ruleId}")
     public ResponseEntity<Void> deleteAdvanceRule(
-            @PathVariable UUID ruleId
+            @PathVariable UUID ruleId,
+            Authentication authentication
     ) {
-        return null;
+        roundService.deleteAdvanceRule(ruleId, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")

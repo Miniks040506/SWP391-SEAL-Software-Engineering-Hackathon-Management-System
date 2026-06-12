@@ -319,7 +319,13 @@ public class RoundServiceImpl implements RoundService {
     @Transactional
     @Override
     public void deleteAdvanceRule(UUID advanceRuleId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
 
+        AdvanceRule advanceRule = getAdvanceRule(advanceRuleId);
+
+        assertAdvanceRuleEditable(advanceRule.getRound());
+
+        advanceRuleRepository.delete(advanceRule);
     }
 
     //HELPERS
