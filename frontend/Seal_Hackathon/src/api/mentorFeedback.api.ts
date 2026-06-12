@@ -14,10 +14,20 @@ export const mentorFeedbackApi = {
     );
   },
 
+  getMentorTeamFeedback(teamId: UUID) {
+    return apiRequest.get<MentorFeedbackResponse[]>(
+      `/mentor-feedback/teams/${teamId}`,
+    );
+  },
+
   getTeamFeedback(teamId: UUID) {
     return apiRequest.get<MentorFeedbackResponse[]>(
       `/mentor-feedback/teams/${teamId}`,
     );
+  },
+
+  getTeamVisibleFeedback(teamId: UUID) {
+    return apiRequest.get<MentorFeedbackResponse[]>(`/teams/${teamId}/feedback`);
   },
 
   getFeedbackById(feedbackId: UUID) {
@@ -35,5 +45,11 @@ export const mentorFeedbackApi = {
 
   deleteFeedback(feedbackId: UUID) {
     return apiRequest.delete<void>(`/mentor-feedback/${feedbackId}`);
+  },
+
+  publishFeedback(feedbackId: UUID) {
+    return apiRequest.post<MentorFeedbackResponse>(
+      `/mentor-feedback/${feedbackId}/publish`,
+    );
   },
 };

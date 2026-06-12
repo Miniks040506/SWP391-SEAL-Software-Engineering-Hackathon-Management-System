@@ -39,7 +39,7 @@ public class MentorFeedback {
     private User mentor;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "submission_id", nullable = false)
+    @JoinColumn(name = "submission_id")
     private Submission submission;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,6 +1,6 @@
-import type { MentorDashboardData } from "../schemas/mentorDashboard.schema";
+import type { MentorDashboard } from "../schemas/mentorDashboard.schema";
 
-export const mentorDashboardMock: MentorDashboardData = {
+export const mentorDashboardMock: MentorDashboard = {
   mentorName: "Thu Minh",
 
   summaryCards: [
