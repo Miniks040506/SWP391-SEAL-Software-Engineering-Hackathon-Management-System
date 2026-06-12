@@ -31,15 +31,27 @@ function detectLinkType(url: string): SubmissionLinkType {
     return "REPOSITORY";
   }
 
-  if (lower.includes("youtube.com") || lower.includes("youtu.be") || lower.includes("vimeo.com")) {
+  if (
+    lower.includes("youtube.com") ||
+    lower.includes("youtu.be") ||
+    lower.includes("vimeo.com")
+  ) {
     return "VIDEO";
   }
 
-  if (lower.includes("slides.google.com") || lower.endsWith(".ppt") || lower.endsWith(".pptx")) {
+  if (
+    lower.includes("slides.google.com") ||
+    lower.endsWith(".ppt") ||
+    lower.endsWith(".pptx")
+  ) {
     return "SLIDE";
   }
 
-  if (lower.includes("docs.google.com/document") || lower.endsWith(".pdf") || lower.includes("report")) {
+  if (
+    lower.includes("docs.google.com/document") ||
+    lower.endsWith(".pdf") ||
+    lower.includes("report")
+  ) {
     return "REPORT";
   }
 
@@ -131,8 +143,9 @@ export function SubmissionFormPage() {
   }, [submission]);
 
   const isLeader = teamInfo?.roleInTeam === "LEADER";
-  const isApproved = teamInfo?.status === "APPROVED";
-  const canEdit = isLeader && isApproved;
+  const isRegistered =
+    teamInfo?.status === "REGISTERED" || teamInfo?.status === "COMPETING";
+  const canEdit = isLeader && isRegistered;
 
   const generateId = () => crypto.randomUUID();
 
@@ -529,10 +542,10 @@ export function SubmissionFormPage() {
             edit deliverables.
           </div>
         )}
-        {isLeader && !isApproved && (
+        {isLeader && !isRegistered && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
-            <strong>Action blocked:</strong> Your team registration is not
-            APPROVED. Submissions are disabled.
+            <strong>Action blocked:</strong> Your team must be REGISTERED or
+            COMPETING to submit. Submissions are disabled.
           </div>
         )}
 
