@@ -24,6 +24,20 @@ type StorageItem = {
   path: string;
 };
 
+const ALLOWED_CONTENT_TYPES = [
+  "application/pdf",
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "video/mp4",
+  "image/png",
+  "image/webp",
+  "image/jpeg",
+  "text/plain"
+];
+
+
 function detectLinkType(url: string): SubmissionLinkType {
   const lower = url.toLowerCase();
 
@@ -31,11 +45,7 @@ function detectLinkType(url: string): SubmissionLinkType {
     return "REPOSITORY";
   }
 
-  if (
-    lower.includes("youtube.com") ||
-    lower.includes("youtu.be") ||
-    lower.includes("vimeo.com")
-  ) {
+  if (lower.endsWith(".mp4") || lower.includes("drive.google.com")) {
     return "VIDEO";
   }
 
@@ -161,7 +171,19 @@ export function SubmissionFormPage() {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && canEdit) {
-      const newItems: StorageItem[] = Array.from(e.dataTransfer.files).map(
+      const validFiles = Array.from(e.dataTransfer.files).filter((f) => {
+        if (!ALLOWED_CONTENT_TYPES.includes(f.type)) {
+          setErrorMsg(`Unsupported file type: ${f.name}`);
+          return false;
+        }
+        if (f.size > 25 * 1024 * 1024) {
+          setErrorMsg(`File exceeds max size 25MB: ${f.name}`);
+          return false;
+        }
+        return true;
+      });
+
+      const newItems: StorageItem[] = validFiles.map(
         (f) => ({
           id: generateId(),
           type: "file",
@@ -190,6 +212,15 @@ export function SubmissionFormPage() {
 
   const handleModalUpload = () => {
     if (tempFile) {
+      if (!ALLOWED_CONTENT_TYPES.includes(tempFile.type)) {
+        setErrorMsg(`Unsupported file type: ${tempFile.name}`);
+        return;
+      }
+      if (tempFile.size > 25 * 1024 * 1024) {
+        setErrorMsg(`File exceeds max size 25MB: ${tempFile.name}`);
+        return;
+      }
+
       const finalName = tempSaveAs.trim() || tempFile.name;
       const fileToSave = new File([tempFile], finalName, {
         type: tempFile.type,
@@ -572,7 +603,7 @@ export function SubmissionFormPage() {
                     File submissions
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
-                    Max size: 10 MB, max files: 20
+                    Max size: 25 MB, max files: 20
                   </div>
                 </div>
 
@@ -1153,12 +1184,22 @@ export function SubmissionFormPage() {
                     </div>
                     <input
                       type="file"
+                      accept={ALLOWED_CONTENT_TYPES.join(",")}
                       className="hidden"
                       ref={pickerFileInputRef}
                       onChange={(e) => {
                         if (e.target.files?.[0]) {
-                          setTempFile(e.target.files[0]);
-                          setTempSaveAs(e.target.files[0].name);
+                          const file = e.target.files[0];
+                          if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
+                            setErrorMsg(`Unsupported file type: ${file.name}`);
+                            return;
+                          }
+                          if (file.size > 25 * 1024 * 1024) {
+                            setErrorMsg(`File exceeds max size 25MB: ${file.name}`);
+                            return;
+                          }
+                          setTempFile(file);
+                          setTempSaveAs(file.name);
                         }
                       }}
                     />
