@@ -127,12 +127,14 @@ public class RoundController {
                 .body(roundService.createAdvanceRule(roundId, request, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PatchMapping("/advance-rules/{ruleId}")
     public ResponseEntity<AdvanceRuleResponse> updateAdvanceRule(
             @PathVariable UUID ruleId,
-            @Valid @RequestBody UpdateAdvanceRuleRequest request
+            @Valid @RequestBody UpdateAdvanceRuleRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.updateAdvanceRule(ruleId, request, authentication));
     }
 
     @DeleteMapping("/advance-rules/{ruleId}")

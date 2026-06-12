@@ -212,6 +212,7 @@ public class RoundServiceImpl implements RoundService {
         roundRepository.delete(round);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<AdvanceRuleResponse> getAdvanceRules(UUID roundId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
@@ -224,6 +225,7 @@ public class RoundServiceImpl implements RoundService {
                 .toList();
     }
 
+    @Transactional
     @Override
     public AdvanceRuleResponse createAdvanceRule(
             UUID roundId,
@@ -240,7 +242,7 @@ public class RoundServiceImpl implements RoundService {
 
         Track track = resolveTrack(request.trackId(), round);
 
-        assertNoDuplicateAdvanceRule(roundId, ruleType, track.getId());
+        assertNoDuplicateAdvanceRule(roundId, ruleType, track.getId() == null ? null : track.getId());
 
         Float value = resolveRuleValue(ruleType, request.topN(),
                 request.topPercent(), request.minScore(), request.wildCardSlots());
@@ -257,11 +259,64 @@ public class RoundServiceImpl implements RoundService {
         return toAdvanceRuleResponse(advanceRuleRepository.save(advanceRule));
     }
 
+    @Transactional
     @Override
-    public AdvanceRuleResponse updateAdvanceRule(UUID advanceRuleId, UpdateAdvanceRuleRequest request, Authentication authentication) {
-        return null;
+    public AdvanceRuleResponse updateAdvanceRule(
+            UUID advanceRuleId,
+            UpdateAdvanceRuleRequest request,
+            Authentication authentication
+    ) {
+        currentUserService.getCurrentUser(authentication);
+
+        AdvanceRule advanceRule = getAdvanceRule(advanceRuleId);
+
+        assertAdvanceRuleEditable(advanceRule.getRound());
+
+        if (request.active() != null && !request.active()) {
+            throw new BadRequestException("Advance rule does not support inactive state yet.");
+        }
+
+        RuleType nextRuleType = request.ruleType() == null
+                ? advanceRule.getRuleType()
+                : parseEnum(RuleType.class, request.ruleType(), "ruleType");
+
+        Track nextTrack = resolveTrack(request.trackId(), advanceRule.getRound());
+
+        assertNoDuplicateAdvanceRuleOnUpdate(
+                advanceRule.getRound().getId(),
+                nextRuleType,
+                nextTrack == null ? null : nextTrack.getId(),
+                advanceRule.getId()
+        );
+
+        if (request.description() != null) {
+            advanceRule.setDescription(trimToNull(request.description()));
+        }
+
+        if (request.priority() != null) {
+            advanceRule.setPriority(resolvePriority(request.priority(), nextRuleType));
+        } else if (request.ruleType() != null && !request.ruleType().isBlank()) {
+            advanceRule.setPriority(priorityFor(nextRuleType));
+        }
+
+        advanceRule.setRuleType(nextRuleType);
+        advanceRule.setTrack(nextTrack);
+
+
+        if (advanceRule.getRuleType() != null || hasRuleValuePatch(request)) {
+            advanceRule.setValue(resolveRuleValue(
+                    nextRuleType,
+                    request.topN(),
+                    request.topPercent(),
+                    request.minScore(),
+                    request.wildCardSlots()
+            ));
+        }
+
+        return toAdvanceRuleResponse(advanceRuleRepository.save(advanceRule));
     }
 
+    @Transactional
     @Override
     public void deleteAdvanceRule(UUID advanceRuleId, Authentication authentication) {
 
@@ -395,7 +450,7 @@ public class RoundServiceImpl implements RoundService {
         return track;
     }
 
-    private void assertNoDuplicateAdvanceRule(
+    private void assertNoDuplicateAdvanceRuleOnUpdate(
             UUID roundId, RuleType ruleType,
             UUID trackId, UUID currentRuleId
     ) {
@@ -476,5 +531,17 @@ public class RoundServiceImpl implements RoundService {
             case MIN_SCORE -> 1;
             case WILDCARD -> 3;
         };
+    }
+
+    private AdvanceRule getAdvanceRule(UUID advanceRuleId) {
+        return advanceRuleRepository.findById(advanceRuleId)
+                .orElseThrow(() -> new NotFoundException("Advance rule not found " + advanceRuleId));
+    }
+
+    private boolean hasRuleValuePatch(UpdateAdvanceRuleRequest request) {
+        return request.topN() != null
+                || request.topPercent() != null
+                || request.minScore() != null
+                || request.wildCardSlots() != null;
     }
 }
