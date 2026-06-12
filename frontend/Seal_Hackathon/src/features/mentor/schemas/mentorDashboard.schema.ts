@@ -30,6 +30,7 @@ export const mentorSubmissionSchema = z.object({
   id: z.string(),
   teamName: z.string(),
   projectName: z.string(),
+  roundName: z.string().optional(),
   submittedAt: z.string(),
   feedbackStatus: z.enum(feedbackStatuses),
 });
