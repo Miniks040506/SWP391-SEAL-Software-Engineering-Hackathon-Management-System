@@ -2,16 +2,22 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Button from "@mui/material/Button";
 import { useNavigate } from "react-router-dom";
 
-import { MentorSubmissionHistoryTable } from "../components/submission/MentorSubmissionHistoryTable";
+import { MentorSubmissionTable } from "../components/submission/MentorSubmissionTable";
 import { useMentorSubmission } from "../hooks/useMentorSubmission";
+import { useMentorDashboard } from "../hooks/useMentorDashboard";
+
 
 export const MentorSubmissionPage = () => {
   const navigate = useNavigate();
-  const { teamSubmissionQuery, goToSubmissionDetail } = useMentorSubmission();
 
-  const { data: response, isLoading } = teamSubmissionQuery;
-  // Dữ liệu API bọc trong property 'data' của axios, tùy chỉnh dựa trên axios instance thực tế
-  const submissions = response?.data || []; 
+  const { dashboard } = useMentorDashboard();
+
+  const trackId = (dashboard?.assignedTrack as any)?.id;
+  
+  const { trackSubmissionQuery, goToSubmissionDetail } = useMentorSubmission(trackId);
+
+  const { data: response, isLoading } = trackSubmissionQuery;
+  const submissions = response?.data || response || []; 
 
   return (
     <div className="space-y-6">
@@ -34,7 +40,7 @@ export const MentorSubmissionPage = () => {
         </p>
       </div>
 
-      <MentorSubmissionHistoryTable
+      <MentorSubmissionTable
         isLoading={isLoading}
         submissions={submissions}
         onRowClick={goToSubmissionDetail}

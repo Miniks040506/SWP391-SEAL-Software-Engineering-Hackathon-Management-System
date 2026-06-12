@@ -86,12 +86,16 @@ public class RoundController {
     }
 
     @GetMapping("/rounds/{roundId}/scoring-progress")
-    public ResponseEntity<ScoringProgressResponse> getScoringProgress(@PathVariable UUID roundId) {
+    public ResponseEntity<ScoringProgressResponse> getScoringProgress(
+            @PathVariable UUID roundId
+    ) {
         return null;
     }
 
     @GetMapping("/rounds/{roundId}/advancement-preview")
-    public ResponseEntity<AdvancementPreviewResponse> getAdvancementPreview(@PathVariable UUID roundId) {
+    public ResponseEntity<AdvancementPreviewResponse> getAdvancementPreview(
+            @PathVariable UUID roundId
+    ) {
         return null;
     }
 
@@ -103,32 +107,44 @@ public class RoundController {
         return null;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @GetMapping("/rounds/{roundId}/advance-rules")
-    public ResponseEntity<List<AdvanceRuleResponse>> getAdvanceRules(@PathVariable UUID roundId) {
-        return null;
+    public ResponseEntity<List<AdvanceRuleResponse>> getAdvanceRules(
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(roundService.getAdvanceRules(roundId, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PostMapping("/rounds/{roundId}/advance-rules")
     public ResponseEntity<AdvanceRuleResponse> createAdvanceRule(
             @PathVariable UUID roundId,
-            @Valid @RequestBody CreateAdvanceRuleRequest request
+            @Valid @RequestBody CreateAdvanceRuleRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(roundService.createAdvanceRule(roundId, request, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PatchMapping("/advance-rules/{ruleId}")
     public ResponseEntity<AdvanceRuleResponse> updateAdvanceRule(
             @PathVariable UUID ruleId,
-            @Valid @RequestBody UpdateAdvanceRuleRequest request
+            @Valid @RequestBody UpdateAdvanceRuleRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.updateAdvanceRule(ruleId, request, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @DeleteMapping("/advance-rules/{ruleId}")
     public ResponseEntity<Void> deleteAdvanceRule(
-            @PathVariable UUID ruleId
+            @PathVariable UUID ruleId,
+            Authentication authentication
     ) {
-        return null;
+        roundService.deleteAdvanceRule(ruleId, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")

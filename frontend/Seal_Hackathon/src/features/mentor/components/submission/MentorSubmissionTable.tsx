@@ -17,7 +17,7 @@ type MentorSubmissionTableProps = {
   onRowClick: (submissionId: string) => void;
 };
 
-export const MentorSubmissionHistoryTable = ({
+export const MentorSubmissionTable = ({
   submissions,
   isLoading,
   onRowClick,

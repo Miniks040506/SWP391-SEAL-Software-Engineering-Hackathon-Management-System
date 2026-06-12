@@ -2,17 +2,21 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.RoundStatus;
+import com.t7.seal.domain.RuleType;
 import com.t7.seal.domain.UserRole;
-import com.t7.seal.entities.HackathonEvent;
-import com.t7.seal.entities.Round;
-import com.t7.seal.entities.User;
+import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.repository.AdvanceRuleRepository;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
+import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.request.round.CreateAdvanceRuleRequest;
 import com.t7.seal.request.round.CreateRoundRequest;
+import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
 import com.t7.seal.request.round.UpdateRoundRequest;
+import com.t7.seal.response.round.AdvanceRuleResponse;
 import com.t7.seal.response.round.RoundDetailResponse;
 import com.t7.seal.response.round.RoundResponse;
 import com.t7.seal.service.CurrentUserService;
@@ -34,6 +38,8 @@ public class RoundServiceImpl implements RoundService {
     private final HackathonEventRepository hackathonEventRepository;
     private final RoundRepository roundRepository;
     private final CurrentUserService currentUserService;
+    private final AdvanceRuleRepository advanceRuleRepository;
+    private final TrackRepository trackRepository;
 
     @Transactional
     @Override
@@ -123,8 +129,7 @@ public class RoundServiceImpl implements RoundService {
     public RoundResponse updateRound(UUID roundId, UpdateRoundRequest request, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Round round = roundRepository.findById(roundId)
-                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+        Round round = getRound(roundId);
 
         assertTrackRoundEditable(round.getEvent());
 
@@ -194,8 +199,7 @@ public class RoundServiceImpl implements RoundService {
     public void deleteRound(UUID roundId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Round round = roundRepository.findById(roundId)
-                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+        Round round = getRound(roundId);
 
         assertTrackRoundEditable(round.getEvent());
 
@@ -206,6 +210,122 @@ public class RoundServiceImpl implements RoundService {
         }
 
         roundRepository.delete(round);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<AdvanceRuleResponse> getAdvanceRules(UUID roundId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        ensureRoundExist(roundId);
+
+        return advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId)
+                .stream()
+                .map(this::toAdvanceRuleResponse)
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public AdvanceRuleResponse createAdvanceRule(
+            UUID roundId,
+            CreateAdvanceRuleRequest request,
+            Authentication authentication
+    ) {
+        currentUserService.getCurrentUser(authentication);
+
+        Round round = getRound(roundId);
+
+        assertAdvanceRuleEditable(round);
+
+        RuleType ruleType = parseEnum(RuleType.class, request.ruleType(), "ruleType");
+
+        Track track = resolveTrack(request.trackId(), round);
+
+        assertNoDuplicateAdvanceRule(roundId, ruleType, track.getId() == null ? null : track.getId());
+
+        Float value = resolveRuleValue(ruleType, request.topN(),
+                request.topPercent(), request.minScore(), request.wildCardSlots());
+
+        AdvanceRule advanceRule = AdvanceRule.builder()
+                .round(round)
+                .track(track)
+                .ruleType(ruleType)
+                .priority(resolvePriority(request.priority(), ruleType))
+                .value(value)
+                .description(trimToNull(request.description()))
+                .build();
+
+        return toAdvanceRuleResponse(advanceRuleRepository.save(advanceRule));
+    }
+
+    @Transactional
+    @Override
+    public AdvanceRuleResponse updateAdvanceRule(
+            UUID advanceRuleId,
+            UpdateAdvanceRuleRequest request,
+            Authentication authentication
+    ) {
+        currentUserService.getCurrentUser(authentication);
+
+        AdvanceRule advanceRule = getAdvanceRule(advanceRuleId);
+
+        assertAdvanceRuleEditable(advanceRule.getRound());
+
+        if (request.active() != null && !request.active()) {
+            throw new BadRequestException("Advance rule does not support inactive state yet.");
+        }
+
+        RuleType nextRuleType = request.ruleType() == null
+                ? advanceRule.getRuleType()
+                : parseEnum(RuleType.class, request.ruleType(), "ruleType");
+
+        Track nextTrack = resolveTrack(request.trackId(), advanceRule.getRound());
+
+        assertNoDuplicateAdvanceRuleOnUpdate(
+                advanceRule.getRound().getId(),
+                nextRuleType,
+                nextTrack == null ? null : nextTrack.getId(),
+                advanceRule.getId()
+        );
+
+        if (request.description() != null) {
+            advanceRule.setDescription(trimToNull(request.description()));
+        }
+
+        if (request.priority() != null) {
+            advanceRule.setPriority(resolvePriority(request.priority(), nextRuleType));
+        } else if (request.ruleType() != null && !request.ruleType().isBlank()) {
+            advanceRule.setPriority(priorityFor(nextRuleType));
+        }
+
+        advanceRule.setRuleType(nextRuleType);
+        advanceRule.setTrack(nextTrack);
+
+
+        if (advanceRule.getRuleType() != null || hasRuleValuePatch(request)) {
+            advanceRule.setValue(resolveRuleValue(
+                    nextRuleType,
+                    request.topN(),
+                    request.topPercent(),
+                    request.minScore(),
+                    request.wildCardSlots()
+            ));
+        }
+
+        return toAdvanceRuleResponse(advanceRuleRepository.save(advanceRule));
+    }
+
+    @Transactional
+    @Override
+    public void deleteAdvanceRule(UUID advanceRuleId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        AdvanceRule advanceRule = getAdvanceRule(advanceRuleId);
+
+        assertAdvanceRuleEditable(advanceRule.getRound());
+
+        advanceRuleRepository.delete(advanceRule);
     }
 
     //HELPERS
@@ -263,5 +383,171 @@ public class RoundServiceImpl implements RoundService {
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline()
         );
+    }
+
+    private void ensureRoundExist(UUID roundId) {
+        if (!roundRepository.existsById(roundId)) {
+            throw new NotFoundException("Round not found " + roundId);
+        }
+    }
+
+    private AdvanceRuleResponse toAdvanceRuleResponse(AdvanceRule advanceRule) {
+        Integer topN = null;
+        Double topPercent = null;
+        Double minScore = null;
+        Integer wildCardSlots = null;
+
+        if (advanceRule.getValue() != null) {
+            switch (advanceRule.getRuleType()) {
+                case TOP_N -> topN = Math.round(advanceRule.getValue());
+                case TOP_PERCENT -> topPercent = advanceRule.getValue().doubleValue();
+                case MIN_SCORE -> minScore = advanceRule.getValue().doubleValue();
+                case WILDCARD -> wildCardSlots = Math.round(advanceRule.getValue());
+            }
+        }
+
+        return new AdvanceRuleResponse(
+                advanceRule.getId(),
+                advanceRule.getRound().getId(),
+                advanceRule.getTrack() == null ? null : advanceRule.getTrack().getId(),
+                advanceRule.getRuleType().name(),
+                topN,
+                topPercent,
+                minScore,
+                wildCardSlots,
+                Boolean.TRUE,
+                advanceRule.getValue(),
+                advanceRule.getPriority(),
+                advanceRule.getDescription()
+        );
+    }
+
+    private Round getRound(UUID roundId) {
+        return roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+    }
+
+    private void assertAdvanceRuleEditable(Round round) {
+        RegistrationStatus status = round.getEvent().getStatus();
+
+        if (status == RegistrationStatus.JUDGING
+                || status == RegistrationStatus.COMPLETED
+                || status == RegistrationStatus.CANCELLED) {
+            throw new ConflictException("Advance rules cannot be edited in this status " + status + ".");
+        }
+
+        if (round.getAdvancementConfirmedAt() != null) {
+            throw new ConflictException("Advance rules cannot be edited after advancement has been confirmed.");
+        }
+    }
+
+    private Track resolveTrack(UUID trackId, Round round) {
+        if (trackId == null) {
+            return null;
+        }
+
+        Track track = trackRepository.findById(trackId)
+                .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
+
+        if (!track.getEvent().getId().equals(round.getEvent().getId())) {
+            throw new BadRequestException("Track does not belong to this round's event.");
+        }
+
+        return track;
+    }
+
+    private void assertNoDuplicateAdvanceRuleOnUpdate(
+            UUID roundId, RuleType ruleType,
+            UUID trackId, UUID currentRuleId
+    ) {
+        boolean exists = advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId)
+                .stream()
+                .filter(r -> !r.getId().equals(currentRuleId))
+                .anyMatch(r -> {
+                    UUID existingTrackId = r.getTrack() == null ? null : r.getTrack().getId();
+                    return r.getRuleType() == ruleType
+                            && ((existingTrackId == null && trackId == null)
+                            || (existingTrackId != null && existingTrackId.equals(trackId)));
+                });
+
+        if (exists) {
+            throw new ConflictException("Advance rule already exists for this round and track.");
+        }
+    }
+
+    private void assertNoDuplicateAdvanceRule(
+            UUID roundId, RuleType ruleType, UUID trackId
+    ) {
+        boolean exists = (trackId == null)
+                ? advanceRuleRepository.existGlobalRule(roundId, ruleType)
+                : advanceRuleRepository.existsByRoundIdAndRuleTypeAndTrackId(roundId, ruleType, trackId);
+    }
+
+    private Float resolveRuleValue(
+            RuleType ruleType, Integer topN,
+            Double topPercent, Double minScore,
+            Integer wildCardSlots
+    ) {
+        return switch (ruleType) {
+            case TOP_N -> {
+                if (topN == null || topN <= 0) {
+                    throw new BadRequestException("topN must be greater than 0 for TOP_N rule type.");
+                }
+                yield topN.floatValue();
+            }
+
+            case TOP_PERCENT -> {
+                if (topPercent == null || topPercent <= 0 || topPercent > 100) {
+                    throw new BadRequestException("topPercent must be greater than 0 and less than or equal to 100 for TOP_PERCENT rule type.");
+                }
+                yield topPercent.floatValue();
+            }
+
+            case MIN_SCORE -> {
+                if (minScore == null || minScore < 0) {
+                    throw new BadRequestException("minScore must be greater than 0 for MIN_SCORE rule type.");
+                }
+                yield minScore.floatValue();
+            }
+
+            case WILDCARD -> {
+                if (wildCardSlots == null || wildCardSlots <= 0) {
+                    throw new BadRequestException("wildCardSlots must be greater than 0 for WILDCARD rule type.");
+                }
+                yield wildCardSlots.floatValue();
+            }
+        };
+    }
+
+    private int resolvePriority(Integer reqPriority, RuleType ruleType) {
+        if (reqPriority == null) {
+            return priorityFor(ruleType);
+        }
+
+        if (reqPriority <= 0) {
+            throw new BadRequestException("Priority must be greater than 0");
+        }
+
+        return reqPriority;
+    }
+
+    private int priorityFor(RuleType ruleType) {
+        return switch (ruleType) {
+            case TOP_N, TOP_PERCENT -> 2;
+            case MIN_SCORE -> 1;
+            case WILDCARD -> 3;
+        };
+    }
+
+    private AdvanceRule getAdvanceRule(UUID advanceRuleId) {
+        return advanceRuleRepository.findById(advanceRuleId)
+                .orElseThrow(() -> new NotFoundException("Advance rule not found " + advanceRuleId));
+    }
+
+    private boolean hasRuleValuePatch(UpdateAdvanceRuleRequest request) {
+        return request.topN() != null
+                || request.topPercent() != null
+                || request.minScore() != null
+                || request.wildCardSlots() != null;
     }
 }
