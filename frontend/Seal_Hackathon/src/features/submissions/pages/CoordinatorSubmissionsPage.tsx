@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Pagination } from "@mui/material";
-import { apiRequest } from "@/api/apiRequest";
+import { eventApi } from "@/api/event.api";
+import { roundApi } from "@/api/round.api";
+import { trackApi } from "@/api/track.api";
 import { useCoordinatorSubmissionsQuery } from "../hooks/useCoordinatorSubmissionQueries";
 import { SubmissionFilterBar } from "../components/SubmissionFilterBar";
 import { SubmissionTable } from "../components/SubmissionTable";
@@ -13,7 +15,7 @@ const PAGE_SIZE = 20;
 
 type EventOption = { id: string; name: string };
 type TrackOption = { id: string; name: string; eventId: string };
-type RoundOption = { id: string; name: string; trackId: string };
+type RoundOption = { id: string; name: string; eventId: string };
 
 export function CoordinatorSubmissionsPage() {
   const { submissionId } = useParams<{ submissionId: string }>();
@@ -31,14 +33,40 @@ export function CoordinatorSubmissionsPage() {
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {
-        const [eventsRes, tracksRes, roundsRes] = await Promise.all([
-          apiRequest.get<EventOption[]>("/coordinator/events"),
-          apiRequest.get<TrackOption[]>("/coordinator/tracks"),
-          apiRequest.get<RoundOption[]>("/coordinator/rounds"),
+        const eventsRes = await eventApi.getAllEvents({ page: 0, size: 100 });
+        const eventOptions = eventsRes.content.map((event) => ({
+          id: event.id,
+          name: event.name,
+        }));
+
+        const [trackGroups, roundGroups] = await Promise.all([
+          Promise.all(
+            eventOptions.map((event) =>
+              trackApi.getTracksByEvent(event.id).then((tracks) =>
+                tracks.map((track) => ({
+                  id: track.id,
+                  name: track.name,
+                  eventId: event.id,
+                })),
+              ),
+            ),
+          ),
+          Promise.all(
+            eventOptions.map((event) =>
+              roundApi.getRoundsByEvent(event.id).then((rounds) =>
+                rounds.map((round) => ({
+                  id: round.id,
+                  name: round.name,
+                  eventId: event.id,
+                })),
+              ),
+            ),
+          ),
         ]);
-        setEvents(eventsRes);
-        setTracks(tracksRes);
-        setRounds(roundsRes);
+
+        setEvents(eventOptions);
+        setTracks(trackGroups.flat());
+        setRounds(roundGroups.flat());
       } catch (error) {
         console.error("Failed to fetch filter options:", error);
       }

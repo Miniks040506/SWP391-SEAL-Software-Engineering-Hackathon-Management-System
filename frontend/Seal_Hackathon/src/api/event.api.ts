@@ -22,7 +22,7 @@ export const eventApi = {
   },
   
   getAllEvents(params?: GetEventsParams) {
-    return apiRequest.get<EventSummaryResponse[]>("/events/all", {params});
+    return apiRequest.get<PageResponse<EventSummaryResponse>>("/events/all", {params});
   },
 
   getPublicEvents(params?: GetEventsParams) {

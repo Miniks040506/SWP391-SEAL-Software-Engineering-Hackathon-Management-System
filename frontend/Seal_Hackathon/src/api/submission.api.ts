@@ -134,7 +134,6 @@ export const submissionApi = {
     );
   },
 
-  // Backend route is planned by the service layer but not currently exposed by the controller.
   getTrackSubmissions(trackId: UUID) {
     return apiRequest.get<SubmissionSummaryResponse[]>(
       `/tracks/${trackId}/submissions`,
