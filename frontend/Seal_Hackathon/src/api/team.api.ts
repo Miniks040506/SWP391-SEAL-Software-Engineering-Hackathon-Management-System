@@ -3,11 +3,13 @@ import type { UUID } from "@/types/common.types";
 import type {
   CreateTeamRequest,
   InviteMemberRequest,
+  JoinTeamByCodeRequest,
   LeaveTeamRequest,
   RejectInvitationRequest,
   RemoveMemberRequest,
   TeamDetailResponse,
   TeamInvitationResponse,
+  TeamJoinCodePreviewResponse,
   TeamMemberResponse,
   TeamResponse,
   TeamSummaryResponse,
@@ -34,15 +36,14 @@ export const teamApi = {
   },
 
   inviteMember(teamId: UUID, payload: InviteMemberRequest) {
-    return apiRequest.post<TeamInvitationResponse>(`/teams/${teamId}/invite`, payload);
+    return apiRequest.post<TeamInvitationResponse>(
+      `/teams/${teamId}/invitations`,
+      payload,
+    );
   },
 
   getTeamInvitations(teamId: UUID) {
     return apiRequest.get<TeamInvitationResponse[]>(`/teams/${teamId}/invitations`);
-  },
-
-  getMyInvitations() {
-    return apiRequest.get<TeamInvitationResponse[]>("/teams/invitations/me");
   },
 
   getTeamMembers(teamId: UUID) {
@@ -55,26 +56,6 @@ export const teamApi = {
     });
   },
 
-  acceptInvitation(invitationId: UUID) {
-    return apiRequest.post<TeamMemberResponse>(`/teams/invitations/${invitationId}/accept`);
-  },
-
-  acceptInvitationByToken(token: string) {
-    return apiRequest.post<TeamMemberResponse>(`/teams/invitations/token/${token}/accept`);
-  },
-
-  rejectInvitation(invitationId: UUID, payload?: RejectInvitationRequest) {
-    return apiRequest.post<void>(`/teams/invitations/${invitationId}/reject`, payload ?? {});
-  },
-
-  rejectInvitationByToken(token: string, payload?: RejectInvitationRequest) {
-    return apiRequest.post<void>(`/teams/invitations/token/${token}/reject`, payload ?? {});
-  },
-
-  cancelInvitation(invitationId: UUID) {
-    return apiRequest.post<void>(`/teams/invitations/${invitationId}/cancel`);
-  },
-
   transferLeader(teamId: UUID, payload: TransferLeaderRequest) {
     return apiRequest.post<TeamResponse>(`/teams/${teamId}/transfer-leader`, payload);
   },
@@ -85,5 +66,56 @@ export const teamApi = {
 
   toggleJoinCode(teamId: UUID, payload: ToggleJoinCodeRequest) {
     return apiRequest.patch<TeamResponse>(`/teams/${teamId}/join-code`, payload);
+  },
+
+  previewJoinCode(joinCode: string) {
+    return apiRequest.get<TeamJoinCodePreviewResponse>(
+      `/teams/join-code/${encodeURIComponent(joinCode)}`,
+    );
+  },
+
+  joinByCode(payload: JoinTeamByCodeRequest) {
+    return apiRequest.post<TeamMemberResponse>("/teams/join-code", payload);
+  },
+
+  joinByCodePath(joinCode: string) {
+    return apiRequest.post<TeamMemberResponse>(
+      `/teams/join-code/${encodeURIComponent(joinCode)}`,
+    );
+  },
+
+  getMyInvitations() {
+    return apiRequest.get<TeamInvitationResponse[]>("/invitations/me");
+  },
+
+  getInvitationByToken(token: string) {
+    return apiRequest.get<TeamInvitationResponse>(
+      `/invitations/token/${encodeURIComponent(token)}`,
+    );
+  },
+
+  acceptInvitation(invitationId: UUID) {
+    return apiRequest.post<TeamMemberResponse>(`/invitations/${invitationId}/accept`);
+  },
+
+  acceptInvitationByToken(token: string) {
+    return apiRequest.post<TeamMemberResponse>(
+      `/invitations/token/${encodeURIComponent(token)}/accept`,
+    );
+  },
+
+  rejectInvitation(invitationId: UUID, payload?: RejectInvitationRequest) {
+    return apiRequest.post<void>(`/invitations/${invitationId}/reject`, payload ?? {});
+  },
+
+  rejectInvitationByToken(token: string, payload?: RejectInvitationRequest) {
+    return apiRequest.post<void>(
+      `/invitations/token/${encodeURIComponent(token)}/reject`,
+      payload ?? {},
+    );
+  },
+
+  cancelInvitation(invitationId: UUID) {
+    return apiRequest.post<void>(`/invitations/${invitationId}/cancel`);
   },
 };
