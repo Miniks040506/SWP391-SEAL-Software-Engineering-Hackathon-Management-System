@@ -1,5 +1,25 @@
 import type { ISODateTime, UUID } from "@/types/common.types";
 
+export type TeamStatus =
+  | "FORMING"
+  | "INCOMPLETE"
+  | "REGISTERED"
+  | "COMPETING"
+  | "ADVANCED"
+  | "ELIMINATED"
+  | "WINNER"
+  | string;
+
+export type TeamMemberRole = "LEADER" | "MEMBER" | string;
+
+export type TeamInvitationStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "DECLINED"
+  | "EXPIRED"
+  | "CANCELLED"
+  | string;
+
 export type CreateTeamRequest = {
   name: string;
   projectTitle?: string;
@@ -37,6 +57,10 @@ export type ToggleJoinCodeRequest = {
   enabled: boolean;
 };
 
+export type JoinTeamByCodeRequest = {
+  joinCode: string;
+};
+
 export type TeamResponse = {
   id: UUID;
   name: string;
@@ -44,7 +68,7 @@ export type TeamResponse = {
   leaderId: UUID;
   leaderName: string;
   trackId?: UUID | null;
-  status: string;
+  status: TeamStatus;
   memberCount: number;
 };
 
@@ -52,8 +76,8 @@ export type TeamSummaryResponse = {
   id: UUID;
   name: string;
   projectTitle?: string | null;
-  status: string;
-  roleInTeam: string;
+  status: TeamStatus;
+  roleInTeam: TeamMemberRole;
 };
 
 export type TeamMemberResponse = {
@@ -61,7 +85,7 @@ export type TeamMemberResponse = {
   userId: UUID;
   fullName: string;
   email: string;
-  memberRole: string;
+  memberRole: TeamMemberRole;
   joinedAt: ISODateTime;
 };
 
@@ -73,14 +97,35 @@ export type TeamDetailResponse = {
   leaderId: UUID;
   leaderName: string;
   trackId?: UUID | null;
-  status: string;
+  status: TeamStatus;
   members: TeamMemberResponse[];
 };
 
 export type TeamInvitationResponse = {
   id: UUID;
   teamId: UUID;
+  teamName: string;
   invitedEmail: string;
-  status: string;
+  status: TeamInvitationStatus;
   expiresAt: ISODateTime;
+  token: string;
+  acceptUrl: string;
+  rejectUrl: string;
+};
+
+export type TeamJoinCodePreviewResponse = {
+  teamId: UUID;
+  teamName: string;
+  projectTitle?: string | null;
+  description?: string | null;
+  leaderId?: UUID | null;
+  leaderName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  eventId?: UUID | null;
+  eventName?: string | null;
+  status: TeamStatus;
+  memberCount: number;
+  maxMembers: number;
+  joinCodeEnabled: boolean;
 };
