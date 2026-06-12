@@ -217,7 +217,7 @@ export function EventsPage() {
               src="https://picsum.photos/seed/seal-hackathon-build/640/720"
               alt="Students collaborating during a hackathon sprint"
               loading="eager"
-              className="aspect-[4/5] w-full rounded-2xl object-cover shadow-xl shadow-blue-500/10"
+              className="aspect-4/5 w-full rounded-2xl object-cover shadow-xl shadow-blue-500/10"
             />
             <img
               src="https://picsum.photos/seed/seal-office-team/480/340"
@@ -370,7 +370,7 @@ export function EventsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:grid-rows-2">
-          <div className="flex h-full flex-col justify-between gap-10 rounded-2xl bg-gradient-to-br from-blue-50 via-white to-blue-50/40 p-8 ring-1 ring-blue-100 md:p-10 dark:from-blue-500/10 dark:via-slate-900 dark:to-slate-900 dark:ring-blue-500/20 lg:col-span-2 lg:row-span-2">
+          <div className="flex h-full flex-col justify-between gap-10 rounded-2xl bg-linear-to-br from-blue-50 via-white to-blue-50/40 p-8 ring-1 ring-blue-100 md:p-10 dark:from-blue-500/10 dark:via-slate-900 dark:to-slate-900 dark:ring-blue-500/20 lg:col-span-2 lg:row-span-2">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500 text-white shadow-md shadow-blue-500/30">
               <VisibilityOffOutlinedIcon style={{ fontSize: 24 }} />
             </div>

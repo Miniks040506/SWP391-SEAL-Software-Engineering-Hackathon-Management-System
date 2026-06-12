@@ -52,6 +52,7 @@ export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionList
     };
 
     fetchSubmissions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.eventId, params.roundId, params.trackId, params.status, params.search, params.page, params.size]);
 
   return { data, loading };
