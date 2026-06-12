@@ -10,5 +10,8 @@ public record CreateAdvanceRuleRequest(
         Integer topN,
         Double minScore,
         Double topPercent,
+        Integer wildCardSlots,
+        Integer priority,
         String description
-) {}
+) {
+}
