@@ -107,6 +107,7 @@ public class RoundController {
         return null;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @GetMapping("/rounds/{roundId}/advance-rules")
     public ResponseEntity<List<AdvanceRuleResponse>> getAdvanceRules(
             @PathVariable UUID roundId,
@@ -115,12 +116,15 @@ public class RoundController {
         return ResponseEntity.ok(roundService.getAdvanceRules(roundId, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PostMapping("/rounds/{roundId}/advance-rules")
     public ResponseEntity<AdvanceRuleResponse> createAdvanceRule(
             @PathVariable UUID roundId,
-            @Valid @RequestBody CreateAdvanceRuleRequest request
+            @Valid @RequestBody CreateAdvanceRuleRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(roundService.createAdvanceRule(roundId, request, authentication));
     }
 
     @PatchMapping("/advance-rules/{ruleId}")

@@ -242,7 +242,19 @@ public class RoundServiceImpl implements RoundService {
 
         assertNoDuplicateAdvanceRule(roundId, ruleType, track.getId());
 
-        return null;
+        Float value = resolveRuleValue(ruleType, request.topN(),
+                request.topPercent(), request.minScore(), request.wildCardSlots());
+
+        AdvanceRule advanceRule = AdvanceRule.builder()
+                .round(round)
+                .track(track)
+                .ruleType(ruleType)
+                .priority(resolvePriority(request.priority(), ruleType))
+                .value(value)
+                .description(trimToNull(request.description()))
+                .build();
+
+        return toAdvanceRuleResponse(advanceRuleRepository.save(advanceRule));
     }
 
     @Override
@@ -415,6 +427,54 @@ public class RoundServiceImpl implements RoundService {
             Double topPercent, Double minScore,
             Integer wildCardSlots
     ) {
-        Float value = null;
+        return switch (ruleType) {
+            case TOP_N -> {
+                if (topN == null || topN <= 0) {
+                    throw new BadRequestException("topN must be greater than 0 for TOP_N rule type.");
+                }
+                yield topN.floatValue();
+            }
+
+            case TOP_PERCENT -> {
+                if (topPercent == null || topPercent <= 0 || topPercent > 100) {
+                    throw new BadRequestException("topPercent must be greater than 0 and less than or equal to 100 for TOP_PERCENT rule type.");
+                }
+                yield topPercent.floatValue();
+            }
+
+            case MIN_SCORE -> {
+                if (minScore == null || minScore < 0) {
+                    throw new BadRequestException("minScore must be greater than 0 for MIN_SCORE rule type.");
+                }
+                yield minScore.floatValue();
+            }
+
+            case WILDCARD -> {
+                if (wildCardSlots == null || wildCardSlots <= 0) {
+                    throw new BadRequestException("wildCardSlots must be greater than 0 for WILDCARD rule type.");
+                }
+                yield wildCardSlots.floatValue();
+            }
+        };
+    }
+
+    private int resolvePriority(Integer reqPriority, RuleType ruleType) {
+        if (reqPriority == null) {
+            return priorityFor(ruleType);
+        }
+
+        if (reqPriority <= 0) {
+            throw new BadRequestException("Priority must be greater than 0");
+        }
+
+        return reqPriority;
+    }
+
+    private int priorityFor(RuleType ruleType) {
+        return switch (ruleType) {
+            case TOP_N, TOP_PERCENT -> 2;
+            case MIN_SCORE -> 1;
+            case WILDCARD -> 3;
+        };
     }
 }
