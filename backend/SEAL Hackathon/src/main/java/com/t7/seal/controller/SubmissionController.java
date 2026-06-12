@@ -42,6 +42,21 @@ public class SubmissionController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @PostMapping({
+            "/teams/{teamId}/rounds/{roundId}/submission/draft",
+            "/teams/{teamId}/rounds/{roundId}/submissions/draft"
+    })
+    public ResponseEntity<SubmissionResponse> saveSubmissionDraft(
+            @PathVariable UUID teamId,
+            @PathVariable UUID roundId,
+            @Valid @RequestBody(required = false) UpdateSubmissionRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(submissionService.saveSubmissionDraft(teamId, roundId, request, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @PostMapping(value = {
             "/teams/{teamId}/rounds/{roundId}/submission/file",
             "/teams/{teamId}/rounds/{roundId}/submissions/files"
@@ -169,6 +184,21 @@ public class SubmissionController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @GetMapping("/submissions")
+    public ResponseEntity<PageResponse<CoordinatorSubmissionSummaryResponse>> getCoordinatorSubmissions(
+            @RequestParam(required = false) UUID eventId,
+            @RequestParam(required = false) UUID roundId,
+            @RequestParam(required = false) UUID trackId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.getEventSubmissions(eventId, roundId, trackId, status, search, page, size, authentication));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
     @GetMapping("/events/{eventId}/submissions")
     public ResponseEntity<PageResponse<CoordinatorSubmissionSummaryResponse>> getEventSubmissions(
             @PathVariable UUID eventId,
@@ -192,6 +222,15 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getRoundSubmissions(roundId, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @GetMapping("/tracks/{trackId}/submissions")
+    public ResponseEntity<List<SubmissionSummaryResponse>> getTrackSubmissions(
+            @PathVariable UUID trackId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.getTrackSubmissions(trackId, authentication));
+    }
+
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping("/mentor/teams/{teamId}/submissions")
     public ResponseEntity<List<SubmissionSummaryResponse>> getMentorTeamSubmissions(
@@ -209,7 +248,7 @@ public class SubmissionController {
     ) {
         return ResponseEntity.ok(submissionService.getMentorSubmissionById(submissionId, authentication));
     }
-    
+
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/submission-links/{linkId}/download-url")
     public ResponseEntity<FileDownloadUrlResponse> createSubmissionFileDownloadUrl(
