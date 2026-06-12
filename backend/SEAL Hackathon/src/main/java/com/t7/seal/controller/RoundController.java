@@ -137,6 +137,7 @@ public class RoundController {
         return ResponseEntity.ok(roundService.updateAdvanceRule(ruleId, request, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @DeleteMapping("/advance-rules/{ruleId}")
     public ResponseEntity<Void> deleteAdvanceRule(
             @PathVariable UUID ruleId,
