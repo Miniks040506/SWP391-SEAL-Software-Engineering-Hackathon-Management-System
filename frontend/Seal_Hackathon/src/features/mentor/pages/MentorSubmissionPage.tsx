@@ -3,7 +3,7 @@ import Button from "@mui/material/Button";
 import { useNavigate } from "react-router-dom";
 
 import { MentorSubmissionTable } from "../components/submission/MentorSubmissionTable";
-import { useMentorSubmission } from "../hooks/useMentorSubmission";
+import { useMentorSubmissions } from "../hooks/useMentorSubmission";
 import { useMentorDashboard } from "../hooks/useMentorDashboard";
 
 
@@ -14,9 +14,9 @@ export const MentorSubmissionPage = () => {
 
   const trackId = (dashboard?.assignedTrack as any)?.id;
   
-  const { trackSubmissionQuery, goToSubmissionDetail } = useMentorSubmission(trackId);
+  const { trackSubmissionsQuery, goToSubmissionDetail } = useMentorSubmissions(trackId);
 
-  const { data: response, isLoading } = trackSubmissionQuery;
+  const { data: response, isLoading } = trackSubmissionsQuery;
   const submissions = response?.data || response || []; 
 
   return (
