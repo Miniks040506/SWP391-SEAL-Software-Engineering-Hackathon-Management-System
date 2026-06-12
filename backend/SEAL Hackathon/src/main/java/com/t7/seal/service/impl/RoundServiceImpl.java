@@ -2,17 +2,16 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.RoundStatus;
+import com.t7.seal.domain.RuleType;
 import com.t7.seal.domain.UserRole;
-import com.t7.seal.entities.AdvanceRule;
-import com.t7.seal.entities.HackathonEvent;
-import com.t7.seal.entities.Round;
-import com.t7.seal.entities.User;
+import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.AdvanceRuleRepository;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
+import com.t7.seal.repository.TrackRepository;
 import com.t7.seal.request.round.CreateAdvanceRuleRequest;
 import com.t7.seal.request.round.CreateRoundRequest;
 import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
@@ -40,6 +39,7 @@ public class RoundServiceImpl implements RoundService {
     private final RoundRepository roundRepository;
     private final CurrentUserService currentUserService;
     private final AdvanceRuleRepository advanceRuleRepository;
+    private final TrackRepository trackRepository;
 
     @Transactional
     @Override
@@ -129,8 +129,7 @@ public class RoundServiceImpl implements RoundService {
     public RoundResponse updateRound(UUID roundId, UpdateRoundRequest request, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Round round = roundRepository.findById(roundId)
-                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+        Round round = getRound(roundId);
 
         assertTrackRoundEditable(round.getEvent());
 
@@ -200,8 +199,7 @@ public class RoundServiceImpl implements RoundService {
     public void deleteRound(UUID roundId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        Round round = roundRepository.findById(roundId)
-                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+        Round round = getRound(roundId);
 
         assertTrackRoundEditable(round.getEvent());
 
@@ -227,7 +225,23 @@ public class RoundServiceImpl implements RoundService {
     }
 
     @Override
-    public AdvanceRuleResponse createAdvanceRule(UUID roundId, CreateAdvanceRuleRequest request, Authentication authentication) {
+    public AdvanceRuleResponse createAdvanceRule(
+            UUID roundId,
+            CreateAdvanceRuleRequest request,
+            Authentication authentication
+    ) {
+        currentUserService.getCurrentUser(authentication);
+
+        Round round = getRound(roundId);
+
+        assertAdvanceRuleEditable(round);
+
+        RuleType ruleType = parseEnum(RuleType.class, request.ruleType(), "ruleType");
+
+        Track track = resolveTrack(request.trackId(), round);
+
+        assertNoDuplicateAdvanceRule(roundId, ruleType, track.getId());
+
         return null;
     }
 
@@ -333,5 +347,74 @@ public class RoundServiceImpl implements RoundService {
                 advanceRule.getPriority(),
                 advanceRule.getDescription()
         );
+    }
+
+    private Round getRound(UUID roundId) {
+        return roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+    }
+
+    private void assertAdvanceRuleEditable(Round round) {
+        RegistrationStatus status = round.getEvent().getStatus();
+
+        if (status == RegistrationStatus.JUDGING
+                || status == RegistrationStatus.COMPLETED
+                || status == RegistrationStatus.CANCELLED) {
+            throw new ConflictException("Advance rules cannot be edited in this status " + status + ".");
+        }
+
+        if (round.getAdvancementConfirmedAt() != null) {
+            throw new ConflictException("Advance rules cannot be edited after advancement has been confirmed.");
+        }
+    }
+
+    private Track resolveTrack(UUID trackId, Round round) {
+        if (trackId == null) {
+            return null;
+        }
+
+        Track track = trackRepository.findById(trackId)
+                .orElseThrow(() -> new NotFoundException("Track not found " + trackId));
+
+        if (!track.getEvent().getId().equals(round.getEvent().getId())) {
+            throw new BadRequestException("Track does not belong to this round's event.");
+        }
+
+        return track;
+    }
+
+    private void assertNoDuplicateAdvanceRule(
+            UUID roundId, RuleType ruleType,
+            UUID trackId, UUID currentRuleId
+    ) {
+        boolean exists = advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId)
+                .stream()
+                .filter(r -> !r.getId().equals(currentRuleId))
+                .anyMatch(r -> {
+                    UUID existingTrackId = r.getTrack() == null ? null : r.getTrack().getId();
+                    return r.getRuleType() == ruleType
+                            && ((existingTrackId == null && trackId == null)
+                            || (existingTrackId != null && existingTrackId.equals(trackId)));
+                });
+
+        if (exists) {
+            throw new ConflictException("Advance rule already exists for this round and track.");
+        }
+    }
+
+    private void assertNoDuplicateAdvanceRule(
+            UUID roundId, RuleType ruleType, UUID trackId
+    ) {
+        boolean exists = (trackId == null)
+                ? advanceRuleRepository.existGlobalRule(roundId, ruleType)
+                : advanceRuleRepository.existsByRoundIdAndRuleTypeAndTrackId(roundId, ruleType, trackId);
+    }
+
+    private Float resolveRuleValue(
+            RuleType ruleType, Integer topN,
+            Double topPercent, Double minScore,
+            Integer wildCardSlots
+    ) {
+        Float value = null;
     }
 }
