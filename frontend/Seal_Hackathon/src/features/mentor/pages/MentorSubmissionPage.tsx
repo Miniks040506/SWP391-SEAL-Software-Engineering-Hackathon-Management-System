@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { MentorSubmissionHistoryTable } from "../components/submission/MentorSubmissionHistoryTable";
 import { useMentorSubmission } from "../hooks/useMentorSubmission";
 
-export const MentorTeamSubmissionsPage = () => {
+export const MentorSubmissionPage = () => {
   const navigate = useNavigate();
   const { teamSubmissionQuery, goToSubmissionDetail } = useMentorSubmission();
 
