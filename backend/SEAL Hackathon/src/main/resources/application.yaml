@@ -105,7 +105,7 @@ app:
       provider: ${SUBMISSION_STORAGE_PROVIDER:AWS_S3}
     upload:
       max-size-mb: ${SUBMISSION_UPLOAD_MAX_SIZE_MB:25}
-      allowed-content-types: ${SUBMISSION_UPLOAD_ALLOWED_CONTENT_TYPES:application/pdf,application/zip,application/x-zip-compressed,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,image/png,image/jpeg,text/plain}
+      allowed-content-types: ${SUBMISSION_UPLOAD_ALLOWED_CONTENT_TYPES:application/pdf,application/zip,application/x-zip-compressed,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,image/png,image/jpeg,image/png,text/plain}
     repo-metadata:
       enabled: ${REPO_METADATA_ENABLED:true}
 
