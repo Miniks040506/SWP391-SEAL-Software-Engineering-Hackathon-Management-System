@@ -42,6 +42,21 @@ public class SubmissionController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @PostMapping({
+            "/teams/{teamId}/rounds/{roundId}/submission/draft",
+            "/teams/{teamId}/rounds/{roundId}/submissions/draft"
+    })
+    public ResponseEntity<SubmissionResponse> saveSubmissionDraft(
+            @PathVariable UUID teamId,
+            @PathVariable UUID roundId,
+            @Valid @RequestBody(required = false) UpdateSubmissionRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(submissionService.saveSubmissionDraft(teamId, roundId, request, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @PostMapping(value = {
             "/teams/{teamId}/rounds/{roundId}/submission/file",
             "/teams/{teamId}/rounds/{roundId}/submissions/files"
@@ -192,6 +207,15 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getRoundSubmissions(roundId, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @GetMapping("/tracks/{trackId}/submissions")
+    public ResponseEntity<List<SubmissionSummaryResponse>> getTrackSubmissions(
+            @PathVariable UUID trackId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.getTrackSubmissions(trackId, authentication));
+    }
+
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping("/mentor/teams/{teamId}/submissions")
     public ResponseEntity<List<SubmissionSummaryResponse>> getMentorTeamSubmissions(
@@ -209,7 +233,6 @@ public class SubmissionController {
     ) {
         return ResponseEntity.ok(submissionService.getMentorSubmissionById(submissionId, authentication));
     }
-
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/submission-links/{linkId}/download-url")

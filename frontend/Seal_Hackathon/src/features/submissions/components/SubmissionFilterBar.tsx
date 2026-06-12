@@ -10,7 +10,7 @@ type Props = {
   onChange: (filters: CoordinatorSubmissionListParams) => void;
   events?: { id: string; name: string }[];
   tracks?: { id: string; name: string; eventId: string }[];
-  rounds?: { id: string; name: string; trackId: string }[];
+  rounds?: { id: string; name: string; eventId: string }[];
 };
 
 export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [], rounds = [] }: Props) {
@@ -78,14 +78,14 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
   };
 
   const filteredTracks = tracks.filter((t) => t.eventId === filters.eventId);
-  const filteredRounds = rounds.filter((r) => r.trackId === filters.trackId);
+  const filteredRounds = rounds.filter((r) => r.eventId === filters.eventId);
 
   const hasActiveFilters = Boolean(
     filters.search || filters.status || filters.eventId || filters.trackId || filters.roundId
   );
 
   const isTrackDisabled = !filters.eventId || filteredTracks.length === 0;
-  const isRoundDisabled = !filters.trackId || filteredRounds.length === 0;
+  const isRoundDisabled = !filters.eventId || filteredRounds.length === 0;
 
   return (
     <div className="p-4 md:p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
@@ -197,7 +197,7 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
                 sx={filterSelectSx}
                 MenuProps={menuPropsAll}
                 renderValue={(selected) => {
-                  if (filters.trackId && filteredRounds.length === 0) {
+                  if (filters.eventId && filteredRounds.length === 0) {
                     return <span className="text-slate-400 dark:text-slate-500 italic">No rounds available</span>;
                   }
                   if (!selected) return <span className="text-slate-500 dark:text-slate-400">All Rounds</span>;

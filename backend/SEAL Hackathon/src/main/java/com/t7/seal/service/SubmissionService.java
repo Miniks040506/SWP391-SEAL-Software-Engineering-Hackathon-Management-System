@@ -17,6 +17,10 @@ public interface SubmissionService {
                                           SubmitDeliverablesRequest request,
                                           Authentication authentication);
 
+    SubmissionResponse saveSubmissionDraft(UUID teamId, UUID roundId,
+                                           UpdateSubmissionRequest request,
+                                           Authentication authentication);
+
     SubmissionResponse uploadSubmissionFile(UUID teamId, UUID roundId,
                                             String linkType, String note,
                                             String label, Boolean isPrimary,

@@ -1,32 +1,28 @@
 import { useState, useEffect } from "react";
-import { apiRequest } from "@/api/apiRequest";
+import { submissionApi } from "@/api/submission.api";
 import type { PageResponse, UUID } from "@/types/common.types";
-import type { SubmissionDetailResponse } from "@/types/submission.types";
+import type {
+  CoordinatorSubmissionSummaryResponse,
+  GetEventSubmissionsParams,
+  SubmissionDetailResponse,
+} from "@/types/submission.types";
 
-export type CoordinatorSubmissionListParams = {
-  eventId?: string;
-  trackId?: string;
-  roundId?: string;
-  status?: string;
-  search?: string;
-  page?: number;
-  size?: number;
+export type CoordinatorSubmissionListParams = GetEventSubmissionsParams & {
+  eventId?: UUID;
 };
+export type CoordinatorSubmissionSummary = CoordinatorSubmissionSummaryResponse;
 
-export type CoordinatorSubmissionSummary = {
-  id: string;
-  teamId: string;
-  teamName?: string | null;
-  trackId?: string | null;
-  trackName?: string | null;
-  roundId: string;
-  roundName: string;
-  status: string;
-  submissionNumber: number;
-  submittedAt?: string | null;
-  updatedAt?: string | null;
-  linkCount?: number;
-};
+const emptySubmissionPage = (
+  page: number,
+  size: number,
+): PageResponse<CoordinatorSubmissionSummary> => ({
+  content: [],
+  page,
+  size,
+  totalElements: 0,
+  totalPages: 0,
+  last: true,
+});
 
 export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionListParams) => {
   const [data, setData] = useState<PageResponse<CoordinatorSubmissionSummary> | null>(null);
@@ -36,17 +32,18 @@ export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionList
     const fetchSubmissions = async () => {
       setLoading(true);
       try {
-        let url = "/submissions";
-        if (params.eventId) {
-          url = `/events/${params.eventId}/submissions`;
-        } else if (params.roundId) {
-          url = `/rounds/${params.roundId}/submissions`;
-        } else if (params.trackId) {
-          url = `/tracks/${params.trackId}/submissions`;
+        if (!params.eventId) {
+          setData(emptySubmissionPage(params.page ?? 1, params.size ?? 20));
+          return;
         }
-        
-        const res = await apiRequest.get<PageResponse<CoordinatorSubmissionSummary>>(url, { params });
-        setData(res);
+
+        const apiPage = Math.max((params.page ?? 1) - 1, 0);
+        const { eventId, ...queryParams } = params;
+        const res = await submissionApi.getEventSubmissions(eventId, {
+          ...queryParams,
+          page: apiPage,
+        });
+        setData({ ...res, page: res.page + 1 });
       } catch (error) {
         console.error("Failed to fetch submissions:", error);
       } finally {
@@ -70,7 +67,7 @@ export const useSubmissionAdminDetailQuery = (submissionId?: UUID) => {
     const fetchDetail = async () => {
       setLoading(true);
       try {
-        const res = await apiRequest.get<SubmissionDetailResponse>(`/submissions/${submissionId}/admin-view`);
+        const res = await submissionApi.getSubmissionAdminView(submissionId);
         setDetail(res);
       } catch (error) {
         console.error("Failed to fetch submission detail:", error);

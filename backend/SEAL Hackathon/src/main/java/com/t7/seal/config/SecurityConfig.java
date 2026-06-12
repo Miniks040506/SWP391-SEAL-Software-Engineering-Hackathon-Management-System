@@ -208,7 +208,7 @@ public class SecurityConfig {
 
                         // Mentor
                         .requestMatchers(API + "/mentor-feedback/**").hasAnyRole("MENTOR", "STUDENT", "COORDINATOR")
-                        .requestMatchers(HttpMethod.GET, API + "/tracks/*/teams").hasAnyRole("MENTOR", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/tracks/*/teams").hasAnyRole("MENTOR", "COORDINATOR", "ADMIN")
 
                         // Team invitations. Token lookup is public above; response actions require an authenticated user.
                         .requestMatchers(API + "/invitations/**").authenticated()

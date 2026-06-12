@@ -1,8 +1,11 @@
 import { apiRequest } from "@/api/apiRequest";
-import type { UUID } from "@/types/common.types";
+import type { PageResponse, UUID } from "@/types/common.types";
 import type {
+  CoordinatorSubmissionSummaryResponse,
   CreateSubmissionLinkRequest,
   FileDownloadUrlResponse,
+  GetEventSubmissionsParams,
+  SaveSubmissionDraftRequest,
   SubmissionDetailResponse,
   SubmissionLinkResponse,
   SubmissionResponse,
@@ -14,6 +17,13 @@ import type {
 } from "@/types/submission.types";
 
 export const submissionApi = {
+  saveSubmissionDraft(teamId: UUID, roundId: UUID, payload: SaveSubmissionDraftRequest) {
+    return apiRequest.post<SubmissionResponse>(
+      `/teams/${teamId}/rounds/${roundId}/submission/draft`,
+      payload,
+    );
+  },
+
   submitDeliverables(teamId: UUID, roundId: UUID, payload: SubmitDeliverablesRequest) {
     return apiRequest.post<SubmissionResponse>(
       `/teams/${teamId}/rounds/${roundId}/submission`,
@@ -64,8 +74,12 @@ export const submissionApi = {
     );
   },
 
+  submitExistingSubmission(submissionId: UUID) {
+    return apiRequest.post<SubmissionResponse>(`/submissions/${submissionId}/submit`);
+  },
+
   addSubmissionLink(submissionId: UUID, payload: CreateSubmissionLinkRequest) {
-    return apiRequest.post<SubmissionLinkResponse>(
+    return apiRequest.post<SubmissionResponse>(
       `/submissions/${submissionId}/links`,
       payload,
     );
@@ -91,6 +105,31 @@ export const submissionApi = {
   getMyTeamDetailedScores(submissionId: UUID) {
     return apiRequest.get<TeamDetailedScoreResponse>(
       `/submissions/${submissionId}/scores/me`,
+    );
+  },
+
+  getSubmissionAdminView(submissionId: UUID) {
+    return apiRequest.get<SubmissionDetailResponse>(
+      `/submissions/${submissionId}/admin-view`,
+    );
+  },
+
+  getEventSubmissions(eventId: UUID, params?: GetEventSubmissionsParams) {
+    return apiRequest.get<PageResponse<CoordinatorSubmissionSummaryResponse>>(
+      `/events/${eventId}/submissions`,
+      { params },
+    );
+  },
+
+  getRoundSubmissions(roundId: UUID) {
+    return apiRequest.get<SubmissionSummaryResponse[]>(
+      `/rounds/${roundId}/submissions`,
+    );
+  },
+
+  getTrackSubmissions(trackId: UUID) {
+    return apiRequest.get<SubmissionSummaryResponse[]>(
+      `/tracks/${trackId}/submissions`,
     );
   },
 };

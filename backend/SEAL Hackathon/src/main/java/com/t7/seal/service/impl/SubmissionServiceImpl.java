@@ -91,6 +91,49 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     @Override
     @Transactional
+    public SubmissionResponse saveSubmissionDraft(
+            UUID teamId,
+            UUID roundId,
+            UpdateSubmissionRequest request,
+            Authentication authentication
+    ) {
+        Team team = getTeam(teamId);
+        Round round = getRound(roundId);
+
+        ensureRoundBelongsToTeamEvent(team, round);
+        ensureTeamLeader(team, authentication);
+        ensureTeamCanSubmit(team);
+        ensureRoundCanAcceptSubmission(round);
+
+        Submission submission = submissionRepository.findByTeamIdAndRoundId(teamId, roundId)
+                .orElseGet(() -> Submission.builder()
+                        .team(team)
+                        .round(round)
+                        .status(SubmissionStatus.DRAFT)
+                        .submissionNumber(1)
+                        .submissionLinks(new ArrayList<>())
+                        .build());
+
+        if (request != null) {
+            if (request.status() != null && parseSubmissionStatus(request.status()) != SubmissionStatus.DRAFT) {
+                throw new BadRequestException("Draft endpoint only accepts DRAFT status.");
+            }
+
+            if (request.note() != null) {
+                submission.setNote(blankToNull(request.note()));
+            }
+
+            if (request.links() != null) {
+                replaceLinks(submissionRepository.save(submission), request.links());
+            }
+        }
+
+        Submission saved = submissionRepository.save(submission);
+        return toSubmissionResponse(getSubmission(saved.getId()));
+    }
+
+    @Override
+    @Transactional
     public SubmissionResponse uploadSubmissionFile(
             UUID teamId, UUID roundId,
             String linkType, String note,

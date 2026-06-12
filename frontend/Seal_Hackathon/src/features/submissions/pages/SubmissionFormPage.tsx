@@ -8,6 +8,7 @@ import { SubmissionHistoryTable } from "../components/SubmissionHistoryTable";
 import { filterTextFieldSx } from "../schemas/submissions.schema";
 import type {
   CreateSubmissionLinkRequest,
+  SubmissionLinkType,
   SubmissionHistoryEntry,
 } from "@/types/submission.types";
 
@@ -23,11 +24,35 @@ type StorageItem = {
   path: string;
 };
 
-function detectLinkType(url: string): string {
-  if (url.includes("github.com")) return "GITHUB";
-  if (url.includes("gitlab.com")) return "GITLAB";
-  if (url.includes("drive.google.com")) return "GOOGLE_DRIVE";
-  return "EXTERNAL_URL";
+function detectLinkType(url: string): SubmissionLinkType {
+  const lower = url.toLowerCase();
+
+  if (lower.includes("github.com") || lower.includes("gitlab.com")) {
+    return "REPOSITORY";
+  }
+
+  if (lower.includes("youtube.com") || lower.includes("youtu.be") || lower.includes("vimeo.com")) {
+    return "VIDEO";
+  }
+
+  if (lower.includes("slides.google.com") || lower.endsWith(".ppt") || lower.endsWith(".pptx")) {
+    return "SLIDE";
+  }
+
+  if (lower.includes("docs.google.com/document") || lower.endsWith(".pdf") || lower.includes("report")) {
+    return "REPORT";
+  }
+
+  if (
+    lower.includes("demo") ||
+    lower.includes("vercel.app") ||
+    lower.includes("netlify.app") ||
+    lower.includes("render.com")
+  ) {
+    return "DEMO";
+  }
+
+  return "OTHER";
 }
 
 function formatDate(ts: number): string {
@@ -307,9 +332,10 @@ export function SubmissionFormPage() {
       if (submission?.id) {
         await submissionApi.updateSubmission(submission.id, {
           note: note.trim() || undefined,
+          links: payload.links,
         });
       } else {
-        await submissionApi.submitDeliverables(teamId, roundId, payload);
+        await submissionApi.saveSubmissionDraft(teamId, roundId, payload);
       }
       setSuccessMsg("Draft saved successfully.");
       refetch();
@@ -338,7 +364,9 @@ export function SubmissionFormPage() {
       if (submissionId) {
         await submissionApi.updateSubmission(submissionId, {
           note: note.trim() || undefined,
+          links: payload.links,
         });
+        await submissionApi.submitExistingSubmission(submissionId);
       } else {
         const created = await submissionApi.submitDeliverables(
           teamId,
