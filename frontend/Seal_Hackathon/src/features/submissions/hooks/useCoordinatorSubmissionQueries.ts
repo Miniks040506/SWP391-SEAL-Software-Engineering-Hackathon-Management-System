@@ -3,12 +3,26 @@ import { submissionApi } from "@/api/submission.api";
 import type { PageResponse, UUID } from "@/types/common.types";
 import type {
   CoordinatorSubmissionSummaryResponse,
-  GetCoordinatorSubmissionsParams,
+  GetEventSubmissionsParams,
   SubmissionDetailResponse,
 } from "@/types/submission.types";
 
-export type CoordinatorSubmissionListParams = GetCoordinatorSubmissionsParams;
+export type CoordinatorSubmissionListParams = GetEventSubmissionsParams & {
+  eventId?: UUID;
+};
 export type CoordinatorSubmissionSummary = CoordinatorSubmissionSummaryResponse;
+
+const emptySubmissionPage = (
+  page: number,
+  size: number,
+): PageResponse<CoordinatorSubmissionSummary> => ({
+  content: [],
+  page,
+  size,
+  totalElements: 0,
+  totalPages: 0,
+  last: true,
+});
 
 export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionListParams) => {
   const [data, setData] = useState<PageResponse<CoordinatorSubmissionSummary> | null>(null);
@@ -18,9 +32,15 @@ export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionList
     const fetchSubmissions = async () => {
       setLoading(true);
       try {
+        if (!params.eventId) {
+          setData(emptySubmissionPage(params.page ?? 1, params.size ?? 20));
+          return;
+        }
+
         const apiPage = Math.max((params.page ?? 1) - 1, 0);
-        const res = await submissionApi.getCoordinatorSubmissions({
-          ...params,
+        const { eventId, ...queryParams } = params;
+        const res = await submissionApi.getEventSubmissions(eventId, {
+          ...queryParams,
           page: apiPage,
         });
         setData({ ...res, page: res.page + 1 });

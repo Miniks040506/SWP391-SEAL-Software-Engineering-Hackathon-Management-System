@@ -4,7 +4,7 @@ import type {
   CoordinatorSubmissionSummaryResponse,
   CreateSubmissionLinkRequest,
   FileDownloadUrlResponse,
-  GetCoordinatorSubmissionsParams,
+  GetEventSubmissionsParams,
   SaveSubmissionDraftRequest,
   SubmissionDetailResponse,
   SubmissionLinkResponse,
@@ -114,14 +114,7 @@ export const submissionApi = {
     );
   },
 
-  getCoordinatorSubmissions(params?: GetCoordinatorSubmissionsParams) {
-    return apiRequest.get<PageResponse<CoordinatorSubmissionSummaryResponse>>(
-      "/submissions",
-      { params },
-    );
-  },
-
-  getEventSubmissions(eventId: UUID, params?: Omit<GetCoordinatorSubmissionsParams, "eventId">) {
+  getEventSubmissions(eventId: UUID, params?: GetEventSubmissionsParams) {
     return apiRequest.get<PageResponse<CoordinatorSubmissionSummaryResponse>>(
       `/events/${eventId}/submissions`,
       { params },

@@ -184,21 +184,6 @@ public class SubmissionController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
-    @GetMapping("/submissions")
-    public ResponseEntity<PageResponse<CoordinatorSubmissionSummaryResponse>> getCoordinatorSubmissions(
-            @RequestParam(required = false) UUID eventId,
-            @RequestParam(required = false) UUID roundId,
-            @RequestParam(required = false) UUID trackId,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            Authentication authentication
-    ) {
-        return ResponseEntity.ok(submissionService.getEventSubmissions(eventId, roundId, trackId, status, search, page, size, authentication));
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
     @GetMapping("/events/{eventId}/submissions")
     public ResponseEntity<PageResponse<CoordinatorSubmissionSummaryResponse>> getEventSubmissions(
             @PathVariable UUID eventId,

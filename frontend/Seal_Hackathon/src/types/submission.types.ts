@@ -159,8 +159,7 @@ export type CoordinatorSubmissionSummaryResponse = {
   late?: boolean;
 };
 
-export type GetCoordinatorSubmissionsParams = {
-  eventId?: UUID;
+export type GetEventSubmissionsParams = {
   roundId?: UUID;
   trackId?: UUID;
   status?: SubmissionStatus | string;
