@@ -1,6 +1,8 @@
 package com.t7.seal.repository;
 
 import com.t7.seal.entities.Team;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,8 @@ import java.util.UUID;
 @Repository
 public interface TeamRepository extends JpaRepository<Team, UUID> {
     Optional<Team> findByJoinCode(String joinCode);
+
+    Page<Team> findByTrackIdOrderByRegisteredAtDescCreatedAtDesc(UUID trackId, Pageable pageable);
 
     @Query("""
             SELECT COUNT(t) FROM Team t 

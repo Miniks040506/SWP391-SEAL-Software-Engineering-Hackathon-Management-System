@@ -5,27 +5,38 @@ import com.t7.seal.domain.SubmissionLinkType;
 import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.MentorAssignment;
+import com.t7.seal.entities.Submission;
+import com.t7.seal.entities.Team;
 import com.t7.seal.entities.Track;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.MentorAssignmentRepository;
+import com.t7.seal.repository.SubmissionRepository;
 import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.repository.TrackRepository;
 import com.t7.seal.request.track.CreateTrackRequest;
+import com.t7.seal.request.track.RegisterTeamTrackRequest;
 import com.t7.seal.request.track.UpdateTrackRequest;
+import com.t7.seal.response.PageResponse;
+import com.t7.seal.response.team.TeamResponse;
 import com.t7.seal.response.track.MentorAssignmentResponse;
 import com.t7.seal.response.track.TrackDetailResponse;
 import com.t7.seal.response.track.TrackResponse;
+import com.t7.seal.response.track.TrackTeamProgressResponse;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.TrackService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,10 +44,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TrackServiceImpl implements TrackService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final HackathonEventRepository hackathonEventRepository;
     private final TrackRepository trackRepository;
     private final TeamRepository teamRepository;
     private final MentorAssignmentRepository mentorAssignmentRepository;
+    private final SubmissionRepository submissionRepository;
 
     private final CurrentUserService currentUserService;
 
@@ -136,6 +150,8 @@ public class TrackServiceImpl implements TrackService {
 
         if (request.name() != null) {
 
+            
+
             String name = request.name().trim();
 
             if (name.isBlank()) {
@@ -193,6 +209,77 @@ public class TrackServiceImpl implements TrackService {
         trackRepository.delete(track);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public PageResponse<TrackTeamProgressResponse> getTrackTeams(
+            UUID trackId,
+            int page,
+            int size,
+            Authentication authentication
+    ) {
+        findTrack(trackId);
+        User user = currentUserService.getCurrentUser(authentication);
+        ensureCanViewTrackTeams(trackId, user);
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+
+        Page<Team> result = teamRepository.findByTrackIdOrderByRegisteredAtDescCreatedAtDesc(
+                trackId,
+                PageRequest.of(safePage, safeSize)
+        );
+
+        return new PageResponse<>(
+                result.getContent().stream().map(this::toTrackTeamProgressResponse).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
+    }
+
+    @Transactional
+    @Override
+    public TeamResponse registerTeamForTrack(
+            UUID teamId,
+            RegisterTeamTrackRequest request,
+            Authentication authentication
+    ) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found " + teamId));
+        Track track = findTrack(request.trackId());
+
+        if (team.getLeader() == null || !team.getLeader().getId().equals(currentUser.getId())) {
+            throw new UnauthorizedException("Only the team leader can register the team for a track.");
+        }
+
+        if (!team.isForming()) {
+            throw new ConflictException("Only forming teams can register for a track.");
+        }
+
+        if (team.getTrack() != null) {
+            throw new ConflictException("Team is already registered to a track.");
+        }
+
+        if (track.getEvent() == null || track.getEvent().getStatus() != RegistrationStatus.REGISTRATION) {
+            throw new ConflictException("Track registration is only open while the event is in REGISTRATION status.");
+        }
+
+        Integer maxTeams = track.getMaxTeams();
+        if (maxTeams != null && teamRepository.CountActiveTeamByTrackId(track.getId()) >= maxTeams) {
+            throw new ConflictException("Track has reached its team limit.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        team.setTrack(track);
+        team.register(now);
+        team.setUpdatedAt(now);
+
+        return toTeamResponse(teamRepository.save(team));
+    }
+
     //HELPERS
 
     private void assertTrackRoundEditable(HackathonEvent event) {
@@ -238,6 +325,28 @@ public class TrackServiceImpl implements TrackService {
         }
     }
 
+    private Track findTrack(UUID trackId) {
+        if (trackId == null) {
+            throw new BadRequestException("Track id is required.");
+        }
+
+        return trackRepository.findById(trackId)
+                .orElseThrow(() -> new NotFoundException("Track not found."));
+    }
+
+    private void ensureCanViewTrackTeams(UUID trackId, User user) {
+        if (user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.COORDINATOR) {
+            return;
+        }
+
+        if (user.getRole() == UserRole.MENTOR
+                && mentorAssignmentRepository.existsByTrackIdAndUserId(trackId, user.getId())) {
+            return;
+        }
+
+        throw new UnauthorizedException("You do not have access to this track's teams.");
+    }
+
     private TrackResponse toTrackResponse(Track track) {
         return new TrackResponse(
                 track.getId(),
@@ -256,6 +365,38 @@ public class TrackServiceImpl implements TrackService {
                 assignment.getUser().getId(),
                 assignment.getUser().getFullName(),
                 assignment.getAssignedAt()
+        );
+    }
+
+    private TrackTeamProgressResponse toTrackTeamProgressResponse(Team team) {
+        return new TrackTeamProgressResponse(
+                team.getId(),
+                team.getName(),
+                team.getLeader() == null ? null : team.getLeader().getFullName(),
+                team.getMemberCount() == null ? 0 : team.getMemberCount(),
+                latestSubmissionStatus(team.getId())
+        );
+    }
+
+    private String latestSubmissionStatus(UUID teamId) {
+        return submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(teamId)
+                .stream()
+                .reduce((previous, current) -> current)
+                .map(Submission::getStatus)
+                .map(Enum::name)
+                .orElse(null);
+    }
+
+    private TeamResponse toTeamResponse(Team team) {
+        return new TeamResponse(
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                team.getLeader() == null ? null : team.getLeader().getId(),
+                team.getLeader() == null ? null : team.getLeader().getFullName(),
+                team.getTrack() == null ? null : team.getTrack().getId(),
+                team.getStatus().name(),
+                team.getMemberCount() == null ? 0 : team.getMemberCount()
         );
     }
 }
