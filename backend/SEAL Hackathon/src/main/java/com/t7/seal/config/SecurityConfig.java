@@ -103,6 +103,9 @@ public class SecurityConfig {
                                 API + "/rankings/**"
                         ).permitAll()
 
+                        // Public invitation token lookup. Accept/reject still requires login.
+                        .requestMatchers(HttpMethod.GET, API + "/invitations/token/*").permitAll()
+
                         // Current user routes. Must be before /users/*.
                         .requestMatchers(HttpMethod.GET, API + "/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, API + "/users/me").authenticated()
@@ -157,8 +160,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, API + "/events/*/rounds").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.PATCH, API + "/rounds/*").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.DELETE, API + "/rounds/*").hasRole("COORDINATOR")
-                        .requestMatchers(API + "/rounds/*/advance-rules/**").hasRole("COORDINATOR")
-                        .requestMatchers(API + "/advance-rules/**").hasRole("COORDINATOR")
+                        .requestMatchers(API + "/rounds/*/advance-rules", API + "/rounds/*/advance-rules/**").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(API + "/advance-rules/**").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(API + "/rounds/*/judge-assignments/**").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/lock-submissions").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/lock-grading").hasRole("COORDINATOR")
@@ -206,6 +209,9 @@ public class SecurityConfig {
                         // Mentor
                         .requestMatchers(API + "/mentor-feedback/**").hasAnyRole("MENTOR", "STUDENT", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/tracks/*/teams").hasAnyRole("MENTOR", "COORDINATOR")
+
+                        // Team invitations. Token lookup is public above; response actions require an authenticated user.
+                        .requestMatchers(API + "/invitations/**").authenticated()
 
                         // Student/team/submission
                         .requestMatchers(API + "/teams/**").hasAnyRole("STUDENT", "COORDINATOR")
