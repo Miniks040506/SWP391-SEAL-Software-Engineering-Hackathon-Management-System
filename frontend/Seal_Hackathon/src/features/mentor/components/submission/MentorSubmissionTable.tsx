@@ -1,4 +1,6 @@
 import { format } from "date-fns";
+
+import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
 import Table from "@mui/material/Table";
@@ -7,11 +9,13 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+
+import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import FolderOffOutlinedIcon from "@mui/icons-material/FolderOffOutlined";
 
 import type { SubmissionSummaryResponse } from "@/types/submission.types";
 
-type MentorSubmissionTableProps = {
+type MentorSubmissionsTableProps = {
   submissions: SubmissionSummaryResponse[];
   isLoading: boolean;
   onRowClick: (submissionId: string) => void;
@@ -21,35 +25,47 @@ export const MentorSubmissionTable = ({
   submissions,
   isLoading,
   onRowClick,
-}: MentorSubmissionTableProps) => {
+}: MentorSubmissionsTableProps) => {
   if (isLoading) {
-    return;
-    <div className="p-8 text-center text-gray-500">Loading track submission...</div>;
+    return (
+      <div className="rounded-2xl border border-dashed border-gray-200 bg-slate-50 px-5 py-12 text-center dark:border-slate-700 dark:bg-slate-900/40">
+        <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">
+          Loading track submissions...
+        </p>
+      </div>
+    );
   }
 
   if (!submissions || submissions.length === 0) {
     return (
-      <Card variant="outlined" className="flex flex-col items-center justify-center p-12 border-dashed dark:border-slate-700 dark:bg-[#1e293b]">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-slate-50 p-12 text-center dark:border-slate-700 dark:bg-slate-900/40">
         <FolderOffOutlinedIcon className="mb-4 text-4xl text-gray-400" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">No Submissions Found</h3>
-        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+        <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
+          No Submissions Found
+        </h3>
+        <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
           There are currently no deliverables submitted by teams in your track.
         </p>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <TableContainer component={Card} variant="outlined" className="dark:border-slate-700 dark:bg-[#1e293b]">
+    <TableContainer
+      component={Card}
+      variant="outlined"
+      className="rounded-2xl border-gray-100 dark:border-slate-700 dark:bg-[#1e293b]"
+    >
       <Table aria-label="track submissions table">
-        <TableHead className="bg-gray-50 dark:bg-slate-800">
+        <TableHead className="bg-slate-50 dark:bg-slate-800/50">
           <TableRow>
-            <TableCell>Team Name</TableCell>
-            <TableCell>Round</TableCell>
-            <TableCell>Submission #</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Submitted At</TableCell>
-            <TableCell>Links</TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Team Name</TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Round</TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Submission</TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Submitted At</TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Links</TableCell>
+            <TableCell align="right" className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Action</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -57,28 +73,45 @@ export const MentorSubmissionTable = ({
             <TableRow
               key={row.id}
               hover
-              onClick={() => onRowClick(row.id)}
-              className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/50"
+              className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
             >
-              <TableCell className="font-bold text-gray-900 dark:text-white">
+              <TableCell className="font-extrabold text-gray-900 dark:text-white">
                 {row.teamName || "Unknown Team"}
               </TableCell>
-              <TableCell className="font-medium text-gray-700 dark:text-slate-300">
+              <TableCell className="font-semibold text-gray-700 dark:text-slate-300">
                 {row.roundName}
               </TableCell>
-              <TableCell>#{row.submissionNumber}</TableCell>
+              <TableCell className="font-medium text-gray-600 dark:text-slate-400">
+                #{row.submissionNumber}
+              </TableCell>
               <TableCell>
                 <Chip
                   label={row.status}
                   size="small"
                   color={row.status === "SUBMITTED" ? "success" : "default"}
-                  className="font-medium"
+                  sx={{ fontWeight: 600 }}
                 />
               </TableCell>
-              <TableCell>
+              <TableCell className="text-sm text-gray-500 dark:text-slate-400">
                 {row.submittedAt ? format(new Date(row.submittedAt), "MMM dd, yyyy HH:mm") : "-"}
               </TableCell>
-              <TableCell>{row.linkCount || 0} links</TableCell>
+              <TableCell className="font-semibold text-gray-600 dark:text-slate-400">
+                {row.linkCount || 0} links
+              </TableCell>
+              <TableCell align="right">
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => onRowClick(row.id)}
+                  sx={{
+                    fontWeight: 500,
+                    textTransform: "none",
+                    borderRadius: "8px",
+                  }}
+                >
+                  View Detail
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
