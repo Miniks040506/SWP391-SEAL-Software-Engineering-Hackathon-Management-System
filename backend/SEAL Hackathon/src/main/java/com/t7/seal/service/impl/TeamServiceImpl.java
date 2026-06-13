@@ -635,6 +635,24 @@ public class TeamServiceImpl implements TeamService {
         notificationRepository.save(notification);
     }
 
+    private void createTeamMemberJoinedByCodeNotification(Team team, User actor) {
+        List<TeamMember> members = activeMembers(team.getId());
+        Notification notification = Notification.builder()
+                .event(team.getTrack() == null ? null : team.getTrack().getEvent())
+                .createdBy(actor)
+                .type(NotificationType.TEAM_INVITATION_ACCEPTED)
+                .title("New team member joined")
+                .body(actor.getFullName() + " joined team " + team.getName() + " using the team code.")
+                .targetScope(NotificationTargetScope.TEAM)
+                .targetId(team.getId())
+                .channel(NotificationChannel.BOTH)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(members.size())
+                .build();
+        notificationRepository.save(notification);
+    }
+
     private void createInvitationAcceptedNotification(TeamInvitation invitation, User actor) {
         List<TeamMember> members = activeMembers(invitation.getTeam().getId());
         Notification notification = Notification.builder()
@@ -683,6 +701,33 @@ public class TeamServiceImpl implements TeamService {
             );
         } catch (RuntimeException ex) {
             log.warn("Failed to send team invitation email. invitationId={}, to={}", invitation.getId(), invitation.getInviteEmail(), ex);
+        }
+    }
+
+    private void sendTeamMemberJoinedByCodeEmail(Team team, User joinedMember) {
+        User leader = team.getLeader();
+        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
+            return;
+        }
+
+        List<String> cc = activeMembers(team.getId()).stream()
+                .map(TeamMember::getUser)
+                .filter(user -> user != null && user.getEmail() != null && !user.getEmail().isBlank())
+                .filter(user -> !user.getId().equals(leader.getId()))
+                .map(User::getEmail)
+                .distinct()
+                .toList();
+
+        try {
+            emailService.sendTeamInvitationAccepted(
+                    leader.getEmail(),
+                    cc,
+                    team.getName(),
+                    joinedMember.getFullName(),
+                    buildTeamUrl(team.getId())
+            );
+        } catch (RuntimeException ex) {
+            log.warn("Failed to send team join-code accepted email. teamId={}, joinedUserId={}", team.getId(), joinedMember.getId(), ex);
         }
     }
 
@@ -771,6 +816,25 @@ public class TeamServiceImpl implements TeamService {
                 m.getUser().getEmail(),
                 m.getRole().name(),
                 m.getJoinedAt()
+        );
+    }
+
+    private TeamJoinCodePreviewResponse toTeamJoinCodePreviewResponse(Team team) {
+        return new TeamJoinCodePreviewResponse(
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                team.getDescription(),
+                team.getLeader() == null ? null : team.getLeader().getId(),
+                team.getLeader() == null ? null : team.getLeader().getFullName(),
+                team.getTrack() == null ? null : team.getTrack().getId(),
+                team.getTrack() == null ? null : team.getTrack().getName(),
+                team.getTrack() == null || team.getTrack().getEvent() == null ? null : team.getTrack().getEvent().getId(),
+                team.getTrack() == null || team.getTrack().getEvent() == null ? null : team.getTrack().getEvent().getName(),
+                team.getStatus().name(),
+                team.getMemberCount() == null ? 0 : team.getMemberCount(),
+                maxMembersFor(team),
+                team.hasJoinCodeEnabled()
         );
     }
 
