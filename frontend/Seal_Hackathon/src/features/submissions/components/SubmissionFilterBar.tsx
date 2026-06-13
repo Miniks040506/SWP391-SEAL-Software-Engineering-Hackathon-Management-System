@@ -1,9 +1,22 @@
 import { useState, useEffect } from "react";
-import { TextField, InputAdornment, Select, MenuItem, FormControl, Button, type SelectChangeEvent } from "@mui/material";
+import {
+  TextField,
+  InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  Button,
+  type SelectChangeEvent,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import type { CoordinatorSubmissionListParams } from "../hooks/useCoordinatorSubmissionQueries";
-import { SUBMISSION_STATUSES, filterTextFieldSx, filterSelectSx, menuPropsAll } from "../schemas/submissions.schema";
+import {
+  SUBMISSION_STATUSES,
+  filterTextFieldSx,
+  filterSelectSx,
+  menuPropsAll,
+} from "../schemas/submissions.schema";
 
 type Props = {
   filters: CoordinatorSubmissionListParams;
@@ -13,19 +26,25 @@ type Props = {
   rounds?: { id: string; name: string; eventId: string }[];
 };
 
-export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [], rounds = [] }: Props) {
+export function SubmissionFilterBar({
+  filters,
+  onChange,
+  events = [],
+  tracks = [],
+  rounds = [],
+}: Props) {
   const [localSearch, setLocalSearch] = useState(filters.search || "");
 
   useEffect(() => {
     const timer = setTimeout(() => {
       const cleanSearch = localSearch.trim();
       const currentSearch = filters.search || "";
-      
+
       if (cleanSearch !== currentSearch) {
         onChange({ ...filters, search: cleanSearch || undefined, page: 1 });
       }
     }, 500);
-    
+
     return () => clearTimeout(timer);
   }, [localSearch, filters, onChange]);
 
@@ -81,7 +100,11 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
   const filteredRounds = rounds.filter((r) => r.eventId === filters.eventId);
 
   const hasActiveFilters = Boolean(
-    filters.search || filters.status || filters.eventId || filters.trackId || filters.roundId
+    filters.search ||
+    filters.status ||
+    filters.eventId ||
+    filters.trackId ||
+    filters.roundId,
   );
 
   const isTrackDisabled = !filters.eventId || filteredTracks.length === 0;
@@ -90,7 +113,6 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
   return (
     <div className="p-4 md:p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
       <div className="flex flex-col gap-4 md:gap-5">
-        
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <TextField
@@ -100,13 +122,18 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
               name="search"
               value={localSearch}
               onChange={handleTextChange}
-              placeholder="Search by team name..."
+              placeholder="Search team, project, or round..."
               sx={filterTextFieldSx}
               slotProps={{
                 input: {
                   endAdornment: (
                     <InputAdornment position="end">
-                      <SearchIcon fontSize="small" sx={{ color: "var(--mui-palette-text-secondary, #94a3b8)" }} />
+                      <SearchIcon
+                        fontSize="small"
+                        sx={{
+                          color: "var(--mui-palette-text-secondary, #94a3b8)",
+                        }}
+                      />
                     </InputAdornment>
                   ),
                 },
@@ -125,7 +152,11 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
                 MenuProps={menuPropsAll}
                 renderValue={(selected) => {
                   if (!selected) {
-                    return <span className="text-slate-500 dark:text-slate-400">All Statuses</span>;
+                    return (
+                      <span className="text-slate-500 dark:text-slate-400">
+                        All Statuses
+                      </span>
+                    );
                   }
                   return selected as string;
                 }}
@@ -152,14 +183,25 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
                 sx={filterSelectSx}
                 MenuProps={menuPropsAll}
                 renderValue={(selected) => {
-                  if (!selected) return <span className="text-slate-500 dark:text-slate-400">All Events</span>;
+                  if (!selected)
+                    return (
+                      <span className="text-slate-500 dark:text-slate-400">
+                        All Events
+                      </span>
+                    );
                   const found = events.find((e) => e.id === selected);
-                  return found ? found.name : <span className="text-rose-500">Invalid Event</span>;
+                  return found ? (
+                    found.name
+                  ) : (
+                    <span className="text-rose-500">Invalid Event</span>
+                  );
                 }}
               >
                 <MenuItem value="">All Events</MenuItem>
                 {events.map((e) => (
-                  <MenuItem key={e.id} value={e.id}>{e.name}</MenuItem>
+                  <MenuItem key={e.id} value={e.id}>
+                    {e.name}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -174,16 +216,31 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
                 MenuProps={menuPropsAll}
                 renderValue={(selected) => {
                   if (filters.eventId && filteredTracks.length === 0) {
-                    return <span className="text-slate-400 dark:text-slate-500 italic">No tracks available</span>;
+                    return (
+                      <span className="text-slate-400 dark:text-slate-500 italic">
+                        No tracks available
+                      </span>
+                    );
                   }
-                  if (!selected) return <span className="text-slate-500 dark:text-slate-400">All Tracks</span>;
+                  if (!selected)
+                    return (
+                      <span className="text-slate-500 dark:text-slate-400">
+                        All Tracks
+                      </span>
+                    );
                   const found = tracks.find((t) => t.id === selected);
-                  return found ? found.name : <span className="text-rose-500">Invalid Track</span>;
+                  return found ? (
+                    found.name
+                  ) : (
+                    <span className="text-rose-500">Invalid Track</span>
+                  );
                 }}
               >
                 <MenuItem value="">All Tracks</MenuItem>
                 {filteredTracks.map((t) => (
-                  <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
+                  <MenuItem key={t.id} value={t.id}>
+                    {t.name}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -198,16 +255,31 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
                 MenuProps={menuPropsAll}
                 renderValue={(selected) => {
                   if (filters.eventId && filteredRounds.length === 0) {
-                    return <span className="text-slate-400 dark:text-slate-500 italic">No rounds available</span>;
+                    return (
+                      <span className="text-slate-400 dark:text-slate-500 italic">
+                        No rounds available
+                      </span>
+                    );
                   }
-                  if (!selected) return <span className="text-slate-500 dark:text-slate-400">All Rounds</span>;
+                  if (!selected)
+                    return (
+                      <span className="text-slate-500 dark:text-slate-400">
+                        All Rounds
+                      </span>
+                    );
                   const found = rounds.find((r) => r.id === selected);
-                  return found ? found.name : <span className="text-rose-500">Invalid Round</span>;
+                  return found ? (
+                    found.name
+                  ) : (
+                    <span className="text-rose-500">Invalid Round</span>
+                  );
                 }}
               >
                 <MenuItem value="">All Rounds</MenuItem>
                 {filteredRounds.map((r) => (
-                  <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
+                  <MenuItem key={r.id} value={r.id}>
+                    {r.name}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -219,19 +291,18 @@ export function SubmissionFilterBar({ filters, onChange, events = [], tracks = [
               startIcon={<FilterAltOffIcon />}
               variant="text"
               color="error"
-              sx={{ 
-                textTransform: 'none', 
+              sx={{
+                textTransform: "none",
                 fontWeight: 600,
-                minWidth: '130px',
-                height: '40px',
-                borderRadius: '8px'
+                minWidth: "130px",
+                height: "40px",
+                borderRadius: "8px",
               }}
             >
               Clear Filters
             </Button>
           )}
         </div>
-
       </div>
     </div>
   );

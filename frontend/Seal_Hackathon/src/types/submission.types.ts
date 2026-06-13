@@ -8,7 +8,12 @@ export type SubmissionLinkType =
   | "VIDEO"
   | "OTHER";
 
-export type SubmissionStatus = "DRAFT" | "SUBMITTED" | "LATE" | "DISQUALIFIED" | string;
+export type SubmissionStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "LATE"
+  | "DISQUALIFIED"
+  | string;
 
 export type SubmissionStorageProvider =
   | "EXTERNAL_URL"
@@ -192,14 +197,14 @@ export type SubmissionHistoryEntry = {
   linkCount: number;
   note?: string;
 };
- 
+
 export type RequiredLinkConfig = {
   linkType: string;
   label: string;
   isRequired: boolean;
   isPrimary: boolean;
 };
- 
+
 export type LinkFieldValue = {
   linkType: string;
   label: string;
