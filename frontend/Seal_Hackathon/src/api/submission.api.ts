@@ -114,9 +114,9 @@ export const submissionApi = {
     );
   },
 
-  getEventSubmissions(eventId: UUID, params?: GetEventSubmissionsParams) {
+  getEventSubmissions(params?: GetEventSubmissionsParams) {
     return apiRequest.get<PageResponse<CoordinatorSubmissionSummaryResponse>>(
-      `/events/${eventId}/submissions`,
+      "/submissions",
       { params },
     );
   },
