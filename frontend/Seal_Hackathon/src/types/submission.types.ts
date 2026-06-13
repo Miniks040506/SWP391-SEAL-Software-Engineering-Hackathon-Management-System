@@ -8,7 +8,12 @@ export type SubmissionLinkType =
   | "VIDEO"
   | "OTHER";
 
-export type SubmissionStatus = "DRAFT" | "SUBMITTED" | "LATE" | "DISQUALIFIED" | string;
+export type SubmissionStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "LATE"
+  | "DISQUALIFIED"
+  | string;
 
 export type SubmissionStorageProvider =
   | "EXTERNAL_URL"
@@ -118,8 +123,10 @@ export type SubmissionDetailResponse = {
   id: UUID;
   eventId?: UUID | null;
   eventName?: string | null;
-  teamId: UUID;
-  teamName?: string | null;
+  team: {
+    id: UUID;
+    name: string | null;
+  };
   leaderId?: UUID | null;
   leaderName?: string | null;
   trackId?: UUID | null;
@@ -192,14 +199,14 @@ export type SubmissionHistoryEntry = {
   linkCount: number;
   note?: string;
 };
- 
+
 export type RequiredLinkConfig = {
   linkType: string;
   label: string;
   isRequired: boolean;
   isPrimary: boolean;
 };
- 
+
 export type LinkFieldValue = {
   linkType: string;
   label: string;

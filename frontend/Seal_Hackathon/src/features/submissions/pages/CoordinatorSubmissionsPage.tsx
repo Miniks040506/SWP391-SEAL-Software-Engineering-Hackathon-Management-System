@@ -93,7 +93,8 @@ export function CoordinatorSubmissionsPage() {
             Submission Management
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Monitor and review all team submissions across events, tracks, and rounds.
+            Monitor and review all team submissions across events, tracks, and
+            rounds.
           </p>
         </div>
       </div>
@@ -113,7 +114,8 @@ export function CoordinatorSubmissionsPage() {
           <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 px-5 py-3 bg-white dark:bg-slate-800">
             <span className="text-xs text-slate-400">
               Showing {(filters.page! - 1) * filters.size! + 1}–
-              {Math.min(filters.page! * filters.size!, total)} of {total} submissions
+              {Math.min(filters.page! * filters.size!, total)} of {total}{" "}
+              submissions
             </span>
             <Pagination
               count={totalPages}

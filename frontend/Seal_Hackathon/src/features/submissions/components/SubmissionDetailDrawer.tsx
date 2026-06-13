@@ -15,14 +15,16 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
 
   return (
     <>
-      <div 
-        className="fixed inset-0 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity" 
+      <div
+        className="fixed inset-0 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity"
         onClick={onClose}
       />
       <div className="fixed inset-y-0 right-0 w-full md:w-150 bg-white dark:bg-slate-900 shadow-2xl z-50 overflow-y-auto transform transition-transform flex flex-col border-l border-slate-200 dark:border-slate-800">
         <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900 sticky top-0 z-10">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Submission Details</h2>
-          <button 
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+            Submission Details
+          </h2>
+          <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
           >
@@ -39,31 +41,49 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
             <div className="space-y-6">
               <section className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700/50">
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Overview</h3>
-                  <span className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(detail.status)}`}>
+                  <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Overview
+                  </h3>
+                  <span
+                    className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(detail.status)}`}
+                  >
                     {detail.status}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-5">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Submission ID</p>
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate font-mono">{detail.id}</p>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                      Submission ID
+                    </p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate font-mono">
+                      {detail.id}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Attempt Number</p>
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{detail.submissionNumber}</p>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                      Attempt Number
+                    </p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                      {detail.submissionNumber}
+                    </p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Submitted At</p>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                      Submitted At
+                    </p>
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                      {detail.submittedAt ? new Date(detail.submittedAt).toLocaleString() : "Not submitted yet"}
+                      {detail.submittedAt
+                        ? new Date(detail.submittedAt).toLocaleString()
+                        : "Not submitted yet"}
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
-                  <button 
-                    onClick={() => navigate(`/coordinator/teams/${detail.teamId}`)}
+                  <button
+                    onClick={() =>
+                      navigate(`/coordinator/teams/${detail.team.id}`)
+                    }
                     className="w-full py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-600 font-semibold rounded-lg transition-colors text-sm"
                   >
                     View Team Details →
