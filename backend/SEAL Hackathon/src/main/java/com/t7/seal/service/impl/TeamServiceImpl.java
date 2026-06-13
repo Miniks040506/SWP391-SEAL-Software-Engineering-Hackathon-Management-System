@@ -285,6 +285,19 @@ public class TeamServiceImpl implements TeamService {
 
     @Transactional
     @Override
+    public void cancelInvitation(UUID invitationId, Authentication authentication) {
+        TeamInvitation invitation = getInvitation(invitationId);
+        ensureTeamLeader(invitation.getTeam(), authentication);
+
+        if (!invitation.isPending()) {
+            throw new ConflictException("Only pending invitations can be cancelled.");
+        }
+
+        invitation.cancel(LocalDateTime.now());
+    }
+
+    @Transactional
+    @Override
     public TeamResponse transferLeader(UUID teamId, TransferLeaderRequest request, Authentication authentication) {
         Team team = getTeam(teamId);
 
@@ -518,6 +531,11 @@ public class TeamServiceImpl implements TeamService {
     private Team getTeam(UUID teamId) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new NotFoundException("Team not found " + teamId));
+    }
+
+    private TeamInvitation getInvitation(UUID invitationId) {
+        return teamInvitationRepository.findById(invitationId)
+                .orElseThrow(() -> new NotFoundException("Invitation not found."));
     }
 
     private List<TeamMember> activeMembers(UUID teamId) {
