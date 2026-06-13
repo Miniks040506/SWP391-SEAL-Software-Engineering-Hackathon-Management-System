@@ -1,41 +1,83 @@
+import { useState, useMemo } from "react";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import Button from "@mui/material/Button";
 import { useNavigate } from "react-router-dom";
 
 import { MentorSubmissionTable } from "../components/submission/MentorSubmissionTable";
+import {
+  MentorSubmissionFilterBar,
+  type MentorSubmissionFilters,
+} from "../components/submission/MentorSubmissionFilterBar";
 import { useMentorSubmissions } from "../hooks/useMentorSubmission";
 import { useMentorDashboard } from "../hooks/useMentorDashboard";
 
 export const MentorSubmissionPage = () => {
   const navigate = useNavigate();
-
   const { dashboard } = useMentorDashboard();
 
   const trackId = (dashboard?.assignedTrack as any)?.id;
+  const trackName = dashboard?.assignedTrack?.trackName;
 
   const { trackSubmissionsQuery, goToSubmissionDetail } =
     useMentorSubmissions(trackId);
+  const { data: response, isLoading } = trackSubmissionsQuery || {};
+  const allSubmissions = response?.data || response || [];
 
-  const { data: response, isLoading } = trackSubmissionsQuery;
-  const submissions = response?.data || response || [];
+  const [filters, setFilters] = useState<MentorSubmissionFilters>({});
+
+  const availableRounds = useMemo(() => {
+    const roundsMap = new Map();
+    allSubmissions.forEach((sub: any) => {
+      if (sub.roundId && sub.roundName && !roundsMap.has(sub.roundId)) {
+        roundsMap.set(sub.roundId, { id: sub.roundId, name: sub.roundName });
+      }
+    });
+    return Array.from(roundsMap.values());
+  }, [allSubmissions]);
+
+  // Logic áp dụng bộ lọc (Client-side filtering)
+  const filteredSubmissions = useMemo(() => {
+    return allSubmissions.filter((sub: any) => {
+      const matchSearch =
+        !filters.search ||
+        sub.teamName?.toLowerCase().includes(filters.search.toLowerCase());
+
+      const matchStatus = !filters.status || sub.status === filters.status;
+
+      const matchRound = !filters.roundId || sub.roundId === filters.roundId;
+
+      return matchSearch && matchStatus && matchRound;
+    });
+  }, [allSubmissions, filters]);
 
   return (
-    <div class="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
+    <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-            Team Submissions History
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-300">
+            Track Submissions
           </h1>
-          <p className="text-gray-500 dark:text-slate-400 mt-1">
-            Review past and current deliverables submitted by the team.
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+            Review all deliverables submitted by teams in your assigned track:
+            <span className="ml-1 font-bold text-blue-600 dark:text-blue-400">
+              {trackName || "..."}
+            </span>
           </p>
         </div>
 
-        <div className="p-4 md:p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-          <MentorSubmissionTable
-            isLoading={isLoading}
-            submissions={submissions}
-            onRowClick={goToSubmissionDetail}
-          />
-        </div>
+        {/* Thanh Filter Mới */}
+        <MentorSubmissionFilterBar
+          filters={filters}
+          onChange={setFilters}
+          rounds={availableRounds}
+        />
+
+        {/* Bảng dữ liệu đã được lọc */}
+        <MentorSubmissionTable
+          isLoading={isLoading}
+          submissions={filteredSubmissions}
+          onRowClick={goToSubmissionDetail}
+        />
       </div>
     </div>
   );

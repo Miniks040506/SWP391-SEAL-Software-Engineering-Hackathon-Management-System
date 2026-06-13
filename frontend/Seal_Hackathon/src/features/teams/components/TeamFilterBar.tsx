@@ -1,6 +1,12 @@
 import { TextField, InputAdornment, Select, MenuItem, FormControl, type SelectChangeEvent } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import type { CoordinatorTeamListParams } from "@/types/team.types";
 import { TEAM_STATUSES, filterTextFieldSx, filterSelectSx, menuPropsAll } from "../schemas/teams.schema";
+
+type Props = {
+  filters: CoordinatorTeamListParams;
+  onChange: (filters: CoordinatorTeamListParams) => void;
+};
 
 export function TeamFilterBar({ filters, onChange }: Props) {
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
