@@ -100,7 +100,8 @@ public class SecurityConfig {
                                 API + "/tracks/*/rankings",
                                 API + "/prizes/*",
                                 API + "/announcements/*",
-                                API + "/rankings/**"
+                                API + "/rankings/**",
+                                API + "/prizes/events/*"
                         ).permitAll()
 
                         // Public invitation token lookup. Accept/reject still requires login.

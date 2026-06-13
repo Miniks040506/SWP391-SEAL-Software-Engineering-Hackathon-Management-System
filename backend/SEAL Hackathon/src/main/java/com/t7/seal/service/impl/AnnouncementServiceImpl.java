@@ -347,6 +347,13 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     }
 
     private AnnouncementResponse toAnnouncementResponse(EventAnnouncement announcement) {
+        List<UUID> targetTrackIds = announcement.getTargetTrackIds() == null
+                ? List.of()
+                : List.copyOf(announcement.getTargetTrackIds());
+        List<String> targetRoleNames = announcement.getTargetRoleNames() == null
+                ? List.of()
+                : List.copyOf(announcement.getTargetRoleNames());
+
         return new AnnouncementResponse(
                 announcement.getId(),
                 announcement.getEvent().getId(),
@@ -362,8 +369,8 @@ public class AnnouncementServiceImpl implements AnnouncementService {
                 announcement.getScheduledAt(),
                 announcement.getTargetScope().name(),
                 announcement.getTargetId(),
-                announcement.getTargetTrackIds() == null ? List.of() : announcement.getTargetTrackIds(),
-                announcement.getTargetRoleNames() == null ? List.of() : announcement.getTargetRoleNames()
+                targetTrackIds,
+                targetRoleNames
         );
     }
 }

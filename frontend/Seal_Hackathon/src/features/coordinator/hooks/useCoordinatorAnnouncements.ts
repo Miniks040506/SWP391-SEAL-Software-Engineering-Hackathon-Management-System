@@ -99,7 +99,7 @@ export function useCoordinatorAnnouncements(initialEventId?: string) {
 
   const eventsQuery = useQuery({
     queryKey: announcementQueryKeys.events,
-    queryFn: () => eventApi.getEvents({ page: 0, size: 50 }),
+    queryFn: () => eventApi.getAllEvents({ page: 0, size: 50 }),
   });
 
   const events = useMemo(() => {
