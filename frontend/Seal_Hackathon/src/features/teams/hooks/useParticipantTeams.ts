@@ -16,7 +16,7 @@ import type {
   UpdateTeamRequest,
 } from "@/types/team.types";
 
-const USE_MOCK_TEAMS = false;
+const USE_MOCK_TEAMS = true;
 
 export const participantTeamQueryKeys = {
   myTeams: ["participant-my-teams"] as const,
