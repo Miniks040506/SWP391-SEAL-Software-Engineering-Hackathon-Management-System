@@ -303,7 +303,7 @@ public class RoundServiceImpl implements RoundService {
         advanceRule.setTrack(nextTrack);
 
 
-        if (advanceRule.getRuleType() != null || hasRuleValuePatch(request)) {
+        if (request.ruleType() != null || hasRuleValuePatch(request)) {
             advanceRule.setValue(resolveRuleValue(
                     nextRuleType,
                     request.topN(),
