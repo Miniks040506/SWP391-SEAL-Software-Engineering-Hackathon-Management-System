@@ -14,7 +14,7 @@ import {
   publishMockFeedback,
 } from "../mocks/mentorFeedback.mock";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function useMentorFeedback(teamId?: UUID | string) {
@@ -63,13 +63,7 @@ export function useMentorFeedback(teamId?: UUID | string) {
 
   // PATCH: Update
   const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: UUID;
-      payload: UpdateMentorFeedbackRequest;
-    }) => {
+    mutationFn: async ({ id, payload }: { id: UUID; payload: UpdateMentorFeedbackRequest }) => {
       if (USE_MOCK) {
         await delay(500);
         return { data: updateMockFeedback(id, payload) };
@@ -80,8 +74,7 @@ export function useMentorFeedback(teamId?: UUID | string) {
       queryClient.invalidateQueries({ queryKey });
       enqueueSnackbar("Feedback updated successfully!", { variant: "success" });
     },
-    onError: () =>
-      enqueueSnackbar("Failed to update feedback", { variant: "error" }),
+    onError: () => enqueueSnackbar("Failed to update feedback", { variant: "error" }),
   });
 
   // POST: Publish
@@ -95,12 +88,9 @@ export function useMentorFeedback(teamId?: UUID | string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
-      enqueueSnackbar("Feedback published! Team has been notified.", {
-        variant: "success",
-      });
+      enqueueSnackbar("Feedback published! Team has been notified.", { variant: "success" });
     },
-    onError: () =>
-      enqueueSnackbar("Failed to publish feedback", { variant: "error" }),
+    onError: () => enqueueSnackbar("Failed to publish feedback", { variant: "error" }),
   });
 
   // DELETE
@@ -124,10 +114,6 @@ export function useMentorFeedback(teamId?: UUID | string) {
     updateFeedback: updateMutation.mutateAsync,
     publishFeedback: publishMutation.mutateAsync,
     deleteFeedback: deleteMutation.mutateAsync,
-    isMutating:
-      createMutation.isPending ||
-      updateMutation.isPending ||
-      publishMutation.isPending ||
-      deleteMutation.isPending,
+    isMutating: createMutation.isPending || updateMutation.isPending || publishMutation.isPending || deleteMutation.isPending,
   };
 }

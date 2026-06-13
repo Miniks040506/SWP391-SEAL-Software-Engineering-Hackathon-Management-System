@@ -41,7 +41,6 @@ export const MentorFeedbackPage = () => {
   const handleSubmit = async (data: MentorFeedbackFormValues, publish: boolean) => {
     if (editingFeedback) {
       await updateFeedback({ id: editingFeedback.id, payload: { ...data, visibleToTeam: publish } });
-      // Nếu user nhấn Publish khi đang edit draft
       if (publish && editingFeedback.visibility === "DRAFT") {
         await publishFeedback(editingFeedback.id);
       }
@@ -59,16 +58,28 @@ export const MentorFeedbackPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div>
         <Button
           variant="text"
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/mentor/dashboard")}
+          onClick={() => navigate("/mentor/teams")} // Trở về trang danh sách Teams sẽ hợp lý hơn
           className="text-gray-600 dark:text-slate-400"
-          sx={{ textTransform: "none", fontWeight: 700 }}
+          sx={{ textTransform: "none", fontWeight: 700, marginLeft: "-8px" }}
         >
           Back to Team
         </Button>
+      </div>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+            Feedback
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+            Provide private text feedback to guide the team. Drafts are hidden until published.
+          </p>
+        </div>
+
         <Button
           variant="contained"
           startIcon={<AddOutlinedIcon />}
@@ -78,6 +89,7 @@ export const MentorFeedbackPage = () => {
             fontWeight: 800,
             borderRadius: "8px",
             bgcolor: "#2563eb",
+            boxShadow: "none",
             "&:hover": { bgcolor: "#1d4ed8" },
           }}
         >
@@ -85,15 +97,7 @@ export const MentorFeedbackPage = () => {
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-          Feedback
-        </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-          Provide private text feedback to guide the team. Drafts are hidden until published.
-        </p>
-      </div>
-
+      {/* Danh sách Feedback */}
       <MentorFeedbackList
         feedbacks={feedbacks}
         isLoading={feedbackListQuery.isLoading}

@@ -7,7 +7,7 @@ import { mockTrackSubmissions, mockSubmissionDetail } from "../mocks/mentorSubmi
 
 // true: Chạy dữ liệu giả từ thư mục mocks
 // false: Gọi API thật từ Backend
-const USE_MOCK = true; 
+const USE_MOCK = false; 
 
 // Hàm tiện ích giả lập network delay 500ms cho giống thật
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

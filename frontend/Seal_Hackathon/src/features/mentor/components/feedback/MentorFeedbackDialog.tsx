@@ -15,7 +15,6 @@ import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
 
 import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 
 import { mentorFeedbackSchema, type MentorFeedbackFormValues } from "../../schemas/mentorFeedback.schema";
 import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
@@ -103,7 +102,6 @@ export const MentorFeedbackDialog = ({
         <Button
           onClick={handleSaveDraft}
           disabled={isLoading}
-          startIcon={<SaveOutlinedIcon />}
           sx={{ textTransform: "none", fontWeight: 800 }}
         >
           Save Draft

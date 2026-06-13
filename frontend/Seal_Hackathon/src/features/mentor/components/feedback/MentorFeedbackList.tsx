@@ -59,7 +59,7 @@ export const MentorFeedbackList = ({
             variant="outlined"
             className="rounded-2xl border-gray-100 dark:border-slate-700 dark:bg-[#1e293b]"
           >
-            <div className="flex flex-col p-5 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col p-5 md:flex-row md:items-start md:justify-between gap-7">
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3">
                   <Chip
@@ -86,7 +86,6 @@ export const MentorFeedbackList = ({
                 </Typography>
               </div>
 
-              {/* Chỉ hiện action nếu là DRAFT */}
               {isDraft && (
                 <div className="mt-4 flex items-center gap-2 md:mt-0 md:flex-col md:items-end">
                   <Button
