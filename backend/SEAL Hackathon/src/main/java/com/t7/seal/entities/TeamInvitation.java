@@ -57,6 +57,9 @@ public class TeamInvitation {
     @Column(name = "respond_at")
     private LocalDateTime respondAt;
 
+    @Column(name = "response_reason", columnDefinition = "TEXT")
+    private String responseReason;
+
     // Awaiting invitee response — the only state that allows accept/decline/cancel/expire.
     public boolean isPending() {
         return status == InvitationStatus.PENDING;
