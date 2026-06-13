@@ -22,7 +22,7 @@ public class TeamController {
 
     private final TeamService teamService;
 
-    @PreAuthorize("hasAnyRole('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping
     public ResponseEntity<TeamResponse> createTeam(
             @Valid @RequestBody CreateTeamRequest request,
@@ -34,10 +34,43 @@ public class TeamController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
-    public ResponseEntity<List<TeamSummaryResponse>> getMyTeams(
+    public ResponseEntity<List<TeamSummaryResponse>> getMyTeams(Authentication authentication) {
+        return ResponseEntity.ok(teamService.getMyTeams(authentication));
+    }
+
+    @PreAuthorize("hasRole('STUDENT')")
+    @GetMapping("/join-code/{joinCode}")
+    public ResponseEntity<TeamJoinCodePreviewResponse> previewJoinCode(
+            @PathVariable String joinCode,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(teamService.getMyTeams(authentication));
+        return ResponseEntity.ok(teamService.previewJoinCode(joinCode, authentication));
+    }
+
+    @PreAuthorize("hasRole('STUDENT')")
+    @PostMapping("/join-code")
+    public ResponseEntity<TeamMemberResponse> joinByCode(
+            @Valid @RequestBody JoinTeamByCodeRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(teamService.joinByCode(request, authentication));
+    }
+
+    @PreAuthorize("hasRole('STUDENT')")
+    @PostMapping("/join-code/{joinCode}")
+    public ResponseEntity<TeamMemberResponse> joinByCodePath(
+            @PathVariable String joinCode,
+            Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(teamService.joinByCode(joinCode, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/invitations/me")
+    public ResponseEntity<List<TeamInvitationResponse>> getMyInvitations(Authentication authentication) {
+        return ResponseEntity.ok(teamService.getMyInvitations(authentication));
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -59,12 +92,24 @@ public class TeamController {
         return ResponseEntity.ok(teamService.updateTeam(teamId, request, authentication));
     }
 
-    @PostMapping("/{teamId}/invite")
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping({"/{teamId}/invitations", "/{teamId}/invite"})
     public ResponseEntity<TeamInvitationResponse> inviteMember(
             @PathVariable UUID teamId,
-            @Valid @RequestBody InviteMemberRequest request
+            @Valid @RequestBody InviteMemberRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(teamService.inviteMember(teamId, request, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{teamId}/invitations")
+    public ResponseEntity<List<TeamInvitationResponse>> getTeamInvitations(
+            @PathVariable UUID teamId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(teamService.getTeamInvitations(teamId, authentication));
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -88,19 +133,24 @@ public class TeamController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/invitations/{invitationId}/accept")
     public ResponseEntity<TeamMemberResponse> acceptInvitation(
-            @PathVariable UUID invitationId
+            @PathVariable UUID invitationId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(teamService.acceptInvitation(invitationId, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/invitations/{invitationId}/reject")
     public ResponseEntity<Void> rejectInvitation(
             @PathVariable UUID invitationId,
-            @Valid @RequestBody ReasonRequest request
+            @Valid @RequestBody(required = false) ReasonRequest request,
+            Authentication authentication
     ) {
-        return null;
+        teamService.rejectInvitation(invitationId, request, authentication);
+        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -124,11 +174,13 @@ public class TeamController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{teamId}/join-code")
     public ResponseEntity<TeamResponse> toggleJoinCode(
             @PathVariable UUID teamId,
-            @Valid @RequestBody ToggleJoinCodeRequest request
+            @Valid @RequestBody ToggleJoinCodeRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(teamService.toggleJoinCode(teamId, request, authentication));
     }
 }

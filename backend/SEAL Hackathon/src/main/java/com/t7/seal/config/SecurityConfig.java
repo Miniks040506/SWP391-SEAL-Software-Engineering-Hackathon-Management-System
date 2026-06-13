@@ -132,6 +132,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, API + "/system/audit-logs").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/criteria").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/criteria/*").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/submissions").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(API + "/exports/**").hasAnyRole("ADMIN", "COORDINATOR")
 
                         // Coordinator account review

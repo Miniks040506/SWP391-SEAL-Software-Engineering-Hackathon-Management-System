@@ -38,6 +38,9 @@ public class TeamMember {
     @Column(name = "left_reason")
     private LeftReason leftReason;
 
+    @Column(name = "left_reason_note", columnDefinition = "TEXT")
+    private String leftReasonNote;
+
     // Checks whether this membership is currently active.
     public boolean isActive() {
         return leftAt == null;
@@ -55,6 +58,11 @@ public class TeamMember {
         }
         leftAt = now;
         leftReason = reason;
+    }
+
+    public void leave(LocalDateTime now, LeftReason reason, String reasonNote) {
+        leave(now, reason);
+        leftReasonNote = reasonNote;
     }
 
     // N - 1 relationship with User

@@ -1,30 +1,48 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.InvitationStatus;
 import com.t7.seal.domain.LeftReason;
 import com.t7.seal.domain.MemberRole;
+import com.t7.seal.domain.NotificationChannel;
+import com.t7.seal.domain.NotificationStatus;
+import com.t7.seal.domain.NotificationTargetScope;
+import com.t7.seal.domain.NotificationType;
 import com.t7.seal.domain.TeamStatus;
+import com.t7.seal.entities.Notification;
 import com.t7.seal.entities.Team;
+import com.t7.seal.entities.TeamInvitation;
 import com.t7.seal.entities.TeamMember;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.repository.NotificationRepository;
 import com.t7.seal.repository.StudentProfileRepository;
+import com.t7.seal.repository.TeamInvitationRepository;
 import com.t7.seal.repository.TeamMemberRepository;
 import com.t7.seal.repository.TeamRepository;
+import com.t7.seal.repository.UserRepository;
 import com.t7.seal.request.team.CreateTeamRequest;
+import com.t7.seal.request.team.InviteMemberRequest;
+import com.t7.seal.request.team.JoinTeamByCodeRequest;
 import com.t7.seal.request.team.ReasonRequest;
+import com.t7.seal.request.team.ToggleJoinCodeRequest;
 import com.t7.seal.request.team.TransferLeaderRequest;
 import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.response.team.TeamDetailResponse;
+import com.t7.seal.response.team.TeamInvitationResponse;
+import com.t7.seal.response.team.TeamJoinCodePreviewResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
 import com.t7.seal.response.team.TeamResponse;
 import com.t7.seal.response.team.TeamSummaryResponse;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.CurrentUserService;
+import com.t7.seal.service.EmailService;
 import com.t7.seal.service.TeamService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,14 +56,24 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TeamServiceImpl implements TeamService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final int DEFAULT_MAX_TEAM_MEMBERS = 5;
+    private static final int INVITATION_TTL_HOURS = 48;
 
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final TeamInvitationRepository teamInvitationRepository;
+    private final UserRepository userRepository;
     private final StudentProfileRepository studentProfileRepository;
+    private final NotificationRepository notificationRepository;
     private final CurrentUserService currentUserService;
+    private final EmailService emailService;
+
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
 
     @Transactional
     @Override
@@ -143,6 +171,137 @@ public class TeamServiceImpl implements TeamService {
         return toTeamResponse(teamRepository.save(team));
     }
 
+    @Transactional
+    @Override
+    public TeamInvitationResponse inviteMember(UUID teamId, InviteMemberRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+        ensureTeamLeader(team, authentication);
+        ensureTeamEditable(team);
+        ensureTeamHasSpace(team);
+
+        User inviter = currentUserService.getCurrentUser(authentication);
+        String email = normalizeEmail(request.email());
+
+        if (teamInvitationRepository.existsByTeamIdAndInviteEmailIgnoreCaseAndStatus(teamId, email, InvitationStatus.PENDING)) {
+            throw new ConflictException("This email already has a pending invitation for this team.");
+        }
+
+        User invitee = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (invitee != null && teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, invitee.getId())) {
+            throw new ConflictException("This user is already an active member of the team.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        TeamInvitation invitation = TeamInvitation.builder()
+                .team(team)
+                .invitedBy(inviter)
+                .inviteEmail(email)
+                .invitee(invitee)
+                .token(generateToken())
+                .status(InvitationStatus.PENDING)
+                .expiresAt(now.plusHours(INVITATION_TTL_HOURS))
+                .createdAt(now)
+                .build();
+
+        TeamInvitation saved = teamInvitationRepository.save(invitation);
+        createInvitationSentNotification(saved, inviter);
+        sendInvitationSentEmail(saved, inviter, invitee);
+
+        return toTeamInvitationResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<TeamInvitationResponse> getTeamInvitations(UUID teamId, Authentication authentication) {
+        Team team = getTeam(teamId);
+        ensureTeamLeader(team, authentication);
+
+        return teamInvitationRepository.findByTeamIdOrderByCreatedAtDesc(teamId)
+                .stream()
+                .map(this::toTeamInvitationResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<TeamInvitationResponse> getMyInvitations(Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+
+        return teamInvitationRepository.findByInviteEmailIgnoreCaseOrderByCreatedAtDesc(currentUser.getEmail())
+                .stream()
+                .map(this::toTeamInvitationResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public TeamInvitationResponse getInvitationByToken(String token) {
+        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+                .orElseThrow(() -> new NotFoundException("Invitation not found."));
+
+        if (invitation.isPending() && invitation.isExpired(LocalDateTime.now())) {
+            return toTeamInvitationResponseWithStatus(invitation, InvitationStatus.EXPIRED);
+        }
+
+        return toTeamInvitationResponse(invitation);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public TeamJoinCodePreviewResponse previewJoinCode(String joinCode, Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+        ensureActiveStudent(currentUser);
+
+        Team team = teamRepository.findByJoinCode(normalizeJoinCode(joinCode))
+                .orElseThrow(() -> new NotFoundException("Team join code was not found."));
+
+        ensureJoinCodeUsable(team);
+        ensureNotAlreadyActiveMember(team, currentUser);
+        ensureNoSameTrackMembership(team, currentUser);
+
+        return toTeamJoinCodePreviewResponse(team);
+    }
+
+    @Transactional
+    @Override
+    public TeamMemberResponse joinByCode(JoinTeamByCodeRequest request, Authentication authentication) {
+        return joinByCode(request.joinCode(), authentication);
+    }
+
+    @Transactional
+    @Override
+    public TeamMemberResponse joinByCode(String joinCode, Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+        ensureActiveStudent(currentUser);
+
+        Team team = teamRepository.findByJoinCode(normalizeJoinCode(joinCode))
+                .orElseThrow(() -> new NotFoundException("Team join code was not found."));
+
+        ensureJoinCodeUsable(team);
+        ensureTeamEditable(team);
+        ensureTeamHasSpace(team);
+        ensureNotAlreadyActiveMember(team, currentUser);
+        ensureNoSameTrackMembership(team, currentUser);
+
+        LocalDateTime now = LocalDateTime.now();
+        TeamMember member = TeamMember.builder()
+                .team(team)
+                .user(currentUser)
+                .role(MemberRole.MEMBER)
+                .joinedAt(now)
+                .build();
+
+        team.incrementMemberCount();
+        team.setUpdatedAt(now);
+
+        TeamMember savedMember = teamMemberRepository.save(member);
+        cancelPendingInvitationsIfTeamFull(team, now);
+        createTeamMemberJoinedByCodeNotification(team, currentUser);
+        sendTeamMemberJoinedByCodeEmail(team, currentUser);
+
+        return toTeamMemberResponse(savedMember);
+    }
+
     @Transactional(readOnly = true)
     @Override
     public List<TeamMemberResponse> getTeamMembers(UUID teamId, Authentication authentication) {
@@ -178,9 +337,53 @@ public class TeamServiceImpl implements TeamService {
             throw new BadRequestException("Member is not active");
         }
 
-        member.leave(LocalDateTime.now(), LeftReason.KICKED_BY_LEADER);
+        LocalDateTime now = LocalDateTime.now();
+        member.leave(now, LeftReason.KICKED_BY_LEADER, blankToNull(reason == null ? null : reason.reason()));
         team.decrementMemberCount();
-        team.setUpdatedAt(LocalDateTime.now());
+        team.setUpdatedAt(now);
+    }
+
+    @Transactional
+    @Override
+    public TeamMemberResponse acceptInvitation(UUID invitationId, Authentication authentication) {
+        TeamInvitation invitation = getInvitation(invitationId);
+        return acceptInvitationInternal(invitation, authentication);
+    }
+
+    @Transactional
+    @Override
+    public TeamMemberResponse acceptInvitationByToken(String token, Authentication authentication) {
+        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+                .orElseThrow(() -> new NotFoundException("Invitation not found."));
+        return acceptInvitationInternal(invitation, authentication);
+    }
+
+    @Transactional
+    @Override
+    public void rejectInvitation(UUID invitationId, ReasonRequest request, Authentication authentication) {
+        TeamInvitation invitation = getInvitation(invitationId);
+        rejectInvitationInternal(invitation, request, authentication);
+    }
+
+    @Transactional
+    @Override
+    public void rejectInvitationByToken(String token, ReasonRequest request, Authentication authentication) {
+        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+                .orElseThrow(() -> new NotFoundException("Invitation not found."));
+        rejectInvitationInternal(invitation, request, authentication);
+    }
+
+    @Transactional
+    @Override
+    public void cancelInvitation(UUID invitationId, Authentication authentication) {
+        TeamInvitation invitation = getInvitation(invitationId);
+        ensureTeamLeader(invitation.getTeam(), authentication);
+
+        if (!invitation.isPending()) {
+            throw new ConflictException("Only pending invitations can be cancelled.");
+        }
+
+        invitation.cancel(LocalDateTime.now());
     }
 
     @Transactional
@@ -223,12 +426,96 @@ public class TeamServiceImpl implements TeamService {
             throw new BadRequestException("Transfer leadership to another member before leaving the team.");
         }
 
-        member.leave(LocalDateTime.now(), LeftReason.SELF_LEFT);
+        LocalDateTime now = LocalDateTime.now();
+        member.leave(now, LeftReason.SELF_LEFT, blankToNull(request == null ? null : request.reason()));
         team.decrementMemberCount();
+        team.setUpdatedAt(now);
+    }
+
+    @Transactional
+    @Override
+    public TeamResponse toggleJoinCode(UUID teamId, ToggleJoinCodeRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+        ensureTeamLeader(team, authentication);
+        ensureTeamEditable(team);
+
+        team.setJoinCodeEnabled(request.enabled());
         team.setUpdatedAt(LocalDateTime.now());
+        return toTeamResponse(teamRepository.save(team));
     }
 
     //HELPERS
+    private TeamMemberResponse acceptInvitationInternal(TeamInvitation invitation, Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+        ensureActiveStudent(currentUser);
+
+        if (!invitation.isPending()) {
+            throw new ConflictException("This invitation is no longer pending.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (invitation.isExpired(now)) {
+            invitation.expire(now);
+            throw new ConflictException("This invitation has expired.");
+        }
+
+        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
+            throw new UnauthorizedException("This invitation is not for your account.");
+        }
+
+        Team team = invitation.getTeam();
+        ensureTeamEditable(team);
+        ensureTeamHasSpace(team);
+
+        if (teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUser.getId())) {
+            throw new ConflictException("You are already an active member of this team.");
+        }
+
+        invitation.accept(now);
+        invitation.setInvitee(currentUser);
+
+        TeamMember member = TeamMember.builder()
+                .team(team)
+                .user(currentUser)
+                .role(MemberRole.MEMBER)
+                .joinedAt(now)
+                .build();
+
+        team.incrementMemberCount();
+        team.setUpdatedAt(now);
+
+        TeamMember savedMember = teamMemberRepository.save(member);
+        cancelPendingInvitationsIfTeamFull(team, now);
+        createInvitationAcceptedNotification(invitation, currentUser);
+        sendInvitationAcceptedEmail(invitation, currentUser);
+
+        return toTeamMemberResponse(savedMember);
+    }
+
+    private void rejectInvitationInternal(TeamInvitation invitation, ReasonRequest request, Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+
+        if (!invitation.isPending()) {
+            throw new ConflictException("This invitation is no longer pending.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (invitation.isExpired(now)) {
+            invitation.expire(now);
+            throw new ConflictException("This invitation has expired.");
+        }
+
+        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
+            throw new UnauthorizedException("This invitation is not for your account.");
+        }
+
+        invitation.decline(now);
+        invitation.setInvitee(currentUser);
+        invitation.setResponseReason(blankToNull(request == null ? null : request.reason()));
+        createInvitationRejectedNotification(invitation, currentUser);
+        sendInvitationRejectedEmail(invitation);
+    }
+
     private void ensureActiveStudent(User user) {
         if (!user.isStudent()) {
             throw new BadRequestException("Only students can create a team.");
@@ -261,11 +548,253 @@ public class TeamServiceImpl implements TeamService {
         return randomHex(32);
     }
 
+    private void ensureTeamHasSpace(Team team) {
+        int maxMembers = maxMembersFor(team);
+
+        if (team.getMemberCount() != null && team.getMemberCount() >= maxMembers) {
+            throw new ConflictException("Team already reached maximum member limit.");
+        }
+    }
+
+    private int maxMembersFor(Team team) {
+        return team.getTrack() != null && team.getTrack().getMaxMembers() != null
+                ? team.getTrack().getMaxMembers()
+                : DEFAULT_MAX_TEAM_MEMBERS;
+    }
+
+    private void cancelPendingInvitationsIfTeamFull(Team team, LocalDateTime now) {
+        int maxMembers = maxMembersFor(team);
+        if (team.getMemberCount() == null || team.getMemberCount() < maxMembers) {
+            return;
+        }
+
+        team.setJoinCodeEnabled(false);
+        teamInvitationRepository.findByTeamIdAndStatus(team.getId(), InvitationStatus.PENDING)
+                .forEach(invitation -> invitation.cancel(now));
+    }
+
     private String blankToNull(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
         return value.trim();
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new BadRequestException("Invite email is required.");
+        }
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeJoinCode(String joinCode) {
+        if (joinCode == null || joinCode.isBlank()) {
+            throw new BadRequestException("Join code is required.");
+        }
+        return joinCode.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private void ensureJoinCodeUsable(Team team) {
+        if (!team.hasJoinCodeEnabled()) {
+            throw new BadRequestException("Team join code is disabled.");
+        }
+    }
+
+    private void ensureNotAlreadyActiveMember(Team team, User user) {
+        if (teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), user.getId())) {
+            throw new ConflictException("You are already an active member of this team.");
+        }
+    }
+
+    private void ensureNoSameTrackMembership(Team team, User user) {
+        if (team.getTrack() == null) {
+            return;
+        }
+
+        if (teamMemberRepository.existsActiveMembershipInSameTrack(user.getId(), team.getId(), team.getTrack().getId())) {
+            throw new ConflictException("You already have an active team in this track.");
+        }
+    }
+
+    private void createInvitationSentNotification(TeamInvitation invitation, User actor) {
+        if (invitation.getInvitee() == null) {
+            return;
+        }
+
+        Notification notification = Notification.builder()
+                .event(invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent())
+                .createdBy(actor)
+                .type(NotificationType.TEAM_INVITATION_SENT)
+                .title("Team invitation")
+                .body("You are invited to join team " + invitation.getTeam().getName() + ".")
+                .targetScope(NotificationTargetScope.SINGLE_USER)
+                .targetId(invitation.getInvitee().getId())
+                .channel(NotificationChannel.BOTH)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(1)
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    private void createTeamMemberJoinedByCodeNotification(Team team, User actor) {
+        List<TeamMember> members = activeMembers(team.getId());
+        Notification notification = Notification.builder()
+                .event(team.getTrack() == null ? null : team.getTrack().getEvent())
+                .createdBy(actor)
+                .type(NotificationType.TEAM_INVITATION_ACCEPTED)
+                .title("New team member joined")
+                .body(actor.getFullName() + " joined team " + team.getName() + " using the team code.")
+                .targetScope(NotificationTargetScope.TEAM)
+                .targetId(team.getId())
+                .channel(NotificationChannel.BOTH)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(members.size())
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    private void createInvitationAcceptedNotification(TeamInvitation invitation, User actor) {
+        List<TeamMember> members = activeMembers(invitation.getTeam().getId());
+        Notification notification = Notification.builder()
+                .event(invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent())
+                .createdBy(actor)
+                .type(NotificationType.TEAM_INVITATION_ACCEPTED)
+                .title("Team invitation accepted")
+                .body(actor.getFullName() + " joined team " + invitation.getTeam().getName() + ".")
+                .targetScope(NotificationTargetScope.TEAM)
+                .targetId(invitation.getTeam().getId())
+                .channel(NotificationChannel.BOTH)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(members.size())
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    private void createInvitationRejectedNotification(TeamInvitation invitation, User actor) {
+        Notification notification = Notification.builder()
+                .event(invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent())
+                .createdBy(actor)
+                .type(NotificationType.TEAM_INVITATION_REJECTED)
+                .title("Team invitation declined")
+                .body(invitation.getInviteEmail() + " declined the invitation to join " + invitation.getTeam().getName() + ".")
+                .targetScope(NotificationTargetScope.TEAM)
+                .targetId(invitation.getTeam().getId())
+                .channel(NotificationChannel.BOTH)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(1)
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    private void sendInvitationSentEmail(TeamInvitation invitation, User inviter, User invitee) {
+        try {
+            emailService.sendTeamInvitationSent(
+                    invitation.getInviteEmail(),
+                    invitee == null ? invitation.getInviteEmail() : invitee.getFullName(),
+                    invitation.getTeam().getName(),
+                    inviter.getFullName(),
+                    buildInvitationUrl("accept", invitation.getToken()),
+                    buildInvitationUrl("reject", invitation.getToken()),
+                    invitation.getExpiresAt()
+            );
+        } catch (RuntimeException ex) {
+            log.warn("Failed to send team invitation email. invitationId={}, to={}", invitation.getId(), invitation.getInviteEmail(), ex);
+        }
+    }
+
+    private void sendTeamMemberJoinedByCodeEmail(Team team, User joinedMember) {
+        User leader = team.getLeader();
+        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
+            return;
+        }
+
+        List<String> cc = activeMembers(team.getId()).stream()
+                .map(TeamMember::getUser)
+                .filter(user -> user != null && user.getEmail() != null && !user.getEmail().isBlank())
+                .filter(user -> !user.getId().equals(leader.getId()))
+                .map(User::getEmail)
+                .distinct()
+                .toList();
+
+        try {
+            emailService.sendTeamInvitationAccepted(
+                    leader.getEmail(),
+                    cc,
+                    team.getName(),
+                    joinedMember.getFullName(),
+                    buildTeamUrl(team.getId())
+            );
+        } catch (RuntimeException ex) {
+            log.warn("Failed to send team join-code accepted email. teamId={}, joinedUserId={}", team.getId(), joinedMember.getId(), ex);
+        }
+    }
+
+    private void sendInvitationAcceptedEmail(TeamInvitation invitation, User acceptedMember) {
+        Team team = invitation.getTeam();
+        User leader = team.getLeader();
+        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
+            return;
+        }
+
+        List<String> cc = activeMembers(team.getId()).stream()
+                .map(TeamMember::getUser)
+                .filter(user -> user != null && user.getEmail() != null && !user.getEmail().isBlank())
+                .filter(user -> !user.getId().equals(leader.getId()))
+                .map(User::getEmail)
+                .distinct()
+                .toList();
+
+        try {
+            emailService.sendTeamInvitationAccepted(
+                    leader.getEmail(),
+                    cc,
+                    team.getName(),
+                    acceptedMember.getFullName(),
+                    buildTeamUrl(team.getId())
+            );
+        } catch (RuntimeException ex) {
+            log.warn("Failed to send team invitation accepted email. invitationId={}, teamId={}", invitation.getId(), team.getId(), ex);
+        }
+    }
+
+    private void sendInvitationRejectedEmail(TeamInvitation invitation) {
+        Team team = invitation.getTeam();
+        User leader = team.getLeader();
+        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
+            return;
+        }
+
+        try {
+            emailService.sendTeamInvitationRejected(
+                    leader.getEmail(),
+                    team.getName(),
+                    invitation.getInviteEmail(),
+                    buildTeamUrl(team.getId())
+            );
+        } catch (RuntimeException ex) {
+            log.warn("Failed to send team invitation rejected email. invitationId={}, teamId={}", invitation.getId(), team.getId(), ex);
+        }
+    }
+
+    private String buildInvitationUrl(String action, String token) {
+        String base = frontendUrl == null || frontendUrl.isBlank() ? "http://localhost:5173" : frontendUrl;
+        return stripTrailingSlash(base) + "/invitations/" + action + "?token=" + token;
+    }
+
+    private String buildTeamUrl(UUID teamId) {
+        String base = frontendUrl == null || frontendUrl.isBlank() ? "http://localhost:5173" : frontendUrl;
+        return stripTrailingSlash(base) + "/participant/teams/" + teamId;
+    }
+
+    private String stripTrailingSlash(String value) {
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value;
     }
 
     private TeamResponse toTeamResponse(Team team) {
@@ -283,11 +812,31 @@ public class TeamServiceImpl implements TeamService {
 
     private TeamMemberResponse toTeamMemberResponse(TeamMember m) {
         return new TeamMemberResponse(
+                m.getId(),
                 m.getUser().getId(),
                 m.getUser().getFullName(),
                 m.getUser().getEmail(),
                 m.getRole().name(),
                 m.getJoinedAt()
+        );
+    }
+
+    private TeamJoinCodePreviewResponse toTeamJoinCodePreviewResponse(Team team) {
+        return new TeamJoinCodePreviewResponse(
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                team.getDescription(),
+                team.getLeader() == null ? null : team.getLeader().getId(),
+                team.getLeader() == null ? null : team.getLeader().getFullName(),
+                team.getTrack() == null ? null : team.getTrack().getId(),
+                team.getTrack() == null ? null : team.getTrack().getName(),
+                team.getTrack() == null || team.getTrack().getEvent() == null ? null : team.getTrack().getEvent().getId(),
+                team.getTrack() == null || team.getTrack().getEvent() == null ? null : team.getTrack().getEvent().getName(),
+                team.getStatus().name(),
+                team.getMemberCount() == null ? 0 : team.getMemberCount(),
+                maxMembersFor(team),
+                team.hasJoinCodeEnabled()
         );
     }
 
@@ -301,6 +850,34 @@ public class TeamServiceImpl implements TeamService {
                 team.getProjectTitle(),
                 team.getStatus().name(),
                 role
+        );
+    }
+
+    private TeamInvitationResponse toTeamInvitationResponse(TeamInvitation invitation) {
+        return new TeamInvitationResponse(
+                invitation.getId(),
+                invitation.getTeam().getId(),
+                invitation.getTeam().getName(),
+                invitation.getInviteEmail(),
+                invitation.getStatus().name(),
+                invitation.getExpiresAt(),
+                invitation.getToken(),
+                buildInvitationUrl("accept", invitation.getToken()),
+                buildInvitationUrl("reject", invitation.getToken())
+        );
+    }
+
+    private TeamInvitationResponse toTeamInvitationResponseWithStatus(TeamInvitation invitation, InvitationStatus status) {
+        return new TeamInvitationResponse(
+                invitation.getId(),
+                invitation.getTeam().getId(),
+                invitation.getTeam().getName(),
+                invitation.getInviteEmail(),
+                status.name(),
+                invitation.getExpiresAt(),
+                invitation.getToken(),
+                buildInvitationUrl("accept", invitation.getToken()),
+                buildInvitationUrl("reject", invitation.getToken())
         );
     }
 
@@ -319,6 +896,11 @@ public class TeamServiceImpl implements TeamService {
     private Team getTeam(UUID teamId) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new NotFoundException("Team not found " + teamId));
+    }
+
+    private TeamInvitation getInvitation(UUID invitationId) {
+        return teamInvitationRepository.findById(invitationId)
+                .orElseThrow(() -> new NotFoundException("Invitation not found."));
     }
 
     private List<TeamMember> activeMembers(UUID teamId) {
