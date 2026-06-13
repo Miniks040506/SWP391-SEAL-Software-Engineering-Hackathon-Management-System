@@ -209,6 +209,42 @@ public class TeamServiceImpl implements TeamService {
 
     @Transactional(readOnly = true)
     @Override
+    public List<TeamInvitationResponse> getTeamInvitations(UUID teamId, Authentication authentication) {
+        Team team = getTeam(teamId);
+        ensureTeamLeader(team, authentication);
+
+        return teamInvitationRepository.findByTeamIdOrderByCreatedAtDesc(teamId)
+                .stream()
+                .map(this::toTeamInvitationResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<TeamInvitationResponse> getMyInvitations(Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+
+        return teamInvitationRepository.findByInviteEmailIgnoreCaseOrderByCreatedAtDesc(currentUser.getEmail())
+                .stream()
+                .map(this::toTeamInvitationResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public TeamInvitationResponse getInvitationByToken(String token) {
+        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+                .orElseThrow(() -> new NotFoundException("Invitation not found."));
+
+        if (invitation.isPending() && invitation.isExpired(LocalDateTime.now())) {
+            return toTeamInvitationResponseWithStatus(invitation, InvitationStatus.EXPIRED);
+        }
+
+        return toTeamInvitationResponse(invitation);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
     public List<TeamMemberResponse> getTeamMembers(UUID teamId, Authentication authentication) {
         Team team = getTeam(teamId);
 
@@ -446,6 +482,20 @@ public class TeamServiceImpl implements TeamService {
                 invitation.getTeam().getName(),
                 invitation.getInviteEmail(),
                 invitation.getStatus().name(),
+                invitation.getExpiresAt(),
+                invitation.getToken(),
+                buildInvitationUrl("accept", invitation.getToken()),
+                buildInvitationUrl("reject", invitation.getToken())
+        );
+    }
+
+    private TeamInvitationResponse toTeamInvitationResponseWithStatus(TeamInvitation invitation, InvitationStatus status) {
+        return new TeamInvitationResponse(
+                invitation.getId(),
+                invitation.getTeam().getId(),
+                invitation.getTeam().getName(),
+                invitation.getInviteEmail(),
+                status.name(),
                 invitation.getExpiresAt(),
                 invitation.getToken(),
                 buildInvitationUrl("accept", invitation.getToken()),
