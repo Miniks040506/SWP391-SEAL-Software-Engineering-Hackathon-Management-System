@@ -337,9 +337,10 @@ public class TeamServiceImpl implements TeamService {
             throw new BadRequestException("Member is not active");
         }
 
-        member.leave(LocalDateTime.now(), LeftReason.KICKED_BY_LEADER);
+        LocalDateTime now = LocalDateTime.now();
+        member.leave(now, LeftReason.KICKED_BY_LEADER, blankToNull(reason == null ? null : reason.reason()));
         team.decrementMemberCount();
-        team.setUpdatedAt(LocalDateTime.now());
+        team.setUpdatedAt(now);
     }
 
     @Transactional
@@ -425,9 +426,10 @@ public class TeamServiceImpl implements TeamService {
             throw new BadRequestException("Transfer leadership to another member before leaving the team.");
         }
 
-        member.leave(LocalDateTime.now(), LeftReason.SELF_LEFT);
+        LocalDateTime now = LocalDateTime.now();
+        member.leave(now, LeftReason.SELF_LEFT, blankToNull(request == null ? null : request.reason()));
         team.decrementMemberCount();
-        team.setUpdatedAt(LocalDateTime.now());
+        team.setUpdatedAt(now);
     }
 
     @Transactional
