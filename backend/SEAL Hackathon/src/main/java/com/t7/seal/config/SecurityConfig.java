@@ -216,7 +216,7 @@ public class SecurityConfig {
                         .requestMatchers(API + "/invitations/**").authenticated()
 
                         // Student/team/submission
-                        .requestMatchers(API + "/teams/**").hasAnyRole("STUDENT", "COORDINATOR")
+                        .requestMatchers(API + "/teams/**").authenticated()
                         .requestMatchers(API + "/submissions/**").hasAnyRole("STUDENT", "JUDGE", "MENTOR", "COORDINATOR")
                         .requestMatchers(API + "/submission-links/**").hasAnyRole("STUDENT", "COORDINATOR")
 

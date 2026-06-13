@@ -182,7 +182,9 @@ public class TeamServiceImpl implements TeamService {
         User inviter = currentUserService.getCurrentUser(authentication);
         String email = normalizeEmail(request.email());
 
-        if (teamInvitationRepository.existsByTeamIdAndInviteEmailIgnoreCaseAndStatus(teamId, email, InvitationStatus.PENDING)) {
+        LocalDateTime now = LocalDateTime.now();
+        if (teamInvitationRepository.existsByTeamIdAndInviteEmailIgnoreCaseAndStatusAndExpiresAtAfter(
+                teamId, email, InvitationStatus.PENDING, now)) {
             throw new ConflictException("This email already has a pending invitation for this team.");
         }
 
@@ -191,7 +193,6 @@ public class TeamServiceImpl implements TeamService {
             throw new ConflictException("This user is already an active member of the team.");
         }
 
-        LocalDateTime now = LocalDateTime.now();
         TeamInvitation invitation = TeamInvitation.builder()
                 .team(team)
                 .invitedBy(inviter)
@@ -238,10 +239,6 @@ public class TeamServiceImpl implements TeamService {
     public TeamInvitationResponse getInvitationByToken(String token) {
         TeamInvitation invitation = teamInvitationRepository.findByToken(token)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
-
-        if (invitation.isPending() && invitation.isExpired(LocalDateTime.now())) {
-            return toTeamInvitationResponseWithStatus(invitation, InvitationStatus.EXPIRED);
-        }
 
         return toTeamInvitationResponse(invitation);
     }
@@ -449,18 +446,17 @@ public class TeamServiceImpl implements TeamService {
         User currentUser = currentUserService.getCurrentUser(authentication);
         ensureActiveStudent(currentUser);
 
+        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
+            throw new UnauthorizedException("This invitation is not for your account.");
+        }
+
         if (!invitation.isPending()) {
             throw new ConflictException("This invitation is no longer pending.");
         }
 
         LocalDateTime now = LocalDateTime.now();
         if (invitation.isExpired(now)) {
-            invitation.expire(now);
             throw new ConflictException("This invitation has expired.");
-        }
-
-        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
-            throw new UnauthorizedException("This invitation is not for your account.");
         }
 
         Team team = invitation.getTeam();
@@ -495,18 +491,17 @@ public class TeamServiceImpl implements TeamService {
     private void rejectInvitationInternal(TeamInvitation invitation, ReasonRequest request, Authentication authentication) {
         User currentUser = currentUserService.getCurrentUser(authentication);
 
+        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
+            throw new UnauthorizedException("This invitation is not for your account.");
+        }
+
         if (!invitation.isPending()) {
             throw new ConflictException("This invitation is no longer pending.");
         }
 
         LocalDateTime now = LocalDateTime.now();
         if (invitation.isExpired(now)) {
-            invitation.expire(now);
             throw new ConflictException("This invitation has expired.");
-        }
-
-        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
-            throw new UnauthorizedException("This invitation is not for your account.");
         }
 
         invitation.decline(now);
@@ -859,7 +854,7 @@ public class TeamServiceImpl implements TeamService {
                 invitation.getTeam().getId(),
                 invitation.getTeam().getName(),
                 invitation.getInviteEmail(),
-                invitation.getStatus().name(),
+                effectiveStatus(invitation, LocalDateTime.now()).name(),
                 invitation.getExpiresAt(),
                 invitation.getToken(),
                 buildInvitationUrl("accept", invitation.getToken()),
@@ -867,18 +862,13 @@ public class TeamServiceImpl implements TeamService {
         );
     }
 
-    private TeamInvitationResponse toTeamInvitationResponseWithStatus(TeamInvitation invitation, InvitationStatus status) {
-        return new TeamInvitationResponse(
-                invitation.getId(),
-                invitation.getTeam().getId(),
-                invitation.getTeam().getName(),
-                invitation.getInviteEmail(),
-                status.name(),
-                invitation.getExpiresAt(),
-                invitation.getToken(),
-                buildInvitationUrl("accept", invitation.getToken()),
-                buildInvitationUrl("reject", invitation.getToken())
-        );
+    // Display status shown to clients: a PENDING invitation past its deadline reads as EXPIRED on every endpoint,
+    // even though the row is not yet persisted as EXPIRED (B8). Keeps token/list/team views consistent.
+    private InvitationStatus effectiveStatus(TeamInvitation invitation, LocalDateTime now) {
+        if (invitation.isPending() && invitation.isExpired(now)) {
+            return InvitationStatus.EXPIRED;
+        }
+        return invitation.getStatus();
     }
 
     private void ensureTeamMemberForCoordinator(Team team, Authentication authentication) {
