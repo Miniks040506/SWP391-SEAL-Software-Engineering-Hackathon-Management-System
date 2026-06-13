@@ -122,7 +122,7 @@ export function SubmissionFilterBar({
               name="search"
               value={localSearch}
               onChange={handleTextChange}
-              placeholder="Search by team name..."
+              placeholder="Search team, project, or round..."
               sx={filterTextFieldSx}
               slotProps={{
                 input: {

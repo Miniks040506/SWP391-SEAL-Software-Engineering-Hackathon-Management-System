@@ -46,6 +46,14 @@ export function SubmissionTable({ submissions, loading }: Props) {
             <tr key={sub.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group">
               <td className="px-6 py-5 whitespace-nowrap">
                 <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{sub.teamName}</div>
+                {(sub as any).projectTitle && (
+                  <div 
+                    className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[250px]" 
+                    title={(sub as any).projectTitle}
+                  >
+                    Project: {(sub as any).projectTitle}
+                  </div>
+                )}
                 <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-mono">ID: {sub.teamId.substring(0, 8)}...</div>
               </td>
               <td className="px-6 py-5 whitespace-nowrap">
