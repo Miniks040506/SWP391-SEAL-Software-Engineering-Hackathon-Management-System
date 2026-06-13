@@ -430,6 +430,18 @@ public class TeamServiceImpl implements TeamService {
         team.setUpdatedAt(LocalDateTime.now());
     }
 
+    @Transactional
+    @Override
+    public TeamResponse toggleJoinCode(UUID teamId, ToggleJoinCodeRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+        ensureTeamLeader(team, authentication);
+        ensureTeamEditable(team);
+
+        team.setJoinCodeEnabled(request.enabled());
+        team.setUpdatedAt(LocalDateTime.now());
+        return toTeamResponse(teamRepository.save(team));
+    }
+
     //HELPERS
     private TeamMemberResponse acceptInvitationInternal(TeamInvitation invitation, Authentication authentication) {
         User currentUser = currentUserService.getCurrentUser(authentication);
@@ -571,6 +583,35 @@ public class TeamServiceImpl implements TeamService {
             throw new BadRequestException("Invite email is required.");
         }
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeJoinCode(String joinCode) {
+        if (joinCode == null || joinCode.isBlank()) {
+            throw new BadRequestException("Join code is required.");
+        }
+        return joinCode.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private void ensureJoinCodeUsable(Team team) {
+        if (!team.hasJoinCodeEnabled()) {
+            throw new BadRequestException("Team join code is disabled.");
+        }
+    }
+
+    private void ensureNotAlreadyActiveMember(Team team, User user) {
+        if (teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), user.getId())) {
+            throw new ConflictException("You are already an active member of this team.");
+        }
+    }
+
+    private void ensureNoSameTrackMembership(Team team, User user) {
+        if (team.getTrack() == null) {
+            return;
+        }
+
+        if (teamMemberRepository.existsActiveMembershipInSameTrack(user.getId(), team.getId(), team.getTrack().getId())) {
+            throw new ConflictException("You already have an active team in this track.");
+        }
     }
 
     private void createInvitationSentNotification(TeamInvitation invitation, User actor) {
