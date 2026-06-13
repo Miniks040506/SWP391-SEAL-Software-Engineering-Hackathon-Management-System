@@ -285,6 +285,21 @@ public class TeamServiceImpl implements TeamService {
 
     @Transactional
     @Override
+    public TeamMemberResponse acceptInvitation(UUID invitationId, Authentication authentication) {
+        TeamInvitation invitation = getInvitation(invitationId);
+        return acceptInvitationInternal(invitation, authentication);
+    }
+
+    @Transactional
+    @Override
+    public TeamMemberResponse acceptInvitationByToken(String token, Authentication authentication) {
+        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+                .orElseThrow(() -> new NotFoundException("Invitation not found."));
+        return acceptInvitationInternal(invitation, authentication);
+    }
+
+    @Transactional
+    @Override
     public void cancelInvitation(UUID invitationId, Authentication authentication) {
         TeamInvitation invitation = getInvitation(invitationId);
         ensureTeamLeader(invitation.getTeam(), authentication);
