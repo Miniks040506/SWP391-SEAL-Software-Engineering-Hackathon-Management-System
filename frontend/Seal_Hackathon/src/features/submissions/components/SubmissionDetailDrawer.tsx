@@ -33,14 +33,17 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
   }, [submissionId]);
 
   const handleViewTeamDetails = async () => {
-    if (!detail?.team?.id) return;
+    const actualTeamId =
+      detail?.teamId ||
+      (detail as unknown as { team?: { id: string } })?.team?.id;
+    if (!actualTeamId) return;
     setIsViewingTeam(true);
 
-    if (teamDetail && teamDetail.id === detail.team.id) return;
+    if (teamDetail && teamDetail.id === actualTeamId) return;
 
     setLoadingTeam(true);
     try {
-      const res = await teamApi.getTeamById(detail.team.id);
+      const res = await teamApi.getTeamById(actualTeamId);
       setTeamDetail(res);
     } catch (error) {
       console.error("Failed to fetch team details", error);

@@ -123,10 +123,8 @@ export type SubmissionDetailResponse = {
   id: UUID;
   eventId?: UUID | null;
   eventName?: string | null;
-  team: {
-    id: UUID;
-    name: string | null;
-  };
+  teamId: UUID;
+  teamName?: string | null;
   leaderId?: UUID | null;
   leaderName?: string | null;
   trackId?: UUID | null;
