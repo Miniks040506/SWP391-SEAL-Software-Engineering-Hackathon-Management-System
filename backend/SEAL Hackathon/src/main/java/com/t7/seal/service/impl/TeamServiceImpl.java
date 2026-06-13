@@ -496,6 +496,24 @@ public class TeamServiceImpl implements TeamService {
         notificationRepository.save(notification);
     }
 
+    private void createInvitationAcceptedNotification(TeamInvitation invitation, User actor) {
+        List<TeamMember> members = activeMembers(invitation.getTeam().getId());
+        Notification notification = Notification.builder()
+                .event(invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent())
+                .createdBy(actor)
+                .type(NotificationType.TEAM_INVITATION_ACCEPTED)
+                .title("Team invitation accepted")
+                .body(actor.getFullName() + " joined team " + invitation.getTeam().getName() + ".")
+                .targetScope(NotificationTargetScope.TEAM)
+                .targetId(invitation.getTeam().getId())
+                .channel(NotificationChannel.BOTH)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(members.size())
+                .build();
+        notificationRepository.save(notification);
+    }
+
     private void sendInvitationSentEmail(TeamInvitation invitation, User inviter, User invitee) {
         try {
             emailService.sendTeamInvitationSent(
@@ -512,9 +530,42 @@ public class TeamServiceImpl implements TeamService {
         }
     }
 
+    private void sendInvitationAcceptedEmail(TeamInvitation invitation, User acceptedMember) {
+        Team team = invitation.getTeam();
+        User leader = team.getLeader();
+        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
+            return;
+        }
+
+        List<String> cc = activeMembers(team.getId()).stream()
+                .map(TeamMember::getUser)
+                .filter(user -> user != null && user.getEmail() != null && !user.getEmail().isBlank())
+                .filter(user -> !user.getId().equals(leader.getId()))
+                .map(User::getEmail)
+                .distinct()
+                .toList();
+
+        try {
+            emailService.sendTeamInvitationAccepted(
+                    leader.getEmail(),
+                    cc,
+                    team.getName(),
+                    acceptedMember.getFullName(),
+                    buildTeamUrl(team.getId())
+            );
+        } catch (RuntimeException ex) {
+            log.warn("Failed to send team invitation accepted email. invitationId={}, teamId={}", invitation.getId(), team.getId(), ex);
+        }
+    }
+
     private String buildInvitationUrl(String action, String token) {
         String base = frontendUrl == null || frontendUrl.isBlank() ? "http://localhost:5173" : frontendUrl;
         return stripTrailingSlash(base) + "/invitations/" + action + "?token=" + token;
+    }
+
+    private String buildTeamUrl(UUID teamId) {
+        String base = frontendUrl == null || frontendUrl.isBlank() ? "http://localhost:5173" : frontendUrl;
+        return stripTrailingSlash(base) + "/participant/teams/" + teamId;
     }
 
     private String stripTrailingSlash(String value) {
