@@ -67,7 +67,7 @@ export const MentorFeedbackPage = () => {
           className="text-gray-600 dark:text-slate-400"
           sx={{ textTransform: "none", fontWeight: 700 }}
         >
-          Back
+          Back to Team
         </Button>
         <Button
           variant="contained"
@@ -87,7 +87,7 @@ export const MentorFeedbackPage = () => {
 
       <div>
         <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-          Team Feedback
+          Feedback
         </h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
           Provide private text feedback to guide the team. Drafts are hidden until published.
