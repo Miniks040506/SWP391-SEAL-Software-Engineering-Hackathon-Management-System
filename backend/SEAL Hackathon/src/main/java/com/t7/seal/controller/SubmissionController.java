@@ -184,9 +184,9 @@ public class SubmissionController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
-    @GetMapping("/events/{eventId}/submissions")
+    @GetMapping("/submissions")
     public ResponseEntity<PageResponse<CoordinatorSubmissionSummaryResponse>> getEventSubmissions(
-            @PathVariable UUID eventId,
+            @RequestParam(required = false) UUID eventId,
             @RequestParam(required = false) UUID roundId,
             @RequestParam(required = false) UUID trackId,
             @RequestParam(required = false) String status,
