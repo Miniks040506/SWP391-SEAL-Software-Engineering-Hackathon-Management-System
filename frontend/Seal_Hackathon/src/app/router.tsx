@@ -13,6 +13,7 @@ import {
   MentorSubmissionPage,
   MentorSubmissionDetailPage,
   MentorFeedbackPage,
+  MentorTeamsPage,
 } from "@/features/mentor";
 
 import {
@@ -192,7 +193,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <MentorDashboardPage /> },
-      { path: "teams", element: <NotFoundPage /> },
+      { path: "teams", element: <MentorTeamsPage /> },
       { path: "teams/:teamId/feedback", element: <MentorFeedbackPage /> },
       { path: "feedback", element: <NotFoundPage /> },
       { path: "submissions", element: <MentorSubmissionPage /> },
