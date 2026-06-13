@@ -1,5 +1,8 @@
 package com.t7.seal.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 public interface EmailService {
 
     void sendVerificationCode(String to, String fullName, String code, int expiresInMinutes);
@@ -7,4 +10,29 @@ public interface EmailService {
     void sendPasswordResetCode(String to, String fullName, String code, int expiresInMinutes);
 
     void sendOAuthLoginSuccessEmail(String to, String fullName, String providerName);
+
+    void sendTeamInvitationSent(
+            String to,
+            String inviteeName,
+            String teamName,
+            String invitedByName,
+            String acceptUrl,
+            String rejectUrl,
+            LocalDateTime expiresAt
+    );
+
+    void sendTeamInvitationAccepted(
+            String to,
+            List<String> cc,
+            String teamName,
+            String acceptedMemberName,
+            String teamUrl
+    );
+
+    void sendTeamInvitationRejected(
+            String to,
+            String teamName,
+            String inviteeEmail,
+            String manageInvitationsUrl
+    );
 }

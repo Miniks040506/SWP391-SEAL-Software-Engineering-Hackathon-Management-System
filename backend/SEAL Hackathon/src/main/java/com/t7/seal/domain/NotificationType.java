@@ -1,6 +1,9 @@
 package com.t7.seal.domain;
 
 public enum NotificationType {
+    TEAM_INVITATION_SENT,
+    TEAM_INVITATION_ACCEPTED,
+    TEAM_INVITATION_REJECTED,
     RESULT_PUBLISHED,
     ROUND_OPENED,
     ROUND_CLOSED,
