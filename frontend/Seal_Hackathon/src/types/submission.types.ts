@@ -160,6 +160,7 @@ export type CoordinatorSubmissionSummaryResponse = {
 };
 
 export type GetEventSubmissionsParams = {
+  eventId?: UUID;
   roundId?: UUID;
   trackId?: UUID;
   status?: SubmissionStatus | string;
