@@ -450,6 +450,17 @@ public class TeamServiceImpl implements TeamService {
                 : DEFAULT_MAX_TEAM_MEMBERS;
     }
 
+    private void cancelPendingInvitationsIfTeamFull(Team team, LocalDateTime now) {
+        int maxMembers = maxMembersFor(team);
+        if (team.getMemberCount() == null || team.getMemberCount() < maxMembers) {
+            return;
+        }
+
+        team.setJoinCodeEnabled(false);
+        teamInvitationRepository.findByTeamIdAndStatus(team.getId(), InvitationStatus.PENDING)
+                .forEach(invitation -> invitation.cancel(now));
+    }
+
     private String blankToNull(String value) {
         if (value == null || value.isBlank()) {
             return null;
