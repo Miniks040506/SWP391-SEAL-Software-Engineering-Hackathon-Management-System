@@ -25,11 +25,14 @@ import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.repository.UserRepository;
 import com.t7.seal.request.team.CreateTeamRequest;
 import com.t7.seal.request.team.InviteMemberRequest;
+import com.t7.seal.request.team.JoinTeamByCodeRequest;
 import com.t7.seal.request.team.ReasonRequest;
+import com.t7.seal.request.team.ToggleJoinCodeRequest;
 import com.t7.seal.request.team.TransferLeaderRequest;
 import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.response.team.TeamDetailResponse;
 import com.t7.seal.response.team.TeamInvitationResponse;
+import com.t7.seal.response.team.TeamJoinCodePreviewResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
 import com.t7.seal.response.team.TeamResponse;
 import com.t7.seal.response.team.TeamSummaryResponse;
@@ -241,6 +244,62 @@ public class TeamServiceImpl implements TeamService {
         }
 
         return toTeamInvitationResponse(invitation);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public TeamJoinCodePreviewResponse previewJoinCode(String joinCode, Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+        ensureActiveStudent(currentUser);
+
+        Team team = teamRepository.findByJoinCode(normalizeJoinCode(joinCode))
+                .orElseThrow(() -> new NotFoundException("Team join code was not found."));
+
+        ensureJoinCodeUsable(team);
+        ensureNotAlreadyActiveMember(team, currentUser);
+        ensureNoSameTrackMembership(team, currentUser);
+
+        return toTeamJoinCodePreviewResponse(team);
+    }
+
+    @Transactional
+    @Override
+    public TeamMemberResponse joinByCode(JoinTeamByCodeRequest request, Authentication authentication) {
+        return joinByCode(request.joinCode(), authentication);
+    }
+
+    @Transactional
+    @Override
+    public TeamMemberResponse joinByCode(String joinCode, Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+        ensureActiveStudent(currentUser);
+
+        Team team = teamRepository.findByJoinCode(normalizeJoinCode(joinCode))
+                .orElseThrow(() -> new NotFoundException("Team join code was not found."));
+
+        ensureJoinCodeUsable(team);
+        ensureTeamEditable(team);
+        ensureTeamHasSpace(team);
+        ensureNotAlreadyActiveMember(team, currentUser);
+        ensureNoSameTrackMembership(team, currentUser);
+
+        LocalDateTime now = LocalDateTime.now();
+        TeamMember member = TeamMember.builder()
+                .team(team)
+                .user(currentUser)
+                .role(MemberRole.MEMBER)
+                .joinedAt(now)
+                .build();
+
+        team.incrementMemberCount();
+        team.setUpdatedAt(now);
+
+        TeamMember savedMember = teamMemberRepository.save(member);
+        cancelPendingInvitationsIfTeamFull(team, now);
+        createTeamMemberJoinedByCodeNotification(team, currentUser);
+        sendTeamMemberJoinedByCodeEmail(team, currentUser);
+
+        return toTeamMemberResponse(savedMember);
     }
 
     @Transactional(readOnly = true)
