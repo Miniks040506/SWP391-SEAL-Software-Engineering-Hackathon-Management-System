@@ -3,7 +3,7 @@ import { mentorFeedbackApi } from "@/api/mentorFeedback.api";
 import type { UUID } from "@/types/common.types";
 import { mockTeamVisibleFeedbacks } from "../mocks/teamFeedback.mock";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function useTeamFeedback(teamId?: UUID | string) {
