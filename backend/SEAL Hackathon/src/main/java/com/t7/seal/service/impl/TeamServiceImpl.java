@@ -419,6 +419,30 @@ public class TeamServiceImpl implements TeamService {
         return toTeamMemberResponse(savedMember);
     }
 
+    private void rejectInvitationInternal(TeamInvitation invitation, ReasonRequest request, Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+
+        if (!invitation.isPending()) {
+            throw new ConflictException("This invitation is no longer pending.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (invitation.isExpired(now)) {
+            invitation.expire(now);
+            throw new ConflictException("This invitation has expired.");
+        }
+
+        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
+            throw new UnauthorizedException("This invitation is not for your account.");
+        }
+
+        invitation.decline(now);
+        invitation.setInvitee(currentUser);
+        invitation.setResponseReason(blankToNull(request == null ? null : request.reason()));
+        createInvitationRejectedNotification(invitation, currentUser);
+        sendInvitationRejectedEmail(invitation);
+    }
+
     private void ensureActiveStudent(User user) {
         if (!user.isStudent()) {
             throw new BadRequestException("Only students can create a team.");
