@@ -553,6 +553,23 @@ public class TeamServiceImpl implements TeamService {
         notificationRepository.save(notification);
     }
 
+    private void createInvitationRejectedNotification(TeamInvitation invitation, User actor) {
+        Notification notification = Notification.builder()
+                .event(invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent())
+                .createdBy(actor)
+                .type(NotificationType.TEAM_INVITATION_REJECTED)
+                .title("Team invitation declined")
+                .body(invitation.getInviteEmail() + " declined the invitation to join " + invitation.getTeam().getName() + ".")
+                .targetScope(NotificationTargetScope.TEAM)
+                .targetId(invitation.getTeam().getId())
+                .channel(NotificationChannel.BOTH)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(1)
+                .build();
+        notificationRepository.save(notification);
+    }
+
     private void sendInvitationSentEmail(TeamInvitation invitation, User inviter, User invitee) {
         try {
             emailService.sendTeamInvitationSent(
@@ -594,6 +611,25 @@ public class TeamServiceImpl implements TeamService {
             );
         } catch (RuntimeException ex) {
             log.warn("Failed to send team invitation accepted email. invitationId={}, teamId={}", invitation.getId(), team.getId(), ex);
+        }
+    }
+
+    private void sendInvitationRejectedEmail(TeamInvitation invitation) {
+        Team team = invitation.getTeam();
+        User leader = team.getLeader();
+        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
+            return;
+        }
+
+        try {
+            emailService.sendTeamInvitationRejected(
+                    leader.getEmail(),
+                    team.getName(),
+                    invitation.getInviteEmail(),
+                    buildTeamUrl(team.getId())
+            );
+        } catch (RuntimeException ex) {
+            log.warn("Failed to send team invitation rejected email. invitationId={}, teamId={}", invitation.getId(), team.getId(), ex);
         }
     }
 
