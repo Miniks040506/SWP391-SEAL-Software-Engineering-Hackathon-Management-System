@@ -240,9 +240,9 @@ public class RoundServiceImpl implements RoundService {
 
         RuleType ruleType = parseEnum(RuleType.class, request.ruleType(), "ruleType");
 
-        Track track = resolveTrack(request.trackId(), round);
+        Track track = resolveOptionalTrack(request.trackId(), round);
 
-        assertNoDuplicateAdvanceRule(roundId, ruleType, track.getId() == null ? null : track.getId());
+        assertNoDuplicateAdvanceRule(roundId, ruleType, track == null ? null : track.getId());
 
         Float value = resolveRuleValue(ruleType, request.topN(),
                 request.topPercent(), request.minScore(), request.wildCardSlots());
@@ -280,7 +280,7 @@ public class RoundServiceImpl implements RoundService {
                 ? advanceRule.getRuleType()
                 : parseEnum(RuleType.class, request.ruleType(), "ruleType");
 
-        Track nextTrack = resolveTrack(request.trackId(), advanceRule.getRound());
+        Track nextTrack = resolveNextTrack(advanceRule.getRound(), request, advanceRule.getTrack());
 
         assertNoDuplicateAdvanceRuleOnUpdate(
                 advanceRule.getRound().getId(),
@@ -412,8 +412,8 @@ public class RoundServiceImpl implements RoundService {
                 advanceRule.getTrack() == null ? null : advanceRule.getTrack().getId(),
                 advanceRule.getRuleType().name(),
                 topN,
-                topPercent,
                 minScore,
+                topPercent,
                 wildCardSlots,
                 Boolean.TRUE,
                 advanceRule.getValue(),
@@ -441,7 +441,7 @@ public class RoundServiceImpl implements RoundService {
         }
     }
 
-    private Track resolveTrack(UUID trackId, Round round) {
+    private Track resolveOptionalTrack(UUID trackId, Round round) {
         if (trackId == null) {
             return null;
         }
@@ -454,6 +454,18 @@ public class RoundServiceImpl implements RoundService {
         }
 
         return track;
+    }
+
+    private Track resolveNextTrack(Round round, UpdateAdvanceRuleRequest request, Track currentTrack) {
+        if (Boolean.TRUE.equals(request.global())) {
+            return null;
+        }
+
+        if (request.trackId() != null) {
+            return resolveOptionalTrack(request.trackId(), round);
+        }
+
+        return currentTrack;
     }
 
     private void assertNoDuplicateAdvanceRuleOnUpdate(
@@ -481,6 +493,9 @@ public class RoundServiceImpl implements RoundService {
         boolean exists = (trackId == null)
                 ? advanceRuleRepository.existGlobalRule(roundId, ruleType)
                 : advanceRuleRepository.existsByRoundIdAndRuleTypeAndTrackId(roundId, ruleType, trackId);
+        if (exists) {
+            throw new ConflictException("Advance rule already exists for this round and track.");
+        }
     }
 
     private Float resolveRuleValue(
