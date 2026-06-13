@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -170,7 +171,144 @@ public class EmailServiceImpl implements EmailService {
         sendHtml(to, appName + " - Login Successful via " + providerName, html);
     }
 
+    @Override
+    public void sendTeamInvitationSent(
+            String to,
+            String inviteeName,
+            String teamName,
+            String invitedByName,
+            String acceptUrl,
+            String rejectUrl,
+            LocalDateTime expiresAt
+    ) {
+        String safeInviteeName = escapeHtml(displayName(inviteeName));
+        String safeTeamName = escapeHtml(teamName);
+        String safeInvitedByName = escapeHtml(displayName(invitedByName));
+        String safeExpiresAt = expiresAt == null
+                ? "the invitation deadline"
+                : escapeHtml(expiresAt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+
+        String html = buildBaseTemplate(
+                "Team Invitation",
+                "You have been invited to join a SEAL team",
+                """
+                <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                    Hello <strong>%s</strong>,
+                </p>
+
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                    <strong>%s</strong> invited you to join team <strong>%s</strong>.
+                </p>
+
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                    This invitation expires at <strong>%s</strong>.
+                </p>
+
+                <div style="text-align:center;margin:28px 0;">
+                    <a href="%s"
+                       style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;margin:0 6px 10px;">
+                        Accept Invitation
+                    </a>
+                    <a href="%s"
+                       style="display:inline-block;background:#ef4444;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;margin:0 6px 10px;">
+                        Reject Invitation
+                    </a>
+                </div>
+                """.formatted(
+                        safeInviteeName,
+                        safeInvitedByName,
+                        safeTeamName,
+                        safeExpiresAt,
+                        escapeHtml(acceptUrl),
+                        escapeHtml(rejectUrl)
+                )
+        );
+
+        sendHtml(to, appName + " - Invitation to join " + teamName, html);
+    }
+
+    @Override
+    public void sendTeamInvitationAccepted(
+            String to,
+            List<String> cc,
+            String teamName,
+            String acceptedMemberName,
+            String teamUrl
+    ) {
+        String safeTeamName = escapeHtml(teamName);
+        String safeAcceptedMemberName = escapeHtml(displayName(acceptedMemberName));
+
+        String html = buildBaseTemplate(
+                "New Team Member",
+                "A team invitation was accepted",
+                """
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                    <strong>%s</strong> accepted the invitation to join team <strong>%s</strong>.
+                </p>
+
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                    The team roster has been updated.
+                </p>
+
+                <div style="text-align:center;margin-top:28px;">
+                    <a href="%s"
+                       style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                        Open Team
+                    </a>
+                </div>
+                """.formatted(
+                        safeAcceptedMemberName,
+                        safeTeamName,
+                        escapeHtml(teamUrl)
+                )
+        );
+
+        sendHtml(to, cc, appName + " - " + acceptedMemberName + " joined " + teamName, html);
+    }
+
+    @Override
+    public void sendTeamInvitationRejected(
+            String to,
+            String teamName,
+            String inviteeEmail,
+            String manageInvitationsUrl
+    ) {
+        String safeTeamName = escapeHtml(teamName);
+        String safeInviteeEmail = escapeHtml(inviteeEmail);
+
+        String html = buildBaseTemplate(
+                "Invitation Declined",
+                "A team invitation was declined",
+                """
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                    <strong>%s</strong> declined the invitation to join team <strong>%s</strong>.
+                </p>
+
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                    You can invite another member or review pending invitations from the team management page.
+                </p>
+
+                <div style="text-align:center;margin-top:28px;">
+                    <a href="%s"
+                       style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                        Open Team
+                    </a>
+                </div>
+                """.formatted(
+                        safeInviteeEmail,
+                        safeTeamName,
+                        escapeHtml(manageInvitationsUrl)
+                )
+        );
+
+        sendHtml(to, appName + " - " + inviteeEmail + " declined invitation to " + teamName, html);
+    }
+
     private void sendHtml(String to, String subject, String html) {
+        sendHtml(to, List.of(), subject, html);
+    }
+
+    private void sendHtml(String to, List<String> cc, String subject, String html) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
 
@@ -181,6 +319,9 @@ public class EmailServiceImpl implements EmailService {
             );
 
             helper.setTo(to);
+            if (cc != null && !cc.isEmpty()) {
+                helper.setCc(cc.toArray(String[]::new));
+            }
             helper.setSubject(subject);
             helper.setText(html, true);
 
