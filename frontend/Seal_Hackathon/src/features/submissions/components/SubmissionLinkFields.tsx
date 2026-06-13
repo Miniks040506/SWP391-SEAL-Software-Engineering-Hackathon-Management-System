@@ -3,6 +3,20 @@ import { TextField } from "@mui/material";
 import { filterTextFieldSx } from "../schemas/submissions.schema";
 import type { LinkFieldValue } from "@/types/submission.types";
 
+const ALLOWED_CONTENT_TYPES = [
+  "application/pdf",
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "video/mp4",
+  "image/png",
+  "image/webp",
+  "image/jpeg",
+  "text/plain"
+];
+
+
 type Props = {
   fields: LinkFieldValue[];
   onChange: (fields: LinkFieldValue[]) => void;
@@ -28,7 +42,7 @@ const PROVIDER_ICONS: Record<string, { color: string; hint: string }> = {
   },
   VIDEO: {
     color: "text-red-600 dark:text-red-400",
-    hint: "https://youtube.com/...",
+    hint: "https://drive.google.com/...",
   },
   OTHER: {
     color: "text-slate-500 dark:text-slate-400",
@@ -42,7 +56,9 @@ function ProviderIcon({ type }: { type: string }) {
 
   if (type === "REPOSITORY")
     return (
-      <div className={`${base} bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 ${meta.color}`}>
+      <div
+        className={`${base} bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 ${meta.color}`}
+      >
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
           <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
         </svg>
@@ -51,8 +67,17 @@ function ProviderIcon({ type }: { type: string }) {
 
   if (type === "DEMO")
     return (
-      <div className={`${base} bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20 ${meta.color}`}>
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+      <div
+        className={`${base} bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20 ${meta.color}`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <polygon points="5 3 19 12 5 21 5 3" />
         </svg>
       </div>
@@ -60,8 +85,17 @@ function ProviderIcon({ type }: { type: string }) {
 
   if (type === "SLIDE")
     return (
-      <div className={`${base} bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20 ${meta.color}`}>
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+      <div
+        className={`${base} bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20 ${meta.color}`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
           <line x1="8" y1="21" x2="16" y2="21" />
           <line x1="12" y1="17" x2="12" y2="21" />
@@ -71,8 +105,17 @@ function ProviderIcon({ type }: { type: string }) {
 
   if (type === "REPORT")
     return (
-      <div className={`${base} bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 ${meta.color}`}>
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+      <div
+        className={`${base} bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 ${meta.color}`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
           <polyline points="14 2 14 8 20 8" />
           <line x1="16" y1="13" x2="8" y2="13" />
@@ -84,8 +127,17 @@ function ProviderIcon({ type }: { type: string }) {
 
   if (type === "VIDEO")
     return (
-      <div className={`${base} bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 ${meta.color}`}>
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+      <div
+        className={`${base} bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 ${meta.color}`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <polygon points="23 7 16 12 23 17 23 7" />
           <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
         </svg>
@@ -93,8 +145,17 @@ function ProviderIcon({ type }: { type: string }) {
     );
 
   return (
-    <div className={`${base} bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 ${meta.color}`}>
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+    <div
+      className={`${base} bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 ${meta.color}`}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
         <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
         <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
       </svg>
@@ -114,7 +175,11 @@ function validateUrl(url: string): string | null {
   }
 }
 
-export function SubmissionLinkFields({ fields, onChange, disabled = false }: Props) {
+export function SubmissionLinkFields({
+  fields,
+  onChange,
+  disabled = false,
+}: Props) {
   const [touched, setTouched] = useState<Set<string>>(new Set());
   const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
@@ -171,7 +236,12 @@ export function SubmissionLinkFields({ fields, onChange, disabled = false }: Pro
               </div>
               {isFilled && (
                 <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -186,7 +256,9 @@ export function SubmissionLinkFields({ fields, onChange, disabled = false }: Pro
               <div className="flex bg-slate-200/50 dark:bg-slate-700 p-1 rounded-lg mb-4 w-max">
                 <button
                   type="button"
-                  onClick={() => updateField(index, { inputType: "url", file: null })}
+                  onClick={() =>
+                    updateField(index, { inputType: "url", file: null })
+                  }
                   disabled={disabled}
                   className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${field.inputType === "url" ? "bg-white shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
                 >
@@ -194,7 +266,9 @@ export function SubmissionLinkFields({ fields, onChange, disabled = false }: Pro
                 </button>
                 <button
                   type="button"
-                  onClick={() => updateField(index, { inputType: "file", url: "" })}
+                  onClick={() =>
+                    updateField(index, { inputType: "file", url: "" })
+                  }
                   disabled={disabled}
                   className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${field.inputType === "file" ? "bg-white shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
                 >
@@ -208,7 +282,9 @@ export function SubmissionLinkFields({ fields, onChange, disabled = false }: Pro
                   size="small"
                   value={field.url}
                   onChange={(e) => updateField(index, { url: e.target.value })}
-                  onBlur={() => setTouched((prev) => new Set(prev).add(field.linkType))}
+                  onBlur={() =>
+                    setTouched((prev) => new Set(prev).add(field.linkType))
+                  }
                   placeholder={meta.hint}
                   disabled={disabled}
                   error={Boolean(error)}
@@ -221,24 +297,45 @@ export function SubmissionLinkFields({ fields, onChange, disabled = false }: Pro
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
-                    if (!disabled && e.dataTransfer.files?.[0])
-                      updateField(index, { file: e.dataTransfer.files[0] });
+                    if (!disabled && e.dataTransfer.files?.[0]) {
+                      const file = e.dataTransfer.files[0];
+                      if (!ALLOWED_CONTENT_TYPES.includes(file.type)) return;
+                      if (file.size > 25 * 1024 * 1024) return;
+                      updateField(index, { file });
+                    }
                   }}
                 >
                   <input
                     type="file"
+                    accept={ALLOWED_CONTENT_TYPES.join(",")}
                     className="hidden"
                     disabled={disabled}
-                    ref={(el) => { fileInputRefs.current[index] = el; }}
+                    ref={(el) => {
+                      fileInputRefs.current[index] = el;
+                    }}
                     onChange={(e) => {
-                      if (e.target.files?.[0])
-                        updateField(index, { file: e.target.files[0] });
+                      if (e.target.files?.[0]) {
+                        const file = e.target.files[0];
+                        if (!ALLOWED_CONTENT_TYPES.includes(file.type)) return;
+                        if (file.size > 25 * 1024 * 1024) return;
+                        updateField(index, { file });
+                      }
                     }}
                   />
                   {field.file ? (
                     <div className="flex flex-col items-center">
-                      <svg className="w-8 h-8 text-blue-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      <svg
+                        className="w-8 h-8 text-blue-500 mb-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
                       </svg>
                       <span className="text-sm font-bold text-slate-700 truncate max-w-50">
                         {field.file.name}
@@ -258,15 +355,31 @@ export function SubmissionLinkFields({ fields, onChange, disabled = false }: Pro
                   ) : (
                     <div
                       className="flex flex-col items-center cursor-pointer"
-                      onClick={() => !disabled && fileInputRefs.current[index]?.click()}
+                      onClick={() =>
+                        !disabled && fileInputRefs.current[index]?.click()
+                      }
                     >
                       <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                        <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        <svg
+                          className="w-5 h-5 text-slate-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                          />
                         </svg>
                       </div>
-                      <span className="text-sm font-bold text-blue-600">Click to upload</span>
-                      <span className="text-xs text-slate-500 mt-1">or drag and drop</span>
+                      <span className="text-sm font-bold text-blue-600">
+                        Click to upload
+                      </span>
+                      <span className="text-xs text-slate-500 mt-1">
+                        or drag and drop
+                      </span>
                     </div>
                   )}
                 </div>
