@@ -357,6 +357,53 @@ public class TeamServiceImpl implements TeamService {
     }
 
     //HELPERS
+    private TeamMemberResponse acceptInvitationInternal(TeamInvitation invitation, Authentication authentication) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+        ensureActiveStudent(currentUser);
+
+        if (!invitation.isPending()) {
+            throw new ConflictException("This invitation is no longer pending.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (invitation.isExpired(now)) {
+            invitation.expire(now);
+            throw new ConflictException("This invitation has expired.");
+        }
+
+        if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
+            throw new UnauthorizedException("This invitation is not for your account.");
+        }
+
+        Team team = invitation.getTeam();
+        ensureTeamEditable(team);
+        ensureTeamHasSpace(team);
+
+        if (teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUser.getId())) {
+            throw new ConflictException("You are already an active member of this team.");
+        }
+
+        invitation.accept(now);
+        invitation.setInvitee(currentUser);
+
+        TeamMember member = TeamMember.builder()
+                .team(team)
+                .user(currentUser)
+                .role(MemberRole.MEMBER)
+                .joinedAt(now)
+                .build();
+
+        team.incrementMemberCount();
+        team.setUpdatedAt(now);
+
+        TeamMember savedMember = teamMemberRepository.save(member);
+        cancelPendingInvitationsIfTeamFull(team, now);
+        createInvitationAcceptedNotification(invitation, currentUser);
+        sendInvitationAcceptedEmail(invitation, currentUser);
+
+        return toTeamMemberResponse(savedMember);
+    }
+
     private void ensureActiveStudent(User user) {
         if (!user.isStudent()) {
             throw new BadRequestException("Only students can create a team.");
