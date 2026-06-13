@@ -10,7 +10,7 @@ import { useMentorFeedback } from "../hooks/useMentorFeedback";
 import type { MentorFeedbackFormValues } from "../schemas/mentorFeedback.schema";
 import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
 
-export const MentorTeamFeedbackPage = () => {
+export const MentorFeedbackPage = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
 
