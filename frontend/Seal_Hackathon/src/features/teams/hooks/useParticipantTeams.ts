@@ -10,6 +10,7 @@ import type {
   RemoveMemberRequest,
   TransferLeaderRequest,
   UpdateTeamRequest,
+  JoinTeamByCodeRequest,
 } from "@/types/team.types";
 
 import { mockTeamService } from "../mocks/participantTeams.mock";
@@ -279,5 +280,40 @@ export function useRejectInvitationByTokenMutation() {
       return teamApi.rejectInvitationByToken(token);
     },
     onSuccess: () => enqueueSnackbar("Invitation declined.", { variant: "info" }),
+  });
+}
+
+export function usePreviewJoinCodeMutation() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (joinCode: string) => {
+      if (USE_MOCK_TEAMS) return mockTeamService.previewJoinCode(joinCode);
+      const res = await teamApi.previewJoinCode(joinCode);
+      return res.data;
+    },
+    onError: (err: any) => {
+      enqueueSnackbar(err.message || "Invalid join code.", { variant: "error" });
+    },
+  });
+}
+
+export function useJoinTeamByCodeMutation() {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (payload: JoinTeamByCodeRequest) => {
+      if (USE_MOCK_TEAMS) return mockTeamService.joinByCode(payload);
+      return teamApi.joinByCode(payload);
+    },
+    onSuccess: async () => {
+      // Cập nhật lại danh sách team sau khi join thành công
+      await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.myTeams });
+      enqueueSnackbar("You have successfully joined the team!", { variant: "success" });
+    },
+    onError: (err: any) => {
+      enqueueSnackbar(err.message || "Failed to join team.", { variant: "error" });
+    },
   });
 }
