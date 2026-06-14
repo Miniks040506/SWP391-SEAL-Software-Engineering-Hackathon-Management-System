@@ -14,7 +14,7 @@ import type {
 
 import { mockTeamService } from "../mocks/participantTeams.mock";
 
-const USE_MOCK_TEAMS = true; // Bật true để test Mock Data
+const USE_MOCK_TEAMS = false;
 
 export const participantTeamQueryKeys = {
   myTeams: ["participant-my-teams"] as const,
