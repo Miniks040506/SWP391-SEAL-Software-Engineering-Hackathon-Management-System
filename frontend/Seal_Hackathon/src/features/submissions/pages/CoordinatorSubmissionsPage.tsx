@@ -4,6 +4,8 @@ import { Pagination } from "@mui/material";
 import { eventApi } from "@/api/event.api";
 import { roundApi } from "@/api/round.api";
 import { trackApi } from "@/api/track.api";
+import { teamApi } from "@/api/team.api";
+import type { UUID } from "@/types/common.types";
 import { useCoordinatorSubmissionsQuery } from "../hooks/useCoordinatorSubmissionQueries";
 import { SubmissionFilterBar } from "../components/SubmissionFilterBar";
 import { SubmissionTable } from "../components/SubmissionTable";
@@ -77,6 +79,37 @@ export function CoordinatorSubmissionsPage() {
 
   const { data, loading } = useCoordinatorSubmissionsQuery(filters);
 
+  const [projectTitles, setProjectTitles] = useState<Record<UUID, string>>({});
+
+  useEffect(() => {
+    if (!data?.content || data.content.length === 0) {
+      setProjectTitles({});
+      return;
+    }
+
+    const fetchTitles = async () => {
+      try {
+        const uniqueTeamIds = Array.from(new Set(data.content.map((s) => s.teamId)));
+        
+        const promises = uniqueTeamIds.map(id => teamApi.getTeamById(id));
+        const results = await Promise.all(promises);
+
+        const newMap: Record<UUID, string> = {};
+        results.forEach((team) => {
+          if (team.projectTitle) {
+            newMap[team.id] = team.projectTitle;
+          }
+        });
+
+        setProjectTitles(newMap);
+      } catch (error) {
+        console.error("Failed to fetch project titles:", error);
+      }
+    };
+
+    fetchTitles();
+  }, [data?.content]);
+
   const handleCloseDrawer = () => {
     navigate("/coordinator/submissions");
   };
@@ -108,7 +141,11 @@ export function CoordinatorSubmissionsPage() {
           rounds={rounds}
         />
 
-        <SubmissionTable submissions={items} loading={loading} />
+        <SubmissionTable 
+          submissions={items} 
+          loading={loading} 
+          projectTitles={projectTitles} 
+        />
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 px-5 py-3 bg-white dark:bg-slate-800">
