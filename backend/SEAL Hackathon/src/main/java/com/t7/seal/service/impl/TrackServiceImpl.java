@@ -234,6 +234,7 @@ public class TrackServiceImpl implements TrackService {
         );
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<TrackAvailabilityResponse> getAvailableTracks(UUID eventId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
