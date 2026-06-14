@@ -33,11 +33,12 @@ public interface RoundJudgeAssignmentRepository extends JpaRepository<RoundJudge
             WHERE rja.round.id = :roundId
               AND rja.judge.id = :judgeId
               AND (
-                    (:trackId IS NULL AND rja.track IS NULL)
-                    OR (:trackId IS NOT NULL AND rja.track.id = :trackId)
+                    :trackId IS NULL
+                    OR rja.track IS NULL
+                    OR rja.track.id = :trackId
                   )
             """)
-    boolean existsByRoundIdAndJudgeIdAndTrackIdNullable(
+    boolean existsOverlappingAssignment(
             @Param("roundId") UUID roundId,
             @Param("judgeId") UUID judgeId,
             @Param("trackId") UUID trackId

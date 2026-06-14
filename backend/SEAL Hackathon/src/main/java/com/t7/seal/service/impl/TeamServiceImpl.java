@@ -192,6 +192,9 @@ public class TeamServiceImpl implements TeamService {
         if (invitee != null && teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, invitee.getId())) {
             throw new ConflictException("This user is already an active member of the team.");
         }
+        if (invitee != null) {
+            ensureNoSameTrackMembership(team, invitee, "This user already has an active team in this track.");
+        }
 
         TeamInvitation invitation = TeamInvitation.builder()
                 .team(team)
@@ -466,6 +469,7 @@ public class TeamServiceImpl implements TeamService {
         if (teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUser.getId())) {
             throw new ConflictException("You are already an active member of this team.");
         }
+        ensureNoSameTrackMembership(team, currentUser);
 
         invitation.accept(now);
         invitation.setInvitee(currentUser);
@@ -602,12 +606,16 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private void ensureNoSameTrackMembership(Team team, User user) {
+        ensureNoSameTrackMembership(team, user, "You already have an active team in this track.");
+    }
+
+    private void ensureNoSameTrackMembership(Team team, User user, String conflictMessage) {
         if (team.getTrack() == null) {
             return;
         }
 
         if (teamMemberRepository.existsActiveMembershipInSameTrack(user.getId(), team.getId(), team.getTrack().getId())) {
-            throw new ConflictException("You already have an active team in this track.");
+            throw new ConflictException(conflictMessage);
         }
     }
 

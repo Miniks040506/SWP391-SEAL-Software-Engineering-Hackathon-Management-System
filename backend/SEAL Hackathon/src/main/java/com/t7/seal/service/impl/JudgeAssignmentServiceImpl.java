@@ -23,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,6 +63,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
 
         Judge judge = judgeRepository.findByIdWithUser(request.judgeId())
                 .orElseThrow(() -> new NotFoundException("Judge not found."));
+        ensureJudgeCanBeAssigned(judge);
 
         Track track = null;
 
@@ -76,12 +78,12 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
 
         UUID trackId = track == null ? null : track.getId();
 
-        if (assignmentRepository.existsByRoundIdAndJudgeIdAndTrackIdNullable(roundId, judge.getId(), trackId)) {
+        if (assignmentRepository.existsOverlappingAssignment(roundId, judge.getId(), trackId)) {
             throw new ConflictException("Judge is already assigned to this round/track.");
         }
 
-        if (track != null && mentorAssignmentRepository.existsByTrackIdAndUserId(track.getId(), judge.getUser().getId())) {
-            throw new ConflictException("This user is already assigned as mentor for this track.");
+        if (hasMentorConflict(round, track, judge.getUser().getId())) {
+            throw new ConflictException("This user is already assigned as mentor for this track/event.");
         }
 
         RoundJudgeAssignment assignment = new RoundJudgeAssignment();
@@ -115,6 +117,31 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                 || status == RegistrationStatus.CANCELLED) {
             throw new ConflictException("Judge assignments are locked in event status " + status + ".");
         }
+    }
+
+    private void ensureJudgeCanBeAssigned(Judge judge) {
+        User user = judge.getUser();
+
+        if (user == null || !user.isJudge()) {
+            throw new BadRequestException("Selected user is not a judge.");
+        }
+
+        if (!user.isActive()) {
+            throw new BadRequestException("Judge account must be ACTIVE.");
+        }
+
+        if (Boolean.TRUE.equals(judge.getIsTemporary())
+                && !judge.isTemporaryActive(LocalDateTime.now())) {
+            throw new ConflictException("Temporary judge account has expired.");
+        }
+    }
+
+    private boolean hasMentorConflict(Round round, Track track, UUID judgeUserId) {
+        if (track != null) {
+            return mentorAssignmentRepository.existsByTrackIdAndUserId(track.getId(), judgeUserId);
+        }
+
+        return mentorAssignmentRepository.existsByEventIdAndUserId(round.getEvent().getId(), judgeUserId);
     }
 
     private JudgeAssignmentResponse toResponse(RoundJudgeAssignment assignment) {
