@@ -12,6 +12,8 @@ import type {
   TeamSummaryResponse,
   TransferLeaderRequest,
   UpdateTeamRequest,
+  TeamJoinCodePreviewResponse,
+  JoinTeamByCodeRequest,
 } from "@/types/team.types";
 
 export type TeamSummaryWithMemberCount = TeamSummaryResponse & {
@@ -301,5 +303,59 @@ export const mockTeamService = {
     const inv = mockInvitations.find((i) => i.token === token);
     if (!inv) throw new Error("Invalid token.");
     return this.rejectInvitation(inv.id, payload);
+  },
+
+  async previewJoinCode(joinCode: string): Promise<TeamJoinCodePreviewResponse> {
+    await mockDelay();
+    
+    // Giả lập mã join code là "SEAL-2026" trỏ vào team "Null Pointers"
+    if (joinCode.trim().toUpperCase() !== "SEAL-2026") {
+      throw new Error("Invalid or expired join code.");
+    }
+
+    const team = mockTeams.find((t) => t.id === "team-2222-2222-2222-222222222222");
+    if (!team) throw new Error("Team not found.");
+
+    return {
+      teamId: team.id,
+      teamName: team.name,
+      projectTitle: team.projectTitle,
+      description: team.description,
+      leaderId: team.leaderId,
+      leaderName: team.leaderName,
+      status: team.status,
+      memberCount: team.members.length,
+      maxMembers: 5,
+      joinCodeEnabled: true,
+    };
+  },
+
+  async joinByCode(payload: JoinTeamByCodeRequest) {
+    await mockDelay();
+    
+    if (payload.joinCode.trim().toUpperCase() !== "SEAL-2026") {
+      throw new Error("Invalid or expired join code.");
+    }
+
+    const team = mockTeams.find((t) => t.id === "team-2222-2222-2222-222222222222");
+    if (!team) throw new Error("Team not found.");
+    if (team.members.length >= 5) throw new Error("This team is already full.");
+    
+    // Kiểm tra xem đã trong nhóm chưa
+    if (team.members.some(m => m.userId === currentUserId)) {
+      throw new Error("You are already a member of this team.");
+    }
+
+    const newMember = {
+      memberId: createMockId(),
+      userId: currentUserId,
+      fullName: "Nguyen Van A",
+      email: currentUserEmail,
+      memberRole: "MEMBER",
+      joinedAt: getNowLocalDateTime(),
+    };
+    
+    team.members.push(newMember);
+    return newMember as TeamMemberResponse;
   }
 };
