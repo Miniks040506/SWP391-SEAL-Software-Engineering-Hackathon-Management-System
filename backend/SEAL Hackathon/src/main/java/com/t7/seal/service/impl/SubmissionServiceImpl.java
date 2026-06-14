@@ -596,11 +596,23 @@ public class SubmissionServiceImpl implements SubmissionService {
         return roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(submission.getRound().getId())
                 .stream()
                 .filter(a -> a.getJudge() != null && a.getJudge().getUser() != null)
+                .filter(a -> canJudgeStillScore(a.getJudge()))
                 .filter(a -> a.getJudge().getUser().getId().equals(userId))
                 .anyMatch(a -> a.canScore(
                         submission.getRound().getId(),
                         submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getId()
                 ));
+    }
+
+    private boolean canJudgeStillScore(Judge judge) {
+        User user = judge.getUser();
+
+        if (user == null || !user.isActive()) {
+            return false;
+        }
+
+        return !Boolean.TRUE.equals(judge.getIsTemporary())
+                || judge.isTemporaryActive(LocalDateTime.now());
     }
 
     private void ensureCoordinator(Authentication authentication) {
