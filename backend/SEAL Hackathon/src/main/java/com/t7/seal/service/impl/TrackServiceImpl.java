@@ -23,10 +23,7 @@ import com.t7.seal.request.track.RegisterTeamTrackRequest;
 import com.t7.seal.request.track.UpdateTrackRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.team.TeamResponse;
-import com.t7.seal.response.track.MentorAssignmentResponse;
-import com.t7.seal.response.track.TrackDetailResponse;
-import com.t7.seal.response.track.TrackResponse;
-import com.t7.seal.response.track.TrackTeamProgressResponse;
+import com.t7.seal.response.track.*;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.TrackService;
 import lombok.RequiredArgsConstructor;
@@ -237,45 +234,18 @@ public class TrackServiceImpl implements TrackService {
         );
     }
 
-    @Transactional
     @Override
-    public TeamResponse registerTeamForTrack(
-            UUID teamId,
-            RegisterTeamTrackRequest request,
-            Authentication authentication
-    ) {
-        User currentUser = currentUserService.getCurrentUser(authentication);
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new NotFoundException("Team not found " + teamId));
-        Track track = findTrack(request.trackId());
+    public List<TrackAvailabilityResponse> getAvailableTracks(UUID eventId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
 
-        if (team.getLeader() == null || !team.getLeader().getId().equals(currentUser.getId())) {
-            throw new UnauthorizedException("Only the team leader can register the team for a track.");
-        }
+        HackathonEvent event = hackathonEventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
-        if (!team.isForming()) {
-            throw new ConflictException("Only forming teams can register for a track.");
-        }
 
-        if (team.getTrack() != null) {
-            throw new ConflictException("Team is already registered to a track.");
-        }
-
-        if (track.getEvent() == null || track.getEvent().getStatus() != RegistrationStatus.REGISTRATION) {
-            throw new ConflictException("Track registration is only open while the event is in REGISTRATION status.");
-        }
-
-        Integer maxTeams = track.getMaxTeams();
-        if (maxTeams != null && teamRepository.CountActiveTeamByTrackId(track.getId()) >= maxTeams) {
-            throw new ConflictException("Track has reached its team limit.");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        team.setTrack(track);
-        team.register(now);
-        team.setUpdatedAt(now);
-
-        return toTeamResponse(teamRepository.save(team));
+        return trackRepository.findByEventIdOrderByNameAsc(eventId)
+                .stream()
+                .map(this::toTrackAvailabilityResponse)
+                .toList();
     }
 
     //HELPERS
@@ -395,6 +365,29 @@ public class TrackServiceImpl implements TrackService {
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
                 team.getMemberCount() == null ? 0 : team.getMemberCount()
+        );
+    }
+
+
+    private TrackAvailabilityResponse toTrackAvailabilityResponse(Track track) {
+        int registeredCount = teamRepository.CountActiveTeamByTrackId(track.getId());
+        Long remainingSlots = track.getMaxTeams() == null
+                ? null
+                : Math.max(0L, track.getMaxTeams() - (long) registeredCount);
+        boolean full = track.getMaxTeams() != null && registeredCount >= track.getMaxTeams();
+
+        return new TrackAvailabilityResponse(
+                track.getId(),
+                track.getEvent().getId(),
+                track.getName(),
+                track.getDescription(),
+                track.getMinMembers(),
+                track.getMaxMembers(),
+                track.getMaxTeams(),
+                registeredCount,
+                remainingSlots,
+                full,
+                track.getRequiredLinkTypes()
         );
     }
 }

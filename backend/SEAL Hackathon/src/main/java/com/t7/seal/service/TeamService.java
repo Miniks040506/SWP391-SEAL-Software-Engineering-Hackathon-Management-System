@@ -1,6 +1,7 @@
 package com.t7.seal.service;
 
 import com.t7.seal.request.team.*;
+import com.t7.seal.request.track.RegisterTeamTrackRequest;
 import com.t7.seal.response.team.*;
 import org.springframework.security.core.Authentication;
 
@@ -49,4 +50,6 @@ public interface TeamService {
     void leaveTeam(UUID teamId, ReasonRequest request, Authentication authentication);
 
     TeamResponse toggleJoinCode(UUID teamId, ToggleJoinCodeRequest request, Authentication authentication);
+
+    TeamResponse registerTeamForTrack(UUID teamId, RegisterTeamTrackRequest request, Authentication authentication);
 }
