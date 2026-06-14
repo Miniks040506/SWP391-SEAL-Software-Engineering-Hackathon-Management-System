@@ -15,7 +15,7 @@ import type {
 
 import { mockTeamService } from "../mocks/participantTeams.mock";
 
-const USE_MOCK_TEAMS = false;
+const USE_MOCK_TEAMS = true;
 
 export const participantTeamQueryKeys = {
   myTeams: ["participant-my-teams"] as const,
