@@ -1,25 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import type { UUID } from "@/types/common.types";
-import { mockMentorTeams } from "../mocks/mentorTeams.mock";
 
-const USE_MOCK = true;
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import type { UUID } from "@/types/common.types";
+import { apiRequest } from "@/api/apiRequest"; 
+import { mockMentorTeamService, type MentorTeamSummary } from "../mocks/mentorTeams.mock";
+
+const USE_MOCK_TEAMS = true;
+
+const apiMentorTeamService = {
+  getTeamsByTrack(trackId: UUID) {
+    return apiRequest.get<MentorTeamSummary[]>(`/mentor/tracks/${trackId}/teams`);
+  },
+};
+
+const activeMentorTeamService = USE_MOCK_TEAMS ? mockMentorTeamService : apiMentorTeamService;
 
 export function useMentorTeams(trackId?: UUID | string) {
   const navigate = useNavigate();
 
   const trackTeamsQuery = useQuery({
     queryKey: ["mentor-track-teams", trackId],
-    queryFn: async () => {
-      if (USE_MOCK) {
-        await delay(500);
-        return { data: mockMentorTeams };
-      }
-      // Khi có BE, bạn có thể gọi: return teamApi.getTeamsByTrack(trackId);
-      return { data: [] }; 
-    },
-    enabled: USE_MOCK || !!trackId,
+    queryFn: () => activeMentorTeamService.getTeamsByTrack(trackId as UUID),
+    enabled: Boolean(trackId),
     staleTime: 60_000,
   });
 
