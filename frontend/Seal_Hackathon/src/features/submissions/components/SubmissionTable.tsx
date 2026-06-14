@@ -48,7 +48,7 @@ export function SubmissionTable({ submissions, loading }: Props) {
                 <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{sub.teamName}</div>
                 {(sub as any).projectTitle && (
                   <div 
-                    className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[250px]" 
+                    className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-62.5" 
                     title={(sub as any).projectTitle}
                   >
                     Project: {(sub as any).projectTitle}

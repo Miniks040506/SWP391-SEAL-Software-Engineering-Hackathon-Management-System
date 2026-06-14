@@ -28,6 +28,7 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsViewingTeam(false);
     setTeamDetail(null);
   }, [submissionId]);
@@ -59,10 +60,10 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
   return (
     <>
       <div
-        className="fixed inset-0 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm z-[60] transition-opacity"
+        className="fixed inset-0 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm z-60 transition-opacity"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 w-full md:w-150 bg-white dark:bg-slate-900 shadow-2xl z-[70] overflow-y-auto transform transition-transform flex flex-col border-l border-slate-200 dark:border-slate-800">
+      <div className="fixed inset-y-0 right-0 w-full md:w-150 bg-white dark:bg-slate-900 shadow-2xl z-70 overflow-y-auto transform transition-transform flex flex-col border-l border-slate-200 dark:border-slate-800">
         <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900 sticky top-0 z-10">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">
             {isViewingTeam ? "Team Details" : "Submission Details"}
