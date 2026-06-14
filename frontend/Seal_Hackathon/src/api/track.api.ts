@@ -8,6 +8,7 @@ import type {
   RegisterTeamTrackRequest,
   TrackDetailResponse,
   TrackResponse,
+  TrackAvailabilityResponse,
   TrackTeamProgressResponse,
   UpdateTrackRequest,
 } from "@/types/track.types";
@@ -55,7 +56,7 @@ export const trackApi = {
   getTrackTeams(trackId: UUID, params?: { page?: number; size?: number }) {
     return apiRequest.get<PageResponse<TrackTeamProgressResponse>>(
       `/tracks/${trackId}/teams`,
-      {params},
+      { params },
     );
   },
 
@@ -63,6 +64,12 @@ export const trackApi = {
     return apiRequest.post<TeamResponse>(
       `/teams/${teamId}/register-track`,
       payload,
+    );
+  },
+
+  getAvailableTracks(eventId: UUID) {
+    return apiRequest.get<TrackAvailabilityResponse[]>(
+      `/events/${eventId}/tracks/available`,
     );
   },
 };
