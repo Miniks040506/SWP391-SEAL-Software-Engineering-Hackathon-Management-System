@@ -42,7 +42,12 @@ import {
   CoordinatorAnnouncementPage,
 } from "@/features/coordinator";
 
-import { CreateTeamPage, MyTeamsPage, TeamDetailPage } from "@/features/teams";
+import { 
+  CreateTeamPage, 
+  MyTeamsPage, 
+  TeamDetailPage,
+  MyInvitationsPage,
+} from "@/features/teams";
 
 import { CoordinatorUsersPage } from "@/features/coordinator/pages/CoordinatorUsersPage";
 
@@ -92,6 +97,7 @@ export const router = createBrowserRouter([
       { path: "teams", element: <MyTeamsPage /> },
       { path: "teams/create", element: <CreateTeamPage /> },
       { path: "teams/:teamId", element: <TeamDetailPage /> },
+      { path: "invitations", element: <MyInvitationsPage /> },
       { path: "teams/:teamId/submissions", element: <ParticipantSubmissionsPage /> },
       { path: "teams/:teamId/rounds/:roundId/submission", element: <SubmissionFormPage /> },
     ],
