@@ -35,4 +35,13 @@ public interface EmailService {
             String inviteeEmail,
             String manageInvitationsUrl
     );
+
+    void sendTeamRegisterEmail(
+            String leaderEmail,
+            List<String> cc,
+            String leaderName,
+            String teamName,
+            String eventName,
+            String trackName
+    );
 }

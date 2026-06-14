@@ -7,11 +7,9 @@ import com.t7.seal.request.track.RegisterTeamTrackRequest;
 import com.t7.seal.request.track.UpdateTrackRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.team.TeamResponse;
-import com.t7.seal.response.track.MentorAssignmentResponse;
-import com.t7.seal.response.track.TrackDetailResponse;
-import com.t7.seal.response.track.TrackResponse;
-import com.t7.seal.response.track.TrackTeamProgressResponse;
+import com.t7.seal.response.track.*;
 import com.t7.seal.service.MentorAssignmentService;
+import com.t7.seal.service.TeamService;
 import com.t7.seal.service.TrackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +29,7 @@ public class TrackController {
 
     private final TrackService trackService;
     private final MentorAssignmentService mentorAssignmentService;
-//    private final TeamService teamService;
+    private final TeamService teamService;
 
     @PreAuthorize("@eventSecurity.canCreateTrack(#eventId, authentication)")
     @PostMapping("/events/{eventId}/tracks")
@@ -120,12 +118,21 @@ public class TrackController {
         return ResponseEntity.ok(trackService.getTrackTeams(trackId, page, size, authentication));
     }
 
+    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/teams/{teamId}/register-track")
     public ResponseEntity<TeamResponse> registerTeamForTrack(
             @PathVariable UUID teamId,
             @Valid @RequestBody RegisterTeamTrackRequest request,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(trackService.registerTeamForTrack(teamId, request, authentication));
+        return ResponseEntity.ok(teamService.registerTeamForTrack(teamId, request, authentication));
+    }
+
+    @GetMapping("/events/{eventId}/tracks/available")
+    public ResponseEntity<List<TrackAvailabilityResponse>> getAvailableTracks(
+            @PathVariable UUID eventId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(trackService.getAvailableTracks(eventId, authentication));
     }
 }

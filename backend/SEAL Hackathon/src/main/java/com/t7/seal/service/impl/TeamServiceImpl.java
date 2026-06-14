@@ -1,28 +1,12 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.domain.InvitationStatus;
-import com.t7.seal.domain.LeftReason;
-import com.t7.seal.domain.MemberRole;
-import com.t7.seal.domain.NotificationChannel;
-import com.t7.seal.domain.NotificationStatus;
-import com.t7.seal.domain.NotificationTargetScope;
-import com.t7.seal.domain.NotificationType;
-import com.t7.seal.domain.TeamStatus;
-import com.t7.seal.entities.Notification;
-import com.t7.seal.entities.Team;
-import com.t7.seal.entities.TeamInvitation;
-import com.t7.seal.entities.TeamMember;
-import com.t7.seal.entities.User;
+import com.t7.seal.domain.*;
+import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
-import com.t7.seal.repository.NotificationRepository;
-import com.t7.seal.repository.StudentProfileRepository;
-import com.t7.seal.repository.TeamInvitationRepository;
-import com.t7.seal.repository.TeamMemberRepository;
-import com.t7.seal.repository.TeamRepository;
-import com.t7.seal.repository.UserRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.team.CreateTeamRequest;
 import com.t7.seal.request.team.InviteMemberRequest;
 import com.t7.seal.request.team.JoinTeamByCodeRequest;
@@ -30,6 +14,7 @@ import com.t7.seal.request.team.ReasonRequest;
 import com.t7.seal.request.team.ToggleJoinCodeRequest;
 import com.t7.seal.request.team.TransferLeaderRequest;
 import com.t7.seal.request.team.UpdateTeamRequest;
+import com.t7.seal.request.track.RegisterTeamTrackRequest;
 import com.t7.seal.response.team.TeamDetailResponse;
 import com.t7.seal.response.team.TeamInvitationResponse;
 import com.t7.seal.response.team.TeamJoinCodePreviewResponse;
@@ -49,10 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -69,6 +51,9 @@ public class TeamServiceImpl implements TeamService {
     private final UserRepository userRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final NotificationRepository notificationRepository;
+    private final TrackRepository trackRepository;
+    private final AuditLogRepository auditLogRepository;
+
     private final CurrentUserService currentUserService;
     private final EmailService emailService;
 
@@ -442,6 +427,111 @@ public class TeamServiceImpl implements TeamService {
         team.setJoinCodeEnabled(request.enabled());
         team.setUpdatedAt(LocalDateTime.now());
         return toTeamResponse(teamRepository.save(team));
+    }
+
+    @Transactional
+    @Override
+    public TeamResponse registerTeamForTrack(UUID teamId, RegisterTeamTrackRequest request, Authentication authentication) {
+        if (request == null || request.trackId() == null) {
+            throw new BadRequestException("trackId is required.");
+        }
+
+        User leader = currentUserService.getCurrentUser(authentication);
+        Team team = getTeam(teamId);
+
+        ensureActiveStudent(leader);
+        ensureTeamLeader(team, authentication);
+        ensureTeamEditable(team);
+
+        if (team.getTrack() != null && team.getRegisteredAt() != null) {
+            throw new ConflictException("Track is already registered for this team.");
+        }
+
+        Track track = trackRepository.findById(request.trackId())
+                .orElseThrow(() -> new NotFoundException("Track not found."));
+        HackathonEvent event = track.getEvent();
+
+        if (event == null) {
+            throw new ConflictException("Track is not registered for any event.");
+        }
+
+        if (!event.isRegistrationWindowOpen(LocalDateTime.now())) {
+            throw new ConflictException("Registration window is not open.");
+        }
+
+        List<TeamMember> teamMembers = activeMembers(team.getId());
+        int memberCount = teamMembers.size();
+
+        if (!track.isMemberCountAllowed(memberCount)) {
+            throw new ConflictException("Team member count must be between "
+                    + track.getMinMembers() + " and " + track.getMaxMembers() + ".");
+        }
+
+        List<String> inactiveMembers = teamMembers.stream()
+                .map(TeamMember::getUser)
+                .filter(u -> u == null || !u.isActive())
+                .map(user -> user == null ? "Unknown member" : user.getEmail())
+                .toList();
+
+        if (!inactiveMembers.isEmpty()) {
+            throw new ConflictException("The following members are not active: "
+                    + String.join(", ", inactiveMembers)
+                    + ". All team members must be active before track registration.");
+        }
+
+        for (TeamMember member : teamMembers) {
+            if (teamMemberRepository
+                    .existsActiveRegisteredMembershipInEvent(member.getUser().getId(),
+                            team.getId(), event.getId())) {
+                throw new ConflictException(member.getUser().getEmail()
+                        + " is already active in another registered team for this event.");
+            }
+        }
+
+        int registeredCount = teamRepository.CountActiveTeamByTrackId(track.getId());
+
+        if (track.getMaxTeams() != null && registeredCount >= track.getMaxTeams()) {
+            throw new ConflictException("Maximum number of teams for this track has been reached.");
+        }
+
+        team.setTrack(track);
+        team.register(LocalDateTime.now());
+        team.setUpdatedAt(LocalDateTime.now());
+
+        Team teamSaved = teamRepository.save(team);
+
+        auditLogRepository.save(AuditLog.builder()
+                .actor(leader)
+                .actionType(AuditActionType.TEAM_REGISTERED)
+                .targetTable("teams")
+                .targetId(teamSaved.getId())
+                .afterState(Map.of(
+                        "eventId", event.getId().toString(),
+                        "trackId", track.getId().toString(),
+                        "status", teamSaved.getStatus().name(),
+                        "memberCount", memberCount
+                ))
+                .build()
+        );
+
+        notificationRepository.save(Notification.builder()
+                .event(event)
+                .createdBy(leader)
+                .type(NotificationType.TEAM_REGISTERED)
+                .title("Team registered to track")
+                .body("Team " + team.getName() + " has been registered for track " + track.getName() + ".")
+                .targetScope(NotificationTargetScope.TEAM)
+                .targetId(teamSaved.getId())
+                .channel(NotificationChannel.BOTH)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(memberCount)
+                .build()
+        );
+
+        sendTeamRegisterEmailSafely(teamSaved, teamMembers, event, track);
+
+        return toTeamResponse(teamSaved);
     }
 
     //HELPERS
@@ -916,6 +1006,35 @@ public class TeamServiceImpl implements TeamService {
     private void ensureTeamEditable(Team team) {
         if (team.getStatus() != TeamStatus.FORMING) {
             throw new BadRequestException("Team is not in forming status.");
+        }
+    }
+
+    private void sendTeamRegisterEmailSafely(
+            Team team, List<TeamMember> members, HackathonEvent event, Track track
+    ) {
+        try {
+            User leader = team.getLeader();
+
+            List<String> cc = members.stream()
+                    .map(TeamMember::getUser)
+                    .filter(user -> user != null && user.getEmail() != null)
+                    .filter(user -> leader == null || !user.getId().equals(leader.getId()))
+                    .map(User::getEmail)
+                    .distinct()
+                    .toList();
+            if (leader != null && leader.getEmail() != null) {
+                emailService.sendTeamRegisterEmail(
+                        leader.getEmail(),
+                        cc,
+                        leader.getFullName(),
+                        team.getName(),
+                        event.getName(),
+                        track.getName()
+                );
+            }
+        } catch (RuntimeException ex) {
+            //TODO
+            ex.printStackTrace();
         }
     }
 }

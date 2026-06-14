@@ -17,5 +17,6 @@ public enum NotificationType {
     EMAIL_VERIFY,
     PASSWORD_RESET,
     MENTOR_FEEDBACK,
-    GENERAL
+    TEAM_REGISTERED,
+    GENERAL,
 }

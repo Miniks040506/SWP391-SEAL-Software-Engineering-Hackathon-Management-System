@@ -39,29 +39,29 @@ public class EmailServiceImpl implements EmailService {
                 "Email Verification",
                 "Complete your SEAL registration",
                 """
-                <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
-                    Hello <strong>%s</strong>,
-                </p>
-
-                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                    Welcome to <strong>SEAL Hackathon System</strong>. Use the verification code below to confirm your email address.
-                </p>
-
-                <div style="margin:26px 0;text-align:center;">
-                    <div style="display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:18px;padding:18px 30px;">
-                        <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;color:#2563eb;text-transform:uppercase;margin-bottom:8px;">
-                            Verification Code
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+                        
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            Welcome to <strong>SEAL Hackathon System</strong>. Use the verification code below to confirm your email address.
+                        </p>
+                        
+                        <div style="margin:26px 0;text-align:center;">
+                            <div style="display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:18px;padding:18px 30px;">
+                                <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;color:#2563eb;text-transform:uppercase;margin-bottom:8px;">
+                                    Verification Code
+                                </div>
+                                <div style="font-size:34px;font-weight:900;letter-spacing:0.28em;color:#0f172a;font-family:Arial,Helvetica,sans-serif;">
+                                    %s
+                                </div>
+                            </div>
                         </div>
-                        <div style="font-size:34px;font-weight:900;letter-spacing:0.28em;color:#0f172a;font-family:Arial,Helvetica,sans-serif;">
-                            %s
-                        </div>
-                    </div>
-                </div>
-
-                <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
-                    This code expires in <strong>%d minutes</strong>. If you did not create a SEAL account, you can safely ignore this email.
-                </p>
-                """.formatted(safeName, escapeHtml(code), expiresInMinutes)
+                        
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            This code expires in <strong>%d minutes</strong>. If you did not create a SEAL account, you can safely ignore this email.
+                        </p>
+                        """.formatted(safeName, escapeHtml(code), expiresInMinutes)
         );
 
         sendHtml(to, appName + " - Email Verification Code", html);
@@ -80,29 +80,29 @@ public class EmailServiceImpl implements EmailService {
                 "Password Reset",
                 "Secure your SEAL account",
                 """
-                <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
-                    Hello <strong>%s</strong>,
-                </p>
-
-                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                    We received a request to reset your SEAL account password. Use the code below to continue.
-                </p>
-
-                <div style="margin:26px 0;text-align:center;">
-                    <div style="display:inline-block;background:#fff7ed;border:1px solid #fed7aa;border-radius:18px;padding:18px 30px;">
-                        <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;color:#ea580c;text-transform:uppercase;margin-bottom:8px;">
-                            Reset Code
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+                        
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            We received a request to reset your SEAL account password. Use the code below to continue.
+                        </p>
+                        
+                        <div style="margin:26px 0;text-align:center;">
+                            <div style="display:inline-block;background:#fff7ed;border:1px solid #fed7aa;border-radius:18px;padding:18px 30px;">
+                                <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;color:#ea580c;text-transform:uppercase;margin-bottom:8px;">
+                                    Reset Code
+                                </div>
+                                <div style="font-size:34px;font-weight:900;letter-spacing:0.28em;color:#0f172a;font-family:Arial,Helvetica,sans-serif;">
+                                    %s
+                                </div>
+                            </div>
                         </div>
-                        <div style="font-size:34px;font-weight:900;letter-spacing:0.28em;color:#0f172a;font-family:Arial,Helvetica,sans-serif;">
-                            %s
-                        </div>
-                    </div>
-                </div>
-
-                <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
-                    This reset code expires in <strong>%d minutes</strong>. If you did not request this reset, please ignore this email.
-                </p>
-                """.formatted(safeName, escapeHtml(code), expiresInMinutes)
+                        
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            This reset code expires in <strong>%d minutes</strong>. If you did not request this reset, please ignore this email.
+                        </p>
+                        """.formatted(safeName, escapeHtml(code), expiresInMinutes)
         );
 
         sendHtml(to, appName + " - Password Reset Code", html);
@@ -123,42 +123,42 @@ public class EmailServiceImpl implements EmailService {
                 "Welcome to SEAL",
                 "Your SEAL account was accessed securely",
                 """
-                <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
-                    Hello <strong>%s</strong>,
-                </p>
-
-                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                    Your SEAL account has just been signed in successfully using <strong>%s</strong>.
-                </p>
-
-                <div style="margin:24px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:18px;">
-                    <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-                        <tr>
-                            <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:700;">Provider</td>
-                            <td style="padding:8px 0;color:#0f172a;font-size:13px;font-weight:800;text-align:right;">%s</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:700;">Email</td>
-                            <td style="padding:8px 0;color:#0f172a;font-size:13px;font-weight:800;text-align:right;">%s</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:700;">Time</td>
-                            <td style="padding:8px 0;color:#0f172a;font-size:13px;font-weight:800;text-align:right;">%s</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <p style="margin:0 0 18px;color:#475569;font-size:15px;line-height:1.7;">
-                    If this was you, no further action is needed. If you did not perform this login, please change your password or contact the SEAL support team immediately.
-                </p>
-
-                <div style="text-align:center;margin-top:28px;">
-                    <a href="%s"
-                       style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
-                        Open SEAL Portal
-                    </a>
-                </div>
-                """.formatted(
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+                        
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            Your SEAL account has just been signed in successfully using <strong>%s</strong>.
+                        </p>
+                        
+                        <div style="margin:24px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:18px;">
+                            <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:700;">Provider</td>
+                                    <td style="padding:8px 0;color:#0f172a;font-size:13px;font-weight:800;text-align:right;">%s</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:700;">Email</td>
+                                    <td style="padding:8px 0;color:#0f172a;font-size:13px;font-weight:800;text-align:right;">%s</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:700;">Time</td>
+                                    <td style="padding:8px 0;color:#0f172a;font-size:13px;font-weight:800;text-align:right;">%s</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <p style="margin:0 0 18px;color:#475569;font-size:15px;line-height:1.7;">
+                            If this was you, no further action is needed. If you did not perform this login, please change your password or contact the SEAL support team immediately.
+                        </p>
+                        
+                        <div style="text-align:center;margin-top:28px;">
+                            <a href="%s"
+                               style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                                Open SEAL Portal
+                            </a>
+                        </div>
+                        """.formatted(
                         safeName,
                         safeProvider,
                         safeProvider,
@@ -192,29 +192,29 @@ public class EmailServiceImpl implements EmailService {
                 "Team Invitation",
                 "You have been invited to join a SEAL team",
                 """
-                <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
-                    Hello <strong>%s</strong>,
-                </p>
-
-                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                    <strong>%s</strong> invited you to join team <strong>%s</strong>.
-                </p>
-
-                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                    This invitation expires at <strong>%s</strong>.
-                </p>
-
-                <div style="text-align:center;margin:28px 0;">
-                    <a href="%s"
-                       style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;margin:0 6px 10px;">
-                        Accept Invitation
-                    </a>
-                    <a href="%s"
-                       style="display:inline-block;background:#ef4444;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;margin:0 6px 10px;">
-                        Reject Invitation
-                    </a>
-                </div>
-                """.formatted(
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+                        
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            <strong>%s</strong> invited you to join team <strong>%s</strong>.
+                        </p>
+                        
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            This invitation expires at <strong>%s</strong>.
+                        </p>
+                        
+                        <div style="text-align:center;margin:28px 0;">
+                            <a href="%s"
+                               style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;margin:0 6px 10px;">
+                                Accept Invitation
+                            </a>
+                            <a href="%s"
+                               style="display:inline-block;background:#ef4444;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;margin:0 6px 10px;">
+                                Reject Invitation
+                            </a>
+                        </div>
+                        """.formatted(
                         safeInviteeName,
                         safeInvitedByName,
                         safeTeamName,
@@ -242,21 +242,21 @@ public class EmailServiceImpl implements EmailService {
                 "New Team Member",
                 "A team invitation was accepted",
                 """
-                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                    <strong>%s</strong> accepted the invitation to join team <strong>%s</strong>.
-                </p>
-
-                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                    The team roster has been updated.
-                </p>
-
-                <div style="text-align:center;margin-top:28px;">
-                    <a href="%s"
-                       style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
-                        Open Team
-                    </a>
-                </div>
-                """.formatted(
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            <strong>%s</strong> accepted the invitation to join team <strong>%s</strong>.
+                        </p>
+                        
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            The team roster has been updated.
+                        </p>
+                        
+                        <div style="text-align:center;margin-top:28px;">
+                            <a href="%s"
+                               style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                                Open Team
+                            </a>
+                        </div>
+                        """.formatted(
                         safeAcceptedMemberName,
                         safeTeamName,
                         escapeHtml(teamUrl)
@@ -280,21 +280,21 @@ public class EmailServiceImpl implements EmailService {
                 "Invitation Declined",
                 "A team invitation was declined",
                 """
-                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                    <strong>%s</strong> declined the invitation to join team <strong>%s</strong>.
-                </p>
-
-                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                    You can invite another member or review pending invitations from the team management page.
-                </p>
-
-                <div style="text-align:center;margin-top:28px;">
-                    <a href="%s"
-                       style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
-                        Open Team
-                    </a>
-                </div>
-                """.formatted(
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            <strong>%s</strong> declined the invitation to join team <strong>%s</strong>.
+                        </p>
+                        
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            You can invite another member or review pending invitations from the team management page.
+                        </p>
+                        
+                        <div style="text-align:center;margin-top:28px;">
+                            <a href="%s"
+                               style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                                Open Team
+                            </a>
+                        </div>
+                        """.formatted(
                         safeInviteeEmail,
                         safeTeamName,
                         escapeHtml(manageInvitationsUrl)
@@ -302,6 +302,11 @@ public class EmailServiceImpl implements EmailService {
         );
 
         sendHtml(to, appName + " - " + inviteeEmail + " declined invitation to " + teamName, html);
+    }
+
+    @Override
+    public void sendTeamRegisterEmail(String leaderEmail, List<String> cc, String leaderName, String teamName, String eventName, String trackName) {
+
     }
 
     private void sendHtml(String to, String subject, String html) {
@@ -344,13 +349,13 @@ public class EmailServiceImpl implements EmailService {
                     <div style="display:none;max-height:0;overflow:hidden;color:transparent;">
                         %s
                     </div>
-
+                
                     <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
                         <tr>
                             <td align="center">
                                 <table role="presentation" width="100%%" cellpadding="0" cellspacing="0"
                                        style="max-width:620px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 18px 45px rgba(15,23,42,0.08);">
-
+                
                                     <tr>
                                         <td style="background:linear-gradient(135deg,#2563eb,#3b82f6,#60a5fa);padding:34px 34px 30px;">
                                             <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
@@ -365,23 +370,23 @@ public class EmailServiceImpl implements EmailService {
                                                     </td>
                                                 </tr>
                                             </table>
-
+                
                                             <h1 style="margin:28px 0 8px;color:#ffffff;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.04em;">
                                                 %s
                                             </h1>
-
+                
                                             <p style="margin:0;color:#dbeafe;font-size:15px;line-height:1.6;font-weight:600;">
                                                 %s
                                             </p>
                                         </td>
                                     </tr>
-
+                
                                     <tr>
                                         <td style="padding:34px;">
                                             %s
                                         </td>
                                     </tr>
-
+                
                                     <tr>
                                         <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:26px 34px;">
                                             <p style="margin:0 0 8px;color:#0f172a;font-size:14px;font-weight:900;">

@@ -5,6 +5,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.team.TeamResponse;
 import com.t7.seal.request.track.CreateTrackRequest;
 import com.t7.seal.request.track.UpdateTrackRequest;
+import com.t7.seal.response.track.TrackAvailabilityResponse;
 import com.t7.seal.response.track.TrackDetailResponse;
 import com.t7.seal.response.track.TrackResponse;
 import com.t7.seal.response.track.TrackTeamProgressResponse;
@@ -26,5 +27,5 @@ public interface TrackService {
 
     PageResponse<TrackTeamProgressResponse> getTrackTeams(UUID trackId, int page, int size, Authentication authentication);
 
-    TeamResponse registerTeamForTrack(UUID teamId, RegisterTeamTrackRequest request, Authentication authentication);
+    List<TrackAvailabilityResponse> getAvailableTracks(UUID eventId, Authentication authentication);
 }
