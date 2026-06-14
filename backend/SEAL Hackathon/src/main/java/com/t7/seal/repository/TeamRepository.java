@@ -21,7 +21,7 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
     @Query("""
             SELECT COUNT(t) FROM Team t 
                         WHERE t.track.id = :trackId
-                                    AND CAST(t.status AS string) <> 'DELETED' 
+                                    AND CAST(t.status AS string) NOT IN 'FORMING'
             """)
     int CountActiveTeamByTrackId(
             @Param("trackId") UUID trackId);

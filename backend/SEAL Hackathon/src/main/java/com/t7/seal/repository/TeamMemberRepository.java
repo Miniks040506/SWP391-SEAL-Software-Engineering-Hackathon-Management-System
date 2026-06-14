@@ -34,4 +34,21 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
             @Param("teamId") UUID teamId,
             @Param("trackId") UUID trackId
     );
+
+    @Query("""
+                SELECT CASE WHEN COUNT(tm) > 0 THEN TRUE ELSE FALSE END
+                    FROM TeamMember tm 
+                    JOIN tm.team otherTeam 
+                    JOIN otherTeam.track t
+                        WHERE tm.leftAt IS NULL 
+                        AND tm.user.id = :userId
+                        AND otherTeam.id <> :currentTeamId
+                        AND t.event.id = :eventId
+                        AND CAST(otherTeam.status AS STRING) NOT IN 'FORMING'
+            """)
+    boolean existsActiveRegisteredMembershipInEvent(
+            @Param("userId") UUID userId,
+            @Param("currentTeamId") UUID currentTeamId,
+            @Param("eventId") UUID eventId
+    );
 }
