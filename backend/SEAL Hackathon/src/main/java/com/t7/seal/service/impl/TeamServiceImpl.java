@@ -429,8 +429,13 @@ public class TeamServiceImpl implements TeamService {
         return toTeamResponse(teamRepository.save(team));
     }
 
+    @Transactional
     @Override
     public TeamResponse registerTeamForTrack(UUID teamId, RegisterTeamTrackRequest request, Authentication authentication) {
+        if (request == null || request.trackId() == null) {
+            throw new BadRequestException("trackId is required.");
+        }
+
         User leader = currentUserService.getCurrentUser(authentication);
         Team team = getTeam(teamId);
 
