@@ -9,6 +9,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.team.TeamResponse;
 import com.t7.seal.response.track.*;
 import com.t7.seal.service.MentorAssignmentService;
+import com.t7.seal.service.TeamService;
 import com.t7.seal.service.TrackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ public class TrackController {
 
     private final TrackService trackService;
     private final MentorAssignmentService mentorAssignmentService;
-//    private final TeamService teamService;
+    private final TeamService teamService;
 
     @PreAuthorize("@eventSecurity.canCreateTrack(#eventId, authentication)")
     @PostMapping("/events/{eventId}/tracks")
@@ -124,7 +125,7 @@ public class TrackController {
             @Valid @RequestBody RegisterTeamTrackRequest request,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(teamService.registerTeamToTrack(teamId, request, authentication));
+        return ResponseEntity.ok(teamService.registerTeamForTrack(teamId, request, authentication));
     }
 
     @GetMapping("/events/{eventId}/tracks/available")
@@ -132,6 +133,6 @@ public class TrackController {
             @PathVariable UUID eventId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(trackService.getAvailableTracks(eventId, authentication));
     }
 }
