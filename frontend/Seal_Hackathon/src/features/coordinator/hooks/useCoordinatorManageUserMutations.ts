@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { userApi } from "@/api/user.api";
+
 import type {
   AdminUserListParams,
   UpdateUserRequest,
+  CreateGuestJudgeRequest
 } from "@/types/user.types";
 
 const COORDINATOR_USERS_KEY = "coordinator-users";
@@ -69,5 +71,11 @@ export function useCoordinatorActivateUserMutation() {
       userApi.updateUser(userId, { status: "ACTIVE" }),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
+  });
+}
+
+export function useCreateGuestJudgeMutation() {
+  return useMutation({
+    mutationFn: (payload: CreateGuestJudgeRequest) => userApi.createGuestJudge(payload),
   });
 }
