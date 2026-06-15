@@ -506,6 +506,46 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         return mentorAssignmentRepository.existsByEventIdAndUserId(round.getEvent().getId(), judgeUserId);
     }
 
+    private void createJudgeAssignedNotification(RoundJudgeAssignment assignment, User assignedBy) {
+        notificationRepository.save(Notification.builder()
+                .event(assignment.getRound().getEvent())
+                .createdBy(assignedBy)
+                .type(NotificationType.JUDGE_ASSIGNED)
+                .title("Judge assignment")
+                .body(buildJudgeAssignedMessage(assignment))
+                .targetScope(NotificationTargetScope.SINGLE_USER)
+                .targetId(assignment.getJudge().getUser().getId())
+                .channel(NotificationChannel.BOTH)
+                .status(NotificationStatus.SENT)
+                .sentAt(LocalDateTime.now())
+                .recipientCount(1)
+                .build());
+    }
+
+    private void sendJudgeAssignedEmailSafely(RoundJudgeAssignment assignment) {
+        try {
+            User judgeUser = assignment.getJudge().getUser();
+            if (judgeUser != null && judgeUser.getEmail() != null) {
+                emailService.sendJudgeAssignedEmail(
+                        judgeUser.getEmail(),
+                        judgeUser.getFullName(),
+                        assignment.getRound().getEvent().getName(),
+                        assignment.getRound().getName(),
+                        assignment.getTrack() == null ? "All tracks" : assignment.getTrack().getName()
+                );
+            }
+        } catch (RuntimeException ex) {
+            log.warn("Failed to send judge assignment email for assignment {}", assignment.getId(), ex);
+        }
+    }
+
+    private String buildJudgeAssignedMessage(RoundJudgeAssignment assignment) {
+        String trackName = assignment.getTrack() == null ? "all tracks" : assignment.getTrack().getName();
+        return "You have been assigned to judge " + trackName
+                + " in round " + assignment.getRound().getName()
+                + " of " + assignment.getRound().getEvent().getName() + ".";
+    }
+
     private JudgeAssignmentResponse toResponse(RoundJudgeAssignment assignment) {
         return new JudgeAssignmentResponse(
                 assignment.getId(),
