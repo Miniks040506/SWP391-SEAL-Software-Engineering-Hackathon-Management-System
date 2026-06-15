@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSnackbar } from "notistack";
-import { MentorFeedbackList } from "../components/feedback/MentorFeedbackList";
+
+import { MentorGlobalFeedbackTable } from "../components/feedback/MentorGlobalFeedbackTable";
 import { MentorFeedbackDialog } from "../components/feedback/MentorFeedbackDialog";
+import { 
+  MentorGlobalFeedbackFilterBar, 
+  type MentorFeedbackFilters 
+} from "../components/feedback/MentorGlobalFeedbackFilterBar";
+
 import { 
   useMentorGlobalFeedbackQuery,
   useUpdateMentorFeedbackMutation,
@@ -15,6 +21,8 @@ import type { UUID } from "@/types/common.types";
 export const MentorGlobalFeedbackPage = () => {
   const { enqueueSnackbar } = useSnackbar();
 
+  const [filters, setFilters] = useState<MentorFeedbackFilters>({});
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFeedback, setEditingFeedback] = useState<MentorFeedbackResponse | null>(null);
 
@@ -24,8 +32,23 @@ export const MentorGlobalFeedbackPage = () => {
   const updateMutation = useUpdateMentorFeedbackMutation();
   const publishMutation = usePublishMentorFeedbackMutation();
   const deleteMutation = useDeleteMentorFeedbackMutation();
-
   const isMutating = updateMutation.isPending || publishMutation.isPending || deleteMutation.isPending;
+
+  const filteredFeedbacks = useMemo(() => {
+    return allFeedbacks.filter((fb) => {
+      const searchLower = filters.search?.toLowerCase() || "";
+      const matchSearch =
+        !searchLower ||
+        fb.teamName?.toLowerCase().includes(searchLower) ||
+        fb.content?.toLowerCase().includes(searchLower);
+
+      const matchCategory = !filters.category || fb.category === filters.category;
+
+      const matchVisibility = !filters.visibility || fb.visibility === filters.visibility;
+
+      return matchSearch && matchCategory && matchVisibility;
+    });
+  }, [allFeedbacks, filters]);
 
   const handleOpenEdit = (fb: MentorFeedbackResponse) => {
     setEditingFeedback(fb);
@@ -64,7 +87,7 @@ export const MentorGlobalFeedbackPage = () => {
 
   const handlePublish = (id: string) => {
     publishMutation.mutate(id as UUID, {
-      onSuccess: () => enqueueSnackbar("Feedback published! Team has been notified.", { variant: "success" }),
+      onSuccess: () => enqueueSnackbar("Feedback published!", { variant: "success" }),
       onError: () => enqueueSnackbar("Failed to publish feedback", { variant: "error" })
     });
   };
@@ -77,12 +100,17 @@ export const MentorGlobalFeedbackPage = () => {
             Global Feedback Management
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-            A centralized hub to review, edit, and publish all your drafted feedback across all submissions.
+            A centralized hub to review, edit, and publish all your drafted feedback.
           </p>
         </div>
 
-        <MentorFeedbackList
-          feedbacks={allFeedbacks}
+        <MentorGlobalFeedbackFilterBar
+          filters={filters}
+          onChange={setFilters}
+        />
+
+        <MentorGlobalFeedbackTable
+          feedbacks={filteredFeedbacks}
           isLoading={isLoading}
           onEdit={handleOpenEdit}
           onDelete={handleDelete}
