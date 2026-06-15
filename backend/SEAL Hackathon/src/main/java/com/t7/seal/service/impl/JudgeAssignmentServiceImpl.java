@@ -132,10 +132,19 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         assignment.setJudge(judge);
         assignment.setTrack(track);
         assignment.setAssignedBy(assignedBy);
-        assignment.setTotalToScore(request.totalToScore());
         assignment.setScoringProgress(0);
 
-        return toResponse(assignmentRepository.save(assignment));
+        Integer totalToScore = request.totalToScore();
+        if (totalToScore == null) {
+            totalToScore = Math.toIntExact(submissionRepository.count(assignedSubmissionSpecForSlot(round, track, null)));
+        }
+        assignment.setTotalToScore(totalToScore);
+
+        RoundJudgeAssignment saved = assignmentRepository.save(assignment);
+        createJudgeAssignedNotification(saved, assignedBy);
+        sendJudgeAssignedEmailSafely(saved);
+
+        return toResponse(saved);
     }
 
     @Override
