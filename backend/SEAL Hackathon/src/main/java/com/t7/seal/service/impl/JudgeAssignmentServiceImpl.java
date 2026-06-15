@@ -272,6 +272,56 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         return new PageResponse<>(List.of(), Math.max(page, 0), size, 0, 0, true);
     }
 
+    private JudgeSubmissionAssignmentResponse toJudgeSubmissionResponse(Submission submission, Judge judge) {
+        Team team = submission.getTeam();
+        Track track = team == null ? null : team.getTrack();
+        Round round = submission.getRound();
+        long criteriaCount = countCriteriaForRound(round);
+        long confirmedScoreCount = scoreRepository.countBySubmissionIdAndJudgeIdAndIsDraftFalse(submission.getId(), judge.getId());
+        String gradingStatus = resolveGradingStatus(round, criteriaCount, confirmedScoreCount);
+
+        return new JudgeSubmissionAssignmentResponse(
+                submission.getId(),
+                team == null ? null : team.getId(),
+                team == null ? null : team.getName(),
+                team == null ? null : team.getProjectTitle(),
+                track == null ? null : track.getId(),
+                track == null ? null : track.getName(),
+                round == null ? null : round.getId(),
+                round == null ? null : round.getName(),
+                submission.getStatus() == null ? null : submission.getStatus().name(),
+                submission.getSubmissionNumber(),
+                submission.getSubmittedAt(),
+                submission.getUpdatedAt(),
+                round != null && round.isSubmissionLocked(),
+                round == null ? null : round.getSubmissionLockedAt(),
+                confirmedScoreCount,
+                criteriaCount,
+                gradingStatus
+        );
+    }
+
+    private long countCriteriaForRound(Round round) {
+        if (round == null || round.getEvent() == null) {
+            return 0;
+        }
+        return eventCriteriaRepository
+                .findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
+                .stream()
+                .filter(criteria -> criteria.appliesToRound(round.getId()))
+                .count();
+    }
+
+    private String resolveGradingStatus(Round round, long criteriaCount, long confirmedScoreCount) {
+        if (criteriaCount > 0 && confirmedScoreCount >= criteriaCount) {
+            return "GRADED";
+        }
+        if (round != null && round.isSubmissionLocked()) {
+            return "READY";
+        }
+        return "PENDING";
+    }
+
     private Judge currentJudge(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
         if (!user.isJudge()) {
