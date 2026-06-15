@@ -10,10 +10,11 @@ import { JudgeDashboardPage } from "@/features/judge";
 
 import { 
   MentorDashboardPage,
-  MentorSubmissionPage,
-  MentorSubmissionDetailPage,
-  MentorFeedbackPage,
   MentorTeamsPage,
+  MentorTeamFeedbackPage,      
+  MentorGlobalFeedbackPage,  
+  MentorSubmissionPage,
+  MentorSubmissionDetailPage  
 } from "@/features/mentor";
 
 import {
@@ -200,14 +201,10 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <MentorDashboardPage /> },
       { path: "teams", element: <MentorTeamsPage /> },
-      { path: "teams/:teamId/feedback", element: <MentorFeedbackPage /> },
-      { path: "feedback", element: <NotFoundPage /> },
+      { path: "teams/:teamId/feedback", element: <MentorTeamFeedbackPage /> }, 
+      { path: "feedback", element: <MentorGlobalFeedbackPage /> }, 
       { path: "submissions", element: <MentorSubmissionPage /> },
-      { path: "submissions/:submissionId", element: <MentorSubmissionDetailPage /> },
-      { path: "notifications", element: <NotFoundPage /> },
-      { path: "profile", element: <PersonalProfilePage /> },
-      { path: "settings", element: <NotFoundPage /> },
-      { path: "schedule", element: <NotFoundPage /> },
+      { path: "submissions/:submissionId", element: <MentorSubmissionDetailPage /> }, 
     ],
   },
 
