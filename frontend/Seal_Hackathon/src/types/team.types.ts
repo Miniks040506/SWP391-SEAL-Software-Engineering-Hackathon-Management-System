@@ -130,10 +130,63 @@ export type TeamJoinCodePreviewResponse = {
   joinCodeEnabled: boolean;
 };
 
-// added
+export type CoordinatorTeamSubmissionProgressResponse = {
+  roundId?: UUID | null;
+  roundName?: string | null;
+  roundOrderIndex?: number | null;
+  roundStatus?: string | null;
+  submissionId?: UUID | null;
+  submissionStatus?: string | null;
+  submissionNumber?: number | null;
+  submittedAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
+  linkCount: number;
+  note?: string | null;
+};
+
+export type CoordinatorTeamMemberResponse = {
+  memberId: UUID;
+  userId?: UUID | null;
+  fullName?: string | null;
+  email?: string | null;
+  role?: TeamMemberRole | null;
+  userStatus?: string | null;
+  joinedAt?: ISODateTime | null;
+};
+
+export type CoordinatorTeamSummaryResponse = {
+  teamId: UUID;
+  teamName: string;
+  projectTitle?: string | null;
+  status?: TeamStatus | null;
+  eventId?: UUID | null;
+  eventName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  leaderId?: UUID | null;
+  leaderName?: string | null;
+  leaderEmail?: string | null;
+  memberCount: number;
+  submissionCount: number;
+  submittedSubmissionCount: number;
+  missingSubmissionCount: number;
+  latestSubmissionStatus?: string | null;
+  registeredAt?: ISODateTime | null;
+  createdAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
+};
+
+export type CoordinatorTeamDetailResponse = CoordinatorTeamSummaryResponse & {
+  description?: string | null;
+  joinCode?: string | null;
+  joinCodeEnabled: boolean;
+  members: CoordinatorTeamMemberResponse[];
+  submissions: CoordinatorTeamSubmissionProgressResponse[];
+};
+
 export type CoordinatorTeamListParams = {
-  trackId?: string;
-  eventId?: string;
+  trackId?: UUID;
+  eventId?: UUID;
   search?: string;
   status?: string;
   page?: number;
