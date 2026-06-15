@@ -9,10 +9,12 @@ import com.t7.seal.response.grading.AssignedSubmissionResponse;
 import com.t7.seal.response.grading.GradingSubmissionDetailResponse;
 import com.t7.seal.response.grading.ScoreResponse;
 import com.t7.seal.response.grading.ScoreSheetResponse;
+import com.t7.seal.service.JudgeAssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -21,22 +23,30 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/grading")
 public class GradingController {
+
+    private final JudgeAssignmentService judgeAssignmentService;
+
+    @PreAuthorize("hasRole('JUDGE')")
     @GetMapping("/rounds/{roundId}/assigned-submissions")
     public ResponseEntity<PageResponse<AssignedSubmissionResponse>> getAssignedSubmissions(
             @PathVariable("roundId") UUID roundId,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(judgeAssignmentService.getMyAssignedSubmissionsForGrading(
+                roundId, status, page, size, authentication
+        ));
     }
 
+    @PreAuthorize("hasRole('JUDGE')")
     @GetMapping("/submissions/{submissionId}")
     public ResponseEntity<GradingSubmissionDetailResponse> getSubmissionForGrading(
             @PathVariable("submissionId") UUID submissionId,
-            @Valid @RequestBody GradingSubmissionDetailResponse request
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(judgeAssignmentService.getMySubmissionDetail(submissionId, authentication));
     }
 
     @GetMapping("/submissions/{submissionId}/scores")
