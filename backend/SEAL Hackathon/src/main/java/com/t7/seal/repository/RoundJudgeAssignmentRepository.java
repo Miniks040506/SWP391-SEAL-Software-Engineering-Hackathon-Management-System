@@ -64,4 +64,34 @@ public interface RoundJudgeAssignmentRepository extends JpaRepository<RoundJudge
             @Param("eventId") UUID eventId,
             @Param("trackId") UUID trackId
     );
+
+    @Query("""
+            SELECT rja
+            FROM RoundJudgeAssignment rja
+            JOIN FETCH rja.round r
+            JOIN FETCH r.event e
+            JOIN FETCH rja.judge j
+            JOIN FETCH j.user u
+            LEFT JOIN FETCH rja.track t
+            WHERE j.id = :judgeId
+            ORDER BY r.orderIndex ASC, t.name ASC
+            """)
+    List<RoundJudgeAssignment> findByJudgeIdWithRoundAndTrack(@Param("judgeId") UUID judgeId);
+
+    @Query("""
+            SELECT rja
+            FROM RoundJudgeAssignment rja
+            JOIN FETCH rja.round r
+            JOIN FETCH r.event e
+            JOIN FETCH rja.judge j
+            JOIN FETCH j.user u
+            LEFT JOIN FETCH rja.track t
+            WHERE j.id = :judgeId
+              AND r.id = :roundId
+            ORDER BY t.name ASC
+            """)
+    List<RoundJudgeAssignment> findByJudgeIdAndRoundIdWithRoundAndTrack(
+            @Param("judgeId") UUID judgeId,
+            @Param("roundId") UUID roundId
+    );
 }
