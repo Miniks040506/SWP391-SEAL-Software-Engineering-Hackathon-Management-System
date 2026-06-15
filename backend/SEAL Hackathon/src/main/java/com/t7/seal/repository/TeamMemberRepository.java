@@ -44,7 +44,7 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
                         AND tm.user.id = :userId
                         AND otherTeam.id <> :currentTeamId
                         AND t.event.id = :eventId
-                        AND CAST(otherTeam.status AS STRING) NOT IN 'FORMING'
+                        AND CAST(otherTeam.status AS STRING) NOT IN ('FORMING')
             """)
     boolean existsActiveRegisteredMembershipInEvent(
             @Param("userId") UUID userId,
