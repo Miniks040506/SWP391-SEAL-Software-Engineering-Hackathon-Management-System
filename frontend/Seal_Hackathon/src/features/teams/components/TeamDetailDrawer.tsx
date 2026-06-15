@@ -199,13 +199,15 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                     TEAM OVERVIEW
                   </h3>
 
-                  <span
-                    className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getTeamStatusColor(
-                      detail.status,
-                    )}`}
-                  >
-                    {detail.status}
-                  </span>
+                  {detail.status && (
+                    <span
+                      className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getTeamStatusColor(
+                        detail.status,
+                      )}`}
+                    >
+                      {detail.status}
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-5">
@@ -214,7 +216,7 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                       Team Name
                     </p>
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                      {detail.name}
+                      {detail.teamName}
                     </p>
                   </div>
 
@@ -223,7 +225,7 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                       Leader
                     </p>
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                      {detail.leaderName || detail.members?.find(m => m.memberRole === 'LEADER')?.fullName || "—"}
+                      {detail.leaderName || detail.members?.find((m) => m.role === "LEADER")?.fullName || "Unassigned"}
                     </p>
                   </div>
 
@@ -260,7 +262,7 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                   <ul className="space-y-2">
                     {detail.members.map((member) => (
                       <li
-                        key={member.userId}
+                        key={member.memberId}
                         className="flex items-start justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50"
                       >
                         <div>
@@ -274,7 +276,7 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                         </div>
 
                         <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 uppercase">
-                          {member.memberRole}
+                          {member.role || "MEMBER"}
                         </span>
                       </li>
                     ))}
