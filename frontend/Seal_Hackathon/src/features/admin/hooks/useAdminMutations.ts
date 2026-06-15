@@ -37,6 +37,14 @@ export function useCreateUserMutation() {
   });
 }
 
+export function useCreateGuestJudgeMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: userApi.createGuestJudge,
+    onSuccess: () => qc.invalidateQueries({ queryKey: [ADMIN_USERS_KEY] }),
+  });
+}
+
 export function useUpdateUserMutation() {
   const qc = useQueryClient();
   return useMutation({

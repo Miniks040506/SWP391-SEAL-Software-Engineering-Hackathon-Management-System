@@ -44,22 +44,22 @@ export function SubmissionTable({
       <table className="min-w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-3/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Team
             </th>
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-3/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Round / Track
             </th>
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-2/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Status
             </th>
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-2/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Submitted At
             </th>
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-1/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               #
             </th>
-            <th className="px-6 py-5 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-1/12 px-6 py-5 text-right pr-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Actions
             </th>
           </tr>
@@ -114,7 +114,7 @@ export function SubmissionTable({
               <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
                 {sub.submissionNumber}
               </td>
-              <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+              <td className="px-6 py-5 whitespace-nowrap text-right pr-6 text-sm font-medium">
                 <button
                   onClick={() => navigate(`/coordinator/submissions/${sub.id}`)}
                   className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-white dark:bg-transparent border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-sm px-4 py-2 rounded-lg transition-all"
