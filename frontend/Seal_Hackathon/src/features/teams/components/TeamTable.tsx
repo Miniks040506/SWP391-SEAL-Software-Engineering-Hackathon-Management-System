@@ -72,26 +72,57 @@ export function TeamTable({ teams, loading }: Props) {
                 <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   {team.teamName}
                 </div>
-                <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-mono">
-                  ID: {team.teamId.substring(0, 8)}...
-                </div>
+                {team.projectTitle && (
+                  <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                    {team.projectTitle}
+                  </div>
+                )}
               </td>
               <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
-                {team.leaderName}
+                <div>{team.leaderName || "Unassigned"}</div>
+                {team.leaderEmail && (
+                  <div className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                    {team.leaderEmail}
+                  </div>
+                )}
+              </td>
+              <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
+                {team.trackName || "No track"}
               </td>
               <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
                 {team.memberCount}
               </td>
               <td className="px-6 py-5 whitespace-nowrap">
-                {team.latestSubmissionStatus ? (
+                {team.status ? (
                   <span
-                    className={`px-3 py-1.5 inline-flex text-xs font-bold rounded-lg border ${getSubmissionStatusColor(team.latestSubmissionStatus)}`}
+                    className={`px-3 py-1.5 inline-flex text-xs font-bold rounded-lg border ${getTeamStatusColor(team.status)}`}
                   >
-                    {team.latestSubmissionStatus}
+                    {team.status}
                   </span>
                 ) : (
-                  <span className="text-xs text-slate-400 italic">No Submission</span>
+                  <span className="text-xs text-slate-400 italic">Unknown</span>
                 )}
+              </td>
+              <td className="px-6 py-5 whitespace-nowrap">
+                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  {team.submittedSubmissionCount}/{team.submittedSubmissionCount + team.missingSubmissionCount} submitted
+                </div>
+                <div className="mt-1 flex items-center gap-2">
+                  {team.latestSubmissionStatus ? (
+                    <span
+                      className={`px-2 py-0.5 inline-flex text-[11px] font-bold rounded-md border ${getSubmissionStatusColor(team.latestSubmissionStatus)}`}
+                    >
+                      {team.latestSubmissionStatus}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400 italic">No submission</span>
+                  )}
+                  {team.missingSubmissionCount > 0 && (
+                    <span className="text-xs text-rose-500 dark:text-rose-400">
+                      {team.missingSubmissionCount} missing
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
                 <button
