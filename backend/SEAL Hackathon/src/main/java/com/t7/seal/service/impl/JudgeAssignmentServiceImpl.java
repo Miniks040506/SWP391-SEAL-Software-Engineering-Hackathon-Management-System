@@ -238,6 +238,59 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         );
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public GradingSubmissionDetailResponse getMySubmissionDetail(UUID submissionId, Authentication authentication) {
+        Judge judge = currentJudge(authentication);
+        Submission submission = submissionRepository.findDetailById(submissionId)
+                .orElseThrow(() -> new NotFoundException("Submission not found."));
+
+        ensureJudgeCanViewSubmission(judge, submission);
+
+        Team team = submission.getTeam();
+        List<SubmissionLinkResponse> links = submissionLinkRepository
+                .findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(submission.getId())
+                .stream()
+                .map(this::toLinkResponse)
+                .toList();
+
+        List<EventCriteriaResponse> criteria = eventCriteriaRepository
+                .findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(submission.getRound().getEvent().getId())
+                .stream()
+                .filter(c -> c.appliesToRound(submission.getRound().getId()))
+                .map(this::toEventCriteriaResponse)
+                .toList();
+
+        return new GradingSubmissionDetailResponse(
+                submission.getId(),
+                team == null ? null : team.getName(),
+                team == null ? null : team.getProjectTitle(),
+                submission.getNote(),
+                links,
+                criteria
+        );
+    }
+
+    private void ensureJudgeCanViewSubmission(Judge judge, Submission submission) {
+        Team team = submission.getTeam();
+        Track track = team == null ? null : team.getTrack();
+        UUID trackId = track == null ? null : track.getId();
+        UUID roundId = submission.getRound() == null ? null : submission.getRound().getId();
+
+        boolean allowed = assignmentRepository
+                .findByJudgeIdAndRoundIdWithRoundAndTrack(judge.getId(), roundId)
+                .stream()
+                .anyMatch(assignment -> assignment.canScore(roundId, trackId));
+
+        if (!allowed) {
+            throw new UnauthorizedException("This submission is not assigned to you.");
+        }
+
+        if (!submission.isScorable()) {
+            throw new ConflictException("Only submitted or late submissions can be viewed by judges.");
+        }
+    }
+
     private List<RoundJudgeAssignment> findMyAssignments(Judge judge, UUID roundId) {
         if (roundId == null) {
             return assignmentRepository.findByJudgeIdWithRoundAndTrack(judge.getId());
