@@ -44,4 +44,12 @@ public interface EmailService {
             String eventName,
             String trackName
     );
+
+    void sendJudgeAssignedEmail(
+            String to,
+            String judgeName,
+            String eventName,
+            String roundName,
+            String trackName
+    );
 }

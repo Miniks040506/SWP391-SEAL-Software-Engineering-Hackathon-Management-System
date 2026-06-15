@@ -305,8 +305,109 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendTeamRegisterEmail(String leaderEmail, List<String> cc, String leaderName, String teamName, String eventName, String trackName) {
+    public void sendTeamRegisterEmail(
+            String leaderEmail,
+            List<String> cc,
+            String leaderName,
+            String teamName,
+            String eventName,
+            String trackName
+    ) {
+        String safeLeaderName = escapeHtml(displayName(leaderName));
+        String safeTeamName = escapeHtml(teamName);
+        String safeEventName = escapeHtml(eventName);
+        String safeTrackName = escapeHtml(trackName);
+        String teamUrl = frontendUrl + "/participant/teams";
 
+        String html = buildBaseTemplate(
+                "Team Registered",
+                "Your team registration is confirmed",
+                """
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            Team <strong>%s</strong> has been registered successfully for track <strong>%s</strong> in <strong>%s</strong>.
+                        </p>
+
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            All active team members are copied on this email according to the SEAL team communication rule.
+                        </p>
+
+                        <div style="text-align:center;margin-top:28px;">
+                            <a href="%s"
+                               style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                                Open My Teams
+                            </a>
+                        </div>
+                        """.formatted(
+                        safeLeaderName,
+                        safeTeamName,
+                        safeTrackName,
+                        safeEventName,
+                        escapeHtml(teamUrl)
+                )
+        );
+
+        sendHtml(leaderEmail, cc, appName + " - Team registered: " + teamName, html);
+    }
+
+    @Override
+    public void sendJudgeAssignedEmail(
+            String to,
+            String judgeName,
+            String eventName,
+            String roundName,
+            String trackName
+    ) {
+        String safeJudgeName = escapeHtml(displayName(judgeName));
+        String safeEventName = escapeHtml(eventName);
+        String safeRoundName = escapeHtml(roundName);
+        String safeTrackName = escapeHtml(trackName);
+        String judgeUrl = frontendUrl + "/judge/submissions";
+
+        String html = buildBaseTemplate(
+                "Judge Assignment",
+                "You have assigned submissions to review",
+                """
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            You have been assigned as a judge for <strong>%s</strong>.
+                        </p>
+
+                        <div style="margin:24px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:18px;">
+                            <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:700;">Round</td>
+                                    <td style="padding:8px 0;color:#0f172a;font-size:13px;font-weight:800;text-align:right;">%s</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:700;">Track</td>
+                                    <td style="padding:8px 0;color:#0f172a;font-size:13px;font-weight:800;text-align:right;">%s</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="text-align:center;margin-top:28px;">
+                            <a href="%s"
+                               style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                                Open Assigned Submissions
+                            </a>
+                        </div>
+                        """.formatted(
+                        safeJudgeName,
+                        safeEventName,
+                        safeRoundName,
+                        safeTrackName,
+                        escapeHtml(judgeUrl)
+                )
+        );
+
+        sendHtml(to, appName + " - Judge assignment for " + eventName, html);
     }
 
     private void sendHtml(String to, String subject, String html) {
