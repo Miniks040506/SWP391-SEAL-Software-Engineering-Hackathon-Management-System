@@ -129,3 +129,13 @@ export type TeamJoinCodePreviewResponse = {
   maxMembers: number;
   joinCodeEnabled: boolean;
 };
+
+// added
+export type CoordinatorTeamListParams = {
+  trackId?: string;
+  eventId?: string;
+  search?: string;
+  status?: string;
+  page?: number;
+  size?: number;
+};
