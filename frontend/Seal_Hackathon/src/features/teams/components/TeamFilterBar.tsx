@@ -17,12 +17,13 @@ import {
   menuPropsAll,
 } from "../schemas/teams.schema";
 
-const SUBMISSION_STATUSES = [
-  "DRAFT",
-  "SUBMITTED",
-  "GRADED",
-  "DISQUALIFIED",
-  "NOT_SUBMITTED",
+const TEAM_STATUSES = [
+  "FORMING",
+  "REGISTERED",
+  "COMPETING",
+  "ADVANCED",
+  "ELIMINATED",
+  "WINNER",
 ];
 
 type Props = {
@@ -142,15 +143,15 @@ export function TeamFilterBar({
                   if (!selected) {
                     return (
                       <span className="text-slate-500 dark:text-slate-400">
-                        All Statuses
+                        All Team Statuses
                       </span>
                     );
                   }
                   return selected as string;
                 }}
               >
-                <MenuItem value="">All Statuses</MenuItem>
-                {SUBMISSION_STATUSES.map((status) => (
+                <MenuItem value="">All Team Statuses</MenuItem>
+                {TEAM_STATUSES.map((status) => (
                   <MenuItem key={status} value={status}>
                     {status}
                   </MenuItem>
