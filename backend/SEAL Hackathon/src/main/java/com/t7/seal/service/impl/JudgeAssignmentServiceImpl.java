@@ -160,6 +160,30 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         assignmentRepository.delete(assignment);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<JudgeAssignmentResponse> getMyAssignments(Authentication authentication) {
+        Judge judge = currentJudge(authentication);
+        return assignmentRepository.findByJudgeIdWithRoundAndTrack(judge.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private Judge currentJudge(Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+        if (!user.isJudge()) {
+            throw new UnauthorizedException("Only judges can access assigned submissions.");
+        }
+
+        if (!user.isActive()) {
+            throw new UnauthorizedException("Judge account is not ACTIVE.");
+        }
+
+        return judgeRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new UnauthorizedException("Judge profile was not found."));
+    }
+
 
     private void assertAssignmentEditable(RegistrationStatus status) {
         if (status == RegistrationStatus.JUDGING
