@@ -1,42 +1,83 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.NotificationChannel;
+import com.t7.seal.domain.NotificationStatus;
+import com.t7.seal.domain.NotificationTargetScope;
+import com.t7.seal.domain.NotificationType;
 import com.t7.seal.domain.RegistrationStatus;
+import com.t7.seal.domain.SubmissionStatus;
+import com.t7.seal.entities.EventCriteria;
 import com.t7.seal.entities.Judge;
+import com.t7.seal.entities.Notification;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.RoundJudgeAssignment;
+import com.t7.seal.entities.Submission;
+import com.t7.seal.entities.SubmissionLink;
+import com.t7.seal.entities.Team;
 import com.t7.seal.entities.Track;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.repository.EventCriteriaRepository;
 import com.t7.seal.repository.JudgeRepository;
 import com.t7.seal.repository.MentorAssignmentRepository;
+import com.t7.seal.repository.NotificationRepository;
 import com.t7.seal.repository.RoundJudgeAssignmentRepository;
 import com.t7.seal.repository.RoundRepository;
+import com.t7.seal.repository.ScoreRepository;
+import com.t7.seal.repository.SubmissionLinkRepository;
+import com.t7.seal.repository.SubmissionRepository;
 import com.t7.seal.repository.TrackRepository;
 import com.t7.seal.request.round.AssignJudgeRequest;
+import com.t7.seal.response.PageResponse;
+import com.t7.seal.response.criteria.EventCriteriaResponse;
+import com.t7.seal.response.grading.AssignedSubmissionResponse;
+import com.t7.seal.response.grading.GradingSubmissionDetailResponse;
+import com.t7.seal.response.grading.JudgeSubmissionAssignmentResponse;
 import com.t7.seal.response.round.JudgeAssignmentResponse;
+import com.t7.seal.response.submission.SubmissionLinkResponse;
 import com.t7.seal.service.CurrentUserService;
+import com.t7.seal.service.EmailService;
 import com.t7.seal.service.JudgeAssignmentService;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final RoundJudgeAssignmentRepository assignmentRepository;
     private final RoundRepository roundRepository;
     private final TrackRepository trackRepository;
     private final JudgeRepository judgeRepository;
     private final MentorAssignmentRepository mentorAssignmentRepository;
+    private final SubmissionRepository submissionRepository;
+    private final SubmissionLinkRepository submissionLinkRepository;
+    private final EventCriteriaRepository eventCriteriaRepository;
+    private final ScoreRepository scoreRepository;
+    private final NotificationRepository notificationRepository;
     private final CurrentUserService currentUserService;
+    private final EmailService emailService;
 
     @Override
     @Transactional(readOnly = true)
