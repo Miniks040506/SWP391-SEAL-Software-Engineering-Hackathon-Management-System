@@ -88,7 +88,8 @@ jwt:
   secret: ${JWT_SECRET:}
   header: ${JWT_HEADER:}
   access-token-expiration-ms: 3600000
-  refresh-token-expiration-ms: 604800000
+
+  -token-expiration-ms: 604800000
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}

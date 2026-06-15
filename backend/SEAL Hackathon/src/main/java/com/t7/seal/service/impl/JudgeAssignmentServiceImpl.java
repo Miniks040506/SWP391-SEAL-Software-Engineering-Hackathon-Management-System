@@ -142,7 +142,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
 
         RoundJudgeAssignment saved = assignmentRepository.save(assignment);
 
-        (saved, assignedBy);
+        createJudgeAssignedNotification(saved, assignedBy);
         sendJudgeAssignedEmailSafely(saved);
 
         return toResponse(saved);
