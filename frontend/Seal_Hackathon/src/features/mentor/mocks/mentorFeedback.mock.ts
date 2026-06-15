@@ -2,23 +2,6 @@ import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
 
 export let mockTeamFeedbacks: MentorFeedbackResponse[] = [
   {
-    id: "fb-team-1",
-    teamId: "team-1111-1111-1111-111111111111",
-    teamName: "Byte Me",
-    submissionId: null,
-    roundId: null,
-    roundName: null,
-    mentorUserId: "mentor-1",
-    mentorName: "Mentor John",
-    category: "GENERAL",
-    content: "Các em làm việc nhóm rất tốt. Tuy nhiên tuần tới cần tăng tốc độ phát triển và chia task rõ ràng hơn nhé.",
-    visibility: "PUBLISHED",
-    visibleToTeam: true,
-    createdAt: new Date(Date.now() - 100000000).toISOString(),
-    publishedAt: new Date(Date.now() - 90000000).toISOString(),
-  },
-  
-  {
     id: "fb-sub-1",
     teamId: "team-1111-1111-1111-111111111111",
     teamName: "Byte Me",
@@ -33,18 +16,17 @@ export let mockTeamFeedbacks: MentorFeedbackResponse[] = [
     visibleToTeam: false,
     createdAt: new Date().toISOString(),
   },
-
   {
-    id: "fb-team-2",
+    id: "fb-sub-2",
     teamId: "team-2222-2222-2222-222222222222",
     teamName: "Null Pointers",
-    submissionId: null, 
-    roundId: null,
-    roundName: null,
+    submissionId: "sub-2222", 
+    roundId: "round-1",
+    roundName: "Preliminary Round",
     mentorUserId: "mentor-1",
     mentorName: "Mentor John",
-    category: "PROCESS",
-    content: "Nhóm chưa nộp bài đúng hạn. Yêu cầu nhóm trưởng liên hệ Mentor để giải trình lý do trễ deadline.",
+    category: "PRESENTATION",
+    content: "Slide báo cáo của bài nộp này làm khá sơ sài, nhóm cần bổ sung thêm các biểu đồ kiến trúc hệ thống.",
     visibility: "PUBLISHED",
     visibleToTeam: true,
     createdAt: new Date(Date.now() - 50000000).toISOString(),
