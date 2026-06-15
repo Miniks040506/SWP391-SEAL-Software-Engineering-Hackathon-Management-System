@@ -46,10 +46,16 @@ export function TeamTable({ teams, loading }: Props) {
               Leader
             </th>
             <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Track
+            </th>
+            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Members
             </th>
             <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Submission Status
+              Team Status
+            </th>
+            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Submissions
             </th>
             <th className="px-6 py-5 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Actions
