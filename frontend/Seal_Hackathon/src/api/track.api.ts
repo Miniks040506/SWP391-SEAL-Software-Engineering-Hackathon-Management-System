@@ -67,6 +67,7 @@ export const trackApi = {
     );
   },
 
+  // added
   getAvailableTracks(eventId: UUID) {
     return apiRequest.get<TrackAvailabilityResponse[]>(
       `/events/${eventId}/tracks/available`,

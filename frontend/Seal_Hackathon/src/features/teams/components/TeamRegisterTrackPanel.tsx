@@ -37,6 +37,7 @@ export const TeamRegisterTrackPanel = ({
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [registered, setRegistered] = useState(false);
+  const memberCount = (team.members ?? []).length;
 
   const hasMinMembers = (team.members ?? []).length >= 3;
 
@@ -142,14 +143,20 @@ export const TeamRegisterTrackPanel = ({
                 const isFull =
                   track.maxTeams != null &&
                   track.registeredTeamCount >= track.maxTeams;
+                const notEligible =
+                  (track.minMembers != null &&
+                    memberCount < track.minMembers) ||
+                  (track.maxMembers != null && memberCount > track.maxMembers);
+                const isDisabled = isFull || notEligible;
+
                 return (
                   <div
                     key={track.id}
-                    onClick={() => !isFull && setSelectedTrackId(track.id)}
+                    onClick={() => !isDisabled && setSelectedTrackId(track.id)}
                     className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-colors ${
                       selectedTrackId === track.id
                         ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20"
-                        : isFull
+                        : isDisabled
                           ? "cursor-not-allowed border-gray-200 bg-gray-50 opacity-60 dark:border-slate-700 dark:bg-slate-800/40"
                           : "border-gray-200 bg-white hover:border-blue-300 dark:border-slate-700 dark:bg-slate-800"
                     }`}
@@ -157,7 +164,7 @@ export const TeamRegisterTrackPanel = ({
                     <div className="flex items-start gap-3">
                       <Radio
                         checked={selectedTrackId === track.id}
-                        disabled={isFull}
+                        disabled={isDisabled}
                         color="primary"
                         sx={{ p: 0, mt: 0.5 }}
                       />
@@ -174,13 +181,19 @@ export const TeamRegisterTrackPanel = ({
                     </div>
                     <div className="text-right">
                       <p
-                        className={`text-sm font-bold ${isFull ? "text-red-500" : "text-green-600 dark:text-green-400"}`}
+                        className={`text-sm font-bold ${isDisabled ? "text-red-500" : "text-green-600 dark:text-green-400"}`}
                       >
                         {track.registeredTeamCount} / {track.maxTeams ?? "∞"}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-slate-400">
                         Teams
                       </p>
+                      {(track.minMembers || track.maxMembers) && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {track.minMembers ?? 1}–{track.maxMembers ?? "∞"}{" "}
+                          members required
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
