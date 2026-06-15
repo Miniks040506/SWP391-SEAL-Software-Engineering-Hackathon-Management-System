@@ -19,112 +19,64 @@ type MentorFeedbackListProps = {
   isLoading: boolean;
 };
 
-export const MentorFeedbackList = ({
-  feedbacks,
-  onEdit,
-  onDelete,
-  onPublish,
-  isLoading,
-}: MentorFeedbackListProps) => {
-  if (isLoading) {
-    return (
-      <div className="p-8 text-center text-gray-500">Loading feedbacks...</div>
-    );
-  }
+export const MentorFeedbackList = ({ feedbacks, onEdit, onDelete, onPublish, isLoading }: MentorFeedbackListProps) => {
+  if (isLoading) return <div className="p-8 text-center text-gray-500">Loading feedbacks...</div>;
 
   if (!feedbacks.length) {
     return (
-      <div className="p-4 md:p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-slate-50 p-12 text-center dark:border-slate-700 dark:bg-slate-900/40">
-          <RateReviewOutlinedIcon className="mb-4 text-4xl text-gray-400" />
-          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
-            No Feedback Yet
-          </h3>
-          <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
-            You haven't provided any feedback for this team.
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-slate-50 p-12 text-center dark:border-slate-700 dark:bg-slate-900/40">
+        <RateReviewOutlinedIcon className="mb-4 text-4xl text-gray-400" />
+        <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">No Feedback Yet</h3>
+        <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
+          There is no feedback to display here.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {feedbacks.map((fb) => {
         const isDraft = fb.visibility === "DRAFT";
 
         return (
-          <Card
-            key={fb.id}
-            variant="outlined"
-            className="rounded-2xl border-gray-100 dark:border-slate-700 dark:bg-[#1e293b]"
-          >
-            <div className="flex flex-col p-5 md:flex-row md:items-start md:justify-between gap-7">
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-3">
-                  <Chip
-                    label={fb.category}
-                    size="small"
-                    className="font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                  />
-                  <Chip
-                    label={fb.visibility}
-                    size="small"
-                    color={isDraft ? "warning" : "success"}
-                    variant={isDraft ? "outlined" : "filled"}
-                    sx={{ fontWeight: 800 }}
-                  />
-                  <Typography variant="caption" className="text-gray-500">
-                    {format(new Date(fb.createdAt), "PPP p")}
+          <Card key={fb.id} variant="outlined" className="rounded-2xl border-gray-100 dark:border-slate-700 dark:bg-[#1e293b]">
+            <div className="flex flex-col p-6 sm:flex-row sm:gap-8">
+              <div className="flex-1 space-y-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  
+                  {fb.teamName && (
+                    <Chip label={`Team: ${fb.teamName}`} size="small" sx={{ fontWeight: 800, bgcolor: "#f1f5f9", color: "#334155" }} />
+                  )}
+
+                  <Chip label={fb.category} size="small" className="font-extrabold text-blue-700 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300" />
+                  
+                  {fb.roundName && (
+                    <Chip label={`Submission: ${fb.roundName}`} size="small" variant="outlined" sx={{ fontWeight: 700, color: "#64748b", borderColor: "#cbd5e1" }} />
+                  )}
+
+                  <Chip label={fb.visibility} size="small" color={isDraft ? "warning" : "success"} variant={isDraft ? "outlined" : "filled"} sx={{ fontWeight: 800 }} />
+                  
+                  <Typography variant="caption" className="font-medium text-gray-500">
+                    {format(new Date(fb.createdAt), "MMM do, yyyy h:mm a")}
                   </Typography>
                 </div>
-                <Typography
-                  variant="body1"
-                  className="text-gray-700 dark:text-slate-300 whitespace-pre-wrap"
-                >
+                <Typography variant="body1" className="font-medium whitespace-pre-wrap text-gray-700 dark:text-slate-300">
                   {fb.content}
                 </Typography>
               </div>
 
-              {isDraft && (
-                <div className="mt-4 flex items-center gap-2 md:mt-0 md:flex-col md:items-end">
-                  <Button
-                    size="small"
-                    startIcon={<SendOutlinedIcon />}
-                    onClick={() => onPublish(fb.id)}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 700,
-                      color: "#2563eb",
-                    }}
-                  >
-                    Publish
-                  </Button>
-                  <Button
-                    size="small"
-                    color="inherit"
-                    startIcon={<EditOutlinedIcon />}
-                    onClick={() => onEdit(fb)}
-                    sx={{ textTransform: "none", fontWeight: 700 }}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    color="error"
-                    startIcon={<DeleteOutlinedIcon />}
-                    onClick={() => onDelete(fb.id)}
-                    sx={{ textTransform: "none", fontWeight: 700 }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              )}
-
-              {!isDraft && (
-                <div className="mt-4 flex items-center gap-2 md:mt-0 md:flex-col md:items-end">
-                </div>
-              )}
+              <div className="mt-4 flex w-[110px] shrink-0 flex-col items-start sm:mt-0 sm:items-end">
+                {isDraft ? (
+                  <div className="flex w-full flex-col gap-1">
+                    <Button size="small" startIcon={<SendOutlinedIcon fontSize="small" />} onClick={() => onPublish(fb.id)} sx={{ textTransform: "none", fontWeight: 800, color: "#2563eb", justifyContent: "flex-start", paddingX: "12px" }}>Publish</Button>
+                    <Button size="small" color="inherit" startIcon={<EditOutlinedIcon fontSize="small" />} onClick={() => onEdit(fb)} className="text-gray-700 dark:text-slate-300" sx={{ textTransform: "none", fontWeight: 800, justifyContent: "flex-start", paddingX: "12px" }}>Edit</Button>
+                    <Button size="small" color="error" startIcon={<DeleteOutlinedIcon fontSize="small" />} onClick={() => onDelete(fb.id)} sx={{ textTransform: "none", fontWeight: 800, justifyContent: "flex-start", paddingX: "12px" }}>Delete</Button>
+                  </div>
+                ) : (
+                  <div className="h-[100px] w-full"></div>
+                )}
+              </div>
             </div>
           </Card>
         );
