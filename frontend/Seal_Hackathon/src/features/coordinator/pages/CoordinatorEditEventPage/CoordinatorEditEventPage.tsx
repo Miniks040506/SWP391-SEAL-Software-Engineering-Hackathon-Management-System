@@ -211,7 +211,7 @@ export function CoordinatorEditEventPage() {
       {activeTab === "INFO" && (
         <InfoTab
           eventId={eventId}
-          event={eventQuery.data}
+          event={eventQuery.data!}
           onUpdated={invalidateEditData}
           canEdit={editRules.canEditInfo}
           readonlyReason={editRules.infoReason}
