@@ -69,8 +69,8 @@ export function MentorsJudgesStep({
     if (isAlreadyAssigned) return;
 
     const newAssignment = createMentorJudgeAssignment({
-      userId: user.userId, // Chuẩn Type mới
-      judgeId: user.judgeId, // Lấy judgeId nếu có
+      userId: user.userId, 
+      judgeId: user.judgeId, 
       email: user.email,
       fullName: user.fullName,
       role: activeTab,
@@ -79,16 +79,14 @@ export function MentorsJudgesStep({
     append(newAssignment);
   };
 
-  // 2. Xử lý khi tạo GUEST JUDGE thành công
-  // Vì GuestJudgeResponse không có fullName, ta phải nhận thêm fullName từ Form Data
   const handleGuestJudgeCreated = (judge: GuestJudgeResponse, fullName: string) => {
     setGuestJudgeModalOpen(false);
 
     const newAssignment = createMentorJudgeAssignment({
-      userId: judge.userId, // Chuẩn Type mới
-      judgeId: judge.judgeId, // Chuẩn Type mới
+      userId: judge.userId, 
+      judgeId: judge.judgeId, 
       email: judge.email,
-      fullName: fullName, // Lấy từ Form lúc user gõ vào Modal
+      fullName: fullName, 
       role: "JUDGE",
     });
 
