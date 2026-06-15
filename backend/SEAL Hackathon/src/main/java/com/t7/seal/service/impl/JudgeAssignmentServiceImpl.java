@@ -170,6 +170,108 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<JudgeSubmissionAssignmentResponse> getMySubmissionQueue(
+            UUID roundId,
+            String status,
+            int page,
+            int size,
+            Authentication authentication
+    ) {
+        Judge judge = currentJudge(authentication);
+        List<RoundJudgeAssignment> assignments = findMyAssignments(judge, roundId);
+
+        if (assignments.isEmpty()) {
+            return emptyPage(page, normalizeSize(size));
+        }
+
+        SubmissionStatus parsedStatus = parseSubmissionStatus(status);
+        int safePage = Math.max(page, 0);
+        int safeSize = normalizeSize(size);
+
+        Page<Submission> result = submissionRepository.findAll(
+                assignedSubmissionSpec(assignments, parsedStatus),
+                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "submittedAt"))
+        );
+
+        return new PageResponse<>(
+                result.getContent().stream()
+                        .map(submission -> toJudgeSubmissionResponse(submission, judge))
+                        .toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
+    }
+
+    private List<RoundJudgeAssignment> findMyAssignments(Judge judge, UUID roundId) {
+        if (roundId == null) {
+            return assignmentRepository.findByJudgeIdWithRoundAndTrack(judge.getId());
+        }
+        return assignmentRepository.findByJudgeIdAndRoundIdWithRoundAndTrack(judge.getId(), roundId);
+    }
+
+    private Specification<Submission> assignedSubmissionSpecForSlot(Round round, Track track, SubmissionStatus status) {
+        RoundJudgeAssignment slot = new RoundJudgeAssignment();
+        slot.setRound(round);
+        slot.setTrack(track);
+        return assignedSubmissionSpec(List.of(slot), status);
+    }
+
+    private Specification<Submission> assignedSubmissionSpec(List<RoundJudgeAssignment> assignments, SubmissionStatus status) {
+        return (root, query, cb) -> {
+            if (query != null) {
+                query.distinct(true);
+            }
+
+            Join<Submission, Round> roundJoin = root.join("round");
+            Join<Submission, Team> teamJoin = root.join("team");
+            Join<Team, Track> trackJoin = teamJoin.join("track", JoinType.LEFT);
+
+            List<Predicate> assignmentPredicates = new ArrayList<>();
+            for (RoundJudgeAssignment assignment : assignments) {
+                Predicate byRound = cb.equal(roundJoin.get("id"), assignment.getRound().getId());
+                if (assignment.getTrack() == null) {
+                    assignmentPredicates.add(byRound);
+                } else {
+                    assignmentPredicates.add(cb.and(
+                            byRound,
+                            cb.equal(trackJoin.get("id"), assignment.getTrack().getId())
+                    ));
+                }
+            }
+
+            Predicate assignmentScope = cb.or(assignmentPredicates.toArray(Predicate[]::new));
+            Predicate statusScope = status == null
+                    ? root.get("status").in(SubmissionStatus.SUBMITTED, SubmissionStatus.LATE)
+                    : cb.equal(root.get("status"), status);
+
+            return cb.and(assignmentScope, statusScope);
+        };
+    }
+
+    private SubmissionStatus parseSubmissionStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        try {
+            return SubmissionStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid submission status: " + status);
+        }
+    }
+
+    private int normalizeSize(int size) {
+        return Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+    }
+
+    private <T> PageResponse<T> emptyPage(int page, int size) {
+        return new PageResponse<>(List.of(), Math.max(page, 0), size, 0, 0, true);
+    }
+
     private Judge currentJudge(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
         if (!user.isJudge()) {
