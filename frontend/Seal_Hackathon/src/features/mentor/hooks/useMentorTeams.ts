@@ -21,7 +21,7 @@ export function useMentorTeams(trackId?: UUID | string) {
   const trackTeamsQuery = useQuery({
     queryKey: ["mentor-track-teams", trackId],
     queryFn: () => activeMentorTeamService.getTeamsByTrack(trackId as UUID),
-    enabled: Boolean(trackId),
+    enabled: USE_MOCK_TEAMS || Boolean(trackId),
     staleTime: 60_000,
   });
 

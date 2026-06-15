@@ -5,7 +5,6 @@ import type { UUID } from "@/types/common.types";
 
 import { mockTrackSubmissions, mockSubmissionDetail } from "../mocks/mentorSubmission.mock";
 
-// true: Chạy dữ liệu giả từ thư mục mocks
 // false: Gọi API thật từ Backend
 const USE_MOCK = false; 
 
