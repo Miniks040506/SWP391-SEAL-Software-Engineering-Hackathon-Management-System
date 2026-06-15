@@ -211,6 +211,38 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
         );
     }
 
+    private CoordinatorTeamMemberResponse toMemberResponse(TeamMember member) {
+        User user = member.getUser();
+        return new CoordinatorTeamMemberResponse(
+                member.getId(),
+                user == null ? null : user.getId(),
+                user == null ? null : user.getFullName(),
+                user == null ? null : user.getEmail(),
+                member.getRole() == null ? null : member.getRole().name(),
+                user == null || user.getStatus() == null ? null : user.getStatus().name(),
+                member.getJoinedAt()
+        );
+    }
+
+    private CoordinatorTeamSubmissionProgressResponse toSubmissionProgressResponse(Submission submission) {
+        int linkCount = submission.getSubmissionLinks() == null ? 0 : submission.getSubmissionLinks().size();
+        return new CoordinatorTeamSubmissionProgressResponse(
+                submission.getRound() == null ? null : submission.getRound().getId(),
+                submission.getRound() == null ? null : submission.getRound().getName(),
+                submission.getRound() == null ? null : submission.getRound().getOrderIndex(),
+                submission.getRound() == null || submission.getRound().getStatus() == null
+                        ? null
+                        : submission.getRound().getStatus().name(),
+                submission.getId(),
+                submission.getStatus() == null ? null : submission.getStatus().name(),
+                submission.getSubmissionNumber(),
+                submission.getSubmittedAt(),
+                submission.getUpdatedAt(),
+                linkCount,
+                submission.getNote()
+        );
+    }
+
     private long missingSubmissionCount(Team team, long submittedSubmissionCount) {
         UUID eventId = eventId(team);
         if (eventId == null) {
