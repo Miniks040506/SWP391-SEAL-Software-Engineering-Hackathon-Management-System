@@ -32,36 +32,7 @@ function criteriaNumberOrNull(value: unknown) {
   return parsed === undefined ? null : parsed;
 }
 
-function mapAdvanceRule(
-  round: CreateEventFormValues["rounds"][number],
-  trackId: string,
-) {
-  const numericValue = numberOrUndefined(round.advancementRuleValue);
 
-  if (round.advancementRuleType === "Top-N Teams") {
-    return {
-      ruleType: "TOP_N",
-      trackId,
-      topN: numericValue,
-      description: "Advance top N teams for this track.",
-    };
-  }
-
-  if (round.advancementRuleType === "Threshold Score") {
-    return {
-      ruleType: "MIN_SCORE",
-      trackId,
-      minScore: numericValue,
-      description: "Advance teams that reach the minimum score.",
-    };
-  }
-
-  return {
-    ruleType: "MANUAL",
-    trackId,
-    description: "Manual advancement selection.",
-  };
-}
 
 async function createEventFlow(values: CreateEventFormValues) {
   let bannerUrl: string | undefined;
@@ -122,14 +93,11 @@ async function createEventFlow(values: CreateEventFormValues) {
 
     roundIdMap.set(round.id, createdRound.id);
 
-    for (const track of values.tracks) {
-      const mappedTrackId = trackIdMap.get(track.id);
-      if (!mappedTrackId) continue;
-
-      await roundApi.createAdvanceRule(
-        createdRound.id,
-        mapAdvanceRule(round, mappedTrackId),
-      );
+    for (const rule of round.advanceRules) {
+      await roundApi.createAdvanceRule(createdRound.id, {
+        ...rule,
+        trackId: rule.trackId ? trackIdMap.get(rule.trackId) : undefined,
+      });
     }
   }
 

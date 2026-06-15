@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { CreateAdvanceRuleRequest } from "@/types/round.types";
+
 export const EVENT_SEASONS = ["SPRING", "SUMMER", "FALL"] as const;
 
 export const EVENT_STATUSES = [
@@ -178,11 +180,7 @@ export const createRoundSchema = z
 
     judgingDeadline: optionalTrimmedString,
 
-    advancementRuleType: z
-      .enum(ADVANCEMENT_RULE_TYPES)
-      .default("Manual Selection"),
-
-    advancementRuleValue: optionalTrimmedString,
+    advanceRules: z.array(z.custom<CreateAdvanceRuleRequest>()).default([]),
   })
   .superRefine((values, ctx) => {
     if (
@@ -194,17 +192,6 @@ export const createRoundSchema = z
         code: z.ZodIssueCode.custom,
         path: ["judgingDeadline"],
         message: "Judging deadline must be after submission deadline.",
-      });
-    }
-
-    if (
-      values.advancementRuleType !== "Manual Selection" &&
-      !values.advancementRuleValue
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["advancementRuleValue"],
-        message: "Rule value is required for this advancement rule.",
       });
     }
   });
@@ -361,8 +348,7 @@ export const createEmptyRound = (orderIndex = 0): RoundFormValues => ({
   isFinal: false,
   submissionDeadline: "",
   judgingDeadline: "",
-  advancementRuleType: "Manual Selection",
-  advancementRuleValue: "",
+  advanceRules: [],
 });
 
 export const createEmptyCriteria = (): EventCriteriaFormValues => ({

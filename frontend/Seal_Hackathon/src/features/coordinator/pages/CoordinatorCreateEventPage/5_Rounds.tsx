@@ -6,15 +6,21 @@ import {
   Alert,
   Button,
   Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   IconButton,
   MenuItem,
   TextField,
 } from "@mui/material";
-import { Controller, useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import { useState } from "react";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+
+import type { CreateAdvanceRuleRequest } from "@/types/round.types";
 
 import {
-  ADVANCEMENT_RULE_TYPES,
   createEmptyRound,
   type CreateEventFormValues,
   type TrackFormValues,
@@ -61,6 +67,285 @@ function formatRoundTime(value?: string | null) {
   return value.replace("T", " ");
 }
 
+const RULE_TYPE_OPTIONS = [
+  { value: "TOP_N", label: "Top-N Teams" },
+  { value: "TOP_PERCENT", label: "Top Percent" },
+  { value: "MIN_SCORE", label: "Threshold Score" },
+  { value: "WILDCARD", label: "Wildcard" },
+];
+
+function AdvanceRuleModal({
+  open,
+  onClose,
+  onSave,
+  tracks,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSave: (rule: any) => void;
+  tracks: any[];
+}) {
+  const [ruleType, setRuleType] = useState<string>("TOP_N");
+  const [trackId, setTrackId] = useState<string>("");
+  const [value, setValue] = useState<string>("");
+  const [priority, setPriority] = useState<string>("1");
+  const [description, setDescription] = useState<string>("");
+
+  const numVal = value ? Number(value) : undefined;
+  const numPriority = priority ? Number(priority) : undefined;
+
+  let valueError = "";
+  if (value && numVal !== undefined) {
+    if (ruleType === "TOP_N" && (!Number.isInteger(numVal) || numVal < 1)) {
+      valueError = "Must be an integer at least 1";
+    }
+    if (ruleType === "TOP_PERCENT" && (numVal < 1 || numVal > 100)) {
+      valueError = "Must be between 1 and 100";
+    }
+    if (ruleType === "MIN_SCORE" && numVal <= 0) {
+      valueError = "Must be greater than 0";
+    }
+    if (ruleType === "WILDCARD" && (!Number.isInteger(numVal) || numVal < 1)) {
+      valueError = "Must be an integer at least 1";
+    }
+  }
+
+  let priorityError = "";
+  if (
+    priority &&
+    numPriority !== undefined &&
+    (!Number.isInteger(numPriority) || numPriority < 1)
+  ) {
+    priorityError = "Must be an integer at least 1";
+  }
+
+  const isValid = value && priority && !valueError && !priorityError;
+
+  const handleSave = () => {
+    if (!isValid) return;
+    const rule: CreateAdvanceRuleRequest = {
+      ruleType,
+      trackId: trackId || null,
+      priority: Number(priority),
+      description: description || undefined,
+      ...(ruleType === "TOP_N" && { topN: numVal }),
+      ...(ruleType === "TOP_PERCENT" && { topPercent: numVal }),
+      ...(ruleType === "MIN_SCORE" && { minScore: numVal }),
+      ...(ruleType === "WILDCARD" && { wildCardSlots: numVal }),
+    };
+    onSave(rule);
+    onClose();
+  };
+
+  const getValueLabel = () => {
+    if (ruleType === "TOP_N") return "Top N";
+    if (ruleType === "TOP_PERCENT") return "Top Percent (1-100)";
+    if (ruleType === "MIN_SCORE") return "Minimum Score";
+    if (ruleType === "WILDCARD") return "Wildcard Slots";
+    return "Value";
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Add Advance Rule</DialogTitle>
+      <DialogContent className="space-y-4 pt-2">
+        <TextField
+          select
+          label="Rule Type"
+          fullWidth
+          value={ruleType}
+          onChange={(e) => setRuleType(e.target.value)}
+          sx={{ ...textFieldSx, mt: 1 }}
+        >
+          {RULE_TYPE_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          label="Track (Optional, Global if empty)"
+          fullWidth
+          value={trackId}
+          onChange={(e) => setTrackId(e.target.value)}
+          sx={textFieldSx}
+        >
+          <MenuItem value="">
+            <em>Global (All Tracks)</em>
+          </MenuItem>
+          {tracks.map((t: any) => (
+            <MenuItem key={t.id} value={t.id}>
+              {t.trackName || "Unnamed track"}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          label={getValueLabel()}
+          type="number"
+          fullWidth
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          error={!!valueError}
+          helperText={valueError}
+          sx={textFieldSx}
+        />
+        <TextField
+          label="Priority"
+          type="number"
+          fullWidth
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          error={!!priorityError}
+          helperText={priorityError}
+          sx={textFieldSx}
+        />
+        <TextField
+          label="Description"
+          fullWidth
+          multiline
+          rows={2}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          sx={textFieldSx}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button
+          onClick={onClose}
+          sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          disabled={!isValid}
+          sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+        >
+          Save Rule
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+const getRuleChipStyle = (ruleType: string) => {
+  switch (ruleType) {
+    case "TOP_N":
+      return "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-500/15 dark:border-blue-500/40 dark:text-blue-300";
+    case "TOP_PERCENT":
+      return "bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-500/15 dark:border-violet-500/40 dark:text-violet-300";
+    case "MIN_SCORE":
+      return "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-300";
+    case "WILDCARD":
+      return "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/40 dark:text-amber-300";
+    default:
+      return "bg-slate-50 border-slate-200 text-slate-700";
+  }
+};
+
+const getXButtonStyle = (ruleType: string) => {
+  switch (ruleType) {
+    case "TOP_N":
+      return "bg-blue-100 text-blue-400 hover:bg-red-100 hover:text-red-500 dark:bg-blue-500/30 dark:text-blue-300";
+    case "TOP_PERCENT":
+      return "bg-violet-100 text-violet-400 hover:bg-red-100 hover:text-red-500 dark:bg-violet-500/30 dark:text-violet-300";
+    case "MIN_SCORE":
+      return "bg-emerald-100 text-emerald-400 hover:bg-red-100 hover:text-red-500 dark:bg-emerald-500/30 dark:text-emerald-300";
+    case "WILDCARD":
+      return "bg-amber-100 text-amber-400 hover:bg-red-100 hover:text-red-500 dark:bg-amber-500/30 dark:text-amber-300";
+    default:
+      return "bg-slate-100 text-slate-400 hover:bg-red-100 hover:text-red-500";
+  }
+};
+
+function AdvanceRulesSection({ roundIndex, tracks, register }: any) {
+  const { control } = useFormContext<CreateEventFormValues>();
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `rounds.${roundIndex}.advanceRules` as any,
+    keyName: "fieldId",
+  });
+  const [modalOpen, setModalOpen] = useState(false);
+
+  return (
+    <div className="col-span-1 md:col-span-2 mt-2 border-t border-slate-200 pt-4 dark:border-slate-700">
+      <div className="flex items-center justify-between mb-4">
+        <FormControlLabel
+          control={<Checkbox {...register(`rounds.${roundIndex}.isFinal`)} />}
+          label={
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              Final round
+            </span>
+          }
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setModalOpen(true)}
+          startIcon={<AddOutlinedIcon />}
+          sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+        >
+          Add Advance Rule
+        </Button>
+      </div>
+
+      {fields.length === 0 ? (
+        <p className="text-xs text-slate-500">
+          No advance rules configured for this round.
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {fields.map((field: any, index: number) => {
+            const trackName = field.trackId
+              ? tracks.find((t: any) => t.id === field.trackId)?.trackName ||
+                "Unknown track"
+              : "Global";
+            const val =
+              field.topN ??
+              field.topPercent ??
+              field.minScore ??
+              field.wildCardSlots ??
+              0;
+
+            return (
+              <div
+                key={field.fieldId}
+                className={`relative inline-flex group items-center gap-2 px-3.5 py-1.5 rounded-full border font-medium text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default ${getRuleChipStyle(field.ruleType)}`}
+              >
+                <span>
+                  {field.ruleType} · {val}
+                </span>
+                {field.trackId && (
+                  <span className="text-xs opacity-70">({trackName})</span>
+                )}
+                <button
+                  className={`absolute -top-2 -right-2 w-5 h-5 rounded-full items-center justify-center hidden group-hover:flex transition-all duration-150 shadow-sm font-bold text-xs ${getXButtonStyle(field.ruleType)}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    remove(index);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {modalOpen && (
+        <AdvanceRuleModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          tracks={tracks}
+          onSave={(rule: any) => append(rule)}
+        />
+      )}
+    </div>
+  );
+}
+
 export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
   const {
     control,
@@ -86,15 +371,17 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
         </h2>
 
         <p className="mt-2 text-sm font-medium text-gray-500 dark:text-slate-400">
-          Create round templates separately from tracks. Every track will contain
-          the same list of rounds, and judges will be assigned to a specific
-          track-round pair in the next step.
+          Create round templates separately from tracks. Every track will
+          contain the same list of rounds, and judges will be assigned to a
+          specific track-round pair in the next step.
         </p>
       </div>
 
       <div className="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
         <div className="space-y-5">
-          {arrayErrorMessage && <Alert severity="error">{arrayErrorMessage}</Alert>}
+          {arrayErrorMessage && (
+            <Alert severity="error">{arrayErrorMessage}</Alert>
+          )}
 
           {fields.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center dark:border-slate-700">
@@ -174,41 +461,10 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                     {...register(`rounds.${index}.judgingDeadline`)}
                   />
 
-                  <Controller
-                    name={`rounds.${index}.advancementRuleType`}
-                    control={control}
-                    render={({ field: controllerField }) => (
-                      <TextField
-                        {...controllerField}
-                        select
-                        label="Advancement rule"
-                        fullWidth
-                        sx={textFieldSx}
-                        error={Boolean(roundErrors?.advancementRuleType)}
-                        helperText={roundErrors?.advancementRuleType?.message}
-                      >
-                        {ADVANCEMENT_RULE_TYPES.map((type) => (
-                          <MenuItem key={type} value={type}>
-                            {type}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    )}
-                  />
-
-                  <TextField
-                    label="Rule value"
-                    fullWidth
-                    sx={textFieldSx}
-                    placeholder="Example: 10 or 70"
-                    error={Boolean(roundErrors?.advancementRuleValue)}
-                    helperText={roundErrors?.advancementRuleValue?.message}
-                    {...register(`rounds.${index}.advancementRuleValue`)}
-                  />
-
-                  <FormControlLabel
-                    control={<Checkbox {...register(`rounds.${index}.isFinal`)} />}
-                    label="Final round"
+                  <AdvanceRulesSection
+                    roundIndex={index}
+                    tracks={tracks}
+                    register={register}
                   />
                 </div>
               </div>
@@ -220,7 +476,11 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
             variant="outlined"
             startIcon={<AddOutlinedIcon />}
             onClick={() => append(createEmptyRound(fields.length))}
-            sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
+            sx={{
+              borderRadius: "12px",
+              textTransform: "none",
+              fontWeight: 900,
+            }}
           >
             Add Round
           </Button>
@@ -238,7 +498,9 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
           </div>
 
           {tracks.length === 0 && (
-            <Alert severity="warning">Create at least one track before reviewing rounds.</Alert>
+            <Alert severity="warning">
+              Create at least one track before reviewing rounds.
+            </Alert>
           )}
 
           {tracks.length > 0 && rounds.length === 0 && (
