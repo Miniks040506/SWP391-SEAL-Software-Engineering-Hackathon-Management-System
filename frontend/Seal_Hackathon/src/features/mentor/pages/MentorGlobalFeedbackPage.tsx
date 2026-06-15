@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useSnackbar } from "notistack";
-import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
-
 import { MentorFeedbackList } from "../components/feedback/MentorFeedbackList";
 import { MentorFeedbackDialog } from "../components/feedback/MentorFeedbackDialog";
 import { 
@@ -75,8 +73,7 @@ export const MentorGlobalFeedbackPage = () => {
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
       <div className="space-y-6">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900 dark:text-white">
-            <RateReviewOutlinedIcon className="text-blue-600" />
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-300">
             Global Feedback Management
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
