@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import type { TrackTeamProgressResponse } from "@/types/track.types";
-import { getSubmissionStatusColor } from "../schemas/teams.schema";
+import type { CoordinatorTeamSummaryResponse } from "@/types/team.types";
+import { getSubmissionStatusColor, getTeamStatusColor } from "../schemas/teams.schema";
 
 type Props = {
-  teams: TrackTeamProgressResponse[];
+  teams: CoordinatorTeamSummaryResponse[];
   loading: boolean;
 };
 
