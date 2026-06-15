@@ -5,7 +5,6 @@ import type { UUID } from "@/types/common.types";
 
 import { mockTrackSubmissions, mockSubmissionDetail } from "../mocks/mentorSubmission.mock";
 
-// false: Gọi API thật từ Backend
 const USE_MOCK = false; 
 
 // Hàm tiện ích giả lập network delay 500ms cho giống thật

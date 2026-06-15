@@ -427,6 +427,24 @@ export const initialCreateEventFormValues: CreateEventFormValues = {
   criteria: [],
 };
 
+export const createGuestJudgeFormSchema = z.object({
+  fullName: z.string().trim().min(1, "Full name is required."),
+  email: z.string().trim().email("Invalid email address."),
+  affiliation: optionalTrimmedString,
+  expertise: optionalTrimmedString,
+  temporaryAccountExpiresAt: optionalTrimmedString,
+});
+
+export type CreateGuestJudgeFormValues = z.infer<typeof createGuestJudgeFormSchema>;
+
+export const initialCreateGuestJudgeFormValues: CreateGuestJudgeFormValues = {
+  fullName: "",
+  email: "",
+  affiliation: "",
+  expertise: "",
+  temporaryAccountExpiresAt: "",
+};
+
 // Compatibility aliases for older create-event components.
 export const SUBMISSION_LINK_TYPES = REQUIRED_LINK_TYPES;
 export type MentorJudgeFormValues = MentorJudgeAssignmentFormValues;

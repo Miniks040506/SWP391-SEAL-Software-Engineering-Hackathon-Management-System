@@ -1,5 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSnackbar } from "notistack";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mentorFeedbackApi } from "@/api/mentorFeedback.api";
 import type { UUID } from "@/types/common.types";
 import type {
@@ -17,52 +16,62 @@ import {
 const USE_MOCK = false;
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function useMentorFeedback(teamId?: UUID | string) {
-  const queryClient = useQueryClient();
-  const { enqueueSnackbar } = useSnackbar();
+export const MENTOR_FEEDBACK_KEYS = {
+  all: ["mentor-feedback"] as const,
+  global: () => [...MENTOR_FEEDBACK_KEYS.all, "global"] as const,
+  team: (teamId?: string) => [...MENTOR_FEEDBACK_KEYS.all, "team", teamId] as const,
+};
 
-  const queryKey = ["mentor-team-feedback", teamId];
-
-  // GET: Fetch list
-  const feedbackListQuery = useQuery({
-    queryKey,
+export function useMentorGlobalFeedbackQuery() {
+  return useQuery({
+    queryKey: MENTOR_FEEDBACK_KEYS.global(),
     queryFn: async () => {
       if (USE_MOCK) {
         await delay(500);
         return { data: getMockFeedbacks() };
       }
+      return { data: [] };
+    },
+  });
+}
+
+export function useMentorTeamFeedbackQuery(teamId?: string) {
+  return useQuery({
+    queryKey: MENTOR_FEEDBACK_KEYS.team(teamId),
+    queryFn: async () => {
+      if (USE_MOCK) {
+        await delay(500);
+        return { data: getMockFeedbacks().filter((fb) => fb.teamId === teamId) };
+      }
       return mentorFeedbackApi.getMentorTeamFeedback(teamId as UUID);
     },
-    enabled: !!teamId,
+    enabled: Boolean(teamId),
   });
+}
 
-  // POST: Create
-  const createMutation = useMutation({
-    mutationFn: async (payload: CreateMentorFeedbackRequest) => {
+export function useCreateMentorFeedbackMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ teamId, payload }: { teamId: UUID; payload: CreateMentorFeedbackRequest }) => {
       if (USE_MOCK) {
         await delay(500);
         return {
           data: addMockFeedback({
             ...payload,
+            teamId,
             visibility: payload.publish ? "PUBLISHED" : "DRAFT",
           }),
         };
       }
-      return mentorFeedbackApi.createFeedback(teamId as UUID, payload);
+      return mentorFeedbackApi.createFeedback(teamId, payload);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey });
-      const action = variables.publish ? "published" : "saved as draft";
-      enqueueSnackbar(`Feedback successfully ${action}!`, {
-        variant: "success",
-      });
-    },
-    onError: () =>
-      enqueueSnackbar("Failed to create feedback", { variant: "error" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: MENTOR_FEEDBACK_KEYS.all }),
   });
+}
 
-  // PATCH: Update
-  const updateMutation = useMutation({
+export function useUpdateMentorFeedbackMutation() {
+  const qc = useQueryClient();
+  return useMutation({
     mutationFn: async ({ id, payload }: { id: UUID; payload: UpdateMentorFeedbackRequest }) => {
       if (USE_MOCK) {
         await delay(500);
@@ -70,15 +79,13 @@ export function useMentorFeedback(teamId?: UUID | string) {
       }
       return mentorFeedbackApi.updateFeedback(id, payload);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
-      enqueueSnackbar("Feedback updated successfully!", { variant: "success" });
-    },
-    onError: () => enqueueSnackbar("Failed to update feedback", { variant: "error" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: MENTOR_FEEDBACK_KEYS.all }),
   });
+}
 
-  // POST: Publish
-  const publishMutation = useMutation({
+export function usePublishMentorFeedbackMutation() {
+  const qc = useQueryClient();
+  return useMutation({
     mutationFn: async (id: UUID) => {
       if (USE_MOCK) {
         await delay(500);
@@ -86,15 +93,13 @@ export function useMentorFeedback(teamId?: UUID | string) {
       }
       return mentorFeedbackApi.publishFeedback(id);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
-      enqueueSnackbar("Feedback published! Team has been notified.", { variant: "success" });
-    },
-    onError: () => enqueueSnackbar("Failed to publish feedback", { variant: "error" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: MENTOR_FEEDBACK_KEYS.all }),
   });
+}
 
-  // DELETE
-  const deleteMutation = useMutation({
+export function useDeleteMentorFeedbackMutation() {
+  const qc = useQueryClient();
+  return useMutation({
     mutationFn: async (id: UUID) => {
       if (USE_MOCK) {
         await delay(500);
@@ -102,18 +107,6 @@ export function useMentorFeedback(teamId?: UUID | string) {
       }
       return mentorFeedbackApi.deleteFeedback(id);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
-      enqueueSnackbar("Feedback deleted", { variant: "info" });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: MENTOR_FEEDBACK_KEYS.all }),
   });
-
-  return {
-    feedbackListQuery,
-    createFeedback: createMutation.mutateAsync,
-    updateFeedback: updateMutation.mutateAsync,
-    publishFeedback: publishMutation.mutateAsync,
-    deleteFeedback: deleteMutation.mutateAsync,
-    isMutating: createMutation.isPending || updateMutation.isPending || publishMutation.isPending || deleteMutation.isPending,
-  };
 }
