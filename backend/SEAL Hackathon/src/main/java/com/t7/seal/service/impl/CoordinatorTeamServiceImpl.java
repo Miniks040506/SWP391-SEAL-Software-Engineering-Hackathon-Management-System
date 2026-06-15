@@ -4,7 +4,9 @@ import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.domain.TeamStatus;
 import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.HackathonEvent;
+import com.t7.seal.entities.Submission;
 import com.t7.seal.entities.Team;
+import com.t7.seal.entities.TeamMember;
 import com.t7.seal.entities.Track;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
@@ -18,6 +20,8 @@ import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.repository.TrackRepository;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.coordinator.CoordinatorTeamDetailResponse;
+import com.t7.seal.response.coordinator.CoordinatorTeamMemberResponse;
+import com.t7.seal.response.coordinator.CoordinatorTeamSubmissionProgressResponse;
 import com.t7.seal.response.coordinator.CoordinatorTeamSummaryResponse;
 import com.t7.seal.service.CoordinatorTeamService;
 import com.t7.seal.service.CurrentUserService;
@@ -29,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -92,7 +97,15 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
     @Transactional(readOnly = true)
     @Override
     public CoordinatorTeamDetailResponse getTeamSummary(UUID teamId, Authentication authentication) {
-        throw new UnsupportedOperationException("Coordinator team summary endpoint is not implemented yet.");
+        ensureCoordinator(authentication);
+
+        Team team = teamRepository.findCoordinatorDetailById(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found " + teamId));
+
+        List<TeamMember> members = teamMemberRepository.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAsc(teamId);
+        List<Submission> submissions = submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(teamId);
+
+        return toDetailResponse(team, members, submissions);
     }
 
     private void ensureTrackBelongsToEvent(HackathonEvent event, UUID trackId) {
@@ -155,6 +168,46 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
                 team.getRegisteredAt(),
                 team.getCreatedAt(),
                 team.getUpdatedAt()
+        );
+    }
+
+    private CoordinatorTeamDetailResponse toDetailResponse(
+            Team team,
+            List<TeamMember> members,
+            List<Submission> submissions
+    ) {
+        long submittedSubmissionCount = submissions.stream()
+                .filter(submission -> SUBMITTED_STATUSES.contains(submission.getStatus()))
+                .count();
+
+        return new CoordinatorTeamDetailResponse(
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                team.getDescription(),
+                enumName(team.getStatus()),
+                eventId(team),
+                eventName(team),
+                trackId(team),
+                trackName(team),
+                team.getLeader() == null ? null : team.getLeader().getId(),
+                team.getLeader() == null ? null : team.getLeader().getFullName(),
+                team.getLeader() == null ? null : team.getLeader().getEmail(),
+                team.getJoinCode(),
+                team.hasJoinCodeEnabled(),
+                members.size(),
+                submissions.size(),
+                submittedSubmissionCount,
+                missingSubmissionCount(team, submittedSubmissionCount),
+                submissions.stream().reduce((previous, current) -> current)
+                        .map(submission -> submission.getStatus())
+                        .map(Enum::name)
+                        .orElse(null),
+                team.getRegisteredAt(),
+                team.getCreatedAt(),
+                team.getUpdatedAt(),
+                members.stream().map(this::toMemberResponse).toList(),
+                submissions.stream().map(this::toSubmissionProgressResponse).toList()
         );
     }
 
