@@ -23,7 +23,12 @@ export type ConfirmAdvancementRequest = {
   note?: string;
 };
 
-export type AdvanceRuleType = "TOP_N" | "TOP_PERCENT" | "MIN_SCORE" | "WILDCARD" | string;
+export type AdvanceRuleType =
+  | "TOP_N"
+  | "TOP_PERCENT"
+  | "MIN_SCORE"
+  | "WILDCARD"
+  | string;
 
 export type CreateAdvanceRuleRequest = {
   ruleType: AdvanceRuleType;
@@ -31,7 +36,7 @@ export type CreateAdvanceRuleRequest = {
   topN?: number;
   minScore?: number;
   topPercent?: number;
-  wildcardSlots?: number;
+  wildCardSlots?: number;
   priority?: number;
   description?: string;
 };
@@ -43,7 +48,7 @@ export type UpdateAdvanceRuleRequest = {
   topN?: number;
   minScore?: number;
   topPercent?: number;
-  wildcardSlots?: number;
+  wildCardSlots?: number;
   priority?: number;
   description?: string;
   active?: boolean;
@@ -123,7 +128,7 @@ export type AdvanceRuleResponse = {
   topN?: number | null;
   minScore?: number | null;
   topPercent?: number | null;
-  wildcardSlots?: number | null;
+  wildCardSlots?: number | null;
   active: boolean;
   value: number;
   priority: number;
