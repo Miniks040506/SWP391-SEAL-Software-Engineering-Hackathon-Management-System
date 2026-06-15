@@ -1,7 +1,19 @@
-import { TextField, InputAdornment, Select, MenuItem, FormControl, type SelectChangeEvent } from "@mui/material";
+import {
+  TextField,
+  InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  type SelectChangeEvent,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import type { CoordinatorTeamListParams } from "@/types/team.types";
-import { TEAM_STATUSES, filterTextFieldSx, filterSelectSx, menuPropsAll } from "../schemas/teams.schema";
+import {
+  TEAM_STATUSES,
+  filterTextFieldSx,
+  filterSelectSx,
+  menuPropsAll,
+} from "../schemas/teams.schema";
 
 type Props = {
   filters: CoordinatorTeamListParams;
@@ -21,7 +33,6 @@ export function TeamFilterBar({ filters, onChange }: Props) {
   return (
     <div className="p-4 md:p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-12 gap-4">
-
         <div className="sm:col-span-2 md:col-span-2 lg:col-span-4">
           <TextField
             fullWidth
@@ -36,7 +47,12 @@ export function TeamFilterBar({ filters, onChange }: Props) {
               input: {
                 endAdornment: (
                   <InputAdornment position="end">
-                    <SearchIcon fontSize="small" sx={{ color: "var(--mui-palette-text-secondary, #94a3b8)" }} />
+                    <SearchIcon
+                      fontSize="small"
+                      sx={{
+                        color: "var(--mui-palette-text-secondary, #94a3b8)",
+                      }}
+                    />
                   </InputAdornment>
                 ),
               },
@@ -55,7 +71,11 @@ export function TeamFilterBar({ filters, onChange }: Props) {
               MenuProps={menuPropsAll}
               renderValue={(selected) => {
                 if (!selected) {
-                  return <span className="text-slate-500 dark:text-slate-400">All Statuses</span>;
+                  return (
+                    <span className="text-slate-500 dark:text-slate-400">
+                      All Statuses
+                    </span>
+                  );
                 }
                 return selected as string;
               }}
@@ -95,7 +115,6 @@ export function TeamFilterBar({ filters, onChange }: Props) {
             sx={filterTextFieldSx}
           />
         </div>
-
       </div>
     </div>
   );

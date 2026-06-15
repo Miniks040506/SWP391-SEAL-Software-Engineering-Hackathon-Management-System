@@ -57,3 +57,18 @@ export type TrackTeamProgressResponse = {
   memberCount: number;
   latestSubmissionStatus?: string;
 };
+
+// added
+export type TrackAvailabilityResponse = {
+  id: UUID;
+  eventId: UUID;
+  name: string;
+  description?: string;
+  minMembers?: number;
+  maxMembers?: number;
+  maxTeams?: number;
+  registeredTeamCount: number;
+  remainingSlots?: number;
+  full: boolean;
+  requiredLinkTypes?: string[];
+};

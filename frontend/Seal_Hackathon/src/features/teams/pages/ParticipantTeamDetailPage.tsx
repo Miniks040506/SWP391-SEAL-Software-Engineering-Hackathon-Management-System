@@ -24,8 +24,7 @@ import type { UUID } from "@/types/common.types";
 import type { TeamMemberResponse } from "@/types/team.types";
 
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
-import { TeamFeedbackList } from "../components/TeamFeedbackList";
-import { useTeamFeedback } from "../hooks/useTeamFeedback"; 
+import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
 
 import {
   inviteMemberSchema,
@@ -45,7 +44,7 @@ import {
   useUpdateTeamMutation,
 } from "../hooks/useParticipantTeams";
 
-type TeamDetailTab = "overview" | "members" | "feedback"; 
+type TeamDetailTab = "overview" | "members" | "track-registration";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "N/A";
@@ -68,10 +67,6 @@ export const TeamDetailPage = () => {
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
   const invitationsQuery = useTeamInvitationsQuery(teamId);
-  
-  // Gọi Query lấy Feedback
-  const { teamFeedbackQuery } = useTeamFeedback(teamId);
-  const feedbacks = teamFeedbackQuery.data?.data || teamFeedbackQuery.data || [];
 
   // Mutations
   const updateTeamMutation = useUpdateTeamMutation(teamId);
@@ -82,6 +77,7 @@ export const TeamDetailPage = () => {
   const leaveTeamMutation = useLeaveTeamMutation(teamId);
 
   const team = teamQuery.data;
+  const members = team?.members ?? [];
   const invitations = invitationsQuery.data ?? [];
 
   const currentTeamSummary = useMemo(() => {
@@ -195,7 +191,10 @@ export const TeamDetailPage = () => {
         Back to My Teams
       </button>
 
-      <Card variant="outlined" className="dark:border-slate-700 dark:bg-slate-800">
+      <Card
+        variant="outlined"
+        className="dark:border-slate-700 dark:bg-slate-800"
+      >
         <CardContent>
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
@@ -212,7 +211,7 @@ export const TeamDetailPage = () => {
 
             <TeamStatusBadge
               status={team.status}
-              memberCount={team.members.length}
+              memberCount={members.length}
             />
           </div>
 
@@ -225,19 +224,11 @@ export const TeamDetailPage = () => {
             >
               <Tab value="overview" label="Overview" />
               <Tab value="members" label="Members" />
-              <Tab value="feedback" label="Mentor Feedback" /> 
+              {currentUserIsLeader && (
+                <Tab value="track-registration" label="Track Registration" />
+              )}
             </Tabs>
           </div>
-
-
-
-
-
-
-
-
-
-
 
           {activeTab === "overview" && (
             <div className="space-y-6 pt-6">
@@ -249,7 +240,8 @@ export const TeamDetailPage = () => {
                       Team Information
                     </h2>
                     <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-                      Leader can edit only Team Name, Project Title, and Description.
+                      Leader can edit only Team Name, Project Title, and
+                      Description.
                     </p>
                   </div>
                   {!currentUserIsLeader && (
@@ -265,7 +257,10 @@ export const TeamDetailPage = () => {
                   )}
                 </div>
 
-                <form className="space-y-5" onSubmit={handleSubmitUpdateTeam(handleSaveTeamDetail)}>
+                <form
+                  className="space-y-5"
+                  onSubmit={handleSubmitUpdateTeam(handleSaveTeamDetail)}
+                >
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <TextField
                       label="Team Name"
@@ -320,24 +315,19 @@ export const TeamDetailPage = () => {
               <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <InfoItem label="Leader" value={team.leaderName} />
                 <InfoItem label="Team Status" value={team.status} />
-                <InfoItem label="Track" value={team.trackId ? team.trackId : "Not assigned"} />
-                <InfoItem label="Members" value={`${team.members.length}/5 member(s)`} />
+                <InfoItem
+                  label="Track"
+                  value={team.trackId ? team.trackId : "Not assigned"}
+                />
+                <InfoItem
+                  label="Members"
+                  value={`${members.length}/5 member(s)`}
+                />
                 <InfoItem label="Team ID" value={team.id} />
                 <InfoItem label="Leader ID" value={team.leaderId} />
               </section>
             </div>
           )}
-
-
-
-
-
-
-
-
-
-
-
 
           {activeTab === "members" && (
             <div className="space-y-5 pt-6">
@@ -354,7 +344,9 @@ export const TeamDetailPage = () => {
                 <Button
                   variant="contained"
                   startIcon={<GroupAddOutlinedIcon />}
-                  disabled={team.members.length >= 5 || inviteMemberMutation.isPending}
+                  disabled={
+                    members.length >= 5 || inviteMemberMutation.isPending
+                  }
                   onClick={() => setInviteDialogOpen(true)}
                   sx={{
                     bgcolor: "#2563eb",
@@ -367,29 +359,42 @@ export const TeamDetailPage = () => {
                 </Button>
               </div>
 
-              {team.members.length === 0 ? (
+              {members.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-gray-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/40">
                   <GroupsOutlinedIcon className="text-gray-400" />
-                  <p className="mt-3 font-bold text-gray-700 dark:text-slate-200">No members yet.</p>
-                  <p className="mt-1 text-sm text-gray-500">Invite members to start building your team.</p>
+                  <p className="mt-3 font-bold text-gray-700 dark:text-slate-200">
+                    No members yet.
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Invite members to start building your team.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {team.members.map((member) => {
+                  {members.map((member) => {
                     const memberIsLeader = member.userId === team.leaderId;
                     return (
-                      <div key={member.memberId} className="flex flex-col gap-4 rounded-2xl border border-gray-100 p-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
+                      <div
+                        key={member.memberId}
+                        className="flex flex-col gap-4 rounded-2xl border border-gray-100 p-4 md:flex-row md:items-center md:justify-between dark:border-slate-700"
+                      >
                         <div className="flex items-start gap-3">
                           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
                             <GroupsOutlinedIcon fontSize="small" />
                           </div>
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-extrabold text-gray-900 dark:text-white">{member.fullName}</p>
+                              <p className="font-extrabold text-gray-900 dark:text-white">
+                                {member.fullName}
+                              </p>
                               <TeamStatusBadge status={member.memberRole} />
                             </div>
-                            <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{member.email}</p>
-                            <p className="mt-1 text-xs font-semibold text-gray-400">Joined at: {formatDateTime(member.joinedAt)}</p>
+                            <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+                              {member.email}
+                            </p>
+                            <p className="mt-1 text-xs font-semibold text-gray-400">
+                              Joined at: {formatDateTime(member.joinedAt)}
+                            </p>
                           </div>
                         </div>
                         {currentUserIsLeader && !memberIsLeader && (
@@ -422,38 +427,56 @@ export const TeamDetailPage = () => {
               )}
 
               <section className="space-y-3">
-                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">Pending Invitations</h3>
+                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
+                  Pending Invitations
+                </h3>
                 {invitationsQuery.isError && (
-                  <Alert severity="warning">Cannot load team invitations right now.</Alert>
+                  <Alert severity="warning">
+                    Cannot load team invitations right now.
+                  </Alert>
                 )}
                 {!invitationsQuery.isLoading && invitations.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-gray-300 bg-slate-50 p-6 text-center dark:border-slate-700 dark:bg-slate-900/40">
-                    <p className="font-bold text-gray-700 dark:text-slate-200">No pending invitations.</p>
-                    <p className="mt-1 text-sm text-gray-500">Invited members will appear here.</p>
+                    <p className="font-bold text-gray-700 dark:text-slate-200">
+                      No pending invitations.
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Invited members will appear here.
+                    </p>
                   </div>
                 )}
                 {invitations.length > 0 && (
                   <div className="space-y-3">
                     {invitations.map((invitation) => (
-                      <div key={invitation.id} className="flex flex-col gap-3 rounded-2xl border border-gray-100 p-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
+                      <div
+                        key={invitation.id}
+                        className="flex flex-col gap-3 rounded-2xl border border-gray-100 p-4 md:flex-row md:items-center md:justify-between dark:border-slate-700"
+                      >
                         <div>
-                          <p className="font-extrabold text-gray-900 dark:text-white">{invitation.invitedEmail}</p>
-                          <p className="mt-1 text-sm text-gray-500">Expires at: {formatDateTime(invitation.expiresAt)}</p>
+                          <p className="font-extrabold text-gray-900 dark:text-white">
+                            {invitation.invitedEmail}
+                          </p>
+                          <p className="mt-1 text-sm text-gray-500">
+                            Expires at: {formatDateTime(invitation.expiresAt)}
+                          </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <TeamStatusBadge status={invitation.status} />
-                          {currentUserIsLeader && invitation.status.toUpperCase() === "PENDING" && (
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              color="error"
-                              disabled={cancelInvitationMutation.isPending}
-                              onClick={() => handleCancelInvitation(invitation.id)}
-                              sx={{ fontWeight: 800, textTransform: "none" }}
-                            >
-                              Cancel
-                            </Button>
-                          )}
+                          {currentUserIsLeader &&
+                            invitation.status.toUpperCase() === "PENDING" && (
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                color="error"
+                                disabled={cancelInvitationMutation.isPending}
+                                onClick={() =>
+                                  handleCancelInvitation(invitation.id)
+                                }
+                                sx={{ fontWeight: 800, textTransform: "none" }}
+                              >
+                                Cancel
+                              </Button>
+                            )}
                         </div>
                       </div>
                     ))}
@@ -463,42 +486,18 @@ export const TeamDetailPage = () => {
             </div>
           )}
 
-
-
-
-
-
-
-
-
-
-
-
-          {/*  ============================= FEEDBACK  ============================= */}
-          {activeTab === "feedback" && (
-            <div className="space-y-5 pt-6">
-              <div>
-                <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
-                  Mentor Feedback
-                </h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-                  Review the guidance and advice provided by your track's mentor.
-                </p>
-              </div>
-
-              <div className="mt-4">
-                <TeamFeedbackList
-                  feedbacks={feedbacks}
-                  isLoading={teamFeedbackQuery.isLoading}
-                />
-              </div>
-            </div>
+          {activeTab === "track-registration" && (
+            <TeamRegisterTrackPanel team={team} />
           )}
-
         </CardContent>
       </Card>
 
-      <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={inviteDialogOpen}
+        onClose={() => setInviteDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle sx={{ fontWeight: 900 }}>Invite Member</DialogTitle>
         <form onSubmit={handleSubmitInvite(handleInviteMember)}>
           <DialogContent dividers className="space-y-4">
@@ -521,7 +520,11 @@ export const TeamDetailPage = () => {
             />
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button variant="outlined" onClick={() => setInviteDialogOpen(false)} sx={{ fontWeight: 800, textTransform: "none" }}>
+            <Button
+              variant="outlined"
+              onClick={() => setInviteDialogOpen(false)}
+              sx={{ fontWeight: 800, textTransform: "none" }}
+            >
               Cancel
             </Button>
             <Button
@@ -535,7 +538,9 @@ export const TeamDetailPage = () => {
                 "&:hover": { bgcolor: "#1d4ed8" },
               }}
             >
-              {inviteMemberMutation.isPending ? "Sending..." : "Send Invitation"}
+              {inviteMemberMutation.isPending
+                ? "Sending..."
+                : "Send Invitation"}
             </Button>
           </DialogActions>
         </form>
@@ -549,7 +554,9 @@ const InfoItem = ({ label, value }: InfoItemProps) => {
   return (
     <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
       <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-1 break-words font-bold text-gray-900 dark:text-white">{value}</p>
+      <p className="mt-1 break-words font-bold text-gray-900 dark:text-white">
+        {value}
+      </p>
     </div>
   );
 };
