@@ -2,6 +2,7 @@ package com.t7.seal.controller;
 
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.response.PageResponse;
+import com.t7.seal.response.coordinator.CoordinatorTeamDetailResponse;
 import com.t7.seal.response.coordinator.CoordinatorTeamSummaryResponse;
 import com.t7.seal.service.CoordinatorTeamService;
 import lombok.RequiredArgsConstructor;
@@ -43,5 +44,14 @@ public class CoordinatorTeamController {
                 size,
                 authentication
         ));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @GetMapping("/teams/{teamId}/summary")
+    public ResponseEntity<CoordinatorTeamDetailResponse> getTeamSummary(
+            @PathVariable UUID teamId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(coordinatorTeamService.getTeamSummary(teamId, authentication));
     }
 }
