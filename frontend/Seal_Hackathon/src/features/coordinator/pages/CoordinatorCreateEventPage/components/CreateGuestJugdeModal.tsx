@@ -14,6 +14,7 @@ import Typography from "@mui/material/Typography";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 
 import { useCreateGuestJudgeMutation } from "@/features/coordinator/hooks/useCoordinatorManageUserMutations";
+
 import { 
   createGuestJudgeFormSchema, 
   initialCreateGuestJudgeFormValues, 
@@ -24,7 +25,7 @@ import type { GuestJudgeResponse } from "@/types/user.types";
 type CreateGuestJudgeModalProps = {
   open: boolean;
   onClose: () => void;
-  onSuccess: (judge: GuestJudgeResponse) => void;
+  onSuccess: (judge: GuestJudgeResponse, fullName: string) => void; 
 };
 
 const textFieldSx = {
@@ -68,7 +69,7 @@ export const CreateGuestJudgeModal = ({
       {
         onSuccess: (response) => {
           enqueueSnackbar("Guest Judge created successfully!", { variant: "success" });
-          onSuccess(response.data); // Truyền data ngược ra cha để tự động gán
+          onSuccess(response.data, data.fullName); 
         },
         onError: (error: any) => {
           const msg = error?.response?.data?.message || "Failed to create guest judge. Email might be in use.";
