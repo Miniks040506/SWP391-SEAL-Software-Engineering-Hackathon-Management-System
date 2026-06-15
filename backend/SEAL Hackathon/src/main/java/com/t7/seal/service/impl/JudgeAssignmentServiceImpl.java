@@ -406,6 +406,57 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         return "PENDING";
     }
 
+    private SubmissionLinkResponse toLinkResponse(SubmissionLink link) {
+        return new SubmissionLinkResponse(
+                link.getId(),
+                link.getLinkType() == null ? null : link.getLinkType().name(),
+                link.getUrl(),
+                link.getLabel(),
+                link.getStorageProvider() == null ? null : link.getStorageProvider().name(),
+                link.getObjectKey(),
+                link.getOriginalFileName(),
+                link.getContentType(),
+                link.getFileSizeBytes(),
+                link.getRepoMetadata(),
+                link.getIsPrimary(),
+                link.getDisplayOrder(),
+                link.getCreatedAt(),
+                link.getUpdatedAt()
+        );
+    }
+
+    private EventCriteriaResponse toEventCriteriaResponse(EventCriteria criteria) {
+        return new EventCriteriaResponse(
+                criteria.getId(),
+                criteria.getEvent().getId(),
+                criteria.getCriteria() == null ? null : criteria.getCriteria().getId(),
+                criteria.getCriteria() == null ? null : criteria.getCriteria().getName(),
+                criteria.getCriteria() == null || criteria.getCriteria().getCategory() == null
+                        ? null
+                        : criteria.getCriteria().getCategory().name(),
+                criteria.isCustomCriteria(),
+                criteria.getNameOverride(),
+                criteria.getDescriptionOverride(),
+                criteria.getRubricOverride(),
+                toDouble(criteria.getWeightOverride()),
+                toDouble(criteria.getMaxScoreOverride()),
+                criteria.getIsTechnicalOverride(),
+                criteria.getEffectiveName(),
+                criteria.getEffectiveDescription(),
+                criteria.getEffectiveRubric(),
+                toDouble(criteria.getEffectiveWeight()),
+                toDouble(criteria.getEffectiveMaxScore()),
+                criteria.getEffectiveIsTechnical(),
+                criteria.getAppliesToRoundIds(),
+                criteria.getDisplayOrder(),
+                criteria.getIsActive()
+        );
+    }
+
+    private Double toDouble(Float value) {
+        return value == null ? null : value.doubleValue();
+    }
+
     private Judge currentJudge(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
         if (!user.isJudge()) {
