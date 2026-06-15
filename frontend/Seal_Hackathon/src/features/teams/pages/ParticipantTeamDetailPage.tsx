@@ -22,12 +22,9 @@ import TextField from "@mui/material/TextField";
 
 import type { UUID } from "@/types/common.types";
 import type { TeamMemberResponse } from "@/types/team.types";
-import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
 
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
-import { TeamFeedbackList } from "../components/TeamFeedbackList";
 import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
-import { useTeamFeedback } from "../hooks/useTeamFeedback";
 
 import {
   inviteMemberSchema,
@@ -47,7 +44,7 @@ import {
   useUpdateTeamMutation,
 } from "../hooks/useParticipantTeams";
 
-type TeamDetailTab = "overview" | "members" | "feedback";
+type TeamDetailTab = "overview" | "members" | "track-registration";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "N/A";
@@ -70,13 +67,6 @@ export const TeamDetailPage = () => {
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
   const invitationsQuery = useTeamInvitationsQuery(teamId);
-
-  // Gọi Query lấy Feedback
-  const { teamFeedbackQuery } = useTeamFeedback(teamId);
-  const feedbacks = Array.isArray(teamFeedbackQuery.data)
-    ? teamFeedbackQuery.data
-    : ((teamFeedbackQuery.data as { data?: MentorFeedbackResponse[] })?.data ??
-      []);
 
   // Mutations
   const updateTeamMutation = useUpdateTeamMutation(teamId);
@@ -234,7 +224,9 @@ export const TeamDetailPage = () => {
             >
               <Tab value="overview" label="Overview" />
               <Tab value="members" label="Members" />
-              <Tab value="feedback" label="Mentor Feedback" />
+              {currentUserIsLeader && (
+                <Tab value="track-registration" label="Track Registration" />
+              )}
             </Tabs>
           </div>
 
@@ -494,33 +486,11 @@ export const TeamDetailPage = () => {
             </div>
           )}
 
-          {/*  ============================= FEEDBACK  ============================= */}
-          {activeTab === "feedback" && (
-            <div className="space-y-5 pt-6">
-              <div>
-                <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
-                  Mentor Feedback
-                </h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-                  Review the guidance and advice provided by your track's
-                  mentor.
-                </p>
-              </div>
-
-              <div className="mt-4">
-                <TeamFeedbackList
-                  feedbacks={feedbacks}
-                  isLoading={teamFeedbackQuery.isLoading}
-                />
-              </div>
-            </div>
+          {activeTab === "track-registration" && (
+            <TeamRegisterTrackPanel team={team} />
           )}
         </CardContent>
       </Card>
-
-      {activeTab === "overview" && currentUserIsLeader && team.status === "FORMING" && (
-        <TeamRegisterTrackPanel team={team} />
-      )}
 
       <Dialog
         open={inviteDialogOpen}

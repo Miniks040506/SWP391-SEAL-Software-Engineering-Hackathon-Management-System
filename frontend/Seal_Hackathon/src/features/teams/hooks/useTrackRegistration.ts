@@ -10,8 +10,6 @@ import type {
 } from "@/types/track.types";
 import { participantTeamQueryKeys } from "./useParticipantTeams";
 
-export const USE_MOCK = false;
-
 export function useTrackRegistration(teamId: UUID) {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();

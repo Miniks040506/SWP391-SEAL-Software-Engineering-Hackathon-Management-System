@@ -25,21 +25,20 @@ type TeamRegisterTrackPanelProps = {
 export const TeamRegisterTrackPanel = ({
   team,
 }: TeamRegisterTrackPanelProps) => {
-  const { 
+  const {
     eventsQuery,
     events,
     selectedEventId,
     setSelectedEventId,
-    availableTracksQuery, 
-    registerMutation 
+    availableTracksQuery,
+    registerMutation,
   } = useTrackRegistration(team.id);
 
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [registered, setRegistered] = useState(false);
 
-  const hasMinMembers = team.members.length >= 3;
-  const isForming = team.status === "FORMING";
+  const hasMinMembers = (team.members ?? []).length >= 3;
 
   const handleRegister = async () => {
     if (!selectedTrackId) return;
@@ -47,10 +46,6 @@ export const TeamRegisterTrackPanel = ({
     setConfirmOpen(false);
     setRegistered(true);
   };
-
-  if (!isForming) {
-    return null;
-  }
 
   return (
     <Card
@@ -63,7 +58,8 @@ export const TeamRegisterTrackPanel = ({
             Track Registration
           </h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-            Select an event and a competition track for your team. You cannot change this once registered.
+            Select an event and a competition track for your team. You cannot
+            change this once registered.
           </p>
         </div>
 
@@ -121,7 +117,8 @@ export const TeamRegisterTrackPanel = ({
           <Alert severity="error">Failed to load available tracks.</Alert>
         )}
 
-        {hasMinMembers && selectedEventId &&
+        {hasMinMembers &&
+          selectedEventId &&
           availableTracksQuery.isSuccess &&
           availableTracksQuery.data.length === 0 && (
             <Alert severity="warning">
@@ -129,13 +126,15 @@ export const TeamRegisterTrackPanel = ({
             </Alert>
           )}
 
-        {hasMinMembers && selectedEventId &&
+        {hasMinMembers &&
+          selectedEventId &&
           availableTracksQuery.isSuccess &&
           availableTracksQuery.data.length > 0 &&
           (registered ? (
             <Alert severity="success" sx={{ mt: 2 }}>
-              Registration submitted! Status: PENDING_APPROVAL. Awaiting
-              coordinator approval.
+              <strong>Registration submitted!</strong>
+              <br />
+              Status: PENDING_APPROVAL. Awaiting coordinator approval.
             </Alert>
           ) : (
             <div className="space-y-3">
