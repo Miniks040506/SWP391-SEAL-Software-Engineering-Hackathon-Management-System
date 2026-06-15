@@ -1,14 +1,15 @@
 import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
+import type { UUID } from "@/types/common.types";
 
 export let mockTeamFeedbacks: MentorFeedbackResponse[] = [
   {
-    id: "fb-sub-1",
-    teamId: "team-1111-1111-1111-111111111111",
+    id: "fb-sub-1" as UUID,
+    teamId: "team-1111-1111-1111-111111111111" as UUID,
     teamName: "Byte Me",
-    submissionId: "sub-1111", 
-    roundId: "round-1",
+    submissionId: "sub-1111" as UUID, 
+    roundId: "round-1" as UUID,
     roundName: "Preliminary Round",
-    mentorUserId: "mentor-1",
+    mentorUserId: "mentor-1" as UUID,
     mentorName: "Mentor John",
     category: "TECHNICAL",
     content: "Cấu trúc mã nguồn của bài nộp này rất tốt. Tuy nhiên phần API kết nối database cần tối ưu lại các câu truy vấn để tránh N+1.",
@@ -17,13 +18,13 @@ export let mockTeamFeedbacks: MentorFeedbackResponse[] = [
     createdAt: new Date().toISOString(),
   },
   {
-    id: "fb-sub-2",
-    teamId: "team-2222-2222-2222-222222222222",
+    id: "fb-sub-2" as UUID,
+    teamId: "team-2222-2222-2222-222222222222" as UUID,
     teamName: "Null Pointers",
-    submissionId: "sub-2222", 
-    roundId: "round-1",
+    submissionId: "sub-2222" as UUID, 
+    roundId: "round-1" as UUID,
     roundName: "Preliminary Round",
-    mentorUserId: "mentor-1",
+    mentorUserId: "mentor-1" as UUID,
     mentorName: "Mentor John",
     category: "PRESENTATION",
     content: "Slide báo cáo của bài nộp này làm khá sơ sài, nhóm cần bổ sung thêm các biểu đồ kiến trúc hệ thống.",
@@ -38,7 +39,7 @@ export const getMockFeedbacks = () => [...mockTeamFeedbacks];
 
 export const addMockFeedback = (feedback: Partial<MentorFeedbackResponse>) => {
   const newFb: MentorFeedbackResponse = {
-    id: `fb-${Date.now()}`,
+    id: `fb-${Date.now()}` as UUID,
     createdAt: new Date().toISOString(),
     content: feedback.content || "",
     category: feedback.category,
@@ -49,7 +50,7 @@ export const addMockFeedback = (feedback: Partial<MentorFeedbackResponse>) => {
     submissionId: feedback.submissionId || null,
     roundId: feedback.roundId || null,
     roundName: feedback.submissionId ? "Current Round" : null,
-    mentorUserId: "mentor-1",
+    mentorUserId: "mentor-1" as UUID,
     mentorName: "Mentor John",
     ...feedback,
   };

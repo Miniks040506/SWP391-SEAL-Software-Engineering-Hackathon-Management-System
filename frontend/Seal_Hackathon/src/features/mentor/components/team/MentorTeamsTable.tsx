@@ -1,4 +1,3 @@
-import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
 import Table from "@mui/material/Table";
@@ -8,7 +7,6 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 
-import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 
 import type { MentorTeamSummary } from "../../mocks/mentorTeams.mock";
@@ -16,13 +14,11 @@ import type { MentorTeamSummary } from "../../mocks/mentorTeams.mock";
 type MentorTeamsTableProps = {
   teams: MentorTeamSummary[];
   isLoading: boolean;
-  onGiveFeedback: (teamId: string) => void;
 };
 
 export const MentorTeamsTable = ({
   teams,
   isLoading,
-  onGiveFeedback,
 }: MentorTeamsTableProps) => {
   if (isLoading) {
     return (
@@ -57,11 +53,18 @@ export const MentorTeamsTable = ({
       <Table aria-label="mentor teams table">
         <TableHead className="bg-slate-50 dark:bg-slate-800/50">
           <TableRow>
-            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Team Name</TableCell>
-            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Project</TableCell>
-            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Members</TableCell>
-            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Latest Activity</TableCell>
-            <TableCell align="right" className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Action</TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Team Name
+            </TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Project
+            </TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Members
+            </TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Latest Activity
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -90,26 +93,10 @@ export const MentorTeamsTable = ({
                     sx={{ fontWeight: 600 }}
                   />
                 ) : (
-                  <span className="text-sm italic text-gray-400">No submissions yet</span>
+                  <span className="text-sm italic text-gray-400">
+                    No submissions yet
+                  </span>
                 )}
-              </TableCell>
-              <TableCell align="right">
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={() => onGiveFeedback(row.id)}
-                  startIcon={<RateReviewOutlinedIcon fontSize="small" />}
-                  sx={{
-                    fontWeight: 800,
-                    textTransform: "none",
-                    borderRadius: "8px",
-                    bgcolor: "#2563eb",
-                    "&:hover": { bgcolor: "#1d4ed8" },
-                    boxShadow: "none",
-                  }}
-                >
-                  Feedback
-                </Button>
               </TableCell>
             </TableRow>
           ))}
