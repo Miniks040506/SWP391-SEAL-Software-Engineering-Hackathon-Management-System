@@ -1,23 +1,29 @@
 import { useState, useEffect } from "react";
-import { trackApi } from "@/api/track.api";
+import { teamApi } from "@/api/team.api";
 import type { PageResponse } from "@/types/common.types";
-import type { CoordinatorTeamListParams } from "@/types/team.types";
-import type { TrackTeamProgressResponse } from "@/types/track.types";
+import type {
+  CoordinatorTeamListParams,
+  CoordinatorTeamSummaryResponse,
+} from "@/types/team.types";
 
 export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
-  const [data, setData] = useState<PageResponse<TrackTeamProgressResponse> | null>(null);
+  const [data, setData] =
+    useState<PageResponse<CoordinatorTeamSummaryResponse> | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchTeams = async () => {
-      if (!params.trackId) {
+      if (!params.eventId) {
         setData(null);
         return;
       }
-      
+
       setLoading(true);
       try {
-        const res = await trackApi.getTrackTeams(params.trackId, {
+        const res = await teamApi.getCoordinatorEventTeams(params.eventId, {
+          trackId: params.trackId,
+          status: params.status,
+          search: params.search,
           page: params.page ? params.page - 1 : 0,
           size: params.size,
         });
@@ -30,7 +36,14 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
     };
 
     fetchTeams();
-  }, [params.trackId, params.page, params.size]);
+  }, [
+    params.eventId,
+    params.trackId,
+    params.status,
+    params.search,
+    params.page,
+    params.size,
+  ]);
 
   return { data, loading };
 };
