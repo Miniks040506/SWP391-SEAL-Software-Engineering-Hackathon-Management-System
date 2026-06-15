@@ -1,6 +1,9 @@
 import { apiRequest } from "@/api/apiRequest";
-import type { UUID } from "@/types/common.types";
+import type { PageResponse, UUID } from "@/types/common.types";
 import type {
+  CoordinatorTeamDetailResponse,
+  CoordinatorTeamListParams,
+  CoordinatorTeamSummaryResponse,
   CreateTeamRequest,
   InviteMemberRequest,
   JoinTeamByCodeRequest,
@@ -29,6 +32,22 @@ export const teamApi = {
 
   getTeamById(teamId: UUID) {
     return apiRequest.get<TeamDetailResponse>(`/teams/${teamId}`);
+  },
+
+  getCoordinatorEventTeams(
+    eventId: UUID,
+    params?: Omit<CoordinatorTeamListParams, "eventId">,
+  ) {
+    return apiRequest.get<PageResponse<CoordinatorTeamSummaryResponse>>(
+      `/events/${eventId}/teams`,
+      { params },
+    );
+  },
+
+  getCoordinatorTeamSummary(teamId: UUID) {
+    return apiRequest.get<CoordinatorTeamDetailResponse>(
+      `/teams/${teamId}/summary`,
+    );
   },
 
   updateTeam(teamId: UUID, payload: UpdateTeamRequest) {
