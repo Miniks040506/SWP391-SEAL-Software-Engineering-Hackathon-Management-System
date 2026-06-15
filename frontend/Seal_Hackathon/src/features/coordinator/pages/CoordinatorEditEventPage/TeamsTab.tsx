@@ -47,11 +47,15 @@ export const TeamsTab = ({ eventId, eventName, tracks }: TeamsTabProps) => {
     eventId,
   }));
 
+  const handleFiltersChange = (next: CoordinatorTeamListParams) => {
+    setFilters({ ...next, eventId });
+  };
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <TeamFilterBar
         filters={filters}
-        onChange={setFilters}
+        onChange={handleFiltersChange}
         events={[{ id: eventId, name: eventName }]}
         tracks={trackOptions}
       />
