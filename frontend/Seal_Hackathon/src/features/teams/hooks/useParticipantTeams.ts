@@ -10,19 +10,23 @@ import type {
   RemoveMemberRequest,
   TransferLeaderRequest,
   UpdateTeamRequest,
+  JoinTeamByCodeRequest,
 } from "@/types/team.types";
 
 import { mockTeamService } from "../mocks/participantTeams.mock";
 
-const USE_MOCK_TEAMS = false;
+const USE_MOCK_TEAMS = true;
 
 export const participantTeamQueryKeys = {
   myTeams: ["participant-my-teams"] as const,
   detail: (teamId?: string) => ["participant-team-detail", teamId] as const,
   members: (teamId?: string) => ["participant-team-members", teamId] as const,
   invitations: (teamId?: string) => ["participant-team-invitations", teamId] as const,
+  myInvitations: ["participant-my-invitations"] as const,
+  invitationToken: (token: string) => ["participant-invitation-token", token] as const,
 };
 
+// 1. QUERIES (Lấy dữ liệu)
 export function useMyTeamsQuery() {
   return useQuery({
     queryKey: participantTeamQueryKeys.myTeams,
@@ -66,6 +70,29 @@ export function useTeamInvitationsQuery(teamId?: string) {
   });
 }
 
+export function useMyInvitationsQuery() {
+  return useQuery({
+    queryKey: participantTeamQueryKeys.myInvitations,
+    queryFn: async () => {
+      if (USE_MOCK_TEAMS) return mockTeamService.getMyInvitations();
+      return teamApi.getMyInvitations();
+    },
+  });
+}
+
+export function useInvitationByTokenQuery(token: string) {
+  return useQuery({
+    queryKey: participantTeamQueryKeys.invitationToken(token),
+    queryFn: async () => {
+      if (USE_MOCK_TEAMS) return mockTeamService.getInvitationByToken(token);
+      return teamApi.getInvitationByToken(token);
+    },
+    enabled: Boolean(token),
+    retry: false, 
+  });
+}
+
+// 2. MUTATIONS (Cập nhật, thay đổi dữ liệu)
 export function useCreateTeamMutation() {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
@@ -114,7 +141,10 @@ export function useInviteTeamMemberMutation(teamId?: string) {
       await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.invitations(teamId) });
       enqueueSnackbar(USE_MOCK_TEAMS ? "Mock: Invitation sent successfully." : "Invitation sent successfully.", { variant: "success" });
     },
-    onError: () => enqueueSnackbar("Failed to send invitation.", { variant: "error" }),
+    onError: (error: any) => {
+      const msg = error.message || "Failed to send invitation.";
+      enqueueSnackbar(msg, { variant: "error" });
+    },
   });
 }
 
@@ -187,5 +217,103 @@ export function useLeaveTeamMutation(teamId?: string) {
       enqueueSnackbar(USE_MOCK_TEAMS ? "Mock: You left the team." : "You left the team successfully.", { variant: "success" });
     },
     onError: () => enqueueSnackbar("Failed to leave team.", { variant: "error" }),
+  });
+}
+
+export function useAcceptInvitationMutation() {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (invitationId: UUID) => {
+      if (USE_MOCK_TEAMS) return mockTeamService.acceptInvitation(invitationId);
+      return teamApi.acceptInvitation(invitationId);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.myInvitations });
+      await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.myTeams });
+      enqueueSnackbar("You have joined the team successfully!", { variant: "success" });
+    },
+    onError: () => enqueueSnackbar("Failed to accept invitation.", { variant: "error" }),
+  });
+}
+
+export function useRejectInvitationMutation() {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (invitationId: UUID) => {
+      if (USE_MOCK_TEAMS) return mockTeamService.rejectInvitation(invitationId);
+      return teamApi.rejectInvitation(invitationId);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.myInvitations });
+      enqueueSnackbar("Invitation declined.", { variant: "info" });
+    },
+    onError: () => enqueueSnackbar("Failed to decline invitation.", { variant: "error" }),
+  });
+}
+
+export function useAcceptInvitationByTokenMutation() {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (token: string) => {
+      if (USE_MOCK_TEAMS) return mockTeamService.acceptInvitationByToken(token);
+      return teamApi.acceptInvitationByToken(token);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.myTeams });
+      enqueueSnackbar("You have joined the team successfully!", { variant: "success" });
+    },
+  });
+}
+
+export function useRejectInvitationByTokenMutation() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (token: string) => {
+      if (USE_MOCK_TEAMS) return mockTeamService.rejectInvitationByToken(token);
+      return teamApi.rejectInvitationByToken(token);
+    },
+    onSuccess: () => enqueueSnackbar("Invitation declined.", { variant: "info" }),
+  });
+}
+
+export function usePreviewJoinCodeMutation() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (joinCode: string) => {
+      if (USE_MOCK_TEAMS) return mockTeamService.previewJoinCode(joinCode);
+      const res = await teamApi.previewJoinCode(joinCode);
+      return res.data;
+    },
+    onError: (err: any) => {
+      enqueueSnackbar(err.message || "Invalid join code.", { variant: "error" });
+    },
+  });
+}
+
+export function useJoinTeamByCodeMutation() {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (payload: JoinTeamByCodeRequest) => {
+      if (USE_MOCK_TEAMS) return mockTeamService.joinByCode(payload);
+      return teamApi.joinByCode(payload);
+    },
+    onSuccess: async () => {
+      // Cập nhật lại danh sách team sau khi join thành công
+      await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.myTeams });
+      enqueueSnackbar("You have successfully joined the team!", { variant: "success" });
+    },
+    onError: (err: any) => {
+      enqueueSnackbar(err.message || "Failed to join team.", { variant: "error" });
+    },
   });
 }

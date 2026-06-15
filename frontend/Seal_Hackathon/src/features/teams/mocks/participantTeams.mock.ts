@@ -3,22 +3,27 @@ import type {
   CreateTeamRequest,
   InviteMemberRequest,
   LeaveTeamRequest,
+  RejectInvitationRequest,
   RemoveMemberRequest,
   TeamDetailResponse,
   TeamInvitationResponse,
+  TeamMemberResponse,
   TeamResponse,
   TeamSummaryResponse,
   TransferLeaderRequest,
   UpdateTeamRequest,
+  TeamJoinCodePreviewResponse,
+  JoinTeamByCodeRequest,
 } from "@/types/team.types";
 
 export type TeamSummaryWithMemberCount = TeamSummaryResponse & {
   memberCount: number;
 };
 
-const currentUserId = "11111111-1111-1111-1111-111111111111" as UUID;
+export const currentUserId = "11111111-1111-1111-1111-111111111111" as UUID;
+export const currentUserEmail = "nguyenvana@fpt.edu.vn";
 
-let mockTeams: TeamDetailResponse[] = [
+export let mockTeams: TeamDetailResponse[] = [
   {
     id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" as UUID,
     name: "Code Warriors",
@@ -36,30 +41,36 @@ let mockTeams: TeamDetailResponse[] = [
         email: "nguyenvana@fpt.edu.vn",
         memberRole: "LEADER",
         joinedAt: "2026-05-18T09:00:00",
-      },
-      {
-        memberId: "member-aaaaaaaa-0002-0002-0002-000000000002" as UUID,
-        userId: "22222222-2222-2222-2222-222222222222" as UUID,
-        fullName: "Tran Minh B",
-        email: "tranminhb@fpt.edu.vn",
-        memberRole: "MEMBER",
-        joinedAt: "2026-05-18T09:20:00",
-      },
-      {
-        memberId: "member-aaaaaaaa-0003-0003-0003-000000000003" as UUID,
-        userId: "33333333-3333-3333-3333-333333333333" as UUID,
-        fullName: "Le Hoang C",
-        email: "lehoangc@student.hcmut.edu.vn",
-        memberRole: "MEMBER",
-        joinedAt: "2026-05-18T10:00:00",
-      },
+      }
     ],
   },
+  {
+    id: "team-2222-2222-2222-222222222222" as UUID,
+    name: "Null Pointers",
+    projectTitle: "Smart Healthcare App",
+    description: "AI-driven health analytics",
+    leaderId: "user-9999" as UUID,
+    leaderName: "Tran Minh B",
+    trackId: null,
+    status: "REGISTERED",
+    members: [],
+  }
 ];
 
-let mockInvitations: TeamInvitationResponse[] = [];
+export let mockInvitations: TeamInvitationResponse[] = [
+  {
+    id: "inv-1111" as UUID,
+    teamId: "team-2222-2222-2222-222222222222" as UUID,
+    teamName: "Null Pointers",
+    invitedEmail: currentUserEmail,
+    status: "PENDING",
+    expiresAt: new Date(Date.now() + 86400000).toISOString().slice(0, 19),
+    token: "mock-token-123",
+    acceptUrl: "/invitations/accept?token=mock-token-123",
+    rejectUrl: "/invitations/reject?token=mock-token-123",
+  }
+];
 
-// --- Helper Functions ---
 const createMockId = () => crypto.randomUUID() as UUID;
 const getNowLocalDateTime = () => new Date().toISOString().slice(0, 19);
 const getMockExpiresAt = () => {
@@ -67,7 +78,7 @@ const getMockExpiresAt = () => {
   date.setDate(date.getDate() + 1);
   return date.toISOString().slice(0, 19);
 };
-const mockDelay = () => new Promise((resolve) => window.setTimeout(resolve, 500));
+const mockDelay = () => new Promise((resolve) => window.setTimeout(resolve, 400));
 
 const toTeamSummary = (team: TeamDetailResponse): TeamSummaryWithMemberCount => ({
   id: team.id,
@@ -89,11 +100,10 @@ const toTeamResponse = (team: TeamDetailResponse): TeamResponse => ({
   memberCount: team.members.length,
 });
 
-// --- Mock API Service ---
 export const mockTeamService = {
   async getMyTeams() {
     await mockDelay();
-    return mockTeams.map(toTeamSummary);
+    return mockTeams.filter(t => t.members.some(m => m.userId === currentUserId)).map(toTeamSummary);
   },
 
   async getTeamById(teamId: UUID) {
@@ -166,6 +176,9 @@ export const mockTeamService = {
     if (!team) throw new Error("Team not found.");
     if (team.members.length >= 5) throw new Error("Your team is full.");
 
+    const isDuplicate = mockInvitations.some(i => i.teamId === teamId && i.invitedEmail === payload.email && i.status === "PENDING");
+    if (isDuplicate) throw new Error("An invitation is already pending for this email.");
+
     const token = createMockId();
     const invitation: TeamInvitationResponse = {
       id: createMockId(),
@@ -178,7 +191,7 @@ export const mockTeamService = {
       acceptUrl: `/invitations/accept?token=${token}`,
       rejectUrl: `/invitations/reject?token=${token}`,
     };
-    mockInvitations = [invitation, ...mockInvitations];
+    mockInvitations.unshift(invitation);
     return invitation;
   },
 
@@ -242,4 +255,107 @@ export const mockTeamService = {
       return { ...item, members: item.members.filter((m) => m.userId !== currentUserId) };
     });
   },
+
+  async getMyInvitations() {
+    await mockDelay();
+    return mockInvitations.filter((i) => i.invitedEmail === currentUserEmail && i.status === "PENDING");
+  },
+
+  async getInvitationByToken(token: string) {
+    await mockDelay();
+    const inv = mockInvitations.find((i) => i.token === token);
+    if (!inv) throw new Error("Invalid or expired invitation token.");
+    return inv;
+  },
+
+  async acceptInvitation(invitationId: UUID) {
+    await mockDelay();
+    const inv = mockInvitations.find((i) => i.id === invitationId);
+    if (!inv || inv.status !== "PENDING") throw new Error("Invalid invitation.");
+    inv.status = "ACCEPTED";
+    
+    const team = mockTeams.find((t) => t.id === inv.teamId);
+    let newMember: TeamMemberResponse | null = null;
+    if (team) {
+      newMember = { 
+        memberId: createMockId(), userId: currentUserId, fullName: "Nguyen Van A", 
+        email: currentUserEmail, memberRole: "MEMBER", joinedAt: getNowLocalDateTime() 
+      };
+      team.members.push(newMember);
+    }
+    return newMember as TeamMemberResponse;
+  },
+
+  async rejectInvitation(invitationId: UUID, payload?: RejectInvitationRequest) {
+    await mockDelay();
+    const inv = mockInvitations.find((i) => i.id === invitationId);
+    if (!inv || inv.status !== "PENDING") throw new Error("Invalid invitation.");
+    inv.status = "DECLINED";
+  },
+
+  async acceptInvitationByToken(token: string) {
+    const inv = mockInvitations.find((i) => i.token === token);
+    if (!inv) throw new Error("Invalid token.");
+    return this.acceptInvitation(inv.id);
+  },
+
+  async rejectInvitationByToken(token: string, payload?: RejectInvitationRequest) {
+    const inv = mockInvitations.find((i) => i.token === token);
+    if (!inv) throw new Error("Invalid token.");
+    return this.rejectInvitation(inv.id, payload);
+  },
+
+  async previewJoinCode(joinCode: string): Promise<TeamJoinCodePreviewResponse> {
+    await mockDelay();
+    
+    // Giả lập mã join code là "SEAL-2026" trỏ vào team "Null Pointers"
+    if (joinCode.trim().toUpperCase() !== "SEAL-2026") {
+      throw new Error("Invalid or expired join code.");
+    }
+
+    const team = mockTeams.find((t) => t.id === "team-2222-2222-2222-222222222222");
+    if (!team) throw new Error("Team not found.");
+
+    return {
+      teamId: team.id,
+      teamName: team.name,
+      projectTitle: team.projectTitle,
+      description: team.description,
+      leaderId: team.leaderId,
+      leaderName: team.leaderName,
+      status: team.status,
+      memberCount: team.members.length,
+      maxMembers: 5,
+      joinCodeEnabled: true,
+    };
+  },
+
+  async joinByCode(payload: JoinTeamByCodeRequest) {
+    await mockDelay();
+    
+    if (payload.joinCode.trim().toUpperCase() !== "SEAL-2026") {
+      throw new Error("Invalid or expired join code.");
+    }
+
+    const team = mockTeams.find((t) => t.id === "team-2222-2222-2222-222222222222");
+    if (!team) throw new Error("Team not found.");
+    if (team.members.length >= 5) throw new Error("This team is already full.");
+    
+    // Kiểm tra xem đã trong nhóm chưa
+    if (team.members.some(m => m.userId === currentUserId)) {
+      throw new Error("You are already a member of this team.");
+    }
+
+    const newMember = {
+      memberId: createMockId(),
+      userId: currentUserId,
+      fullName: "Nguyen Van A",
+      email: currentUserEmail,
+      memberRole: "MEMBER",
+      joinedAt: getNowLocalDateTime(),
+    };
+    
+    team.members.push(newMember);
+    return newMember as TeamMemberResponse;
+  }
 };
