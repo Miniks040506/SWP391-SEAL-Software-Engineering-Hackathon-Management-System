@@ -106,7 +106,7 @@ export function TeamTable({ teams, loading, onViewTeam }: Props) {
               </td>
               <td className="px-6 py-5 whitespace-nowrap">
                 <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  {team.submittedSubmissionCount}/{team.submittedSubmissionCount + team.missingSubmissionCount} submitted
+                  {team.submittedSubmissionCount} of {team.submittedSubmissionCount + team.missingSubmissionCount} rounds submitted
                 </div>
                 <div className="mt-1 flex items-center gap-2">
                   {team.latestSubmissionStatus ? (
@@ -119,8 +119,8 @@ export function TeamTable({ teams, loading, onViewTeam }: Props) {
                     <span className="text-xs text-slate-400 italic">No submission</span>
                   )}
                   {team.missingSubmissionCount > 0 && (
-                    <span className="text-xs text-rose-500 dark:text-rose-400">
-                      {team.missingSubmissionCount} missing
+                    <span className="text-xs text-amber-500 dark:text-amber-400">
+                      {team.missingSubmissionCount} rounds pending
                     </span>
                   )}
                 </div>
