@@ -207,6 +207,37 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         );
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<AssignedSubmissionResponse> getMyAssignedSubmissionsForGrading(
+            UUID roundId,
+            String status,
+            int page,
+            int size,
+            Authentication authentication
+    ) {
+        PageResponse<JudgeSubmissionAssignmentResponse> queue = getMySubmissionQueue(roundId, status, page, size, authentication);
+
+        return new PageResponse<>(
+                queue.content().stream()
+                        .map(item -> new AssignedSubmissionResponse(
+                                item.submissionId(),
+                                item.teamId(),
+                                item.teamName(),
+                                item.roundId(),
+                                item.trackId(),
+                                item.submissionStatus(),
+                                "GRADED".equals(item.gradingStatus())
+                        ))
+                        .toList(),
+                queue.page(),
+                queue.size(),
+                queue.totalElements(),
+                queue.totalPages(),
+                queue.last()
+        );
+    }
+
     private List<RoundJudgeAssignment> findMyAssignments(Judge judge, UUID roundId) {
         if (roundId == null) {
             return assignmentRepository.findByJudgeIdWithRoundAndTrack(judge.getId());
