@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { CoordinatorTeamSummaryResponse } from "@/types/team.types";
-import { getSubmissionStatusColor, getTeamStatusColor } from "../schemas/teams.schema";
+import { getTeamStatusColor } from "../schemas/teams.schema";
 
 type Props = {
   teams: CoordinatorTeamSummaryResponse[];
@@ -40,25 +40,22 @@ export function TeamTable({ teams, loading, onViewTeam }: Props) {
       <table className="min-w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-3/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Team
             </th>
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-3/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Leader
             </th>
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-2/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Track
             </th>
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-1/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Members
             </th>
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-2/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Team Status
             </th>
-            <th className="px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Submissions
-            </th>
-            <th className="px-6 py-5 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-1/12 px-6 py-5 text-right pr-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Actions
             </th>
           </tr>
@@ -104,28 +101,7 @@ export function TeamTable({ teams, loading, onViewTeam }: Props) {
                   <span className="text-xs text-slate-400 italic">Unknown</span>
                 )}
               </td>
-              <td className="px-6 py-5 whitespace-nowrap">
-                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  {team.submittedSubmissionCount} of {team.submittedSubmissionCount + team.missingSubmissionCount} rounds submitted
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  {team.latestSubmissionStatus ? (
-                    <span
-                      className={`px-2 py-0.5 inline-flex text-[11px] font-bold rounded-md border ${getSubmissionStatusColor(team.latestSubmissionStatus)}`}
-                    >
-                      {team.latestSubmissionStatus}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-400 italic">No submission</span>
-                  )}
-                  {team.missingSubmissionCount > 0 && (
-                    <span className="text-xs text-amber-500 dark:text-amber-400">
-                      {team.missingSubmissionCount} rounds pending
-                    </span>
-                  )}
-                </div>
-              </td>
-              <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+              <td className="px-6 py-5 whitespace-nowrap text-right pr-6 text-sm font-medium">
                 <button
                   onClick={() =>
                     onViewTeam
