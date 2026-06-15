@@ -18,5 +18,6 @@ public enum NotificationType {
     PASSWORD_RESET,
     MENTOR_FEEDBACK,
     TEAM_REGISTERED,
+    JUDGE_ASSIGNED,
     GENERAL,
 }
