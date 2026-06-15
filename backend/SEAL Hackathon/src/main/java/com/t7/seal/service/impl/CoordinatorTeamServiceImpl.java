@@ -129,4 +129,75 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
     private String normalizeSearch(String search) {
         return search == null || search.isBlank() ? null : search.trim();
     }
+
+    private CoordinatorTeamSummaryResponse toSummaryResponse(Team team) {
+        long submissionCount = submissionRepository.countByTeamId(team.getId());
+        long submittedSubmissionCount = submissionRepository.countByTeamIdAndStatusIn(team.getId(), SUBMITTED_STATUSES);
+        long missingSubmissionCount = missingSubmissionCount(team, submittedSubmissionCount);
+
+        return new CoordinatorTeamSummaryResponse(
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                enumName(team.getStatus()),
+                eventId(team),
+                eventName(team),
+                trackId(team),
+                trackName(team),
+                team.getLeader() == null ? null : team.getLeader().getId(),
+                team.getLeader() == null ? null : team.getLeader().getFullName(),
+                team.getLeader() == null ? null : team.getLeader().getEmail(),
+                team.getMemberCount() == null ? 0 : team.getMemberCount(),
+                submissionCount,
+                submittedSubmissionCount,
+                missingSubmissionCount,
+                latestSubmissionStatus(team.getId()),
+                team.getRegisteredAt(),
+                team.getCreatedAt(),
+                team.getUpdatedAt()
+        );
+    }
+
+    private long missingSubmissionCount(Team team, long submittedSubmissionCount) {
+        UUID eventId = eventId(team);
+        if (eventId == null) {
+            return 0;
+        }
+
+        long roundCount = roundRepository.countByEventId(eventId);
+        return Math.max(0, roundCount - submittedSubmissionCount);
+    }
+
+    private String latestSubmissionStatus(UUID teamId) {
+        return submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(teamId)
+                .stream()
+                .reduce((previous, current) -> current)
+                .map(submission -> submission.getStatus())
+                .map(Enum::name)
+                .orElse(null);
+    }
+
+    private UUID eventId(Team team) {
+        return team.getTrack() == null || team.getTrack().getEvent() == null
+                ? null
+                : team.getTrack().getEvent().getId();
+    }
+
+    private String eventName(Team team) {
+        return team.getTrack() == null || team.getTrack().getEvent() == null
+                ? null
+                : team.getTrack().getEvent().getName();
+    }
+
+    private UUID trackId(Team team) {
+        return team.getTrack() == null ? null : team.getTrack().getId();
+    }
+
+    private String trackName(Team team) {
+        return team.getTrack() == null ? null : team.getTrack().getName();
+    }
+
+    private String enumName(Enum<?> value) {
+        return value == null ? null : value.name();
+    }
 }
