@@ -1,5 +1,5 @@
 export { MentorDashboardPage } from "./pages/MentorDashboardPage";
 export { MentorSubmissionPage } from "./pages/MentorSubmissionPage";
 export { MentorSubmissionDetailPage } from "./pages/MentorSubmissionDetailPage";
-export { MentorFeedbackPage } from "./pages/MentorFeedbackPage";
+export { MentorGlobalFeedbackPage } from "./pages/MentorGlobalFeedbackPage";
 export { MentorTeamsPage } from "./pages/MentorTeamsPage";

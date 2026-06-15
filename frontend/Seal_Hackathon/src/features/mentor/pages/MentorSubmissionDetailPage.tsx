@@ -1,27 +1,152 @@
+import { useState } from "react";
+import { useSnackbar } from "notistack";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
+import Divider from "@mui/material/Divider";
 
 import { MentorSubmissionDetailCard } from "../components/submission/MentorSubmissionDetailCard";
 import { MentorSubmissionLinksList } from "../components/submission/MentorSubmissionLinkList";
+import { MentorFeedbackList } from "../components/feedback/MentorFeedbackList";
+import { MentorFeedbackDialog } from "../components/feedback/MentorFeedbackDialog";
 
 import { useMentorSubmissions } from "../hooks/useMentorSubmission";
+import {
+  useMentorTeamFeedbackQuery,
+  useCreateMentorFeedbackMutation,
+  useUpdateMentorFeedbackMutation,
+  usePublishMentorFeedbackMutation,
+  useDeleteMentorFeedbackMutation,
+} from "../hooks/useMentorFeedback";
+import type { MentorFeedbackFormValues } from "../schemas/mentorFeedback.schema";
+import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
+import type { UUID } from "@/types/common.types";
 
 export const MentorSubmissionDetailPage = () => {
-  // Lấy query và hàm điều hướng từ hook
-  const { submissionDetailQuery, goBackToHistory } = useMentorSubmissions();
-  
-  const { data: response, isLoading, isError } = submissionDetailQuery;
-  
-  // Axios thường bọc data trong thuộc tính data
-  // Hàm mock của chúng ta cũng đã bọc { data: mockSubmissionDetail }
-  const submission = response?.data;
+  const { enqueueSnackbar } = useSnackbar();
 
-  if (isLoading) {
+  const { submissionDetailQuery, goBackToHistory } = useMentorSubmissions();
+  const {
+    data: subResponse,
+    isLoading: isSubLoading,
+    isError,
+  } = submissionDetailQuery;
+  const submission = subResponse?.data;
+
+  const { data: fbResponse, isLoading: isFbLoading } =
+    useMentorTeamFeedbackQuery(submission?.teamId);
+  const allFeedbacks = fbResponse?.data || [];
+
+  const submissionFeedbacks = allFeedbacks.filter(
+    (fb: MentorFeedbackResponse) => fb.submissionId === submission?.id,
+  );
+
+  const createMutation = useCreateMentorFeedbackMutation();
+  const updateMutation = useUpdateMentorFeedbackMutation();
+  const publishMutation = usePublishMentorFeedbackMutation();
+  const deleteMutation = useDeleteMentorFeedbackMutation();
+
+  const isMutating =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    publishMutation.isPending ||
+    deleteMutation.isPending;
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingFeedback, setEditingFeedback] =
+    useState<MentorFeedbackResponse | null>(null);
+
+  const handleOpenCreate = () => {
+    setEditingFeedback(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenEdit = (fb: MentorFeedbackResponse) => {
+    setEditingFeedback(fb);
+    setIsDialogOpen(true);
+  };
+
+  const handleSubmit = (data: MentorFeedbackFormValues, publish: boolean) => {
+    if (editingFeedback) {
+      updateMutation.mutate(
+        {
+          id: editingFeedback.id,
+          payload: { ...data, visibleToTeam: publish },
+        },
+        {
+          onSuccess: () => {
+            if (publish && editingFeedback.visibility === "DRAFT") {
+              publishMutation.mutate(editingFeedback.id, {
+                onSuccess: () =>
+                  enqueueSnackbar("Feedback published!", {
+                    variant: "success",
+                  }),
+              });
+            } else {
+              enqueueSnackbar("Feedback updated successfully!", {
+                variant: "success",
+              });
+            }
+            setIsDialogOpen(false);
+          },
+          onError: () =>
+            enqueueSnackbar("Failed to update feedback", { variant: "error" }),
+        },
+      );
+    } else {
+      createMutation.mutate(
+        {
+          teamId: submission?.teamId as UUID,
+          payload: {
+            ...data,
+            publish,
+            submissionId: submission?.id as UUID,
+            roundId: submission?.roundId as UUID,
+          },
+        },
+        {
+          onSuccess: (_, variables) => {
+            const action = variables.payload.publish
+              ? "published"
+              : "saved as draft";
+            enqueueSnackbar(`Feedback successfully ${action}!`, {
+              variant: "success",
+            });
+            setIsDialogOpen(false);
+          },
+          onError: () =>
+            enqueueSnackbar("Failed to create feedback", { variant: "error" }),
+        },
+      );
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this draft?")) {
+      deleteMutation.mutate(id as UUID, {
+        onSuccess: () =>
+          enqueueSnackbar("Feedback deleted", { variant: "info" }),
+        onError: () =>
+          enqueueSnackbar("Failed to delete feedback", { variant: "error" }),
+      });
+    }
+  };
+
+  const handlePublish = (id: string) => {
+    publishMutation.mutate(id as UUID, {
+      onSuccess: () =>
+        enqueueSnackbar("Feedback published!", { variant: "success" }),
+      onError: () =>
+        enqueueSnackbar("Failed to publish feedback", { variant: "error" }),
+    });
+  };
+
+  if (isSubLoading) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4">
         <CircularProgress />
-        <p className="text-gray-500 dark:text-slate-400">Loading submission details...</p>
       </div>
     );
   }
@@ -30,13 +155,13 @@ export const MentorSubmissionDetailPage = () => {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 p-8 text-center dark:border-slate-700 dark:bg-[#1e293b]">
         <p className="text-lg font-medium text-red-500 dark:text-red-400">
-          Failed to load submission details or submission not found.
+          Submission not found.
         </p>
         <Button
           variant="outlined"
-          startIcon={<ArrowBackIcon />}
           onClick={goBackToHistory}
           className="mt-6"
+          sx={{ fontWeight: 800, textTransform: "none", borderRadius: "8px" }}
         >
           Go Back
         </Button>
@@ -44,36 +169,76 @@ export const MentorSubmissionDetailPage = () => {
     );
   }
 
-  // 3. Trạng thái Thành công (Success)
   return (
-    <div className="space-y-6">
-      {/* Thanh điều hướng */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="text"
-          startIcon={<ArrowBackIcon />}
-          onClick={goBackToHistory}
-          className="text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
-        >
-          Back to Track Submissions
-        </Button>
-      </div>
+    <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
+      <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="text"
+            startIcon={<ArrowBackIcon />}
+            onClick={goBackToHistory}
+            className="text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
+            sx={{ textTransform: "none", fontWeight: 700, marginLeft: "-8px" }}
+          >
+            Back to Track Submissions
+          </Button>
+        </div>
 
-      {/* Header của trang chi tiết */}
-      <div>
-        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-          Submission Detail
-        </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-          Review the specific deliverables and notes from the team.
-        </p>
-      </div>
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+            Submission Detail
+          </h1>
+        </div>
 
-      {/* Component hiển thị Thông tin chung (Status, Round, Notes) */}
-      <MentorSubmissionDetailCard submission={submission} />
-      
-      {/* Component hiển thị Danh sách các Link (GitHub, Demo, Report) */}
-      <MentorSubmissionLinksList links={submission.links || []} />
+        <div className="space-y-6">
+          <MentorSubmissionDetailCard submission={submission} />
+          <MentorSubmissionLinksList links={submission.links || []} />
+        </div>
+
+        <Divider className="my-8 border-gray-200 dark:border-slate-700" />
+
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="flex items-center gap-2 text-xl font-extrabold text-gray-900 dark:text-white">
+                <RateReviewOutlinedIcon className="text-blue-500" />
+                Submission Feedback
+              </h2>
+            </div>
+            <Button
+              variant="contained"
+              startIcon={<AddOutlinedIcon />}
+              onClick={handleOpenCreate}
+              sx={{
+                textTransform: "none",
+                fontWeight: 800,
+                borderRadius: "10px",
+                bgcolor: "#2563eb",
+                boxShadow: "none",
+                "&:hover": { bgcolor: "#1d4ed8" },
+              }}
+            >
+              Write Feedback
+            </Button>
+          </div>
+
+          <MentorFeedbackList
+            feedbacks={submissionFeedbacks}
+            isLoading={isFbLoading}
+            onEdit={handleOpenEdit}
+            onDelete={handleDelete}
+            onPublish={handlePublish}
+          />
+        </div>
+
+        <MentorFeedbackDialog
+          open={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          onSubmit={handleSubmit}
+          initialData={editingFeedback}
+          isLoading={isMutating}
+        />
+      </div>
     </div>
   );
 };

@@ -1,46 +1,57 @@
 import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
+import type { UUID } from "@/types/common.types";
 
 export let mockTeamFeedbacks: MentorFeedbackResponse[] = [
   {
-    id: "fb-1",
-    teamId: "team-1",
+    id: "fb-sub-1" as UUID,
+    teamId: "team-1111-1111-1111-111111111111" as UUID,
     teamName: "Byte Me",
-    mentorUserId: "mentor-1",
+    submissionId: "sub-1111" as UUID, 
+    roundId: "round-1" as UUID,
+    roundName: "Preliminary Round",
+    mentorUserId: "mentor-1" as UUID,
     mentorName: "Mentor John",
     category: "TECHNICAL",
-    content:
-      "Kiến trúc hệ thống rất tốt, tuy nhiên phần database schema cần tối ưu lại các khóa ngoại để truy vấn nhanh hơn nhé.",
-    visibility: "PUBLISHED",
-    visibleToTeam: true,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    publishedAt: new Date(Date.now() - 80000000).toISOString(),
-  },
-
-  {
-    id: "fb-2",
-    teamId: "team-1",
-    teamName: "Byte Me",
-    mentorUserId: "mentor-1",
-    mentorName: "Mentor John",
-    category: "PRESENTATION",
-    content: "Slide demo đang hơi nhiều chữ. Các em nên dùng thêm biểu đồ (chart) để hội đồng dễ hình dung luồng dữ liệu.",
+    content: "Cấu trúc mã nguồn của bài nộp này rất tốt. Tuy nhiên phần API kết nối database cần tối ưu lại các câu truy vấn để tránh N+1.",
     visibility: "DRAFT",
     visibleToTeam: false,
     createdAt: new Date().toISOString(),
   },
+  {
+    id: "fb-sub-2" as UUID,
+    teamId: "team-2222-2222-2222-222222222222" as UUID,
+    teamName: "Null Pointers",
+    submissionId: "sub-2222" as UUID, 
+    roundId: "round-1" as UUID,
+    roundName: "Preliminary Round",
+    mentorUserId: "mentor-1" as UUID,
+    mentorName: "Mentor John",
+    category: "PRESENTATION",
+    content: "Slide báo cáo của bài nộp này làm khá sơ sài, nhóm cần bổ sung thêm các biểu đồ kiến trúc hệ thống.",
+    visibility: "PUBLISHED",
+    visibleToTeam: true,
+    createdAt: new Date(Date.now() - 50000000).toISOString(),
+    publishedAt: new Date(Date.now() - 40000000).toISOString(),
+  },
 ];
 
-// Helper functions for mock hook
 export const getMockFeedbacks = () => [...mockTeamFeedbacks];
 
 export const addMockFeedback = (feedback: Partial<MentorFeedbackResponse>) => {
   const newFb: MentorFeedbackResponse = {
-    id: `fb-${Date.now()}`,
+    id: `fb-${Date.now()}` as UUID,
     createdAt: new Date().toISOString(),
     content: feedback.content || "",
     category: feedback.category,
     visibility: feedback.visibility || "DRAFT",
     visibleToTeam: feedback.visibility === "PUBLISHED",
+    teamId: feedback.teamId || null,
+    teamName: feedback.teamName || "Unknown Team",
+    submissionId: feedback.submissionId || null,
+    roundId: feedback.roundId || null,
+    roundName: feedback.submissionId ? "Current Round" : null,
+    mentorUserId: "mentor-1" as UUID,
+    mentorName: "Mentor John",
     ...feedback,
   };
   mockTeamFeedbacks = [newFb, ...mockTeamFeedbacks];
