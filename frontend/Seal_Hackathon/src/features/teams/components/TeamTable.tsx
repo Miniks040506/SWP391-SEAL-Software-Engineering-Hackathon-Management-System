@@ -5,9 +5,10 @@ import { getSubmissionStatusColor, getTeamStatusColor } from "../schemas/teams.s
 type Props = {
   teams: CoordinatorTeamSummaryResponse[];
   loading: boolean;
+  onViewTeam?: (teamId: string) => void;
 };
 
-export function TeamTable({ teams, loading }: Props) {
+export function TeamTable({ teams, loading, onViewTeam }: Props) {
   const navigate = useNavigate();
 
   if (loading) {
@@ -126,7 +127,11 @@ export function TeamTable({ teams, loading }: Props) {
               </td>
               <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
                 <button
-                  onClick={() => navigate(`/coordinator/teams/${team.teamId}`)}
+                  onClick={() =>
+                    onViewTeam
+                      ? onViewTeam(team.teamId)
+                      : navigate(`/coordinator/teams/${team.teamId}`)
+                  }
                   className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-white dark:bg-transparent border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-sm px-4 py-2 rounded-lg transition-all"
                 >
                   View Detail

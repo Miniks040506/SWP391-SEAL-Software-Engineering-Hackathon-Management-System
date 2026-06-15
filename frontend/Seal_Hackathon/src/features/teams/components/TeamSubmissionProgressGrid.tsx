@@ -61,7 +61,7 @@ export function TeamSubmissionProgressGrid({ submissions, onSelectSubmission }: 
                 onClick={() => onSelectSubmission(sub.submissionId as UUID)}
                 className="w-full py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-600 font-semibold rounded-lg transition-colors text-sm"
               >
-                View Submission Details →
+                View Submission Details
               </button>
             </div>
           )}

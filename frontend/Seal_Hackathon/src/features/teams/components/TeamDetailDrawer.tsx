@@ -293,16 +293,10 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                   Submission Progress
                 </h3>
 
-                {loadingSubmissions ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-                    Loading submissions...
-                  </p>
-                ) : (
-                  <TeamSubmissionProgressGrid
-                    submissions={submissions}
-                    onSelectSubmission={handleViewSubmission}
-                  />
-                )}
+                <TeamSubmissionProgressGrid
+                  submissions={detail.submissions}
+                  onSelectSubmission={handleViewSubmission}
+                />
               </section>
             </div>
           ) : (
