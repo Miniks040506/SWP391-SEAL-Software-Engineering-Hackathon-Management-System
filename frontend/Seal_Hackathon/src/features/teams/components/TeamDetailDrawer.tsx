@@ -2,11 +2,8 @@ import { useEffect, useState } from "react";
 import { teamApi } from "@/api/team.api";
 import { submissionApi } from "@/api/submission.api";
 import type { UUID } from "@/types/common.types";
-import type { TeamDetailResponse } from "@/types/team.types";
-import type {
-  SubmissionSummaryResponse,
-  SubmissionDetailResponse,
-} from "@/types/submission.types";
+import type { CoordinatorTeamDetailResponse } from "@/types/team.types";
+import type { SubmissionDetailResponse } from "@/types/submission.types";
 import { getTeamStatusColor, getSubmissionStatusColor } from "../schemas/teams.schema";
 import { TeamSubmissionProgressGrid } from "./TeamSubmissionProgressGrid";
 import { SubmissionLinksPreview } from "@/features/submissions/components/SubmissionLinksPreview";
@@ -17,10 +14,8 @@ type Props = {
 };
 
 export function TeamDetailDrawer({ teamId, onClose }: Props) {
-  const [detail, setDetail] = useState<TeamDetailResponse | null>(null);
+  const [detail, setDetail] = useState<CoordinatorTeamDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [submissions, setSubmissions] = useState<SubmissionSummaryResponse[]>([]);
-  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<UUID | null>(null);
   const [submissionDetail, setSubmissionDetail] = useState<SubmissionDetailResponse | null>(null);
@@ -41,23 +36,17 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
     setSubmissionDetail(null);
 
     setLoading(true);
-    setLoadingSubmissions(true);
 
-    Promise.all([
-      teamApi.getTeamById(teamId),
-      submissionApi.getTeamSubmissions(teamId),
-    ])
-      .then(([teamRes, submissionsRes]) => {
+    teamApi
+      .getCoordinatorTeamSummary(teamId)
+      .then((teamRes) => {
         setDetail(teamRes);
-        setSubmissions(submissionsRes);
       })
       .catch(() => {
         setDetail(null);
-        setSubmissions([]);
       })
       .finally(() => {
         setLoading(false);
-        setLoadingSubmissions(false);
       });
   }, [teamId]);
 
@@ -210,13 +199,15 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                     TEAM OVERVIEW
                   </h3>
 
-                  <span
-                    className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getTeamStatusColor(
-                      detail.status,
-                    )}`}
-                  >
-                    {detail.status}
-                  </span>
+                  {detail.status && (
+                    <span
+                      className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getTeamStatusColor(
+                        detail.status,
+                      )}`}
+                    >
+                      {detail.status}
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-5">
@@ -225,7 +216,7 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                       Team Name
                     </p>
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                      {detail.name}
+                      {detail.teamName}
                     </p>
                   </div>
 
@@ -234,7 +225,7 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                       Leader
                     </p>
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                      {detail.leaderName || detail.members?.find(m => m.memberRole === 'LEADER')?.fullName || "—"}
+                      {detail.leaderName || detail.members?.find((m) => m.role === "LEADER")?.fullName || "Unassigned"}
                     </p>
                   </div>
 
@@ -271,7 +262,7 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                   <ul className="space-y-2">
                     {detail.members.map((member) => (
                       <li
-                        key={member.userId}
+                        key={member.memberId}
                         className="flex items-start justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50"
                       >
                         <div>
@@ -285,7 +276,7 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                         </div>
 
                         <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 uppercase">
-                          {member.memberRole}
+                          {member.role || "MEMBER"}
                         </span>
                       </li>
                     ))}
@@ -302,16 +293,10 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                   Submission Progress
                 </h3>
 
-                {loadingSubmissions ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-                    Loading submissions...
-                  </p>
-                ) : (
-                  <TeamSubmissionProgressGrid
-                    submissions={submissions}
-                    onSelectSubmission={handleViewSubmission}
-                  />
-                )}
+                <TeamSubmissionProgressGrid
+                  submissions={detail.submissions}
+                  onSelectSubmission={handleViewSubmission}
+                />
               </section>
             </div>
           ) : (

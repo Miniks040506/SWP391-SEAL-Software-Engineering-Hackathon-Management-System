@@ -14,6 +14,8 @@ import java.util.UUID;
 @Repository
 public interface RoundRepository extends JpaRepository<Round, UUID> {
 
+    long countByEventId(UUID eventId);
+
     boolean existsByEventIdAndOrderIndex(UUID eventId, Integer orderIndex);
 
     boolean existsByEventIdAndNameIgnoreCase(UUID eventId, String name);

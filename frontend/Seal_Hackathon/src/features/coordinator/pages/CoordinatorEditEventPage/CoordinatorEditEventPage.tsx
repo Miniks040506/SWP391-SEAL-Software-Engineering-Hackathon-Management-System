@@ -20,11 +20,19 @@ import { AssignmentsTab } from "./AssignmentsTab";
 import { InfoTab } from "./InfoTab";
 import { PrizesTab } from "./PrizesTab";
 import { RoundsTab } from "./RoundsTab";
+import { TeamsTab } from "./TeamsTab";
 import { TracksTab } from "./TracksTab";
 import { CriteriaTab } from "./CriteriaTab";
 import { getEventEditRules, normalizeEventStatus } from "./eventEditRules";
 
-type EditTab = "INFO" | "TRACKS" | "ROUNDS" | "ASSIGNMENTS" | "CRITERIA" | "PRIZES";
+type EditTab =
+  | "INFO"
+  | "TRACKS"
+  | "TEAMS"
+  | "ROUNDS"
+  | "ASSIGNMENTS"
+  | "CRITERIA"
+  | "PRIZES";
 
 const tabs: Array<{
   value: EditTab;
@@ -33,6 +41,7 @@ const tabs: Array<{
 }> = [
   { value: "INFO", label: "Info", icon: InfoOutlinedIcon },
   { value: "TRACKS", label: "Tracks", icon: RouteOutlinedIcon },
+  { value: "TEAMS", label: "Teams", icon: GroupsOutlinedIcon },
   { value: "ROUNDS", label: "Rounds", icon: SchemaOutlinedIcon },
   { value: "ASSIGNMENTS", label: "Mentors & Judges", icon: GroupsOutlinedIcon },
   { value: "CRITERIA", label: "Criteria", icon: FactCheckOutlinedIcon },
@@ -202,7 +211,7 @@ export function CoordinatorEditEventPage() {
       {activeTab === "INFO" && (
         <InfoTab
           eventId={eventId}
-          event={eventQuery.data}
+          event={eventQuery.data!}
           onUpdated={invalidateEditData}
           canEdit={editRules.canEditInfo}
           readonlyReason={editRules.infoReason}
@@ -217,6 +226,14 @@ export function CoordinatorEditEventPage() {
           onChanged={invalidateEditData}
           canEdit={editRules.canEditTracksRounds}
           readonlyReason={editRules.trackRoundReason}
+        />
+      )}
+
+      {activeTab === "TEAMS" && (
+        <TeamsTab
+          eventId={eventId}
+          eventName={eventName}
+          tracks={tracksQuery.data ?? []}
         />
       )}
 
