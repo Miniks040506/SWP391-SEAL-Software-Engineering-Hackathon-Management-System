@@ -31,10 +31,16 @@ export function CoordinatorTeamsPage() {
     const fetchEvents = async () => {
       try {
         const eventsRes = await eventApi.getAllEvents({ page: 0, size: 100 });
-        setEvents(eventsRes.content.map((event) => ({
+        const eventOptions = eventsRes.content.map((event) => ({
           id: event.id,
           name: event.name,
-        })));
+        }));
+        setEvents(eventOptions);
+        setFilters((prev) =>
+          prev.eventId || eventOptions.length === 0
+            ? prev
+            : { ...prev, eventId: eventOptions[0].id, page: 1 },
+        );
       } catch {
         // Silently handle error
       }
@@ -74,16 +80,6 @@ export function CoordinatorTeamsPage() {
   const total = data?.totalElements ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
-  const searchText = filters.search || "";
-  const statusFilter = filters.status || "";
-
-  const filteredItems = items
-    .filter(t => !searchText || 
-      t.teamName.toLowerCase().includes(searchText.toLowerCase()) ||
-      t.leaderName.toLowerCase().includes(searchText.toLowerCase()))
-    .filter(t => !statusFilter || 
-      (statusFilter === "NOT_SUBMITTED" ? !t.latestSubmissionStatus : t.latestSubmissionStatus === statusFilter));
-
   return (
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
       <div className="mb-6 flex items-center justify-between">
@@ -105,7 +101,7 @@ export function CoordinatorTeamsPage() {
           tracks={tracks}
         />
 
-        <TeamTable teams={filteredItems} loading={loading} />
+        <TeamTable teams={items} loading={loading} />
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 px-5 py-3 bg-white dark:bg-slate-800">

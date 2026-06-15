@@ -2,11 +2,8 @@ import { useEffect, useState } from "react";
 import { teamApi } from "@/api/team.api";
 import { submissionApi } from "@/api/submission.api";
 import type { UUID } from "@/types/common.types";
-import type { TeamDetailResponse } from "@/types/team.types";
-import type {
-  SubmissionSummaryResponse,
-  SubmissionDetailResponse,
-} from "@/types/submission.types";
+import type { CoordinatorTeamDetailResponse } from "@/types/team.types";
+import type { SubmissionDetailResponse } from "@/types/submission.types";
 import { getTeamStatusColor, getSubmissionStatusColor } from "../schemas/teams.schema";
 import { TeamSubmissionProgressGrid } from "./TeamSubmissionProgressGrid";
 import { SubmissionLinksPreview } from "@/features/submissions/components/SubmissionLinksPreview";
@@ -17,10 +14,8 @@ type Props = {
 };
 
 export function TeamDetailDrawer({ teamId, onClose }: Props) {
-  const [detail, setDetail] = useState<TeamDetailResponse | null>(null);
+  const [detail, setDetail] = useState<CoordinatorTeamDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [submissions, setSubmissions] = useState<SubmissionSummaryResponse[]>([]);
-  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<UUID | null>(null);
   const [submissionDetail, setSubmissionDetail] = useState<SubmissionDetailResponse | null>(null);
@@ -41,23 +36,17 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
     setSubmissionDetail(null);
 
     setLoading(true);
-    setLoadingSubmissions(true);
 
-    Promise.all([
-      teamApi.getTeamById(teamId),
-      submissionApi.getTeamSubmissions(teamId),
-    ])
-      .then(([teamRes, submissionsRes]) => {
+    teamApi
+      .getCoordinatorTeamSummary(teamId)
+      .then((teamRes) => {
         setDetail(teamRes);
-        setSubmissions(submissionsRes);
       })
       .catch(() => {
         setDetail(null);
-        setSubmissions([]);
       })
       .finally(() => {
         setLoading(false);
-        setLoadingSubmissions(false);
       });
   }, [teamId]);
 
