@@ -206,6 +206,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, API + "/prizes/*/clear-award").hasRole("COORDINATOR")
 
                         // Judge grading
+                        .requestMatchers(API + "/judge/**").hasRole("JUDGE")
                         .requestMatchers(API + "/judges/**").hasRole("JUDGE")
                         .requestMatchers(API + "/judges/me/**").hasRole("JUDGE")
                         .requestMatchers(API + "/grading/**").hasRole("JUDGE")
