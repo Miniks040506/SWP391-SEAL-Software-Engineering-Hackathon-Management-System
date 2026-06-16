@@ -19,6 +19,7 @@ import { enqueueSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 
 import { roundApi } from "@/api/round.api";
+import { RoundOperationPanel } from "../../components/RoundOperationPanel";
 import type { UUID } from "@/types/common.types";
 import type { AdvanceRuleResponse, RoundResponse } from "@/types/round.types";
 import type { TrackResponse } from "@/types/track.types";
@@ -650,6 +651,8 @@ export function RoundsTab({
 
       <div className="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
         <div className="space-y-5">
+          <RoundOperationPanel rounds={rounds} onChanged={onChanged} />
+
           {!canEdit && readonlyReason && (
             <Alert severity="warning">{readonlyReason}</Alert>
           )}
@@ -743,6 +746,7 @@ export function RoundsTab({
           {rounds.map((round, index) => {
             const id = getId(round);
             const values = editing[id] ?? createRoundForm(round);
+            const canEditRound = canEdit && round.status === "NOT_STARTED";
 
             return (
               <div
@@ -753,6 +757,9 @@ export function RoundsTab({
                   <div>
                     <h3 className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
                       Round {index + 1}
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {round.status?.replace("_", " ") || "NOT STARTED"}
+                      </span>
                       {rounds.length > 0 && index === rounds.length - 1 && (
                         <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
                           Final
@@ -764,7 +771,7 @@ export function RoundsTab({
                     </p>
                   </div>
 
-                  {canEdit && (
+                  {canEditRound && (
                     <IconButton color="error" onClick={() => handleDelete(id)}>
                       <DeleteOutlineOutlinedIcon />
                     </IconButton>
@@ -783,7 +790,7 @@ export function RoundsTab({
                     }
                     size="small"
                     sx={textFieldSx}
-                    disabled={!canEdit}
+                    disabled={!canEditRound}
                   />
 
                   <TextField
@@ -811,7 +818,7 @@ export function RoundsTab({
                     size="small"
                     sx={dateTimeFieldSx}
                     slotProps={{ inputLabel: { shrink: true } }}
-                    disabled={!canEdit}
+                    disabled={!canEditRound}
                   />
 
                   <TextField
@@ -830,10 +837,10 @@ export function RoundsTab({
                     size="small"
                     sx={dateTimeFieldSx}
                     slotProps={{ inputLabel: { shrink: true } }}
-                    disabled={!canEdit}
+                    disabled={!canEditRound}
                   />
 
-                  {canEdit && (
+                  {canEditRound && (
                     <Button
                       variant="contained"
                       startIcon={<SaveOutlinedIcon />}
@@ -852,7 +859,7 @@ export function RoundsTab({
                 <RoundAdvanceRules
                   roundId={id}
                   tracks={tracks}
-                  canEdit={canEdit}
+                  canEdit={canEditRound}
                 />
               </div>
             );
