@@ -1,15 +1,21 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import CircularProgress from "@mui/material/CircularProgress";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+
 import { JudgeSubmissionTable } from "../components/submission/JudgeSubmissionTable";
+import { JudgeSubmissionFilterBar } from "../components/submission/JudgeSubmissionFilterBar";
 import { useJudgeRoundSubmissionsQuery, useJudgeSubmissionsQuery } from "../hooks/useJudge";
+import type { GetJudgeSubmissionsParams } from "@/types/judge.types";
 
 export const JudgeSubmissionsPage = () => {
   const { roundId } = useParams<{ roundId?: string }>();
   const navigate = useNavigate();
 
+  const [filters, setFilters] = useState<GetJudgeSubmissionsParams>({ page: 1, size: 10 });
+
   const roundQuery = useJudgeRoundSubmissionsQuery(roundId);
-  const allQuery = useJudgeSubmissionsQuery();
+  const allQuery = useJudgeSubmissionsQuery(filters);
 
   const query = roundId ? roundQuery : allQuery;
   const submissions = query.data?.data?.content || query.data?.content || [];
@@ -27,12 +33,14 @@ export const JudgeSubmissionsPage = () => {
 
       <div>
         <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-          {roundId ? "Round Submissions" : "All Assigned Submissions"}
+          {roundId ? "Round Submissions" : "Assigned Grading Queue"}
         </h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-          Only submissions assigned to your grading queue are visible here.
+          Review and grade the submissions assigned to you.
         </p>
       </div>
+
+      <JudgeSubmissionFilterBar filters={filters} onChange={setFilters} />
 
       {query.isLoading ? (
         <div className="flex justify-center py-24"><CircularProgress /></div>

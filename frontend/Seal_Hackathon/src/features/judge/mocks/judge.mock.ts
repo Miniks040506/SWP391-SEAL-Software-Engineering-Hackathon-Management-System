@@ -4,7 +4,6 @@ import type {
   GetJudgeSubmissionsParams,
   JudgeAssignmentListItem,
   JudgeSubmissionAssignmentResponse,
-  JudgeSubmissionDetailResponse,
 } from "@/types/judge.types";
 
 export const mockJudgeAssignments: JudgeAssignmentListItem[] = [
@@ -34,7 +33,7 @@ export const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
     submittedAt: "2026-05-25T10:00:00",
     roundSubmissionLocked: false,
     confirmedScoreCount: 1,
-    criteriaCount: 5,
+    criteriaCount: 3,
     gradingStatus: "PENDING",
   },
   {
@@ -51,49 +50,68 @@ export const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
     submittedAt: "2026-05-26T14:30:00",
     roundSubmissionLocked: true,
     confirmedScoreCount: 5,
-    criteriaCount: 5,
+    criteriaCount: 3,
     gradingStatus: "SCORED",
   },
 ];
 
-export const mockJudgeSubmissionDetail: JudgeSubmissionDetailResponse = {
+// Mock tiêu chí dùng chung cho cả 2 bài nộp
+const mockCriteria = [
+  { id: "crit-1", name: "Technical Complexity", description: "Is the tech stack advanced and well-implemented?", maxScore: 40 },
+  { id: "crit-2", name: "Innovation", description: "How unique and original is the idea?", maxScore: 30 },
+  { id: "crit-3", name: "Presentation", description: "Quality of the pitch and demo.", maxScore: 30 },
+];
+
+export let mockPendingSubmissionDetail = {
   id: "sub-1111" as UUID,
   eventId: "event-1111" as UUID,
   eventName: "SEAL Spring 2026",
   teamId: "team-1111" as UUID,
   teamName: "Code Warriors",
-  leaderId: "user-1111" as UUID,
-  leaderName: "Nguyen Van A",
-  trackId: "track-1111" as UUID,
+  projectTitle: "Smart Campus AI",
   trackName: "AI Track",
-  roundId: "round-1111" as UUID,
   roundName: "Preliminary Round",
-  note: "This is our latest AI model.",
   status: "SUBMITTED",
-  submissionNumber: 1,
+  gradingStatus: "PENDING",
+  description: "An AI system that predicts student dropout rates.",
   submittedAt: "2026-05-25T10:00:00",
-  roundSubmissionLocked: false,
   links: [
-    {
-      id: "link-1" as UUID,
-      linkType: "VIDEO",
-      url: "https://youtube.com/watch?v=123",
-      label: "Demo Video",
-      isPrimary: true,
-    },
-    {
-      id: "link-2" as UUID,
-      linkType: "GITHUB",
-      url: "https://github.com/team/repo",
-      label: "Source Code",
-      isPrimary: false,
-    }
+    { id: "link-1" as UUID, linkType: "VIDEO", url: "https://youtube.com", label: "Demo Video", isPrimary: true },
+    { id: "link-2" as UUID, linkType: "GITHUB", url: "https://github.com", label: "Source Code", isPrimary: false },
   ],
+  criteria: mockCriteria,
+  scoredData: null as any, 
+};
+
+export const mockScoredSubmissionDetail = {
+  id: "sub-2222" as UUID,
+  eventId: "event-1111" as UUID,
+  eventName: "SEAL Spring 2026",
+  teamId: "team-2222" as UUID,
+  teamName: "Byte Builders",
+  projectTitle: "Student Management System",
+  trackName: "Software Engineering",
+  roundName: "Final Round",
+  status: "LATE",
+  gradingStatus: "SCORED",
+  description: "A comprehensive management system for university students.",
+  submittedAt: "2026-05-26T14:30:00",
+  links: [
+    { id: "link-3" as UUID, linkType: "REPORT", url: "https://docs.google.com", label: "Final Report", isPrimary: true },
+  ],
+  criteria: mockCriteria,
+  scoredData: {
+    scores: {
+      "crit-1": 35, // Technical: 35/40
+      "crit-2": 20, // Innovation: 20/30
+      "crit-3": 28, // Presentation: 28/30
+    },
+    comment: "Solid technical implementation, but the idea is quite common. Great presentation though!",
+  },
 };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// ĐÂY LÀ ĐỐI TƯỢNG CẦN EXPORT ĐỂ FIX LỖI SYNTAX ERROR
 export const mockJudgeService = {
   async getMyAssignments() {
     await delay(500);
@@ -125,6 +143,21 @@ export const mockJudgeService = {
 
   async getMySubmissionDetail(submissionId: UUID) {
     await delay(500);
-    return { ...mockJudgeSubmissionDetail, gradingStatus: "PENDING" } as JudgeSubmissionDetailResponse & { gradingStatus?: string };
+    if (submissionId === "sub-2222") {
+      return mockScoredSubmissionDetail;
+    }
+    return mockPendingSubmissionDetail;
   },
+
+  async submitScore(submissionId: UUID, payload: any) {
+    await delay(600);
+    if (submissionId === "sub-1111") {
+      mockPendingSubmissionDetail.gradingStatus = "SCORED";
+      mockPendingSubmissionDetail.scoredData = payload; 
+      
+      const targetSub = mockJudgeSubmissions.find(s => s.submissionId === "sub-1111");
+      if (targetSub) targetSub.gradingStatus = "SCORED";
+    }
+    return { success: true };
+  }
 };
