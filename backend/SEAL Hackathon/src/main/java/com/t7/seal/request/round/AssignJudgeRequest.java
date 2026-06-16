@@ -7,6 +7,6 @@ import java.util.UUID;
 
 public record AssignJudgeRequest(
         @NotNull UUID judgeId,
-        UUID trackId,
+        @NotNull UUID trackId,
         @Min(1) Integer totalToScore
 ) {}

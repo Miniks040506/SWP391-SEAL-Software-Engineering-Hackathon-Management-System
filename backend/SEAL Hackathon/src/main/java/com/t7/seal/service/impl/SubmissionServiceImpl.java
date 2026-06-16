@@ -781,6 +781,8 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getSubmissionNumber(),
                 submission.getSubmittedAt(),
                 submission.getUpdatedAt(),
+                submission.getRound().isSubmissionLocked(),
+                submission.getRound().getSubmissionLockedAt(),
                 linkResponses(submission.getId())
         );
     }
@@ -800,6 +802,8 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getSubmissionNumber(),
                 submission.getSubmittedAt(),
                 submission.getUpdatedAt(),
+                submission.getRound().isSubmissionLocked(),
+                submission.getRound().getSubmissionLockedAt(),
                 links.size()
         );
     }
@@ -823,6 +827,8 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getSubmissionNumber(),
                 submission.getSubmittedAt(),
                 submission.getUpdatedAt(),
+                submission.getRound().isSubmissionLocked(),
+                submission.getRound().getSubmissionLockedAt(),
                 links.size(),
                 submission.isLate()
         );

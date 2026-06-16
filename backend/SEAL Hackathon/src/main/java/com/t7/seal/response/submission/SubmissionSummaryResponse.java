@@ -15,6 +15,8 @@ public record SubmissionSummaryResponse(
         Integer submissionNumber,
         LocalDateTime submittedAt,
         LocalDateTime updatedAt,
+        Boolean roundSubmissionLocked,
+        LocalDateTime roundSubmissionLockedAt,
         long linkCount
 ) {
 }
