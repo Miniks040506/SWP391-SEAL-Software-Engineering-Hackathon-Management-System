@@ -7,6 +7,7 @@ export * from "@/api/track.api";
 export * from "@/api/criteria.api";
 export * from "@/api/team.api";
 export * from "@/api/submission.api";
+export * from "@/api/judge.api";
 export * from "@/api/grading.api";
 export * from "@/api/calibration.api";
 export * from "@/api/mentorFeedback.api";
