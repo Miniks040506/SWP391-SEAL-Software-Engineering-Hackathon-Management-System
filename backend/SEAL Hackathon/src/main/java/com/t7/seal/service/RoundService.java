@@ -4,9 +4,7 @@ import com.t7.seal.request.round.CreateAdvanceRuleRequest;
 import com.t7.seal.request.round.CreateRoundRequest;
 import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
 import com.t7.seal.request.round.UpdateRoundRequest;
-import com.t7.seal.response.round.AdvanceRuleResponse;
-import com.t7.seal.response.round.RoundDetailResponse;
-import com.t7.seal.response.round.RoundResponse;
+import com.t7.seal.response.round.*;
 import org.springframework.security.core.Authentication;
 
 import java.util.List;
@@ -32,4 +30,12 @@ public interface RoundService {
             (UUID advanceRuleId, UpdateAdvanceRuleRequest request, Authentication authentication);
 
     void deleteAdvanceRule(UUID advanceRuleId, Authentication authentication);
+
+    RoundResponse openRound(UUID roundId, Authentication authentication);
+
+    RoundResponse closeRound(UUID roundId, Authentication authentication);
+
+    RoundLockResponse lockSubmission(UUID roundId, Authentication authentication);
+
+    RoundOperationStatusResponse getOperationStatus(UUID roundId, Authentication authentication);
 }

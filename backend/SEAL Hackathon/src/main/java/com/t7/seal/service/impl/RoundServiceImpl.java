@@ -16,9 +16,7 @@ import com.t7.seal.request.round.CreateAdvanceRuleRequest;
 import com.t7.seal.request.round.CreateRoundRequest;
 import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
 import com.t7.seal.request.round.UpdateRoundRequest;
-import com.t7.seal.response.round.AdvanceRuleResponse;
-import com.t7.seal.response.round.RoundDetailResponse;
-import com.t7.seal.response.round.RoundResponse;
+import com.t7.seal.response.round.*;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
@@ -326,6 +324,26 @@ public class RoundServiceImpl implements RoundService {
         assertAdvanceRuleEditable(advanceRule.getRound());
 
         advanceRuleRepository.delete(advanceRule);
+    }
+
+    @Override
+    public RoundResponse openRound(UUID roundId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public RoundResponse closeRound(UUID roundId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public RoundLockResponse lockSubmission(UUID roundId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public RoundOperationStatusResponse getOperationStatus(UUID roundId, Authentication authentication) {
+        return null;
     }
 
     //HELPERS
