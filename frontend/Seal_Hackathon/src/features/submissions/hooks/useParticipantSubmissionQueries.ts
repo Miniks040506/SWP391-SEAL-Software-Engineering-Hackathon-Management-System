@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { submissionApi } from "@/api/submission.api";
 import { teamApi } from "@/api/team.api";
+import { roundApi } from "@/api/round.api";
 import { apiRequest } from "@/api/apiRequest";
 import type { UUID } from "@/types/common.types";
 import type {
@@ -9,19 +10,22 @@ import type {
   SubmissionSummaryResponse,
 } from "@/types/submission.types";
 import type { TeamSummaryResponse } from "@/types/team.types";
+import type { RoundDetailResponse } from "@/types/round.types";
 
 export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
   const [submission, setSubmission] = useState<SubmissionDetailResponse | null>(null);
   const [teamInfo, setTeamInfo] = useState<TeamSummaryResponse | null>(null);
+  const [roundInfo, setRoundInfo] = useState<RoundDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetch = useCallback(async () => {
     if (!teamId || !roundId) return;
     setLoading(true);
     try {
-      const [teams, summaries] = await Promise.all([
+      const [teams, summaries, roundRes] = await Promise.all([
         teamApi.getMyTeams(),
         submissionApi.getTeamSubmissions(teamId),
+        roundApi.getRoundById(roundId),
       ]);
 
       const currentTeam = teams.find((t) => t.id === teamId);
@@ -34,6 +38,8 @@ export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
       } else {
         setSubmission(null);
       }
+      
+      setRoundInfo(roundRes);
     } catch (err) {
       console.error("Failed to fetch submission data", err);
     } finally {
@@ -45,7 +51,7 @@ export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
     fetch();
   }, [fetch]);
 
-  return { submission, teamInfo, loading, refetch: fetch };
+  return { submission, teamInfo, roundInfo, loading, refetch: fetch };
 };
 
 export const useRequiredLinkConfigQuery = (roundId?: UUID) => {

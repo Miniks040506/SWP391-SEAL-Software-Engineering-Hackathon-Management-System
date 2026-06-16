@@ -104,7 +104,7 @@ export function SubmissionFormPage() {
   const { teamId, roundId } = useParams<{ teamId: string; roundId: string }>();
   const navigate = useNavigate();
 
-  const { submission, teamInfo, loading, refetch } =
+  const { submission, teamInfo, roundInfo, loading, refetch } =
     useParticipantSubmissionData(teamId, roundId);
 
   const [items, setItems] = useState<StorageItem[]>([]);
@@ -155,7 +155,8 @@ export function SubmissionFormPage() {
   const isLeader = teamInfo?.roleInTeam === "LEADER";
   const isRegistered =
     teamInfo?.status === "REGISTERED" || teamInfo?.status === "COMPETING";
-  const canEdit = isLeader && isRegistered;
+  const isLocked = !!roundInfo?.submissionLockedAt;
+  const canEdit = isLeader && isRegistered && !isLocked;
 
   const generateId = () => crypto.randomUUID();
 
@@ -384,8 +385,12 @@ export function SubmissionFormPage() {
       setSuccessMsg("Draft saved successfully.");
       refetch();
     } catch (err: unknown) {
+      const axiosErr = err as any;
+      const msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.errorCode || (err as { message?: string })?.message;
       setErrorMsg(
-        (err as { message?: string })?.message || "Failed to save draft.",
+        msg?.includes("ROUND_SUBMISSION_LOCKED") 
+          ? "Submissions are locked for this round. No further edits are allowed." 
+          : msg || "Failed to save draft."
       );
     } finally {
       setSaving(false);
@@ -422,10 +427,13 @@ export function SubmissionFormPage() {
       setSuccessMsg("Submission confirmed! Reviewers have been notified.");
       refetch();
     } catch (err: unknown) {
-      const msg = (err as { message?: string })?.message;
+      const axiosErr = err as any;
+      const msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.errorCode || (err as { message?: string })?.message;
       setErrorMsg(
         msg?.includes("deadline")
           ? "Deadline exceeded. Submission is blocked."
+          : msg?.includes("ROUND_SUBMISSION_LOCKED")
+          ? "Submissions are locked for this round. No further edits are allowed."
           : msg || "Failed to submit.",
       );
     } finally {
@@ -577,6 +585,11 @@ export function SubmissionFormPage() {
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
             <strong>Action blocked:</strong> Your team must be REGISTERED or
             COMPETING to submit. Submissions are disabled.
+          </div>
+        )}
+        {isLocked && (
+          <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl text-sm text-rose-800 dark:text-rose-400">
+            <strong>Submissions locked:</strong> The round submissions were locked on {formatDate(new Date(roundInfo!.submissionLockedAt!).getTime())}. Edits are no longer allowed.
           </div>
         )}
 
