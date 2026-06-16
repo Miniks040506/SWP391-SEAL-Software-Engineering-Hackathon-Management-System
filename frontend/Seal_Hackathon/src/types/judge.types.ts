@@ -34,6 +34,7 @@ export type JudgeSubmissionAssignmentResponse = {
 export type GetJudgeSubmissionsParams = PageParams & {
   roundId?: UUID;
   status?: string;
+  search?: string;
 };
 
 export type JudgeSubmissionDetailResponse = GradingSubmissionDetailResponse;

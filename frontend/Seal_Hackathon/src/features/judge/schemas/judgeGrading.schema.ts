@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const judgeSubmissionFilterSchema = {
-  STATUSES: ["PENDING", "SCORED"],
+  STATUSES: ["SUBMITTED", "LATE"],
 };
 
 export type JudgeGradingFormValues = {
