@@ -26,6 +26,8 @@ export const coordinatorEventKeys = {
   detail: (eventId?: UUID) => [...coordinatorEventKeys.all, "detail", eventId] as const,
   tracks: (eventId?: UUID) => [...coordinatorEventKeys.all, "tracks", eventId] as const,
   rounds: (eventId?: UUID) => [...coordinatorEventKeys.all, "rounds", eventId] as const,
+  roundOperationStatus: (roundId?: UUID) => [...coordinatorEventKeys.all, "round-operation-status", roundId] as const,
+  advanceRules: (roundId?: UUID) => [...coordinatorEventKeys.all, "advance-rules", roundId] as const,
   prizes: (eventId?: UUID) => [...coordinatorEventKeys.all, "prizes", eventId] as const,
   mentorAssignments: (trackId?: UUID) => [...coordinatorEventKeys.all, "mentor-assignments", trackId] as const,
   judgeAssignments: (roundId?: UUID) => [...coordinatorEventKeys.all, "judge-assignments", roundId] as const,
@@ -76,7 +78,28 @@ export function useAssignableUsersQuery(role: AssignableUserRole, search?: strin
   return useQuery({
     queryKey: coordinatorEventKeys.assignableUsers(role, search),
     queryFn: () => activeUserApi.getAssignableUsers(role, search),
+    placeholderData: (previous) => previous,
     staleTime: 30_000,
+  });
+}
+
+export function useRoundOperationStatusQuery(roundId?: UUID) {
+  return useQuery({
+    queryKey: coordinatorEventKeys.roundOperationStatus(roundId),
+    queryFn: () => activeRoundApi.getOperationStatus(roundId!),
+    enabled: Boolean(roundId),
+    placeholderData: (previous) => previous,
+    retry: false,
+  });
+}
+
+export function useAdvanceRulesQuery(roundId?: UUID) {
+  return useQuery({
+    queryKey: coordinatorEventKeys.advanceRules(roundId),
+    queryFn: () => activeRoundApi.getAdvanceRules(roundId!),
+    enabled: Boolean(roundId),
+    placeholderData: (previous) => previous,
+    retry: false,
   });
 }
 
