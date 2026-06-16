@@ -35,6 +35,8 @@ public class RoundServiceImpl implements RoundService {
     private final TrackRepository trackRepository;
     private final AuditLogRepository auditLogRepository;
     private final NotificationRepository notificationRepository;
+    private final SubmissionRepository submissionRepository;
+    private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
 
     @Transactional
     @Override
@@ -374,7 +376,50 @@ public class RoundServiceImpl implements RoundService {
     @Transactional
     @Override
     public RoundLockResponse lockSubmission(UUID roundId, Authentication authentication) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getSubmissionLockedAt() != null) {
+            throw new ConflictException("This round submissions are already locked.");
+        }
+
+        if (round.getStatus() != RoundStatus.OPEN
+                && round.getStatus() != RoundStatus.CLOSED) {
+            throw new ConflictException("Round cannot be locked in this status " + round.getStatus() + ".");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        RoundStatus before = round.getStatus();
+        round.setSubmissionLockedAt(now);
+        round.setStatus(RoundStatus.CLOSED);
+        Round saved = roundRepository.save(round);
+
+        List<Submission> drafts = submissionRepository.findDraftsByRoundId(saved.getId());
+        drafts.forEach(draft -> draft.setStatus(SubmissionStatus.LATE));
+
+        submissionRepository.saveAll(drafts);
+
+        List<RoundJudgeAssignment> judgeAssignments = roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(saved.getId());
+
+        for (RoundJudgeAssignment judgeAssignment : judgeAssignments) {
+            UUID trackId = judgeAssignment.getTrack() == null ? null
+                    : judgeAssignment.getTrack().getId();
+            judgeAssignment.setTotalToScore((int) submissionRepository
+                    .countSubmittedOrLateByRoundAndTrack(roundId, trackId));
+        }
+
+        roundJudgeAssignmentRepository.saveAll(judgeAssignments);
+
+        saveRoundAudit(actor, round, AuditActionType.ROUND_LOCKED, before.name(), saved.getStatus().name());
+        saveRoundNotification(actor, round, NotificationType.SUBMISSION_LOCKED, "Submission locked", "Submission are locked for this " + saved.getName());
+        saveRoundNotification(actor, round, NotificationType.JUDGING_READY, "Judging reading", "Judging queue is ready for " + saved.getName());
+
+        return new RoundLockResponse(
+                saved.getId(),
+                "Submission",
+                now,
+                "Round submission locked successfully"
+        );
     }
 
     @Transactional(readOnly = true)
