@@ -204,7 +204,7 @@ public class UserServiceImpl implements UserService {
         validateAdminCreateRole(role);
 
         String temporaryPassword = generateRandomToken();
-        String setupCode = tokenGenerator.generateSixDigitCode();
+        String setupToken = generateRandomToken();
 
         User user = new User();
         user.setEmail(email);
@@ -304,7 +304,7 @@ public class UserServiceImpl implements UserService {
         }
 
         String temporaryPassword = generateRandomToken();
-        String setupToken = generateRandomToken();
+        String setupCode = tokenGenerator.generateSixDigitCode();
 
         User user = new User();
         user.setEmail(email);
