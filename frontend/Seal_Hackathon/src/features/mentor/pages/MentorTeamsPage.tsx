@@ -10,7 +10,8 @@ export const MentorTeamsPage = () => {
 
   const { trackTeamsQuery } = useMentorTeams(trackId);
   const { data: response, isLoading } = trackTeamsQuery || {};
-  const teams = response?.data || response || [];
+  
+  const teams = response?.data?.content || response?.data || response || [];
 
   return (
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">

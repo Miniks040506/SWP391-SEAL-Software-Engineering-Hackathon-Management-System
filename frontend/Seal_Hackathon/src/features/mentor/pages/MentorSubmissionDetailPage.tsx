@@ -33,11 +33,11 @@ export const MentorSubmissionDetailPage = () => {
     isLoading: isSubLoading,
     isError,
   } = submissionDetailQuery;
-  const submission = subResponse?.data;
+  const submission = (subResponse as any)?.data || subResponse;
 
   const { data: fbResponse, isLoading: isFbLoading } =
     useMentorTeamFeedbackQuery(submission?.teamId);
-  const allFeedbacks = fbResponse?.data || [];
+  const allFeedbacks = (fbResponse as any)?.data?.content || (fbResponse as any)?.data || fbResponse || [];
 
   const submissionFeedbacks = allFeedbacks.filter(
     (fb: MentorFeedbackResponse) => fb.submissionId === submission?.id,

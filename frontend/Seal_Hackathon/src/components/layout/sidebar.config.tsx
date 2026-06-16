@@ -256,11 +256,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <GroupsOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Feedback",
-            path: "/mentor/feedback",
-            icon: <FactCheckOutlinedIcon fontSize="small" />,
-          },
-          {
             label: "Submissions",
             path: "/mentor/submissions",
             icon: <UploadFileOutlinedIcon fontSize="small" />,
