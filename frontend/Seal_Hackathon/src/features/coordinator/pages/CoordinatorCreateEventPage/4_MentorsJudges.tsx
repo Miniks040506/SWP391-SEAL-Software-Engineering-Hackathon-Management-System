@@ -81,7 +81,18 @@ export function MentorsJudgesStep({
       role: activeTab,
     });
     
-    append(newAssignment);
+    append(
+      activeTab === "JUDGE"
+        ? {
+            ...newAssignment,
+            judgeRoundAssignments:
+              tracks[0]?.id && rounds[0]?.id
+                ? [createJudgeTrackRoundAssignment(tracks[0].id, rounds[0].id)]
+                : [],
+          }
+        : newAssignment,
+    );
+    void trigger("mentorJudgeAssignments");
   };
 
   const handleGuestJudgeCreated = (judge: GuestJudgeResponse, fullName: string) => {
