@@ -425,6 +425,7 @@ public class RoundServiceImpl implements RoundService {
     @Transactional(readOnly = true)
     @Override
     public RoundOperationStatusResponse getOperationStatus(UUID roundId, Authentication authentication) {
+
         return null;
     }
 
