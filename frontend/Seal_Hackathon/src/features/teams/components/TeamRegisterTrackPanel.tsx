@@ -36,7 +36,6 @@ export const TeamRegisterTrackPanel = ({
 
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [registered, setRegistered] = useState(false);
   const memberCount = (team.members ?? []).length;
 
   const hasMinMembers = (team.members ?? []).length >= 3;
@@ -45,7 +44,6 @@ export const TeamRegisterTrackPanel = ({
     if (!selectedTrackId) return;
     await registerMutation.mutateAsync({ trackId: selectedTrackId });
     setConfirmOpen(false);
-    setRegistered(true);
   };
 
   return (
@@ -64,158 +62,163 @@ export const TeamRegisterTrackPanel = ({
           </p>
         </div>
 
-        {!hasMinMembers && (
-          <Alert severity="warning">
-            Registration blocked: Your team must have at least 3 members to
-            register for a track.
+        {team.trackId ? (
+          <Alert severity="success">
+            <strong>Registration submitted!</strong>
+            <br />
+            Registered Track: {availableTracksQuery.data?.find((t) => t.id === team.trackId)?.name || (team as any).trackName || team.trackId}
+            <br />
+            Status: PENDING_APPROVAL. Awaiting coordinator approval.
           </Alert>
-        )}
+        ) : (
+          <>
+            {!hasMinMembers && (
+              <Alert severity="warning">
+                Registration blocked: Your team must have at least 3 members to
+                register for a track.
+              </Alert>
+            )}
 
-        {hasMinMembers && eventsQuery.isLoading && (
-          <div className="flex justify-center py-4">
-            <CircularProgress size={24} />
-          </div>
-        )}
+            {hasMinMembers && eventsQuery.isLoading && (
+              <div className="flex justify-center py-4">
+                <CircularProgress size={24} />
+              </div>
+            )}
 
-        {hasMinMembers && eventsQuery.isError && (
-          <Alert severity="error">Failed to load registration events.</Alert>
-        )}
+            {hasMinMembers && eventsQuery.isError && (
+              <Alert severity="error">Failed to load registration events.</Alert>
+            )}
 
-        {hasMinMembers && eventsQuery.isSuccess && events.length === 0 && (
-          <Alert severity="warning">
-            Registration blocked: No events are currently open for registration.
-          </Alert>
-        )}
+            {hasMinMembers && eventsQuery.isSuccess && events.length === 0 && (
+              <Alert severity="warning">
+                Registration blocked: No events are currently open for registration.
+              </Alert>
+            )}
 
-        {hasMinMembers && eventsQuery.isSuccess && events.length > 1 && (
-          <FormControl fullWidth sx={{ mt: 2, mb: 2 }}>
-            <InputLabel id="event-select-label">Select Event</InputLabel>
-            <Select
-              labelId="event-select-label"
-              value={selectedEventId || ""}
-              label="Select Event"
-              onChange={(e) => {
-                setSelectedEventId(e.target.value as string);
-                setSelectedTrackId(null);
-              }}
-            >
-              {events.map((evt) => (
-                <MenuItem key={evt.id} value={evt.id}>
-                  {evt.name} ({evt.season} {evt.year})
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-
-        {hasMinMembers && selectedEventId && availableTracksQuery.isLoading && (
-          <div className="flex justify-center py-4">
-            <CircularProgress size={24} />
-          </div>
-        )}
-
-        {hasMinMembers && selectedEventId && availableTracksQuery.isError && (
-          <Alert severity="error">Failed to load available tracks.</Alert>
-        )}
-
-        {hasMinMembers &&
-          selectedEventId &&
-          availableTracksQuery.isSuccess &&
-          availableTracksQuery.data.length === 0 && (
-            <Alert severity="warning">
-              Registration blocked: No tracks available in this event.
-            </Alert>
-          )}
-
-        {hasMinMembers &&
-          selectedEventId &&
-          availableTracksQuery.isSuccess &&
-          availableTracksQuery.data.length > 0 &&
-          (registered ? (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              <strong>Registration submitted!</strong>
-              <br />
-              Status: PENDING_APPROVAL. Awaiting coordinator approval.
-            </Alert>
-          ) : (
-            <div className="space-y-3">
-              {availableTracksQuery.data.map((track) => {
-                const isFull =
-                  track.maxTeams != null &&
-                  track.registeredTeamCount >= track.maxTeams;
-                const notEligible =
-                  (track.minMembers != null &&
-                    memberCount < track.minMembers) ||
-                  (track.maxMembers != null && memberCount > track.maxMembers);
-                const isDisabled = isFull || notEligible;
-
-                return (
-                  <div
-                    key={track.id}
-                    onClick={() => !isDisabled && setSelectedTrackId(track.id)}
-                    className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-colors ${
-                      selectedTrackId === track.id
-                        ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20"
-                        : isDisabled
-                          ? "cursor-not-allowed border-gray-200 bg-gray-50 opacity-60 dark:border-slate-700 dark:bg-slate-800/40"
-                          : "border-gray-200 bg-white hover:border-blue-300 dark:border-slate-700 dark:bg-slate-800"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Radio
-                        checked={selectedTrackId === track.id}
-                        disabled={isDisabled}
-                        color="primary"
-                        sx={{ p: 0, mt: 0.5 }}
-                      />
-                      <div>
-                        <h3 className="font-bold text-gray-900 dark:text-white">
-                          {track.name}
-                        </h3>
-                        {track.description && (
-                          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-                            {track.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className={`text-sm font-bold ${isDisabled ? "text-red-500" : "text-green-600 dark:text-green-400"}`}
-                      >
-                        {track.registeredTeamCount} / {track.maxTeams ?? "∞"}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-slate-400">
-                        Teams
-                      </p>
-                      {(track.minMembers || track.maxMembers) && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          {track.minMembers ?? 1}–{track.maxMembers ?? "∞"}{" "}
-                          members required
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  variant="contained"
-                  disabled={!selectedTrackId || registerMutation.isPending}
-                  onClick={() => setConfirmOpen(true)}
-                  sx={{
-                    bgcolor: "#2563eb",
-                    fontWeight: 800,
-                    textTransform: "none",
-                    "&:hover": { bgcolor: "#1d4ed8" },
+            {hasMinMembers && eventsQuery.isSuccess && events.length > 1 && (
+              <FormControl fullWidth sx={{ mt: 2, mb: 2 }}>
+                <InputLabel id="event-select-label">Select Event</InputLabel>
+                <Select
+                  labelId="event-select-label"
+                  value={selectedEventId || ""}
+                  label="Select Event"
+                  onChange={(e) => {
+                    setSelectedEventId(e.target.value as string);
+                    setSelectedTrackId(null);
                   }}
                 >
-                  Register Team
-                </Button>
+                  {events.map((evt) => (
+                    <MenuItem key={evt.id} value={evt.id}>
+                      {evt.name} ({evt.season} {evt.year})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
+            {hasMinMembers && selectedEventId && availableTracksQuery.isLoading && (
+              <div className="flex justify-center py-4">
+                <CircularProgress size={24} />
               </div>
-            </div>
-          ))}
+            )}
+
+            {hasMinMembers && selectedEventId && availableTracksQuery.isError && (
+              <Alert severity="error">Failed to load available tracks.</Alert>
+            )}
+
+            {hasMinMembers &&
+              selectedEventId &&
+              availableTracksQuery.isSuccess &&
+              availableTracksQuery.data.length === 0 && (
+                <Alert severity="warning">
+                  Registration blocked: No tracks available in this event.
+                </Alert>
+              )}
+
+            {hasMinMembers &&
+              selectedEventId &&
+              availableTracksQuery.isSuccess &&
+              availableTracksQuery.data.length > 0 && (
+                <div className="space-y-3">
+                  {availableTracksQuery.data.map((track) => {
+                    const isFull =
+                      track.maxTeams != null &&
+                      track.registeredTeamCount >= track.maxTeams;
+                    const notEligible =
+                      (track.minMembers != null &&
+                        memberCount < track.minMembers) ||
+                      (track.maxMembers != null && memberCount > track.maxMembers);
+                    const isDisabled = isFull || notEligible;
+
+                    return (
+                      <div
+                        key={track.id}
+                        onClick={() => !isDisabled && setSelectedTrackId(track.id)}
+                        className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-colors ${
+                          selectedTrackId === track.id
+                            ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20"
+                            : isDisabled
+                              ? "cursor-not-allowed border-gray-200 bg-gray-50 opacity-60 dark:border-slate-700 dark:bg-slate-800/40"
+                              : "border-gray-200 bg-white hover:border-blue-300 dark:border-slate-700 dark:bg-slate-800"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Radio
+                            checked={selectedTrackId === track.id}
+                            disabled={isDisabled}
+                            color="primary"
+                            sx={{ p: 0, mt: 0.5 }}
+                          />
+                          <div>
+                            <h3 className="font-bold text-gray-900 dark:text-white">
+                              {track.name}
+                            </h3>
+                            {track.description && (
+                              <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+                                {track.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p
+                            className={`text-sm font-bold ${isDisabled ? "text-red-500" : "text-green-600 dark:text-green-400"}`}
+                          >
+                            {track.registeredTeamCount} / {track.maxTeams ?? "∞"}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">
+                            Teams
+                          </p>
+                          {(track.minMembers || track.maxMembers) && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              {track.minMembers ?? 1}–{track.maxMembers ?? "∞"}{" "}
+                              members required
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      variant="contained"
+                      disabled={!selectedTrackId || registerMutation.isPending}
+                      onClick={() => setConfirmOpen(true)}
+                      sx={{
+                        bgcolor: "#2563eb",
+                        fontWeight: 800,
+                        textTransform: "none",
+                        "&:hover": { bgcolor: "#1d4ed8" },
+                      }}
+                    >
+                      Register Team
+                    </Button>
+                  </div>
+                </div>
+              )}
+          </>
+        )}
       </CardContent>
 
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
