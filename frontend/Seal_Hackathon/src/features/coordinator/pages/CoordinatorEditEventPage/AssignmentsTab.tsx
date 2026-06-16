@@ -1,21 +1,20 @@
-import { useMemo, useState } from "react";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { enqueueSnackbar } from "notistack";
-
-import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
-import CircularProgress from "@mui/material/CircularProgress";
-import IconButton from "@mui/material/IconButton";
-import InputAdornment from "@mui/material/InputAdornment";
-import TextField from "@mui/material/TextField";
-
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
-import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
+import {
+  Alert,
+  Button,
+  Chip,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  TextField,
+} from "@mui/material";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { enqueueSnackbar } from "notistack";
+import { useMemo, useState } from "react";
 
 import {
   assignableUserApi,
@@ -24,8 +23,8 @@ import {
 } from "@/api/assignableUser.api";
 import { roundApi } from "@/api/round.api";
 import { trackApi } from "@/api/track.api";
-
 import type { UUID } from "@/types/common.types";
+
 import type {
   JudgeAssignmentResponse,
   RoundResponse,
@@ -116,7 +115,6 @@ export function AssignmentsTab({
   const queryClient = useQueryClient();
   const [activeRole, setActiveRole] = useState<AssignableUserRole>("MENTOR");
   const [search, setSearch] = useState("");
-  
   const [selectedTrackId, setSelectedTrackId] = useState<UUID | "">(
     tracks[0]?.id ?? "",
   );
@@ -125,9 +123,6 @@ export function AssignmentsTab({
   );
   const [totalToScore, setTotalToScore] = useState("10");
   const [guestJudgeModalOpen, setGuestJudgeModalOpen] = useState(false);
-
-  // Quản lý Modal tạo Guest Judge
-  const [isGuestJudgeModalOpen, setGuestJudgeModalOpen] = useState(false);
 
   const usersQuery = useQuery({
     queryKey: ["edit-assignable-users", activeRole, search],
@@ -453,24 +448,22 @@ export function AssignmentsTab({
               ` · ${selectedRound ? getRoundName(selectedRound) : "No round"}`}
           </div>
 
-          <div className="flex items-center gap-3">
-            <TextField
-              fullWidth
-              size="small"
-              placeholder={`Search ${activeRole.toLowerCase()} by name or email`}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchOutlinedIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </div>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder={`Search ${activeRole.toLowerCase()} by name or email`}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchOutlinedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
 
           {activeRole === "JUDGE" && (
             <Button
@@ -645,27 +638,9 @@ export function AssignmentsTab({
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
-            <div className="flex items-center justify-between">
-              <h3 className="font-black text-slate-950 dark:text-white">
-                Judge assignments
-              </h3>
-              
-              {canEdit && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<PersonAddOutlinedIcon fontSize="small" />}
-                  onClick={() => setGuestJudgeModalOpen(true)}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 800,
-                    borderRadius: "8px",
-                  }}
-                >
-                  Create Guest
-                </Button>
-              )}
-            </div>
+            <h3 className="font-black text-slate-950 dark:text-white">
+              Judge assignments
+            </h3>
 
             <div className="mt-4 space-y-3">
               {judgeAssignments.map(({ assignment, round }) => {
