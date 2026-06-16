@@ -41,11 +41,11 @@ export function useTrackRegistration(teamId: UUID) {
     mutationFn: async (payload: RegisterTeamTrackRequest) => {
       return trackApi.registerTeamForTrack(teamId, payload);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.detail(teamId),
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
       enqueueSnackbar("Registered successfully.", { variant: "success" });
