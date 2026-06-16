@@ -12,7 +12,7 @@ import type { CreatePrizeRequest, UpdatePrizeRequest } from "@/types/prize.types
 import type { AssignJudgeRequest, CreateRoundRequest, UpdateRoundRequest } from "@/types/round.types";
 import type { AssignMentorRequest, CreateTrackRequest, UpdateTrackRequest } from "@/types/track.types";
 
-const USE_MOCK = false;
+const USE_MOCK = true;
 
 const activeEventApi = USE_MOCK ? mockCoordinatorService.eventApi : eventApi;
 const activeTrackApi = USE_MOCK ? mockCoordinatorService.trackApi : trackApi;
