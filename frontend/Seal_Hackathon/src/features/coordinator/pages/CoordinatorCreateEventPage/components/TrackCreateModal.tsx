@@ -17,7 +17,6 @@ import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import IconButton from "@mui/material/IconButton";
 import Checkbox from "@mui/material/Checkbox";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import Chip from "@mui/material/Chip";
 
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
@@ -47,7 +46,7 @@ export const TrackCreateModal = ({
 }: TrackCreateModalProps) => {
   const isEditMode = Boolean(initialTrack);
 
-  const methods = useForm<TrackFormValues>({
+  const methods = useForm({
     resolver: zodResolver(createEventTrackSchema),
     defaultValues: createEmptyTrack(),
     mode: "onSubmit",
@@ -76,6 +75,12 @@ export const TrackCreateModal = ({
     control,
     name: "trackName",
   });
+
+  const currentRounds =
+    useWatch({
+      control,
+      name: "rounds",
+    }) ?? [];
 
   const canAddRound = Boolean(trackName?.trim());
 
@@ -107,7 +112,7 @@ export const TrackCreateModal = ({
   };
 
   const handleSave = handleSubmit((values) => {
-    onSave(values);
+    onSave(values as TrackFormValues);
     onClose();
   });
 
@@ -171,7 +176,9 @@ export const TrackCreateModal = ({
                     ? field.value
                     : [];
 
-                  const handleToggleLinkType = (linkType: typeof SUBMISSION_LINK_TYPES[number]) => {
+                  const handleToggleLinkType = (
+                    linkType: (typeof SUBMISSION_LINK_TYPES)[number],
+                  ) => {
                     const nextValues = selectedValues.includes(linkType)
                       ? selectedValues.filter((value) => value !== linkType)
                       : [...selectedValues, linkType];
@@ -214,9 +221,7 @@ export const TrackCreateModal = ({
                                 }}
                               />
 
-                              <span className="text-sm">
-                                {linkType}
-                              </span>
+                              <span className="text-sm">{linkType}</span>
                             </button>
                           );
                         })}
@@ -278,7 +283,7 @@ export const TrackCreateModal = ({
 
               <div className="space-y-4">
                 {roundFields.map((round, roundIndex) => {
-                  const roundErrors = errors.rounds?.[roundIndex];
+                  const roundErrors = errors.rounds?.[roundIndex] as any;
 
                   return (
                     <div
@@ -286,9 +291,24 @@ export const TrackCreateModal = ({
                       className="rounded-xl border border-gray-200 bg-white p-5"
                     >
                       <div className="mb-4 flex items-center justify-between">
-                        <h4 className="font-extrabold text-gray-900">
-                          Round {roundIndex + 1}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-extrabold text-gray-900">
+                            Round {roundIndex + 1}
+                          </h4>
+                          {currentRounds.length > 0 &&
+                            roundIndex === currentRounds.length - 1 && (
+                              <Chip
+                                size="small"
+                                label="Final"
+                                color="success"
+                                sx={{
+                                  fontWeight: 800,
+                                  height: 20,
+                                  fontSize: "0.65rem",
+                                }}
+                              />
+                            )}
+                        </div>
 
                         <IconButton
                           color="error"
@@ -312,20 +332,15 @@ export const TrackCreateModal = ({
 
                         <TextField
                           label="Order Index"
-                          placeholder="e.g. 1"
                           type="number"
-                          error={Boolean(roundErrors?.orderIndex)}
-                          helperText={roundErrors?.orderIndex?.message}
+                          value={roundIndex + 1}
                           fullWidth
-                          required
+                          disabled
                           size="small"
-                          slotProps={{
-                            input: {
-                              inputProps: {
-                                min: 1,
-                              },
-                            },
-                          }}
+                        />
+                        <input
+                          type="hidden"
+                          value={roundIndex + 1}
                           {...register(`rounds.${roundIndex}.orderIndex`)}
                         />
 
@@ -359,24 +374,6 @@ export const TrackCreateModal = ({
                             },
                           }}
                           {...register(`rounds.${roundIndex}.judgingDeadline`)}
-                        />
-
-                        <FormControlLabel
-                          control={
-                            <Controller
-                              name={`rounds.${roundIndex}.isFinal`}
-                              control={control}
-                              render={({ field }) => (
-                                <Checkbox
-                                  checked={Boolean(field.value)}
-                                  onChange={(event) =>
-                                    field.onChange(event.target.checked)
-                                  }
-                                />
-                              )}
-                            />
-                          }
-                          label="Final round"
                         />
 
                         <Controller

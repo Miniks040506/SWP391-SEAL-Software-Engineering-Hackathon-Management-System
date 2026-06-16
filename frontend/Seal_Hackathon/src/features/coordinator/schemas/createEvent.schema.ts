@@ -174,8 +174,6 @@ export const createRoundSchema = z
       .int("Order index must be an integer.")
       .min(0, "Order index must be greater than or equal to 0."),
 
-    isFinal: z.boolean().default(false),
-
     submissionDeadline: optionalTrimmedString,
 
     judgingDeadline: optionalTrimmedString,
@@ -348,7 +346,6 @@ export const createEmptyRound = (orderIndex = 0): RoundFormValues => ({
   id: crypto.randomUUID(),
   roundName: "",
   orderIndex,
-  isFinal: false,
   submissionDeadline: "",
   judgingDeadline: "",
   advanceRules: [],

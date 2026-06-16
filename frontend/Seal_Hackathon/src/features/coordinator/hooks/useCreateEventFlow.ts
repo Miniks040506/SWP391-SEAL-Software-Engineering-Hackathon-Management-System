@@ -32,8 +32,6 @@ function criteriaNumberOrNull(value: unknown) {
   return parsed === undefined ? null : parsed;
 }
 
-
-
 async function createEventFlow(values: CreateEventFormValues) {
   let bannerUrl: string | undefined;
 
@@ -57,12 +55,14 @@ async function createEventFlow(values: CreateEventFormValues) {
   const roundIdMap = new Map<string, string>();
 
   const createdTracks = await Promise.all(
-    values.tracks.map((track) => trackApi.createTrack(createdEvent.id, {
-      name: track.trackName.trim(),
-      description: nullIfBlank(track.description),
-      maxTeams: numberOrUndefined(track.maxTeams),
-      requiredLinkTypes: track.requiredLinkTypes,
-    })),
+    values.tracks.map((track) =>
+      trackApi.createTrack(createdEvent.id, {
+        name: track.trackName.trim(),
+        description: nullIfBlank(track.description),
+        maxTeams: numberOrUndefined(track.maxTeams),
+        requiredLinkTypes: track.requiredLinkTypes,
+      }),
+    ),
   );
 
   createdTracks.forEach((createdTrack, index) => {
@@ -70,64 +70,82 @@ async function createEventFlow(values: CreateEventFormValues) {
     trackIdMap.set(track.id, createdTrack.id);
   });
 
-  await Promise.all(values.prizes.map((prize) => {
-    const mappedTrackId = prize.trackId ? trackIdMap.get(prize.trackId) : undefined;
+  await Promise.all(
+    values.prizes.map((prize) => {
+      const mappedTrackId = prize.trackId
+        ? trackIdMap.get(prize.trackId)
+        : undefined;
 
-    return prizeApi.createPrize({
-      eventId: createdEvent.id,
-      trackId: mappedTrackId,
-      rankPosition: numberOrUndefined(prize.rankPosition),
-      title: prize.title.trim(),
-      description: nullIfBlank(prize.description),
-      value: numberOrUndefined(prize.value),
-      currency: nullIfBlank(prize.currency),
-      sponsorName: nullIfBlank(prize.sponsorName),
-    });
-  }));
-
-  const createdRounds = await Promise.all(
-    values.rounds.map((round) => roundApi.createRound(createdEvent.id, {
-      name: round.roundName.trim(),
-      orderIndex: Number(round.orderIndex),
-      isFinal: round.isFinal,
-      submissionDeadline: toLocalDateTime(round.submissionDeadline),
-      judgingDeadline: toLocalDateTime(round.judgingDeadline),
-    })),
+      return prizeApi.createPrize({
+        eventId: createdEvent.id,
+        trackId: mappedTrackId,
+        rankPosition: numberOrUndefined(prize.rankPosition),
+        title: prize.title.trim(),
+        description: nullIfBlank(prize.description),
+        value: numberOrUndefined(prize.value),
+        currency: nullIfBlank(prize.currency),
+        sponsorName: nullIfBlank(prize.sponsorName),
+      });
+    }),
   );
 
-  await Promise.all(createdRounds.flatMap((createdRound, index) => {
-    const round = values.rounds[index];
-    roundIdMap.set(round.id, createdRound.id);
+  const maxOrderIndex = Math.max(...values.rounds.map((_, i) => i + 1));
 
-    return round.advanceRules.map((rule) =>
-      roundApi.createAdvanceRule(createdRound.id, {
-        ...rule,
-        trackId: rule.trackId ? trackIdMap.get(rule.trackId) : undefined,
+  const createdRounds = await Promise.all(
+    values.rounds.map((round, index) =>
+      roundApi.createRound(createdEvent.id, {
+        name: round.roundName.trim(),
+        orderIndex: index + 1,
+        isFinal: (index + 1) === maxOrderIndex,
+        submissionDeadline: toLocalDateTime(round.submissionDeadline),
+        judgingDeadline: toLocalDateTime(round.judgingDeadline),
       }),
-    );
-  }));
+    ),
+  );
 
-  await Promise.all(values.criteria.map((criteria) => {
-    const appliesToRoundIds = criteria.appliesToRoundLocalIds
-      .map((localRoundId) => roundIdMap.get(localRoundId))
-      .filter((id): id is string => Boolean(id));
+  await Promise.all(
+    createdRounds.flatMap((createdRound, index) => {
+      const round = values.rounds[index];
+      roundIdMap.set(round.id, createdRound.id);
 
-    return criteriaApi.createEventCriteria(createdEvent.id, {
-      criteriaId: criteria.sourceType === "TEMPLATE" ? criteria.criteriaId || null : null,
-      nameOverride:
-        criteria.sourceType === "CUSTOM"
-          ? (criteria.nameOverride ?? "").trim()
-          : nullIfBlank(criteria.nameOverride),
-      descriptionOverride: nullIfBlank(criteria.descriptionOverride),
-      rubricOverride: nullIfBlank(criteria.rubricOverride),
-      weightOverride: criteriaNumberOrNull(criteria.weightOverride),
-      maxScoreOverride: criteriaNumberOrNull(criteria.maxScoreOverride),
-      isTechnicalOverride:
-        criteria.sourceType === "CUSTOM" ? criteria.isTechnicalOverride : null,
-      appliesToRoundIds: appliesToRoundIds.length > 0 ? appliesToRoundIds : null,
-      displayOrder: numberOrUndefined(criteria.displayOrder),
-    });
-  }));
+      return round.advanceRules.map((rule) =>
+        roundApi.createAdvanceRule(createdRound.id, {
+          ...rule,
+          trackId: rule.trackId ? trackIdMap.get(rule.trackId) : undefined,
+        }),
+      );
+    }),
+  );
+
+  await Promise.all(
+    values.criteria.map((criteria) => {
+      const appliesToRoundIds = criteria.appliesToRoundLocalIds
+        .map((localRoundId) => roundIdMap.get(localRoundId))
+        .filter((id): id is string => Boolean(id));
+
+      return criteriaApi.createEventCriteria(createdEvent.id, {
+        criteriaId:
+          criteria.sourceType === "TEMPLATE"
+            ? criteria.criteriaId || null
+            : null,
+        nameOverride:
+          criteria.sourceType === "CUSTOM"
+            ? (criteria.nameOverride ?? "").trim()
+            : nullIfBlank(criteria.nameOverride),
+        descriptionOverride: nullIfBlank(criteria.descriptionOverride),
+        rubricOverride: nullIfBlank(criteria.rubricOverride),
+        weightOverride: criteriaNumberOrNull(criteria.weightOverride),
+        maxScoreOverride: criteriaNumberOrNull(criteria.maxScoreOverride),
+        isTechnicalOverride:
+          criteria.sourceType === "CUSTOM"
+            ? criteria.isTechnicalOverride
+            : null,
+        appliesToRoundIds:
+          appliesToRoundIds.length > 0 ? appliesToRoundIds : null,
+        displayOrder: numberOrUndefined(criteria.displayOrder),
+      });
+    }),
+  );
 
   const assignmentRequests = values.mentorJudgeAssignments.flatMap(
     (assignment): Promise<unknown>[] => {
@@ -149,7 +167,8 @@ async function createEventFlow(values: CreateEventFormValues) {
           const mappedTrackId = trackIdMap.get(pair.trackId);
           const mappedRoundId = roundIdMap.get(pair.roundId);
 
-          if (!mappedTrackId || !mappedRoundId) return Promise.resolve(undefined);
+          if (!mappedTrackId || !mappedRoundId)
+            return Promise.resolve(undefined);
 
           return roundApi.assignJudge(mappedRoundId, {
             judgeId,

@@ -89,7 +89,7 @@ export const TrackRoundsTable = ({
               </div>
             )}
 
-            {track.rounds.map((round) => (
+            {track.rounds.map((round, index) => (
               <div
                 key={round.id}
                 className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3"
@@ -99,14 +99,15 @@ export const TrackRoundsTable = ({
                     {round.orderIndex}. {round.roundName}
                   </p>
 
-                  {round.isFinal && (
-                    <Chip
-                      size="small"
-                      label="Final"
-                      color="success"
-                      sx={{ fontWeight: 800 }}
-                    />
-                  )}
+                  {track.rounds.length > 0 &&
+                    index === track.rounds.length - 1 && (
+                      <Chip
+                        size="small"
+                        label="Final"
+                        color="success"
+                        sx={{ fontWeight: 800 }}
+                      />
+                    )}
 
                   <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-600">
                     {round.advancementRuleType}
