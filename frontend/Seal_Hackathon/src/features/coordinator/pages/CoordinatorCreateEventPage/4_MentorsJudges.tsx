@@ -14,6 +14,7 @@ import { MentorJudgeAssignmentTable } from "./components/MentorJudgeAssignmentTa
 import { CreateGuestJudgeModal } from "./components/CreateGuestJugdeModal";
 
 import {
+  createJudgeTrackRoundAssignment,
   createMentorJudgeAssignment,
   type CreateEventFormValues,
   type RoundFormValues,
@@ -31,17 +32,21 @@ type MentorsJudgesStepProps = {
 
 export function MentorsJudgesStep({
   tracks,
-  rounds: _rounds, 
+  rounds,
   onBack,
   onNext,
 }: MentorsJudgesStepProps) {
   const {
     control,
+    trigger,
     formState: { errors },
   } = useFormContext<CreateEventFormValues>();
 
   const [activeTab, setActiveTab] = useState<"MENTOR" | "JUDGE">("MENTOR");
   const [isGuestJudgeModalOpen, setGuestJudgeModalOpen] = useState(false);
+  const [createdGuestJudges, setCreatedGuestJudges] = useState<
+    AssignableUserResponse[]
+  >([]);
 
   const assignments = useWatch({ control, name: "mentorJudgeAssignments" }) ?? [];
 
