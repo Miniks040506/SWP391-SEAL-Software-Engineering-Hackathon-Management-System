@@ -6,9 +6,13 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
 import { RootLayout } from "@/components/layout/RootLayout";
 
-import { JudgeDashboardPage } from "@/features/judge";
+import {
+  JudgeDashboardPage,
+  JudgeSubmissionsPage,
+  JudgeSubmissionDetailPage,
+} from "@/features/judge";
 
-import { 
+import {
   MentorDashboardPage,
   MentorSubmissionPage,
   MentorSubmissionDetailPage,
@@ -41,9 +45,9 @@ import {
   CoordinatorAnnouncementPage,
 } from "@/features/coordinator";
 
-import { 
-  CreateTeamPage, 
-  MyTeamsPage, 
+import {
+  CreateTeamPage,
+  MyTeamsPage,
   TeamDetailPage,
   MyInvitationsPage,
 } from "@/features/teams";
@@ -97,8 +101,14 @@ export const router = createBrowserRouter([
       { path: "teams/create", element: <CreateTeamPage /> },
       { path: "teams/:teamId", element: <TeamDetailPage /> },
       { path: "invitations", element: <MyInvitationsPage /> },
-      { path: "teams/:teamId/submissions", element: <ParticipantSubmissionsPage /> },
-      { path: "teams/:teamId/rounds/:roundId/submission", element: <SubmissionFormPage /> },
+      {
+        path: "teams/:teamId/submissions",
+        element: <ParticipantSubmissionsPage />,
+      },
+      {
+        path: "teams/:teamId/rounds/:roundId/submission",
+        element: <SubmissionFormPage />,
+      },
     ],
   },
 
@@ -174,7 +184,9 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <JudgeDashboardPage /> },
       { path: "events", element: <NotFoundPage /> },
-      { path: "submissions", element: <NotFoundPage /> },
+      { path: "submissions", element: <JudgeSubmissionsPage /> },
+      { path: "rounds/:roundId/submissions", element: <JudgeSubmissionsPage />},
+      { path: "submissions/:submissionId", element: <JudgeSubmissionDetailPage />,},
       { path: "scoring", element: <NotFoundPage /> },
       { path: "calibration", element: <NotFoundPage /> },
       {
@@ -200,7 +212,10 @@ export const router = createBrowserRouter([
       { path: "dashboard", element: <MentorDashboardPage /> },
       { path: "teams", element: <MentorTeamsPage /> },
       { path: "submissions", element: <MentorSubmissionPage /> },
-      { path: "submissions/:submissionId", element: <MentorSubmissionDetailPage /> },
+      {
+        path: "submissions/:submissionId",
+        element: <MentorSubmissionDetailPage />,
+      },
       { path: "notifications", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
