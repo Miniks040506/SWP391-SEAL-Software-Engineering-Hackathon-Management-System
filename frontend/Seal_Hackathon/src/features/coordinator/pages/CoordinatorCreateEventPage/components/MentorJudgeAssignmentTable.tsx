@@ -257,7 +257,10 @@ export const MentorJudgeAssignmentTable = ({
                               value={pair.totalToScore ?? ""}
                               onChange={(event) =>
                                 updatePair(pairIndex, {
-                                  totalToScore: event.target.value,
+                                  totalToScore:
+                                    event.target.value === ""
+                                      ? ""
+                                      : Number(event.target.value),
                                 })
                               }
                             />

@@ -344,9 +344,9 @@ export function useJoinTeamByCodeMutation() {
     mutationFn: async (payload: JoinTeamByCodeRequest) => {
       return teamApi.joinByCode(payload);
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       // Cập nhật lại danh sách team sau khi join thành công
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
       enqueueSnackbar("You have successfully joined the team!", {
