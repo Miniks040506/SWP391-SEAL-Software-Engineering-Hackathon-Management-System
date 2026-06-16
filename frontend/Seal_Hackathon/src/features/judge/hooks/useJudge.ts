@@ -6,7 +6,7 @@ import type { UUID } from "@/types/common.types";
 import type { GetJudgeSubmissionsParams } from "@/types/judge.types";
 
 const USE_MOCK = false;
-const activeService = USE_MOCK ? mockJudgeService : judgeApi;
+const activeService = (USE_MOCK ? mockJudgeService : judgeApi) as typeof judgeApi;
 type JudgeSubmissionApiParams = Omit<GetJudgeSubmissionsParams, "search">;
 type JudgeRoundSubmissionParams = Omit<JudgeSubmissionApiParams, "roundId">;
 

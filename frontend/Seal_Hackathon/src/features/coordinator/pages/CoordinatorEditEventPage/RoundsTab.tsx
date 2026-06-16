@@ -349,7 +349,7 @@ function RoundAdvanceRules({
   const createRuleMutation = useCreateAdvanceRuleMutation(eventId);
   const updateRuleMutation = useUpdateAdvanceRuleMutation(eventId);
   const deleteRuleMutation = useDeleteAdvanceRuleMutation(eventId);
-  const rules = rulesQuery.data ?? [];
+  const rules = (rulesQuery.data ?? []) as AdvanceRuleResponse[];
 
   const handleCreate = async (payload: any) => {
     try {

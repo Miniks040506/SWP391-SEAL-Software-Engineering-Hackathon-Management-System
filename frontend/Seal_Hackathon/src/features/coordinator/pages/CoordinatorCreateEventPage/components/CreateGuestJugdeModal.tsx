@@ -69,7 +69,7 @@ export const CreateGuestJudgeModal = ({
       {
         onSuccess: async (response) => {
           enqueueSnackbar("Guest Judge created successfully!", { variant: "success" });
-          await onSuccess(response, response.fullName || data.fullName); 
+          void onSuccess(response, response.fullName || data.fullName); 
         },
         onError: (error: any) => {
           const msg = error?.response?.data?.message || "Failed to create guest judge. Email might be in use.";

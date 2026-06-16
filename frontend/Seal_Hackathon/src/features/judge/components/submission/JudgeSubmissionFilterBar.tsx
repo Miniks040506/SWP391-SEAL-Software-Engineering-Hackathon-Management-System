@@ -56,10 +56,12 @@ export function JudgeSubmissionFilterBar({ filters, onChange }: Props) {
           value={localSearch}
           onChange={(e) => setLocalSearch(e.target.value)}
           sx={filterSx}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>
+              ),
+            },
           }}
         />
       </div>

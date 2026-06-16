@@ -188,8 +188,8 @@ export function AssignmentsTab({
 
   const usersQuery = useAssignableUsersQuery(activeRole, debouncedSearch);
 
-  const visibleUsers = useMemo(() => {
-    const users = usersQuery.data ?? [];
+  const visibleUsers = useMemo<AssignableUserResponse[]>(() => {
+    const users = (usersQuery.data ?? []) as AssignableUserResponse[];
 
     if (activeRole !== "JUDGE") return users;
 
@@ -603,6 +603,8 @@ export function AssignmentsTab({
                   : Boolean(userJudgeId && assignedJudgeIdsForTarget.has(userJudgeId));
               const assigningThis =
                 isAssigning && activeAssigningUserId === targetUserId;
+              const assignedLabel =
+                activeRole === "JUDGE" && user.guest ? "Invited" : "Assigned";
 
               const disabled =
                 !canEdit ||
@@ -682,7 +684,7 @@ export function AssignmentsTab({
                       : assigningThis
                         ? "Assigning..."
                       : alreadyAssigned
-                        ? "Assigned"
+                        ? assignedLabel
                         : missingTarget
                           ? "Select target first"
                           : activeRole === "MENTOR"

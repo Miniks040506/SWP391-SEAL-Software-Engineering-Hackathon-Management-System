@@ -22,7 +22,7 @@ const USE_MOCK = false;
 
 const activeEventApi = USE_MOCK ? mockCoordinatorService.eventApi : eventApi;
 const activeTrackApi = USE_MOCK ? mockCoordinatorService.trackApi : trackApi;
-const activeRoundApi = USE_MOCK ? mockCoordinatorService.roundApi : roundApi;
+const activeRoundApi = (USE_MOCK ? mockCoordinatorService.roundApi : roundApi) as typeof roundApi;
 const activePrizeApi = USE_MOCK ? mockCoordinatorService.prizeApi : prizeApi;
 
 export function useCreateEventMutation() {
