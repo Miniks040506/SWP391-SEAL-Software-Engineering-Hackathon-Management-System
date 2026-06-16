@@ -10,10 +10,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { eventApi } from "@/api/event.api";
-import { prizeApi } from "@/api/prize.api";
-import { roundApi } from "@/api/round.api";
-import { trackApi } from "@/api/track.api";
+import { eventApi as realEventApi } from "@/api/event.api";
+import { prizeApi as realPrizeApi } from "@/api/prize.api";
+import { roundApi as realRoundApi } from "@/api/round.api";
+import { trackApi as realTrackApi } from "@/api/track.api";
+import { mockCoordinatorService } from "../../mocks/coordinatorService.mock";
+
+const USE_MOCK = false;
+const eventApi = USE_MOCK ? (mockCoordinatorService.eventApi as any) : realEventApi;
+const trackApi = USE_MOCK ? (mockCoordinatorService.trackApi as any) : realTrackApi;
+const roundApi = USE_MOCK ? (mockCoordinatorService.roundApi as any) : realRoundApi;
+const prizeApi = USE_MOCK ? (mockCoordinatorService.prizeApi as any) : realPrizeApi;
+
 import type { UUID } from "@/types/common.types";
 
 import { AssignmentsTab } from "./AssignmentsTab";
