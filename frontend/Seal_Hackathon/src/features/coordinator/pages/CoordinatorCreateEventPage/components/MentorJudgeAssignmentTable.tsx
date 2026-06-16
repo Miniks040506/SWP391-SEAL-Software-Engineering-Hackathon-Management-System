@@ -103,7 +103,7 @@ export const MentorJudgeAssignmentTable = ({
             <div>
               <Chip
                 label={assignment.role}
-                color={assignment.role === "Judge" ? "primary" : "success"}
+                color={assignment.role === "JUDGE" ? "primary" : "success"}
                 size="small"
                 sx={{ fontWeight: 800 }}
               />
