@@ -12,17 +12,22 @@ import {
   InputAdornment,
   TextField,
 } from "@mui/material";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
-  assignableUserApi,
-  type AssignableUserResponse,
-  type AssignableUserRole,
-} from "@/api/assignableUser.api";
-import { roundApi } from "@/api/round.api";
-import { trackApi } from "@/api/track.api";
+  coordinatorEventKeys,
+  useAssignableUsersQuery,
+  useJudgeAssignmentsQueries,
+  useMentorAssignmentsQueries,
+} from "@/features/coordinator/hooks/useCoordinatorEventQueries";
+import {
+  useAssignJudgeMutation,
+  useAssignMentorMutation,
+  useRemoveJudgeAssignmentMutation,
+  useRemoveMentorAssignmentMutation,
+} from "@/features/coordinator/hooks/useCoordinatorEventMutations";
 import type { UUID } from "@/types/common.types";
 
 import type {
@@ -33,13 +38,17 @@ import type {
   MentorAssignmentResponse,
   TrackResponse,
 } from "@/types/track.types";
-import type { GuestJudgeResponse } from "@/types/user.types";
+import type {
+  AssignableUserResponse,
+  AssignableUserRole,
+  GuestJudgeResponse,
+} from "@/types/user.types";
 import { CreateGuestJudgeModal } from "../CoordinatorCreateEventPage/components/CreateGuestJugdeModal";
 
 type AssignmentsTabProps = {
+  eventId: UUID;
   tracks: TrackResponse[];
   rounds: RoundResponse[];
-  onChanged: () => void | Promise<void>;
   canEdit: boolean;
   readonlyReason?: string;
 };
@@ -120,15 +129,16 @@ function upsertAssignment<T extends { id?: UUID }>(items: T[] | undefined, item:
 }
 
 export function AssignmentsTab({
+  eventId,
   tracks,
   rounds,
-  onChanged,
   canEdit,
   readonlyReason,
 }: AssignmentsTabProps) {
   const queryClient = useQueryClient();
   const [activeRole, setActiveRole] = useState<AssignableUserRole>("MENTOR");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedTrackId, setSelectedTrackId] = useState<UUID | "">(
     tracks[0]?.id ?? "",
   );
@@ -141,12 +151,42 @@ export function AssignmentsTab({
     AssignableUserResponse[]
   >([]);
 
-  const usersQuery = useQuery({
-    queryKey: ["edit-assignable-users", activeRole, search],
-    queryFn: () => assignableUserApi.getAssignableUsers(activeRole, search),
-    staleTime: 30_000,
-    retry: false,
-  });
+  const assignMentorMutation = useAssignMentorMutation(eventId);
+  const assignJudgeMutation = useAssignJudgeMutation(eventId);
+  const removeMentorMutation = useRemoveMentorAssignmentMutation(eventId);
+  const removeJudgeMutation = useRemoveJudgeAssignmentMutation(eventId);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    if (!tracks.length) {
+      setSelectedTrackId("");
+      return;
+    }
+
+    if (!selectedTrackId || !tracks.some((track) => getId(track) === selectedTrackId)) {
+      setSelectedTrackId(getId(tracks[0]));
+    }
+  }, [selectedTrackId, tracks]);
+
+  useEffect(() => {
+    if (!rounds.length) {
+      setSelectedRoundId("");
+      return;
+    }
+
+    if (!selectedRoundId || !rounds.some((round) => getId(round) === selectedRoundId)) {
+      setSelectedRoundId(getId(rounds[0]));
+    }
+  }, [rounds, selectedRoundId]);
+
+  const usersQuery = useAssignableUsersQuery(activeRole, debouncedSearch);
 
   const visibleUsers = useMemo(() => {
     const users = usersQuery.data ?? [];
@@ -159,21 +199,12 @@ export function AssignmentsTab({
     );
   }, [activeRole, createdGuestJudges, usersQuery.data]);
 
-  const mentorAssignmentQueries = useQueries({
-    queries: tracks.map((track) => ({
-      queryKey: ["edit-track-mentor-assignments", getId(track)],
-      queryFn: () => trackApi.getMentorAssignments(getId(track)),
-      retry: false,
-    })),
-  });
-
-  const judgeAssignmentQueries = useQueries({
-    queries: rounds.map((round) => ({
-      queryKey: ["edit-round-judge-assignments", getId(round)],
-      queryFn: () => roundApi.getJudgeAssignments(getId(round)),
-      retry: false,
-    })),
-  });
+  const mentorAssignmentQueries = useMentorAssignmentsQueries(
+    tracks.map((track) => getId(track)),
+  );
+  const judgeAssignmentQueries = useJudgeAssignmentsQueries(
+    rounds.map((round) => getId(round)),
+  );
 
   const mentorAssignments = useMemo(() => {
     return tracks.flatMap((track, index) => {
