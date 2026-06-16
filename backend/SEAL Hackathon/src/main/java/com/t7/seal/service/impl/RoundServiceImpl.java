@@ -604,4 +604,37 @@ public class RoundServiceImpl implements RoundService {
                 || request.minScore() != null
                 || request.wildCardSlots() != null;
     }
+
+    private void saveRoundAudit(
+            User user,
+            Round round,
+            AuditActionType actionType,
+            String beforeStatus,
+            String afterStatus
+    ) {
+        try {
+            AuditLog log = new AuditLog();
+
+            log.setActor(user);
+            log.setActionType(actionType);
+            log.setTargetTable("rounds");
+            log.setTargetId(round.getId());
+            log.setBeforeState(Map.of(
+                    "status", beforeStatus
+            ));
+            log.setAfterState(Map.of(
+                    "status", afterStatus,
+                    "submissionLockedAt", round.getSubmissionLockedAt() == null
+                            ? "" : round.getSubmissionLockedAt().toString()
+            ));
+            log.setContext(Map.of(
+                    "eventId", round.getEvent().getId().toString()
+            ));
+
+            auditLogRepository.save(log);
+        } catch (Exception e) {
+            //TODO
+            e.printStackTrace();
+        }
+    }
 }
