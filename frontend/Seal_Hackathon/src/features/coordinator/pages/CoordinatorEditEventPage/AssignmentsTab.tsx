@@ -33,6 +33,7 @@ import type {
   MentorAssignmentResponse,
   TrackResponse,
 } from "@/types/track.types";
+import type { GuestJudgeResponse } from "@/types/user.types";
 import { CreateGuestJudgeModal } from "../CoordinatorCreateEventPage/components/CreateGuestJugdeModal";
 
 type AssignmentsTabProps = {
@@ -105,6 +106,19 @@ function matchesTargetJudgeAssignment(
   return assignment.roundId === roundId && assignment.trackId === trackId;
 }
 
+function upsertAssignment<T extends { id?: UUID }>(items: T[] | undefined, item: T) {
+  const current = items ?? [];
+  const existingIndex = current.findIndex((entry) => entry.id === item.id);
+
+  if (existingIndex === -1) {
+    return [item, ...current];
+  }
+
+  return current.map((entry, index) =>
+    index === existingIndex ? item : entry,
+  );
+}
+
 export function AssignmentsTab({
   tracks,
   rounds,
@@ -123,6 +137,9 @@ export function AssignmentsTab({
   );
   const [totalToScore, setTotalToScore] = useState("10");
   const [guestJudgeModalOpen, setGuestJudgeModalOpen] = useState(false);
+  const [createdGuestJudges, setCreatedGuestJudges] = useState<
+    AssignableUserResponse[]
+  >([]);
 
   const usersQuery = useQuery({
     queryKey: ["edit-assignable-users", activeRole, search],
@@ -130,6 +147,17 @@ export function AssignmentsTab({
     staleTime: 30_000,
     retry: false,
   });
+
+  const visibleUsers = useMemo(() => {
+    const users = usersQuery.data ?? [];
+
+    if (activeRole !== "JUDGE") return users;
+
+    return [...createdGuestJudges, ...users].filter(
+      (user, index, allUsers) =>
+        allUsers.findIndex((item) => item.userId === user.userId) === index,
+    );
+  }, [activeRole, createdGuestJudges, usersQuery.data]);
 
   const mentorAssignmentQueries = useQueries({
     queries: tracks.map((track) => ({
@@ -206,18 +234,6 @@ export function AssignmentsTab({
     );
   }, [judgeAssignments, selectedRoundId, selectedTrackId]);
 
-  const refreshAssignments = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: ["edit-track-mentor-assignments"],
-      }),
-      queryClient.invalidateQueries({
-        queryKey: ["edit-round-judge-assignments"],
-      }),
-      onChanged(),
-    ]);
-  };
-
   const handleAssignMentor = async (user: AssignableUserResponse) => {
     if (!canEdit) return;
 
@@ -239,9 +255,16 @@ export function AssignmentsTab({
     }
 
     try {
-      await trackApi.assignMentor(selectedTrackId, { mentorUserId });
+      const assignment = await trackApi.assignMentor(selectedTrackId, { mentorUserId });
+      queryClient.setQueryData<MentorAssignmentResponse[]>(
+        ["edit-track-mentor-assignments", selectedTrackId],
+        (current) => upsertAssignment(current, assignment),
+      );
       enqueueSnackbar("Mentor assigned.", { variant: "success" });
-      await refreshAssignments();
+      void queryClient.invalidateQueries({
+        queryKey: ["edit-track-mentor-assignments", selectedTrackId],
+      });
+      void onChanged();
     } catch {
       enqueueSnackbar("Failed to assign mentor.", { variant: "error" });
     }
@@ -268,14 +291,21 @@ export function AssignmentsTab({
     }
 
     try {
-      await roundApi.assignJudge(selectedRoundId, {
+      const assignment = await roundApi.assignJudge(selectedRoundId, {
         judgeId,
         trackId: selectedTrackId,
         totalToScore: totalToScore ? Number(totalToScore) : undefined,
       });
+      queryClient.setQueryData<JudgeAssignmentResponse[]>(
+        ["edit-round-judge-assignments", selectedRoundId],
+        (current) => upsertAssignment(current, assignment),
+      );
 
       enqueueSnackbar("Judge assigned.", { variant: "success" });
-      await refreshAssignments();
+      void queryClient.invalidateQueries({
+        queryKey: ["edit-round-judge-assignments", selectedRoundId],
+      });
+      void onChanged();
     } catch {
       enqueueSnackbar("Failed to assign judge.", { variant: "error" });
     }
@@ -286,8 +316,15 @@ export function AssignmentsTab({
 
     try {
       await trackApi.removeMentorAssignment(trackId, assignmentId);
+      queryClient.setQueryData<MentorAssignmentResponse[]>(
+        ["edit-track-mentor-assignments", trackId],
+        (current) => (current ?? []).filter((item) => item.id !== assignmentId),
+      );
       enqueueSnackbar("Mentor assignment removed.", { variant: "success" });
-      await refreshAssignments();
+      void queryClient.invalidateQueries({
+        queryKey: ["edit-track-mentor-assignments", trackId],
+      });
+      void onChanged();
     } catch {
       enqueueSnackbar("Failed to remove mentor assignment.", {
         variant: "error",
@@ -300,8 +337,15 @@ export function AssignmentsTab({
 
     try {
       await roundApi.removeJudgeAssignment(roundId, assignmentId);
+      queryClient.setQueryData<JudgeAssignmentResponse[]>(
+        ["edit-round-judge-assignments", roundId],
+        (current) => (current ?? []).filter((item) => item.id !== assignmentId),
+      );
       enqueueSnackbar("Judge assignment removed.", { variant: "success" });
-      await refreshAssignments();
+      void queryClient.invalidateQueries({
+        queryKey: ["edit-round-judge-assignments", roundId],
+      });
+      void onChanged();
     } catch {
       enqueueSnackbar("Failed to remove judge assignment.", {
         variant: "error",
@@ -309,12 +353,36 @@ export function AssignmentsTab({
     }
   };
 
-  const handleGuestJudgeCreated = async () => {
+  const handleGuestJudgeCreated = async (
+    judge: GuestJudgeResponse,
+    fullName: string,
+  ) => {
     setGuestJudgeModalOpen(false);
     setActiveRole("JUDGE");
-    await queryClient.invalidateQueries({
+
+    const guestUser: AssignableUserResponse = {
+      userId: judge.userId,
+      judgeId: judge.judgeId,
+      email: judge.email,
+      fullName,
+      role: "JUDGE",
+      status: "ACTIVE",
+      judgeType: judge.judgeType,
+      guest: judge.guest,
+      temporary: judge.temporary,
+      expiresAt: judge.expiresAt,
+    };
+
+    setCreatedGuestJudges((current) => [
+      guestUser,
+      ...current.filter((user) => user.userId !== guestUser.userId),
+    ]);
+
+    void queryClient.invalidateQueries({
       queryKey: ["edit-assignable-users", "JUDGE"],
     });
+
+    await handleAssignJudge(guestUser);
   };
 
   const roleNeedsRound = activeRole === "JUDGE";
@@ -493,7 +561,7 @@ export function AssignmentsTab({
           )}
 
           <div className="max-h-110 space-y-3 overflow-y-auto pr-1">
-            {(usersQuery.data ?? []).map((user) => {
+            {visibleUsers.map((user) => {
               const alreadyAssigned =
                 activeRole === "MENTOR"
                   ? assignedMentorIdsForTarget.has(user.userId)
@@ -575,7 +643,9 @@ export function AssignmentsTab({
                         ? "Assigned"
                         : missingTarget
                           ? "Select target first"
-                          : "Assign"}
+                          : activeRole === "MENTOR"
+                            ? "Assign mentor"
+                            : "Assign judge"}
                   </Button>
                 </div>
               );
@@ -583,7 +653,7 @@ export function AssignmentsTab({
 
             {!usersQuery.isLoading &&
               !usersQuery.isError &&
-              (usersQuery.data ?? []).length === 0 && (
+              visibleUsers.length === 0 && (
                 <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm font-semibold text-slate-400">
                   No {activeRole.toLowerCase()} found.
                 </div>

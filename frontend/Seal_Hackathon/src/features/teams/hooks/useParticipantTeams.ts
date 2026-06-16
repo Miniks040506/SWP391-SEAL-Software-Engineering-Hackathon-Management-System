@@ -93,8 +93,8 @@ export function useCreateTeamMutation() {
     mutationFn: async (payload: CreateTeamRequest) => {
       return teamApi.createTeam(payload);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
       enqueueSnackbar("Team created successfully.", { variant: "success" });
@@ -112,11 +112,11 @@ export function useUpdateTeamMutation(teamId?: string) {
     mutationFn: async (payload: UpdateTeamRequest) => {
       return teamApi.updateTeam(teamId as UUID, payload);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.detail(teamId),
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
       enqueueSnackbar("Team updated successfully.", { variant: "success" });
@@ -134,8 +134,8 @@ export function useInviteTeamMemberMutation(teamId?: string) {
     mutationFn: async (payload: InviteMemberRequest) => {
       return teamApi.inviteMember(teamId as UUID, payload);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.invitations(teamId),
       });
       enqueueSnackbar("Invitation sent successfully.", { variant: "success" });
@@ -155,8 +155,8 @@ export function useCancelTeamInvitationMutation(teamId?: string) {
     mutationFn: async (invitationId: UUID) => {
       return teamApi.cancelInvitation(invitationId);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.invitations(teamId),
       });
       enqueueSnackbar("Invitation cancelled successfully.", {
@@ -182,14 +182,14 @@ export function useRemoveTeamMemberMutation(teamId?: string) {
     }) => {
       return teamApi.removeMember(teamId as UUID, memberId, payload);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.detail(teamId),
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.members(teamId),
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
       enqueueSnackbar("Member removed successfully.", { variant: "success" });
@@ -207,11 +207,11 @@ export function useTransferTeamLeaderMutation(teamId?: string) {
     mutationFn: async (payload: TransferLeaderRequest) => {
       return teamApi.transferLeader(teamId as UUID, payload);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.detail(teamId),
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
       enqueueSnackbar("Team leader transferred successfully.", {
@@ -231,11 +231,11 @@ export function useLeaveTeamMutation(teamId?: string) {
     mutationFn: async (payload?: LeaveTeamRequest) => {
       return teamApi.leaveTeam(teamId as UUID, payload ?? {});
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.detail(teamId),
       });
       enqueueSnackbar("You left the team successfully.", {
@@ -255,11 +255,11 @@ export function useAcceptInvitationMutation() {
     mutationFn: async (invitationId: UUID) => {
       return teamApi.acceptInvitation(invitationId);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myInvitations,
       });
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
       enqueueSnackbar("You have joined the team successfully!", {
@@ -279,8 +279,8 @@ export function useRejectInvitationMutation() {
     mutationFn: async (invitationId: UUID) => {
       return teamApi.rejectInvitation(invitationId);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myInvitations,
       });
       enqueueSnackbar("Invitation declined.", { variant: "info" });
@@ -298,8 +298,8 @@ export function useAcceptInvitationByTokenMutation() {
     mutationFn: async (token: string) => {
       return teamApi.acceptInvitationByToken(token);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
       enqueueSnackbar("You have joined the team successfully!", {
@@ -344,9 +344,9 @@ export function useJoinTeamByCodeMutation() {
     mutationFn: async (payload: JoinTeamByCodeRequest) => {
       return teamApi.joinByCode(payload);
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       // Cập nhật lại danh sách team sau khi join thành công
-      await queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
       enqueueSnackbar("You have successfully joined the team!", {

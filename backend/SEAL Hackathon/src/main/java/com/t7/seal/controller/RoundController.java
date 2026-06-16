@@ -71,13 +71,6 @@ public class RoundController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/rounds/{roundId}/lock-submissions")
-    public ResponseEntity<RoundLockResponse> lockSubmissions(
-            @PathVariable UUID roundId
-    ) {
-        return null;
-    }
-
     @PostMapping("/rounds/{roundId}/lock-grading")
     public ResponseEntity<RoundLockResponse> lockGrading(
             @PathVariable UUID roundId
