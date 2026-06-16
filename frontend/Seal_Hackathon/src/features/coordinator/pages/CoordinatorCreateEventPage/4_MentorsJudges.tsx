@@ -31,7 +31,7 @@ type MentorsJudgesStepProps = {
 
 export function MentorsJudgesStep({
   tracks,
-  rounds, 
+  rounds: _rounds, 
   onBack,
   onNext,
 }: MentorsJudgesStepProps) {
@@ -176,6 +176,9 @@ export function MentorsJudgesStep({
 
             <UserInviteSearchPanel 
               role={activeTab} 
+              selectedUserIds={assignments
+                .filter((assignment) => assignment.role === activeTab)
+                .map((assignment) => assignment.userId)}
               onSelect={handleSelectExistingUser} 
             />
           </div>

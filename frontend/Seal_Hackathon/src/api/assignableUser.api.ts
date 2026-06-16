@@ -13,6 +13,10 @@ export type AssignableUserResponse = {
   fullName: string;
   role: AssignableUserRole;
   status: string;
+  judgeType?: "GUEST" | "INTERNAL" | string | null;
+  guest?: boolean | null;
+  temporary?: boolean | null;
+  expiresAt?: string | null;
 };
 
 type AssignableCompatible = Partial<AssignableUserResponse> &
@@ -48,6 +52,10 @@ function normalizeAssignableUser(
     fullName: user.fullName ?? user.name ?? user.email ?? "Unnamed user",
     role,
     status: user.status ?? "ACTIVE",
+    judgeType: user.judgeType ?? null,
+    guest: user.guest ?? null,
+    temporary: user.temporary ?? null,
+    expiresAt: user.expiresAt ?? null,
   };
 }
 

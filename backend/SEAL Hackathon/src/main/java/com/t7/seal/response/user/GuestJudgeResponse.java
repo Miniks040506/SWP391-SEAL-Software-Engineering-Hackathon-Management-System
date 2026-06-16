@@ -4,7 +4,15 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record GuestJudgeResponse(
-        UUID userId, UUID judgeId,
-        String email, String temporaryPasswordLink,
+        UUID userId,
+        UUID judgeId,
+        String email,
+        String fullName,
+        String judgeType,
+        Boolean guest,
+        Boolean temporary,
+        String affiliation,
+        String expertise,
+        String temporaryPasswordLink,
         LocalDateTime expiresAt
 ) {}

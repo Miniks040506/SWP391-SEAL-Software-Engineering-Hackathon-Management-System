@@ -68,6 +68,12 @@ export type GuestJudgeResponse = {
   userId: UUID;
   judgeId: UUID;
   email: string;
+  fullName: string;
+  judgeType: "GUEST" | "INTERNAL" | string;
+  guest: boolean;
+  temporary: boolean;
+  affiliation?: string | null;
+  expertise?: string | null;
   temporaryPasswordLink: string;
   expiresAt: ISODateTime;
 };
@@ -181,4 +187,8 @@ export type AssignableUserResponse = {
   fullName: string;
   role: AssignableUserRole;
   status: string;
+  judgeType?: "GUEST" | "INTERNAL" | string | null;
+  guest?: boolean | null;
+  temporary?: boolean | null;
+  expiresAt?: ISODateTime | null;
 };

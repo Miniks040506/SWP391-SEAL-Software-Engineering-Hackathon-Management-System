@@ -6,6 +6,7 @@ export * from "@/types/track.types";
 export * from "@/types/criteria.types";
 export * from "@/types/team.types";
 export * from "@/types/submission.types";
+export * from "@/types/judge.types";
 export * from "@/types/grading.types";
 export * from "@/types/calibration.types";
 export * from "@/types/mentorFeedback.types";

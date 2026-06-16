@@ -56,7 +56,7 @@ export type UpdateAdvanceRuleRequest = {
 
 export type AssignJudgeRequest = {
   judgeId: UUID;
-  trackId: UUID;
+  trackId?: UUID | null;
   totalToScore?: number;
 };
 
@@ -90,6 +90,23 @@ export type RoundLockResponse = {
   lockType: string;
   lockedAt: ISODateTime;
   message: string;
+};
+
+export type RoundOperationStatusResponse = {
+  roundId: UUID;
+  eventId: UUID;
+  eventStatus: string;
+  roundStatus: string;
+  submissionDeadline?: ISODateTime | null;
+  judgingDeadline?: ISODateTime | null;
+  submissionLockedAt?: ISODateTime | null;
+  gradingLockedAt?: ISODateTime | null;
+  canOpen: boolean;
+  canClose: boolean;
+  canLockSubmissions: boolean;
+  submittedOrLateSubmissionCount: number;
+  draftSubmissionCount: number;
+  judgeAssignmentCount: number;
 };
 
 export type JudgeProgressResponse = {
@@ -140,7 +157,7 @@ export type JudgeAssignmentResponse = {
   roundId: UUID;
   judgeId: UUID;
   judgeName: string;
-  trackId?: UUID;
+  trackId?: UUID | null;
   scoringProgress: number;
-  totalToScore?: number;
+  totalToScore?: number | null;
 };

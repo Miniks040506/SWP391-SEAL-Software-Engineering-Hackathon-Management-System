@@ -120,6 +120,11 @@ export function CreateUserDialog({
     onClose();
   };
 
+  const normalizeExpiresAt = (value?: string) => {
+    if (!value) return undefined;
+    return value.length === 16 ? `${value}:00` : value;
+  };
+
   const onSubmit = async (values: any) => {
     try {
       if (values.role === "JUDGE" && values.judgeType === "GUEST") {
@@ -128,8 +133,9 @@ export function CreateUserDialog({
           fullName: values.fullName.trim(),
           affiliation: values.affiliation?.trim() || undefined,
           expertise: values.expertise?.trim() || undefined,
-          temporaryAccountExpiresAt:
-            values.temporaryAccountExpiresAt || undefined,
+          temporaryAccountExpiresAt: normalizeExpiresAt(
+            values.temporaryAccountExpiresAt,
+          ),
         });
       } else {
         await onSubmitUser({

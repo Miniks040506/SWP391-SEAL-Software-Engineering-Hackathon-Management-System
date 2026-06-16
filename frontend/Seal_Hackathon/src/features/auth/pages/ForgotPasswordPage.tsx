@@ -90,12 +90,19 @@ export function ForgotPasswordPage() {
   const resetPasswordMutation = useResetPasswordMutation();
 
   const initialEmail = searchParams.get("email") || "";
+  const initialCodeParam = searchParams.get("code") || "";
+  const initialCodeResult = resetPasswordCodeSchema.safeParse({
+    code: initialCodeParam,
+  });
+  const initialCode = initialCodeResult.success
+    ? initialCodeResult.data.code
+    : "";
 
   const [currentStep, setCurrentStep] = useState<ResetStep>(
-    initialEmail ? 2 : 1,
+    initialEmail ? (initialCode ? 3 : 2) : 1,
   );
   const [email, setEmail] = useState(initialEmail);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(initialCode);
   const [codeError, setCodeError] = useState("");
   const [codeStatus, setCodeStatus] = useState<ResetCodeStatus>("input");
 

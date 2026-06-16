@@ -13,6 +13,7 @@ import TextField from "@mui/material/TextField";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 
@@ -25,11 +26,14 @@ import { roundApi } from "@/api/round.api";
 import { trackApi } from "@/api/track.api";
 
 import type { UUID } from "@/types/common.types";
-import type { JudgeAssignmentResponse, RoundResponse } from "@/types/round.types";
-import type { MentorAssignmentResponse, TrackResponse } from "@/types/track.types";
-import type { GuestJudgeResponse } from "@/types/user.types";
-
-// Import Modal từ trang Create Event (Sửa đường dẫn nếu cần)
+import type {
+  JudgeAssignmentResponse,
+  RoundResponse,
+} from "@/types/round.types";
+import type {
+  MentorAssignmentResponse,
+  TrackResponse,
+} from "@/types/track.types";
 import { CreateGuestJudgeModal } from "../CoordinatorCreateEventPage/components/CreateGuestJugdeModal";
 
 type AssignmentsTabProps = {
@@ -120,6 +124,7 @@ export function AssignmentsTab({
     rounds[0]?.id ?? "",
   );
   const [totalToScore, setTotalToScore] = useState("10");
+  const [guestJudgeModalOpen, setGuestJudgeModalOpen] = useState(false);
 
   // Quản lý Modal tạo Guest Judge
   const [isGuestJudgeModalOpen, setGuestJudgeModalOpen] = useState(false);
@@ -309,40 +314,12 @@ export function AssignmentsTab({
     }
   };
 
-  // ==========================================
-  // Xử lý tạo Guest Judge
-  // ==========================================
-  const handleGuestJudgeCreated = async (judge: GuestJudgeResponse, _fullName: string) => {
+  const handleGuestJudgeCreated = async () => {
     setGuestJudgeModalOpen(false);
-
-    if (!canEdit) return;
-
-    if (!selectedTrackId || !selectedRoundId) {
-      enqueueSnackbar(
-        "Guest Judge created, but please select a Track and Round to assign them.",
-        { variant: "warning" }
-      );
-      return;
-    }
-
-    try {
-      await roundApi.assignJudge(selectedRoundId, {
-        judgeId: judge.judgeId,
-        trackId: selectedTrackId,
-        totalToScore: totalToScore ? Number(totalToScore) : undefined,
-      });
-
-      enqueueSnackbar("Guest Judge created and assigned successfully!", {
-        variant: "success",
-      });
-      
-      // Load lại dữ liệu cái bảng bên phải
-      await refreshAssignments(); 
-    } catch {
-      enqueueSnackbar("Judge created but failed to assign to round.", {
-        variant: "error",
-      });
-    }
+    setActiveRole("JUDGE");
+    await queryClient.invalidateQueries({
+      queryKey: ["edit-assignable-users", "JUDGE"],
+    });
   };
 
   const roleNeedsRound = activeRole === "JUDGE";
@@ -495,6 +472,23 @@ export function AssignmentsTab({
             />
           </div>
 
+          {activeRole === "JUDGE" && (
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<PersonAddOutlinedIcon />}
+              onClick={() => setGuestJudgeModalOpen(true)}
+              disabled={!canEdit}
+              sx={{
+                borderRadius: "12px",
+                textTransform: "none",
+                fontWeight: 900,
+              }}
+            >
+              Create guest judge
+            </Button>
+          )}
+
           {usersQuery.isLoading && (
             <div className="flex justify-center py-8">
               <CircularProgress size={24} />
@@ -532,11 +526,31 @@ export function AssignmentsTab({
                         {user.email}
                       </p>
                     </div>
-                    <Chip
-                      label={user.role}
-                      size="small"
-                      sx={{ fontWeight: 800 }}
-                    />
+                    <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                      <Chip
+                        label={user.role}
+                        size="small"
+                        sx={{ fontWeight: 800 }}
+                      />
+                      {activeRole === "JUDGE" && user.guest && (
+                        <Chip
+                          label="Guest"
+                          size="small"
+                          color="info"
+                          variant="outlined"
+                          sx={{ fontWeight: 800 }}
+                        />
+                      )}
+                      {activeRole === "JUDGE" && user.temporary && (
+                        <Chip
+                          label="Temporary"
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                          sx={{ fontWeight: 800 }}
+                        />
+                      )}
+                    </div>
                   </div>
 
                   <Button
@@ -700,7 +714,7 @@ export function AssignmentsTab({
       </div>
 
       <CreateGuestJudgeModal
-        open={isGuestJudgeModalOpen}
+        open={guestJudgeModalOpen}
         onClose={() => setGuestJudgeModalOpen(false)}
         onSuccess={handleGuestJudgeCreated}
       />
