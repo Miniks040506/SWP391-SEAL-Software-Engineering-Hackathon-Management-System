@@ -11,6 +11,7 @@ import type {
   JudgeAssignmentResponse,
   RoundDetailResponse,
   RoundLockResponse,
+  RoundOperationStatusResponse,
   RoundResponse,
   ScoringProgressResponse,
   UpdateAdvanceRuleRequest,
@@ -38,8 +39,22 @@ export const roundApi = {
     return apiRequest.delete<void>(`/rounds/${roundId}`);
   },
 
+  openRound(roundId: UUID) {
+    return apiRequest.post<RoundResponse>(`/rounds/${roundId}/open`);
+  },
+
+  closeRound(roundId: UUID) {
+    return apiRequest.post<RoundResponse>(`/rounds/${roundId}/close`);
+  },
+
   lockSubmissions(roundId: UUID) {
     return apiRequest.post<RoundLockResponse>(`/rounds/${roundId}/lock-submissions`);
+  },
+
+  getOperationStatus(roundId: UUID) {
+    return apiRequest.get<RoundOperationStatusResponse>(
+      `/rounds/${roundId}/operation-status`,
+    );
   },
 
   lockGrading(roundId: UUID) {

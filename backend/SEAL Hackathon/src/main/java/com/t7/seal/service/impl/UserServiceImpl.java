@@ -17,6 +17,8 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.user.*;
 import com.t7.seal.service.CloudinaryStorageService;
 import com.t7.seal.service.CurrentUserService;
+import com.t7.seal.service.EmailService;
+import com.t7.seal.service.TokenGenerator;
 import com.t7.seal.service.TokenBlacklistService;
 import com.t7.seal.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +31,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
 import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HexFormat;
@@ -49,6 +53,8 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final TokenBlacklistService tokenBlacklistService;
     private final CloudinaryStorageService cloudinaryStorageService;
+    private final TokenGenerator tokenGenerator;
+    private final EmailService emailService;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -90,14 +96,19 @@ public class UserServiceImpl implements UserService {
     }
 
     private AssignableUserResponse toAssignableUserResponse(User user) {
+        Judge judge = user.getRole() == UserRole.JUDGE ? user.getJudge() : null;
+
         return new AssignableUserResponse(
                 user.getId(),
-                user.getRole() == UserRole.JUDGE && user.getJudge() != null
-                        ? user.getJudge().getId() : null,
+                judge == null ? null : judge.getId(),
                 user.getEmail(),
                 user.getFullName(),
                 user.getRole(),
-                user.getStatus()
+                user.getStatus(),
+                judge == null || judge.getJudgeType() == null ? null : judge.getJudgeType().name(),
+                judge == null ? null : judge.isGuest(),
+                judge == null ? null : judge.getIsTemporary(),
+                judge == null ? null : judge.getExpiresAt()
         );
     }
 
@@ -293,16 +304,17 @@ public class UserServiceImpl implements UserService {
         }
 
         String temporaryPassword = generateRandomToken();
-        String setupToken = generateRandomToken();
+        String setupCode = tokenGenerator.generateSixDigitCode();
 
         User user = new User();
         user.setEmail(email);
         user.setFullName(request.fullName().trim());
         user.setRole(UserRole.JUDGE);
+        
         user.setStatus(UserStatus.ACTIVE);
         user.setEmailVerifiedAt(LocalDateTime.now());
         user.setPasswordHash(passwordEncoder.encode(temporaryPassword));
-        user.setPasswordResetToken(setupToken);
+        user.setPasswordResetToken(setupCode);
         user.setPasswordResetExpiresAt(expiresAt);
 
         User savedUser = userRepository.save(user);
@@ -317,12 +329,27 @@ public class UserServiceImpl implements UserService {
 
         Judge savedJudge = judgeRepository.save(judge);
 
-        String temporaryPasswordLink = "/reset-password?token=" + setupToken;
+        String temporaryPasswordLink = "/reset-password?email=" + encodeUrl(savedUser.getEmail())
+                + "&code=" + encodeUrl(setupCode);
+
+        emailService.sendGuestJudgeSetupEmail(
+                savedUser.getEmail(),
+                savedUser.getFullName(),
+                setupCode,
+                expiresAt,
+                temporaryPasswordLink
+        );
 
         return new GuestJudgeResponse(
                 savedUser.getId(),
                 savedJudge.getId(),
                 savedUser.getEmail(),
+                savedUser.getFullName(),
+                savedJudge.getJudgeType().name(),
+                savedJudge.isGuest(),
+                savedJudge.getIsTemporary(),
+                savedJudge.getAffiliation(),
+                savedJudge.getExpertiseTags(),
                 temporaryPasswordLink,
                 expiresAt
         );
@@ -641,6 +668,10 @@ public class UserServiceImpl implements UserService {
         byte[] bytes = new byte[RANDOM_TOKEN_BYTE_LENGTH];
         secureRandom.nextBytes(bytes);
         return HexFormat.of().formatHex(bytes);
+    }
+
+    private String encodeUrl(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     private <E extends Enum<E>> E parseEnum(Class<E> enumType, String value, String fieldName) {

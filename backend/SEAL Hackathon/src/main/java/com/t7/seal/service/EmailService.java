@@ -9,6 +9,14 @@ public interface EmailService {
 
     void sendPasswordResetCode(String to, String fullName, String code, int expiresInMinutes);
 
+    void sendGuestJudgeSetupEmail(
+            String to,
+            String fullName,
+            String code,
+            LocalDateTime expiresAt,
+            String setupPath
+    );
+
     void sendOAuthLoginSuccessEmail(String to, String fullName, String providerName);
 
     void sendTeamInvitationSent(

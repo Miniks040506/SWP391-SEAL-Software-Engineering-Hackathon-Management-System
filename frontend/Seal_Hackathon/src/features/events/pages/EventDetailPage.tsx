@@ -171,7 +171,7 @@ export function EventDetailPage() {
               {registrationOpen && (
                 <button
                   type="button"
-                  onClick={() => joinEvent(event.id)}
+                  onClick={() => joinEvent()}
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-600 active:scale-95"
                 >
                   <LoginIcon style={{ fontSize: 16 }} />

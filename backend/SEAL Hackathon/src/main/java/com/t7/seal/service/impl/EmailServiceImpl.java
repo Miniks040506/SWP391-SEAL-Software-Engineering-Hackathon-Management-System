@@ -109,6 +109,66 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
+    public void sendGuestJudgeSetupEmail(
+            String to,
+            String fullName,
+            String code,
+            LocalDateTime expiresAt,
+            String setupPath
+    ) {
+        String safeName = escapeHtml(displayName(fullName));
+        String safeExpiresAt = expiresAt == null
+                ? "the account setup deadline"
+                : escapeHtml(expiresAt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+        String setupUrl = setupPath != null && setupPath.startsWith("http")
+                ? setupPath
+                : frontendUrl + (setupPath == null ? "/reset-password" : setupPath);
+
+        String html = buildBaseTemplate(
+                "Guest Judge Account",
+                "Set your SEAL judge account password",
+                """
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            A coordinator created a guest judge account for you in <strong>SEAL Hackathon System</strong>.
+                        </p>
+
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Use this setup code to set your password before <strong>%s</strong>.
+                        </p>
+
+                        <div style="margin:26px 0;text-align:center;">
+                            <div style="display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:18px;padding:18px 30px;">
+                                <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;color:#2563eb;text-transform:uppercase;margin-bottom:8px;">
+                                    Setup Code
+                                </div>
+                                <div style="font-size:34px;font-weight:900;letter-spacing:0.28em;color:#0f172a;font-family:Arial,Helvetica,sans-serif;">
+                                    %s
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="text-align:center;margin-top:28px;">
+                            <a href="%s"
+                               style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                                Set Password
+                            </a>
+                        </div>
+                        """.formatted(
+                        safeName,
+                        safeExpiresAt,
+                        escapeHtml(code),
+                        escapeHtml(setupUrl)
+                )
+        );
+
+        sendHtml(to, appName + " - Guest Judge Account Setup", html);
+    }
+
+    @Override
     public void sendOAuthLoginSuccessEmail(
             String to,
             String fullName,

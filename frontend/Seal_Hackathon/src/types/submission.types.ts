@@ -83,6 +83,8 @@ export type SubmissionResponse = {
   submissionNumber: number;
   submittedAt?: ISODateTime | null;
   updatedAt?: ISODateTime | null;
+  roundSubmissionLocked?: boolean | null;
+  roundSubmissionLockedAt?: ISODateTime | null;
   links?: SubmissionLinkResponse[];
 };
 
@@ -98,6 +100,8 @@ export type SubmissionSummaryResponse = {
   submissionNumber: number;
   submittedAt?: ISODateTime | null;
   updatedAt?: ISODateTime | null;
+  roundSubmissionLocked?: boolean | null;
+  roundSubmissionLockedAt?: ISODateTime | null;
   linkCount?: number;
 };
 
@@ -160,9 +164,13 @@ export type CoordinatorSubmissionSummaryResponse = {
   submissionNumber: number;
   submittedAt?: ISODateTime | null;
   updatedAt?: ISODateTime | null;
+  roundSubmissionLocked?: boolean | null;
+  roundSubmissionLockedAt?: ISODateTime | null;
   linkCount: number;
   late?: boolean;
 };
+
+export type SubmissionLockErrorCode = "ROUND_SUBMISSION_LOCKED";
 
 export type GetEventSubmissionsParams = {
   eventId?: UUID;

@@ -69,7 +69,7 @@ export const CreateGuestJudgeModal = ({
       {
         onSuccess: (response) => {
           enqueueSnackbar("Guest Judge created successfully!", { variant: "success" });
-          onSuccess(response.data, data.fullName); 
+          onSuccess(response, response.fullName || data.fullName); 
         },
         onError: (error: any) => {
           const msg = error?.response?.data?.message || "Failed to create guest judge. Email might be in use.";
@@ -80,7 +80,13 @@ export const CreateGuestJudgeModal = ({
   });
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ className: "rounded-2xl" }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      slotProps={{ paper: { className: "rounded-2xl" } }}
+    >
       <DialogTitle className="font-extrabold text-gray-900 border-b border-gray-100 pb-4">
         Create Guest Judge
       </DialogTitle>

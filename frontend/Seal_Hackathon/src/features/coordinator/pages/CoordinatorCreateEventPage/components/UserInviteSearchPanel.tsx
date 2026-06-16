@@ -12,28 +12,30 @@ import type { MentorJudgeFormValues } from "../../../schemas/createEvent.schema"
 
 type UserInviteSearchPanelProps = {
   role: MentorJudgeFormValues["role"];
-  selectedUserIds: string[];
-  onInvite: (user: AssignableUserResponse) => void;
+  selectedUserIds?: string[];
+  onSelect: (user: AssignableUserResponse) => void;
 };
 
 const USER_ROLE_QUERY_MAP: Record<MentorJudgeFormValues["role"], AssignableUserRole> = {
-  Mentor: "MENTOR",
-  Judge: "JUDGE",
+  MENTOR: "MENTOR",
+  JUDGE: "JUDGE",
 };
 
 export const UserInviteSearchPanel = ({
   role,
-  selectedUserIds,
-  onInvite,
+  selectedUserIds = [],
+  onSelect,
 }: UserInviteSearchPanelProps) => {
   const [search, setSearch] = useState("");
   const usersQuery = useAssignableUsersQuery(USER_ROLE_QUERY_MAP[role], search);
   const users = usersQuery.data ?? [];
+  const roleLabel = role === "MENTOR" ? "Mentors" : "Judges";
+  const roleSearchLabel = role === "MENTOR" ? "mentor" : "judge";
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
       <div className="border-b border-gray-100 px-5 py-4 dark:border-slate-700">
-        <h3 className="font-extrabold text-gray-900 dark:text-white">Available {role}s</h3>
+        <h3 className="font-extrabold text-gray-900 dark:text-white">Available {roleLabel}</h3>
         <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
           Search by name or email, then invite to this event.
         </p>
@@ -43,7 +45,7 @@ export const UserInviteSearchPanel = ({
         <TextField
           fullWidth
           size="small"
-          placeholder={`Search ${role.toLowerCase()} by name or email`}
+          placeholder={`Search ${roleSearchLabel} by name or email`}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           slotProps={{
@@ -66,7 +68,7 @@ export const UserInviteSearchPanel = ({
         {usersQuery.isError && (
           <div className="rounded-xl border border-red-100 bg-red-50 px-5 py-4">
             <p className="text-sm font-semibold text-red-600">
-              Failed to load {role.toLowerCase()} list. Check GET /users/assignable.
+              Failed to load {roleSearchLabel} list. Check GET /users/assignable.
             </p>
           </div>
         )}
@@ -74,7 +76,7 @@ export const UserInviteSearchPanel = ({
         {!usersQuery.isLoading && !usersQuery.isError && users.length === 0 && (
           <div className="rounded-xl border border-dashed border-gray-300 bg-slate-50 px-5 py-8 text-center dark:border-slate-700 dark:bg-slate-900/40">
             <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">
-              No {role.toLowerCase()} found.
+              No {roleSearchLabel} found.
             </p>
           </div>
         )}
@@ -103,7 +105,7 @@ export const UserInviteSearchPanel = ({
                   size="small"
                   disabled={invited || (user.role === "JUDGE" && !user.judgeId)}
                   startIcon={<PersonAddAltOutlinedIcon />}
-                  onClick={() => onInvite(user)}
+                  onClick={() => onSelect(user)}
                   sx={{ whiteSpace: "nowrap", fontWeight: 800 }}
                 >
                   {invited ? "Invited" : "Invite"}

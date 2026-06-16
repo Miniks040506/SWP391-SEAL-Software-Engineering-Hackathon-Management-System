@@ -12,7 +12,7 @@ export function usePublicEventActions() {
 
   const isAuthenticated = Boolean(accessToken && user);
 
-  const joinEvent = (eventId: UUID) => {
+  const joinEvent = () => {
     if (!isAuthenticated) {
       enqueueSnackbar("Please sign in before joining this event.", {
         variant: "info",
@@ -27,7 +27,7 @@ export function usePublicEventActions() {
       return;
     }
 
-    navigate(`/teams/create?eventId=${eventId}`);
+    navigate(`/participant/teams/create`);
   };
 
   const viewPrizes = (eventId: UUID) => {
