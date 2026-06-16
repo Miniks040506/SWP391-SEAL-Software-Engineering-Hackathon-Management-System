@@ -1,24 +1,16 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.domain.RegistrationStatus;
-import com.t7.seal.domain.RoundStatus;
-import com.t7.seal.domain.RuleType;
-import com.t7.seal.domain.UserRole;
+import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.repository.AdvanceRuleRepository;
-import com.t7.seal.repository.HackathonEventRepository;
-import com.t7.seal.repository.RoundRepository;
-import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.round.CreateAdvanceRuleRequest;
 import com.t7.seal.request.round.CreateRoundRequest;
 import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
 import com.t7.seal.request.round.UpdateRoundRequest;
-import com.t7.seal.response.round.AdvanceRuleResponse;
-import com.t7.seal.response.round.RoundDetailResponse;
-import com.t7.seal.response.round.RoundResponse;
+import com.t7.seal.response.round.*;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -40,6 +33,10 @@ public class RoundServiceImpl implements RoundService {
     private final CurrentUserService currentUserService;
     private final AdvanceRuleRepository advanceRuleRepository;
     private final TrackRepository trackRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final NotificationRepository notificationRepository;
+    private final SubmissionRepository submissionRepository;
+    private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
 
     @Transactional
     @Override
@@ -328,6 +325,113 @@ public class RoundServiceImpl implements RoundService {
         advanceRuleRepository.delete(advanceRule);
     }
 
+    @Transactional
+    @Override
+    public RoundResponse openRound(UUID roundId, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getEvent().getStatus() != RegistrationStatus.ONGOING) {
+            throw new ConflictException("Round cannot be opened in this status "
+                    + round.getEvent().getStatus() + ".");
+        }
+
+        if (round.getStatus() != RoundStatus.UPCOMING
+                && round.getStatus() != RoundStatus.CLOSED) {
+            throw new ConflictException("Only upcoming and closed rounds can be opened.");
+        }
+
+        if (round.getSubmissionLockedAt() != null) {
+            throw new ConflictException("Cannot re-open round that submissions are locked.");
+        }
+
+        RoundStatus before = round.getStatus();
+        round.setStatus(RoundStatus.OPEN);
+        Round saved = roundRepository.save(round);
+        saveRoundAudit(actor, round, AuditActionType.ROUND_OPEN, before.name(), saved.getStatus().name());
+
+        saveRoundNotification(actor, round, NotificationType.ROUND_OPENED, "Round open", "Round " + saved.getName());
+        return toRoundResponse(saved);
+    }
+
+    @Transactional
+    @Override
+    public RoundResponse closeRound(UUID roundId, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getStatus() != RoundStatus.OPEN) {
+            throw new ConflictException("Only open rounds can be closed.");
+        }
+
+        RoundStatus before = round.getStatus();
+        round.setStatus(RoundStatus.CLOSED);
+        Round saved = roundRepository.save(round);
+        saveRoundAudit(actor, round, AuditActionType.ROUND_OPEN, before.name(), saved.getStatus().name());
+
+        saveRoundNotification(actor, round, NotificationType.ROUND_OPENED, "Round open", "Round " + saved.getName());
+        return toRoundResponse(saved);
+    }
+
+    @Transactional
+    @Override
+    public RoundLockResponse lockSubmission(UUID roundId, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getSubmissionLockedAt() != null) {
+            throw new ConflictException("This round submissions are already locked.");
+        }
+
+        if (round.getStatus() != RoundStatus.OPEN
+                && round.getStatus() != RoundStatus.CLOSED) {
+            throw new ConflictException("Round cannot be locked in this status " + round.getStatus() + ".");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        RoundStatus before = round.getStatus();
+        round.setSubmissionLockedAt(now);
+        round.setStatus(RoundStatus.CLOSED);
+        Round saved = roundRepository.save(round);
+
+        List<Submission> drafts = submissionRepository.findDraftsByRoundId(saved.getId());
+        drafts.forEach(draft -> draft.setStatus(SubmissionStatus.LATE));
+
+        submissionRepository.saveAll(drafts);
+
+        List<RoundJudgeAssignment> judgeAssignments = roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(saved.getId());
+
+        for (RoundJudgeAssignment judgeAssignment : judgeAssignments) {
+            UUID trackId = judgeAssignment.getTrack() == null ? null
+                    : judgeAssignment.getTrack().getId();
+            judgeAssignment.setTotalToScore((int) submissionRepository
+                    .countSubmittedOrLateByRoundAndTrackNullable(roundId, trackId));
+        }
+
+        roundJudgeAssignmentRepository.saveAll(judgeAssignments);
+
+        saveRoundAudit(actor, round, AuditActionType.ROUND_LOCKED, before.name(), saved.getStatus().name());
+        saveRoundNotification(actor, round, NotificationType.SUBMISSION_LOCKED, "Submission locked", "Submission are locked for this " + saved.getName());
+        saveRoundNotification(actor, round, NotificationType.JUDGING_READY, "Judging reading", "Judging queue is ready for " + saved.getName());
+
+        return new RoundLockResponse(
+                saved.getId(),
+                "Submission",
+                now,
+                "Round submission locked successfully"
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public RoundOperationStatusResponse getOperationStatus(UUID roundId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        Round round = getRound(roundId);
+
+        return toRoundOperationStatus(round);
+    }
+
     //HELPERS
 
     private void assertTrackRoundEditable(HackathonEvent event) {
@@ -564,5 +668,95 @@ public class RoundServiceImpl implements RoundService {
                 || request.topPercent() != null
                 || request.minScore() != null
                 || request.wildCardSlots() != null;
+    }
+
+    private void saveRoundAudit(
+            User user,
+            Round round,
+            AuditActionType actionType,
+            String beforeStatus,
+            String afterStatus
+    ) {
+        try {
+            AuditLog log = new AuditLog();
+
+            log.setActor(user);
+            log.setActionType(actionType);
+            log.setTargetTable("rounds");
+            log.setTargetId(round.getId());
+            log.setBeforeState(Map.of(
+                    "status", beforeStatus
+            ));
+            log.setAfterState(Map.of(
+                    "status", afterStatus,
+                    "submissionLockedAt", round.getSubmissionLockedAt() == null
+                            ? "" : round.getSubmissionLockedAt().toString()
+            ));
+            log.setContext(Map.of(
+                    "eventId", round.getEvent().getId().toString()
+            ));
+
+            auditLogRepository.save(log);
+        } catch (Exception e) {
+            //TODO
+            e.printStackTrace();
+        }
+    }
+
+    private void saveRoundNotification(
+            User user,
+            Round round,
+            NotificationType type,
+            String title,
+            String body
+    ) {
+        try {
+            Notification notification = new Notification();
+
+            notification.setEvent(round.getEvent());
+            notification.setCreatedBy(user);
+            notification.setType(type);
+            notification.setTitle(title);
+            notification.setBody(body);
+            notification.setTargetScope(NotificationTargetScope.ALL);
+            notification.setChannel(NotificationChannel.BOTH);
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(LocalDateTime.now());
+            notification.setRecipientCount(0);
+
+            notificationRepository.save(notification);
+        } catch (Exception e) {
+            //TODO
+            e.printStackTrace();
+        }
+    }
+
+    private RoundOperationStatusResponse toRoundOperationStatus(Round round) {
+
+        long submittedOrLate = submissionRepository
+                .countSubmittedOrLateByRoundAndTrackNullable(round.getId(), null);
+
+        long drafts = submissionRepository.findDraftsByRoundId(round.getId()).size();
+        long assignmentCount = roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(round.getId()).size();
+
+        return new RoundOperationStatusResponse(
+                round.getId(),
+                round.getEvent().getId(),
+                round.getEvent().getStatus().name(),
+                round.getStatus().name(),
+                round.getSubmissionDeadline(),
+                round.getJudgingDeadline(),
+                round.getSubmissionLockedAt(),
+                round.getGradingLockedAt(),
+                round.getEvent().getStatus() == RegistrationStatus.ONGOING
+                        && (round.getStatus() == RoundStatus.UPCOMING || round.getStatus() == RoundStatus.CLOSED)
+                        && round.getSubmissionLockedAt() == null,
+                round.getStatus() == RoundStatus.OPEN,
+                (round.getStatus() == RoundStatus.OPEN || round.getStatus() == RoundStatus.CLOSED)
+                        && round.getSubmissionLockedAt() == null,
+                submittedOrLate,
+                drafts,
+                assignmentCount
+        );
     }
 }

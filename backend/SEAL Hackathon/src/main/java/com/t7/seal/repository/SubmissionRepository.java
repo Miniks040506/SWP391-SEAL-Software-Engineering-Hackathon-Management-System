@@ -44,4 +44,27 @@ public interface SubmissionRepository extends JpaRepository<Submission, UUID>, J
             ORDER BY s.submittedAt DESC
             """)
     List<Submission> findByTrackIdOrderBySubmittedAtDesc(@Param("trackId") UUID trackId);
+
+    @Query("""
+            SELECT s FROM Submission s
+                WHERE s.round.id = :roundId 
+                    AND s.status = com.t7.seal.domain.SubmissionStatus.DRAFT
+            """)
+    List<Submission> findDraftsByRoundId(
+            @Param("roundId") UUID roundId);
+
+    @Query("""
+            SELECT COUNT(DISTINCT s.id) 
+                FROM Submission s 
+                JOIN s.round r 
+                JOIN s.team t
+                LEFT JOIN t.track tr 
+                    WHERE r.id = :roundId 
+                        AND (:trackId IS NULL) OR tr.id = :trackId
+                        AND CAST(s.status AS STRING) IN ('SUBMITTED', 'LATE')
+            """)
+    long countSubmittedOrLateByRoundAndTrackNullable(
+            @Param("roundId") UUID roundId,
+            @Param("trackId") UUID trackId
+    );
 }
