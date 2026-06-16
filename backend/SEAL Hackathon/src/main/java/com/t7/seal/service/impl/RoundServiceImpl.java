@@ -405,7 +405,7 @@ public class RoundServiceImpl implements RoundService {
             UUID trackId = judgeAssignment.getTrack() == null ? null
                     : judgeAssignment.getTrack().getId();
             judgeAssignment.setTotalToScore((int) submissionRepository
-                    .countSubmittedOrLateByRoundAndTrack(roundId, trackId));
+                    .countSubmittedOrLateByRoundAndTrackNullable(roundId, trackId));
         }
 
         roundJudgeAssignmentRepository.saveAll(judgeAssignments);
@@ -425,8 +425,11 @@ public class RoundServiceImpl implements RoundService {
     @Transactional(readOnly = true)
     @Override
     public RoundOperationStatusResponse getOperationStatus(UUID roundId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
 
-        return null;
+        Round round = getRound(roundId);
+
+        return toRoundOperationStatus(round);
     }
 
     //HELPERS
@@ -726,5 +729,34 @@ public class RoundServiceImpl implements RoundService {
             //TODO
             e.printStackTrace();
         }
+    }
+
+    private RoundOperationStatusResponse toRoundOperationStatus(Round round) {
+
+        long submittedOrLate = submissionRepository
+                .countSubmittedOrLateByRoundAndTrackNullable(round.getId(), null);
+
+        long drafts = submissionRepository.findDraftsByRoundId(round.getId()).size();
+        long assignmentCount = roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(round.getId()).size();
+
+        return new RoundOperationStatusResponse(
+                round.getId(),
+                round.getEvent().getId(),
+                round.getEvent().getStatus().name(),
+                round.getStatus().name(),
+                round.getSubmissionDeadline(),
+                round.getJudgingDeadline(),
+                round.getSubmissionLockedAt(),
+                round.getGradingLockedAt(),
+                round.getEvent().getStatus() == RegistrationStatus.ONGOING
+                        && (round.getStatus() == RoundStatus.UPCOMING || round.getStatus() == RoundStatus.CLOSED)
+                        && round.getSubmissionLockedAt() == null,
+                round.getStatus() == RoundStatus.OPEN,
+                (round.getStatus() == RoundStatus.OPEN || round.getStatus() == RoundStatus.CLOSED)
+                        && round.getSubmissionLockedAt() == null,
+                submittedOrLate,
+                drafts,
+                assignmentCount
+        );
     }
 }

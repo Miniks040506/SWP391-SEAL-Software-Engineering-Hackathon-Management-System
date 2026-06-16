@@ -63,7 +63,7 @@ public interface SubmissionRepository extends JpaRepository<Submission, UUID>, J
                         AND (:trackId IS NULL) OR tr.id = :trackId
                         AND CAST(s.status AS STRING) IN ('SUBMITTED', 'LATE')
             """)
-    long countSubmittedOrLateByRoundAndTrack(
+    long countSubmittedOrLateByRoundAndTrackNullable(
             @Param("roundId") UUID roundId,
             @Param("trackId") UUID trackId
     );
