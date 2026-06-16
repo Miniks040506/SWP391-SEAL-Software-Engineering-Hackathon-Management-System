@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@mui/material";
+import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import { enqueueSnackbar } from "notistack";
 import { useState } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
@@ -50,7 +51,7 @@ function Stepper({ activeStep }: { activeStep: number }) {
                       : "bg-slate-900 text-white dark:bg-slate-700",
                   ].join(" ")}
                 >
-                  {done ? "✓" : stepNumber}
+                  {done ? <CheckOutlinedIcon fontSize="small" /> : stepNumber}
                 </div>
 
                 <p
@@ -140,7 +141,7 @@ export const CoordinatorCreateEventPage = () => {
       return;
     }
 
-    setActiveStep((step) => Math.min(6, step + 1));
+    setActiveStep((step) => Math.min(steps.length, step + 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
