@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 
 import { teamApi } from "@/api/team.api";
+import { mockTeamService } from "../mocks/participantTeams.mock"; 
 import type { UUID } from "@/types/common.types";
 import type {
   CreateTeamRequest,
@@ -12,6 +13,9 @@ import type {
   UpdateTeamRequest,
   JoinTeamByCodeRequest,
 } from "@/types/team.types";
+
+const USE_MOCK = true;
+const activeTeamService = USE_MOCK ? mockTeamService : teamApi;
 
 export const participantTeamQueryKeys = {
   myTeams: ["participant-my-teams"] as const,
@@ -24,12 +28,11 @@ export const participantTeamQueryKeys = {
     ["participant-invitation-token", token] as const,
 };
 
-// 1. QUERIES (Lấy dữ liệu)
 export function useMyTeamsQuery() {
   return useQuery({
     queryKey: participantTeamQueryKeys.myTeams,
     queryFn: async () => {
-      return teamApi.getMyTeams();
+      return activeTeamService.getMyTeams();
     },
   });
 }
@@ -38,7 +41,7 @@ export function useTeamDetailQuery(teamId?: string) {
   return useQuery({
     queryKey: participantTeamQueryKeys.detail(teamId),
     queryFn: async () => {
-      return teamApi.getTeamById(teamId as UUID);
+      return activeTeamService.getTeamById(teamId as UUID);
     },
     enabled: Boolean(teamId),
   });
@@ -48,7 +51,7 @@ export function useTeamMembersQuery(teamId?: string) {
   return useQuery({
     queryKey: participantTeamQueryKeys.members(teamId),
     queryFn: async () => {
-      return teamApi.getTeamMembers(teamId as UUID);
+      return activeTeamService.getTeamMembers(teamId as UUID);
     },
     enabled: Boolean(teamId),
   });
@@ -58,7 +61,7 @@ export function useTeamInvitationsQuery(teamId?: string) {
   return useQuery({
     queryKey: participantTeamQueryKeys.invitations(teamId),
     queryFn: async () => {
-      return teamApi.getTeamInvitations(teamId as UUID);
+      return activeTeamService.getTeamInvitations(teamId as UUID);
     },
     enabled: Boolean(teamId),
   });
@@ -68,7 +71,7 @@ export function useMyInvitationsQuery() {
   return useQuery({
     queryKey: participantTeamQueryKeys.myInvitations,
     queryFn: async () => {
-      return teamApi.getMyInvitations();
+      return activeTeamService.getMyInvitations();
     },
   });
 }
@@ -77,21 +80,20 @@ export function useInvitationByTokenQuery(token: string) {
   return useQuery({
     queryKey: participantTeamQueryKeys.invitationToken(token),
     queryFn: async () => {
-      return teamApi.getInvitationByToken(token);
+      return activeTeamService.getInvitationByToken(token);
     },
     enabled: Boolean(token),
     retry: false,
   });
 }
 
-// 2. MUTATIONS (Cập nhật, thay đổi dữ liệu)
 export function useCreateTeamMutation() {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
     mutationFn: async (payload: CreateTeamRequest) => {
-      return teamApi.createTeam(payload);
+      return activeTeamService.createTeam(payload);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -110,7 +112,7 @@ export function useUpdateTeamMutation(teamId?: string) {
 
   return useMutation({
     mutationFn: async (payload: UpdateTeamRequest) => {
-      return teamApi.updateTeam(teamId as UUID, payload);
+      return activeTeamService.updateTeam(teamId as UUID, payload);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -132,7 +134,7 @@ export function useInviteTeamMemberMutation(teamId?: string) {
 
   return useMutation({
     mutationFn: async (payload: InviteMemberRequest) => {
-      return teamApi.inviteMember(teamId as UUID, payload);
+      return activeTeamService.inviteMember(teamId as UUID, payload);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -153,7 +155,7 @@ export function useCancelTeamInvitationMutation(teamId?: string) {
 
   return useMutation({
     mutationFn: async (invitationId: UUID) => {
-      return teamApi.cancelInvitation(invitationId);
+      return activeTeamService.cancelInvitation(invitationId);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -180,7 +182,7 @@ export function useRemoveTeamMemberMutation(teamId?: string) {
       memberId: UUID;
       payload?: RemoveMemberRequest;
     }) => {
-      return teamApi.removeMember(teamId as UUID, memberId, payload);
+      return activeTeamService.removeMember(teamId as UUID, memberId, payload);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -205,7 +207,7 @@ export function useTransferTeamLeaderMutation(teamId?: string) {
 
   return useMutation({
     mutationFn: async (payload: TransferLeaderRequest) => {
-      return teamApi.transferLeader(teamId as UUID, payload);
+      return activeTeamService.transferLeader(teamId as UUID, payload);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -229,7 +231,7 @@ export function useLeaveTeamMutation(teamId?: string) {
 
   return useMutation({
     mutationFn: async (payload?: LeaveTeamRequest) => {
-      return teamApi.leaveTeam(teamId as UUID, payload ?? {});
+      return activeTeamService.leaveTeam(teamId as UUID, payload ?? {});
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -247,77 +249,109 @@ export function useLeaveTeamMutation(teamId?: string) {
   });
 }
 
-export function useAcceptInvitationMutation() {
-  const queryClient = useQueryClient();
-  const { enqueueSnackbar } = useSnackbar();
-
-  return useMutation({
-    mutationFn: async (invitationId: UUID) => {
-      return teamApi.acceptInvitation(invitationId);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: participantTeamQueryKeys.myInvitations,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: participantTeamQueryKeys.myTeams,
-      });
-      enqueueSnackbar("You have joined the team successfully!", {
-        variant: "success",
-      });
-    },
-    onError: () =>
-      enqueueSnackbar("Failed to accept invitation.", { variant: "error" }),
+const removeInvitationFromCache = (queryClient: any, idOrToken: string, isToken = false) => {
+  queryClient.setQueryData(participantTeamQueryKeys.myInvitations, (oldData: any) => {
+    if (!oldData) return oldData;
+    const list = oldData.data || oldData;
+    const filtered = list.filter((inv: any) => isToken ? inv.token !== idOrToken : inv.id !== idOrToken);
+    return oldData.data ? { ...oldData, data: filtered } : filtered;
   });
-}
+};
 
-export function useRejectInvitationMutation() {
-  const queryClient = useQueryClient();
-  const { enqueueSnackbar } = useSnackbar();
+  export function useAcceptInvitationMutation() {
+    const queryClient = useQueryClient();
+    const { enqueueSnackbar } = useSnackbar();
 
-  return useMutation({
-    mutationFn: async (invitationId: UUID) => {
-      return teamApi.rejectInvitation(invitationId);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: participantTeamQueryKeys.myInvitations,
-      });
-      enqueueSnackbar("Invitation declined.", { variant: "info" });
-    },
-    onError: () =>
-      enqueueSnackbar("Failed to decline invitation.", { variant: "error" }),
-  });
-}
+    return useMutation({
+      mutationFn: async (invitationId: UUID) => {
+        return activeTeamService.acceptInvitation(invitationId);
+      },
+      onMutate: async (invitationId) => {
+        removeInvitationFromCache(queryClient, invitationId);
+      },
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: participantTeamQueryKeys.myTeams,
+        });
+        void queryClient.invalidateQueries({
+          queryKey: participantTeamQueryKeys.myInvitations,
+        });
+        enqueueSnackbar("You have joined the team successfully!", {
+          variant: "success",
+        });
+      },
+      onError: () =>
+        enqueueSnackbar("Failed to accept invitation.", { variant: "error" }),
+    });
+  }
+
+  export function useRejectInvitationMutation() {
+    const queryClient = useQueryClient();
+    const { enqueueSnackbar } = useSnackbar();
+
+    return useMutation({
+      mutationFn: async (invitationId: UUID) => {
+        return activeTeamService.rejectInvitation(invitationId);
+      },
+      onMutate: async (invitationId) => {
+        removeInvitationFromCache(queryClient, invitationId);
+      },
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: participantTeamQueryKeys.myInvitations,
+        });
+        enqueueSnackbar("Invitation declined.", { variant: "info" });
+      },
+      onError: () =>
+        enqueueSnackbar("Failed to decline invitation.", { variant: "error" }),
+    });
+  }
 
 export function useAcceptInvitationByTokenMutation() {
+    const queryClient = useQueryClient();
+    const { enqueueSnackbar } = useSnackbar();
+
+    return useMutation({
+      mutationFn: async (token: string) => {
+        return activeTeamService.acceptInvitationByToken(token);
+      },
+      onMutate: async (token) => {
+        removeInvitationFromCache(queryClient, token, true);
+      },
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: participantTeamQueryKeys.myTeams,
+        });
+        void queryClient.invalidateQueries({
+          queryKey: participantTeamQueryKeys.myInvitations,
+        });
+        enqueueSnackbar("You have joined the team successfully!", {
+          variant: "success",
+        });
+      },
+      onError: (error: any) =>
+        enqueueSnackbar(error.message || "Failed to accept invitation.", {
+          variant: "error",
+        }),
+    });
+  }
+
+export function useRejectInvitationByTokenMutation() {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
     mutationFn: async (token: string) => {
-      return teamApi.acceptInvitationByToken(token);
+      return activeTeamService.rejectInvitationByToken(token);
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: participantTeamQueryKeys.myTeams,
-      });
-      enqueueSnackbar("You have joined the team successfully!", {
-        variant: "success",
-      });
+    onMutate: async (token) => {
+      removeInvitationFromCache(queryClient, token, true);
     },
-  });
-}
-
-export function useRejectInvitationByTokenMutation() {
-  const { enqueueSnackbar } = useSnackbar();
-
-  return useMutation({
-    mutationFn: async (token: string) => {
-      return teamApi.rejectInvitationByToken(token);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.myInvitations });
+      enqueueSnackbar("Invitation declined.", { variant: "info" });
     },
-    onSuccess: () =>
-      enqueueSnackbar("Invitation declined.", { variant: "info" }),
+    onError: (error: any) => enqueueSnackbar(error.message || "Failed to decline invitation.", { variant: "error" }),
   });
 }
 
@@ -326,7 +360,7 @@ export function usePreviewJoinCodeMutation() {
 
   return useMutation({
     mutationFn: async (joinCode: string) => {
-      return teamApi.previewJoinCode(joinCode);
+      return activeTeamService.previewJoinCode(joinCode);
     },
     onError: (err: any) => {
       enqueueSnackbar(err.message || "Invalid join code.", {
@@ -342,7 +376,7 @@ export function useJoinTeamByCodeMutation() {
 
   return useMutation({
     mutationFn: async (payload: JoinTeamByCodeRequest) => {
-      return teamApi.joinByCode(payload);
+      return activeTeamService.joinByCode(payload);
     },
     onSuccess: () => {
       // Cập nhật lại danh sách team sau khi join thành công

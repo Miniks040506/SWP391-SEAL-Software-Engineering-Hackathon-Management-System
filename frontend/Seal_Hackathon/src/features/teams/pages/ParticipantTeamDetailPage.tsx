@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useSnackbar } from "notistack";
 
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -16,9 +18,11 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import IconButton from "@mui/material/IconButton";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 
 import type { UUID } from "@/types/common.types";
 import type { TeamMemberResponse } from "@/types/team.types";
@@ -63,12 +67,10 @@ export const TeamDetailPage = () => {
   const [activeTab, setActiveTab] = useState<TeamDetailTab>("overview");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
-  // Queries
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
   const invitationsQuery = useTeamInvitationsQuery(teamId);
 
-  // Mutations
   const updateTeamMutation = useUpdateTeamMutation(teamId);
   const inviteMemberMutation = useInviteTeamMemberMutation(teamId);
   const cancelInvitationMutation = useCancelTeamInvitationMutation(teamId);
@@ -232,7 +234,7 @@ export const TeamDetailPage = () => {
 
           {activeTab === "overview" && (
             <div className="space-y-6 pt-6">
-              {/*  ============================= Nội dung Overview ============================= */}
+              {/* ============================= Nội dung Overview ============================= */}
               <section className="space-y-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -315,6 +317,14 @@ export const TeamDetailPage = () => {
               <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <InfoItem label="Leader" value={team.leaderName} />
                 <InfoItem label="Team Status" value={team.status} />
+
+                <CopyableInfoItem
+                  label="Join Code"
+                  value={(team as any).joinCode}
+                  fallback="Not Generated"
+                  highlight
+                />
+
                 <InfoItem
                   label="Track"
                   value={team.trackId ? team.trackId : "Not assigned"}
@@ -323,15 +333,15 @@ export const TeamDetailPage = () => {
                   label="Members"
                   value={`${members.length}/5 member(s)`}
                 />
+
                 <InfoItem label="Team ID" value={team.id} />
-                <InfoItem label="Leader ID" value={team.leaderId} />
               </section>
             </div>
           )}
 
           {activeTab === "members" && (
             <div className="space-y-5 pt-6">
-              {/*  ============================= Nội dung Members  ============================= */}
+              {/* ============================= Nội dung Members  ============================= */}
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
@@ -549,6 +559,7 @@ export const TeamDetailPage = () => {
   );
 };
 
+// Component InfoItem giữ nguyên cho các text bình thường
 type InfoItemProps = { label: string; value: string };
 const InfoItem = ({ label, value }: InfoItemProps) => {
   return (
@@ -557,6 +568,77 @@ const InfoItem = ({ label, value }: InfoItemProps) => {
       <p className="mt-1 break-words font-bold text-gray-900 dark:text-white">
         {value}
       </p>
+    </div>
+  );
+};
+
+// Component MỚI: Dành cho những field có thể Copy được (Join Code, ID)
+type CopyableInfoItemProps = {
+  label: string;
+  value?: string | null;
+  fallback?: string;
+  highlight?: boolean;
+};
+const CopyableInfoItem = ({
+  label,
+  value,
+  fallback = "N/A",
+  highlight,
+}: CopyableInfoItemProps) => {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const handleCopy = () => {
+    if (!value) return;
+    navigator.clipboard.writeText(value);
+    enqueueSnackbar(`${label} copied to clipboard!`, { variant: "success" });
+  };
+
+  return (
+    <div
+      className={`flex items-center justify-between rounded-2xl p-4 ${
+        highlight
+          ? "border border-blue-100 bg-blue-50 dark:border-blue-900/50 dark:bg-blue-900/20"
+          : "bg-slate-50 dark:bg-slate-900/40"
+      }`}
+    >
+      <div className="min-w-0 pr-4">
+        <p
+          className={`text-sm ${highlight ? "font-semibold text-blue-600 dark:text-blue-400" : "text-gray-500"}`}
+        >
+          {label}
+        </p>
+        <p
+          className={`mt-1 truncate font-bold ${
+            highlight
+              ? "text-lg tracking-widest text-blue-700 dark:text-blue-300"
+              : "text-gray-900 dark:text-white"
+          }`}
+        >
+          {value || fallback}
+        </p>
+      </div>
+
+      {value && (
+        <Tooltip title={`Copy ${label}`}>
+          <IconButton
+            onClick={handleCopy}
+            size="small"
+            color={highlight ? "primary" : "default"}
+            sx={{
+              bgcolor: highlight
+                ? "rgba(37, 99, 235, 0.1)"
+                : "rgba(0,0,0,0.05)",
+              "&:hover": {
+                bgcolor: highlight
+                  ? "rgba(37, 99, 235, 0.2)"
+                  : "rgba(0,0,0,0.1)",
+              },
+            }}
+          >
+            <ContentCopyOutlinedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      )}
     </div>
   );
 };
