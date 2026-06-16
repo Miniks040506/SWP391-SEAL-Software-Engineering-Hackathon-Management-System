@@ -34,6 +34,7 @@ public class RoundServiceImpl implements RoundService {
     private final AdvanceRuleRepository advanceRuleRepository;
     private final TrackRepository trackRepository;
     private final AuditLogRepository auditLogRepository;
+    private final NotificationRepository notificationRepository;
 
     @Transactional
     @Override
@@ -343,10 +344,11 @@ public class RoundServiceImpl implements RoundService {
         }
 
         RoundStatus before = round.getStatus();
-
         round.setStatus(RoundStatus.OPEN);
+        Round saved = roundRepository.save(round);
+        saveRoundAudit(actor, round, AuditActionType.ROUND_OPEN, before.name(), saved.getStatus().name());
 
-        return null;
+        return toRoundResponse(saved);
     }
 
     @Transactional
@@ -632,6 +634,34 @@ public class RoundServiceImpl implements RoundService {
             ));
 
             auditLogRepository.save(log);
+        } catch (Exception e) {
+            //TODO
+            e.printStackTrace();
+        }
+    }
+
+    private void saveRoundNotification(
+            User user,
+            Round round,
+            NotificationType type,
+            String title,
+            String body
+    ) {
+        try {
+            Notification notification = new Notification();
+
+            notification.setEvent(round.getEvent());
+            notification.setCreatedBy(user);
+            notification.setType(type);
+            notification.setTitle(title);
+            notification.setBody(body);
+            notification.setTargetScope(NotificationTargetScope.ALL);
+            notification.setChannel(NotificationChannel.BOTH);
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(LocalDateTime.now());
+            notification.setRecipientCount(0);
+
+            notificationRepository.save(notification);
         } catch (Exception e) {
             //TODO
             e.printStackTrace();
