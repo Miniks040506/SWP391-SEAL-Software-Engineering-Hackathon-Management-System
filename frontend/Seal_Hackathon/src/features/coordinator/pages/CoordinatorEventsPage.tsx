@@ -8,10 +8,16 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { eventApi } from "@/api/event.api";
-import { trackApi } from "@/api/track.api";
 import type { UUID } from "@/types/common.types";
 import type { EventSummaryResponse } from "@/types/event.types";
+
+import { eventApi as realEventApi } from "@/api/event.api";
+import { trackApi as realTrackApi } from "@/api/track.api";
+import { mockCoordinatorService } from "../mocks/coordinatorService.mock";
+
+const USE_MOCK = false;
+const eventApi = USE_MOCK ? (mockCoordinatorService.eventApi as any) : realEventApi;
+const trackApi = USE_MOCK ? mockCoordinatorService.trackApi : realTrackApi;
 
 type EventStatusFilter =
   | "ALL"
@@ -252,7 +258,7 @@ export function CoordinatorEventsPage() {
       try {
         return await eventApi.getAllEvents();
       } catch {
-        return await eventApi.getPublicEvents({ page: 0, size: 100 });
+        return await eventApi.getPublicEvents?.({ page: 0, size: 100 }) || [];
       }
     },
   });
@@ -306,7 +312,7 @@ export function CoordinatorEventsPage() {
   }, [activeFilter, apiEvents]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-3xl font-black text-slate-950 dark:text-white">
@@ -323,11 +329,13 @@ export function CoordinatorEventsPage() {
           startIcon={<AddOutlinedIcon />}
           onClick={() => navigate("/coordinator/events/create")}
           sx={{
+            bgcolor: "#2563eb",
             borderRadius: "12px",
             px: 3,
             py: 1.2,
             textTransform: "none",
             fontWeight: 900,
+            "&:hover": { bgcolor: "#1d4ed8" }
           }}
         >
           Create New Event

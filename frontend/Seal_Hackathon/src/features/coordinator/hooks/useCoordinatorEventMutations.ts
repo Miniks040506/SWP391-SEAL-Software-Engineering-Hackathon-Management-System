@@ -4,37 +4,33 @@ import { prizeApi } from "@/api/prize.api";
 import { roundApi } from "@/api/round.api";
 import { trackApi } from "@/api/track.api";
 import { coordinatorEventKeys } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
+
+import { mockCoordinatorService } from "../mocks/coordinatorService.mock";
 import type { UUID } from "@/types/common.types";
 import type { CreateEventRequest, UpdateEventRequest } from "@/types/event.types";
 import type { CreatePrizeRequest, UpdatePrizeRequest } from "@/types/prize.types";
-import type {
-  AssignJudgeRequest,
-  CreateRoundRequest,
-  UpdateRoundRequest,
-} from "@/types/round.types";
-import type {
-  AssignMentorRequest,
-  CreateTrackRequest,
-  UpdateTrackRequest,
-} from "@/types/track.types";
+import type { AssignJudgeRequest, CreateRoundRequest, UpdateRoundRequest } from "@/types/round.types";
+import type { AssignMentorRequest, CreateTrackRequest, UpdateTrackRequest } from "@/types/track.types";
+
+const USE_MOCK = false;
+
+const activeEventApi = USE_MOCK ? mockCoordinatorService.eventApi : eventApi;
+const activeTrackApi = USE_MOCK ? mockCoordinatorService.trackApi : trackApi;
+const activeRoundApi = USE_MOCK ? mockCoordinatorService.roundApi : roundApi;
+const activePrizeApi = USE_MOCK ? mockCoordinatorService.prizeApi : prizeApi;
 
 export function useCreateEventMutation() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (payload: CreateEventRequest) => eventApi.createEvent(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.all });
-    },
+    mutationFn: (payload: CreateEventRequest) => activeEventApi.createEvent(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.all }),
   });
 }
 
 export function useUpdateEventMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (payload: UpdateEventRequest) =>
-      eventApi.updateEvent(eventId, payload),
+    mutationFn: (payload: UpdateEventRequest) => activeEventApi.updateEvent(eventId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.detail(eventId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.all });
@@ -44,20 +40,16 @@ export function useUpdateEventMutation(eventId: UUID) {
 
 export function useDeleteEventMutation() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (eventId: UUID) => eventApi.deleteEvent(eventId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.all });
-    },
+    mutationFn: (eventId: UUID) => activeEventApi.deleteEvent(eventId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.all }),
   });
 }
 
 export function useCreateTrackMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (payload: CreateTrackRequest) => trackApi.createTrack(eventId, payload),
+    mutationFn: (payload: CreateTrackRequest) => activeTrackApi.createTrack(eventId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.tracks(eventId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.detail(eventId) });
@@ -67,10 +59,9 @@ export function useCreateTrackMutation(eventId: UUID) {
 
 export function useUpdateTrackMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ trackId, payload }: { trackId: UUID; payload: UpdateTrackRequest }) =>
-      trackApi.updateTrack(trackId, payload),
+      activeTrackApi.updateTrack(trackId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.tracks(eventId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.detail(eventId) });
@@ -80,9 +71,8 @@ export function useUpdateTrackMutation(eventId: UUID) {
 
 export function useDeleteTrackMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (trackId: UUID) => trackApi.deleteTrack(trackId),
+    mutationFn: (trackId: UUID) => activeTrackApi.deleteTrack(trackId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.tracks(eventId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.detail(eventId) });
@@ -92,9 +82,8 @@ export function useDeleteTrackMutation(eventId: UUID) {
 
 export function useCreateRoundMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (payload: CreateRoundRequest) => roundApi.createRound(eventId, payload),
+    mutationFn: (payload: CreateRoundRequest) => activeRoundApi.createRound(eventId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.rounds(eventId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.detail(eventId) });
@@ -104,10 +93,9 @@ export function useCreateRoundMutation(eventId: UUID) {
 
 export function useUpdateRoundMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ roundId, payload }: { roundId: UUID; payload: UpdateRoundRequest }) =>
-      roundApi.updateRound(roundId, payload),
+      activeRoundApi.updateRound(roundId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.rounds(eventId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.detail(eventId) });
@@ -117,9 +105,8 @@ export function useUpdateRoundMutation(eventId: UUID) {
 
 export function useDeleteRoundMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (roundId: UUID) => roundApi.deleteRound(roundId),
+    mutationFn: (roundId: UUID) => activeRoundApi.deleteRound(roundId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.rounds(eventId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.detail(eventId) });
@@ -129,44 +116,34 @@ export function useDeleteRoundMutation(eventId: UUID) {
 
 export function useCreatePrizeMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (payload: CreatePrizeRequest) => prizeApi.createPrize(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.prizes(eventId) });
-    },
+    mutationFn: (payload: CreatePrizeRequest) => activePrizeApi.createPrize(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.prizes(eventId) }),
   });
 }
 
 export function useUpdatePrizeMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ prizeId, payload }: { prizeId: UUID; payload: UpdatePrizeRequest }) =>
-      prizeApi.updatePrize(prizeId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.prizes(eventId) });
-    },
+      activePrizeApi.updatePrize(prizeId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.prizes(eventId) }),
   });
 }
 
 export function useDeletePrizeMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (prizeId: UUID) => prizeApi.deletePrize(prizeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.prizes(eventId) });
-    },
+    mutationFn: (prizeId: UUID) => activePrizeApi.deletePrize(prizeId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.prizes(eventId) }),
   });
 }
 
 export function useAssignMentorMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ trackId, payload }: { trackId: UUID; payload: AssignMentorRequest }) =>
-      trackApi.assignMentor(trackId, payload),
+      activeTrackApi.assignMentor(trackId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.mentorAssignments(variables.trackId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.tracks(eventId) });
@@ -176,10 +153,9 @@ export function useAssignMentorMutation(eventId: UUID) {
 
 export function useRemoveMentorAssignmentMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ trackId, assignmentId }: { trackId: UUID; assignmentId: UUID }) =>
-      trackApi.removeMentorAssignment(trackId, assignmentId),
+      activeTrackApi.removeMentorAssignment(trackId, assignmentId),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.mentorAssignments(variables.trackId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.tracks(eventId) });
@@ -189,10 +165,9 @@ export function useRemoveMentorAssignmentMutation(eventId: UUID) {
 
 export function useAssignJudgeMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ roundId, payload }: { roundId: UUID; payload: AssignJudgeRequest }) =>
-      roundApi.assignJudge(roundId, payload),
+      activeRoundApi.assignJudge(roundId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.judgeAssignments(variables.roundId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.rounds(eventId) });
@@ -202,10 +177,9 @@ export function useAssignJudgeMutation(eventId: UUID) {
 
 export function useRemoveJudgeAssignmentMutation(eventId: UUID) {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ roundId, assignmentId }: { roundId: UUID; assignmentId: UUID }) =>
-      roundApi.removeJudgeAssignment(roundId, assignmentId),
+      activeRoundApi.removeJudgeAssignment(roundId, assignmentId),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.judgeAssignments(variables.roundId) });
       queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.rounds(eventId) });
