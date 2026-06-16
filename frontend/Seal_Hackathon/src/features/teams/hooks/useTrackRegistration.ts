@@ -21,10 +21,12 @@ export function useTrackRegistration(teamId: UUID) {
     queryFn: () => eventApi.getPublicEvents({ status: "REGISTRATION" }),
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const events = eventsQuery.data?.content || [];
 
   useEffect(() => {
     if (events.length === 1 && !selectedEventId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedEventId(events[0].id);
     }
   }, [events, selectedEventId]);
