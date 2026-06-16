@@ -15,7 +15,7 @@ import { eventApi as realEventApi } from "@/api/event.api";
 import { trackApi as realTrackApi } from "@/api/track.api";
 import { mockCoordinatorService } from "../mocks/coordinatorService.mock";
 
-const USE_MOCK = false;
+const USE_MOCK = true;
 const eventApi = USE_MOCK ? (mockCoordinatorService.eventApi as any) : realEventApi;
 const trackApi = USE_MOCK ? mockCoordinatorService.trackApi : realTrackApi;
 
