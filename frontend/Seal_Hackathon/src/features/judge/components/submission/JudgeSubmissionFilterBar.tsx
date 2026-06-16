@@ -19,24 +19,32 @@ type Props = {
 const filterSx = { "& .MuiOutlinedInput-root": { borderRadius: "10px" } };
 
 export function JudgeSubmissionFilterBar({ filters, onChange }: Props) {
-  const [localSearch, setLocalSearch] = useState(""); 
+  const [localSearch, setLocalSearch] = useState(filters.search ?? "");
 
   useEffect(() => {
+    setLocalSearch(filters.search ?? "");
+  }, [filters.search]);
+
+  useEffect(() => {
+    const trimmed = localSearch.trim();
     const timer = setTimeout(() => {
-    }, 500);
+      if ((filters.search ?? "") === trimmed) return;
+      onChange({ ...filters, search: trimmed || undefined, page: 0 });
+    }, 350);
+
     return () => clearTimeout(timer);
-  }, [localSearch]);
+  }, [filters, localSearch, onChange]);
 
   const handleStatusChange = (e: any) => {
-    onChange({ ...filters, status: e.target.value || undefined, page: 1 });
+    onChange({ ...filters, status: e.target.value || undefined, page: 0 });
   };
 
   const handleClear = () => {
     setLocalSearch("");
-    onChange({ page: 1, size: filters.size, status: undefined });
+    onChange({ page: 0, size: filters.size, status: undefined, search: undefined });
   };
 
-  const hasActiveFilters = Boolean(localSearch || filters.status);
+  const hasActiveFilters = Boolean(localSearch.trim() || filters.status);
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center dark:border-slate-700 dark:bg-slate-900">
