@@ -97,6 +97,20 @@ export function MentorsJudgesStep({
 
   const handleGuestJudgeCreated = (judge: GuestJudgeResponse, fullName: string) => {
     setGuestJudgeModalOpen(false);
+    setActiveTab("JUDGE");
+
+    const guestUser: AssignableUserResponse = {
+      userId: judge.userId,
+      judgeId: judge.judgeId,
+      email: judge.email,
+      fullName,
+      role: "JUDGE",
+      status: "ACTIVE",
+      judgeType: judge.judgeType,
+      guest: judge.guest,
+      temporary: judge.temporary,
+      expiresAt: judge.expiresAt,
+    };
 
     const newAssignment = createMentorJudgeAssignment({
       userId: judge.userId, 
@@ -106,7 +120,18 @@ export function MentorsJudgesStep({
       role: "JUDGE",
     });
 
-    append(newAssignment);
+    append({
+      ...newAssignment,
+      judgeRoundAssignments:
+        tracks[0]?.id && rounds[0]?.id
+          ? [createJudgeTrackRoundAssignment(tracks[0].id, rounds[0].id)]
+          : [],
+    });
+    setCreatedGuestJudges((current) => [
+      guestUser,
+      ...current.filter((user) => user.userId !== guestUser.userId),
+    ]);
+    void trigger("mentorJudgeAssignments");
     setActiveTab("JUDGE"); // Tự động switch sang tab Judge
   };
 
