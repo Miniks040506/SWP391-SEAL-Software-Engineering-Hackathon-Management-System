@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import TextField from "@mui/material/TextField";
@@ -29,7 +29,17 @@ export const UserInviteSearchPanel = ({
   onSelect,
 }: UserInviteSearchPanelProps) => {
   const [search, setSearch] = useState("");
-  const usersQuery = useAssignableUsersQuery(USER_ROLE_QUERY_MAP[role], search);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const usersQuery = useAssignableUsersQuery(USER_ROLE_QUERY_MAP[role], debouncedSearch);
   const users = [...extraUsers, ...(usersQuery.data ?? [])].filter(
     (user, index, allUsers) =>
       allUsers.findIndex((item) => item.userId === user.userId) === index,

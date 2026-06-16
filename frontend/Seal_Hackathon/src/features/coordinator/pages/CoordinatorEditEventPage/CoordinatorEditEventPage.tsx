@@ -129,7 +129,7 @@ export function CoordinatorEditEventPage() {
       {activeTab === "TRACKS" && <TracksTab eventId={eventId} tracks={tracksQuery.data ?? []} isLoading={tracksQuery.isLoading} onChanged={invalidateEditData} canEdit={editRules.canEditTracksRounds} readonlyReason={editRules.trackRoundReason} />}
       {activeTab === "TEAMS" && <TeamsTab eventId={eventId} eventName={eventName} tracks={tracksQuery.data ?? []} />}
       {activeTab === "ROUNDS" && <RoundsTab eventId={eventId} tracks={tracksQuery.data ?? []} rounds={roundsQuery.data ?? []} isLoading={roundsQuery.isLoading} onChanged={invalidateEditData} canEdit={editRules.canEditTracksRounds} readonlyReason={editRules.trackRoundReason} />}
-      {activeTab === "ASSIGNMENTS" && <AssignmentsTab tracks={tracksQuery.data ?? []} rounds={roundsQuery.data ?? []} onChanged={invalidateEditData} canEdit={editRules.canEditAssignments} readonlyReason={editRules.assignmentReason} />}
+      {activeTab === "ASSIGNMENTS" && <AssignmentsTab eventId={eventId} tracks={tracksQuery.data ?? []} rounds={roundsQuery.data ?? []} canEdit={editRules.canEditAssignments} readonlyReason={editRules.assignmentReason} />}
       {activeTab === "CRITERIA" && <CriteriaTab eventId={eventId} event={eventQuery.data} rounds={roundsQuery.data ?? []} canEdit={editRules.canEditCriteria} readonlyReason={editRules.criteriaReason} />}
       {activeTab === "PRIZES" && <PrizesTab eventId={eventId} tracks={tracksQuery.data ?? []} prizes={prizesQuery.data ?? []} isLoading={prizesQuery.isLoading} onChanged={invalidateEditData} canEdit={editRules.canEditPrizes} readonlyReason={editRules.prizeReason} />}
     </div>

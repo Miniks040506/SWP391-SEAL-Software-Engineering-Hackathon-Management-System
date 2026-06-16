@@ -286,16 +286,15 @@ export function AssignmentsTab({
     }
 
     try {
-      const assignment = await trackApi.assignMentor(selectedTrackId, { mentorUserId });
+      const assignment = await assignMentorMutation.mutateAsync({
+        trackId: selectedTrackId,
+        payload: { mentorUserId },
+      });
       queryClient.setQueryData<MentorAssignmentResponse[]>(
-        ["edit-track-mentor-assignments", selectedTrackId],
+        coordinatorEventKeys.mentorAssignments(selectedTrackId),
         (current) => upsertAssignment(current, assignment),
       );
       enqueueSnackbar("Mentor assigned.", { variant: "success" });
-      void queryClient.invalidateQueries({
-        queryKey: ["edit-track-mentor-assignments", selectedTrackId],
-      });
-      void onChanged();
     } catch {
       enqueueSnackbar("Failed to assign mentor.", { variant: "error" });
     }
@@ -322,21 +321,20 @@ export function AssignmentsTab({
     }
 
     try {
-      const assignment = await roundApi.assignJudge(selectedRoundId, {
-        judgeId,
-        trackId: selectedTrackId,
-        totalToScore: totalToScore ? Number(totalToScore) : undefined,
+      const assignment = await assignJudgeMutation.mutateAsync({
+        roundId: selectedRoundId,
+        payload: {
+          judgeId,
+          trackId: selectedTrackId,
+          totalToScore: totalToScore ? Number(totalToScore) : undefined,
+        },
       });
       queryClient.setQueryData<JudgeAssignmentResponse[]>(
-        ["edit-round-judge-assignments", selectedRoundId],
+        coordinatorEventKeys.judgeAssignments(selectedRoundId),
         (current) => upsertAssignment(current, assignment),
       );
 
       enqueueSnackbar("Judge assigned.", { variant: "success" });
-      void queryClient.invalidateQueries({
-        queryKey: ["edit-round-judge-assignments", selectedRoundId],
-      });
-      void onChanged();
     } catch {
       enqueueSnackbar("Failed to assign judge.", { variant: "error" });
     }
@@ -346,16 +344,12 @@ export function AssignmentsTab({
     if (!canEdit) return;
 
     try {
-      await trackApi.removeMentorAssignment(trackId, assignmentId);
+      await removeMentorMutation.mutateAsync({ trackId, assignmentId });
       queryClient.setQueryData<MentorAssignmentResponse[]>(
-        ["edit-track-mentor-assignments", trackId],
+        coordinatorEventKeys.mentorAssignments(trackId),
         (current) => (current ?? []).filter((item) => item.id !== assignmentId),
       );
       enqueueSnackbar("Mentor assignment removed.", { variant: "success" });
-      void queryClient.invalidateQueries({
-        queryKey: ["edit-track-mentor-assignments", trackId],
-      });
-      void onChanged();
     } catch {
       enqueueSnackbar("Failed to remove mentor assignment.", {
         variant: "error",
@@ -367,16 +361,12 @@ export function AssignmentsTab({
     if (!canEdit) return;
 
     try {
-      await roundApi.removeJudgeAssignment(roundId, assignmentId);
+      await removeJudgeMutation.mutateAsync({ roundId, assignmentId });
       queryClient.setQueryData<JudgeAssignmentResponse[]>(
-        ["edit-round-judge-assignments", roundId],
+        coordinatorEventKeys.judgeAssignments(roundId),
         (current) => (current ?? []).filter((item) => item.id !== assignmentId),
       );
       enqueueSnackbar("Judge assignment removed.", { variant: "success" });
-      void queryClient.invalidateQueries({
-        queryKey: ["edit-round-judge-assignments", roundId],
-      });
-      void onChanged();
     } catch {
       enqueueSnackbar("Failed to remove judge assignment.", {
         variant: "error",
@@ -409,16 +399,21 @@ export function AssignmentsTab({
       ...current.filter((user) => user.userId !== guestUser.userId),
     ]);
 
-    void queryClient.invalidateQueries({
-      queryKey: ["edit-assignable-users", "JUDGE"],
-    });
-
     await handleAssignJudge(guestUser);
   };
 
   const roleNeedsRound = activeRole === "JUDGE";
   const missingTarget =
     !selectedTrackId || (roleNeedsRound && !selectedRoundId);
+  const isAssigning =
+    activeRole === "MENTOR"
+      ? assignMentorMutation.isPending
+      : assignJudgeMutation.isPending;
+  const activeAssigningUserId =
+    activeRole === "MENTOR"
+      ? assignMentorMutation.variables?.payload.mentorUserId
+      : assignJudgeMutation.variables?.payload.judgeId;
+  const isRefreshingUsers = usersQuery.isFetching && !usersQuery.isLoading;
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -544,7 +539,7 @@ export function AssignmentsTab({
             Current target:{" "}
             {selectedTrack ? getTrackName(selectedTrack) : "No track"}
             {activeRole === "JUDGE" &&
-              ` · ${selectedRound ? getRoundName(selectedRound) : "No round"}`}
+              ` / ${selectedRound ? getRoundName(selectedRound) : "No round"}`}
           </div>
 
           <TextField
@@ -587,22 +582,34 @@ export function AssignmentsTab({
             </div>
           )}
 
+          {isRefreshingUsers && (
+            <p className="text-xs font-semibold text-slate-400">
+              Refreshing list...
+            </p>
+          )}
+
           {usersQuery.isError && (
             <Alert severity="error">Failed to load assignable users.</Alert>
           )}
 
           <div className="max-h-110 space-y-3 overflow-y-auto pr-1">
             {visibleUsers.map((user) => {
+              const userJudgeId = getJudgeId(user);
+              const targetUserId =
+                activeRole === "MENTOR" ? user.userId : userJudgeId;
               const alreadyAssigned =
                 activeRole === "MENTOR"
                   ? assignedMentorIdsForTarget.has(user.userId)
-                  : assignedJudgeIdsForTarget.has(getJudgeId(user));
+                  : Boolean(userJudgeId && assignedJudgeIdsForTarget.has(userJudgeId));
+              const assigningThis =
+                isAssigning && activeAssigningUserId === targetUserId;
 
               const disabled =
                 !canEdit ||
                 missingTarget ||
                 alreadyAssigned ||
-                (activeRole === "JUDGE" && !getJudgeId(user));
+                isAssigning ||
+                (activeRole === "JUDGE" && !userJudgeId);
 
               return (
                 <div
@@ -649,7 +656,9 @@ export function AssignmentsTab({
                     fullWidth
                     variant={alreadyAssigned ? "outlined" : "contained"}
                     startIcon={
-                      alreadyAssigned ? (
+                      assigningThis ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : alreadyAssigned ? (
                         <CheckCircleOutlineOutlinedIcon />
                       ) : (
                         <AddOutlinedIcon />
@@ -670,6 +679,8 @@ export function AssignmentsTab({
                   >
                     {!canEdit
                       ? "Locked"
+                      : assigningThis
+                        ? "Assigning..."
                       : alreadyAssigned
                         ? "Assigned"
                         : missingTarget
@@ -701,6 +712,9 @@ export function AssignmentsTab({
             <div className="mt-4 space-y-3">
               {mentorAssignments.map(({ assignment, track }) => {
                 const assignmentId = getAssignmentId(assignment);
+                const removingThis =
+                  removeMentorMutation.isPending &&
+                  removeMentorMutation.variables?.assignmentId === assignmentId;
 
                 return (
                   <div
@@ -719,6 +733,7 @@ export function AssignmentsTab({
                     {assignmentId && canEdit && (
                       <IconButton
                         color="error"
+                        disabled={removingThis}
                         onClick={() =>
                           handleRemoveMentor(getId(track), assignmentId)
                         }
@@ -746,6 +761,9 @@ export function AssignmentsTab({
             <div className="mt-4 space-y-3">
               {judgeAssignments.map(({ assignment, round }) => {
                 const assignmentId = getAssignmentId(assignment);
+                const removingThis =
+                  removeJudgeMutation.isPending &&
+                  removeJudgeMutation.variables?.assignmentId === assignmentId;
                 const track = tracks.find(
                   (item) => getId(item) === assignment.trackId,
                 );
@@ -760,7 +778,7 @@ export function AssignmentsTab({
                         {getAssignmentUserName(assignment)}
                       </p>
                       <p className="mt-1 text-sm text-slate-500">
-                        Track: {track ? getTrackName(track) : "—"} · Round:{" "}
+                        Track: {track ? getTrackName(track) : "-"} / Round:{" "}
                         {getRoundName(round)}
                       </p>
                     </div>
@@ -768,6 +786,7 @@ export function AssignmentsTab({
                     {assignmentId && canEdit && (
                       <IconButton
                         color="error"
+                        disabled={removingThis}
                         onClick={() =>
                           handleRemoveJudge(getId(round), assignmentId)
                         }
