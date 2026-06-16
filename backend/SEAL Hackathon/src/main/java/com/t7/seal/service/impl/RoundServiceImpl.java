@@ -1,17 +1,11 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.domain.RegistrationStatus;
-import com.t7.seal.domain.RoundStatus;
-import com.t7.seal.domain.RuleType;
-import com.t7.seal.domain.UserRole;
+import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.repository.AdvanceRuleRepository;
-import com.t7.seal.repository.HackathonEventRepository;
-import com.t7.seal.repository.RoundRepository;
-import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.round.CreateAdvanceRuleRequest;
 import com.t7.seal.request.round.CreateRoundRequest;
 import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
@@ -27,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -38,6 +33,7 @@ public class RoundServiceImpl implements RoundService {
     private final CurrentUserService currentUserService;
     private final AdvanceRuleRepository advanceRuleRepository;
     private final TrackRepository trackRepository;
+    private final AuditLogRepository auditLogRepository;
 
     @Transactional
     @Override
@@ -326,21 +322,46 @@ public class RoundServiceImpl implements RoundService {
         advanceRuleRepository.delete(advanceRule);
     }
 
+    @Transactional
     @Override
     public RoundResponse openRound(UUID roundId, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getEvent().getStatus() != RegistrationStatus.ONGOING) {
+            throw new ConflictException("Round cannot be opened in this status "
+                    + round.getEvent().getStatus() + ".");
+        }
+
+        if (round.getStatus() != RoundStatus.UPCOMING
+                && round.getStatus() != RoundStatus.CLOSED) {
+            throw new ConflictException("Only upcoming and closed rounds can be opened.");
+        }
+
+        if (round.getSubmissionLockedAt() != null) {
+            throw new ConflictException("Cannot re-open round that submissions are locked.");
+        }
+
+        RoundStatus before = round.getStatus();
+
+        round.setStatus(RoundStatus.OPEN);
+
         return null;
     }
 
+    @Transactional
     @Override
     public RoundResponse closeRound(UUID roundId, Authentication authentication) {
         return null;
     }
 
+    @Transactional
     @Override
     public RoundLockResponse lockSubmission(UUID roundId, Authentication authentication) {
         return null;
     }
 
+    @Transactional(readOnly = true)
     @Override
     public RoundOperationStatusResponse getOperationStatus(UUID roundId, Authentication authentication) {
         return null;

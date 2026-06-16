@@ -165,7 +165,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
     public void removeJudgeAssignmentById(UUID assignmentId, Authentication authentication) {
         User judge = currentUserService.getCurrentUser(authentication);
 
-
+        
     }
 
     @Override
