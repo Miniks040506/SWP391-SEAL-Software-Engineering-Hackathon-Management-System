@@ -12,7 +12,7 @@ import type { UUID } from "@/types/common.types";
 import type { GetEventsParams } from "@/types/event.types";
 import type { AssignableUserRole } from "@/types/user.types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const activeEventApi = USE_MOCK ? mockCoordinatorService.eventApi as any : eventApi;
 const activeTrackApi = USE_MOCK ? mockCoordinatorService.trackApi as any : trackApi;
@@ -114,4 +114,16 @@ export function useInvalidateEditEventData(eventId?: UUID) {
       queryClient.invalidateQueries({ queryKey: ["event-criteria", eventId] }),
     ]);
   }, [queryClient, eventId]);
+}
+
+export function useCoordinatorMultipleTracksQueries(eventIds: UUID[]) {
+  return useQueries({
+    queries: eventIds.map((eventId) => ({
+      queryKey: coordinatorEventKeys.tracks(eventId),
+      queryFn: () => activeTrackApi.getTracksByEvent(eventId),
+      enabled: Boolean(eventId),
+      staleTime: 30_000,
+      retry: false,
+    })),
+  });
 }

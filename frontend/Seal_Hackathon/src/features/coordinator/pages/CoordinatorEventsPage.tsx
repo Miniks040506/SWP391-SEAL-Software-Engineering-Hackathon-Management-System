@@ -4,20 +4,17 @@ import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import StackedLineChartOutlinedIcon from "@mui/icons-material/StackedLineChartOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import { Button, CircularProgress } from "@mui/material";
-import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { UUID } from "@/types/common.types";
 import type { EventSummaryResponse } from "@/types/event.types";
 
-import { eventApi as realEventApi } from "@/api/event.api";
-import { trackApi as realTrackApi } from "@/api/track.api";
-import { mockCoordinatorService } from "../mocks/coordinatorService.mock";
-
-const USE_MOCK = true;
-const eventApi = USE_MOCK ? (mockCoordinatorService.eventApi as any) : realEventApi;
-const trackApi = USE_MOCK ? mockCoordinatorService.trackApi : realTrackApi;
+// IMPORT CHUẨN: Chỉ gọi Data từ tầng Hooks, tuyệt đối không import API hay Cờ MOCK ở đây
+import { 
+  useCoordinatorEventsQuery, 
+  useCoordinatorMultipleTracksQueries 
+} from "../../hooks/useCoordinatorEventQueries";
 
 type EventStatusFilter =
   | "ALL"
@@ -252,35 +249,19 @@ export function CoordinatorEventsPage() {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<EventStatusFilter>("ALL");
 
-  const eventsQuery = useQuery({
-    queryKey: ["coordinator-events"],
-    queryFn: async () => {
-      try {
-        return await eventApi.getAllEvents();
-      } catch {
-        return await eventApi.getPublicEvents?.({ page: 0, size: 100 }) || [];
-      }
-    },
-  });
+  // 1. Gọi hook lấy danh sách events
+  const eventsQuery = useCoordinatorEventsQuery();
 
   const apiEvents = useMemo(
     () => normalizeEvents(eventsQuery.data),
     [eventsQuery.data],
   );
 
-  const trackCountQueries = useQueries({
-    queries: apiEvents.map((event) => {
-      const eventId = getEventId(event);
+  // 2. Lấy tất cả ID của Events để truyền vào Hook Tracks
+  const eventIds = useMemo(() => apiEvents.map(getEventId), [apiEvents]);
 
-      return {
-        queryKey: ["coordinator-event-track-count", eventId],
-        queryFn: () => trackApi.getTracksByEvent(eventId),
-        enabled: Boolean(eventId),
-        staleTime: 30_000,
-        retry: false,
-      };
-    }),
-  });
+  // 3. Gọi hook lấy số lượng Tracks
+  const trackCountQueries = useCoordinatorMultipleTracksQueries(eventIds);
 
   const fetchedTrackCounts = useMemo(() => {
     const map = new Map<UUID, number>();
