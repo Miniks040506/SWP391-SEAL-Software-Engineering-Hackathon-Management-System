@@ -104,6 +104,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
 
         Judge judge = judgeRepository.findByIdWithUser(request.judgeId())
                 .orElseThrow(() -> new NotFoundException("Judge not found."));
+
         ensureJudgeCanBeAssigned(judge);
 
         Track track = null;
@@ -127,17 +128,16 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
             throw new ConflictException("This user is already assigned as mentor for this track/event.");
         }
 
+        int totalToScore = request.totalToScore() == null
+                ? (int) submissionRepository.countSubmittedOrLateByRoundAndTrackNullable(roundId, trackId)
+                : request.totalToScore();
+
         RoundJudgeAssignment assignment = new RoundJudgeAssignment();
         assignment.setRound(round);
         assignment.setJudge(judge);
         assignment.setTrack(track);
         assignment.setAssignedBy(assignedBy);
         assignment.setScoringProgress(0);
-
-        Integer totalToScore = request.totalToScore();
-        if (totalToScore == null) {
-            totalToScore = Math.toIntExact(submissionRepository.count(assignedSubmissionSpecForSlot(round, track, null)));
-        }
         assignment.setTotalToScore(totalToScore);
 
         RoundJudgeAssignment saved = assignmentRepository.save(assignment);
@@ -163,9 +163,14 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
 
     @Override
     public void removeJudgeAssignmentById(UUID assignmentId, Authentication authentication) {
-        User judge = currentUserService.getCurrentUser(authentication);
+        currentUserService.getCurrentUser(authentication);
 
-        
+        RoundJudgeAssignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new NotFoundException("Judge assignment not found."));
+
+        assertAssignmentEditable(assignment.getRound().getEvent().getStatus());
+
+        assignmentRepository.delete(assignment);
     }
 
     @Override
@@ -481,9 +486,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
 
 
     private void assertAssignmentEditable(RegistrationStatus status) {
-        if (status == RegistrationStatus.JUDGING
-                || status == RegistrationStatus.COMPLETED
-                || status == RegistrationStatus.CANCELLED) {
+        if (status == RegistrationStatus.COMPLETED || status == RegistrationStatus.CANCELLED) {
             throw new ConflictException("Judge assignments are locked in event status " + status + ".");
         }
     }
@@ -514,19 +517,25 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
     }
 
     private void createJudgeAssignedNotification(RoundJudgeAssignment assignment, User assignedBy) {
-        notificationRepository.save(Notification.builder()
-                .event(assignment.getRound().getEvent())
-                .createdBy(assignedBy)
-                .type(NotificationType.JUDGE_ASSIGNED)
-                .title("Judge assignment")
-                .body(buildJudgeAssignedMessage(assignment))
-                .targetScope(NotificationTargetScope.SINGLE_USER)
-                .targetId(assignment.getJudge().getUser().getId())
-                .channel(NotificationChannel.BOTH)
-                .status(NotificationStatus.SENT)
-                .sentAt(LocalDateTime.now())
-                .recipientCount(1)
-                .build());
+        try {
+            notificationRepository.save(
+                    Notification.builder()
+                            .event(assignment.getRound().getEvent())
+                            .createdBy(assignedBy)
+                            .type(NotificationType.JUDGE_ASSIGNED)
+                            .title("Judge assignment")
+                            .body(buildJudgeAssignedMessage(assignment))
+                            .targetScope(NotificationTargetScope.SINGLE_USER)
+                            .targetId(assignment.getJudge().getUser().getId())
+                            .channel(NotificationChannel.BOTH)
+                            .status(NotificationStatus.SENT)
+                            .sentAt(LocalDateTime.now())
+                            .recipientCount(1)
+                            .build());
+        } catch (Exception e) {
+            //TODO
+            e.printStackTrace();
+        }
     }
 
     private void sendJudgeAssignedEmailSafely(RoundJudgeAssignment assignment) {
