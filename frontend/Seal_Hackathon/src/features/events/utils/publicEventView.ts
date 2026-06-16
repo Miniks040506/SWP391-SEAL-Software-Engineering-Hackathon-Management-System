@@ -231,7 +231,6 @@ export function buildRoundTimelineSteps(rounds: RoundResponse[] = []) {
     .map((round, index) => ({
       label: `Round ${index + 1}`,
       title: round.name,
-      duration: round.isFinal ? "Final round" : undefined,
     }));
 }
 

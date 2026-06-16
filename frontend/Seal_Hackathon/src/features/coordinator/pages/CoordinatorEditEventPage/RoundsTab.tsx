@@ -6,13 +6,11 @@ import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import {
   Alert,
   Button,
-  Checkbox,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   IconButton,
   MenuItem,
   TextField,
@@ -38,7 +36,6 @@ type EditableRound = RoundResponse & {
 type RoundForm = {
   name: string;
   orderIndex: string;
-  isFinal: boolean;
   submissionDeadline: string;
   judgingDeadline: string;
 };
@@ -56,7 +53,6 @@ type RoundsTabProps = {
 const emptyRound: RoundForm = {
   name: "",
   orderIndex: "",
-  isFinal: false,
   submissionDeadline: "",
   judgingDeadline: "",
 };
@@ -110,7 +106,6 @@ function createRoundForm(round: RoundResponse): RoundForm {
   return {
     name: getName(round),
     orderIndex: String(raw.orderIndex ?? 0),
-    isFinal: Boolean(raw.isFinal),
     submissionDeadline: toDateTimeLocal(raw.submissionDeadline),
     judgingDeadline: toDateTimeLocal(raw.judgingDeadline),
   };
@@ -516,12 +511,12 @@ export function RoundsTab({
     }
 
     try {
+      const orderIndex = rounds.length + 1;
+
       await roundApi.createRound(eventId, {
         name: newRound.name.trim(),
-        orderIndex: newRound.orderIndex
-          ? Number(newRound.orderIndex)
-          : rounds.length,
-        isFinal: newRound.isFinal,
+        orderIndex,
+        isFinal: true,
         submissionDeadline: newRound.submissionDeadline
           ? `${newRound.submissionDeadline}:00`
           : undefined,
@@ -529,6 +524,20 @@ export function RoundsTab({
           ? `${newRound.judgingDeadline}:00`
           : undefined,
       });
+
+      // Update other rounds to ensure only max has isFinal
+      const otherFinalRounds = rounds.filter((r) => r.isFinal);
+      await Promise.all(
+        otherFinalRounds.map((r) =>
+          roundApi.updateRound(r.id, {
+            name: r.name,
+            orderIndex: r.orderIndex,
+            isFinal: false,
+            submissionDeadline: r.submissionDeadline,
+            judgingDeadline: r.judgingDeadline,
+          }),
+        ),
+      );
 
       setNewRound(emptyRound);
       setShowAddForm(false);
@@ -551,10 +560,14 @@ export function RoundsTab({
     }
 
     try {
+      const orderIndex = round.orderIndex;
+      const maxOI = Math.max(...rounds.map((r) => r.orderIndex ?? 0));
+      const isFinal = orderIndex === maxOI;
+
       await roundApi.updateRound(id, {
         name: values.name.trim(),
-        orderIndex: values.orderIndex ? Number(values.orderIndex) : 0,
-        isFinal: values.isFinal,
+        orderIndex,
+        isFinal,
         submissionDeadline: values.submissionDeadline
           ? `${values.submissionDeadline}:00`
           : undefined,
@@ -575,6 +588,27 @@ export function RoundsTab({
 
     try {
       await roundApi.deleteRound(roundId);
+
+      const remainingRounds = rounds
+        .filter((r) => r.id !== roundId)
+        .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+
+      await Promise.all(
+        remainingRounds.map((r, idx) => {
+          const expectedOrder = idx + 1;
+          const isFinal = expectedOrder === remainingRounds.length;
+          if (r.orderIndex !== expectedOrder || r.isFinal !== isFinal) {
+            return roundApi.updateRound(r.id, {
+              name: r.name,
+              orderIndex: expectedOrder,
+              isFinal,
+              submissionDeadline: r.submissionDeadline,
+              judgingDeadline: r.judgingDeadline,
+            });
+          }
+        }),
+      );
+
       enqueueSnackbar("Round deleted.", { variant: "success" });
       await onChanged();
     } catch {
@@ -648,15 +682,10 @@ export function RoundsTab({
                 <TextField
                   label="Order index"
                   type="number"
-                  value={newRound.orderIndex}
-                  onChange={(event) =>
-                    setNewRound((current) => ({
-                      ...current,
-                      orderIndex: event.target.value,
-                    }))
-                  }
+                  value={rounds.length + 1}
                   size="small"
                   sx={textFieldSx}
+                  disabled
                 />
 
                 <TextField
@@ -687,21 +716,6 @@ export function RoundsTab({
                   size="small"
                   sx={dateTimeFieldSx}
                   slotProps={{ inputLabel: { shrink: true } }}
-                />
-
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={newRound.isFinal}
-                      onChange={(_, checked) =>
-                        setNewRound((current) => ({
-                          ...current,
-                          isFinal: checked,
-                        }))
-                      }
-                    />
-                  }
-                  label="Final round"
                 />
 
                 <Button
@@ -737,8 +751,13 @@ export function RoundsTab({
               >
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="font-black text-slate-900 dark:text-white">
+                    <h3 className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
                       Round {index + 1}
+                      {rounds.length > 0 && index === rounds.length - 1 && (
+                        <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                          Final
+                        </span>
+                      )}
                     </h3>
                     <p className="mt-1 text-xs font-semibold text-slate-400">
                       This round appears under every track.
@@ -770,16 +789,10 @@ export function RoundsTab({
                   <TextField
                     label="Order index"
                     type="number"
-                    value={values.orderIndex}
-                    onChange={(event) =>
-                      setEditing((current) => ({
-                        ...current,
-                        [id]: { ...values, orderIndex: event.target.value },
-                      }))
-                    }
+                    value={index + 1}
                     size="small"
                     sx={textFieldSx}
-                    disabled={!canEdit}
+                    disabled
                   />
 
                   <TextField
@@ -818,22 +831,6 @@ export function RoundsTab({
                     sx={dateTimeFieldSx}
                     slotProps={{ inputLabel: { shrink: true } }}
                     disabled={!canEdit}
-                  />
-
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={values.isFinal}
-                        disabled={!canEdit}
-                        onChange={(_, checked) =>
-                          setEditing((current) => ({
-                            ...current,
-                            [id]: { ...values, isFinal: checked },
-                          }))
-                        }
-                      />
-                    }
-                    label="Final round"
                   />
 
                   {canEdit && (
@@ -914,14 +911,17 @@ export function RoundsTab({
                         className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <p className="font-bold text-slate-800 dark:text-slate-200">
-                            {getName(round) || `Round ${index + 1}`}
-                          </p>
-                          {raw.isFinal && (
-                            <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                              Final
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-800 dark:text-slate-200">
+                              {getName(round) || `Round ${index + 1}`}
+                            </p>
+                            {rounds.length > 0 &&
+                              index === rounds.length - 1 && (
+                                <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                                  Final
+                                </span>
+                              )}
+                          </div>
                         </div>
                         <p className="mt-1 text-xs font-medium text-slate-500">
                           Submit: {formatRoundTime(raw.submissionDeadline)}

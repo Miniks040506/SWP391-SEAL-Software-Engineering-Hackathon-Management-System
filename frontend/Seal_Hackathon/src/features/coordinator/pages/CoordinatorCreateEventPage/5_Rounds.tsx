@@ -315,7 +315,7 @@ function AdvanceRulesSection({ roundIndex, tracks, register }: any) {
                 className={`relative inline-flex group items-center gap-2 px-3.5 py-1.5 rounded-full border font-medium text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default ${getRuleChipStyle(field.ruleType)}`}
               >
                 <span>
-                  {field.ruleType} · {val}
+                  {field.ruleType} ┬╖ {val}
                 </span>
                 {field.trackId && (
                   <span className="text-xs opacity-70">({trackName})</span>
@@ -327,7 +327,7 @@ function AdvanceRulesSection({ roundIndex, tracks, register }: any) {
                     remove(index);
                   }}
                 >
-                  ×
+                  ├ù
                 </button>
               </div>
             );
@@ -406,8 +406,13 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
               >
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="font-black text-slate-900 dark:text-white">
+                    <h3 className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
                       Round {index + 1}
+                      {rounds.length > 0 && index === rounds.length - 1 && (
+                        <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                          Final
+                        </span>
+                      )}
                     </h3>
                     <p className="mt-1 text-xs font-semibold text-slate-400">
                       This round will appear under every track.
@@ -526,14 +531,16 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                       className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60"
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <p className="font-bold text-slate-800 dark:text-slate-200">
-                          {round.roundName || `Round ${index + 1}`}
-                        </p>
-                        {round.isFinal && (
-                          <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                            Final
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-800 dark:text-slate-200">
+                            {round.roundName || `Round ${index + 1}`}
+                          </p>
+                          {rounds.length > 0 && index === rounds.length - 1 && (
+                            <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                              Final
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <p className="mt-1 text-xs font-medium text-slate-500">
                         Submit: {formatRoundTime(round.submissionDeadline)}
