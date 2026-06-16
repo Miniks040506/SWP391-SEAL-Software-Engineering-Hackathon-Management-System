@@ -268,7 +268,8 @@ public class CriteriaServiceImpl implements CriteriaService {
         return eventCriteriaRepository.findByEventIdOrderByDisplayOrderAsc(eventId)
                 .stream().filter(cr -> isActive == null
                         || Boolean.TRUE.equals(cr.getIsActive()) == isActive)
-                .filter(cr -> isTechnical == null || Boolean.TRUE.equals(cr.getEffectiveIsTechnical()))
+                .filter(cr -> isTechnical == null
+                        || cr.getEffectiveIsTechnical() == isTechnical)
                 .map(this::toEventCriteriaResponse)
                 .toList();
     }

@@ -20,7 +20,7 @@ public interface EventAnnouncementRepository extends JpaRepository<EventAnnounce
                 JOIN ea.event ee
             WHERE ee.id = :eventId
               AND CAST(ee.status AS string) NOT IN ('DRAFT', 'CANCELLED')
-              AND CAST(ea.status AS string) = 'PUBLISHED' 
+              AND CAST(ea.status AS string) = 'PUBLISHED'
             ORDER BY ea.isPinned DESC, ea.publishedAt DESC
             """)
     List<EventAnnouncement> findPublishedByEventId(
@@ -31,7 +31,7 @@ public interface EventAnnouncementRepository extends JpaRepository<EventAnnounce
                 JOIN ea.event ee
             WHERE ea.id = :announcementId
               AND CAST(ee.status AS string) NOT IN ('DRAFT', 'CANCELLED')
-              AND CAST(ea.status AS string) = 'PUBLISHED' 
+              AND CAST(ea.status AS string) = 'PUBLISHED'
             """)
     Optional<EventAnnouncement> findPublicById(
             @Param("announcementId") UUID announcementId);
