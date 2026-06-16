@@ -129,37 +129,41 @@ async function createEventFlow(values: CreateEventFormValues) {
     });
   }));
 
-  await Promise.all(values.mentorJudgeAssignments.flatMap((assignment) => {
-    if (assignment.role === "MENTOR") {
-      return assignment.assignedTrackIds.map((localTrackId) => {
-        const mappedTrackId = trackIdMap.get(localTrackId);
-        if (!mappedTrackId) return Promise.resolve();
+  const assignmentRequests = values.mentorJudgeAssignments.flatMap(
+    (assignment): Promise<unknown>[] => {
+      if (assignment.role === "MENTOR") {
+        return assignment.assignedTrackIds.map((localTrackId) => {
+          const mappedTrackId = trackIdMap.get(localTrackId);
+          if (!mappedTrackId) return Promise.resolve(undefined);
 
-        return trackApi.assignMentor(mappedTrackId, {
-          mentorUserId: assignment.userId,
+          return trackApi.assignMentor(mappedTrackId, {
+            mentorUserId: assignment.userId,
+          });
         });
-      });
-    }
+      }
 
-    if (assignment.role === "JUDGE") {
-      const judgeId = assignment.judgeId || assignment.userId;
+      if (assignment.role === "JUDGE") {
+        const judgeId = assignment.judgeId || assignment.userId;
 
-      return assignment.judgeRoundAssignments.map((pair) => {
-        const mappedTrackId = trackIdMap.get(pair.trackId);
-        const mappedRoundId = roundIdMap.get(pair.roundId);
+        return assignment.judgeRoundAssignments.map((pair) => {
+          const mappedTrackId = trackIdMap.get(pair.trackId);
+          const mappedRoundId = roundIdMap.get(pair.roundId);
 
-        if (!mappedTrackId || !mappedRoundId) return Promise.resolve();
+          if (!mappedTrackId || !mappedRoundId) return Promise.resolve(undefined);
 
-        return roundApi.assignJudge(mappedRoundId, {
-          judgeId,
-          trackId: mappedTrackId,
-          totalToScore: numberOrUndefined(pair.totalToScore),
+          return roundApi.assignJudge(mappedRoundId, {
+            judgeId,
+            trackId: mappedTrackId,
+            totalToScore: numberOrUndefined(pair.totalToScore),
+          });
         });
-      });
-    }
+      }
 
-    return [];
-  }));
+      return [];
+    },
+  );
+
+  await Promise.all(assignmentRequests);
 
   return createdEvent;
 }
