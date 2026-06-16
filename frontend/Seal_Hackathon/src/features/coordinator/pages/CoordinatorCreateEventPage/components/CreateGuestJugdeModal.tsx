@@ -25,7 +25,7 @@ import type { GuestJudgeResponse } from "@/types/user.types";
 type CreateGuestJudgeModalProps = {
   open: boolean;
   onClose: () => void;
-  onSuccess: (judge: GuestJudgeResponse, fullName: string) => void; 
+  onSuccess: (judge: GuestJudgeResponse, fullName: string) => void | Promise<void>; 
 };
 
 const textFieldSx = {
@@ -67,9 +67,9 @@ export const CreateGuestJudgeModal = ({
           : undefined,
       },
       {
-        onSuccess: (response) => {
+        onSuccess: async (response) => {
           enqueueSnackbar("Guest Judge created successfully!", { variant: "success" });
-          onSuccess(response, response.fullName || data.fullName); 
+          await onSuccess(response, response.fullName || data.fullName); 
         },
         onError: (error: any) => {
           const msg = error?.response?.data?.message || "Failed to create guest judge. Email might be in use.";

@@ -94,4 +94,6 @@ public interface RoundJudgeAssignmentRepository extends JpaRepository<RoundJudge
             @Param("judgeId") UUID judgeId,
             @Param("roundId") UUID roundId
     );
+
+
 }

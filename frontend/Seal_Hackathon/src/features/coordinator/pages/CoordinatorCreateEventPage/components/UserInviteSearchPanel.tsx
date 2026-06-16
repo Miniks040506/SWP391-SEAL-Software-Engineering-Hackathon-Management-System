@@ -13,6 +13,7 @@ import type { MentorJudgeFormValues } from "../../../schemas/createEvent.schema"
 type UserInviteSearchPanelProps = {
   role: MentorJudgeFormValues["role"];
   selectedUserIds?: string[];
+  extraUsers?: AssignableUserResponse[];
   onSelect: (user: AssignableUserResponse) => void;
 };
 
@@ -24,11 +25,15 @@ const USER_ROLE_QUERY_MAP: Record<MentorJudgeFormValues["role"], AssignableUserR
 export const UserInviteSearchPanel = ({
   role,
   selectedUserIds = [],
+  extraUsers = [],
   onSelect,
 }: UserInviteSearchPanelProps) => {
   const [search, setSearch] = useState("");
   const usersQuery = useAssignableUsersQuery(USER_ROLE_QUERY_MAP[role], search);
-  const users = usersQuery.data ?? [];
+  const users = [...extraUsers, ...(usersQuery.data ?? [])].filter(
+    (user, index, allUsers) =>
+      allUsers.findIndex((item) => item.userId === user.userId) === index,
+  );
   const roleLabel = role === "MENTOR" ? "Mentors" : "Judges";
   const roleSearchLabel = role === "MENTOR" ? "mentor" : "judge";
 

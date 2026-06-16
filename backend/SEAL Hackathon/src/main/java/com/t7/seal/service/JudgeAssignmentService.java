@@ -19,6 +19,8 @@ public interface JudgeAssignmentService {
 
     void removeJudgeAssignment(UUID roundId, UUID assignmentId, Authentication authentication);
 
+    void removeJudgeAssignmentById(UUID assignmentId, Authentication authentication);
+
     List<JudgeAssignmentResponse> getMyAssignments(Authentication authentication);
 
     PageResponse<JudgeSubmissionAssignmentResponse> getMySubmissionQueue(

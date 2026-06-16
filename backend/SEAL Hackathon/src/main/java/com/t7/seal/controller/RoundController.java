@@ -71,13 +71,6 @@ public class RoundController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/rounds/{roundId}/lock-submissions")
-    public ResponseEntity<RoundLockResponse> lockSubmissions(
-            @PathVariable UUID roundId
-    ) {
-        return null;
-    }
-
     @PostMapping("/rounds/{roundId}/lock-grading")
     public ResponseEntity<RoundLockResponse> lockGrading(
             @PathVariable UUID roundId
@@ -173,5 +166,51 @@ public class RoundController {
     ) {
         judgeAssignmentService.removeJudgeAssignment(roundId, assignmentId, authentication);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('COORDINATOR')")
+    @DeleteMapping("/judge-assignments/{assignmentId}")
+    public ResponseEntity<Void> removeJudgeAssignmentById(
+            @PathVariable UUID assignmentId,
+            Authentication authentication
+    ) {
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @PostMapping("/rounds/{roundId}/open")
+    public ResponseEntity<RoundResponse> openRound(
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(roundService.openRound(roundId, authentication));
+    }
+
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @PostMapping("rounds/{roundId}/close")
+    public ResponseEntity<RoundResponse> closeRound(
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(roundService.closeRound(roundId, authentication));
+    }
+
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @PostMapping("/rounds/{roundId}/lock-submissions")
+    public ResponseEntity<RoundLockResponse> lockSubmissions(
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(roundService.lockSubmission(roundId, authentication));
+    }
+
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @GetMapping("/rounds/{roundId}/operation-status")
+    public ResponseEntity<RoundOperationStatusResponse> getOperationStatus(
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(roundService.getOperationStatus(roundId, authentication));
     }
 }

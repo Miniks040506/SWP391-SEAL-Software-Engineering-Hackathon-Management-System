@@ -14,6 +14,7 @@ import { MentorJudgeAssignmentTable } from "./components/MentorJudgeAssignmentTa
 import { CreateGuestJudgeModal } from "./components/CreateGuestJugdeModal";
 
 import {
+  createJudgeTrackRoundAssignment,
   createMentorJudgeAssignment,
   type CreateEventFormValues,
   type RoundFormValues,
@@ -31,17 +32,21 @@ type MentorsJudgesStepProps = {
 
 export function MentorsJudgesStep({
   tracks,
-  rounds: _rounds, 
+  rounds,
   onBack,
   onNext,
 }: MentorsJudgesStepProps) {
   const {
     control,
+    trigger,
     formState: { errors },
   } = useFormContext<CreateEventFormValues>();
 
   const [activeTab, setActiveTab] = useState<"MENTOR" | "JUDGE">("MENTOR");
   const [isGuestJudgeModalOpen, setGuestJudgeModalOpen] = useState(false);
+  const [createdGuestJudges, setCreatedGuestJudges] = useState<
+    AssignableUserResponse[]
+  >([]);
 
   const assignments = useWatch({ control, name: "mentorJudgeAssignments" }) ?? [];
 
@@ -76,11 +81,36 @@ export function MentorsJudgesStep({
       role: activeTab,
     });
     
-    append(newAssignment);
+    append(
+      activeTab === "JUDGE"
+        ? {
+            ...newAssignment,
+            judgeRoundAssignments:
+              tracks[0]?.id && rounds[0]?.id
+                ? [createJudgeTrackRoundAssignment(tracks[0].id, rounds[0].id)]
+                : [],
+          }
+        : newAssignment,
+    );
+    void trigger("mentorJudgeAssignments");
   };
 
   const handleGuestJudgeCreated = (judge: GuestJudgeResponse, fullName: string) => {
     setGuestJudgeModalOpen(false);
+    setActiveTab("JUDGE");
+
+    const guestUser: AssignableUserResponse = {
+      userId: judge.userId,
+      judgeId: judge.judgeId,
+      email: judge.email,
+      fullName,
+      role: "JUDGE",
+      status: "ACTIVE",
+      judgeType: judge.judgeType,
+      guest: judge.guest,
+      temporary: judge.temporary,
+      expiresAt: judge.expiresAt,
+    };
 
     const newAssignment = createMentorJudgeAssignment({
       userId: judge.userId, 
@@ -90,8 +120,26 @@ export function MentorsJudgesStep({
       role: "JUDGE",
     });
 
-    append(newAssignment);
+    append({
+      ...newAssignment,
+      judgeRoundAssignments:
+        tracks[0]?.id && rounds[0]?.id
+          ? [createJudgeTrackRoundAssignment(tracks[0].id, rounds[0].id)]
+          : [],
+    });
+    setCreatedGuestJudges((current) => [
+      guestUser,
+      ...current.filter((user) => user.userId !== guestUser.userId),
+    ]);
+    void trigger("mentorJudgeAssignments");
     setActiveTab("JUDGE"); // Tự động switch sang tab Judge
+  };
+
+  const handleRemoveAssignment = (index: number) => {
+    remove(index);
+    window.setTimeout(() => {
+      void trigger("mentorJudgeAssignments");
+    }, 0);
   };
 
   const arrayError = errors.mentorJudgeAssignments?.root?.message || errors.mentorJudgeAssignments?.message;
@@ -179,6 +227,7 @@ export function MentorsJudgesStep({
               selectedUserIds={assignments
                 .filter((assignment) => assignment.role === activeTab)
                 .map((assignment) => assignment.userId)}
+              extraUsers={activeTab === "JUDGE" ? createdGuestJudges : []}
               onSelect={handleSelectExistingUser} 
             />
           </div>
@@ -188,7 +237,8 @@ export function MentorsJudgesStep({
           <MentorJudgeAssignmentTable
             assignments={assignments}
             tracks={tracks}
-            onRemove={remove}
+            rounds={rounds}
+            onRemove={handleRemoveAssignment}
           />
         </div>
       </div>

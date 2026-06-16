@@ -301,7 +301,10 @@ export const createEventSchema = createEventDetailsSchema.extend({
 
   rounds: z.array(createRoundSchema).min(1, "Create at least one round."),
 
-  mentorJudgeAssignments: z.array(createMentorJudgeAssignmentSchema).default([]),
+  mentorJudgeAssignments: z
+    .array(createMentorJudgeAssignmentSchema)
+    .min(1, "Invite at least one mentor or judge.")
+    .default([]),
 
   criteria: z.array(createEventCriteriaSchema).default([]),
 });
