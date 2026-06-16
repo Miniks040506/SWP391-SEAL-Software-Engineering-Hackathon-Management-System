@@ -10,11 +10,10 @@ import { useNavigate } from "react-router-dom";
 import type { UUID } from "@/types/common.types";
 import type { EventSummaryResponse } from "@/types/event.types";
 
-// IMPORT CHUẨN: Chỉ gọi Data từ tầng Hooks, tuyệt đối không import API hay Cờ MOCK ở đây
 import { 
   useCoordinatorEventsQuery, 
   useCoordinatorMultipleTracksQueries 
-} from "../../hooks/useCoordinatorEventQueries";
+} from "../hooks/useCoordinatorEventQueries";
 
 type EventStatusFilter =
   | "ALL"
