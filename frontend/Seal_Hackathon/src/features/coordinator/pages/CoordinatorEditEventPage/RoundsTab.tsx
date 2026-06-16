@@ -2,7 +2,10 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PlayArrowOutlinedIcon from "@mui/icons-material/PlayArrowOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
+import StopCircleOutlinedIcon from "@mui/icons-material/StopCircleOutlined";
 import {
   Alert,
   Button,
@@ -18,8 +21,21 @@ import {
 import { enqueueSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 
-import { roundApi } from "@/api/round.api";
-import { RoundOperationPanel } from "../../components/RoundOperationPanel";
+import {
+  useAdvanceRulesQuery,
+  useRoundOperationStatusQuery,
+} from "@/features/coordinator/hooks/useCoordinatorEventQueries";
+import {
+  useCloseRoundMutation,
+  useCreateAdvanceRuleMutation,
+  useCreateRoundMutation,
+  useDeleteAdvanceRuleMutation,
+  useDeleteRoundMutation,
+  useLockSubmissionsMutation,
+  useOpenRoundMutation,
+  useUpdateAdvanceRuleMutation,
+  useUpdateRoundMutation,
+} from "@/features/coordinator/hooks/useCoordinatorEventMutations";
 import type { UUID } from "@/types/common.types";
 import type { AdvanceRuleResponse, RoundResponse } from "@/types/round.types";
 import type { TrackResponse } from "@/types/track.types";
@@ -315,70 +331,57 @@ function AdvanceRuleModal({ open, onClose, onSave, tracks, initialData }: any) {
 }
 
 function RoundAdvanceRules({
+  eventId,
   roundId,
   tracks,
   canEdit,
 }: {
-  roundId: string;
+  eventId: UUID;
+  roundId: UUID;
   tracks: any[];
   canEdit: boolean;
 }) {
-  const [rules, setRules] = useState<AdvanceRuleResponse[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AdvanceRuleResponse | null>(
     null,
   );
-
-  const fetchRules = async () => {
-    try {
-      const data = await roundApi.getAdvanceRules(roundId);
-      setRules(data);
-    } catch {
-      enqueueSnackbar("Failed to load advance rules.", { variant: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRules();
-  }, [roundId]);
+  const rulesQuery = useAdvanceRulesQuery(roundId);
+  const createRuleMutation = useCreateAdvanceRuleMutation(eventId);
+  const updateRuleMutation = useUpdateAdvanceRuleMutation(eventId);
+  const deleteRuleMutation = useDeleteAdvanceRuleMutation(eventId);
+  const rules = (rulesQuery.data ?? []) as AdvanceRuleResponse[];
 
   const handleCreate = async (payload: any) => {
     try {
-      await roundApi.createAdvanceRule(roundId, payload);
+      await createRuleMutation.mutateAsync({ roundId, payload });
       enqueueSnackbar("Rule created.", { variant: "success" });
       setModalOpen(false);
-      fetchRules();
     } catch {
       enqueueSnackbar("Failed to create rule.", { variant: "error" });
     }
   };
 
-  const handleUpdate = async (ruleId: string, payload: any) => {
+  const handleUpdate = async (ruleId: UUID, payload: any) => {
     try {
-      await roundApi.updateAdvanceRule(ruleId, payload);
+      await updateRuleMutation.mutateAsync({ roundId, ruleId, payload });
       enqueueSnackbar("Rule updated.", { variant: "success" });
       setEditingRule(null);
-      fetchRules();
     } catch {
       enqueueSnackbar("Failed to update rule.", { variant: "error" });
     }
   };
 
-  const handleDelete = async (ruleId: string) => {
+  const handleDelete = async (ruleId: UUID) => {
     if (!window.confirm("Delete this advance rule?")) return;
     try {
-      await roundApi.deleteAdvanceRule(ruleId);
+      await deleteRuleMutation.mutateAsync({ roundId, ruleId });
       enqueueSnackbar("Rule deleted.", { variant: "success" });
-      fetchRules();
     } catch {
       enqueueSnackbar("Failed to delete rule.", { variant: "error" });
     }
   };
 
-  if (loading)
+  if (rulesQuery.isLoading)
     return (
       <div className="mt-4 flex justify-center">
         <CircularProgress size={20} />
@@ -433,7 +436,7 @@ function RoundAdvanceRules({
                 onClick={() => canEdit && setEditingRule(rule)}
               >
                 <span>
-                  {rule.ruleType} · {val}
+                  {rule.ruleType} / {val}
                 </span>
                 {rule.trackId && (
                   <span className="text-xs opacity-70">({trackName})</span>
@@ -446,7 +449,7 @@ function RoundAdvanceRules({
                       handleDelete(rule.id);
                     }}
                   >
-                    ×
+                    x
                   </button>
                 )}
               </div>
@@ -476,6 +479,137 @@ function RoundAdvanceRules({
   );
 }
 
+function RoundOperationPanel({
+  eventId,
+  roundId,
+  canEdit,
+  readonlyReason,
+}: {
+  eventId: UUID;
+  roundId: UUID;
+  canEdit: boolean;
+  readonlyReason?: string;
+}) {
+  const statusQuery = useRoundOperationStatusQuery(roundId);
+  const openRoundMutation = useOpenRoundMutation(eventId);
+  const closeRoundMutation = useCloseRoundMutation(eventId);
+  const lockSubmissionsMutation = useLockSubmissionsMutation(eventId);
+  const status = statusQuery.data;
+  const operating =
+    openRoundMutation.isPending ||
+    closeRoundMutation.isPending ||
+    lockSubmissionsMutation.isPending;
+
+  const handleOpen = async () => {
+    try {
+      await openRoundMutation.mutateAsync(roundId);
+      enqueueSnackbar("Round opened.", { variant: "success" });
+    } catch {
+      enqueueSnackbar("Failed to open round.", { variant: "error" });
+    }
+  };
+
+  const handleClose = async () => {
+    try {
+      await closeRoundMutation.mutateAsync(roundId);
+      enqueueSnackbar("Round closed.", { variant: "success" });
+    } catch {
+      enqueueSnackbar("Failed to close round.", { variant: "error" });
+    }
+  };
+
+  const handleLock = async () => {
+    if (!window.confirm("Lock submissions for this round? This cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await lockSubmissionsMutation.mutateAsync(roundId);
+      enqueueSnackbar("Submissions locked.", { variant: "success" });
+    } catch {
+      enqueueSnackbar("Failed to lock submissions.", { variant: "error" });
+    }
+  };
+
+  if (statusQuery.isLoading) {
+    return (
+      <div className="col-span-1 md:col-span-2 mt-4 flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-500 dark:border-slate-700">
+        <CircularProgress size={16} />
+        Loading round operation status...
+      </div>
+    );
+  }
+
+  if (statusQuery.isError || !status) {
+    return (
+      <Alert severity="warning" className="col-span-1 md:col-span-2 mt-4">
+        Cannot load round operation status.
+      </Alert>
+    );
+  }
+
+  return (
+    <div className="col-span-1 md:col-span-2 mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-sm font-black text-slate-900 dark:text-white">
+            Operation status: {status.roundStatus}
+          </p>
+          <p className="mt-1 text-xs font-semibold text-slate-500">
+            Submitted/late: {status.submittedOrLateSubmissionCount} / Drafts:{" "}
+            {status.draftSubmissionCount} / Judge assignments:{" "}
+            {status.judgeAssignmentCount}
+          </p>
+          {status.submissionLockedAt && (
+            <p className="mt-1 text-xs font-semibold text-rose-600">
+              Locked at {formatRoundTime(status.submissionLockedAt)}
+            </p>
+          )}
+          {!canEdit && readonlyReason && (
+            <p className="mt-1 text-xs font-semibold text-amber-600">
+              {readonlyReason}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<PlayArrowOutlinedIcon />}
+            disabled={!canEdit || !status.canOpen || operating}
+            onClick={handleOpen}
+            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 800 }}
+          >
+            Open
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<StopCircleOutlinedIcon />}
+            disabled={!canEdit || !status.canClose || operating}
+            onClick={handleClose}
+            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 800 }}
+          >
+            Close
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            color="warning"
+            startIcon={<LockOutlinedIcon />}
+            disabled={!canEdit || !status.canLockSubmissions || operating}
+            onClick={handleLock}
+            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 800 }}
+          >
+            Lock submissions
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function RoundsTab({
   eventId,
   tracks,
@@ -488,6 +622,9 @@ export function RoundsTab({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRound, setNewRound] = useState<RoundForm>(emptyRound);
   const [editing, setEditing] = useState<Record<string, RoundForm>>({});
+  const createRoundMutation = useCreateRoundMutation(eventId);
+  const updateRoundMutation = useUpdateRoundMutation(eventId);
+  const deleteRoundMutation = useDeleteRoundMutation(eventId);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -514,7 +651,7 @@ export function RoundsTab({
     try {
       const orderIndex = rounds.length + 1;
 
-      await roundApi.createRound(eventId, {
+      await createRoundMutation.mutateAsync({
         name: newRound.name.trim(),
         orderIndex,
         isFinal: true,
@@ -530,12 +667,15 @@ export function RoundsTab({
       const otherFinalRounds = rounds.filter((r) => r.isFinal);
       await Promise.all(
         otherFinalRounds.map((r) =>
-          roundApi.updateRound(r.id, {
-            name: r.name,
-            orderIndex: r.orderIndex,
-            isFinal: false,
-            submissionDeadline: r.submissionDeadline,
-            judgingDeadline: r.judgingDeadline,
+          updateRoundMutation.mutateAsync({
+            roundId: r.id,
+            payload: {
+              name: r.name,
+              orderIndex: r.orderIndex,
+              isFinal: false,
+              submissionDeadline: r.submissionDeadline,
+              judgingDeadline: r.judgingDeadline,
+            },
           }),
         ),
       );
@@ -565,16 +705,19 @@ export function RoundsTab({
       const maxOI = Math.max(...rounds.map((r) => r.orderIndex ?? 0));
       const isFinal = orderIndex === maxOI;
 
-      await roundApi.updateRound(id, {
-        name: values.name.trim(),
-        orderIndex,
-        isFinal,
-        submissionDeadline: values.submissionDeadline
-          ? `${values.submissionDeadline}:00`
-          : undefined,
-        judgingDeadline: values.judgingDeadline
-          ? `${values.judgingDeadline}:00`
-          : undefined,
+      await updateRoundMutation.mutateAsync({
+        roundId: id,
+        payload: {
+          name: values.name.trim(),
+          orderIndex,
+          isFinal,
+          submissionDeadline: values.submissionDeadline
+            ? `${values.submissionDeadline}:00`
+            : undefined,
+          judgingDeadline: values.judgingDeadline
+            ? `${values.judgingDeadline}:00`
+            : undefined,
+        },
       });
 
       enqueueSnackbar("Round updated.", { variant: "success" });
@@ -588,7 +731,7 @@ export function RoundsTab({
     if (!canEdit) return;
 
     try {
-      await roundApi.deleteRound(roundId);
+      await deleteRoundMutation.mutateAsync(roundId);
 
       const remainingRounds = rounds
         .filter((r) => r.id !== roundId)
@@ -599,12 +742,15 @@ export function RoundsTab({
           const expectedOrder = idx + 1;
           const isFinal = expectedOrder === remainingRounds.length;
           if (r.orderIndex !== expectedOrder || r.isFinal !== isFinal) {
-            return roundApi.updateRound(r.id, {
-              name: r.name,
-              orderIndex: expectedOrder,
-              isFinal,
-              submissionDeadline: r.submissionDeadline,
-              judgingDeadline: r.judgingDeadline,
+            return updateRoundMutation.mutateAsync({
+              roundId: r.id,
+              payload: {
+                name: r.name,
+                orderIndex: expectedOrder,
+                isFinal,
+                submissionDeadline: r.submissionDeadline,
+                judgingDeadline: r.judgingDeadline,
+              },
             });
           }
         }),
@@ -651,8 +797,6 @@ export function RoundsTab({
 
       <div className="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
         <div className="space-y-5">
-          <RoundOperationPanel rounds={rounds} onChanged={onChanged} />
-
           {!canEdit && readonlyReason && (
             <Alert severity="warning">{readonlyReason}</Alert>
           )}
@@ -746,7 +890,6 @@ export function RoundsTab({
           {rounds.map((round, index) => {
             const id = getId(round);
             const values = editing[id] ?? createRoundForm(round);
-            const canEditRound = canEdit && round.status === "NOT_STARTED";
 
             return (
               <div
@@ -757,9 +900,6 @@ export function RoundsTab({
                   <div>
                     <h3 className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
                       Round {index + 1}
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        {round.status?.replace("_", " ") || "NOT STARTED"}
-                      </span>
                       {rounds.length > 0 && index === rounds.length - 1 && (
                         <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
                           Final
@@ -771,7 +911,7 @@ export function RoundsTab({
                     </p>
                   </div>
 
-                  {canEditRound && (
+                  {canEdit && (
                     <IconButton color="error" onClick={() => handleDelete(id)}>
                       <DeleteOutlineOutlinedIcon />
                     </IconButton>
@@ -790,7 +930,7 @@ export function RoundsTab({
                     }
                     size="small"
                     sx={textFieldSx}
-                    disabled={!canEditRound}
+                    disabled={!canEdit}
                   />
 
                   <TextField
@@ -818,7 +958,7 @@ export function RoundsTab({
                     size="small"
                     sx={dateTimeFieldSx}
                     slotProps={{ inputLabel: { shrink: true } }}
-                    disabled={!canEditRound}
+                    disabled={!canEdit}
                   />
 
                   <TextField
@@ -837,10 +977,10 @@ export function RoundsTab({
                     size="small"
                     sx={dateTimeFieldSx}
                     slotProps={{ inputLabel: { shrink: true } }}
-                    disabled={!canEditRound}
+                    disabled={!canEdit}
                   />
 
-                  {canEditRound && (
+                  {canEdit && (
                     <Button
                       variant="contained"
                       startIcon={<SaveOutlinedIcon />}
@@ -856,10 +996,18 @@ export function RoundsTab({
                   )}
                 </div>
 
+                <RoundOperationPanel
+                  eventId={eventId}
+                  roundId={id}
+                  canEdit={canEdit}
+                  readonlyReason={readonlyReason}
+                />
+
                 <RoundAdvanceRules
+                  eventId={eventId}
                   roundId={id}
                   tracks={tracks}
-                  canEdit={canEditRound}
+                  canEdit={canEdit}
                 />
               </div>
             );

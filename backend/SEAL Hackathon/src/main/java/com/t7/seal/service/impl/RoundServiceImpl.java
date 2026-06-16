@@ -367,9 +367,9 @@ public class RoundServiceImpl implements RoundService {
         RoundStatus before = round.getStatus();
         round.setStatus(RoundStatus.CLOSED);
         Round saved = roundRepository.save(round);
-        saveRoundAudit(actor, round, AuditActionType.ROUND_OPEN, before.name(), saved.getStatus().name());
+        saveRoundAudit(actor, round, AuditActionType.ROUND_CLOSED, before.name(), saved.getStatus().name());
 
-        saveRoundNotification(actor, round, NotificationType.ROUND_OPENED, "Round open", "Round " + saved.getName());
+        saveRoundNotification(actor, round, NotificationType.ROUND_CLOSED, "Round closed", "Round " + saved.getName());
         return toRoundResponse(saved);
     }
 
@@ -412,7 +412,7 @@ public class RoundServiceImpl implements RoundService {
 
         saveRoundAudit(actor, round, AuditActionType.ROUND_LOCKED, before.name(), saved.getStatus().name());
         saveRoundNotification(actor, round, NotificationType.SUBMISSION_LOCKED, "Submission locked", "Submission are locked for this " + saved.getName());
-        saveRoundNotification(actor, round, NotificationType.JUDGING_READY, "Judging reading", "Judging queue is ready for " + saved.getName());
+        saveRoundNotification(actor, round, NotificationType.JUDGING_READY, "Judging ready", "Judging queue is ready for " + saved.getName());
 
         return new RoundLockResponse(
                 saved.getId(),

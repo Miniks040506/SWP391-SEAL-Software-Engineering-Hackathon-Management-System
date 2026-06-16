@@ -118,7 +118,7 @@ export const mockJudgeService = {
     return mockJudgeAssignments;
   },
 
-  async getMySubmissions(params?: GetJudgeSubmissionsParams) {
+  async getMySubmissions(_params?: GetJudgeSubmissionsParams) {
     await delay(500);
     return {
       content: mockJudgeSubmissions,

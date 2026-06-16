@@ -1,8 +1,13 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TextField, Button } from "@mui/material";
-import { submissionApi } from "@/api/submission.api";
-import { useParticipantSubmissionData } from "../hooks/useParticipantSubmissionQueries";
+import {
+  useParticipantSubmissionData,
+  useSaveSubmissionDraftMutation,
+  useSubmitDeliverablesMutation,
+  useSubmitExistingSubmissionMutation,
+  useUpdateSubmissionMutation,
+} from "../hooks/useParticipantSubmissionQueries";
 import { SubmissionStatusBadge } from "../components/SubmissionStatusBadge";
 import { SubmissionHistoryTable } from "../components/SubmissionHistoryTable";
 import { filterTextFieldSx } from "../schemas/submissions.schema";
@@ -89,6 +94,19 @@ function formatDate(ts: number): string {
   });
   return `${day} ${month} ${year}, ${time}`;
 }
+
+function formatDateTime(value?: string | null): string {
+  if (!value) return "";
+
+  return new Date(value).toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function formatSize(bytes: number): string {
   if (bytes === 0) return "-";
   if (bytes < 1024) return bytes + " B";
@@ -104,8 +122,15 @@ export function SubmissionFormPage() {
   const { teamId, roundId } = useParams<{ teamId: string; roundId: string }>();
   const navigate = useNavigate();
 
-  const { submission, teamInfo, roundInfo, loading, refetch } =
+  const { submission, teamInfo, round, loading, refetch } =
     useParticipantSubmissionData(teamId, roundId);
+  const saveDraftMutation = useSaveSubmissionDraftMutation(teamId, roundId);
+  const updateSubmissionMutation = useUpdateSubmissionMutation();
+  const submitDeliverablesMutation = useSubmitDeliverablesMutation(
+    teamId,
+    roundId,
+  );
+  const submitExistingSubmissionMutation = useSubmitExistingSubmissionMutation();
 
   const [items, setItems] = useState<StorageItem[]>([]);
   const [currentPath, setCurrentPath] = useState("/");
@@ -155,8 +180,23 @@ export function SubmissionFormPage() {
   const isLeader = teamInfo?.roleInTeam === "LEADER";
   const isRegistered =
     teamInfo?.status === "REGISTERED" || teamInfo?.status === "COMPETING";
-  const isLocked = !!roundInfo?.submissionLockedAt;
-  const canEdit = isLeader && isRegistered && !isLocked;
+  const lockTime =
+    submission?.roundSubmissionLockedAt ?? round?.submissionLockedAt ?? null;
+  const isRoundSubmissionLocked = Boolean(
+    submission?.roundSubmissionLocked || lockTime,
+  );
+  const isRoundOpen = round?.status === "OPEN";
+  const canEdit =
+    isLeader && isRegistered && isRoundOpen && !isRoundSubmissionLocked;
+  const blockedReason = !isLeader
+    ? "Only the Team Leader can submit or edit deliverables."
+    : !isRegistered
+      ? "Your team must be REGISTERED or COMPETING to submit."
+      : isRoundSubmissionLocked
+        ? "Submissions are locked for this round."
+        : round && !isRoundOpen
+          ? `Submissions are only allowed while the round is OPEN. Current status: ${round.status}.`
+          : null;
 
   const generateId = () => crypto.randomUUID();
 
@@ -369,28 +409,36 @@ export function SubmissionFormPage() {
 
   const handleSaveDraft = async () => {
     if (!teamId || !roundId) return;
+    if (!canEdit) {
+      setErrorMsg(blockedReason || "This submission is read-only.");
+      return;
+    }
+
     setSaving(true);
     setSuccessMsg(null);
     setErrorMsg(null);
     try {
       const payload = { links: buildLinks(), note: note.trim() || undefined };
       if (submission?.id) {
-        await submissionApi.updateSubmission(submission.id, {
-          note: note.trim() || undefined,
-          links: payload.links,
+        await updateSubmissionMutation.mutateAsync({
+          submissionId: submission.id,
+          payload: {
+            note: note.trim() || undefined,
+            links: payload.links,
+          },
         });
       } else {
-        await submissionApi.saveSubmissionDraft(teamId, roundId, payload);
+        await saveDraftMutation.mutateAsync(payload);
       }
       setSuccessMsg("Draft saved successfully.");
       refetch();
     } catch (err: unknown) {
-      const axiosErr = err as any;
-      const msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.errorCode || (err as { message?: string })?.message;
+      const msg = (err as { message?: string })?.message;
       setErrorMsg(
-        msg?.includes("ROUND_SUBMISSION_LOCKED") 
-          ? "Submissions are locked for this round. No further edits are allowed." 
-          : msg || "Failed to save draft."
+        msg?.includes("ROUND_SUBMISSION_LOCKED") ||
+          msg?.toLowerCase().includes("locked")
+          ? "Submissions are locked for this round."
+          : msg || "Failed to save draft.",
       );
     } finally {
       setSaving(false);
@@ -399,6 +447,11 @@ export function SubmissionFormPage() {
 
   const handleSubmit = async () => {
     if (!teamId || !roundId) return;
+    if (!canEdit) {
+      setErrorMsg(blockedReason || "This submission is read-only.");
+      return;
+    }
+
     const actualFiles = items.filter((i) => i.type === "file");
     if (!linkUrl.trim() && actualFiles.length === 0) {
       setErrorMsg("Please provide at least a link or upload a file.");
@@ -411,29 +464,28 @@ export function SubmissionFormPage() {
       const payload = { links: buildLinks(), note: note.trim() || undefined };
       let submissionId = submission?.id;
       if (submissionId) {
-        await submissionApi.updateSubmission(submissionId, {
-          note: note.trim() || undefined,
-          links: payload.links,
+        await updateSubmissionMutation.mutateAsync({
+          submissionId,
+          payload: {
+            note: note.trim() || undefined,
+            links: payload.links,
+          },
         });
-        await submissionApi.submitExistingSubmission(submissionId);
+        await submitExistingSubmissionMutation.mutateAsync(submissionId);
       } else {
-        const created = await submissionApi.submitDeliverables(
-          teamId,
-          roundId,
-          payload,
-        );
+        const created = await submitDeliverablesMutation.mutateAsync(payload);
         submissionId = created.id;
       }
       setSuccessMsg("Submission confirmed! Reviewers have been notified.");
       refetch();
     } catch (err: unknown) {
-      const axiosErr = err as any;
-      const msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.errorCode || (err as { message?: string })?.message;
+      const msg = (err as { message?: string })?.message;
       setErrorMsg(
-        msg?.includes("deadline")
+        msg?.includes("ROUND_SUBMISSION_LOCKED") ||
+          msg?.toLowerCase().includes("locked")
+          ? "Submissions are locked for this round."
+          : msg?.includes("deadline")
           ? "Deadline exceeded. Submission is blocked."
-          : msg?.includes("ROUND_SUBMISSION_LOCKED")
-          ? "Submissions are locked for this round. No further edits are allowed."
           : msg || "Failed to submit.",
       );
     } finally {
@@ -587,9 +639,17 @@ export function SubmissionFormPage() {
             COMPETING to submit. Submissions are disabled.
           </div>
         )}
-        {isLocked && (
-          <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl text-sm text-rose-800 dark:text-rose-400">
-            <strong>Submissions locked:</strong> The round submissions were locked on {formatDate(new Date(roundInfo!.submissionLockedAt!).getTime())}. Edits are no longer allowed.
+        {isRoundSubmissionLocked && (
+          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
+            <strong>Submissions locked:</strong> This round no longer accepts
+            submission changes
+            {lockTime ? ` since ${formatDateTime(lockTime)}` : ""}.
+          </div>
+        )}
+        {isLeader && isRegistered && !isRoundSubmissionLocked && round && !isRoundOpen && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+            <strong>Round not open:</strong> Submissions are only allowed while
+            the round is OPEN. Current status: {round.status}.
           </div>
         )}
 

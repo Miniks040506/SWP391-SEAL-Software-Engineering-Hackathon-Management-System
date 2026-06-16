@@ -377,7 +377,6 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         if (!submission.isDraft()) {
             submission.increaseSubmissionNumber();
-
         }
 
         markSubmittedConsideringDeadline(submission, submission.getRound());
@@ -438,7 +437,10 @@ public class SubmissionServiceImpl implements SubmissionService {
         ));
 
         return new PageResponse<>(
-                result.getContent().stream().map(this::toCoordinatorSummaryResponse).toList(),
+                result.getContent()
+                        .stream()
+                        .map(this::toCoordinatorSummaryResponse)
+                        .toList(),
                 result.getNumber(),
                 result.getSize(),
                 result.getTotalElements(),
@@ -460,7 +462,8 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Transactional(readOnly = true)
     public List<SubmissionSummaryResponse> getTrackSubmissions(UUID trackId, Authentication authentication) {
         ensureCoordinator(authentication);
-        return submissionRepository.findByTrackIdOrderBySubmittedAtDesc(trackId).stream()
+        return submissionRepository.findByTrackIdOrderBySubmittedAtDesc(trackId)
+                .stream()
                 .map(this::toSubmissionSummaryResponse)
                 .toList();
     }
@@ -778,6 +781,8 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getSubmissionNumber(),
                 submission.getSubmittedAt(),
                 submission.getUpdatedAt(),
+                submission.getRound().isSubmissionLocked(),
+                submission.getRound().getSubmissionLockedAt(),
                 linkResponses(submission.getId())
         );
     }
@@ -797,6 +802,8 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getSubmissionNumber(),
                 submission.getSubmittedAt(),
                 submission.getUpdatedAt(),
+                submission.getRound().isSubmissionLocked(),
+                submission.getRound().getSubmissionLockedAt(),
                 links.size()
         );
     }
@@ -820,6 +827,8 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getSubmissionNumber(),
                 submission.getSubmittedAt(),
                 submission.getUpdatedAt(),
+                submission.getRound().isSubmissionLocked(),
+                submission.getRound().getSubmissionLockedAt(),
                 links.size(),
                 submission.isLate()
         );
@@ -868,7 +877,9 @@ public class SubmissionServiceImpl implements SubmissionService {
                 link.getLinkType().name(),
                 link.getUrl(),
                 link.getDisplayLabel(),
-                link.getStorageProvider() == null ? SubmissionStorageProvider.EXTERNAL_URL.name() : link.getStorageProvider().name(),
+                link.getStorageProvider() == null
+                        ? SubmissionStorageProvider.EXTERNAL_URL.name()
+                        : link.getStorageProvider().name(),
                 link.getObjectKey(),
                 link.getOriginalFileName(),
                 link.getContentType(),

@@ -7,14 +7,13 @@ import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import Chip from "@mui/material/Chip";
 
 import { useJudgeSubmissionDetailQuery } from "../hooks/useJudge";
-import { JudgeGradingPanel } from "../components/submission/JudgeGradingPanel";
 
 export const JudgeSubmissionDetailPage = () => {
   const { submissionId } = useParams<{ submissionId: string }>();
   const navigate = useNavigate();
   
   const { data: response, isLoading, isError } = useJudgeSubmissionDetailQuery(submissionId);
-  const detail = response?.data || response;
+  const detail = response;
 
   if (isLoading) return <div className="flex justify-center py-24"><CircularProgress /></div>;
   if (isError || !detail) return <div className="p-6 text-center text-red-500 font-bold">Submission not found.</div>;
@@ -34,24 +33,19 @@ export const JudgeSubmissionDetailPage = () => {
         <CardContent className="p-8">
           <div className="flex justify-between items-start">
             <div>
-              <Chip label={detail.trackName} size="small" className="mb-3 font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30" />
+              <Chip label="Assigned submission" size="small" className="mb-3 font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30" />
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
                 {detail.projectTitle || detail.teamName}
               </h1>
               <p className="mt-2 text-lg text-gray-500 dark:text-slate-400">Team: {detail.teamName}</p>
             </div>
-            <Chip
-              label={detail.gradingStatus === "SCORED" ? "SCORED" : "PENDING"}
-              color={detail.gradingStatus === "SCORED" ? "success" : "warning"}
-              variant="filled"
-              sx={{ fontWeight: 800 }}
-            />
+            <Chip label="View only" color="info" variant="outlined" sx={{ fontWeight: 800 }} />
           </div>
 
           <div className="mt-8">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Description / Pitch</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Submission note</h3>
             <div className="rounded-xl bg-slate-50 p-5 text-gray-700 dark:bg-slate-900/50 dark:text-slate-300">
-              {detail.description || "No description provided."}
+              {detail.note || "No note provided."}
             </div>
           </div>
 
@@ -59,7 +53,7 @@ export const JudgeSubmissionDetailPage = () => {
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Submitted Links/Files</h3>
             {detail.links && detail.links.length > 0 ? (
               <div className="flex gap-4 flex-wrap">
-                {detail.links.map((link: any) => (
+                {detail.links.map((link) => (
                   <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-3 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/50">
                     <AttachFileOutlinedIcon fontSize="small" className="text-gray-400" />
                     <span className="font-semibold text-blue-600 dark:text-blue-400">{link.label || link.linkType}</span>
@@ -74,12 +68,53 @@ export const JudgeSubmissionDetailPage = () => {
       </Card>
 
       {criteria.length > 0 ? (
-        <JudgeGradingPanel 
-          submissionId={submissionId!} 
-          criteria={criteria} 
-          gradingStatus={detail.gradingStatus}
-          scoredData={detail.scoredData}
-        />
+        <Card variant="outlined" className="rounded-2xl dark:border-slate-700 dark:bg-slate-800">
+          <CardContent className="p-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
+                Round criteria
+              </h2>
+              <p className="mt-1 text-sm font-medium text-gray-500 dark:text-slate-400">
+                Criteria configured for this submission's round.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {criteria.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900"
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <p className="font-extrabold text-gray-900 dark:text-white">
+                        {item.effectiveName}
+                      </p>
+                      {item.effectiveDescription && (
+                        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+                          {item.effectiveDescription}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Chip
+                        size="small"
+                        label={`${item.effectiveMaxScore} pts`}
+                        sx={{ fontWeight: 800 }}
+                      />
+                      <Chip
+                        size="small"
+                        label={`${item.effectiveWeight}% weight`}
+                        variant="outlined"
+                        sx={{ fontWeight: 800 }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <div className="rounded-2xl border border-dashed border-rose-300 bg-rose-50 p-8 text-center text-rose-600 dark:border-rose-900/50 dark:bg-rose-900/10">
           <p className="font-bold">No scoring criteria configured for this round.</p>

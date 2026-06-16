@@ -59,9 +59,12 @@ public interface SubmissionRepository extends JpaRepository<Submission, UUID>, J
                 JOIN s.round r 
                 JOIN s.team t
                 LEFT JOIN t.track tr 
-                    WHERE r.id = :roundId 
-                        AND (:trackId IS NULL) OR tr.id = :trackId
-                        AND CAST(s.status AS STRING) IN ('SUBMITTED', 'LATE')
+                    WHERE r.id = :roundId
+                        AND (:trackId IS NULL OR tr.id = :trackId)
+                        AND s.status IN (
+                            com.t7.seal.domain.SubmissionStatus.SUBMITTED,
+                            com.t7.seal.domain.SubmissionStatus.LATE
+                        )
             """)
     long countSubmittedOrLateByRoundAndTrackNullable(
             @Param("roundId") UUID roundId,

@@ -68,7 +68,10 @@ export function MentorsJudgesStep({
   // 1. Xử lý khi chọn User CÓ SẴN (Dùng type AssignableUserResponse)
   const handleSelectExistingUser = (user: AssignableUserResponse) => {
     const isAlreadyAssigned = assignments.some(
-      (a) => a.userId === user.userId && a.role === activeTab
+      (a) =>
+        a.role === activeTab &&
+        (a.userId === user.userId ||
+          (activeTab === "JUDGE" && Boolean(user.judgeId) && a.judgeId === user.judgeId)),
     );
 
     if (isAlreadyAssigned) return;
@@ -120,13 +123,23 @@ export function MentorsJudgesStep({
       role: "JUDGE",
     });
 
-    append({
-      ...newAssignment,
-      judgeRoundAssignments:
-        tracks[0]?.id && rounds[0]?.id
-          ? [createJudgeTrackRoundAssignment(tracks[0].id, rounds[0].id)]
-          : [],
-    });
+    const alreadyAssigned = assignments.some(
+      (assignment) =>
+        assignment.role === "JUDGE" &&
+        (assignment.userId === judge.userId ||
+          (Boolean(judge.judgeId) && assignment.judgeId === judge.judgeId)),
+    );
+
+    if (!alreadyAssigned) {
+      append({
+        ...newAssignment,
+        judgeRoundAssignments:
+          tracks[0]?.id && rounds[0]?.id
+            ? [createJudgeTrackRoundAssignment(tracks[0].id, rounds[0].id)]
+            : [],
+      });
+    }
+
     setCreatedGuestJudges((current) => [
       guestUser,
       ...current.filter((user) => user.userId !== guestUser.userId),

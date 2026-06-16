@@ -17,6 +17,8 @@ public record SubmissionResponse(
         Integer submissionNumber,
         LocalDateTime submittedAt,
         LocalDateTime updatedAt,
+        Boolean roundSubmissionLocked,
+        LocalDateTime roundSubmissionLockedAt,
         List<SubmissionLinkResponse> links
 ) {
 }

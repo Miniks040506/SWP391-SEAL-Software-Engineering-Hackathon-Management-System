@@ -1,32 +1,45 @@
 import { useState, useEffect, useCallback } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { roundApi } from "@/api/round.api";
 import { submissionApi } from "@/api/submission.api";
 import { teamApi } from "@/api/team.api";
-import { roundApi } from "@/api/round.api";
 import { apiRequest } from "@/api/apiRequest";
 import type { UUID } from "@/types/common.types";
+import type { RoundDetailResponse } from "@/types/round.types";
 import type {
   RequiredLinkConfig,
+  SaveSubmissionDraftRequest,
   SubmissionDetailResponse,
+  SubmissionResponse,
   SubmissionSummaryResponse,
+  SubmitDeliverablesRequest,
+  UpdateSubmissionRequest,
 } from "@/types/submission.types";
 import type { TeamSummaryResponse } from "@/types/team.types";
-import type { RoundDetailResponse } from "@/types/round.types";
+
+export const participantSubmissionKeys = {
+  teamSubmissions: (teamId?: UUID) => ["participant-team-submissions", teamId] as const,
+  submissionDetail: (submissionId?: UUID) => ["participant-submission-detail", submissionId] as const,
+  roundDetail: (roundId?: UUID) => ["participant-round-detail", roundId] as const,
+};
 
 export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
   const [submission, setSubmission] = useState<SubmissionDetailResponse | null>(null);
   const [teamInfo, setTeamInfo] = useState<TeamSummaryResponse | null>(null);
-  const [roundInfo, setRoundInfo] = useState<RoundDetailResponse | null>(null);
+  const [round, setRound] = useState<RoundDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetch = useCallback(async () => {
     if (!teamId || !roundId) return;
     setLoading(true);
     try {
-      const [teams, summaries, roundRes] = await Promise.all([
+      const [teams, summaries, roundDetail] = await Promise.all([
         teamApi.getMyTeams(),
         submissionApi.getTeamSubmissions(teamId),
         roundApi.getRoundById(roundId),
       ]);
+
+      setRound(roundDetail);
 
       const currentTeam = teams.find((t) => t.id === teamId);
       if (currentTeam) setTeamInfo(currentTeam);
@@ -38,8 +51,6 @@ export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
       } else {
         setSubmission(null);
       }
-      
-      setRoundInfo(roundRes);
     } catch (err) {
       console.error("Failed to fetch submission data", err);
     } finally {
@@ -51,7 +62,66 @@ export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
     fetch();
   }, [fetch]);
 
-  return { submission, teamInfo, roundInfo, loading, refetch: fetch };
+  return { submission, teamInfo, round, loading, refetch: fetch };
+};
+
+function invalidateParticipantSubmission(
+  queryClient: ReturnType<typeof useQueryClient>,
+  result: SubmissionResponse | SubmissionDetailResponse | null | undefined,
+  teamId?: UUID,
+  roundId?: UUID,
+) {
+  queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.teamSubmissions(teamId) });
+  queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.roundDetail(roundId) });
+  if (result?.id) {
+    queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.submissionDetail(result.id) });
+  }
+}
+
+export const useSaveSubmissionDraftMutation = (teamId?: UUID, roundId?: UUID) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: SaveSubmissionDraftRequest) =>
+      submissionApi.saveSubmissionDraft(teamId!, roundId!, payload),
+    onSuccess: (result) => invalidateParticipantSubmission(queryClient, result, teamId, roundId),
+  });
+};
+
+export const useUpdateSubmissionMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      submissionId,
+      payload,
+    }: {
+      submissionId: UUID;
+      payload: UpdateSubmissionRequest;
+    }) => submissionApi.updateSubmission(submissionId, payload),
+    onSuccess: (result) =>
+      invalidateParticipantSubmission(queryClient, result, result.teamId, result.roundId),
+  });
+};
+
+export const useSubmitDeliverablesMutation = (teamId?: UUID, roundId?: UUID) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: SubmitDeliverablesRequest) =>
+      submissionApi.submitDeliverables(teamId!, roundId!, payload),
+    onSuccess: (result) => invalidateParticipantSubmission(queryClient, result, teamId, roundId),
+  });
+};
+
+export const useSubmitExistingSubmissionMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (submissionId: UUID) => submissionApi.submitExistingSubmission(submissionId),
+    onSuccess: (result) =>
+      invalidateParticipantSubmission(queryClient, result, result.teamId, result.roundId),
+  });
 };
 
 export const useRequiredLinkConfigQuery = (roundId?: UUID) => {

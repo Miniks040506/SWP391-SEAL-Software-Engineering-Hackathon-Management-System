@@ -6,13 +6,17 @@ import type { UUID } from "@/types/common.types";
 import type { GetJudgeSubmissionsParams } from "@/types/judge.types";
 
 const USE_MOCK = false;
-const activeService = USE_MOCK ? mockJudgeService : judgeApi;
+const activeService = (USE_MOCK ? mockJudgeService : judgeApi) as typeof judgeApi;
+type JudgeSubmissionApiParams = Omit<GetJudgeSubmissionsParams, "search">;
+type JudgeRoundSubmissionParams = Omit<JudgeSubmissionApiParams, "roundId">;
 
 export const judgeKeys = {
   all: ["judge"] as const,
   assignments: () => [...judgeKeys.all, "assignments"] as const,
-  submissions: (params?: any) => [...judgeKeys.all, "submissions", params] as const,
-  roundSubmissions: (roundId: string) => [...judgeKeys.all, "roundSubmissions", roundId] as const,
+  submissions: (params?: JudgeSubmissionApiParams) =>
+    [...judgeKeys.all, "submissions", params] as const,
+  roundSubmissions: (roundId?: string, params?: JudgeRoundSubmissionParams) =>
+    [...judgeKeys.all, "roundSubmissions", roundId, params] as const,
   submissionDetail: (id: string) => [...judgeKeys.all, "submissionDetail", id] as const,
 };
 
@@ -23,18 +27,23 @@ export function useJudgeAssignmentsQuery() {
   });
 }
 
-export function useJudgeSubmissionsQuery(params?: GetJudgeSubmissionsParams) {
+export function useJudgeSubmissionsQuery(params?: JudgeSubmissionApiParams) {
   return useQuery({
     queryKey: judgeKeys.submissions(params),
     queryFn: () => activeService.getMySubmissions(params),
+    placeholderData: (previous) => previous,
   });
 }
 
-export function useJudgeRoundSubmissionsQuery(roundId?: string) {
+export function useJudgeRoundSubmissionsQuery(
+  roundId?: string,
+  params?: JudgeRoundSubmissionParams,
+) {
   return useQuery({
-    queryKey: judgeKeys.roundSubmissions(roundId || ""),
-    queryFn: () => activeService.getMyRoundSubmissions(roundId as UUID),
+    queryKey: judgeKeys.roundSubmissions(roundId, params),
+    queryFn: () => activeService.getMyRoundSubmissions(roundId as UUID, params),
     enabled: Boolean(roundId),
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -52,7 +61,18 @@ export function useSubmitJudgeScoreMutation(submissionId: string) {
 
   return useMutation({
     mutationFn: async (payload: { scores: Record<string, number>; comment?: string }) => {
-      return activeService.submitScore(submissionId as UUID, payload);
+      const scoringService = activeService as typeof activeService & {
+        submitScore?: (
+          submissionId: UUID,
+          payload: { scores: Record<string, number>; comment?: string },
+        ) => Promise<unknown>;
+      };
+
+      if (!scoringService.submitScore) {
+        throw new Error("Score submission endpoint is not available.");
+      }
+
+      return scoringService.submitScore(submissionId as UUID, payload);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: judgeKeys.submissionDetail(submissionId) });

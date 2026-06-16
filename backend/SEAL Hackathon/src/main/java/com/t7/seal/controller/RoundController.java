@@ -188,7 +188,7 @@ public class RoundController {
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
-    @PostMapping("rounds/{roundId}/close")
+    @PostMapping("/rounds/{roundId}/close")
     public ResponseEntity<RoundResponse> closeRound(
             @PathVariable UUID roundId,
             Authentication authentication

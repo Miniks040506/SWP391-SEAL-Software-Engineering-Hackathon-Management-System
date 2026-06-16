@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const judgeSubmissionFilterSchema = {
-  STATUSES: ["PENDING", "SCORED"],
+  STATUSES: ["SUBMITTED", "LATE"],
 };
 
 export type JudgeGradingFormValues = {
@@ -13,7 +13,7 @@ export const createJudgeGradingSchema = (criteria: { id: string; maxScore: numbe
   return z.object({
     scores: z.record(
       z.string(),
-      z.number({ required_error: "Score is required", invalid_type_error: "Must be a number" })
+      z.number({ error: "Must be a number" })
         .min(0, "Score cannot be negative")
     ).superRefine((scores, ctx) => {
       criteria.forEach((crit) => {
