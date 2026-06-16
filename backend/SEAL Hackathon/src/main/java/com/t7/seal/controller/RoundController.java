@@ -174,7 +174,7 @@ public class RoundController {
             @PathVariable UUID assignmentId,
             Authentication authentication
     ) {
-
+        judgeAssignmentService.removeJudgeAssignmentById(assignmentId, authentication);
         return ResponseEntity.noContent().build();
     }
 
