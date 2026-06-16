@@ -348,6 +348,7 @@ public class RoundServiceImpl implements RoundService {
         Round saved = roundRepository.save(round);
         saveRoundAudit(actor, round, AuditActionType.ROUND_OPEN, before.name(), saved.getStatus().name());
 
+        saveRoundNotification(actor, round, NotificationType.ROUND_OPENED, "Round open", "Round " + saved.getName());
         return toRoundResponse(saved);
     }
 

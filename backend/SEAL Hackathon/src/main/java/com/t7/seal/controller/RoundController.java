@@ -191,7 +191,7 @@ public class RoundController {
             @PathVariable UUID roundId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.openRound(roundId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
