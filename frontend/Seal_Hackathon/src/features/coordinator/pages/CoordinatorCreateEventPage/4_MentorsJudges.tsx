@@ -135,6 +135,13 @@ export function MentorsJudgesStep({
     setActiveTab("JUDGE"); // Tự động switch sang tab Judge
   };
 
+  const handleRemoveAssignment = (index: number) => {
+    remove(index);
+    window.setTimeout(() => {
+      void trigger("mentorJudgeAssignments");
+    }, 0);
+  };
+
   const arrayError = errors.mentorJudgeAssignments?.root?.message || errors.mentorJudgeAssignments?.message;
 
   return (
@@ -220,6 +227,7 @@ export function MentorsJudgesStep({
               selectedUserIds={assignments
                 .filter((assignment) => assignment.role === activeTab)
                 .map((assignment) => assignment.userId)}
+              extraUsers={activeTab === "JUDGE" ? createdGuestJudges : []}
               onSelect={handleSelectExistingUser} 
             />
           </div>
@@ -229,7 +237,8 @@ export function MentorsJudgesStep({
           <MentorJudgeAssignmentTable
             assignments={assignments}
             tracks={tracks}
-            onRemove={remove}
+            rounds={rounds}
+            onRemove={handleRemoveAssignment}
           />
         </div>
       </div>
