@@ -639,6 +639,19 @@ export function SubmissionFormPage() {
             COMPETING to submit. Submissions are disabled.
           </div>
         )}
+        {isRoundSubmissionLocked && (
+          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
+            <strong>Submissions locked:</strong> This round no longer accepts
+            submission changes
+            {lockTime ? ` since ${formatDateTime(lockTime)}` : ""}.
+          </div>
+        )}
+        {isLeader && isRegistered && !isRoundSubmissionLocked && round && !isRoundOpen && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+            <strong>Round not open:</strong> Submissions are only allowed while
+            the round is OPEN. Current status: {round.status}.
+          </div>
+        )}
 
         <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6 gap-6">
           {(["form", "history"] as const).map((tab) => (

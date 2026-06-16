@@ -482,9 +482,13 @@ function RoundAdvanceRules({
 function RoundOperationPanel({
   eventId,
   roundId,
+  canEdit,
+  readonlyReason,
 }: {
   eventId: UUID;
   roundId: UUID;
+  canEdit: boolean;
+  readonlyReason?: string;
 }) {
   const statusQuery = useRoundOperationStatusQuery(roundId);
   const openRoundMutation = useOpenRoundMutation(eventId);
@@ -561,6 +565,11 @@ function RoundOperationPanel({
               Locked at {formatRoundTime(status.submissionLockedAt)}
             </p>
           )}
+          {!canEdit && readonlyReason && (
+            <p className="mt-1 text-xs font-semibold text-amber-600">
+              {readonlyReason}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -568,7 +577,7 @@ function RoundOperationPanel({
             size="small"
             variant="outlined"
             startIcon={<PlayArrowOutlinedIcon />}
-            disabled={!status.canOpen || operating}
+            disabled={!canEdit || !status.canOpen || operating}
             onClick={handleOpen}
             sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 800 }}
           >
@@ -578,7 +587,7 @@ function RoundOperationPanel({
             size="small"
             variant="outlined"
             startIcon={<StopCircleOutlinedIcon />}
-            disabled={!status.canClose || operating}
+            disabled={!canEdit || !status.canClose || operating}
             onClick={handleClose}
             sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 800 }}
           >
@@ -589,7 +598,7 @@ function RoundOperationPanel({
             variant="contained"
             color="warning"
             startIcon={<LockOutlinedIcon />}
-            disabled={!status.canLockSubmissions || operating}
+            disabled={!canEdit || !status.canLockSubmissions || operating}
             onClick={handleLock}
             sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 800 }}
           >
@@ -987,7 +996,12 @@ export function RoundsTab({
                   )}
                 </div>
 
-                <RoundOperationPanel eventId={eventId} roundId={id} />
+                <RoundOperationPanel
+                  eventId={eventId}
+                  roundId={id}
+                  canEdit={canEdit}
+                  readonlyReason={readonlyReason}
+                />
 
                 <RoundAdvanceRules
                   eventId={eventId}
