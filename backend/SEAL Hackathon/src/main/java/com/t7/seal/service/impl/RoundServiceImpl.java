@@ -355,7 +355,20 @@ public class RoundServiceImpl implements RoundService {
     @Transactional
     @Override
     public RoundResponse closeRound(UUID roundId, Authentication authentication) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getStatus() != RoundStatus.OPEN) {
+            throw new ConflictException("Only open rounds can be closed.");
+        }
+
+        RoundStatus before = round.getStatus();
+        round.setStatus(RoundStatus.CLOSED);
+        Round saved = roundRepository.save(round);
+        saveRoundAudit(actor, round, AuditActionType.ROUND_OPEN, before.name(), saved.getStatus().name());
+
+        saveRoundNotification(actor, round, NotificationType.ROUND_OPENED, "Round open", "Round " + saved.getName());
+        return toRoundResponse(saved);
     }
 
     @Transactional
