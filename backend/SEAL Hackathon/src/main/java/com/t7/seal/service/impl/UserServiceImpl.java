@@ -310,6 +310,7 @@ public class UserServiceImpl implements UserService {
         user.setEmail(email);
         user.setFullName(request.fullName().trim());
         user.setRole(UserRole.JUDGE);
+        
         user.setStatus(UserStatus.ACTIVE);
         user.setEmailVerifiedAt(LocalDateTime.now());
         user.setPasswordHash(passwordEncoder.encode(temporaryPassword));
