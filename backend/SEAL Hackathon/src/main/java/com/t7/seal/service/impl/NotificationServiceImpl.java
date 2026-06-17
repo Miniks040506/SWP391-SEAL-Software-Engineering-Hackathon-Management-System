@@ -12,6 +12,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.*;
 import com.t7.seal.service.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 public class NotificationServiceImpl implements NotificationService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_EMAIL_ATTEMPTS = 3;
 
     private final NotificationRepository notificationRepository;
     private final NotificationRecipientRepository notificationRecipientRepository;
@@ -40,6 +42,9 @@ public class NotificationServiceImpl implements NotificationService {
     private final CurrentUserService currentUserService;
     private final EmailService emailService;
     private final AuditLogService auditLogService;
+
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
 
     @Override
     @Transactional

@@ -14,4 +14,5 @@ import java.util.UUID;
 public interface EmailOutboxRepository extends JpaRepository<EmailOutbox, UUID> {
     Optional<EmailOutbox> findByIdempotencyKey(String idempotencyKey);
     List<EmailOutbox> findTop50ByStatusAndScheduledAtLessThanEqualOrderByCreatedAtAsc(EmailDeliveryStatus status, LocalDateTime now);
+    List<EmailOutbox> findTop50ByStatusInAndScheduledAtLessThanEqualOrderByCreatedAtAsc(List<EmailDeliveryStatus> statuses, LocalDateTime now);
 }
