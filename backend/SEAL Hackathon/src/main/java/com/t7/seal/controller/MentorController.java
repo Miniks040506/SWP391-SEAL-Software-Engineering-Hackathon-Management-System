@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.mentor.CreateMentorFeedbackRequest;
 import com.t7.seal.request.mentor.UpdateMentorFeedbackRequest;
 import com.t7.seal.response.mentor.MentorFeedbackResponse;
+import com.t7.seal.response.mentor.MentorTrackResponse;
 import com.t7.seal.service.MentorFeedbackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -94,5 +95,13 @@ public class MentorController {
             Authentication authentication
     ) {
         return ResponseEntity.ok(mentorFeedbackService.publishFeedback(feedbackId, authentication));
+    }
+
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
+    @GetMapping("/mentor/tracks")
+    public ResponseEntity<List<MentorTrackResponse>> getMyAssignedTracks(
+            Authentication authentication
+    ) {
+        return null;
     }
 }
