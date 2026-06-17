@@ -1,14 +1,12 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.NotificationChannel;
-import com.t7.seal.domain.NotificationStatus;
 import com.t7.seal.domain.NotificationTargetScope;
 import com.t7.seal.domain.NotificationType;
 import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.entities.EventCriteria;
 import com.t7.seal.entities.Judge;
-import com.t7.seal.entities.Notification;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.RoundJudgeAssignment;
 import com.t7.seal.entities.Submission;
@@ -23,7 +21,6 @@ import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.EventCriteriaRepository;
 import com.t7.seal.repository.JudgeRepository;
 import com.t7.seal.repository.MentorAssignmentRepository;
-import com.t7.seal.repository.NotificationRepository;
 import com.t7.seal.repository.RoundJudgeAssignmentRepository;
 import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.repository.ScoreRepository;
@@ -39,8 +36,8 @@ import com.t7.seal.response.grading.JudgeSubmissionAssignmentResponse;
 import com.t7.seal.response.round.JudgeAssignmentResponse;
 import com.t7.seal.response.submission.SubmissionLinkResponse;
 import com.t7.seal.service.CurrentUserService;
-import com.t7.seal.service.EmailService;
 import com.t7.seal.service.JudgeAssignmentService;
+import com.t7.seal.service.NotificationService;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -75,9 +72,8 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
     private final SubmissionLinkRepository submissionLinkRepository;
     private final EventCriteriaRepository eventCriteriaRepository;
     private final ScoreRepository scoreRepository;
-    private final NotificationRepository notificationRepository;
     private final CurrentUserService currentUserService;
-    private final EmailService emailService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -143,7 +139,6 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         RoundJudgeAssignment saved = assignmentRepository.save(assignment);
 
         createJudgeAssignedNotification(saved, assignedBy);
-        sendJudgeAssignedEmailSafely(saved);
 
         return toResponse(saved);
     }
@@ -518,40 +513,21 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
 
     private void createJudgeAssignedNotification(RoundJudgeAssignment assignment, User assignedBy) {
         try {
-            notificationRepository.save(
-                    Notification.builder()
-                            .event(assignment.getRound().getEvent())
-                            .createdBy(assignedBy)
-                            .type(NotificationType.JUDGE_ASSIGNED)
-                            .title("Judge assignment")
-                            .body(buildJudgeAssignedMessage(assignment))
-                            .targetScope(NotificationTargetScope.SINGLE_USER)
-                            .targetId(assignment.getJudge().getUser().getId())
-                            .channel(NotificationChannel.BOTH)
-                            .status(NotificationStatus.SENT)
-                            .sentAt(LocalDateTime.now())
-                            .recipientCount(1)
-                            .build());
+            notificationService.createSystemNotification(
+                    assignedBy,
+                    assignment.getRound().getEvent(),
+                    NotificationType.JUDGE_ASSIGNED,
+                    "Judge assignment",
+                    buildJudgeAssignedMessage(assignment),
+                    NotificationTargetScope.SINGLE_USER,
+                    assignment.getJudge().getUser().getId(),
+                    null,
+                    NotificationChannel.BOTH,
+                    null
+            );
         } catch (Exception e) {
             //TODO
             e.printStackTrace();
-        }
-    }
-
-    private void sendJudgeAssignedEmailSafely(RoundJudgeAssignment assignment) {
-        try {
-            User judgeUser = assignment.getJudge().getUser();
-            if (judgeUser != null && judgeUser.getEmail() != null) {
-                emailService.sendJudgeAssignedEmail(
-                        judgeUser.getEmail(),
-                        judgeUser.getFullName(),
-                        assignment.getRound().getEvent().getName(),
-                        assignment.getRound().getName(),
-                        assignment.getTrack() == null ? "All tracks" : assignment.getTrack().getName()
-                );
-            }
-        } catch (RuntimeException ex) {
-            log.warn("Failed to send judge assignment email for assignment {}", assignment.getId(), ex);
         }
     }
 
