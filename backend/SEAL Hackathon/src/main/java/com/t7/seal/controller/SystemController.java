@@ -9,6 +9,8 @@ import com.t7.seal.response.system.SystemHealthResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,6 +40,7 @@ public class SystemController {
         return null;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @GetMapping("/audit-logs")
     public ResponseEntity<PageResponse<AuditLogResponse>> getAuditLogs(
             @RequestParam(required = false) UUID actorId,
@@ -47,7 +50,16 @@ public class SystemController {
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication
+    ) {
+        return null;
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @GetMapping("/audit-logs/action")
+    public ResponseEntity<List<String>> getAuditLogs(
+            Authentication authentication
     ) {
         return null;
     }
