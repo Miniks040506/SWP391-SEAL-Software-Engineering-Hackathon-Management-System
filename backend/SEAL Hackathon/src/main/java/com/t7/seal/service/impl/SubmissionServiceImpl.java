@@ -14,6 +14,7 @@ import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import com.t7.seal.security.guard.CurrentUser;
+import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RepositoryMetadataService;
 import com.t7.seal.service.SubmissionFileStorageService;
 import com.t7.seal.service.SubmissionService;
@@ -48,6 +49,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final RepositoryMetadataService repositoryMetadataService;
     private final SubmissionFileStorageService submissionFileStorageService;
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -75,6 +77,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                         .build());
 
         boolean existed = submission.getId() != null;
+        boolean wasSubmittedBefore = existed && !submission.isDraft();
         submission.setNote(blankToNull(request.note()));
         if (existed && !submission.isDraft()) {
             submission.increaseSubmissionNumber();
@@ -85,6 +88,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission saved = submissionRepository.save(submission);
         replaceLinks(saved, request.links());
         saved = getSubmission(saved.getId());
+        notifySubmissionChange(saved, wasSubmittedBefore);
 
         return toSubmissionResponse(saved);
     }
@@ -172,12 +176,14 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         if (Boolean.TRUE.equals(submitNow)) {
             Submission refreshed = getSubmission(saved.getId());
+            boolean wasSubmittedBefore = !refreshed.isDraft();
             validateRequiredLinksFromEntity(refreshed);
             if (!refreshed.isDraft()) {
                 refreshed.increaseSubmissionNumber();
             }
             markSubmittedConsideringDeadline(refreshed, refreshed.getRound());
             saved = submissionRepository.save(refreshed);
+            notifySubmissionChange(saved, wasSubmittedBefore);
         }
 
         return toSubmissionResponse(getSubmission(saved.getId()));
@@ -204,12 +210,14 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         if (Boolean.TRUE.equals(submitNow)) {
             Submission refreshed = getSubmission(submissionId);
+            boolean wasSubmittedBefore = !refreshed.isDraft();
             validateRequiredLinksFromEntity(refreshed);
             if (!refreshed.isDraft()) {
                 refreshed.increaseSubmissionNumber();
             }
             markSubmittedConsideringDeadline(refreshed, refreshed.getRound());
             submissionRepository.save(refreshed);
+            notifySubmissionChange(refreshed, wasSubmittedBefore);
         }
 
         return toSubmissionResponse(getSubmission(submissionId));
@@ -261,6 +269,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission submission = getSubmission(submissionId);
         ensureTeamLeader(submission.getTeam(), authentication);
         ensureRoundCanAcceptSubmission(submission.getRound());
+        boolean wasSubmittedBefore = !submission.isDraft();
+        boolean notifySubmitOrUpdate = false;
 
         if (request.note() != null) {
             submission.setNote(blankToNull(request.note()));
@@ -280,6 +290,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 validateRequiredLinksFromEntity(submission);
                 submission.increaseSubmissionNumber();
                 markSubmittedConsideringDeadline(submission, submission.getRound());
+                notifySubmitOrUpdate = true;
             } else if (status == SubmissionStatus.DRAFT) {
                 submission.setStatus(SubmissionStatus.DRAFT);
             } else {
@@ -288,6 +299,9 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         Submission saved = submissionRepository.save(submission);
+        if (notifySubmitOrUpdate) {
+            notifySubmissionChange(saved, wasSubmittedBefore);
+        }
         return toSubmissionResponse(getSubmission(saved.getId()));
     }
 
@@ -374,6 +388,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         ensureTeamLeader(submission.getTeam(), authentication);
         ensureRoundCanAcceptSubmission(submission.getRound());
         validateRequiredLinksFromEntity(submission);
+        boolean wasSubmittedBefore = !submission.isDraft();
 
         if (!submission.isDraft()) {
             submission.increaseSubmissionNumber();
@@ -381,7 +396,9 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         markSubmittedConsideringDeadline(submission, submission.getRound());
 
-        return toSubmissionResponse(submissionRepository.save(submission));
+        Submission saved = submissionRepository.save(submission);
+        notifySubmissionChange(saved, wasSubmittedBefore);
+        return toSubmissionResponse(saved);
     }
 
     @Override
@@ -754,6 +771,71 @@ public class SubmissionServiceImpl implements SubmissionService {
             return SubmissionStatus.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Unsupported submission status: " + value);
+        }
+    }
+
+    private void notifySubmissionChange(Submission submission, boolean wasSubmittedBefore) {
+        Team team = submission.getTeam();
+        Round round = submission.getRound();
+        if (team == null || round == null || team.getLeader() == null) {
+            return;
+        }
+
+        NotificationType type = wasSubmittedBefore
+                ? NotificationType.SUBMISSION_UPDATED
+                : NotificationType.SUBMISSION_SUBMITTED;
+        String action = wasSubmittedBefore ? "updated" : "submitted";
+        String roundName = round.getName() == null ? "current round" : round.getName();
+        String teamName = team.getName() == null ? "Team" : team.getName();
+        String title = wasSubmittedBefore ? "Submission updated" : "Submission submitted";
+        String body = teamName + " " + action + " deliverables for " + roundName
+                + " (submission #" + submission.getSubmissionNumber() + ").";
+
+        try {
+            notificationService.createSystemNotification(
+                    team.getLeader(),
+                    round.getEvent(),
+                    type,
+                    title,
+                    body,
+                    NotificationTargetScope.TEAM,
+                    team.getId(),
+                    null,
+                    NotificationChannel.BOTH,
+                    null
+            );
+
+            if (team.getTrack() != null) {
+                for (User mentor : mentorAssignmentRepository.findActiveMentorsByTrackId(team.getTrack().getId())) {
+                    notificationService.createSystemNotification(
+                            team.getLeader(),
+                            round.getEvent(),
+                            type,
+                            title,
+                            body,
+                            NotificationTargetScope.SINGLE_USER,
+                            mentor.getId(),
+                            "MENTOR",
+                            NotificationChannel.IN_APP,
+                            null
+                    );
+                }
+            }
+
+            notificationService.createSystemNotification(
+                    team.getLeader(),
+                    round.getEvent(),
+                    type,
+                    title,
+                    body,
+                    NotificationTargetScope.EVENT_COORDINATORS,
+                    null,
+                    null,
+                    NotificationChannel.IN_APP,
+                    null
+            );
+        } catch (RuntimeException ignored) {
+            // Submission persistence must not roll back because notification delivery failed.
         }
     }
 
