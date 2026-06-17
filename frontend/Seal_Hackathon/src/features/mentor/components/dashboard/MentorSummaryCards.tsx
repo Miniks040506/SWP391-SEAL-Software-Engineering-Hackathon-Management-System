@@ -7,7 +7,13 @@ import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 
-import type { MentorSummaryCard } from "../../schemas/mentorDashboard.schema";
+export type MentorSummaryCard = {
+  title: string;
+  value: string | number;
+  description: string;
+  iconType: "event" | "track" | "team" | "feedback" | "deadline";
+  color: string;
+};
 
 type MentorSummaryCardsProps = {
   cards: MentorSummaryCard[];
@@ -15,18 +21,12 @@ type MentorSummaryCardsProps = {
 
 function getSummaryIcon(iconType: MentorSummaryCard["iconType"]) {
   switch (iconType) {
-    case "event":
-      return <EventAvailableOutlinedIcon />;
-    case "track":
-      return <AssignmentOutlinedIcon />;
-    case "team":
-      return <GroupsOutlinedIcon />;
-    case "feedback":
-      return <RateReviewOutlinedIcon />;
-    case "deadline":
-      return <AccessTimeOutlinedIcon />;
-    default:
-      return <EventAvailableOutlinedIcon />;
+    case "event": return <EventAvailableOutlinedIcon />;
+    case "track": return <AssignmentOutlinedIcon />;
+    case "team": return <GroupsOutlinedIcon />;
+    case "feedback": return <RateReviewOutlinedIcon />;
+    case "deadline": return <AccessTimeOutlinedIcon />;
+    default: return <EventAvailableOutlinedIcon />;
   }
 }
 
@@ -45,16 +45,13 @@ export const MentorSummaryCards = ({ cards }: MentorSummaryCardsProps) => {
                 <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">
                   {card.title}
                 </p>
-
                 <h2 className="mt-2 text-2xl font-extrabold text-gray-900 dark:text-white">
                   {card.value}
                 </h2>
-
                 <p className="mt-1 text-sm text-gray-400 dark:text-slate-500">
                   {card.description}
                 </p>
               </div>
-
               <div className={`rounded-2xl p-3 ${card.color}`}>
                 {getSummaryIcon(card.iconType)}
               </div>
