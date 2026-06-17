@@ -1,4 +1,4 @@
-﻿package com.t7.seal.service.impl;
+package com.t7.seal.service.impl;
 
 import com.t7.seal.service.EmailService;
 import jakarta.mail.MessagingException;
@@ -647,5 +647,3 @@ public class EmailServiceImpl implements EmailService {
                 .replace("'", "&#39;");
     }
 }
-
-
