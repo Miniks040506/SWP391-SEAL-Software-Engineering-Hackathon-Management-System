@@ -5,6 +5,7 @@ import com.t7.seal.request.mentor.CreateMentorFeedbackRequest;
 import com.t7.seal.request.mentor.UpdateMentorFeedbackRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.mentor.MentorFeedbackResponse;
+import com.t7.seal.response.mentor.MentorTeamDetailResponse;
 import com.t7.seal.response.mentor.MentorTeamProgressResponse;
 import com.t7.seal.response.mentor.MentorTrackResponse;
 import com.t7.seal.service.MentorFeedbackService;
@@ -108,6 +109,7 @@ public class MentorController {
         return null;
     }
 
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping("/mentor/tracks/{trackId}/teams")
     public ResponseEntity<PageResponse<MentorTeamProgressResponse>> getTeamInAssignedTracks(
             @PathVariable UUID trackId,
@@ -115,6 +117,15 @@ public class MentorController {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
+            Authentication authentication
+    ) {
+        return null;
+    }
+
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
+    @GetMapping("/mentor/teams/{teamId}")
+    public ResponseEntity<MentorTeamDetailResponse> getAssignedTeamDetails(
+            @PathVariable UUID teamId,
             Authentication authentication
     ) {
         return null;
