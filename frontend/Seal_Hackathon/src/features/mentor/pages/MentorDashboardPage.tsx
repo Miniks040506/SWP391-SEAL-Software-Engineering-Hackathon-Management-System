@@ -16,7 +16,7 @@ export const MentorDashboardPage = () => {
   } = useMentorDashboard();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <MentorWelcomeBanner
         mentorName={dashboard.mentorName}
         onViewTeams={goToTeams}
