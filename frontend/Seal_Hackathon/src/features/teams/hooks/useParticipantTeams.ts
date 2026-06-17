@@ -14,7 +14,7 @@ import type {
   JoinTeamByCodeRequest,
 } from "@/types/team.types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const activeTeamService = USE_MOCK ? mockTeamService : teamApi;
 
 export const participantTeamQueryKeys = {
