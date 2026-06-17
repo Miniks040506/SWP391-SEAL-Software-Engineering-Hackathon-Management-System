@@ -80,4 +80,26 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
     long countActiveMemberByTrackId(
             @Param("trackId") UUID trackId
     );
+
+    @Query("""
+            SELECT t FROM Team t
+            LEFT JOIN t.track tr
+            LEFT JOIN tr.event e
+            LEFT JOIN t.leader l
+            WHERE tr.id = :trackId
+              AND (:status IS NULL OR t.status = :status)
+              AND (
+                    :search IS NULL OR :search = ''
+                    OR LOWER(t.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(COALESCE(t.projectTitle, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(COALESCE(l.fullName, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+                  )
+            ORDER BY t.registeredAt DESC, t.createdAt DESC
+            """)
+    Page<Team> searchMentorTrackTeams(
+            @Param("trackId") UUID trackId,
+            @Param("status") TeamStatus status,
+            @Param("search") String search,
+            Pageable pageable
+    );
 }

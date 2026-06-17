@@ -121,7 +121,7 @@ public class MentorController {
             @RequestParam(defaultValue = "20") int size,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorTeamService.getTeamInAssignedTracks(trackId, status, search, page, size, authentication));
     }
 
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
