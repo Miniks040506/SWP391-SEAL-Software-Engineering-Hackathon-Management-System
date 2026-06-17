@@ -130,6 +130,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, API + "/users").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/users/*").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/system/audit-logs").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/system/audit-logs/actions").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/audit-logs").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/audit-logs/actions").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/coordinator/audit-logs").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/coordinator/audit-logs/actions").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/admin/audit-logs").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/admin/audit-logs/actions").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/criteria").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/criteria/*").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/submissions").hasAnyRole("ADMIN", "COORDINATOR")
@@ -140,6 +147,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, API + "/users/*/approve").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/users/*/reject").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/users/guest-judge").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/judges/guest").hasRole("COORDINATOR")
 
                         // Coordinator event operations
                         .requestMatchers(HttpMethod.POST, API + "/events").hasRole("COORDINATOR")
@@ -165,8 +173,11 @@ public class SecurityConfig {
                         .requestMatchers(API + "/rounds/*/advance-rules", API + "/rounds/*/advance-rules/**").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(API + "/advance-rules/**").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(API + "/rounds/*/judge-assignments/**").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rounds/*/open").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rounds/*/close").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/lock-submissions").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/lock-grading").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/rounds/*/operation-status").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/scoring-progress").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/advancement-preview").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/confirm-advancement").hasRole("COORDINATOR")
@@ -207,11 +218,12 @@ public class SecurityConfig {
 
                         // Judge grading
                         .requestMatchers(API + "/judge/**").hasRole("JUDGE")
-                        .requestMatchers(API + "/judges/**").hasRole("JUDGE")
                         .requestMatchers(API + "/judges/me/**").hasRole("JUDGE")
+                        .requestMatchers(API + "/judges/**").hasRole("JUDGE")
                         .requestMatchers(API + "/grading/**").hasRole("JUDGE")
 
                         // Mentor
+                        .requestMatchers(API + "/mentor/**").hasAnyRole("MENTOR", "COORDINATOR", "ADMIN")
                         .requestMatchers(API + "/mentor-feedback/**").hasAnyRole("MENTOR", "STUDENT", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/tracks/*/teams").hasAnyRole("MENTOR", "COORDINATOR", "ADMIN")
 
@@ -226,6 +238,7 @@ public class SecurityConfig {
                         // Notifications
                         .requestMatchers(HttpMethod.POST, API + "/notifications").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/notifications/*/send").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/notifications/recipients/resolve").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(API + "/notifications/**").authenticated()
 
                         .anyRequest().authenticated()
