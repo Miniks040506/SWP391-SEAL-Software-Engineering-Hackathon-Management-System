@@ -425,14 +425,23 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private String renderSubject(Notification notification) {
-        return notificationTemplateRepository.findByTypeAndActiveTrue(notification.getType())
+        String template = notificationTemplateRepository.findByTypeAndActiveTrue(notification.getType())
                 .map(NotificationTemplate::getSubjectTemplate)
-                .orElse(defaultSubject(notification.getType()))
-                .replace("{title}", notification.getTitle());
+                .orElse(defaultSubject(notification.getType()));
+        return renderTemplate(template, notification, renderTargetPath(notification));
     }
 
     private String renderEmailHtml(Notification notification, String actionUrl) {
-        String body = notification.getBody() == null ? "" : notification.getBody().replace("\n", "<br/>");
+        Optional<NotificationTemplate> template = notificationTemplateRepository.findByTypeAndActiveTrue(notification.getType());
+        if (template.isPresent() && !isBlank(template.get().getHtmlTemplate())) {
+            return renderTemplate(template.get().getHtmlTemplate(), notification, actionUrl);
+        }
+
+        String bodyTemplate = template
+                .map(NotificationTemplate::getBodyTemplate)
+                .filter(value -> !isBlank(value))
+                .orElse(notification.getBody());
+        String body = renderTemplate(bodyTemplate, notification, actionUrl).replace("\n", "<br/>");
         String cta = actionUrl == null ? "" : """
                 <div style="text-align:center;margin-top:28px;">
                   <a href="%s" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;font-weight:900;padding:13px 24px;border-radius:12px;">Open in SEAL</a>
@@ -457,6 +466,17 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private String renderActionUrl(Notification notification) {
+        String targetPath = renderTargetPath(notification);
+        if (targetPath.startsWith("http")) {
+            return targetPath;
+        }
+        return stripTrailingSlash(frontendUrl) + targetPath;
+    }
+
+    private String renderTargetPath(Notification notification) {
+        if (notification.getType() == NotificationType.TEAM_INVITATION_SENT) {
+            return "/participant/invitations";
+        }
         if (notification.getTargetScope() == NotificationTargetScope.TEAM && notification.getTargetId() != null) {
             return "/participant/teams/" + notification.getTargetId();
         }
@@ -467,6 +487,20 @@ public class NotificationServiceImpl implements NotificationService {
             return notification.getTargetId() == null ? "/participant/teams" : "/participant/teams/" + notification.getTargetId() + "/feedback";
         }
         return "/notifications";
+    }
+
+    private String renderTemplate(String template, Notification notification, String actionUrl) {
+        if (template == null) {
+            return "";
+        }
+        return template
+                .replace("{title}", nullToEmpty(notification.getTitle()))
+                .replace("{body}", nullToEmpty(notification.getBody()))
+                .replace("{type}", notification.getType() == null ? "" : notification.getType().name())
+                .replace("{targetScope}", notification.getTargetScope() == null ? "" : notification.getTargetScope().name())
+                .replace("{targetId}", notification.getTargetId() == null ? "" : notification.getTargetId().toString())
+                .replace("{eventName}", notification.getEvent() == null ? "" : nullToEmpty(notification.getEvent().getName()))
+                .replace("{actionUrl}", actionUrl == null ? "" : actionUrl);
     }
 
     private String defaultSubject(NotificationType type) {
