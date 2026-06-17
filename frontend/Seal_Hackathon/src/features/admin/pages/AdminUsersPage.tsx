@@ -12,8 +12,8 @@ import { useUserFilters } from "@/features/admin/hooks/useUserFilters";
 import { paginationSx } from "@/features/admin/schemas/admin.schema";
 
 import { UserStatCards } from "@/features/admin/components/ManageUserPage/UserStatCards";
-import { UserFilterBar } from "@/features/admin/components/AdminDashboard/UserFilterBar";
-import { UserTable } from "@/features/admin/components/AdminDashboard/UserTable";
+import { UserFilterBar } from "@/features/admin/components/ManageUserPage/UserFilterBar";
+import { UserTable } from "@/features/admin/components/ManageUserPage/UserTable";
 import { UserViewDialog } from "@/features/admin/components/ManageUserPage/UserViewDialog";
 import { UserCreateDialog } from "@/features/admin/components/ManageUserPage/UserCreateDialog";
 import { UserEditDialog } from "@/features/admin/components/ManageUserPage/UserEditDialog";

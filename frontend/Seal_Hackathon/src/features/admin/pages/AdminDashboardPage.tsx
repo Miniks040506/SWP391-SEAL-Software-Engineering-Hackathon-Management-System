@@ -1,16 +1,22 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@mui/material";
 
-import { useAdminDashboard } from "@/features/admin/hooks/useAdminDashboardMutation";
-import { DashboardRoleCards } from "@/features/admin/components/AdminDashboard/DashboardRoleCards";
-import { DashboardPendingUsers } from "@/features/admin/components/AdminDashboard/DashboardPendingUsers";
-import { DashboardAuditLogs } from "@/features/admin/components/AdminDashboard/DashboardAuditLogs";
-import { DashboardSystemModules } from "@/features/admin/components/AdminDashboard/DashboardSystemModules";
+import { useAdminDashboard } from "../hooks/useAdminDashboard";
+import { DashboardRoleCards } from "../components/AdminDashboard/DashboardRoleCards";
+import { DashboardPendingUsers } from "../components/AdminDashboard/DashboardPendingUsers";
+import { DashboardAuditLogs } from "../components/AdminDashboard/DashboardAuditLogs";
+import { DashboardSystemModules } from "../components/AdminDashboard/DashboardSystemModules";
 
 export function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { isStatsLoading, isPendingLoading, isAuditLoading, stats, auditLogs, pendingRequests } =
-    useAdminDashboard();
+  const {
+    isStatsLoading,
+    isPendingLoading,
+    isAuditLoading,
+    stats,
+    auditLogs,
+    pendingRequests,
+  } = useAdminDashboard();
 
   return (
     <div className="space-y-8 p-6 bg-slate-50 dark:bg-transparent min-h-[calc(100vh-64px)] transition-colors">
@@ -23,7 +29,8 @@ export function AdminDashboardPage() {
             Welcome back, Admin!
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-blue-100">
-            System overview, user management, and pending administrative tasks across the SEAL platform.
+            System overview, user management, and pending administrative tasks
+            across the SEAL platform.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -41,7 +48,10 @@ export function AdminDashboardPage() {
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <DashboardPendingUsers pendingRequests={pendingRequests} isLoading={isPendingLoading} />
+          <DashboardPendingUsers
+            pendingRequests={pendingRequests}
+            isLoading={isPendingLoading}
+          />
         </div>
         <DashboardAuditLogs auditLogs={auditLogs} isLoading={isAuditLoading} />
       </section>
@@ -50,3 +60,5 @@ export function AdminDashboardPage() {
     </div>
   );
 }
+
+export default AdminDashboardPage;
