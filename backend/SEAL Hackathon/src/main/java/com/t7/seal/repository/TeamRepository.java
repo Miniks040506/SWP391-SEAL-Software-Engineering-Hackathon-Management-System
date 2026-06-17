@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -71,4 +72,12 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
             """)
     Optional<Team> findCoordinatorDetailById(@Param("teamId") UUID teamId);
 
+    @Query("""
+            SELECT COUNT(t) FROM Team t 
+                WHERE t.track.id = :trackId
+                    AND CAST(t.status AS STRING) NOT IN ('FORIMING')
+            """)
+    long countActiveMemberByTrackId(
+            @Param("trackId") UUID trackId
+    );
 }

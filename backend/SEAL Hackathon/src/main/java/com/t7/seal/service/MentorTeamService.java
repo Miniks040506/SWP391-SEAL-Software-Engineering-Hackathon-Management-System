@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface MentorTeamService {
-    List<MentorTrackResponse> getMyAssignedTrack(UUID eventId, Authentication authentication);
+    List<MentorTrackResponse> getMyAssignedTracks(UUID eventId, Authentication authentication);
 
     PageResponse<MentorTeamProgressResponse> getTeamInAssignedTracks(
             UUID trackId,
@@ -21,5 +21,5 @@ public interface MentorTeamService {
             Authentication authentication
     );
 
-    MentorTeamDetailResponse getTeamDetail(UUID teamId, Authentication authentication);
+    MentorTeamDetailResponse getTeamDetails(UUID teamId, Authentication authentication);
 }

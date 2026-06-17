@@ -9,6 +9,7 @@ import com.t7.seal.response.mentor.MentorTeamDetailResponse;
 import com.t7.seal.response.mentor.MentorTeamProgressResponse;
 import com.t7.seal.response.mentor.MentorTrackResponse;
 import com.t7.seal.service.MentorFeedbackService;
+import com.t7.seal.service.MentorTeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class MentorController {
 
     private final MentorFeedbackService mentorFeedbackService;
+    private final MentorTeamService mentorTeamService;
 
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @PostMapping({
@@ -106,7 +108,7 @@ public class MentorController {
             @RequestParam(required = false) UUID eventId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorTeamService.getMyAssignedTracks(eventId, authentication));
     }
 
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")

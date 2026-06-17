@@ -70,4 +70,12 @@ public interface SubmissionRepository extends JpaRepository<Submission, UUID>, J
             @Param("roundId") UUID roundId,
             @Param("trackId") UUID trackId
     );
+
+    @Query("""
+            SELECT COUNT(s) FROM Submission s 
+            JOIN s.team t 
+                WHERE t.track.id = :trackId 
+                    AND CAST(s.status AS STRING) IN ('SUBMITTED', 'LATE')
+            """)
+    long countSubmittedOrLateByTrackId(@Param("trackId") UUID trackId);
 }
