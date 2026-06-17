@@ -1,6 +1,5 @@
 import { useState } from "react";
 import CircularProgress from "@mui/material/CircularProgress";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 
 import {
   useAuditLogsQuery,
@@ -30,9 +29,6 @@ export const AuditLogsPage = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 p-4">
       <header className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-          <HistoryOutlinedIcon />
-        </div>
         <div>
           <h1 className="text-3xl font-black text-slate-950 dark:text-white">
             System Audit Logs

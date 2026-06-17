@@ -19,6 +19,7 @@ import RuleOutlinedIcon from "@mui/icons-material/RuleOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
+import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined';
 
 export type SidebarItem = {
   label: string;
@@ -49,7 +50,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
     homePath: "/admin/dashboard",
     profilePath: "/admin/profile",
     settingsPath: "/admin/settings",
-    notificationPath: "/admin/notifications",
     sidebar: [
       {
         title: "Administration",
@@ -82,13 +82,8 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
         items: [
           {
             label: "Audit Logs",
-            path: "/admin/audit-logs",
-            icon: <HistoryEduOutlinedIcon fontSize="small" />,
-          },
-          {
-            label: "Notifications",
-            path: "/admin/notifications",
-            icon: <NotificationsNoneOutlinedIcon fontSize="small" />,
+            path: "/admin/auditLogs",
+            icon: <StickyNote2OutlinedIcon fontSize="small" />,
           },
           {
             label: "System Config",
@@ -183,11 +178,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <NotificationsNoneOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Notifications",
-            path: "/coordinator/notifications",
-            icon: <NotificationsNoneOutlinedIcon fontSize="small" />,
-          },
-          {
             label: "Schedule",
             path: "/coordinator/schedule",
             icon: <CalendarMonthOutlinedIcon fontSize="small" />,
@@ -196,6 +186,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Reports",
             path: "/coordinator/reports",
             icon: <AssessmentOutlinedIcon fontSize="small" />,
+          },
+          {
+            label: "Audit Logs",
+            path: "/coordinator/auditLogs",
+            icon: <StickyNote2OutlinedIcon fontSize="small" />,
           },
         ],
       },
@@ -265,11 +260,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Teams",
             path: "/mentor/teams",
             icon: <GroupsOutlinedIcon fontSize="small" />,
-          },
-          {
-            label: "Feedback",
-            path: "/mentor/feedback",
-            icon: <FactCheckOutlinedIcon fontSize="small" />,
           },
           {
             label: "Submissions",

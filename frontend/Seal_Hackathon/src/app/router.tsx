@@ -6,6 +6,8 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
 import { RootLayout } from "@/components/layout/RootLayout";
 
+import { AuditLogsPage } from "../features/auditLog";
+
 import {
   JudgeDashboardPage,
   JudgeSubmissionDetailPage,
@@ -149,6 +151,7 @@ export const router = createBrowserRouter([
       { path: "reports", element: <NotFoundPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
+      { path: "auditLogs", element: <AuditLogsPage /> },
     ],
   },
 
@@ -164,7 +167,7 @@ export const router = createBrowserRouter([
       { path: "users/:id/edit", element: <NotFoundPage /> },
       { path: "roles", element: <NotFoundPage /> },
       { path: "permissions", element: <NotFoundPage /> },
-      { path: "audit-logs", element: <NotFoundPage /> },
+      { path: "auditLogs", element: <AuditLogsPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
       { path: "system-config", element: <NotFoundPage /> },
       { path: "health", element: <NotFoundPage /> },
