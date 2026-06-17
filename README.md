@@ -63,18 +63,17 @@ The legacy process suffers from recurring pain points that SEAL is built to elim
 
 ## 🚦 Project Status
 
-> **This project is under active development (SWP391).** The domain model, REST surface, and DTO contracts are largely defined; business logic is being filled in module by module.
+> **This project is under active development (SWP391 capstone).** Both the backend and the role-based frontend are substantially built out across all modules; work continues on remaining edge cases and polish.
 
 | Area | State |
 |---|---|
-| Domain model | ✅ 28 JPA entities + 27 enums defined |
-| REST surface | ✅ 18 controllers with mapped routes and request/response DTOs |
-| Auth module | ✅ Implemented (registration, JWT, token blacklist) |
-| Other service logic | 🚧 In progress — most controller handlers are scaffolded |
-| Database schema | ⚙️ Currently Hibernate-generated (`ddl-auto: create`); Flyway is enabled and reserved for versioned migrations |
-| Frontend | 🚧 Vite + React 19 scaffold with auth store and API client wired up |
-
-The sections below describe both the **implemented foundation** and the **target design** the codebase is converging toward.
+| Domain model | ✅ 32 JPA entities + 31 enums + 32 repositories |
+| Service layer | ✅ 28 service interfaces + 30 implementations |
+| REST surface | ✅ 22 controllers with request/response DTO records (63 request / 89 response) |
+| Authentication | ✅ JWT (access + refresh), email verification, password reset, token blacklist, OAuth2 social login |
+| Integrations | ✅ Cloudinary (images), S3 (submission files), GitHub/GitLab metadata, async SMTP email outbox |
+| Frontend | ✅ Feature-based React SPA with dedicated experiences for Admin, Coordinator, Judge, Mentor, and Participant roles |
+| Database schema | ⚙️ Hibernate-managed (`ddl-auto: update` in dev, `validate` in prod); Flyway is enabled and reserved for future versioned migrations |
 
 ---
 
@@ -84,7 +83,7 @@ Features are organized into six functional modules.
 
 ### 1. User & Access Management
 - Email/password registration with email verification before approval.
-- JWT-based authentication (access + refresh tokens) with optional server-side token blacklist on logout.
+- JWT-based authentication (access + refresh tokens) plus **OAuth2 social login**, with optional server-side token blacklist on logout.
 - Time-limited password reset via email code.
 - Account approval workflow (Coordinator) and role management (Admin).
 - Temporary guest-judge accounts.
@@ -139,8 +138,10 @@ Features are organized into six functional modules.
 | Framework | Spring Boot 4.0.6 (Web MVC, Security, Data JPA, Mail, Actuator, OAuth2) |
 | Persistence | Hibernate ORM, PostgreSQL driver |
 | Migrations | Flyway (PostgreSQL) |
-| Auth | JWT via `jjwt` 0.13, BCrypt password hashing |
+| Auth | JWT via `jjwt` 0.13, BCrypt password hashing, OAuth2 social login |
 | Validation | Jakarta Bean Validation |
+| File storage | Cloudinary (images/banners), AWS S3 (submission files) |
+| Integrations | GitHub / GitLab repository metadata, SMTP email outbox + scheduler |
 | API docs | SpringDoc OpenAPI (Swagger UI) |
 | Build | Maven (with wrapper), Lombok |
 
@@ -213,7 +214,7 @@ graph TD
 
 ## 🗃 Domain Model
 
-The schema comprises **28 main entities** grouped by module:
+The schema comprises **32 JPA entities** grouped by module:
 
 | Group | Entities |
 |---|---|
@@ -221,7 +222,8 @@ The schema comprises **28 main entities** grouped by module:
 | Event & Configuration | `HackathonEvent`, `Track`, `Round`, `AdvanceRule`, `SystemConfig` |
 | Team & Participation | `Team`, `TeamMember`, `MentorAssignment`, `MentorFeedback` |
 | Submission & Grading | `ScoringCriteria`, `EventCriteria`, `RoundJudgeAssignment`, `Submission`, `SubmissionLink`, `Score`, `Ranking`, `Disqualification` |
-| Results, Audit & Research | `CalibrationRound`, `CalibrationScore`, `Prize`, `AuditLog`, `Notification`, `EventAnnouncement`, `ExportJob` |
+| Results & Research | `CalibrationRound`, `CalibrationScore`, `Prize`, `AuditLog`, `ExportJob` |
+| Notifications & Email | `Notification`, `NotificationRecipient`, `NotificationTemplate`, `EventAnnouncement`, `EmailOutbox`, `EmailDeliveryLog` |
 
 ### Core relationships
 
@@ -287,18 +289,18 @@ SWP391-SEAL-.../
 ├── backend/
 │   └── SEAL Hackathon/                 # Spring Boot service
 │       ├── src/main/java/com/t7/seal/
-│       │   ├── config/                 # SecurityConfig, ApiPaths
-│       │   ├── controller/             # 18 thin REST controllers
-│       │   ├── domain/                 # Enums (UserRole, SubmissionStatus, …)
+│       │   ├── config/                 # SecurityConfig, ApiPaths, Cloudinary, Jackson, beans
+│       │   ├── controller/             # 22 thin REST controllers
+│       │   ├── domain/                 # 31 enums (UserRole, SubmissionStatus, …)
 │       │   ├── dto/                    # Auth principal types
-│       │   ├── entities/               # 28 JPA entities
+│       │   ├── entities/               # 32 JPA entities
 │       │   ├── filter/                 # JwtAuthenticationFilter
 │       │   ├── infrastructure/         # Converters, security utils
-│       │   ├── repository/             # Spring Data JPA repositories
+│       │   ├── repository/             # 32 Spring Data JPA repositories
 │       │   ├── request/<module>/       # Inbound DTO records
 │       │   ├── response/<module>/      # Outbound DTO records
 │       │   ├── security/               # JWT / OAuth2 support
-│       │   └── service/                # Service interfaces + impl/
+│       │   └── service/                # 28 service interfaces + impl/ (30 implementations)
 │       ├── src/main/resources/
 │       │   ├── application.yaml         # base config (profile: dev)
 │       │   ├── application-dev.yaml
@@ -310,10 +312,22 @@ SWP391-SEAL-.../
 ├── frontend/
 │   └── Seal_Hackathon/                  # React + Vite SPA
 │       ├── src/
-│       │   ├── api/axiosClient.ts       # Axios instance (Bearer JWT)
-│       │   ├── app/                     # providers, theme
-│       │   ├── stores/authStore.ts      # Zustand auth state
-│       │   ├── App.tsx
+│       │   ├── api/                     # 24 typed API modules + Axios client (Bearer JWT)
+│       │   ├── app/                     # App, router, providers, theme
+│       │   ├── components/              # common / layout / guards (AuthGuard, RoleGuard)
+│       │   ├── features/                # feature modules by role & domain:
+│       │   │   ├── auth/                #   login, register, verify, reset, OAuth callback
+│       │   │   ├── admin/               #   user management, audit logs, dashboard
+│       │   │   ├── coordinator/         #   event creation/editing, announcements, teams
+│       │   │   ├── judge/               #   grading, calibration, dashboard
+│       │   │   ├── mentor/              #   assigned teams, feedback, submissions
+│       │   │   ├── criteria/            #   scoring & event criteria management
+│       │   │   ├── events/ ranking/     #   public event pages, leaderboard
+│       │   │   ├── teams/ submissions/  #   team lifecycle, deliverable submission
+│       │   │   ├── notification/        #   notification inbox & bell
+│       │   │   └── profile/             #   personal profile & avatar
+│       │   │       (each: pages / components / hooks / schemas)
+│       │   ├── hooks/  stores/  types/  utils/
 │       │   └── main.tsx
 │       ├── .env.example
 │       ├── vite.config.ts
@@ -430,17 +444,18 @@ VITE_API_NAME=SEAL Hackathon Management System
 
 All endpoints are versioned under **`/api/v1`** and documented interactively via **Swagger UI** (`/swagger-ui.html`) once the backend is running.
 
-The REST surface is organized into the following controllers:
+The REST surface is organized into **22 controllers**:
 
 | Module | Controller(s) | Responsibility |
 |---|---|---|
-| Auth & Users | `AuthController`, `UserController` | Registration, login, verification, password reset, profile, admin user management |
+| Auth & Users | `AuthController`, `UserController` | Registration, login, OAuth2, verification, password reset, profile, admin user management |
 | Events | `EventController`, `TrackController`, `RoundController` | Event/track/round CRUD, submission & grading locks |
 | Configuration | `CriteriaController`, `SystemController`, `PrizeController` | Scoring criteria, system config, prizes |
-| Teams | `TeamController` | Team lifecycle, invitations, registration, leadership |
-| Submission & Grading | `SubmissionController`, `GradingController`, `CalibrationController`, `MentorController` | Deliverables, blind scoring, calibration, mentor feedback |
+| Teams | `TeamController`, `TeamInvitationController`, `CoordinatorTeamController` | Team lifecycle, invitations, registration, leadership, coordinator team views |
+| Judging | `JudgeController`, `GradingController`, `CalibrationController`, `MentorController` | Judge assignments, blind scoring, calibration, mentor feedback |
+| Submissions | `SubmissionController` | Deliverable submission and locking |
 | Results & Research | `RankingController`, `DisqualificationController`, `ExportController` | Ranking, advancement, disqualification, dataset export |
-| Comms | `NotificationController`, `AnnouncementController` | Notifications and event announcements |
+| Comms & Audit | `NotificationController`, `AnnouncementController`, `AuditLogController` | Notifications, event announcements, audit-log queries |
 
 Responses use a consistent envelope: paginated lists return `PageResponse<T>`, and errors return `ApiErrorResponse` from a global `@RestControllerAdvice`.
 
