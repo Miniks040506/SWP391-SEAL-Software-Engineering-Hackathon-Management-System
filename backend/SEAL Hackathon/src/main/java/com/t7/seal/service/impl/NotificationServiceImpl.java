@@ -214,6 +214,31 @@ public class NotificationServiceImpl implements NotificationService {
             User actor = notification.getCreatedBy();
             fanout(notification, actor);
         }
+        dispatchQueuedEmails();
+    }
+
+    @Override
+    @Transactional
+    public void dispatchQueuedEmails() {
+        List<EmailOutbox> queued = emailOutboxRepository.findTop50ByStatusInAndScheduledAtLessThanEqualOrderByCreatedAtAsc(
+                List.of(EmailDeliveryStatus.PENDING, EmailDeliveryStatus.FAILED, EmailDeliveryStatus.RETRYING),
+                LocalDateTime.now()
+        );
+        for (EmailOutbox outbox : queued) {
+            if (outbox.getStatus() == EmailDeliveryStatus.SENT) {
+                continue;
+            }
+            if (outbox.getAttemptCount() != null && outbox.getAttemptCount() >= MAX_EMAIL_ATTEMPTS) {
+                continue;
+            }
+            try {
+                outbox.setStatus(EmailDeliveryStatus.RETRYING);
+                emailOutboxRepository.save(outbox);
+                sendOutbox(outbox);
+            } catch (RuntimeException ignored) {
+                // Failure details are recorded by sendOutbox. The scheduler will retry later.
+            }
+        }
     }
 
     private void fanout(Notification notification, User actor) {
