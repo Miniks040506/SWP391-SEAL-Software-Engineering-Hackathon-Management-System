@@ -37,7 +37,7 @@ public class AuditLogController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
-    @GetMapping("/audit-logs/action")
+    @GetMapping("/audit-logs/actions")
     public ResponseEntity<List<String>> getAuditActionTypes(
             Authentication authentication
     ) {
