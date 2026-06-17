@@ -49,6 +49,7 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
     homePath: "/admin/dashboard",
     profilePath: "/admin/profile",
     settingsPath: "/admin/settings",
+    notificationPath: "/admin/notifications",
     sidebar: [
       {
         title: "Administration",
@@ -83,6 +84,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Audit Logs",
             path: "/admin/audit-logs",
             icon: <HistoryEduOutlinedIcon fontSize="small" />,
+          },
+          {
+            label: "Notifications",
+            path: "/admin/notifications",
+            icon: <NotificationsNoneOutlinedIcon fontSize="small" />,
           },
           {
             label: "System Config",
@@ -177,6 +183,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <NotificationsNoneOutlinedIcon fontSize="small" />,
           },
           {
+            label: "Notifications",
+            path: "/coordinator/notifications",
+            icon: <NotificationsNoneOutlinedIcon fontSize="small" />,
+          },
+          {
             label: "Schedule",
             path: "/coordinator/schedule",
             icon: <CalendarMonthOutlinedIcon fontSize="small" />,
@@ -240,6 +251,7 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
     profilePath: "/mentor/profile",
     settingsPath: "/mentor/settings",
     notificationPath: "/mentor/notifications",
+    notificationPath: "/mentor/notifications",
     sidebar: [
       {
         title: "Mentor",
@@ -254,6 +266,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Teams",
             path: "/mentor/teams",
             icon: <GroupsOutlinedIcon fontSize="small" />,
+          },
+          {
+            label: "Feedback",
+            path: "/mentor/feedback",
+            icon: <FactCheckOutlinedIcon fontSize="small" />,
           },
           {
             label: "Submissions",

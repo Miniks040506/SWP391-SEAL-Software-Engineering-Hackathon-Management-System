@@ -7,6 +7,7 @@ export type CreateNotificationRequest = {
   body: string;
   targetScope: string;
   targetId?: UUID;
+  role?: string;
   channel?: string;
   scheduledAt?: ISODateTime;
 };
@@ -19,6 +20,7 @@ export type NotificationResponse = {
   body: string;
   targetScope: string;
   targetId?: UUID;
+  role?: string;
   channel?: string;
   status: string;
   scheduledAt?: ISODateTime;
@@ -31,3 +33,10 @@ export type GetMyNotificationsParams = {
   page?: number;
   size?: number;
 };
+
+
+export type UnreadCountResponse = {
+  unreadCount: number;
+};
+
+export type NotificationFilter = "ALL" | "UNREAD" | "READ";

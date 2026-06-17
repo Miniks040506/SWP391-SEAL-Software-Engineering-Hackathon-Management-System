@@ -69,4 +69,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
             Pageable pageable
     );
 
+
+    List<User> findByStatusOrderByFullNameAsc(UserStatus status);
+
 }

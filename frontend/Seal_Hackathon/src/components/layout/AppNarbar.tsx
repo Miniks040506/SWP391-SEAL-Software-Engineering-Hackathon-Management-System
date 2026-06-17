@@ -4,13 +4,13 @@ import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import LeaderboardOutlinedIcon from "@mui/icons-material/LeaderboardOutlined";
-import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 
 import { AppLogo } from "@/components/layout/AppLogo";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { UserAvatarMenu } from "@/components/layout/UserAvatarMenu";
+import { NotificationBell } from "@/features/notification";
 import { useLogoutMutation } from "@/features/auth/hooks/useAuthMutations";
 import { useAuthStore } from "@/stores/authStore";
 import { getRoleRedirectPath } from "@/utils/roleRedirect";
@@ -52,7 +52,7 @@ const publicExploreLinks: ExploreLink[] = [
   },
   {
     label: "Teams",
-    path: "/participant/teams",
+    path: "/events#teams",
     description: "Registration flow",
     icon: GroupsOutlinedIcon,
   },
@@ -255,15 +255,7 @@ export function AppNavbar({
                 </button>
               )}
 
-              {notificationPath && (
-                <button
-                  type="button"
-                  onClick={() => navigate(notificationPath)}
-                  className="hidden text-gray-500 transition-colors hover:text-gray-900 dark:text-slate-400 dark:hover:text-white sm:flex"
-                >
-                  <NotificationsNoneOutlinedIcon fontSize="small" />
-                </button>
-              )}
+              {notificationPath && <NotificationBell inboxPath={notificationPath} />}
 
               {settingsPath && (
                 <button
