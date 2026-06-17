@@ -39,28 +39,4 @@ public class SystemController {
     public ResponseEntity<SystemHealthResponse> getSystemHealth() {
         return null;
     }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
-    @GetMapping("/audit-logs")
-    public ResponseEntity<PageResponse<AuditLogResponse>> getAuditLogs(
-            @RequestParam(required = false) UUID actorId,
-            @RequestParam(required = false) String actionType,
-            @RequestParam(required = false) String targetTable,
-            @RequestParam(required = false) UUID targetId,
-            @RequestParam(required = false) String from,
-            @RequestParam(required = false) String to,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            Authentication authentication
-    ) {
-        return null;
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
-    @GetMapping("/audit-logs/action")
-    public ResponseEntity<List<String>> getAuditLogs(
-            Authentication authentication
-    ) {
-        return null;
-    }
 }
