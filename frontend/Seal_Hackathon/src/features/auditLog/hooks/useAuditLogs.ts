@@ -3,7 +3,7 @@ import { systemApi } from "@/api/system.api";
 import { mockAuditLogService } from "../mocks/auditLog.mock";
 import type { GetAuditLogsParams } from "@/types/system.types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const activeApi = USE_MOCK ? (mockAuditLogService as any) : systemApi;
 
 export const auditKeys = {
