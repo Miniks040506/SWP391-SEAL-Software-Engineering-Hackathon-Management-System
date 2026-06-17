@@ -1,207 +1,202 @@
-# SEAL – Software Engineering Hackathon Management System
+<div align="center">
 
-SEAL is a full-stack web platform for managing academic software engineering hackathons at FPT University HCM. The system supports event setup, account approval, team formation, track registration, round-based submissions, judge assignment, blind scoring, ranking, prize publication, audit logging, and research data export for inter-rater reliability analysis.
+# 🏆 SEAL — Software Engineering Hackathon Management System
 
-> Design baseline: Entity Design v6.0  
-> Use case baseline: standalone 42-use-case table  
-> Stack: React + JavaScript, Spring Boot + Java, PostgreSQL
+**A full-stack platform for running academic software-engineering hackathons end to end — from account approval and team formation to blind judging, ranking, prize publication, and research-grade scoring exports.**
 
----
+Built for the Software Engineering Department & PDP at **FPT University HCM**.
 
-## Table of Contents
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/projects/jdk/21/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-6DB33F.svg?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Status](https://img.shields.io/badge/status-active%20development-yellow.svg)](#-project-status)
 
-- [Overview](#overview)
-- [Problem Statement](#problem-statement)
-- [Core Capabilities](#core-capabilities)
-- [Actors](#actors)
-- [Tech Stack](#tech-stack)
-- [System Modules](#system-modules)
-- [Use Case Coverage](#use-case-coverage)
-- [Domain Model](#domain-model)
-- [Key Workflows](#key-workflows)
-- [RBL Research Support](#rbl-research-support)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Backend Setup](#backend-setup)
-- [Frontend Setup](#frontend-setup)
-- [Database Notes](#database-notes)
-- [API Overview](#api-overview)
-- [Security Model](#security-model)
-- [Development Workflow](#development-workflow)
-- [Implementation Roadmap](#implementation-roadmap)
+</div>
 
 ---
 
-## Overview
+## 📑 Table of Contents
 
-Software Engineering Agile League (SEAL) is an annual academic hackathon organized by the Software Engineering Department and PDP at FPT University HCM. Each year can include Spring, Summer, and Fall hackathon events. Each event can contain multiple competition rounds such as Preliminary and Final rounds.
-
-The system is designed to replace manual spreadsheet-based operations with a centralized platform that manages the full competition lifecycle:
-
-1. Participants register and verify accounts.
-2. Coordinators approve student accounts.
-3. Teams are formed with 3–5 members.
-4. Teams register for competition tracks.
-5. Coordinators configure rounds, criteria, mentors, judges, prizes, and calibration rounds.
-6. Teams submit deliverables per round.
-7. Judges score submissions using blind grading.
-8. Coordinators lock submissions, lock grading, confirm advancement, and publish results.
-9. The system exports reports and anonymized scoring datasets for research.
-
----
-
-## Problem Statement
-
-The current SEAL management process is mostly manual and creates several risks:
-
-- Team registration and track management are slow and error-prone.
-- Judges score in separate Excel files, forcing manual collection and re-entry.
-- Ranking calculation is delayed and can be inconsistent.
-- Communication between coordinators, mentors, judges, and teams is fragmented.
-- Scoring decisions and disqualifications lack a reliable audit trail.
-- Research data for judge scoring consistency is difficult to collect cleanly.
-
-SEAL solves these issues by centralizing event operations, scoring data, communication, audit logs, and report exports.
+- [About the Project](#-about-the-project)
+- [Project Status](#-project-status)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Domain Model](#-domain-model)
+- [Repository Structure](#-repository-structure)
+- [Getting Started](#-getting-started)
+- [Configuration](#-configuration)
+- [API Documentation](#-api-documentation)
+- [Security Model](#-security-model)
+- [Research (Inter-Rater Reliability)](#-research-inter-rater-reliability)
+- [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
+- [Team](#-team)
+- [License](#-license)
 
 ---
 
-## Core Capabilities
+## 📖 About the Project
 
-### User & Access Management
+**SEAL** (Software Engineering Agile League) is an annual academic hackathon organized by the Software Engineering Department and PDP at FPT University HCM. Each academic year can host up to three events — **Spring**, **Summer**, and **Fall** — and each event can contain multiple competition rounds (e.g. *Preliminary* and *Final*).
 
-- Email/password registration.
-- Email verification before approval.
-- JWT-based login.
-- Logout with client-side token removal and optional server-side token blacklist.
-- Password reset by time-limited email token.
-- User role management by System Admin.
-- Participant approval by Event Coordinator.
-- Temporary guest judge accounts.
-- Personal profile management.
-- Failed-login lockout support.
+This platform replaces the manual, spreadsheet-driven process with a single system that manages the **full competition lifecycle**:
 
-### Event & Configuration Management
+> Account approval → Team formation → Track registration → Round configuration → Submission → Blind judging → Ranking → Advancement → Prize publication → Audit & research export
 
-- Create and manage hackathon events by season and year.
-- Configure event registration windows.
-- Create competition tracks.
-- Configure rounds with submission and judging deadlines.
-- Define advancement rules such as top-N, minimum score, percentage, and wildcard.
-- Manage scoring criteria templates and per-event overrides.
-- Assign mentors to tracks.
-- Assign judges to rounds and tracks.
-- Manage prizes before result publication.
-- Configure calibration rounds.
-- Manage global runtime configuration through `SystemConfig`.
+Beyond operations, SEAL doubles as a **research data platform**: every individual `judge × criterion × submission` score is preserved so the organizing committee can study **inter-rater reliability** (ICC, Krippendorff's α) of hackathon scoring.
 
-### Team & Participation Management
+### Why it exists
 
-- Create teams with 3–5 members.
-- Invite members by email token.
-- Accept or reject team invitations.
-- Join by join code when enabled.
-- Edit team profile and project title.
-- Remove members before registration closes.
-- Leave a team.
-- Transfer leadership to another active member.
-- Register finalized teams for a track.
-- Mentor view of assigned track teams.
-- Team member view of own roster and submission progress.
+The legacy process suffers from recurring pain points that SEAL is built to eliminate:
 
-### Submission & Grading
-
-- Submit or update deliverable links for each round.
-- Store repository, demo, slide, report, video, and other links.
-- Optional GitHub/GitLab repository metadata extraction.
-- Lock submission window before judging starts.
-- Create calibration round with benchmark scores.
-- Judges participate in calibration scoring.
-- Judges score assigned submissions using blind grading.
-- Store raw scores per judge, submission, and criterion.
-- Lock grading window before ranking calculation.
-- Mentor feedback for assigned track teams.
-
-### Results, Audit & Reports
-
-- Calculate rankings per round and track.
-- Confirm advancement to the next round.
-- View ranking and result pages.
-- View own team’s aggregate scores after publication.
-- Publish official results and award configured prizes.
-- Disqualify teams or submissions with mandatory reason.
-- Recalculate rankings after disqualification.
-- Append-only audit log for sensitive actions.
-- Score variance dashboard for judge consistency monitoring.
-- Export anonymized RBL dataset.
-- Export ranking, scoring, team list, and annual reports.
+- Team and track management handled by hand — slow and error-prone.
+- Judges scoring in separate Excel files, requiring manual collection and re-entry.
+- Delayed, inconsistent ranking calculation.
+- Fragmented communication between coordinators, mentors, judges, and teams.
+- No reliable audit trail for scoring decisions and disqualifications.
+- Scoring-consistency research data that is hard to collect cleanly.
 
 ---
 
-## Actors
+## 🚦 Project Status
 
-| Actor | Description |
+> **This project is under active development (SWP391 capstone).** Both the backend and the role-based frontend are substantially built out across all modules; work continues on remaining edge cases and polish.
+
+| Area | State |
 |---|---|
-| Participant | Student who registers, joins or creates a team, and competes. |
-| Team Member | Participant who belongs to a team. |
-| Team Leader | Team member with permission to manage team profile, invite members, register track, and submit deliverables. |
-| Mentor | Faculty or assigned advisor who supports teams in a track and provides feedback. |
-| Internal Judge | SE Faculty judge assigned to score submissions. |
-| Guest Judge | External judge with temporary limited-access account. |
-| Event Coordinator | SE Department or PDP staff member who manages events, rounds, judges, tracks, submissions, results, and announcements. |
-| System Admin | Highest-level administrator who manages users, permissions, and system configuration. |
+| Domain model | ✅ 32 JPA entities + 31 enums + 32 repositories |
+| Service layer | ✅ 28 service interfaces + 30 implementations |
+| REST surface | ✅ 22 controllers with request/response DTO records (63 request / 89 response) |
+| Authentication | ✅ JWT (access + refresh), email verification, password reset, token blacklist, OAuth2 social login |
+| Integrations | ✅ Cloudinary (images), S3 (submission files), GitHub/GitLab metadata, async SMTP email outbox |
+| Frontend | ✅ Feature-based React SPA with dedicated experiences for Admin, Coordinator, Judge, Mentor, and Participant roles |
+| Database schema | ⚙️ Hibernate-managed (`ddl-auto: update` in dev, `validate` in prod); Flyway is enabled and reserved for future versioned migrations |
 
 ---
 
-## Tech Stack
+## ✨ Features
 
-## Frontend
+Features are organized into six functional modules.
 
-- React (SPA Architecture)
-- TypeScript
-- Vite
-- MUI + MUI Icons
-- Tailwind CSS
-- TanStack Query
-- Zustand
-- Axios
-- React Router DOM
-- React Hook Form
-- Zod
-- Recharts
-- ESLint + Prettier
-- date-fns
-- notistack
+### 1. User & Access Management
+- Email/password registration with email verification before approval.
+- JWT-based authentication (access + refresh tokens) plus **OAuth2 social login**, with optional server-side token blacklist on logout.
+- Time-limited password reset via email code.
+- Account approval workflow (Coordinator) and role management (Admin).
+- Temporary guest-judge accounts.
+- Failed-login lockout and personal profile management.
+
+### 2. Event & Configuration Management
+- Create and manage events by **season + year**.
+- Configure registration windows, competition **tracks**, and **rounds** (with submission/judging deadlines).
+- Define advancement rules (top-N, minimum score, percentage, wildcard).
+- Manage scoring-criteria templates with per-event overrides.
+- Assign mentors to tracks and judges to rounds/tracks.
+- Manage prizes and calibration rounds.
+- Runtime configuration through `SystemConfig`.
+
+### 3. Team & Participation Management
+- Create teams of **3–5 members**.
+- Invite members by email token; accept / decline invitations.
+- Edit team profile, transfer leadership, remove members, leave a team.
+- Register finalized teams for a track.
+- Mentor view of assigned teams; member view of roster and progress.
+
+### 4. Submission & Grading
+- Submit / update deliverable links per round (repo, demo, slides, report, video, …).
+- Optional GitHub/GitLab repository metadata extraction.
+- **Lock submission** window before judging begins.
+- **Blind scoring** — raw score stored per `judge × submission × criterion`.
+- Calibration rounds with benchmark scores.
+- **Lock grading** window before ranking calculation.
+- Mentor feedback for assigned teams.
+
+### 5. Results, Audit & Research
+- Per-round, per-track ranking calculation and advancement confirmation.
+- Publish official results and award configured prizes.
+- Disqualify teams/submissions (mandatory reason) and recalculate rankings.
+- Append-only **audit log** for all sensitive operations.
+- Score-variance dashboard for judge-consistency monitoring.
+- Anonymized research dataset export (hashed judge IDs).
+
+### 6. Cross-Cutting System Configuration
+- Centralized, runtime-changeable settings keyed by `config_key`.
+- Encrypted values for secrets (integration tokens, SMTP), masked in API responses.
+- Feature flags (e.g. mandatory calibration, token blacklist, integrations).
+
+---
+
+## 🛠 Tech Stack
 
 ### Backend
+| Category | Technology |
+|---|---|
+| Language | Java 21 |
+| Framework | Spring Boot 4.0.6 (Web MVC, Security, Data JPA, Mail, Actuator, OAuth2) |
+| Persistence | Hibernate ORM, PostgreSQL driver |
+| Migrations | Flyway (PostgreSQL) |
+| Auth | JWT via `jjwt` 0.13, BCrypt password hashing, OAuth2 social login |
+| Validation | Jakarta Bean Validation |
+| File storage | Cloudinary (images/banners), AWS S3 (submission files) |
+| Integrations | GitHub / GitLab repository metadata, SMTP email outbox + scheduler |
+| API docs | SpringDoc OpenAPI (Swagger UI) |
+| Build | Maven (with wrapper), Lombok |
 
-- Java
-- Spring Boot
-- Spring Web
-- Spring Security
-- Spring Data JPA
-- Hibernate
-- Jakarta Bean Validation
-- JWT Authentication
-- Spring Mail / SMTP Integration
+### Frontend
+| Category | Technology |
+|---|---|
+| Language | TypeScript |
+| Framework | React 19 + Vite 8 |
+| UI | MUI 9 (+ Icons), Tailwind CSS 4 |
+| Data fetching | TanStack Query 5, Axios |
+| State | Zustand 5 |
+| Routing | React Router DOM 7 |
+| Forms & validation | React Hook Form 7 + Zod 4 |
+| Charts | Recharts 3 |
+| Notifications / dates | notistack, date-fns |
+| Tooling | ESLint, Prettier |
 
 ### Database
-
-- PostgreSQL
-- UUID primary keys
-- JSONB for flexible metadata and report parameters
-- Partial unique indexes where required
-
-### Optional Integrations
-
-- GitHub API for repository metadata
-- GitLab API for repository metadata
-- SMTP provider for verification, reset, invitation, reminder, and announcement emails
-- Object storage or local storage for exported CSV/XLSX/PDF files
+- PostgreSQL 15+
+- UUID primary keys across all main tables
+- JSONB for flexible payloads (repo metadata, score breakdowns, export params, audit states)
+- Partial unique indexes for active-only constraints
 
 ---
 
-## System Modules
+## 🏗 Architecture
+
+The system is a **decoupled SPA + REST API**:
+
+```mermaid
+flowchart LR
+    SPA["React SPA<br/>(Vite · MUI · TanStack Query)"]
+    API["Spring Boot REST API<br/>controller → service → repository → entity"]
+    DB[("PostgreSQL")]
+
+    SPA -- "HTTPS / JSON · Bearer JWT (/api/v1)" --> API
+    API -- "JSON response" --> SPA
+    API -- "JPA / Hibernate" --> DB
+```
+
+### Backend layering
+
+Strict, one-directional flow — controllers never touch repositories directly:
+
+```mermaid
+flowchart LR
+    C[Controller] --> S[Service interface] --> I[Service impl] --> R[Repository] --> E[(Entity)]
+```
+
+- **Controllers** are thin REST adapters returning `ResponseEntity<T>`; all routes live under `/api/v1` via `ApiPaths.API_V1`.
+- **Services** own business logic, transaction boundaries, input normalization, and audit logging.
+- **Repositories** extend `JpaRepository<Entity, UUID>`.
+- **DTOs** are Java `record`s under `request/<module>` and `response/<module>` — entities are never exposed directly.
+
+### Module map
 
 ```mermaid
 graph TD
@@ -209,35 +204,17 @@ graph TD
     B --> C[Team & Participation Management]
     B --> D[Submission & Grading]
     C --> D
-    D --> E[Results, Audit & RBL Research]
+    D --> E[Results, Audit & Research]
     B --> E
-    E --> F[Reports & Dataset Export]
-    B --> G[System Configuration]
-    G --> D
-    G --> F
+    G[System Configuration] --> D
+    G --> E
 ```
 
 ---
 
-## Use Case Coverage
+## 🗃 Domain Model
 
-The standalone use case table is treated as the canonical use case numbering for this repository.
-
-| Module | Use Cases | Scope |
-|---|---:|---|
-| User & Access Management | UC-01 → UC-10 | Register, verify email, login, logout, reset password, manage users, approve accounts, guest judge account, system management, profile management. |
-| Event & Configuration Management | UC-11 → UC-18 | Event setup, rounds, tracks, mentors, criteria, judge assignment, notifications, prizes, calibration setup. |
-| Team & Participation Management | UC-19 → UC-26 | Team creation, invitations, team profile, track registration, progress view, leadership transfer, leaving team. |
-| Submission & Grading | UC-27 → UC-33 | Deliverable submission, calibration participation, blind scoring, lock submission, lock grading, mentor feedback, assigned grading list. |
-| Results, Audit & RBL Research | UC-34 → UC-42 | Advancement, ranking, team scores, publish results, disqualification, audit log, variance dashboard, RBL export, reports. |
-
----
-
-## Domain Model
-
-Entity Design v6.0 contains 28 main entities and 53 foreign-key relationships.
-
-### Entity Groups
+The schema comprises **32 JPA entities** grouped by module:
 
 | Group | Entities |
 |---|---|
@@ -245,9 +222,10 @@ Entity Design v6.0 contains 28 main entities and 53 foreign-key relationships.
 | Event & Configuration | `HackathonEvent`, `Track`, `Round`, `AdvanceRule`, `SystemConfig` |
 | Team & Participation | `Team`, `TeamMember`, `MentorAssignment`, `MentorFeedback` |
 | Submission & Grading | `ScoringCriteria`, `EventCriteria`, `RoundJudgeAssignment`, `Submission`, `SubmissionLink`, `Score`, `Ranking`, `Disqualification` |
-| Results, Audit & Research | `CalibrationRound`, `CalibrationScore`, `Prize`, `AuditLog`, `Notification`, `EventAnnouncement`, `ExportJob` |
+| Results & Research | `CalibrationRound`, `CalibrationScore`, `Prize`, `AuditLog`, `ExportJob` |
+| Notifications & Email | `Notification`, `NotificationRecipient`, `NotificationTemplate`, `EventAnnouncement`, `EmailOutbox`, `EmailDeliveryLog` |
 
-### Main Entity Relationships
+### Core relationships
 
 ```mermaid
 erDiagram
@@ -261,17 +239,11 @@ erDiagram
     HACKATHON_EVENT ||--o{ ROUND : contains
     HACKATHON_EVENT ||--o{ EVENT_CRITERIA : configures
     HACKATHON_EVENT ||--o{ PRIZE : defines
-    HACKATHON_EVENT ||--o{ NOTIFICATION : sends
-    HACKATHON_EVENT ||--o{ EVENT_ANNOUNCEMENT : publishes
     HACKATHON_EVENT ||--o{ CALIBRATION_ROUND : contains
 
     TRACK ||--o{ TEAM : registers
     TRACK ||--o{ MENTOR_ASSIGNMENT : assigned
-    TRACK ||--o{ ROUND_JUDGE_ASSIGNMENT : scoped
-    TRACK ||--o{ ADVANCE_RULE : scoped
-
     ROUND ||--o{ SUBMISSION : receives
-    ROUND ||--o{ ADVANCE_RULE : uses
     ROUND ||--o{ ROUND_JUDGE_ASSIGNMENT : assigns
     ROUND ||--o{ RANKING : calculates
 
@@ -279,609 +251,317 @@ erDiagram
     TEAM ||--o{ TEAM_INVITATION : sends
     TEAM ||--o{ SUBMISSION : creates
     TEAM ||--o{ MENTOR_FEEDBACK : receives
-    TEAM ||--o{ PRIZE : wins
 
     SUBMISSION ||--o{ SUBMISSION_LINK : contains
     SUBMISSION ||--o{ SCORE : receives
     SUBMISSION ||--o| RANKING : produces
     SUBMISSION ||--o| DISQUALIFICATION : may_have
-    SUBMISSION ||--o{ CALIBRATION_ROUND : sample_for
 
-    SCORING_CRITERIA ||--o{ EVENT_CRITERIA : templates
     EVENT_CRITERIA ||--o{ SCORE : scored_by
-    EVENT_CRITERIA ||--o{ CALIBRATION_SCORE : benchmarked_by
-
-    JUDGE ||--o{ ROUND_JUDGE_ASSIGNMENT : assigned
     JUDGE ||--o{ SCORE : gives
-    JUDGE ||--o{ CALIBRATION_SCORE : gives
-
+    JUDGE ||--o{ ROUND_JUDGE_ASSIGNMENT : assigned
     CALIBRATION_ROUND ||--o{ CALIBRATION_SCORE : contains
-    USER ||--o{ SYSTEM_CONFIG : updates
 ```
+
+### Key constraints
+
+| Entity | Unique constraint |
+|---|---|
+| `User` | `email` |
+| `StudentProfile` / `Judge` | `user_id` |
+| `HackathonEvent` | `(season, year)` |
+| `Round` | `(event_id, order_index)` |
+| `TeamMember` | one active membership per `(user_id, team_id)` |
+| `Submission` | one per `(team_id, round_id)` |
+| `Score` | one per `(submission_id, judge_id, event_criteria_id)` |
+| `Ranking` | one snapshot per `(submission_id, round_id)` |
+| `Prize` | `(event_id, track_id, rank_position)` |
+| `SystemConfig` | `config_key` |
+
+> `Submission`, `Score`, `Ranking`, `Disqualification`, and `AuditLog` are **never hard-deleted** after publication.
 
 ---
 
-## Key Workflows
-
-### Account Registration and Approval
-
-```mermaid
-sequenceDiagram
-    participant P as Participant
-    participant API as Backend API
-    participant Mail as Email Service
-    participant C as Coordinator
-
-    P->>API: Register account
-    API->>API: Create User with UNVERIFIED status
-    API->>API: Create StudentProfile
-    API->>Mail: Send verification link
-    P->>API: Verify email token
-    API->>API: Set status PENDING_APPROVAL
-    C->>API: Approve account
-    API->>API: Set User ACTIVE and StudentProfile.verified_at
-    API->>Mail: Send approval notification
-```
-
-### Team Registration
-
-```mermaid
-sequenceDiagram
-    participant L as Team Leader
-    participant M as Member
-    participant API as Backend API
-
-    L->>API: Create team
-    API->>API: Create Team and TeamMember LEADER
-    L->>API: Invite member by email
-    API->>M: Send invitation token
-    M->>API: Accept invitation
-    API->>API: Create TeamMember MEMBER
-    L->>API: Register team for track
-    API->>API: Validate member count, active accounts, registration window
-    API->>API: Set Team REGISTERED
-```
-
-### Submission and Grading
-
-```mermaid
-sequenceDiagram
-    participant T as Team Leader
-    participant C as Coordinator
-    participant J as Judge
-    participant API as Backend API
-
-    T->>API: Submit deliverable links
-    API->>API: Validate required link types
-    API->>API: Store Submission and SubmissionLink
-    API->>API: Fetch Git metadata if enabled
-    C->>API: Lock round submission
-    API->>API: Set Round.submission_locked_at
-    J->>API: Score assigned submission
-    API->>API: Store Score per criterion
-    C->>API: Lock round grading
-    API->>API: Set Round.grading_locked_at
-    API->>API: Calculate ranking
-```
-
-### Result Publication
-
-```mermaid
-sequenceDiagram
-    participant C as Coordinator
-    participant API as Backend API
-    participant U as Users
-
-    C->>API: Confirm round advancement
-    API->>API: Apply AdvanceRule and update Ranking.is_advanced
-    C->>API: Publish final results
-    API->>API: Assign Prize.awarded_team_id
-    API->>API: Set HackathonEvent.result_published_at
-    API->>API: Publish EventAnnouncement
-    API->>U: Send result notification
-```
-
----
-
-## RBL Research Support
-
-The project also supports RBL research on scoring consistency in academic software engineering hackathons.
-
-### Main Research Question
-
-> How consistent are hackathon evaluation scores across different judges evaluating the same submission in academic software engineering competitions?
-
-### Sub-Questions
-
-| ID | Question | Data Support |
-|---|---|---|
-| RQ1 | What is the overall inter-rater reliability of SEAL hackathon scoring? | Raw `Score` rows, `CalibrationScore`, anonymized RBL export. |
-| RQ2 | Which scoring criteria show the highest and lowest agreement? | `ScoringCriteria.is_technical`, `EventCriteria.is_technical_override`, score variance dashboard. |
-| RQ3 | Does judge type affect scoring consistency? | `Judge.judge_type` as `INTERNAL` or `GUEST`. |
-
-### RBL Features
-
-- Store every judge score separately per submission and criterion.
-- Preserve raw scoring data for reliability analysis.
-- Calibration round with benchmark scores.
-- Score variance dashboard by judge, criterion, criterion type, and judge type.
-- Export anonymized CSV datasets with hashed judge IDs.
-- Export report data for ICC and Krippendorff's alpha analysis.
-
----
-
-## Project Structure
-
-### Backend Project Structure
+## 📂 Repository Structure
 
 ```text
-SWP391-SEAL-Software-Engineering-Hackathon-Management-System/
+SWP391-SEAL-.../
 ├── backend/
-│   └── SEAL Hackathon/
-│       ├── src/
-│       │   ├── main/
-│       │   │   ├── java/com/t7/seal/
-│       │   │   │   ├── config/
-│       │   │   │   ├── controller/
-│       │   │   │   ├── dto/
-│       │   │   │   ├── entities/
-│       │   │   │   ├── domain/
-│       │   │   │   ├── exception/
-│       │   │   │   ├── repository/
-│       │   │   │   ├── security/
-│       │   │   │   ├── infrastructure/
-│       │   │   │   ├── service/
-│       │   │   │   └── validator/
-│       │   │   └── resources/
-│       │   │       ├── application.yaml
-│       │   │       ├── application-dev.yaml
-│       │   │       └── application-prod.yaml
-│       │   └── test/
+│   └── SEAL Hackathon/                 # Spring Boot service
+│       ├── src/main/java/com/t7/seal/
+│       │   ├── config/                 # SecurityConfig, ApiPaths, Cloudinary, Jackson, beans
+│       │   ├── controller/             # 22 thin REST controllers
+│       │   ├── domain/                 # 31 enums (UserRole, SubmissionStatus, …)
+│       │   ├── dto/                    # Auth principal types
+│       │   ├── entities/               # 32 JPA entities
+│       │   ├── filter/                 # JwtAuthenticationFilter
+│       │   ├── infrastructure/         # Converters, security utils
+│       │   ├── repository/             # 32 Spring Data JPA repositories
+│       │   ├── request/<module>/       # Inbound DTO records
+│       │   ├── response/<module>/      # Outbound DTO records
+│       │   ├── security/               # JWT / OAuth2 support
+│       │   └── service/                # 28 service interfaces + impl/ (30 implementations)
+│       ├── src/main/resources/
+│       │   ├── application.yaml         # base config (profile: dev)
+│       │   ├── application-dev.yaml
+│       │   ├── application-prod.yaml
+│       │   └── db/migration/            # Flyway migrations (reserved)
 │       ├── pom.xml
-│       └── .env.example
-└── README.md
-```
-
-### Frontend Project Structure
-
-```text
-seal-fe/
-├── public/
-├── src/
-│   ├── app/
-│   │   ├── App.tsx
-│   │   ├── router.tsx
-│   │   ├── providers.tsx
-│   │   └── theme.ts
-│   │
-│   ├── api/
-│   │   ├── axiosClient.ts
-│   │   ├── auth.api.ts
-│   │   ├── user.api.ts
-│   │   ├── event.api.ts
-│   │   ├── round.api.ts
-│   │   ├── track.api.ts
-│   │   ├── criteria.api.ts
-│   │   ├── team.api.ts
-│   │   ├── submission.api.ts
-│   │   ├── grading.api.ts
-│   │   ├── ranking.api.ts
-│   │   ├── notification.api.ts
-│   │   └── export.api.ts
-│   │
-│   ├── components/
-│   │   ├── common/
-│   │   ├── layout/
-│   │   └── guards/
-│   │
-│   ├── features/
-│   │   ├── auth/
-│   │   │   ├── pages/
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   └── schemas/
-│   │   ├── users/
-│   │   ├── system/
-│   │   ├── events/
-│   │   ├── rounds/
-│   │   ├── tracks/
-│   │   ├── criteria/
-│   │   ├── teams/
-│   │   ├── submissions/
-│   │   ├── grading/
-│   │   ├── feedback/
-│   │   ├── ranking/
-│   │   ├── dashboard/
-│   │   └── exports/
-│   │
-│   ├── hooks/
-│   ├── stores/
-│   ├── types/
-│   ├── utils/
-│   ├── index.css
-│   └── main.tsx
+│       └── mvnw / mvnw.cmd
 │
-├── .env.example
-├── .env.development
-├── .env.production
-├── vite.config.ts
-├── package.json
-└── README.md
+├── frontend/
+│   └── Seal_Hackathon/                  # React + Vite SPA
+│       ├── src/
+│       │   ├── api/                     # 24 typed API modules + Axios client (Bearer JWT)
+│       │   ├── app/                     # App, router, providers, theme
+│       │   ├── components/              # common / layout / guards (AuthGuard, RoleGuard)
+│       │   ├── features/                # feature modules by role & domain:
+│       │   │   ├── auth/                #   login, register, verify, reset, OAuth callback
+│       │   │   ├── admin/               #   user management, audit logs, dashboard
+│       │   │   ├── coordinator/         #   event creation/editing, announcements, teams
+│       │   │   ├── judge/               #   grading, calibration, dashboard
+│       │   │   ├── mentor/              #   assigned teams, feedback, submissions
+│       │   │   ├── criteria/            #   scoring & event criteria management
+│       │   │   ├── events/ ranking/     #   public event pages, leaderboard
+│       │   │   ├── teams/ submissions/  #   team lifecycle, deliverable submission
+│       │   │   ├── notification/        #   notification inbox & bell
+│       │   │   └── profile/             #   personal profile & avatar
+│       │   │       (each: pages / components / hooks / schemas)
+│       │   ├── hooks/  stores/  types/  utils/
+│       │   └── main.tsx
+│       ├── .env.example
+│       ├── vite.config.ts
+│       └── package.json
+│
+├── README.md
+└── SECURITY.md
 ```
+
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-Install these tools before running the project:
+| Tool | Version |
+|---|---|
+| Java (JDK) | 21+ |
+| Maven | 3.9+ (or use the bundled wrapper) |
+| Node.js | 20+ |
+| PostgreSQL | 15+ |
+| Git | latest |
 
-- Java 17 or later
-- Maven 3.9 or Maven Wrapper
-- Node.js 20 or later
-- npm
-- PostgreSQL 15 or later
-- Git
-
-### Clone Repository
+### 1. Clone
 
 ```bash
 git clone https://github.com/Miniks040506/SWP391-SEAL-Software-Engineering-Hackathon-Management-System.git
 cd SWP391-SEAL-Software-Engineering-Hackathon-Management-System
 ```
 
----
-
-## Environment Variables
-
-Create `.env` files from `.env.example`. Do not commit real credentials.
-
-### Backend `.env.example`
-
-```env
-DB_URL=jdbc:postgresql://localhost:5432/seal_hackathon
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-
-JWT_SECRET=change-this-to-a-real-secret-at-least-32-characters
-JWT_EXPIRATION_MS=86400000
-
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
-MAIL_FROM=your-email@gmail.com
-
-FRONTEND_URL=http://localhost:5173
-
-GITHUB_TOKEN=
-GITLAB_TOKEN=
-
-SYSTEM_CONFIG_MASTER_KEY=change-this-32-byte-master-key
-```
-
-### Frontend `.env.example`
-
-```env
-VITE_API_BASE_URL=http://localhost:8080/api
-VITE_APP_NAME=SEAL Hackathon
-```
-
----
-
-## Backend Setup
-
-### 1. Create Database
+### 2. Create the database
 
 ```bash
 createdb seal_hackathon
+# or, in psql:  CREATE DATABASE seal_hackathon;
 ```
 
-Or create it manually in PostgreSQL:
-
-```sql
-CREATE DATABASE seal_hackathon;
-```
-
-### 2. Configure Backend
+### 3. Run the backend
 
 ```bash
 cd "backend/SEAL Hackathon"
-cp .env.example .env
-```
 
-Update `.env` with your local PostgreSQL username and password.
+# provide credentials & secrets via environment variables (see Configuration)
+# then start the app:
 
-### 3. Run Backend
-
-On Windows:
-
-```bash
+# Windows
 mvnw.cmd spring-boot:run
-```
 
-On Linux/macOS:
-
-```bash
+# Linux / macOS
 ./mvnw spring-boot:run
 ```
 
-If Maven Wrapper is not available:
+| Resource | URL |
+|---|---|
+| API base | `http://localhost:8080/api/v1` |
+| Swagger UI | `http://localhost:8080/swagger-ui.html` |
+| OpenAPI spec | `http://localhost:8080/v3/api-docs` |
+| Actuator health | `http://localhost:8080/actuator/health` |
+
+### 4. Run the frontend
 
 ```bash
-mvn spring-boot:run
-```
-
-Backend default URL:
-
-```text
-http://localhost:8080
-```
-
----
-
-## Frontend Setup
-
-```bash
-cd frontend
+cd frontend/Seal_Hackathon
+cp .env.example .env        # adjust VITE_API_BASE_URL if needed
 npm install
 npm run dev
 ```
 
-Frontend default URL:
+Frontend runs at **`http://localhost:5173`**.
 
-```text
-http://localhost:5173
+### Build & test
+
+```bash
+# backend
+cd "backend/SEAL Hackathon" && ./mvnw clean package      # add -DskipTests to skip
+./mvnw test
+
+# frontend
+cd frontend/Seal_Hackathon && npm run build && npm run lint
 ```
 
 ---
 
-## Database Notes
+## ⚙️ Configuration
 
-Recommended database conventions:
+The backend reads configuration from environment variables (with sensible local defaults in `application.yaml`). **Never commit real secrets** — provide them via your shell or a local `.env`.
 
-- Use UUID primary keys for all main entities.
-- Use `TIMESTAMP` fields for lifecycle events such as `submitted_at`, `submission_locked_at`, `grading_locked_at`, and `result_published_at`.
-- Use JSONB for flexible fields such as repository metadata, score breakdown, benchmark scores, export parameters, and audit states.
-- Use append-only behavior for `AuditLog`.
-- Use partial unique indexes for active-only constraints, such as active team membership and pending invitations.
-- Do not hard delete important competition records after publication.
+### Backend environment variables
 
-### Important Constraints
+| Variable | Purpose | Example |
+|---|---|---|
+| `DB_USERNAME` | PostgreSQL user | `postgres` |
+| `DB_PASSWORD` | PostgreSQL password | `your-password` |
+| `JWT_SECRET` | HMAC signing key (≥ 32 chars) | `change-me-to-a-long-random-secret` |
+| `JWT_HEADER` | Auth header name | `Authorization` |
+| `MAIL_USERNAME` | SMTP username | `you@gmail.com` |
+| `MAIL_PASSWORD` | SMTP app password | `your-app-password` |
+| `FRONTEND_URL` | Allowed frontend origin | `http://localhost:5173` |
+| `GITHUB_TOKEN` | GitHub API token (optional) | _empty_ |
+| `GITLAB_TOKEN` | GitLab API token (optional) | _empty_ |
 
-| Entity | Constraint |
-|---|---|
-| `User` | Unique email. |
-| `StudentProfile` | Unique `user_id`. |
-| `Judge` | Unique `user_id`. |
-| `HackathonEvent` | Unique season and year. |
-| `Round` | Unique `event_id + order_index`. |
-| `TeamMember` | One active membership per user/team. |
-| `Submission` | One submission per team per round. |
-| `Score` | One score per submission, judge, and criterion. |
-| `Ranking` | One ranking snapshot per submission and round. |
-| `Prize` | Unique event, track, and rank position. |
-| `SystemConfig` | Unique config key. |
+> Token lifetimes default to **1 hour** (access) and **7 days** (refresh). The active Spring profile defaults to `dev`.
+
+### Frontend environment variables (`frontend/Seal_Hackathon/.env`)
+
+```env
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+VITE_API_NAME=SEAL Hackathon Management System
+```
 
 ---
 
-## API Overview
+## 📚 API Documentation
 
-The final endpoint names can change during implementation, but the API should follow these module boundaries.
+All endpoints are versioned under **`/api/v1`** and documented interactively via **Swagger UI** (`/swagger-ui.html`) once the backend is running.
 
-### Auth
+The REST surface is organized into **22 controllers**:
 
-| Method | Endpoint | Purpose |
+| Module | Controller(s) | Responsibility |
 |---|---|---|
-| `POST` | `/api/auth/register` | Register participant account. |
-| `POST` | `/api/auth/verify-email` | Verify email token. |
-| `POST` | `/api/auth/login` | Login and issue JWT. |
-| `POST` | `/api/auth/logout` | Logout current user. |
-| `POST` | `/api/auth/forgot-password` | Request reset password token. |
-| `POST` | `/api/auth/reset-password` | Reset password with token. |
+| Auth & Users | `AuthController`, `UserController` | Registration, login, OAuth2, verification, password reset, profile, admin user management |
+| Events | `EventController`, `TrackController`, `RoundController` | Event/track/round CRUD, submission & grading locks |
+| Configuration | `CriteriaController`, `SystemController`, `PrizeController` | Scoring criteria, system config, prizes |
+| Teams | `TeamController`, `TeamInvitationController`, `CoordinatorTeamController` | Team lifecycle, invitations, registration, leadership, coordinator team views |
+| Judging | `JudgeController`, `GradingController`, `CalibrationController`, `MentorController` | Judge assignments, blind scoring, calibration, mentor feedback |
+| Submissions | `SubmissionController` | Deliverable submission and locking |
+| Results & Research | `RankingController`, `DisqualificationController`, `ExportController` | Ranking, advancement, disqualification, dataset export |
+| Comms & Audit | `NotificationController`, `AnnouncementController`, `AuditLogController` | Notifications, event announcements, audit-log queries |
 
-### Users
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `GET` | `/api/users/me` | View current profile. |
-| `PUT` | `/api/users/me` | Update profile. |
-| `PUT` | `/api/users/me/password` | Change own password. |
-| `GET` | `/api/admin/users` | Search users. |
-| `PATCH` | `/api/admin/users/{id}/status` | Update user status. |
-| `PATCH` | `/api/admin/users/{id}/role` | Update user role. |
-
-### Events, Tracks, and Rounds
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/api/events` | Create event. |
-| `GET` | `/api/events` | List events. |
-| `GET` | `/api/events/{id}` | View event details. |
-| `PUT` | `/api/events/{id}` | Update event. |
-| `POST` | `/api/events/{id}/tracks` | Create track. |
-| `POST` | `/api/events/{id}/rounds` | Create round. |
-| `POST` | `/api/rounds/{id}/lock-submission` | Lock submission window. |
-| `POST` | `/api/rounds/{id}/lock-grading` | Lock grading window. |
-
-### Teams
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/api/teams` | Create team. |
-| `GET` | `/api/teams/my-team` | View current user's team. |
-| `PUT` | `/api/teams/{id}` | Update team profile. |
-| `POST` | `/api/teams/{id}/invite` | Invite member. |
-| `POST` | `/api/team-invitations/{token}/accept` | Accept invitation. |
-| `POST` | `/api/team-invitations/{token}/decline` | Decline invitation. |
-| `POST` | `/api/teams/{id}/register` | Register team for track. |
-| `POST` | `/api/teams/{id}/transfer-leader` | Transfer leadership. |
-| `POST` | `/api/teams/{id}/leave` | Leave team. |
-
-### Submissions and Grading
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/api/submissions` | Submit deliverables. |
-| `PUT` | `/api/submissions/{id}` | Update deliverables before lock. |
-| `GET` | `/api/judging/assignments` | View assigned grading list. |
-| `GET` | `/api/judging/submissions/{id}` | View assigned submission. |
-| `POST` | `/api/judging/submissions/{id}/scores` | Save score draft or final score. |
-| `POST` | `/api/events/{id}/calibration-rounds` | Create calibration round. |
-| `POST` | `/api/calibration-rounds/{id}/scores` | Submit calibration scores. |
-
-### Results and Reports
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/api/rounds/{id}/rankings/calculate` | Calculate rankings. |
-| `POST` | `/api/rounds/{id}/advancement/confirm` | Confirm advancement. |
-| `GET` | `/api/rankings` | View ranking. |
-| `GET` | `/api/teams/{id}/scores` | View own team scores after publication. |
-| `POST` | `/api/events/{id}/publish-results` | Publish final results. |
-| `POST` | `/api/submissions/{id}/disqualify` | Disqualify submission. |
-| `GET` | `/api/audit-logs` | View audit logs. |
-| `GET` | `/api/research/variance-dashboard` | View score variance dashboard. |
-| `POST` | `/api/exports` | Create export job. |
-| `GET` | `/api/exports/{id}` | View export status. |
+Responses use a consistent envelope: paginated lists return `PageResponse<T>`, and errors return `ApiErrorResponse` from a global `@RestControllerAdvice`.
 
 ---
 
-## Security Model
+## 🔐 Security Model
 
 ### Authentication
+- Stateless JWT (access + refresh) issued on login; `JwtAuthenticationFilter` runs ahead of the username/password filter.
+- Login is allowed only for **verified + active** accounts; `UNVERIFIED`, `PENDING_APPROVAL`, `LOCKED`, and `SUSPENDED` accounts are rejected.
+- Passwords hashed with BCrypt. Email verification (6-digit, 30 min) and password reset (6-digit, 15 min) codes.
+- Optional server-side logout via `TokenBlacklistService` when the feature flag is enabled.
 
-- JWT is issued after successful login.
-- Only approved active accounts can log in.
-- Passwords are stored as bcrypt hashes.
-- Password reset uses time-limited tokens.
-- Optional token blacklist can invalidate JWTs before expiration.
+### Authorization (roles)
 
-### Authorization
-
-Access is role-based:
-
-| Role | Main Permissions |
+| Role | Scope |
 |---|---|
-| `STUDENT` | Register, manage profile, create/join team, submit deliverables, view own scores. |
-| `MENTOR` | View assigned track teams and provide feedback. |
-| `JUDGE` | View assigned grading list, participate in calibration, score assigned submissions. |
-| `COORDINATOR` | Manage events, rounds, tracks, teams, judges, submissions, results, prizes, and reports. |
-| `ADMIN` | Manage users, permissions, system configuration, and global reports. |
+| `STUDENT` | Own profile, team membership, submissions, own scores |
+| `MENTOR` | Read assigned teams, write mentor feedback |
+| `JUDGE` | Assigned grading list, calibration, scoring |
+| `COORDINATOR` | Events, rounds, tracks, mentors, judges, prizes, results, announcements, exports |
+| `ADMIN` | Users, criteria templates, system config, audit logs |
 
-### Audit Logging
+### Auditing
+Sensitive operations (approval, suspension, verification, password change, role change, submission/grading locks, score writes, ranking recalculation, advancement, publication, disqualification, prize awards, system-config changes) write an **append-only `AuditLog`** entry within the same transaction.
 
-Sensitive operations must create `AuditLog` entries:
-
-- Account approval and suspension.
-- Email verification.
-- Password reset and password change.
-- Role or permission update.
-- Submission update.
-- Round submission lock.
-- Round grading lock and unlock.
-- Score create and update.
-- Ranking recalculation.
-- Advancement confirmation.
-- Result publication.
-- Disqualification.
-- Prize create, update, delete, and award.
-- System configuration changes.
+> See [`SECURITY.md`](SECURITY.md) for the full security policy and disclosure process.
 
 ---
 
-## System Configuration
+## 🔬 Research (Inter-Rater Reliability)
 
-`SystemConfig` stores runtime-changeable global settings managed by the System Admin.
+SEAL preserves raw scoring data so the organizing committee can analyze how consistently judges evaluate the same submission.
 
-Examples:
+**Research question:** *How consistent are hackathon evaluation scores across different judges evaluating the same submission?*
 
-| Key | Category | Purpose |
+| ID | Sub-question | Data support |
 |---|---|---|
-| `integration.github.api_token` | `INTEGRATION` | GitHub API token for repository metadata extraction. |
-| `integration.gitlab.api_token` | `INTEGRATION` | GitLab API token for repository metadata extraction. |
-| `smtp.host` | `SMTP` | SMTP host for email notifications. |
-| `smtp.port` | `SMTP` | SMTP port. |
-| `feature.github_integration.enabled` | `FEATURE_FLAG` | Enable or disable repository metadata extraction. |
-| `feature.calibration.mandatory` | `FEATURE_FLAG` | Require judges to finish calibration before real scoring. |
-| `feature.token_blacklist.enabled` | `FEATURE_FLAG` | Enable server-side logout invalidation. |
-| `rate_limit.export_per_hour` | `RATE_LIMIT` | Limit export job creation. |
+| RQ1 | Overall inter-rater reliability of SEAL scoring? | Raw `Score` rows, `CalibrationScore`, anonymized export |
+| RQ2 | Which criteria show highest/lowest agreement? | `ScoringCriteria.is_technical`, variance dashboard |
+| RQ3 | Does judge type affect consistency? | `Judge.judge_type` (`INTERNAL` / `GUEST`) |
 
-Encrypted values must never be returned as plain text in API responses.
+**Capabilities:** every judge score stored per submission × criterion, calibration rounds with benchmarks, a variance dashboard, and **anonymized CSV export** (SHA-256 hashed judge IDs, team names stripped) ready for **ICC** and **Krippendorff's α** analysis.
 
 ---
 
-## Development Workflow
+## 🗺 Roadmap
 
-### Branch Naming
+Delivered across 6 sprints, split between two backend tracks (BE1: Auth/Event/Team — BE2: Scoring/Research/Export).
 
-```text
-feature/<short-feature-name>
-fix/<short-bug-name>
-refactor/<short-area-name>
-docs/<short-doc-name>
-```
-
-Examples:
-
-```text
-feature/auth-flow
-feature/create-entities
-feature/submission-grading
-fix/login-lockout
-fix/team-invitation-token
-docs/update-readme
-```
-
-### Commit Message Style
-
-Use short imperative messages:
-
-```text
-add user entity
-implement jwt login
-add round grading lock
-fix team invitation validation
-update readme
-```
-
-### Pull Request Checklist
-
-Before opening a pull request:
-
-- Code compiles.
-- Tests pass if available.
-- No real secrets committed.
-- `.env` is not committed.
-- New entity changes are reflected in migrations or schema generation.
-- API changes are documented.
-- Validation and authorization are implemented.
-- Sensitive operations write audit logs.
-
----
-
-## Implementation Roadmap
-
-| Sprint | Backend 1: Auth, Event, Team | Backend 2: Scoring, RBL, Export |
+| Sprint | BE1 — Auth / Event / Team | BE2 — Scoring / Research / Export |
 |---:|---|---|
-| 1 | Auth flow, email verification, reset password, logout, profile management. | Event CRUD, round fields, `SystemConfig`, config encryption utility. |
-| 2 | Team lifecycle, register team, leave team, transfer leader. | Advance rules, mentor assignment, scoring criteria, event criteria, prize CRUD. |
-| 3 | Team invitations, mentor feedback. | Judge assignment, scoring progress, calibration round setup. |
-| 4 | Submission, submission update, lock submission. | Calibration scoring, blind scoring, lock grading. |
-| 5 | Notifications, announcements, track/team progress view. | Ranking service, advancement service, leaderboard, team score view. |
-| 6 | Publish results, award prizes, audit log query. | Disqualification cascade, variance dashboard, RBL export, final reports. |
+| 1 | Auth flow, email verify, reset, logout, profile | Event CRUD, round fields, `SystemConfig` + encryption |
+| 2 | Team lifecycle, register, leave, transfer leader | Advance rules, mentor assignment, criteria, prizes |
+| 3 | Team invitations, mentor feedback | Judge assignment, scoring progress, calibration setup |
+| 4 | Submission, edit, lock submission | Calibration scoring, blind scoring, lock grading |
+| 5 | Notifications, announcements, progress views | Ranking & advancement services, leaderboard |
+| 6 | Publish results, award prizes, audit queries | Disqualification, variance dashboard, research export |
 
 ---
 
-## Status
+## 🤝 Contributing
 
-This repository is under active development for the SEAL academic hackathon management system.
+This is an academic capstone project. For contributors on the team:
 
-Current design target:
+### Branch naming
+```
+feature/<short-feature>     fix/<short-bug>
+refactor/<short-area>       docs/<short-doc>
+```
 
-- 42 use cases.
-- 28 main entities.
-- 53 foreign-key relationships.
-- Full hackathon management workflow.
-- RBL-ready scoring data model.
-- Audit-ready competition operations.
+### Commit style
+Short, imperative, lowercase — e.g. `add user entity`, `implement jwt login`, `fix team invitation validation`.
+
+### Before opening a PR
+- [ ] Code compiles and existing tests pass
+- [ ] No secrets or `.env` committed
+- [ ] New endpoints registered in `SecurityConfig` with correct guards
+- [ ] Request DTOs validated; sensitive operations write `AuditLog`
+- [ ] Lombok / DI conventions followed (constructor injection, no field injection)
+
+> Detailed engineering conventions live in [`AGENTS.md`](AGENTS.md).
+
+---
+
+## 👥 Team
+
+Developed by **Team T7** for the SWP391 course at FPT University HCM.
+
+| Contributor |
+|---|
+| Miniks040506 |
+| nguyen2312-dev |
+| VoNMThu |
+| DatIT-026 |
+
+---
+
+## 📄 License
+
+No license has been declared yet. Until a license file is added, this code is provided for **academic and educational use** within the scope of the SWP391 course. Contact the team before any external reuse.
+
+---
+
+<div align="center">
+
+Made with ☕ and 🏆 by Team T7 — FPT University HCM
+
+</div>
