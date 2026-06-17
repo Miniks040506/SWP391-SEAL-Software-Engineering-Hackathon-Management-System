@@ -41,7 +41,7 @@ export function DashboardAuditLogs({
             size="small"
             endIcon={<ArrowForwardOutlinedIcon fontSize="small" />}
             className="text-slate-500! dark:text-slate-400! hover:bg-slate-50! dark:hover:bg-slate-700/50! font-semibold! normal-case! tracking-normal!"
-            onClick={() => navigate("/admin/audit-logs")}
+            onClick={() => navigate("/admin/auditLogs")}
           >
             View Full Logs
           </Button>

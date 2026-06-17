@@ -88,6 +88,8 @@ export const TeamDetailPage = () => {
 
   const currentUserIsLeader = isLeaderRole(currentTeamSummary?.roleInTeam);
 
+  const isTeamRegistered = team?.status?.toUpperCase() !== "FORMING";
+
   const {
     register: registerUpdateTeam,
     handleSubmit: handleSubmitUpdateTeam,
@@ -234,7 +236,6 @@ export const TeamDetailPage = () => {
 
           {activeTab === "overview" && (
             <div className="space-y-6 pt-6">
-              {/* ============================= Nội dung Overview ============================= */}
               <section className="space-y-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -247,15 +248,19 @@ export const TeamDetailPage = () => {
                     </p>
                   </div>
                   {!currentUserIsLeader && (
-                    <Button
-                      color="error"
-                      variant="outlined"
-                      onClick={handleLeaveTeam}
-                      disabled={leaveTeamMutation.isPending}
-                      sx={{ fontWeight: 800, textTransform: "none" }}
-                    >
-                      Leave Team
-                    </Button>
+                    <Tooltip title={isTeamRegistered ? "Cannot leave the team because it is already registered." : ""}>
+                      <span>
+                        <Button
+                          color="error"
+                          variant="outlined"
+                          onClick={handleLeaveTeam}
+                          disabled={leaveTeamMutation.isPending || isTeamRegistered}
+                          sx={{ fontWeight: 800, textTransform: "none" }}
+                        >
+                          Leave Team
+                        </Button>
+                      </span>
+                    </Tooltip>
                   )}
                 </div>
 
@@ -341,7 +346,6 @@ export const TeamDetailPage = () => {
 
           {activeTab === "members" && (
             <div className="space-y-5 pt-6">
-              {/* ============================= Nội dung Members  ============================= */}
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
@@ -351,22 +355,26 @@ export const TeamDetailPage = () => {
                     Manage current members and invite new members to your team.
                   </p>
                 </div>
-                <Button
-                  variant="contained"
-                  startIcon={<GroupAddOutlinedIcon />}
-                  disabled={
-                    members.length >= 5 || inviteMemberMutation.isPending
-                  }
-                  onClick={() => setInviteDialogOpen(true)}
-                  sx={{
-                    bgcolor: "#2563eb",
-                    fontWeight: 800,
-                    textTransform: "none",
-                    "&:hover": { bgcolor: "#1d4ed8" },
-                  }}
-                >
-                  Invite Member
-                </Button>
+
+                <Tooltip title={isTeamRegistered ? "Cannot invite members because the team is already registered." : ""}>
+                  <span>
+                    <Button
+                      variant="contained"
+                      startIcon={<GroupAddOutlinedIcon />}
+                      disabled={members.length >= 5 || inviteMemberMutation.isPending || isTeamRegistered}
+                      onClick={() => setInviteDialogOpen(true)}
+                      sx={{
+                        bgcolor: "#2563eb",
+                        fontWeight: 800,
+                        textTransform: "none",
+                        "&:hover": { bgcolor: "#1d4ed8" },
+                        "&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" } 
+                      }}
+                    >
+                      Invite Member
+                    </Button>
+                  </span>
+                </Tooltip>
               </div>
 
               {members.length === 0 ? (
@@ -409,25 +417,34 @@ export const TeamDetailPage = () => {
                         </div>
                         {currentUserIsLeader && !memberIsLeader && (
                           <div className="flex flex-wrap gap-2">
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              color="error"
-                              disabled={removeMemberMutation.isPending}
-                              onClick={() => handleRemoveMember(member)}
-                              sx={{ fontWeight: 800, textTransform: "none" }}
-                            >
-                              Remove
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              disabled={transferLeaderMutation.isPending}
-                              onClick={() => handleTransferLeader(member)}
-                              sx={{ fontWeight: 800, textTransform: "none" }}
-                            >
-                              Transfer Leader
-                            </Button>
+                            <Tooltip title={isTeamRegistered ? "Cannot remove members because the team is already registered." : ""}>
+                              <span>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  color="error"
+                                  disabled={removeMemberMutation.isPending || isTeamRegistered}
+                                  onClick={() => handleRemoveMember(member)}
+                                  sx={{ fontWeight: 800, textTransform: "none" }}
+                                >
+                                  Remove
+                                </Button>
+                              </span>
+                            </Tooltip>
+
+                            <Tooltip title={isTeamRegistered ? "Cannot transfer leadership because the team is already registered." : ""}>
+                              <span>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  disabled={transferLeaderMutation.isPending || isTeamRegistered}
+                                  onClick={() => handleTransferLeader(member)}
+                                  sx={{ fontWeight: 800, textTransform: "none" }}
+                                >
+                                  Transfer Leader
+                                </Button>
+                              </span>
+                            </Tooltip>
                           </div>
                         )}
                       </div>
@@ -559,7 +576,6 @@ export const TeamDetailPage = () => {
   );
 };
 
-// Component InfoItem giữ nguyên cho các text bình thường
 type InfoItemProps = { label: string; value: string };
 const InfoItem = ({ label, value }: InfoItemProps) => {
   return (
@@ -572,7 +588,6 @@ const InfoItem = ({ label, value }: InfoItemProps) => {
   );
 };
 
-// Component MỚI: Dành cho những field có thể Copy được (Join Code, ID)
 type CopyableInfoItemProps = {
   label: string;
   value?: string | null;
