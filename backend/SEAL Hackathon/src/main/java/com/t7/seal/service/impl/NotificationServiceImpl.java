@@ -539,6 +539,7 @@ public class NotificationServiceImpl implements NotificationService {
                 notification.getStatus() == null ? null : notification.getStatus().name(),
                 notification.getScheduledAt(),
                 notification.getSentAt(),
+                renderTargetPath(notification),
                 Boolean.TRUE.equals(read)
         );
     }
@@ -575,8 +576,31 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String stripTrailingSlash(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String result = value.trim();
+        while (result.endsWith("/")) {
+            result = result.substring(0, result.length() - 1);
+        }
+        return result;
+    }
+
     private String escape(String value) {
         if (value == null) return "";
         return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
     }
+
+    private record EmailEnvelope(String to, List<String> cc) {}
+
+    private record EmailDispatchResult(int successCount, List<String> failures) {}
 }
