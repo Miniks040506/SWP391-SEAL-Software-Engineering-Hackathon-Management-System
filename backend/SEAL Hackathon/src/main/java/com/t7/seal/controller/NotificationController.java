@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.system.CreateNotificationRequest;
 import com.t7.seal.request.system.TestEmailRequest;
 import com.t7.seal.response.PageResponse;
+import com.t7.seal.response.system.NotificationRecipientResolutionResponse;
 import com.t7.seal.response.system.NotificationResponse;
 import com.t7.seal.response.system.NotificationRecipientResolutionResponse;
 import com.t7.seal.response.system.UnreadCountResponse;
