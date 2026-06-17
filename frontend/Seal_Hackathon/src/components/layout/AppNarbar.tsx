@@ -52,7 +52,7 @@ const publicExploreLinks: ExploreLink[] = [
   },
   {
     label: "Teams",
-    path: "/events#teams",
+    path: "/participant/teams",
     description: "Registration flow",
     icon: GroupsOutlinedIcon,
   },
