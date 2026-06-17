@@ -10,9 +10,9 @@ import { useNavigate } from "react-router-dom";
 import type { UUID } from "@/types/common.types";
 import type { EventSummaryResponse } from "@/types/event.types";
 
-import { 
-  useCoordinatorEventsQuery, 
-  useCoordinatorMultipleTracksQueries 
+import {
+  useCoordinatorEventsQuery,
+  useCoordinatorMultipleTracksQueries,
 } from "../hooks/useCoordinatorEventQueries";
 
 type EventStatusFilter =
@@ -89,20 +89,17 @@ function getTrackCount(
 function getApprovedTeamCount(event: EventSummaryResponse) {
   const raw = event as EventCard;
 
-  return (
-    raw.approvedTeamCount ??
-    raw.approvedTeams ??
-    raw.teamCount ??
-    null
-  );
+  return raw.approvedTeamCount ?? raw.approvedTeams ?? raw.teamCount ?? null;
 }
 
-function isApiPageResponse(value: unknown): value is { content: EventSummaryResponse[] } {
+function isApiPageResponse(
+  value: unknown,
+): value is { content: EventSummaryResponse[] } {
   return Boolean(
     value &&
-      typeof value === "object" &&
-      "content" in value &&
-      Array.isArray((value as { content?: unknown }).content),
+    typeof value === "object" &&
+    "content" in value &&
+    Array.isArray((value as { content?: unknown }).content),
   );
 }
 
@@ -188,7 +185,10 @@ function EventManagementCard({
 
         <div className="space-y-3 text-slate-600 dark:text-slate-300">
           <div className="flex items-center gap-3">
-            <StackedLineChartOutlinedIcon fontSize="small" className="text-slate-400" />
+            <StackedLineChartOutlinedIcon
+              fontSize="small"
+              className="text-slate-400"
+            />
 
             <span>
               <b className="text-slate-950 dark:text-white">
@@ -315,7 +315,7 @@ export function CoordinatorEventsPage() {
             py: 1.2,
             textTransform: "none",
             fontWeight: 900,
-            "&:hover": { bgcolor: "#1d4ed8" }
+            "&:hover": { bgcolor: "#1d4ed8" },
           }}
         >
           Create New Event
