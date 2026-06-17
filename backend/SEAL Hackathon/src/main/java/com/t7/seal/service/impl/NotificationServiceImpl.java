@@ -260,10 +260,10 @@ public class NotificationServiceImpl implements NotificationService {
         String emailFailure = null;
         int emailSuccess = 0;
         if (saved.usesEmailChannel()) {
-            try {
-                emailSuccess = createAndSendEmail(saved, resolved);
-            } catch (RuntimeException ex) {
-                emailFailure = ex.getMessage();
+            EmailDispatchResult dispatchResult = createAndSendEmails(saved, resolved);
+            emailSuccess = dispatchResult.successCount();
+            if (!dispatchResult.failures().isEmpty()) {
+                emailFailure = String.join("; ", dispatchResult.failures());
             }
         }
 
@@ -299,33 +299,87 @@ public class NotificationServiceImpl implements NotificationService {
         return count;
     }
 
-    private int createAndSendEmail(Notification notification, NotificationRecipientResolutionResponse resolved) {
-        if (resolved.to() == null || resolved.to().isEmpty()) {
-            return 0;
+    private EmailDispatchResult createAndSendEmails(Notification notification, NotificationRecipientResolutionResponse resolved) {
+        List<EmailEnvelope> envelopes = buildEmailEnvelopes(notification, resolved);
+        int success = 0;
+        List<String> failures = new ArrayList<>();
+
+        for (EmailEnvelope envelope : envelopes) {
+            String subject = renderSubject(notification);
+            String actionUrl = renderActionUrl(notification);
+            String html = renderEmailHtml(notification, actionUrl);
+            String idempotencyKey = notification.getId() + ":" + envelope.to() + ":" + String.join(",", envelope.cc());
+
+            EmailOutbox outbox = emailOutboxRepository.findByIdempotencyKey(idempotencyKey)
+                    .orElseGet(() -> emailOutboxRepository.save(EmailOutbox.builder()
+                            .notification(notification)
+                            .toEmail(envelope.to())
+                            .ccEmails(String.join(",", envelope.cc()))
+                            .subject(subject)
+                            .htmlBody(html)
+                            .scheduledAt(notification.getScheduledAt() == null ? LocalDateTime.now() : notification.getScheduledAt())
+                            .idempotencyKey(idempotencyKey)
+                            .status(EmailDeliveryStatus.PENDING)
+                            .build()));
+
+            if (outbox.getStatus() == EmailDeliveryStatus.SENT) {
+                success++;
+                continue;
+            }
+
+            try {
+                sendOutbox(outbox);
+                success++;
+            } catch (RuntimeException ex) {
+                failures.add(envelope.to() + ": " + ex.getMessage());
+            }
         }
 
-        NotificationRecipientResponse primary = resolved.primaryRecipient() != null ? resolved.primaryRecipient() : resolved.to().get(0);
-        List<String> cc = resolved.cc() == null
-                ? List.of()
-                : resolved.cc().stream().map(NotificationRecipientResponse::email).filter(Objects::nonNull).distinct().toList();
+        return new EmailDispatchResult(success, failures);
+    }
 
-        String subject = renderSubject(notification);
-        String actionUrl = renderActionUrl(notification);
-        String html = renderEmailHtml(notification, actionUrl);
-        String idempotencyKey = notification.getId() + ":" + primary.email() + ":" + String.join(",", cc);
+    private List<EmailEnvelope> buildEmailEnvelopes(Notification notification, NotificationRecipientResolutionResponse resolved) {
+        if (resolved.to() == null || resolved.to().isEmpty()) {
+            return List.of();
+        }
 
-        EmailOutbox outbox = emailOutboxRepository.findByIdempotencyKey(idempotencyKey)
-                .orElseGet(() -> emailOutboxRepository.save(EmailOutbox.builder()
-                        .notification(notification)
-                        .toEmail(primary.email())
-                        .ccEmails(String.join(",", cc))
-                        .subject(subject)
-                        .htmlBody(html)
-                        .scheduledAt(notification.getScheduledAt() == null ? LocalDateTime.now() : notification.getScheduledAt())
-                        .idempotencyKey(idempotencyKey)
-                        .status(EmailDeliveryStatus.PENDING)
-                        .build()));
+        if (notification.getTargetScope() == NotificationTargetScope.TEAM) {
+            NotificationRecipientResponse primary = resolved.primaryRecipient() != null
+                    ? resolved.primaryRecipient()
+                    : resolved.to().get(0);
+            if (isBlank(primary.email())) {
+                return List.of();
+            }
 
+            List<String> cc = requiresTeamCc(notification.getType())
+                    ? emailList(resolved.cc())
+                    : List.of();
+            return List.of(new EmailEnvelope(primary.email(), cc));
+        }
+
+        return emailList(resolved.to()).stream()
+                .map(to -> new EmailEnvelope(to, List.of()))
+                .toList();
+    }
+
+    private boolean requiresTeamCc(NotificationType type) {
+        return type != NotificationType.TEAM_INVITATION_SENT
+                && type != NotificationType.TEAM_INVITATION_REJECTED;
+    }
+
+    private List<String> emailList(List<NotificationRecipientResponse> recipients) {
+        if (recipients == null) {
+            return List.of();
+        }
+        return recipients.stream()
+                .map(NotificationRecipientResponse::email)
+                .filter(email -> !isBlank(email))
+                .distinct()
+                .toList();
+    }
+
+    private void sendOutbox(EmailOutbox outbox) {
+        List<String> cc = parseCc(outbox.getCcEmails());
         try {
             emailService.sendRawHtmlEmail(outbox.getToEmail(), cc, outbox.getSubject(), outbox.getHtmlBody());
             outbox.markSent();
@@ -336,8 +390,7 @@ public class NotificationServiceImpl implements NotificationService {
                     .status(EmailDeliveryStatus.SENT)
                     .message("Email sent")
                     .build());
-            auditLogService.record(notification.getCreatedBy(), AuditActionType.EMAIL_SENT, "email_outbox", outbox.getId(), null, Map.of("to", outbox.getToEmail(), "cc", outbox.getCcEmails()), null);
-            return 1;
+            auditLogService.record(outbox.getNotification().getCreatedBy(), AuditActionType.EMAIL_SENT, "email_outbox", outbox.getId(), null, Map.of("to", outbox.getToEmail(), "cc", outbox.getCcEmails() == null ? "" : outbox.getCcEmails()), null);
         } catch (RuntimeException ex) {
             outbox.markFailed(ex.getMessage());
             emailOutboxRepository.save(outbox);
@@ -347,9 +400,20 @@ public class NotificationServiceImpl implements NotificationService {
                     .status(EmailDeliveryStatus.FAILED)
                     .message(ex.getMessage())
                     .build());
-            auditLogService.record(notification.getCreatedBy(), AuditActionType.EMAIL_FAILED, "email_outbox", outbox.getId(), null, Map.of("to", outbox.getToEmail(), "error", ex.getMessage()), null);
+            auditLogService.record(outbox.getNotification().getCreatedBy(), AuditActionType.EMAIL_FAILED, "email_outbox", outbox.getId(), null, Map.of("to", outbox.getToEmail(), "error", ex.getMessage()), null);
             throw ex;
         }
+    }
+
+    private List<String> parseCc(String ccEmails) {
+        if (isBlank(ccEmails)) {
+            return List.of();
+        }
+        return Arrays.stream(ccEmails.split(","))
+                .map(String::trim)
+                .filter(email -> !email.isBlank())
+                .distinct()
+                .toList();
     }
 
     private Set<UUID> dedupeUserIds(List<NotificationRecipientResponse> recipients) {
