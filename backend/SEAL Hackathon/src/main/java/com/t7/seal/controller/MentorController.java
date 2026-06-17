@@ -3,7 +3,9 @@ package com.t7.seal.controller;
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.mentor.CreateMentorFeedbackRequest;
 import com.t7.seal.request.mentor.UpdateMentorFeedbackRequest;
+import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.mentor.MentorFeedbackResponse;
+import com.t7.seal.response.mentor.MentorTeamProgressResponse;
 import com.t7.seal.response.mentor.MentorTrackResponse;
 import com.t7.seal.service.MentorFeedbackService;
 import jakarta.validation.Valid;
@@ -100,6 +102,19 @@ public class MentorController {
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @GetMapping("/mentor/tracks")
     public ResponseEntity<List<MentorTrackResponse>> getMyAssignedTracks(
+            @RequestParam(required = false) UUID eventId,
+            Authentication authentication
+    ) {
+        return null;
+    }
+
+    @GetMapping("/mentor/tracks/{trackId}/teams")
+    public ResponseEntity<PageResponse<MentorTeamProgressResponse>> getTeamInAssignedTracks(
+            @PathVariable UUID trackId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             Authentication authentication
     ) {
         return null;
