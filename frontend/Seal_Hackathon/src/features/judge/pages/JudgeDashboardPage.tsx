@@ -18,7 +18,7 @@ export const JudgeDashboardPage = () => {
   } = useJudgeDashboard();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <JudgeWelcomeBanner
         judgeName={dashboard.judgeName}
         onStartGrading={goToScoring}
