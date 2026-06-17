@@ -24,6 +24,7 @@ import com.t7.seal.response.team.TeamSummaryResponse;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EmailService;
+import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.TeamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,12 +51,12 @@ public class TeamServiceImpl implements TeamService {
     private final TeamInvitationRepository teamInvitationRepository;
     private final UserRepository userRepository;
     private final StudentProfileRepository studentProfileRepository;
-    private final NotificationRepository notificationRepository;
     private final TrackRepository trackRepository;
     private final AuditLogRepository auditLogRepository;
 
     private final CurrentUserService currentUserService;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
@@ -514,22 +515,18 @@ public class TeamServiceImpl implements TeamService {
                 .build()
         );
 
-        notificationRepository.save(Notification.builder()
-                .event(event)
-                .createdBy(leader)
-                .type(NotificationType.TEAM_REGISTERED)
-                .title("Team registered to track")
-                .body("Team " + team.getName() + " has been registered for track " + track.getName() + ".")
-                .targetScope(NotificationTargetScope.TEAM)
-                .targetId(teamSaved.getId())
-                .channel(NotificationChannel.BOTH)
-                .status(NotificationStatus.SENT)
-                .sentAt(LocalDateTime.now())
-                .recipientCount(memberCount)
-                .build()
+        notificationService.createSystemNotification(
+                leader,
+                event,
+                NotificationType.TEAM_REGISTERED,
+                "Team registered to track",
+                "Team " + team.getName() + " has been registered for track " + track.getName() + ".",
+                NotificationTargetScope.TEAM,
+                teamSaved.getId(),
+                null,
+                NotificationChannel.BOTH,
+                null
         );
-
-        sendTeamRegisterEmailSafely(teamSaved, teamMembers, event, track);
 
         return toTeamResponse(teamSaved);
     }
@@ -714,73 +711,67 @@ public class TeamServiceImpl implements TeamService {
             return;
         }
 
-        Notification notification = Notification.builder()
-                .event(invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent())
-                .createdBy(actor)
-                .type(NotificationType.TEAM_INVITATION_SENT)
-                .title("Team invitation")
-                .body("You are invited to join team " + invitation.getTeam().getName() + ".")
-                .targetScope(NotificationTargetScope.SINGLE_USER)
-                .targetId(invitation.getInvitee().getId())
-                .channel(NotificationChannel.BOTH)
-                .status(NotificationStatus.SENT)
-                .sentAt(LocalDateTime.now())
-                .recipientCount(1)
-                .build();
-        notificationRepository.save(notification);
+        notificationService.createSystemNotification(
+                actor,
+                invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
+                NotificationType.TEAM_INVITATION_SENT,
+                "Team invitation",
+                "You are invited to join team " + invitation.getTeam().getName() + ".",
+                NotificationTargetScope.SINGLE_USER,
+                invitation.getInvitee().getId(),
+                null,
+                NotificationChannel.IN_APP,
+                null
+        );
     }
 
     private void createTeamMemberJoinedByCodeNotification(Team team, User actor) {
-        List<TeamMember> members = activeMembers(team.getId());
-        Notification notification = Notification.builder()
-                .event(team.getTrack() == null ? null : team.getTrack().getEvent())
-                .createdBy(actor)
-                .type(NotificationType.TEAM_INVITATION_ACCEPTED)
-                .title("New team member joined")
-                .body(actor.getFullName() + " joined team " + team.getName() + " using the team code.")
-                .targetScope(NotificationTargetScope.TEAM)
-                .targetId(team.getId())
-                .channel(NotificationChannel.BOTH)
-                .status(NotificationStatus.SENT)
-                .sentAt(LocalDateTime.now())
-                .recipientCount(members.size())
-                .build();
-        notificationRepository.save(notification);
+        notificationService.createSystemNotification(
+                actor,
+                team.getTrack() == null ? null : team.getTrack().getEvent(),
+                NotificationType.TEAM_INVITATION_ACCEPTED,
+                "New team member joined",
+                actor.getFullName() + " joined team " + team.getName() + " using the team code.",
+                NotificationTargetScope.TEAM,
+                team.getId(),
+                null,
+                NotificationChannel.BOTH,
+                null
+        );
     }
 
     private void createInvitationAcceptedNotification(TeamInvitation invitation, User actor) {
-        List<TeamMember> members = activeMembers(invitation.getTeam().getId());
-        Notification notification = Notification.builder()
-                .event(invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent())
-                .createdBy(actor)
-                .type(NotificationType.TEAM_INVITATION_ACCEPTED)
-                .title("Team invitation accepted")
-                .body(actor.getFullName() + " joined team " + invitation.getTeam().getName() + ".")
-                .targetScope(NotificationTargetScope.TEAM)
-                .targetId(invitation.getTeam().getId())
-                .channel(NotificationChannel.BOTH)
-                .status(NotificationStatus.SENT)
-                .sentAt(LocalDateTime.now())
-                .recipientCount(members.size())
-                .build();
-        notificationRepository.save(notification);
+        notificationService.createSystemNotification(
+                actor,
+                invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
+                NotificationType.TEAM_INVITATION_ACCEPTED,
+                "Team invitation accepted",
+                actor.getFullName() + " joined team " + invitation.getTeam().getName() + ".",
+                NotificationTargetScope.TEAM,
+                invitation.getTeam().getId(),
+                null,
+                NotificationChannel.BOTH,
+                null
+        );
     }
 
     private void createInvitationRejectedNotification(TeamInvitation invitation, User actor) {
-        Notification notification = Notification.builder()
-                .event(invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent())
-                .createdBy(actor)
-                .type(NotificationType.TEAM_INVITATION_REJECTED)
-                .title("Team invitation declined")
-                .body(invitation.getInviteEmail() + " declined the invitation to join " + invitation.getTeam().getName() + ".")
-                .targetScope(NotificationTargetScope.TEAM)
-                .targetId(invitation.getTeam().getId())
-                .channel(NotificationChannel.BOTH)
-                .status(NotificationStatus.SENT)
-                .sentAt(LocalDateTime.now())
-                .recipientCount(1)
-                .build();
-        notificationRepository.save(notification);
+        User leader = invitation.getTeam().getLeader();
+        if (leader == null) {
+            return;
+        }
+        notificationService.createSystemNotification(
+                actor,
+                invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
+                NotificationType.TEAM_INVITATION_REJECTED,
+                "Team invitation declined",
+                invitation.getInviteEmail() + " declined the invitation to join " + invitation.getTeam().getName() + ".",
+                NotificationTargetScope.SINGLE_USER,
+                leader.getId(),
+                null,
+                NotificationChannel.BOTH,
+                null
+        );
     }
 
     private void sendInvitationSentEmail(TeamInvitation invitation, User inviter, User invitee) {
