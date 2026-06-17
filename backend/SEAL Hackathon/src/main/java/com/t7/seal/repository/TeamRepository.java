@@ -102,4 +102,14 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
             @Param("search") String search,
             Pageable pageable
     );
+
+    @Query("""
+            SELECT DISTINCT t
+            FROM Team t
+            LEFT JOIN FETCH t.track tr
+            LEFT JOIN FETCH tr.event e
+            LEFT JOIN FETCH t.leader l
+            WHERE t.id = :teamId
+            """)
+    Optional<Team> findMentorDetailsById(@Param("teamId") UUID teamId);
 }

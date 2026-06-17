@@ -21,5 +21,5 @@ public interface MentorTeamService {
             Authentication authentication
     );
 
-    MentorTeamDetailResponse getTeamDetails(UUID teamId, Authentication authentication);
+    MentorTeamDetailResponse getAssignedTeamDetails(UUID teamId, Authentication authentication);
 }

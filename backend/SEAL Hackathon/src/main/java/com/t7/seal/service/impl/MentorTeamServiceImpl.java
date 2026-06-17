@@ -9,10 +9,7 @@ import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
 import com.t7.seal.response.PageResponse;
-import com.t7.seal.response.mentor.MentorTeamDetailResponse;
-import com.t7.seal.response.mentor.MentorTeamProgressResponse;
-import com.t7.seal.response.mentor.MentorTeamRoundProgressResponse;
-import com.t7.seal.response.mentor.MentorTrackResponse;
+import com.t7.seal.response.mentor.*;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.MentorTeamService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,6 +41,7 @@ public class MentorTeamServiceImpl implements MentorTeamService {
     private final TeamRepository teamRepository;
     private final SubmissionRepository submissionRepository;
     private final RoundRepository roundRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
 
     @Transactional(readOnly = true)
@@ -115,8 +114,24 @@ public class MentorTeamServiceImpl implements MentorTeamService {
 
     @Transactional(readOnly = true)
     @Override
-    public MentorTeamDetailResponse getTeamDetails(UUID teamId, Authentication authentication) {
-        return null;
+    public MentorTeamDetailResponse getAssignedTeamDetails(UUID teamId, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+
+        ensureMentorOrManager(user);
+
+        Team team = teamRepository.findMentorDetailsById(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found"));
+
+        if (team.getTrack() == null) {
+            throw new BadRequestException("Team does not belong to any track.");
+        }
+
+        ensureCanViewTrack(user, team.getTrack());
+
+        List<TeamMember> teamMembers = teamMemberRepository.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAsc(teamId);
+        List<Submission> submissions = submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(teamId);
+
+        return toMentorTeamDetailResponse(team, teamMembers, submissions);
     }
 
     //HELPERS
@@ -216,7 +231,7 @@ public class MentorTeamServiceImpl implements MentorTeamService {
                 team.getRegisteredAt(),
                 team.getCreatedAt(),
                 team.getUpdatedAt(),
-                roundProgress(team, submissions)
+                buildRoundProgress(team, submissions)
         );
     }
 
@@ -263,7 +278,7 @@ public class MentorTeamServiceImpl implements MentorTeamService {
                 .orElse(null);
     }
 
-    private List<MentorTeamRoundProgressResponse> roundProgress(
+    private List<MentorTeamRoundProgressResponse> buildRoundProgress(
             Team team,
             List<Submission> submissions
     ) {
@@ -325,6 +340,55 @@ public class MentorTeamServiceImpl implements MentorTeamService {
                 submission.getUpdatedAt(),
                 linkCount,
                 submission.getNote()
+        );
+    }
+
+    private MentorTeamDetailResponse toMentorTeamDetailResponse(
+            Team team,
+            List<TeamMember> members,
+            List<Submission> submissions
+    ) {
+        long submittedSubmissionCount = submissions.stream()
+                .filter(s -> SUBMITTED_STATUSES.contains(s.getStatus()))
+                .count();
+
+        return new MentorTeamDetailResponse(
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                team.getDescription(),
+                enumName(team.getStatus()),
+                eventId(team),
+                eventName(team),
+                trackId(team),
+                trackName(team),
+                team.getLeader() == null ? null : team.getLeader().getId(),
+                team.getLeader() == null ? null : team.getLeader().getFullName(),
+                team.getLeader() == null ? null : team.getLeader().getEmail(),
+                members.size(),
+                submissions.size(),
+                submittedSubmissionCount,
+                submissionCount(team, submittedSubmissionCount),
+                latestSubmissionStatus(submissions),
+                team.getRegisteredAt(),
+                team.getCreatedAt(),
+                team.getUpdatedAt(),
+                members.stream().map(this::toMentorTeamMemberResponse).toList(),
+                buildRoundProgress(team, submissions)
+        );
+    }
+
+    private MentorTeamMemberResponse toMentorTeamMemberResponse(TeamMember teamMember) {
+        User user = teamMember.getUser();
+
+        return new MentorTeamMemberResponse(
+                teamMember.getId(),
+                user == null ? null : user.getId(),
+                user == null ? null : user.getFullName(),
+                user == null ? null : user.getEmail(),
+                teamMember.getRole() == null ? null : teamMember.getRole().name(),
+                user == null || user.getStatus() == null ? null : user.getStatus().name(),
+                teamMember.getJoinedAt()
         );
     }
 }

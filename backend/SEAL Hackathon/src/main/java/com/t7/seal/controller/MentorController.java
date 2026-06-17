@@ -130,6 +130,6 @@ public class MentorController {
             @PathVariable UUID teamId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(mentorTeamService.getAssignedTeamDetails(teamId, authentication));
     }
 }
