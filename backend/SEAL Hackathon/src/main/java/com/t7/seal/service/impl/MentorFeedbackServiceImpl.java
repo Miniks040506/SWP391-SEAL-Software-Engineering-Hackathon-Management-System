@@ -12,6 +12,7 @@ import com.t7.seal.request.mentor.UpdateMentorFeedbackRequest;
 import com.t7.seal.response.mentor.MentorFeedbackResponse;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.MentorFeedbackService;
+import com.t7.seal.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -32,8 +33,8 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
     private final MentorAssignmentRepository mentorAssignmentRepository;
     private final SubmissionRepository submissionRepository;
     private final RoundRepository roundRepository;
-    private final NotificationRepository notificationRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     @Override
@@ -292,19 +293,17 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
             String roundName = feedback.getRound() == null ? null : feedback.getRound().getName();
             String scopeText = roundName == null ? "" : " for " + roundName;
 
-            notificationRepository.save(
-                    Notification.builder()
-                            .event(team.getTrack() == null ? null : team.getTrack().getEvent())
-                            .createdBy(feedback.getMentor())
-                            .type(NotificationType.MENTOR_FEEDBACK)
-                            .title("Mentor feedback is available")
-                            .body("Mentor feedback is available for " + teamName + scopeText + ".")
-                            .targetScope(NotificationTargetScope.TEAM)
-                            .targetId(team.getId())
-                            .channel(NotificationChannel.BOTH)
-                            .status(NotificationStatus.PROCESSING)
-                            .recipientCount(team.getMemberCount())
-                            .build()
+            notificationService.createSystemNotification(
+                    feedback.getMentor(),
+                    team.getTrack() == null ? null : team.getTrack().getEvent(),
+                    NotificationType.MENTOR_FEEDBACK_PUBLISHED,
+                    "Mentor feedback is available",
+                    "Mentor feedback is available for " + teamName + scopeText + ".",
+                    NotificationTargetScope.TEAM,
+                    team.getId(),
+                    null,
+                    NotificationChannel.BOTH,
+                    null
             );
         } catch (Exception e) {
             e.printStackTrace();

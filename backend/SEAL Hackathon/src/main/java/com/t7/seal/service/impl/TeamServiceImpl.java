@@ -283,7 +283,6 @@ public class TeamServiceImpl implements TeamService {
         TeamMember savedMember = teamMemberRepository.save(member);
         cancelPendingInvitationsIfTeamFull(team, now);
         createTeamMemberJoinedByCodeNotification(team, currentUser);
-        sendTeamMemberJoinedByCodeEmail(team, currentUser);
 
         return toTeamMemberResponse(savedMember);
     }
@@ -574,7 +573,6 @@ public class TeamServiceImpl implements TeamService {
         TeamMember savedMember = teamMemberRepository.save(member);
         cancelPendingInvitationsIfTeamFull(team, now);
         createInvitationAcceptedNotification(invitation, currentUser);
-        sendInvitationAcceptedEmail(invitation, currentUser);
 
         return toTeamMemberResponse(savedMember);
     }
@@ -599,7 +597,6 @@ public class TeamServiceImpl implements TeamService {
         invitation.setInvitee(currentUser);
         invitation.setResponseReason(blankToNull(request == null ? null : request.reason()));
         createInvitationRejectedNotification(invitation, currentUser);
-        sendInvitationRejectedEmail(invitation);
     }
 
     private void ensureActiveStudent(User user) {
