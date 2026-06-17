@@ -49,7 +49,8 @@ public class AuditLogServiceImpl implements AuditLogService {
             Map<String, Object> afterState,
             Map<String, Object> context
     ) {
-        if (actor == null || actionType == null || targetTable == null || targetTable.isBlank() || targetId == null) {
+        if (actor == null || actionType == null || targetTable == null
+                || targetTable.isBlank() || targetId == null) {
             return;
         }
 

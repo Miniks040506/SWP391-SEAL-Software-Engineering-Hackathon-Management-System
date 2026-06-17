@@ -3,6 +3,7 @@ package com.t7.seal.controller;
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.AuditLogResponse;
+import com.t7.seal.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,8 +22,10 @@ import java.util.UUID;
 @RequestMapping(ApiPaths.API_V1)
 public class AuditLogController {
 
+    private final AuditLogService auditLogService;
+
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
-    @GetMapping("/audit-logs")
+    @GetMapping({"/audit-logs", "/coordinator/audit-logs", "/admin/audit-logs"})
     public ResponseEntity<PageResponse<AuditLogResponse>> getAuditLogs(
             @RequestParam(required = false) UUID actorId,
             @RequestParam(required = false) String actionType,
@@ -33,14 +37,29 @@ public class AuditLogController {
             @RequestParam(defaultValue = "20") int size,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(auditLogService.getAuditLogs(
+                actorId,
+                actionType,
+                targetTable,
+                targetId,
+                parseDateTime(from),
+                parseDateTime(to),
+                page,
+                size,
+                authentication
+        ));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
-    @GetMapping("/audit-logs/actions")
-    public ResponseEntity<List<String>> getAuditActionTypes(
-            Authentication authentication
-    ) {
-        return null;
+    @GetMapping({"/audit-logs/actions", "/coordinator/audit-logs/actions", "/admin/audit-logs/actions"})
+    public ResponseEntity<List<String>> getAuditActionTypes(Authentication authentication) {
+        return ResponseEntity.ok(auditLogService.getActionTypes(authentication));
+    }
+
+    private LocalDateTime parseDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return LocalDateTime.parse(value.trim());
     }
 }
