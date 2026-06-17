@@ -22,7 +22,7 @@ function timeAgo(value?: string | null) {
 export function NotificationList({ notifications, onOpen, onMarkRead, compact }: Props) {
   if (notifications.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+      <div className="rounded-lg border border-dashed border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
         <NotificationsNoneOutlinedIcon className="mx-auto text-slate-300" sx={{ fontSize: 42 }} />
         <p className="mt-3 text-sm font-bold text-slate-600 dark:text-slate-300">No notifications</p>
         <p className="mt-1 text-xs text-slate-400">Important SEAL updates will appear here.</p>
@@ -40,7 +40,7 @@ export function NotificationList({ notifications, onOpen, onMarkRead, compact }:
           onClick={() => onOpen?.(item)}
           onKeyDown={(event) => event.key === "Enter" && onOpen?.(item)}
           className={[
-            "group rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg",
+            "group rounded-lg border p-4 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:hover:border-slate-700 dark:hover:bg-slate-900/80",
             item.read
               ? "border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900"
               : "border-blue-200 bg-blue-50/70 shadow-blue-100/50 dark:border-blue-500/30 dark:bg-blue-500/10",
@@ -50,7 +50,7 @@ export function NotificationList({ notifications, onOpen, onMarkRead, compact }:
           <div className="flex items-start gap-3">
             <span
               className={[
-                "mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                "mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
                 item.read
                   ? "bg-slate-100 text-slate-400 dark:bg-slate-800"
                   : "bg-blue-500 text-white",
@@ -64,7 +64,7 @@ export function NotificationList({ notifications, onOpen, onMarkRead, compact }:
                   <p className="line-clamp-1 text-sm font-black text-slate-900 dark:text-white">
                     {item.title}
                   </p>
-                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-blue-500">
+                  <p className="mt-1 text-xs font-semibold uppercase text-blue-500">
                     {item.type?.replaceAll("_", " ")}
                   </p>
                 </div>
@@ -80,7 +80,7 @@ export function NotificationList({ notifications, onOpen, onMarkRead, compact }:
                       event.stopPropagation();
                       onMarkRead(item);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-blue-600 transition-colors hover:bg-white dark:text-blue-300 dark:hover:bg-slate-800"
+                    className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-blue-600 transition-colors hover:bg-white dark:text-blue-300 dark:hover:bg-slate-800"
                   >
                     <MarkEmailReadOutlinedIcon sx={{ fontSize: 16 }} />
                     Mark read

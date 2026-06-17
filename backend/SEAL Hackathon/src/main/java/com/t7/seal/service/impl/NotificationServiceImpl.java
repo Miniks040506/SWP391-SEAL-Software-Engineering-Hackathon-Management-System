@@ -477,6 +477,21 @@ public class NotificationServiceImpl implements NotificationService {
         if (notification.getType() == NotificationType.TEAM_INVITATION_SENT) {
             return "/participant/invitations";
         }
+        if (notification.getType() == NotificationType.SUBMISSION_SUBMITTED
+                || notification.getType() == NotificationType.SUBMISSION_UPDATED) {
+            if ("MENTOR".equalsIgnoreCase(notification.getTargetRole())) {
+                return "/mentor/submissions";
+            }
+            if (notification.getTargetScope() == NotificationTargetScope.EVENT_COORDINATORS
+                    || notification.getTargetScope() == NotificationTargetScope.COORDINATOR
+                    || notification.getTargetScope() == NotificationTargetScope.COORDINATION) {
+                return "/coordinator/submissions";
+            }
+            if (notification.getTargetScope() == NotificationTargetScope.TEAM && notification.getTargetId() != null) {
+                return "/participant/teams/" + notification.getTargetId() + "/submissions";
+            }
+            return "/participant/submissions";
+        }
         if (notification.getTargetScope() == NotificationTargetScope.TEAM && notification.getTargetId() != null) {
             return "/participant/teams/" + notification.getTargetId();
         }

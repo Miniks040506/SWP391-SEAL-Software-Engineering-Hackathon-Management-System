@@ -24,7 +24,7 @@ export function NotificationBell({ inboxPath }: Props) {
   }, []);
 
   return (
-    <div ref={ref} className="relative hidden sm:flex">
+    <div ref={ref} className="relative flex">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
