@@ -7,7 +7,6 @@ export type CreateNotificationRequest = {
   body: string;
   targetScope: string;
   targetId?: UUID;
-  targetUrl?: string;
   role?: string;
   channel?: string;
   scheduledAt?: ISODateTime;
@@ -26,6 +25,7 @@ export type NotificationResponse = {
   status: string;
   scheduledAt?: ISODateTime;
   sentAt?: ISODateTime;
+  targetUrl?: string;
   read: boolean;
 };
 

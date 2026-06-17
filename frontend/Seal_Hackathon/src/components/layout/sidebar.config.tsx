@@ -251,7 +251,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
     profilePath: "/mentor/profile",
     settingsPath: "/mentor/settings",
     notificationPath: "/mentor/notifications",
-    notificationPath: "/mentor/notifications",
     sidebar: [
       {
         title: "Mentor",

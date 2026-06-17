@@ -21,7 +21,11 @@ export function NotificationDropdown({ inboxPath, onClose }: Props) {
       await markReadMutation.mutateAsync(notification.id);
     }
     onClose();
-    navigate(notification.targetUrl || inboxPath);
+    navigate(
+      notification.targetUrl && notification.targetUrl !== "/notifications"
+        ? notification.targetUrl
+        : inboxPath,
+    );
   };
 
   return (
