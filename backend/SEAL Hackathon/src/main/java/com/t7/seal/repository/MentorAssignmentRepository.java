@@ -32,4 +32,19 @@ public interface MentorAssignmentRepository extends JpaRepository<MentorAssignme
     );
 
     Optional<MentorAssignment> findByIdAndTrackId(UUID id, UUID trackId);
+
+    @Query("""
+            SELECT ma
+            FROM MentorAssignment ma
+            JOIN FETCH ma.track t
+            JOIN FETCH t.event e 
+            JOIN FETCH ma.user u
+            WHERE u.id = :userId 
+                AND (:eventId IS NULL OR e.id = :eventId)
+                    ORDER BY e.year DESC, e.season ASC, t.name ASC
+            """)
+    List<MentorAssignment> findAssignedTrackByUserId(
+            @Param("userId") UUID userId,
+            @Param("eventId") UUID eventId
+    );
 }

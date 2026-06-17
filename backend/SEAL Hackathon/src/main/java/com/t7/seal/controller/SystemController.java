@@ -9,6 +9,8 @@ import com.t7.seal.response.system.SystemHealthResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,20 +37,6 @@ public class SystemController {
 
     @GetMapping("/health")
     public ResponseEntity<SystemHealthResponse> getSystemHealth() {
-        return null;
-    }
-
-    @GetMapping("/audit-logs")
-    public ResponseEntity<PageResponse<AuditLogResponse>> getAuditLogs(
-            @RequestParam(required = false) UUID actorId,
-            @RequestParam(required = false) String actionType,
-            @RequestParam(required = false) String targetTable,
-            @RequestParam(required = false) UUID targetId,
-            @RequestParam(required = false) String from,
-            @RequestParam(required = false) String to,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
         return null;
     }
 }
