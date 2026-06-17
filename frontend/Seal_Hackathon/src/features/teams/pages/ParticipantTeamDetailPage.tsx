@@ -248,15 +248,19 @@ export const TeamDetailPage = () => {
                     </p>
                   </div>
                   {!currentUserIsLeader && (
-                    <Button
-                      color="error"
-                      variant="outlined"
-                      onClick={handleLeaveTeam}
-                      disabled={leaveTeamMutation.isPending}
-                      sx={{ fontWeight: 800, textTransform: "none" }}
-                    >
-                      Leave Team
-                    </Button>
+                    <Tooltip title={isTeamRegistered ? "Cannot leave the team because it is already registered." : ""}>
+                      <span>
+                        <Button
+                          color="error"
+                          variant="outlined"
+                          onClick={handleLeaveTeam}
+                          disabled={leaveTeamMutation.isPending || isTeamRegistered}
+                          sx={{ fontWeight: 800, textTransform: "none" }}
+                        >
+                          Leave Team
+                        </Button>
+                      </span>
+                    </Tooltip>
                   )}
                 </div>
 
@@ -364,7 +368,7 @@ export const TeamDetailPage = () => {
                         fontWeight: 800,
                         textTransform: "none",
                         "&:hover": { bgcolor: "#1d4ed8" },
-                        "&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" } // Fix màu nền bị tối khi disable
+                        "&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" } 
                       }}
                     >
                       Invite Member
@@ -413,16 +417,20 @@ export const TeamDetailPage = () => {
                         </div>
                         {currentUserIsLeader && !memberIsLeader && (
                           <div className="flex flex-wrap gap-2">
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              color="error"
-                              disabled={removeMemberMutation.isPending}
-                              onClick={() => handleRemoveMember(member)}
-                              sx={{ fontWeight: 800, textTransform: "none" }}
-                            >
-                              Remove
-                            </Button>
+                            <Tooltip title={isTeamRegistered ? "Cannot remove members because the team is already registered." : ""}>
+                              <span>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  color="error"
+                                  disabled={removeMemberMutation.isPending || isTeamRegistered}
+                                  onClick={() => handleRemoveMember(member)}
+                                  sx={{ fontWeight: 800, textTransform: "none" }}
+                                >
+                                  Remove
+                                </Button>
+                              </span>
+                            </Tooltip>
 
                             <Tooltip title={isTeamRegistered ? "Cannot transfer leadership because the team is already registered." : ""}>
                               <span>
