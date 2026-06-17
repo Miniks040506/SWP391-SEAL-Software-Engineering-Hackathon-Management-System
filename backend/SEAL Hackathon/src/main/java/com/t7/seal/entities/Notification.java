@@ -61,6 +61,9 @@ public class Notification {
     @Column(name = "target_id")
     private UUID targetId;
 
+    @Column(name = "target_role", length = 50)
+    private String targetRole;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "channel", nullable = false, length = 30)
     @Builder.Default

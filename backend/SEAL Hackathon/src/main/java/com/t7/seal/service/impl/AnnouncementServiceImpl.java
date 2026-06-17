@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.domain.NotificationChannel;
 import com.t7.seal.domain.NotificationStatus;
 import com.t7.seal.domain.NotificationTargetScope;
@@ -18,9 +19,12 @@ import com.t7.seal.repository.NotificationRepository;
 import com.t7.seal.repository.UserRepository;
 import com.t7.seal.request.system.CreateAnnouncementRequest;
 import com.t7.seal.request.system.UpdateAnnouncementRequest;
+import com.t7.seal.request.system.CreateNotificationRequest;
 import com.t7.seal.response.system.AnnouncementResponse;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.AnnouncementService;
+import com.t7.seal.service.AuditLogService;
+import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -29,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,6 +46,8 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     private final HackathonEventRepository hackathonEventRepository;
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     @Override
@@ -103,8 +110,26 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         }
 
         EventAnnouncement saved = eventAnnouncementRepository.save(eventAnnouncement);
+        auditLogService.record(
+                actor,
+                AuditActionType.ANNOUNCEMENT_CREATED,
+                "event_announcements",
+                saved.getId(),
+                null,
+                announcementAuditState(saved),
+                null
+        );
         if (saved.isPublished()) {
-            createNotificationForAnnouncement(saved, actor);
+            auditLogService.record(
+                    actor,
+                    AuditActionType.ANNOUNCEMENT_PUBLISHED,
+                    "event_announcements",
+                    saved.getId(),
+                    null,
+                    announcementAuditState(saved),
+                    null
+            );
+            createNotificationForAnnouncement(saved, authentication);
         }
 
         return toAnnouncementResponse(saved);
@@ -176,6 +201,15 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         }
 
         EventAnnouncement saved = eventAnnouncementRepository.save(announcement);
+        auditLogService.record(
+                currentUserService.getCurrentUser(authentication),
+                AuditActionType.ANNOUNCEMENT_UPDATED,
+                "event_announcements",
+                saved.getId(),
+                null,
+                announcementAuditState(saved),
+                null
+        );
 
         return toAnnouncementResponse(saved);
     }
@@ -191,6 +225,15 @@ public class AnnouncementServiceImpl implements AnnouncementService {
                     "Published announcements cannot be deleted. Cancel or unpublish first.");
         }
 
+        auditLogService.record(
+                currentUserService.getCurrentUser(authentication),
+                AuditActionType.ANNOUNCEMENT_DELETED,
+                "event_announcements",
+                announcement.getId(),
+                announcementAuditState(announcement),
+                null,
+                null
+        );
         eventAnnouncementRepository.delete(announcement);
     }
 
@@ -209,10 +252,18 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         }
 
         announcement.publish(LocalDateTime.now());
-        createNotificationForAnnouncement(announcement, actor);
+        createNotificationForAnnouncement(announcement, authentication);
 
         EventAnnouncement saved = eventAnnouncementRepository.save(announcement);
-
+        auditLogService.record(
+                actor,
+                AuditActionType.ANNOUNCEMENT_PUBLISHED,
+                "event_announcements",
+                saved.getId(),
+                null,
+                announcementAuditState(saved),
+                null
+        );
         return toAnnouncementResponse(saved);
     }
 
@@ -289,22 +340,32 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     }
 
     //HELPERS
-    private void createNotificationForAnnouncement(EventAnnouncement announcement, User actor) {
+
+    private Map<String, Object> announcementAuditState(EventAnnouncement announcement) {
+        return Map.of(
+                "eventId", announcement.getEvent() == null ? "" : announcement.getEvent().getId().toString(),
+                "title", announcement.getTitle(),
+                "status", announcement.getStatus() == null ? "" : announcement.getStatus().name(),
+                "targetScope", announcement.getTargetScope() == null ? "" : announcement.getTargetScope().name()
+        );
+    }
+
+    private void createNotificationForAnnouncement(EventAnnouncement announcement, Authentication authentication) {
         NotificationChannel channel = resolveChannel(announcement);
-        Notification notification = Notification.builder()
-                .event(announcement.getEvent())
-                .createdBy(actor)
-                .type(NotificationType.GENERAL)
-                .title(announcement.getTitle())
-                .body(announcement.getContent())
-                .targetScope(announcement.getTargetScope())
-                .targetId(announcement.getTargetId())
-                .channel(channel)
-                .status(NotificationStatus.SENT)
-                .sentAt(LocalDateTime.now())
-                .recipientCount(0)
-                .build();
-        notificationRepository.save(notification);
+        notificationService.createNotification(
+                new CreateNotificationRequest(
+                        announcement.getEvent() == null ? null : announcement.getEvent().getId(),
+                        NotificationType.ANNOUNCEMENT_PUBLISHED.name(),
+                        announcement.getTitle(),
+                        announcement.getContent(),
+                        announcement.getTargetScope().name(),
+                        announcement.getTargetId(),
+                        null,
+                        channel.name(),
+                        null
+                ),
+                authentication
+        );
     }
 
     private NotificationChannel resolveChannel(EventAnnouncement announcement) {

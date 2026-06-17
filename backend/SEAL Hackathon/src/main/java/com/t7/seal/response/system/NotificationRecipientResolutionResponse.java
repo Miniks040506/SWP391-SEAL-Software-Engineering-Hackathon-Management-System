@@ -13,5 +13,4 @@ public record NotificationRecipientResolutionResponse(
         List<NotificationRecipientResponse> to,
         List<NotificationRecipientResponse> cc,
         List<NotificationRecipientResponse> inAppRecipients
-) {
-}
+) {}

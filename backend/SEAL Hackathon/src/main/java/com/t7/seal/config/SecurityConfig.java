@@ -236,8 +236,9 @@ public class SecurityConfig {
                         .requestMatchers(API + "/submission-links/**").hasAnyRole("STUDENT", "COORDINATOR")
 
                         // Notifications
-                        .requestMatchers(HttpMethod.POST, API + "/notifications").hasRole("COORDINATOR")
-                        .requestMatchers(HttpMethod.POST, API + "/notifications/*/send").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/notifications").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/notifications/test-email").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/notifications/*/send").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/notifications/recipients/resolve").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(API + "/notifications/**").authenticated()
 

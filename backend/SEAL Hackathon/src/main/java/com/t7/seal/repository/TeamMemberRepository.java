@@ -51,4 +51,30 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
             @Param("currentTeamId") UUID currentTeamId,
             @Param("eventId") UUID eventId
     );
+
+    @Query("""
+            SELECT DISTINCT tm.user
+            FROM TeamMember tm
+            JOIN tm.team t
+            JOIN t.track tr
+            WHERE tr.id = :trackId
+              AND tm.leftAt IS NULL
+              AND tm.user.status = com.t7.seal.domain.UserStatus.ACTIVE
+            ORDER BY tm.user.fullName ASC
+            """)
+    List<com.t7.seal.entities.User> findActiveUsersByTrackId(@Param("trackId") UUID trackId);
+
+    @Query("""
+            SELECT DISTINCT tm.user
+            FROM TeamMember tm
+            JOIN tm.team t
+            JOIN t.track tr
+            JOIN tr.event e
+            WHERE e.id = :eventId
+              AND tm.leftAt IS NULL
+              AND tm.user.status = com.t7.seal.domain.UserStatus.ACTIVE
+            ORDER BY tm.user.fullName ASC
+            """)
+    List<com.t7.seal.entities.User> findActiveUsersByEventId(@Param("eventId") UUID eventId);
+
 }

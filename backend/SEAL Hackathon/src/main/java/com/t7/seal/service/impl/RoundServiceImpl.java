@@ -12,6 +12,7 @@ import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
 import com.t7.seal.request.round.UpdateRoundRequest;
 import com.t7.seal.response.round.*;
 import com.t7.seal.service.CurrentUserService;
+import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -34,9 +35,9 @@ public class RoundServiceImpl implements RoundService {
     private final AdvanceRuleRepository advanceRuleRepository;
     private final TrackRepository trackRepository;
     private final AuditLogRepository auditLogRepository;
-    private final NotificationRepository notificationRepository;
     private final SubmissionRepository submissionRepository;
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     @Override
@@ -711,20 +712,23 @@ public class RoundServiceImpl implements RoundService {
             String body
     ) {
         try {
-            Notification notification = new Notification();
+            NotificationTargetScope scope = type == NotificationType.JUDGING_READY
+                    ? NotificationTargetScope.ROUND_JUDGES
+                    : NotificationTargetScope.EVENT_PARTICIPANTS;
+            UUID targetId = type == NotificationType.JUDGING_READY ? round.getId() : null;
 
-            notification.setEvent(round.getEvent());
-            notification.setCreatedBy(user);
-            notification.setType(type);
-            notification.setTitle(title);
-            notification.setBody(body);
-            notification.setTargetScope(NotificationTargetScope.ALL);
-            notification.setChannel(NotificationChannel.BOTH);
-            notification.setStatus(NotificationStatus.SENT);
-            notification.setSentAt(LocalDateTime.now());
-            notification.setRecipientCount(0);
-
-            notificationRepository.save(notification);
+            notificationService.createSystemNotification(
+                    user,
+                    round.getEvent(),
+                    type,
+                    title,
+                    body,
+                    scope,
+                    targetId,
+                    null,
+                    NotificationChannel.BOTH,
+                    null
+            );
         } catch (Exception e) {
             //TODO
             e.printStackTrace();

@@ -8,5 +8,6 @@ public record NotificationResponse(
         UUID targetId, String channel, String status,
         LocalDateTime scheduledAt,
         LocalDateTime sentAt,
+        String targetUrl,
         Boolean read
 ) {}

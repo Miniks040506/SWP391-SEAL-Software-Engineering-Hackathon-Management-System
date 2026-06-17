@@ -470,6 +470,53 @@ public class EmailServiceImpl implements EmailService {
         sendHtml(to, appName + " - Judge assignment for " + eventName, html);
     }
 
+
+    @Override
+    public void sendNotificationEmail(
+            String to,
+            List<String> cc,
+            String subject,
+            String title,
+            String body,
+            String actionUrl
+    ) {
+        String safeTitle = escapeHtml(title == null || title.isBlank() ? "SEAL Notification" : title);
+        String safeBody = escapeHtml(body == null ? "" : body).replace("\n", "<br/>");
+        String actionHtml = actionUrl == null || actionUrl.isBlank()
+                ? ""
+                : """
+                    <div style="text-align:center;margin-top:28px;">
+                        <a href="%s"
+                           style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                            Open in SEAL
+                        </a>
+                    </div>
+                    """.formatted(escapeHtml(actionUrl));
+
+        String html = buildBaseTemplate(
+                safeTitle,
+                "SEAL system notification",
+                """
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            %s
+                        </p>
+                        %s
+                        """.formatted(safeBody, actionHtml)
+        );
+
+        sendHtml(to, cc == null ? List.of() : cc, subject == null || subject.isBlank() ? appName + " - Notification" : subject, html);
+    }
+
+    @Override
+    public void sendRawHtmlEmail(
+            String to,
+            List<String> cc,
+            String subject,
+            String html
+    ) {
+        sendHtml(to, cc == null ? List.of() : cc, subject, html);
+    }
+
     private void sendHtml(String to, String subject, String html) {
         sendHtml(to, List.of(), subject, html);
     }
@@ -557,7 +604,7 @@ public class EmailServiceImpl implements EmailService {
                                                 SEAL Hackathon Team
                                             </p>
                                             <p style="margin:8px 0 0;color:#64748b;font-size:12px;line-height:1.6;">
-                                                FPT University HCM · Software Engineering Agile League
+                                                FPT University HCM - Software Engineering Agile League
                                             </p>
                                             <p style="margin:16px 0 0;color:#94a3b8;font-size:11px;line-height:1.6;">
                                                 This is an automated email. Please do not reply directly to this message.

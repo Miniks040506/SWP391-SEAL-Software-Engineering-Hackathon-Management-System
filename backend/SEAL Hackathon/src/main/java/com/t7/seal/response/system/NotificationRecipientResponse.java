@@ -9,5 +9,4 @@ public record NotificationRecipientResponse(
         String role,
         String status,
         String deliveryRole
-) {
-}
+) {}

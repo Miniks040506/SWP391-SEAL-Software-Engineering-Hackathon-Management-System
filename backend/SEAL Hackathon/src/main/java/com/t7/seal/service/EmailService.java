@@ -60,4 +60,21 @@ public interface EmailService {
             String roundName,
             String trackName
     );
+
+    void sendNotificationEmail(
+            String to,
+            List<String> cc,
+            String subject,
+            String title,
+            String body,
+            String actionUrl
+    );
+
+    void sendRawHtmlEmail(
+            String to,
+            List<String> cc,
+            String subject,
+            String html
+    );
 }
+

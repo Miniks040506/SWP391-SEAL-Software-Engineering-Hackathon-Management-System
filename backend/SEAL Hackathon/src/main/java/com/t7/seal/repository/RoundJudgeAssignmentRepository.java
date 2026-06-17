@@ -95,4 +95,29 @@ public interface RoundJudgeAssignmentRepository extends JpaRepository<RoundJudge
     );
 
 
+
+    @Query("""
+            SELECT DISTINCT u
+            FROM RoundJudgeAssignment rja
+            JOIN rja.round r
+            JOIN r.event e
+            JOIN rja.judge j
+            JOIN j.user u
+            WHERE e.id = :eventId
+              AND u.status = com.t7.seal.domain.UserStatus.ACTIVE
+            ORDER BY u.fullName ASC
+            """)
+    List<com.t7.seal.entities.User> findActiveJudgeUsersByEventId(@Param("eventId") UUID eventId);
+
+    @Query("""
+            SELECT DISTINCT u
+            FROM RoundJudgeAssignment rja
+            JOIN rja.judge j
+            JOIN j.user u
+            WHERE rja.round.id = :roundId
+              AND u.status = com.t7.seal.domain.UserStatus.ACTIVE
+            ORDER BY u.fullName ASC
+            """)
+    List<com.t7.seal.entities.User> findActiveJudgeUsersByRoundId(@Param("roundId") UUID roundId);
+
 }
