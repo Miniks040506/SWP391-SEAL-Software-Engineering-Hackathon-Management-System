@@ -51,7 +51,6 @@ public class NotificationServiceImpl implements NotificationService {
     public NotificationResponse createNotification(CreateNotificationRequest request, Authentication authentication) {
         User actor = currentUserService.getCurrentUser(authentication);
         ensureCanManage(actor);
-
         NotificationType type = parseEnum(NotificationType.class, request.type(), "notification type");
         NotificationTargetScope scope = parseEnum(NotificationTargetScope.class, request.targetScope(), "notification target scope");
         NotificationChannel channel = request.channel() == null || request.channel().isBlank()
@@ -64,24 +63,55 @@ public class NotificationServiceImpl implements NotificationService {
                     .orElseThrow(() -> new NotFoundException("Event not found " + request.eventId()));
         }
 
+        return createSystemNotification(
+                actor,
+                event,
+                type,
+                request.title(),
+                request.body(),
+                scope,
+                request.targetId(),
+                request.role(),
+                channel,
+                request.scheduledAt()
+        );
+    }
+
+    @Override
+    @Transactional
+    public NotificationResponse createSystemNotification(
+            User actor,
+            HackathonEvent event,
+            NotificationType type,
+            String title,
+            String body,
+            NotificationTargetScope targetScope,
+            UUID targetId,
+            String role,
+            NotificationChannel channel,
+            LocalDateTime scheduledAt
+    ) {
+        if (actor == null) {
+            throw new BadRequestException("Notification actor is required.");
+        }
         Notification notification = Notification.builder()
                 .event(event)
                 .createdBy(actor)
                 .type(type)
-                .title(trimRequired(request.title(), "title"))
-                .body(trimRequired(request.body(), "body"))
-                .targetScope(scope)
-                .targetId(request.targetId())
-                .targetRole(request.role())
-                .channel(channel)
-                .scheduledAt(request.scheduledAt())
-                .status(request.scheduledAt() == null ? NotificationStatus.DRAFT : NotificationStatus.SCHEDULED)
+                .title(trimRequired(title, "title"))
+                .body(trimRequired(body, "body"))
+                .targetScope(targetScope)
+                .targetId(targetId)
+                .targetRole(role)
+                .channel(channel == null ? NotificationChannel.BOTH : channel)
+                .scheduledAt(scheduledAt)
+                .status(scheduledAt == null ? NotificationStatus.DRAFT : NotificationStatus.SCHEDULED)
                 .build();
 
         Notification saved = notificationRepository.save(notification);
         auditLogService.record(actor, AuditActionType.NOTIFICATION_CREATED, "notifications", saved.getId(), null, auditState(saved), null);
 
-        if (request.scheduledAt() == null) {
+        if (scheduledAt == null) {
             fanout(saved, actor);
         }
 
