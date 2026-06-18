@@ -18,9 +18,11 @@ export function NotificationBell({ inboxPath }: Props) {
   const unreadPreviewQuery = useNotificationsQuery({ read: false, page: 0, size: 1 });
   const isParticipantInbox = inboxPath.startsWith("/participant");
   const pendingInvitationsQuery = useMyInvitationsQuery(isParticipantInbox);
-  const pendingInvitationCount = ((pendingInvitationsQuery.data ?? []) as any[]).filter(
-    (inv) => inv.status === "PENDING",
-  ).length;
+  const pendingInvitationCount = isParticipantInbox
+    ? ((pendingInvitationsQuery.data ?? []) as any[]).filter(
+        (inv) => inv.status === "PENDING",
+      ).length
+    : 0;
   const unreadCount = Math.max(
     unreadQuery.data?.unreadCount ?? 0,
     unreadPreviewQuery.data?.totalElements ?? 0,

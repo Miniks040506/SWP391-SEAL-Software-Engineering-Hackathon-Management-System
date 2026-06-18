@@ -19,7 +19,7 @@ export const MyInvitationsPage = () => {
   const rejectMutation = useRejectInvitationMutation();
   const navigate = useNavigate();
 
-  const invitations = ((response?.data || response || []) as any[]).filter(
+  const invitations = ((response ?? []) as any[]).filter(
     (inv) => inv.status === "PENDING",
   );
 
