@@ -193,7 +193,26 @@ export type CoordinatorTeamListParams = {
   size?: number;
 };
 
-export type MentorTeamProgressResponse = CoordinatorTeamSummaryResponse & {
+export type MentorTeamProgressResponse = {
+  teamId: UUID;
+  teamName: string;
+  projectTitle?: string | null;
+  status?: TeamStatus | null;
+  eventId?: UUID | null;
+  eventName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  leaderId?: UUID | null;
+  leaderName?: string | null;
+  leaderEmail?: string | null;
+  memberCount: number;
+  submissionCount: number;
+  submittedSubmissionCount: number;
+  missingSubmissionCount: number;
+  latestSubmissionStatus?: string | null;
+  registeredAt?: ISODateTime | null;
+  createdAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
   roundProgress: CoordinatorTeamSubmissionProgressResponse[];
 };
 
