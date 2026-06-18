@@ -54,6 +54,19 @@ export const teamApi = {
     );
   },
 
+  acceptJoinRequest(requestId: UUID) {
+    return apiRequest.post<TeamMemberResponse>(
+      `/teams/join-requests/${requestId}/accept`,
+    );
+  },
+
+  rejectJoinRequest(requestId: UUID, payload?: RejectInvitationRequest) {
+    return apiRequest.post<void>(
+      `/teams/join-requests/${requestId}/reject`,
+      payload ?? {},
+    );
+  },
+
   getMyJoinRequests() {
     return apiRequest.get<TeamJoinRequestResponse[]>("/teams/join-requests/me");
   },
