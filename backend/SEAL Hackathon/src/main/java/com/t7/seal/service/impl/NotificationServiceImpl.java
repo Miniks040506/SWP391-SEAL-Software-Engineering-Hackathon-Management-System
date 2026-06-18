@@ -38,6 +38,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationTemplateRepository notificationTemplateRepository;
     private final HackathonEventRepository eventRepository;
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final NotificationRecipientResolver recipientResolver;
     private final CurrentUserService currentUserService;
     private final EmailService emailService;
@@ -143,7 +144,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional(readOnly = true)
     public NotificationResponse getNotificationById(UUID notificationId, Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
-        NotificationRecipient recipient = notificationRecipientRepository.findByNotificationIdAndUserId(notificationId, user.getId())
+        NotificationRecipient recipient = notificationRecipientRepository.findActiveByNotificationIdAndUserId(notificationId, user.getId())
                 .orElseThrow(() -> new NotFoundException("Notification not found " + notificationId));
         return toInboxResponse(recipient);
     }
@@ -163,7 +164,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void markAsRead(UUID notificationId, Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
-        NotificationRecipient recipient = notificationRecipientRepository.findByNotificationIdAndUserId(notificationId, user.getId())
+        NotificationRecipient recipient = notificationRecipientRepository.findActiveByNotificationIdAndUserId(notificationId, user.getId())
                 .orElseThrow(() -> new NotFoundException("Notification not found " + notificationId));
         recipient.markRead();
         notificationRecipientRepository.save(recipient);
@@ -177,10 +178,32 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
+    public void deleteNotification(UUID notificationId, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+        int affected = notificationRecipientRepository.softDeleteOne(user.getId(), notificationId, LocalDateTime.now());
+        if (affected == 0) {
+            throw new NotFoundException("Notification not found " + notificationId);
+        }
+        auditLogService.record(user, AuditActionType.NOTIFICATION_DELETED, "notifications", notificationId, null,
+                Map.of("deletedForUserId", user.getId().toString()), null);
+    }
+
+    @Override
+    @Transactional
+    public int clearMyNotifications(Boolean read, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+        int affected = notificationRecipientRepository.softDeleteInbox(user.getId(), read, LocalDateTime.now());
+        auditLogService.record(user, AuditActionType.NOTIFICATION_CLEARED, "notification_recipients", user.getId(), null,
+                Map.of("deletedCount", affected, "read", read == null ? "ALL" : read.toString()), null);
+        return affected;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public UnreadCountResponse getUnreadCount(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
-        return new UnreadCountResponse(notificationRecipientRepository.countByUserIdAndReadAtIsNull(user.getId()));
+        return new UnreadCountResponse(notificationRecipientRepository.countByUserIdAndReadAtIsNullAndDeletedAtIsNull(user.getId()));
     }
 
     @Override
