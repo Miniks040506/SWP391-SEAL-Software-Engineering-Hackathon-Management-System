@@ -171,8 +171,8 @@ public class TeamServiceImpl implements TeamService {
         String email = normalizeEmail(request.email());
 
         LocalDateTime now = LocalDateTime.now();
-        if (teamInvitationRepository.existsByTeamIdAndInviteEmailIgnoreCaseAndStatusAndExpiresAtAfter(
-                teamId, email, InvitationStatus.PENDING, now)) {
+        if (teamInvitationRepository.existsByTeamIdAndInviteEmailIgnoreCaseAndTypeAndStatusAndExpiresAtAfter(
+                teamId, email, TeamInvitationType.INVITATION, InvitationStatus.PENDING, now)) {
             throw new ConflictException("This email already has a pending invitation for this team.");
         }
 
@@ -191,6 +191,7 @@ public class TeamServiceImpl implements TeamService {
                 .invitee(invitee)
                 .token(generateToken())
                 .status(InvitationStatus.PENDING)
+                .type(TeamInvitationType.INVITATION)
                 .expiresAt(now.plusHours(INVITATION_TTL_HOURS))
                 .createdAt(now)
                 .build();
@@ -208,7 +209,8 @@ public class TeamServiceImpl implements TeamService {
         Team team = getTeam(teamId);
         ensureTeamLeader(team, authentication);
 
-        return teamInvitationRepository.findByTeamIdOrderByCreatedAtDesc(teamId)
+        return teamInvitationRepository.findByTeamIdAndTypeOrderByCreatedAtDesc(
+                        teamId, TeamInvitationType.INVITATION)
                 .stream()
                 .map(this::toTeamInvitationResponse)
                 .toList();
@@ -219,8 +221,9 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamInvitationResponse> getMyInvitations(Authentication authentication) {
         User currentUser = currentUserService.getCurrentUser(authentication);
 
-        return teamInvitationRepository.findByInviteEmailIgnoreCaseAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
+        return teamInvitationRepository.findByInviteEmailIgnoreCaseAndTypeAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
                         currentUser.getEmail(),
+                        TeamInvitationType.INVITATION,
                         InvitationStatus.PENDING,
                         LocalDateTime.now()
                 )
