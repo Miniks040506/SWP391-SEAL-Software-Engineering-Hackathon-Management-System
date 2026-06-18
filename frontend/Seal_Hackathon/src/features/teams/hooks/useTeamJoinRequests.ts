@@ -63,6 +63,58 @@ export function useJoinRequestByTokenQuery(token: string) {
   });
 }
 
+export function useTeamJoinRequestsQuery(teamId?: UUID, enabled = true) {
+  return useQuery({
+    queryKey: teamJoinRequestQueryKeys.teamRequests(teamId),
+    queryFn: () => teamApi.getTeamJoinRequests(teamId as UUID),
+    enabled: Boolean(teamId) && enabled,
+  });
+}
+
+export function useAcceptJoinRequestMutation(teamId?: UUID) {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: (requestId: UUID) => teamApi.acceptJoinRequest(requestId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: teamJoinRequestQueryKeys.teamRequests(teamId),
+        }),
+        queryClient.invalidateQueries({ queryKey: ["participant-team-detail", teamId] }),
+        queryClient.invalidateQueries({ queryKey: ["participant-team-members", teamId] }),
+        queryClient.invalidateQueries({ queryKey: ["participant-my-teams"] }),
+      ]);
+      enqueueSnackbar("Join request accepted.", { variant: "success" });
+    },
+    onError: (error: Error) =>
+      enqueueSnackbar(error.message || "Failed to accept join request.", {
+        variant: "error",
+      }),
+  });
+}
+
+export function useRejectJoinRequestMutation(teamId?: UUID) {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: ({ requestId, reason }: { requestId: UUID; reason?: string }) =>
+      teamApi.rejectJoinRequest(requestId, { reason }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: teamJoinRequestQueryKeys.teamRequests(teamId),
+      });
+      enqueueSnackbar("Join request rejected.", { variant: "info" });
+    },
+    onError: (error: Error) =>
+      enqueueSnackbar(error.message || "Failed to reject join request.", {
+        variant: "error",
+      }),
+  });
+}
+
 export function useAcceptJoinRequestByTokenMutation() {
   const queryClient = useQueryClient();
 
