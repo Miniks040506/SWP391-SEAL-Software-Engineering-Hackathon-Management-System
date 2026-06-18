@@ -277,7 +277,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         int inAppCount = 0;
         if (saved.usesInAppChannel()) {
-            inAppCount = createInAppRecipients(saved, resolved.inAppRecipients());
+            inAppCount = createInAppRecipients(saved, resolveInAppRecipients(saved, resolved));
         }
 
         String emailFailure = null;
@@ -303,11 +303,26 @@ public class NotificationServiceImpl implements NotificationService {
         auditLogService.record(actor, AuditActionType.NOTIFICATION_SENT, "notifications", saved.getId(), null, auditState(saved), null);
     }
 
+    private List<NotificationRecipientResponse> resolveInAppRecipients(
+            Notification notification,
+            NotificationRecipientResolutionResponse resolved
+    ) {
+        if (notification.getType() == NotificationType.TEAM_INVITATION_SENT
+                && notification.getTargetScope() == NotificationTargetScope.SINGLE_USER
+                && notification.getTargetId() != null) {
+            return userRepository.findById(notification.getTargetId())
+                    .filter(this::canReceiveInvitationNotification)
+                    .map(user -> List.of(toRecipientResponse(user, "IN_APP")))
+                    .orElseGet(List::of);
+        }
+        return resolved.inAppRecipients();
+    }
+
     private int createInAppRecipients(Notification notification, List<NotificationRecipientResponse> recipients) {
         int count = 0;
         for (UUID userId : dedupeUserIds(recipients)) {
             User user = userRepository.findById(userId).orElse(null);
-            if (user == null || !user.isActive()) continue;
+            if (!canCreateInAppRecipient(notification, user)) continue;
             if (notificationRecipientRepository.findByNotificationIdAndUserId(notification.getId(), user.getId()).isPresent()) {
                 continue;
             }
@@ -320,6 +335,35 @@ public class NotificationServiceImpl implements NotificationService {
             count++;
         }
         return count;
+    }
+
+    private boolean canCreateInAppRecipient(Notification notification, User user) {
+        if (user == null) {
+            return false;
+        }
+        if (notification.getType() == NotificationType.TEAM_INVITATION_SENT) {
+            return canReceiveInvitationNotification(user);
+        }
+        return user.isActive();
+    }
+
+    private boolean canReceiveInvitationNotification(User user) {
+        return user != null
+                && user.getEmail() != null
+                && !user.getEmail().isBlank()
+                && user.getStatus() != UserStatus.SUSPENDED
+                && user.getStatus() != UserStatus.DEACTIVATED;
+    }
+
+    private NotificationRecipientResponse toRecipientResponse(User user, String deliveryRole) {
+        return new NotificationRecipientResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole() == null ? null : user.getRole().name(),
+                user.getStatus() == null ? null : user.getStatus().name(),
+                deliveryRole
+        );
     }
 
     private EmailDispatchResult createAndSendEmails(Notification notification, NotificationRecipientResolutionResponse resolved) {
