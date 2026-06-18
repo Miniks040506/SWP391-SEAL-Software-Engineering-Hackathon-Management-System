@@ -450,21 +450,35 @@ public class NotificationServiceImpl implements NotificationService {
     private String renderSubject(Notification notification) {
         String template = notificationTemplateRepository.findByTypeAndActiveTrue(notification.getType())
                 .map(NotificationTemplate::getSubjectTemplate)
-                .orElse(defaultSubject(notification.getType()));
-        return renderTemplate(template, notification, renderTargetPath(notification));
+                .orElse(null);
+        String rendered = renderTemplate(template, notification, renderTargetPath(notification));
+        if (isBlank(rendered) || containsUnresolvedPlaceholder(rendered)) {
+            rendered = notification.getTitle();
+        }
+        if (isBlank(rendered) || containsUnresolvedPlaceholder(rendered)) {
+            rendered = defaultSubject(notification.getType());
+        }
+        return rendered;
     }
 
     private String renderEmailHtml(Notification notification, String actionUrl) {
         Optional<NotificationTemplate> template = notificationTemplateRepository.findByTypeAndActiveTrue(notification.getType());
         if (template.isPresent() && !isBlank(template.get().getHtmlTemplate())) {
-            return renderTemplate(template.get().getHtmlTemplate(), notification, actionUrl);
+            String html = renderTemplate(template.get().getHtmlTemplate(), notification, actionUrl);
+            if (!containsUnresolvedPlaceholder(html)) {
+                return html;
+            }
         }
 
         String bodyTemplate = template
                 .map(NotificationTemplate::getBodyTemplate)
                 .filter(value -> !isBlank(value))
                 .orElse(notification.getBody());
-        String body = renderTemplate(bodyTemplate, notification, actionUrl).replace("\n", "<br/>");
+        String renderedBody = renderTemplate(bodyTemplate, notification, actionUrl);
+        if (isBlank(renderedBody) || containsUnresolvedPlaceholder(renderedBody)) {
+            renderedBody = notification.getBody();
+        }
+        String body = nullToEmpty(renderedBody).replace("\n", "<br/>");
         String cta = actionUrl == null ? "" : """
                 <div style="text-align:center;margin-top:28px;">
                   <a href="%s" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;font-weight:900;padding:13px 24px;border-radius:12px;">Open in SEAL</a>
@@ -531,14 +545,116 @@ public class NotificationServiceImpl implements NotificationService {
         if (template == null) {
             return "";
         }
-        return template
-                .replace("{title}", nullToEmpty(notification.getTitle()))
-                .replace("{body}", nullToEmpty(notification.getBody()))
-                .replace("{type}", notification.getType() == null ? "" : notification.getType().name())
-                .replace("{targetScope}", notification.getTargetScope() == null ? "" : notification.getTargetScope().name())
-                .replace("{targetId}", notification.getTargetId() == null ? "" : notification.getTargetId().toString())
-                .replace("{eventName}", notification.getEvent() == null ? "" : nullToEmpty(notification.getEvent().getName()))
-                .replace("{actionUrl}", actionUrl == null ? "" : actionUrl);
+        String rendered = template;
+        for (Map.Entry<String, String> entry : templateValues(notification, actionUrl).entrySet()) {
+            rendered = rendered.replace("{" + entry.getKey() + "}", nullToEmpty(entry.getValue()));
+        }
+        return rendered.trim();
+    }
+
+    private Map<String, String> templateValues(Notification notification, String actionUrl) {
+        Map<String, String> values = new LinkedHashMap<>();
+        String actorName = displayName(notification.getCreatedBy());
+        String actorEmail = notification.getCreatedBy() == null ? "" : notification.getCreatedBy().getEmail();
+
+        values.put("title", notification.getTitle());
+        values.put("body", notification.getBody());
+        values.put("type", notification.getType() == null ? "" : notification.getType().name());
+        values.put("targetScope", notification.getTargetScope() == null ? "" : notification.getTargetScope().name());
+        values.put("targetId", notification.getTargetId() == null ? "" : notification.getTargetId().toString());
+        values.put("eventName", notification.getEvent() == null ? "" : notification.getEvent().getName());
+        values.put("actionUrl", actionUrl == null ? "" : actionUrl);
+        values.put("actorName", actorName);
+        values.put("actorEmail", actorEmail);
+        values.put("memberName", actorName);
+        values.put("inviteeEmail", actorEmail);
+        values.put("teamName", resolveTeamName(notification));
+        values.put("trackName", extractTrackName(notification));
+        values.put("roundName", extractRoundName(notification));
+        return values;
+    }
+
+    private String resolveTeamName(Notification notification) {
+        if (notification.getTargetScope() == NotificationTargetScope.TEAM && notification.getTargetId() != null) {
+            return teamRepository.findById(notification.getTargetId())
+                    .map(Team::getName)
+                    .filter(value -> !isBlank(value))
+                    .orElseGet(() -> extractTeamName(notification));
+        }
+        return extractTeamName(notification);
+    }
+
+    private String extractTeamName(Notification notification) {
+        String source = notificationText(notification);
+        String lower = source.toLowerCase(Locale.ROOT);
+        for (String marker : List.of(" join team ", " joined team ", " for team ", "team ")) {
+            int index = lower.indexOf(marker);
+            if (index >= 0) {
+                String tail = source.substring(index + marker.length()).trim();
+                return cleanExtractedName(tail, List.of(" has ", " using ", " for ", "."));
+            }
+        }
+        return "your team";
+    }
+
+    private String extractTrackName(Notification notification) {
+        String source = notificationText(notification);
+        String lower = source.toLowerCase(Locale.ROOT);
+        int index = lower.indexOf(" track ");
+        if (index < 0) {
+            return "";
+        }
+        String tail = source.substring(index + " track ".length()).trim();
+        return cleanExtractedName(tail, List.of(" in ", " for ", "."));
+    }
+
+    private String extractRoundName(Notification notification) {
+        String source = notificationText(notification);
+        String lower = source.toLowerCase(Locale.ROOT);
+        int index = lower.indexOf(" round ");
+        if (index < 0 && lower.startsWith("round ")) {
+            index = 0;
+        }
+        if (index < 0) {
+            return "";
+        }
+        String tail = source.substring(index + (index == 0 ? "round ".length() : " round ".length())).trim();
+        return cleanExtractedName(tail, List.of(" is ", " has ", " for ", " of ", "."));
+    }
+
+    private String notificationText(Notification notification) {
+        return (nullToEmpty(notification.getTitle()) + " " + nullToEmpty(notification.getBody())).trim();
+    }
+
+    private String cleanExtractedName(String value, List<String> endings) {
+        String result = value;
+        String lower = result.toLowerCase(Locale.ROOT);
+        for (String ending : endings) {
+            int index = lower.indexOf(ending);
+            if (index >= 0) {
+                result = result.substring(0, index);
+                break;
+            }
+        }
+        result = result.trim();
+        return result.isBlank() ? "your team" : result;
+    }
+
+    private String displayName(User user) {
+        if (user == null) {
+            return "A member";
+        }
+        if (!isBlank(user.getFullName())) {
+            return user.getFullName();
+        }
+        if (!isBlank(user.getEmail())) {
+            return user.getEmail();
+        }
+        return "A member";
+    }
+
+    private boolean containsUnresolvedPlaceholder(String value) {
+        return value != null && value.matches(".*\\{[A-Za-z0-9_]+}.*");
     }
 
     private String defaultSubject(NotificationType type) {
