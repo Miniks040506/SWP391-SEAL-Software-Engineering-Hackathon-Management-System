@@ -643,6 +643,11 @@ public class NotificationServiceImpl implements NotificationService {
         if (notification.getType() == NotificationType.TEAM_INVITATION_SENT) {
             return "/participant/invitations";
         }
+        if (notification.getType() == NotificationType.TEAM_JOIN_REQUEST_SENT
+                || notification.getType() == NotificationType.TEAM_JOIN_REQUEST_ACCEPTED
+                || notification.getType() == NotificationType.TEAM_JOIN_REQUEST_REJECTED) {
+            return "/participant/teams";
+        }
         if (notification.getType() == NotificationType.SUBMISSION_SUBMITTED
                 || notification.getType() == NotificationType.SUBMISSION_UPDATED) {
             if ("MENTOR".equalsIgnoreCase(notification.getTargetRole())) {
@@ -792,6 +797,9 @@ public class NotificationServiceImpl implements NotificationService {
             case TEAM_INVITATION_ACCEPTED -> "A member accepted the team invitation";
             case TEAM_INVITATION_REJECTED -> "A team invitation was declined";
             case TEAM_REGISTERED -> "Your team registration is confirmed";
+            case TEAM_JOIN_REQUEST_SENT -> "A student requested to join your team";
+            case TEAM_JOIN_REQUEST_ACCEPTED -> "Your team join request was accepted";
+            case TEAM_JOIN_REQUEST_REJECTED -> "Your team join request was rejected";
             case SUBMISSION_SUBMITTED -> "Submission received";
             case SUBMISSION_UPDATED -> "Submission updated";
             case ROUND_OPENED -> "A SEAL round is now open";

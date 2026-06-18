@@ -53,6 +53,33 @@ public interface EmailService {
             String trackName
     );
 
+    void sendTeamJoinRequestReceived(
+            String leaderEmail,
+            String leaderName,
+            String requesterName,
+            String requesterEmail,
+            String teamName,
+            String message,
+            String acceptUrl,
+            String rejectUrl,
+            LocalDateTime expiresAt
+    );
+
+    void sendTeamJoinRequestAccepted(
+            String requesterEmail,
+            String requesterName,
+            String teamName,
+            String teamUrl
+    );
+
+    void sendTeamJoinRequestRejected(
+            String requesterEmail,
+            String requesterName,
+            String teamName,
+            String reason,
+            String teamsUrl
+    );
+
     void sendJudgeAssignedEmail(
             String to,
             String judgeName,

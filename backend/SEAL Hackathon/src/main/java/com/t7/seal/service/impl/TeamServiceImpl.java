@@ -171,8 +171,8 @@ public class TeamServiceImpl implements TeamService {
         String email = normalizeEmail(request.email());
 
         LocalDateTime now = LocalDateTime.now();
-        if (teamInvitationRepository.existsByTeamIdAndInviteEmailIgnoreCaseAndStatusAndExpiresAtAfter(
-                teamId, email, InvitationStatus.PENDING, now)) {
+        if (teamInvitationRepository.existsByTeamIdAndInviteEmailIgnoreCaseAndTypeAndStatusAndExpiresAtAfter(
+                teamId, email, TeamInvitationType.INVITATION, InvitationStatus.PENDING, now)) {
             throw new ConflictException("This email already has a pending invitation for this team.");
         }
 
@@ -191,6 +191,7 @@ public class TeamServiceImpl implements TeamService {
                 .invitee(invitee)
                 .token(generateToken())
                 .status(InvitationStatus.PENDING)
+                .type(TeamInvitationType.INVITATION)
                 .expiresAt(now.plusHours(INVITATION_TTL_HOURS))
                 .createdAt(now)
                 .build();
@@ -208,7 +209,8 @@ public class TeamServiceImpl implements TeamService {
         Team team = getTeam(teamId);
         ensureTeamLeader(team, authentication);
 
-        return teamInvitationRepository.findByTeamIdOrderByCreatedAtDesc(teamId)
+        return teamInvitationRepository.findByTeamIdAndTypeOrderByCreatedAtDesc(
+                        teamId, TeamInvitationType.INVITATION)
                 .stream()
                 .map(this::toTeamInvitationResponse)
                 .toList();
@@ -219,8 +221,9 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamInvitationResponse> getMyInvitations(Authentication authentication) {
         User currentUser = currentUserService.getCurrentUser(authentication);
 
-        return teamInvitationRepository.findByInviteEmailIgnoreCaseAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
+        return teamInvitationRepository.findByInviteEmailIgnoreCaseAndTypeAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
                         currentUser.getEmail(),
+                        TeamInvitationType.INVITATION,
                         InvitationStatus.PENDING,
                         LocalDateTime.now()
                 )
@@ -232,7 +235,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     @Override
     public TeamInvitationResponse getInvitationByToken(String token) {
-        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+        TeamInvitation invitation = teamInvitationRepository.findByTokenAndType(token, TeamInvitationType.INVITATION)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
 
         return toTeamInvitationResponse(invitation);
@@ -344,7 +347,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     @Override
     public TeamMemberResponse acceptInvitationByToken(String token, Authentication authentication) {
-        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+        TeamInvitation invitation = teamInvitationRepository.findByTokenAndType(token, TeamInvitationType.INVITATION)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
         return acceptInvitationInternal(invitation, authentication);
     }
@@ -359,7 +362,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     @Override
     public void rejectInvitationByToken(String token, ReasonRequest request, Authentication authentication) {
-        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+        TeamInvitation invitation = teamInvitationRepository.findByTokenAndType(token, TeamInvitationType.INVITATION)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
         rejectInvitationInternal(invitation, request, authentication);
     }
@@ -367,7 +370,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     @Override
     public void rejectInvitationByToken(String token, ReasonRequest request) {
-        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+        TeamInvitation invitation = teamInvitationRepository.findByTokenAndType(token, TeamInvitationType.INVITATION)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
         rejectInvitationByTokenInternal(invitation, request);
     }
@@ -1010,8 +1013,12 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private TeamInvitation getInvitation(UUID invitationId) {
-        return teamInvitationRepository.findById(invitationId)
+        TeamInvitation invitation = teamInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
+        if (invitation.getType() != TeamInvitationType.INVITATION) {
+            throw new NotFoundException("Invitation not found.");
+        }
+        return invitation;
     }
 
     private List<TeamMember> activeMembers(UUID teamId) {

@@ -2,9 +2,12 @@ package com.t7.seal.repository;
 
 import com.t7.seal.domain.TeamStatus;
 import com.t7.seal.entities.Team;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.security.core.parameters.P;
@@ -17,6 +20,10 @@ import java.util.UUID;
 @Repository
 public interface TeamRepository extends JpaRepository<Team, UUID> {
     Optional<Team> findByJoinCode(String joinCode);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM Team t WHERE t.id = :teamId")
+    Optional<Team> findByIdForUpdate(@Param("teamId") UUID teamId);
 
     Page<Team> findByTrackIdOrderByRegisteredAtDescCreatedAtDesc(UUID trackId, Pageable pageable);
 
@@ -112,4 +119,30 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
             WHERE t.id = :teamId
             """)
     Optional<Team> findMentorDetailsById(@Param("teamId") UUID teamId);
+
+    @Query("""
+            SELECT DISTINCT t
+            FROM Team t
+            LEFT JOIN t.track tr
+            LEFT JOIN tr.event e
+            LEFT JOIN t.leader l
+            WHERE t.status = com.t7.seal.domain.TeamStatus.FORMING
+              AND (:eventId IS NULL OR e.id = :eventId)
+              AND (:trackId IS NULL OR tr.id = :trackId)
+              AND (
+                    :search IS NULL OR :search = ''
+                    OR LOWER(t.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(COALESCE(t.projectTitle, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(COALESCE(l.fullName, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+                  )
+            ORDER BY t.createdAt DESC
+            """)
+    @EntityGraph(attributePaths = {"leader", "track", "track.event"})
+    Page<Team> searchFormingTeams(
+            @Param("eventId") UUID eventId,
+            @Param("trackId") UUID trackId,
+            @Param("search") String search,
+            Pageable pageable
+    );
+
 }

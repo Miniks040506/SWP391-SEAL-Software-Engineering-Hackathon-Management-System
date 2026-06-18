@@ -28,6 +28,7 @@ import type { TeamMemberResponse } from "@/types/team.types";
 
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
 import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
+import { TeamJoinRequestsPanel } from "../components/TeamJoinRequestsPanel";
 
 import {
   inviteMemberSchema,
@@ -572,6 +573,7 @@ export const TeamDetailPage = () => {
                   </div>
                 )}
               </section>
+              {currentUserIsLeader && <TeamJoinRequestsPanel teamId={team.id} />}
             </div>
           )}
 

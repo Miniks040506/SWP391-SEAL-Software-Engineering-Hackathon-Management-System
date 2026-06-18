@@ -51,6 +51,7 @@ import {
 import {
   CreateTeamPage,
   InvitationResponsePage,
+  JoinRequestResponsePage,
   MyInvitationsPage,
   MyTeamsPage,
   TeamDetailPage,
@@ -245,6 +246,14 @@ export const router = createBrowserRouter([
   {
     path: "/invitations/reject",
     element: <InvitationResponsePage action="reject" />,
+  },
+  {
+    path: "/join-requests/accept",
+    element: <JoinRequestResponsePage action="accept" />,
+  },
+  {
+    path: "/join-requests/reject",
+    element: <JoinRequestResponsePage action="reject" />,
   },
 
   { path: "*", element: <NotFoundPage /> },

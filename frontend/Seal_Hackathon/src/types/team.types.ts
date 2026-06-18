@@ -60,6 +60,18 @@ export type JoinTeamByCodeRequest = {
   joinCode: string;
 };
 
+export type CreateTeamJoinRequest = {
+  message?: string;
+};
+
+export type FormingTeamListParams = {
+  eventId?: UUID;
+  trackId?: UUID;
+  search?: string;
+  page?: number;
+  size?: number;
+};
+
 export type TeamResponse = {
   id: UUID;
   name: string;
@@ -131,6 +143,41 @@ export type TeamJoinCodePreviewResponse = {
   memberCount: number;
   maxMembers: number;
   joinCodeEnabled: boolean;
+};
+
+export type FormingTeamResponse = {
+  id: UUID;
+  name: string;
+  projectTitle?: string | null;
+  description?: string | null;
+  leaderId: UUID;
+  leaderName: string;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  eventId?: UUID | null;
+  eventName?: string | null;
+  status: TeamStatus;
+  memberCount: number;
+  maxMembers: number;
+  joinCodeEnabled: boolean;
+  canRequestJoin: boolean;
+  alreadyMember: boolean;
+  pendingJoinRequest: boolean;
+};
+
+export type TeamJoinRequestResponse = {
+  id: UUID;
+  teamId: UUID;
+  teamName: string;
+  requesterId: UUID;
+  requesterName: string;
+  requesterEmail: string;
+  status: "PENDING" | "ACCEPTED" | "REJECTED" | "EXPIRED" | "CANCELLED" | string;
+  message?: string | null;
+  responseReason?: string | null;
+  createdAt: ISODateTime;
+  expiresAt: ISODateTime;
+  respondedAt?: ISODateTime | null;
 };
 
 export type CoordinatorTeamSubmissionProgressResponse = {
