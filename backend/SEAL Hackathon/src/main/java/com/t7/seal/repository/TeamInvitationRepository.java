@@ -27,4 +27,10 @@ public interface TeamInvitationRepository extends JpaRepository<TeamInvitation, 
     List<TeamInvitation> findByTeamIdAndStatus(UUID teamId, InvitationStatus status);
 
     List<TeamInvitation> findByInviteEmailIgnoreCaseOrderByCreatedAtDesc(String inviteEmail);
+
+    List<TeamInvitation> findByInviteEmailIgnoreCaseAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
+            String inviteEmail,
+            InvitationStatus status,
+            LocalDateTime now
+    );
 }

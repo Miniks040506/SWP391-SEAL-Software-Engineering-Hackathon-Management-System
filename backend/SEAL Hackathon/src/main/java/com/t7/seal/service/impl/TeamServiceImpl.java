@@ -219,7 +219,11 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamInvitationResponse> getMyInvitations(Authentication authentication) {
         User currentUser = currentUserService.getCurrentUser(authentication);
 
-        return teamInvitationRepository.findByInviteEmailIgnoreCaseOrderByCreatedAtDesc(currentUser.getEmail())
+        return teamInvitationRepository.findByInviteEmailIgnoreCaseAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
+                        currentUser.getEmail(),
+                        InvitationStatus.PENDING,
+                        LocalDateTime.now()
+                )
                 .stream()
                 .map(this::toTeamInvitationResponse)
                 .toList();
@@ -358,6 +362,14 @@ public class TeamServiceImpl implements TeamService {
         TeamInvitation invitation = teamInvitationRepository.findByToken(token)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
         rejectInvitationInternal(invitation, request, authentication);
+    }
+
+    @Transactional
+    @Override
+    public void rejectInvitationByToken(String token, ReasonRequest request) {
+        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+                .orElseThrow(() -> new NotFoundException("Invitation not found."));
+        rejectInvitationByTokenInternal(invitation, request);
     }
 
     @Transactional
@@ -586,6 +598,23 @@ public class TeamServiceImpl implements TeamService {
             throw new UnauthorizedException("This invitation is not for your account.");
         }
 
+        declineInvitation(invitation, request, currentUser, currentUser);
+    }
+
+    private void rejectInvitationByTokenInternal(TeamInvitation invitation, ReasonRequest request) {
+        User invitee = invitation.getInvitee();
+        if (invitee == null) {
+            invitee = userRepository.findByEmailIgnoreCase(invitation.getInviteEmail()).orElse(null);
+        }
+        declineInvitation(invitation, request, invitee, invitee == null ? invitation.getInvitedBy() : invitee);
+    }
+
+    private void declineInvitation(
+            TeamInvitation invitation,
+            ReasonRequest request,
+            User invitee,
+            User notificationActor
+    ) {
         if (!invitation.isPending()) {
             throw new ConflictException("This invitation is no longer pending.");
         }
@@ -596,9 +625,11 @@ public class TeamServiceImpl implements TeamService {
         }
 
         invitation.decline(now);
-        invitation.setInvitee(currentUser);
+        if (invitee != null) {
+            invitation.setInvitee(invitee);
+        }
         invitation.setResponseReason(blankToNull(request == null ? null : request.reason()));
-        createInvitationRejectedNotification(invitation, currentUser);
+        createInvitationRejectedNotification(invitation, notificationActor);
     }
 
     private void ensureActiveStudent(User user) {

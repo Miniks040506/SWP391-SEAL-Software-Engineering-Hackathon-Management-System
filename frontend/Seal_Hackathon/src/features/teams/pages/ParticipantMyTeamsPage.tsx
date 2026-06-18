@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
 
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
@@ -61,7 +60,9 @@ export const MyTeamsPage = () => {
   const joinMutation = useJoinTeamByCodeMutation();
 
   const teams = (myTeamsQuery.data ?? []) as TeamSummaryView[];
-  const invitations = invitationsQuery.data ?? [];
+  const invitations = ((invitationsQuery.data ?? []) as any[]).filter(
+    (inv) => inv.status === "PENDING",
+  );
 
   const showEmptyState = !myTeamsQuery.isLoading && (myTeamsQuery.isError || teams.length === 0);
 
@@ -163,7 +164,11 @@ export const MyTeamsPage = () => {
         onClose={handleCloseNotifications}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
-        PaperProps={{ className: "mt-2 w-full max-w-[360px] rounded-2xl border border-gray-100 shadow-xl dark:border-slate-700 dark:bg-slate-800" }}
+        slotProps={{
+          paper: {
+            className: "mt-2 w-full max-w-[360px] rounded-2xl border border-gray-100 shadow-xl dark:border-slate-700 dark:bg-slate-800",
+          },
+        }}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-slate-700">
           <h3 className="font-extrabold text-gray-900 dark:text-white">Invitations</h3>

@@ -104,8 +104,9 @@ public class SecurityConfig {
                                 API + "/prizes/events/*"
                         ).permitAll()
 
-                        // Public invitation token lookup. Accept/reject still requires login.
+                        // Public invitation token lookup. Reject can be confirmed directly from the email token.
                         .requestMatchers(HttpMethod.GET, API + "/invitations/token/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, API + "/invitations/token/*/reject").permitAll()
 
                         // Current user routes. Must be before /users/*.
                         .requestMatchers(HttpMethod.GET, API + "/users/me").authenticated()

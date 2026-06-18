@@ -259,10 +259,23 @@ public class EmailServiceImpl implements EmailService {
                         <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
                             <strong>%s</strong> invited you to join team <strong>%s</strong>.
                         </p>
-                        
-                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                            This invitation expires at <strong>%s</strong>.
-                        </p>
+
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;margin:24px 0;">
+                            <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Team</td>
+                                    <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Invited by</td>
+                                    <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Expires</td>
+                                    <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                                </tr>
+                            </table>
+                        </div>
                         
                         <div style="text-align:center;margin:28px 0;">
                             <a href="%s"
@@ -278,6 +291,8 @@ public class EmailServiceImpl implements EmailService {
                         safeInviteeName,
                         safeInvitedByName,
                         safeTeamName,
+                        safeTeamName,
+                        safeInvitedByName,
                         safeExpiresAt,
                         escapeHtml(acceptUrl),
                         escapeHtml(rejectUrl)

@@ -43,6 +43,8 @@ public interface TeamService {
 
     void rejectInvitationByToken(String token, ReasonRequest request, Authentication authentication);
 
+    void rejectInvitationByToken(String token, ReasonRequest request);
+
     void cancelInvitation(UUID invitationId, Authentication authentication);
 
     TeamResponse transferLeader(UUID teamId, TransferLeaderRequest request, Authentication authentication);

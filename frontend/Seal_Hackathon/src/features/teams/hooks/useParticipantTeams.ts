@@ -68,12 +68,17 @@ export function useTeamInvitationsQuery(teamId?: string) {
   });
 }
 
-export function useMyInvitationsQuery() {
+export function useMyInvitationsQuery(enabled = true) {
   return useQuery({
     queryKey: participantTeamQueryKeys.myInvitations,
     queryFn: async () => {
       return activeTeamService.getMyInvitations();
     },
+    enabled,
+    refetchInterval: 10_000,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: "always",
   });
 }
 
@@ -307,6 +312,9 @@ const removeInvitationFromCache = (queryClient: any, idOrToken: string, isToken 
         void queryClient.invalidateQueries({
           queryKey: participantTeamQueryKeys.myInvitations,
         });
+        void queryClient.invalidateQueries({
+          queryKey: [NOTIFICATION_QUERY_KEY],
+        });
         enqueueSnackbar("Invitation declined.", { variant: "info" });
       },
       onError: () =>
@@ -359,6 +367,7 @@ export function useRejectInvitationByTokenMutation() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.myInvitations });
+      await queryClient.invalidateQueries({ queryKey: [NOTIFICATION_QUERY_KEY] });
       enqueueSnackbar("Invitation declined.", { variant: "info" });
     },
     onError: (error: any) => enqueueSnackbar(error.message || "Failed to decline invitation.", { variant: "error" }),

@@ -5,6 +5,7 @@ import {
   useNotificationsQuery,
   useUnreadNotificationCountQuery,
 } from "@/features/notification/hooks/useNotificationQueries";
+import { useMyInvitationsQuery } from "@/features/teams/hooks/useParticipantTeams";
 
 type Props = {
   inboxPath: string;
@@ -15,9 +16,15 @@ export function NotificationBell({ inboxPath }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const unreadQuery = useUnreadNotificationCountQuery();
   const unreadPreviewQuery = useNotificationsQuery({ read: false, page: 0, size: 1 });
+  const isParticipantInbox = inboxPath.startsWith("/participant");
+  const pendingInvitationsQuery = useMyInvitationsQuery(isParticipantInbox);
+  const pendingInvitationCount = ((pendingInvitationsQuery.data ?? []) as any[]).filter(
+    (inv) => inv.status === "PENDING",
+  ).length;
   const unreadCount = Math.max(
     unreadQuery.data?.unreadCount ?? 0,
     unreadPreviewQuery.data?.totalElements ?? 0,
+    pendingInvitationCount,
   );
 
   useEffect(() => {
