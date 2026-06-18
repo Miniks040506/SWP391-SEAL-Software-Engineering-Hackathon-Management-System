@@ -1,6 +1,6 @@
 import { apiRequest } from "@/api/apiRequest";
 import type { PageResponse, UUID } from "@/types/common.types";
-import type { TeamResponse } from "@/types/team.types";
+import type { MentorTeamProgressResponse, TeamResponse } from "@/types/team.types";
 import type {
   AssignMentorRequest,
   MentorAssignmentResponse,
@@ -11,6 +11,7 @@ import type {
   TrackAvailabilityResponse,
   TrackTeamProgressResponse,
   UpdateTrackRequest,
+  MentorTrackResponse,
 } from "@/types/track.types";
 
 export const trackApi = {
@@ -71,6 +72,22 @@ export const trackApi = {
   getAvailableTracks(eventId: UUID) {
     return apiRequest.get<TrackAvailabilityResponse[]>(
       `/events/${eventId}/tracks/available`,
+    );
+  },
+
+  getMyAssignedTracks(eventId?: UUID) {
+    return apiRequest.get<MentorTrackResponse[]>("/mentor/tracks", {
+      params: { eventId },
+    });
+  },
+
+  getTeamInAssignedTracks(
+    trackId: UUID,
+    params?: { status?: string; search?: string; page?: number; size?: number },
+  ) {
+    return apiRequest.get<PageResponse<MentorTeamProgressResponse>>(
+      `/mentor/tracks/${trackId}/teams`,
+      { params },
     );
   },
 };

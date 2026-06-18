@@ -11,15 +11,14 @@ import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import HealthAndSafetyOutlinedIcon from "@mui/icons-material/HealthAndSafetyOutlined";
-import HistoryEduOutlinedIcon from "@mui/icons-material/HistoryEduOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import RuleOutlinedIcon from "@mui/icons-material/RuleOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
-import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined';
+import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
+import StickyNote2OutlinedIcon from "@mui/icons-material/StickyNote2Outlined";
 
 export type SidebarItem = {
   label: string;

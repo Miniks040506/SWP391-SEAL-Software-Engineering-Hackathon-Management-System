@@ -104,8 +104,14 @@ export const router = createBrowserRouter([
       { path: "teams", element: <MyTeamsPage /> },
       { path: "teams/create", element: <CreateTeamPage /> },
       { path: "teams/:teamId", element: <TeamDetailPage /> },
-      { path: "teams/:teamId/submissions", element: <ParticipantSubmissionsPage /> },
-      { path: "teams/:teamId/rounds/:roundId/submission", element: <SubmissionFormPage /> },
+      {
+        path: "teams/:teamId/submissions",
+        element: <ParticipantSubmissionsPage />,
+      },
+      {
+        path: "teams/:teamId/rounds/:roundId/submission",
+        element: <SubmissionFormPage />,
+      },
       { path: "invitations", element: <MyInvitationsPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
     ],
@@ -187,7 +193,10 @@ export const router = createBrowserRouter([
       { path: "dashboard", element: <JudgeDashboardPage /> },
       { path: "events", element: <NotFoundPage /> },
       { path: "submissions", element: <JudgeSubmissionsPage /> },
-      { path: "submissions/:submissionId", element: <JudgeSubmissionDetailPage /> },
+      {
+        path: "submissions/:submissionId",
+        element: <JudgeSubmissionDetailPage />,
+      },
       { path: "scoring", element: <NotFoundPage /> },
       { path: "calibration", element: <NotFoundPage /> },
       {
@@ -212,9 +221,13 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <MentorDashboardPage /> },
       { path: "teams", element: <MentorTeamsPage /> },
+      { path: "teams/:teamId", element: <MentorTeamsPage /> },
       { path: "feedback", element: <NotFoundPage /> },
       { path: "submissions", element: <MentorSubmissionPage /> },
-      { path: "submissions/:submissionId", element: <MentorSubmissionDetailPage /> },
+      {
+        path: "submissions/:submissionId",
+        element: <MentorSubmissionDetailPage />,
+      },
       { path: "notifications", element: <NotificationInboxPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
@@ -222,8 +235,14 @@ export const router = createBrowserRouter([
     ],
   },
 
-  { path: "/invitations/accept", element: <InvitationResponsePage action="accept" /> },
-  { path: "/invitations/reject", element: <InvitationResponsePage action="reject" /> },
+  {
+    path: "/invitations/accept",
+    element: <InvitationResponsePage action="accept" />,
+  },
+  {
+    path: "/invitations/reject",
+    element: <InvitationResponsePage action="reject" />,
+  },
 
   { path: "*", element: <NotFoundPage /> },
 ]);

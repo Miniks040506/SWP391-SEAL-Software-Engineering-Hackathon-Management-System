@@ -10,6 +10,7 @@ import type {
   LeaveTeamRequest,
   RejectInvitationRequest,
   RemoveMemberRequest,
+  MentorTeamDetailResponse,
   TeamDetailResponse,
   TeamInvitationResponse,
   TeamJoinCodePreviewResponse,
@@ -62,7 +63,9 @@ export const teamApi = {
   },
 
   getTeamInvitations(teamId: UUID) {
-    return apiRequest.get<TeamInvitationResponse[]>(`/teams/${teamId}/invitations`);
+    return apiRequest.get<TeamInvitationResponse[]>(
+      `/teams/${teamId}/invitations`,
+    );
   },
 
   getTeamMembers(teamId: UUID) {
@@ -76,7 +79,10 @@ export const teamApi = {
   },
 
   transferLeader(teamId: UUID, payload: TransferLeaderRequest) {
-    return apiRequest.post<TeamResponse>(`/teams/${teamId}/transfer-leader`, payload);
+    return apiRequest.post<TeamResponse>(
+      `/teams/${teamId}/transfer-leader`,
+      payload,
+    );
   },
 
   leaveTeam(teamId: UUID, payload?: LeaveTeamRequest) {
@@ -84,7 +90,10 @@ export const teamApi = {
   },
 
   toggleJoinCode(teamId: UUID, payload: ToggleJoinCodeRequest) {
-    return apiRequest.patch<TeamResponse>(`/teams/${teamId}/join-code`, payload);
+    return apiRequest.patch<TeamResponse>(
+      `/teams/${teamId}/join-code`,
+      payload,
+    );
   },
 
   previewJoinCode(joinCode: string) {
@@ -114,7 +123,9 @@ export const teamApi = {
   },
 
   acceptInvitation(invitationId: UUID) {
-    return apiRequest.post<TeamMemberResponse>(`/invitations/${invitationId}/accept`);
+    return apiRequest.post<TeamMemberResponse>(
+      `/invitations/${invitationId}/accept`,
+    );
   },
 
   acceptInvitationByToken(token: string) {
@@ -124,7 +135,10 @@ export const teamApi = {
   },
 
   rejectInvitation(invitationId: UUID, payload?: RejectInvitationRequest) {
-    return apiRequest.post<void>(`/invitations/${invitationId}/reject`, payload ?? {});
+    return apiRequest.post<void>(
+      `/invitations/${invitationId}/reject`,
+      payload ?? {},
+    );
   },
 
   rejectInvitationByToken(token: string, payload?: RejectInvitationRequest) {
@@ -136,5 +150,9 @@ export const teamApi = {
 
   cancelInvitation(invitationId: UUID) {
     return apiRequest.post<void>(`/invitations/${invitationId}/cancel`);
+  },
+
+  getAssignedTeamDetails(teamId: UUID) {
+    return apiRequest.get<MentorTeamDetailResponse>(`/mentor/teams/${teamId}`);
   },
 };

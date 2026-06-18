@@ -8,11 +8,12 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import { useNavigate } from "react-router-dom";
 
-import type { MentorTeamSummary } from "../../mocks/mentorTeams.mock";
+import type { MentorTeamProgressResponse } from "@/types/team.types";
 
 type MentorTeamsTableProps = {
-  teams: MentorTeamSummary[];
+  teams: MentorTeamProgressResponse[];
   isLoading: boolean;
 };
 
@@ -20,6 +21,8 @@ export const MentorTeamsTable = ({
   teams,
   isLoading,
 }: MentorTeamsTableProps) => {
+  const navigate = useNavigate();
+
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-dashed border-gray-200 bg-slate-50 px-5 py-12 text-center dark:border-slate-700 dark:bg-slate-900/40">
@@ -65,28 +68,31 @@ export const MentorTeamsTable = ({
             <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               Latest Activity
             </TableCell>
+            <TableCell align="right" className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 pr-6">
+              Actions
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {teams.map((row) => (
             <TableRow
-              key={row.id}
+              key={row.teamId}
               hover
-              className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 group"
             >
               <TableCell className="font-extrabold text-gray-900 dark:text-white">
-                {row.name}
+                {row.teamName}
               </TableCell>
               <TableCell className="font-semibold text-gray-700 dark:text-slate-300">
-                {row.projectName || "-"}
+                {row.projectTitle || "-"}
               </TableCell>
               <TableCell className="font-medium text-gray-600 dark:text-slate-400">
-                {row.memberCount} / 5
+                {row.memberCount}
               </TableCell>
               <TableCell>
-                {row.latestSubmissionRound ? (
+                {row.latestSubmissionStatus ? (
                   <Chip
-                    label={row.latestSubmissionRound}
+                    label={row.latestSubmissionStatus}
                     size="small"
                     color="primary"
                     variant="outlined"
@@ -97,6 +103,14 @@ export const MentorTeamsTable = ({
                     No submissions yet
                   </span>
                 )}
+              </TableCell>
+              <TableCell align="right" className="pr-6">
+                <button
+                  onClick={() => navigate(`/mentor/teams/${row.teamId}`)}
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-white dark:bg-transparent border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-sm px-4 py-2 rounded-lg transition-all text-sm font-medium"
+                >
+                  View Detail
+                </button>
               </TableCell>
             </TableRow>
           ))}

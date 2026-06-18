@@ -72,3 +72,19 @@ export type TrackAvailabilityResponse = {
   full: boolean;
   requiredLinkTypes?: string[];
 };
+
+export type MentorTrackResponse = {
+  assignmentId: UUID;
+  trackId: UUID;
+  eventId: UUID;
+  trackName: string;
+  trackDescription?: string;
+  eventName: string;
+  eventStatus: string;
+  maxTeams: number;
+  minMembers: number;
+  maxMembers: number;
+  teamCount: number;
+  submittedSubmissionCount: number;
+  assignedAt: ISODateTime;
+};
