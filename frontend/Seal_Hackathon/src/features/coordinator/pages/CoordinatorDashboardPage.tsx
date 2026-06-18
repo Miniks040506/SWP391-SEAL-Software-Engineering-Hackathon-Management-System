@@ -86,7 +86,7 @@ function getEmbeddedCount(value?: unknown[] | null) {
   return Array.isArray(value) ? value.length : "—";
 }
 
-function getApprovedTeamCount(event?: DashboardEvent | null) {
+function getRegisteredTeamCount(event?: DashboardEvent | null) {
   if (!event) return "—";
   return event.approvedTeamCount ?? event.approvedTeams ?? event.teamCount ?? "—";
 }
@@ -125,7 +125,7 @@ export const CoordinatorDashboardPage = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      
+
       <section className="flex flex-col gap-4 rounded-3xl bg-linear-to-r from-blue-600 to-indigo-600 px-8 py-7 text-white shadow-sm md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-widest text-blue-200">
@@ -240,8 +240,8 @@ export const CoordinatorDashboardPage = () => {
                 <p className="mt-1 font-bold text-gray-900 dark:text-white">{getEmbeddedCount(currentEvent?.rounds)}</p>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-                <p className="text-sm text-gray-500">Approved Teams</p>
-                <p className="mt-1 font-bold text-gray-900 dark:text-white">{getApprovedTeamCount(currentEvent)}</p>
+                <p className="text-sm text-gray-500">Registered Teams</p>
+                <p className="mt-1 font-bold text-gray-900 dark:text-white">{getRegisteredTeamCount(currentEvent)}</p>
               </div>
             </div>
 

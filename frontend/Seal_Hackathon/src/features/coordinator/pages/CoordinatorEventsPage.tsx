@@ -13,6 +13,7 @@ import type { EventSummaryResponse } from "@/types/event.types";
 import {
   useCoordinatorEventsQuery,
   useCoordinatorMultipleTracksQueries,
+  useCoordinatorMultipleTeamsQueries,
 } from "../hooks/useCoordinatorEventQueries";
 
 type EventStatusFilter =
@@ -35,6 +36,7 @@ type EventCard = EventSummaryResponse & {
   bannerUrl?: string | null;
   trackCount?: number | null;
   totalTracks?: number | null;
+  registeredTeamCount?: number | null;
   approvedTeamCount?: number | null;
   approvedTeams?: number | null;
   teamCount?: number | null;
@@ -86,10 +88,17 @@ function getTrackCount(
   return typeof fetched === "number" ? fetched : null;
 }
 
-function getApprovedTeamCount(event: EventSummaryResponse) {
+function getRegisteredTeamCount(
+  event: EventSummaryResponse,
+  fetchedTeamCounts: Map<UUID, number>,
+) {
   const raw = event as EventCard;
+  const eventId = getEventId(event);
 
-  return raw.approvedTeamCount ?? raw.approvedTeams ?? raw.teamCount ?? null;
+  if (typeof raw.registeredTeamCount === "number") return raw.registeredTeamCount;
+
+  const fetched = fetchedTeamCounts.get(eventId);
+  return typeof fetched === "number" ? fetched : null;
 }
 
 function isApiPageResponse(
@@ -138,9 +147,11 @@ function StatusBadge({ status }: { status: string }) {
 function EventManagementCard({
   event,
   trackCount,
+  registeredTeamCount,
 }: {
   event: EventSummaryResponse;
   trackCount: number | null;
+  registeredTeamCount: number | null;
 }) {
   const navigate = useNavigate();
 
@@ -149,7 +160,6 @@ function EventManagementCard({
   const status = getEventStatus(event);
   const season = getEventSeason(event);
   const bannerUrl = (event as EventCard).bannerUrl;
-  const approvedTeamCount = getApprovedTeamCount(event);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
@@ -203,9 +213,9 @@ function EventManagementCard({
 
             <span>
               <b className="text-slate-950 dark:text-white">
-                {approvedTeamCount ?? "—"}
+                {registeredTeamCount ?? "—"}
               </b>{" "}
-              Approved Teams
+              Registered Teams
             </span>
           </div>
         </div>
@@ -249,7 +259,7 @@ export function CoordinatorEventsPage() {
   const [activeFilter, setActiveFilter] = useState<EventStatusFilter>("ALL");
 
   // 1. Gọi hook lấy danh sách events
-  const eventsQuery = useCoordinatorEventsQuery();
+  const eventsQuery = useCoordinatorEventsQuery({ page: 0, size: 100 });
 
   const apiEvents = useMemo(
     () => normalizeEvents(eventsQuery.data),
@@ -276,6 +286,27 @@ export function CoordinatorEventsPage() {
 
     return map;
   }, [apiEvents, trackCountQueries]);
+
+  // 4. Gọi hook lấy số lượng Teams
+  const teamQueries = useCoordinatorMultipleTeamsQueries(eventIds);
+
+  const fetchedTeamCounts = useMemo(() => {
+    const map = new Map<UUID, number>();
+
+    apiEvents.forEach((event, index) => {
+      const eventId = getEventId(event);
+      const data = teamQueries[index]?.data?.content;
+
+      if (Array.isArray(data)) {
+        const registeredCount = data.filter(
+          (t) => ["REGISTERED", "COMPETING", "ADVANCED", "WINNER"].includes((t.status ?? "").toUpperCase())
+        ).length;
+        map.set(eventId, registeredCount);
+      }
+    });
+
+    return map;
+  }, [apiEvents, teamQueries]);
 
   const filteredEvents = useMemo(() => {
     if (activeFilter === "ALL") return apiEvents;
@@ -379,6 +410,7 @@ export function CoordinatorEventsPage() {
               key={eventId}
               event={event}
               trackCount={getTrackCount(event, fetchedTrackCounts)}
+              registeredTeamCount={getRegisteredTeamCount(event, fetchedTeamCounts)}
             />
           );
         })}

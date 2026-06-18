@@ -24,6 +24,7 @@ import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
+import { BrowseTeamsSection } from "../components/BrowseTeamsSection";
 import {
   useMyTeamsQuery,
   useMyInvitationsQuery,
@@ -376,6 +377,8 @@ export const MyTeamsPage = () => {
           ))}
         </div>
       )}
+
+      <BrowseTeamsSection />
     </div>
   );
 };
