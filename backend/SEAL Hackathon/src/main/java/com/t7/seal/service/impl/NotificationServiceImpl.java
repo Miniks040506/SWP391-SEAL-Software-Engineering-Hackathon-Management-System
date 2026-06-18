@@ -448,6 +448,18 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private String renderSubject(Notification notification) {
+        if (notification.getType() == NotificationType.TEAM_INVITATION_ACCEPTED) {
+            Map<String, String> values = templateValues(notification, renderTargetPath(notification));
+            return valueOrDefault(values, "memberName", "A member")
+                    + " joined "
+                    + valueOrDefault(values, "teamName", "your team");
+        }
+        if (notification.getType() == NotificationType.TEAM_INVITATION_REJECTED) {
+            Map<String, String> values = templateValues(notification, renderTargetPath(notification));
+            String invitee = valueOrDefault(values, "inviteeEmail", valueOrDefault(values, "memberName", "A member"));
+            return invitee + " declined invitation to " + valueOrDefault(values, "teamName", "your team");
+        }
+
         String template = notificationTemplateRepository.findByTypeAndActiveTrue(notification.getType())
                 .map(NotificationTemplate::getSubjectTemplate)
                 .orElse(null);
@@ -462,6 +474,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private String renderEmailHtml(Notification notification, String actionUrl) {
+        if (notification.getType() == NotificationType.TEAM_INVITATION_ACCEPTED) {
+            return renderTeamInvitationAcceptedEmail(notification, actionUrl);
+        }
+        if (notification.getType() == NotificationType.TEAM_INVITATION_REJECTED) {
+            return renderTeamInvitationRejectedEmail(notification, actionUrl);
+        }
+
         Optional<NotificationTemplate> template = notificationTemplateRepository.findByTypeAndActiveTrue(notification.getType());
         if (template.isPresent() && !isBlank(template.get().getHtmlTemplate())) {
             String html = renderTemplate(template.get().getHtmlTemplate(), notification, actionUrl);
@@ -479,11 +498,77 @@ public class NotificationServiceImpl implements NotificationService {
             renderedBody = notification.getBody();
         }
         String body = nullToEmpty(renderedBody).replace("\n", "<br/>");
-        String cta = actionUrl == null ? "" : """
-                <div style="text-align:center;margin-top:28px;">
-                  <a href="%s" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;font-weight:900;padding:13px 24px;border-radius:12px;">Open in SEAL</a>
+        return renderNotificationEmailShell(notification.getTitle(), "Hackathon System Notification", body, actionUrl, "Open in SEAL");
+    }
+
+    private String renderTeamInvitationAcceptedEmail(Notification notification, String actionUrl) {
+        Map<String, String> values = templateValues(notification, actionUrl);
+        String memberName = valueOrDefault(values, "memberName", "A member");
+        String teamName = valueOrDefault(values, "teamName", "your team");
+        String body = """
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                  Hello,
+                </p>
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                  <strong>%s</strong> accepted the invitation to join team <strong>%s</strong>.
+                </p>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;margin:24px 0;">
+                  <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">New member</td>
+                      <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Team</td>
+                      <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                    </tr>
+                  </table>
                 </div>
-                """.formatted(escape(actionUrl));
+                <p style="margin:0;color:#475569;font-size:15px;line-height:1.7;">
+                  The team roster has been updated. Active team members are copied on this email when available.
+                </p>
+                """.formatted(escape(memberName), escape(teamName), escape(memberName), escape(teamName));
+
+        return renderNotificationEmailShell("New Team Member", "A team invitation was accepted", body, actionUrl, "Open Team");
+    }
+
+    private String renderTeamInvitationRejectedEmail(Notification notification, String actionUrl) {
+        Map<String, String> values = templateValues(notification, actionUrl);
+        String teamName = valueOrDefault(values, "teamName", "your team");
+        String invitee = valueOrDefault(values, "inviteeEmail", valueOrDefault(values, "memberName", "A member"));
+        String body = """
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                  Hello,
+                </p>
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                  <strong>%s</strong> declined the invitation to join team <strong>%s</strong>.
+                </p>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;margin:24px 0;">
+                  <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Invitee</td>
+                      <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Team</td>
+                      <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                    </tr>
+                  </table>
+                </div>
+                <p style="margin:0;color:#475569;font-size:15px;line-height:1.7;">
+                  You can invite another member or review pending invitations from the team page.
+                </p>
+                """.formatted(escape(invitee), escape(teamName), escape(invitee), escape(teamName));
+
+        return renderNotificationEmailShell("Invitation Declined", "A team invitation was declined", body, actionUrl, "Open Team");
+    }
+
+    private String renderNotificationEmailShell(String title, String subtitle, String body, String actionUrl, String actionLabel) {
+        String cta = isBlank(actionUrl) ? "" : """
+                <div style="text-align:center;margin-top:28px;">
+                  <a href="%s" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;font-weight:900;padding:13px 24px;border-radius:12px;">%s</a>
+                </div>
+                """.formatted(escape(actionUrl), escape(actionLabel));
         return """
                 <!doctype html>
                 <html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
@@ -492,14 +577,14 @@ public class NotificationServiceImpl implements NotificationService {
                 <tr><td style="background:linear-gradient(135deg,#2563eb,#3b82f6,#60a5fa);padding:34px;color:#fff;">
                   <div style="font-size:20px;font-weight:900;">SEAL</div>
                   <h1 style="margin:28px 0 8px;font-size:28px;line-height:1.15;font-weight:900;">%s</h1>
-                  <p style="margin:0;color:#dbeafe;font-size:15px;font-weight:700;">Hackathon System Notification</p>
+                  <p style="margin:0;color:#dbeafe;font-size:15px;font-weight:700;">%s</p>
                 </td></tr>
                 <tr><td style="padding:34px;color:#475569;font-size:15px;line-height:1.7;">%s%s</td></tr>
                 <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:26px 34px;color:#64748b;font-size:12px;line-height:1.6;">
                   <strong style="display:block;color:#0f172a;font-size:14px;margin-bottom:8px;">SEAL Hackathon Team</strong>
                   This is an automated email. Please do not reply directly to this message.
                 </td></tr></table></td></tr></table></body></html>
-                """.formatted(escape(notification.getTitle()), body, cta);
+                """.formatted(escape(title), escape(subtitle), body, cta);
     }
 
     private String renderActionUrl(Notification notification) {
@@ -736,6 +821,11 @@ public class NotificationServiceImpl implements NotificationService {
 
     private String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private String valueOrDefault(Map<String, String> values, String key, String fallback) {
+        String value = values.get(key);
+        return isBlank(value) ? fallback : value;
     }
 
     private String stripTrailingSlash(String value) {

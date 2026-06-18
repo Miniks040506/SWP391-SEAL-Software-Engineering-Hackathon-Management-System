@@ -706,20 +706,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private void createInvitationSentNotification(TeamInvitation invitation, User actor) {
-        notificationService.createSystemNotification(
-                actor,
-                invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
-                NotificationType.TEAM_INVITATION_SENT,
-                "Invitation sent",
-                "Invitation sent to " + invitation.getInviteEmail() + " for team " + invitation.getTeam().getName() + ".",
-                NotificationTargetScope.SINGLE_USER,
-                actor.getId(),
-                null,
-                NotificationChannel.IN_APP,
-                null
-        );
-
-        if (invitation.getInvitee() == null || invitation.getInvitee().getId().equals(actor.getId())) {
+        if (invitation.getInvitee() == null) {
             return;
         }
 
