@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import { NotificationDropdown } from "@/features/notification/components/NotificationDropdown";
-import { useUnreadNotificationCountQuery } from "@/features/notification/hooks/useNotificationQueries";
+import {
+  useNotificationsQuery,
+  useUnreadNotificationCountQuery,
+} from "@/features/notification/hooks/useNotificationQueries";
+import { useMyInvitationsQuery } from "@/features/teams/hooks/useParticipantTeams";
 
 type Props = {
   inboxPath: string;
@@ -11,11 +15,25 @@ export function NotificationBell({ inboxPath }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const unreadQuery = useUnreadNotificationCountQuery();
-  const unreadCount = unreadQuery.data?.unreadCount ?? 0;
+  const unreadPreviewQuery = useNotificationsQuery({ read: false, page: 0, size: 1 });
+  const isParticipantInbox = inboxPath.startsWith("/participant");
+  const pendingInvitationsQuery = useMyInvitationsQuery(isParticipantInbox);
+  const pendingInvitationCount = isParticipantInbox
+    ? ((pendingInvitationsQuery.data ?? []) as any[]).filter(
+        (inv) => inv.status === "PENDING",
+      ).length
+    : 0;
+  const unreadCount = Math.max(
+    unreadQuery.data?.unreadCount ?? 0,
+    unreadPreviewQuery.data?.totalElements ?? 0,
+    pendingInvitationCount,
+  );
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
+      const target = event.target as HTMLElement;
+      if (target.closest(".MuiDialog-root")) return;
+      if (ref.current && !ref.current.contains(target)) {
         setOpen(false);
       }
     };

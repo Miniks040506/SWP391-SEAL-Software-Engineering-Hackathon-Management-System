@@ -11,5 +11,7 @@ public record TeamDetailResponse(
         String leaderName,
         UUID trackId,
         String status,
+        String joinCode,
+        Boolean joinCodeEnabled,
         List<TeamMemberResponse> members
 ) {}

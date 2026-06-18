@@ -26,7 +26,7 @@ export const InvitationResponsePage = ({ action }: Props) => {
   const acceptMutation = useAcceptInvitationByTokenMutation();
   const rejectMutation = useRejectInvitationByTokenMutation();
 
-  const invitation = invWrapper?.data || invWrapper;
+  const invitation = invWrapper;
 
   const isSuccess = action === "accept" ? acceptMutation.isSuccess : rejectMutation.isSuccess;
   const isMutatingError = action === "accept" ? acceptMutation.isError : rejectMutation.isError;

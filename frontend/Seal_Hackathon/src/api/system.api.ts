@@ -27,4 +27,8 @@ export const systemApi = {
       {params},
     );
   },
+
+  getAuditLogActions() {
+    return apiRequest.get<string[]>("/system/audit-logs/actions");
+  },
 };

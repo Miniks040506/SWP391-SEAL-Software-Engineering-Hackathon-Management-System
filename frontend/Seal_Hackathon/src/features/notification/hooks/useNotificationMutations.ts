@@ -24,3 +24,25 @@ export function useMarkAllNotificationsReadMutation() {
     },
   });
 }
+
+export function useDeleteNotificationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (notificationId: UUID) => notificationApi.deleteNotification(notificationId),
+    onSuccess: async () => {
+      enqueueSnackbar("Notification cleared.", { variant: "success" });
+      await queryClient.invalidateQueries({ queryKey: [NOTIFICATION_QUERY_KEY] });
+    },
+  });
+}
+
+export function useClearNotificationsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (read?: boolean) => notificationApi.clearNotifications(read),
+    onSuccess: async () => {
+      enqueueSnackbar("Notifications cleaned.", { variant: "success" });
+      await queryClient.invalidateQueries({ queryKey: [NOTIFICATION_QUERY_KEY] });
+    },
+  });
+}

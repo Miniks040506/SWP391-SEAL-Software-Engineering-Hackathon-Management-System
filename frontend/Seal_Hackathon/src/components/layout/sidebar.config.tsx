@@ -49,6 +49,7 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
     homePath: "/admin/dashboard",
     profilePath: "/admin/profile",
     settingsPath: "/admin/settings",
+    notificationPath: "/admin/notifications",
     sidebar: [
       {
         title: "Administration",

@@ -25,7 +25,7 @@ public class AuditLogController {
     private final AuditLogService auditLogService;
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
-    @GetMapping({"/audit-logs", "/coordinator/audit-logs", "/admin/audit-logs"})
+    @GetMapping({"/audit-logs", "/system/audit-logs", "/coordinator/audit-logs", "/admin/audit-logs"})
     public ResponseEntity<PageResponse<AuditLogResponse>> getAuditLogs(
             @RequestParam(required = false) UUID actorId,
             @RequestParam(required = false) String actionType,
@@ -51,7 +51,7 @@ public class AuditLogController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
-    @GetMapping({"/audit-logs/actions", "/coordinator/audit-logs/actions", "/admin/audit-logs/actions"})
+    @GetMapping({"/audit-logs/actions", "/system/audit-logs/actions", "/coordinator/audit-logs/actions", "/admin/audit-logs/actions"})
     public ResponseEntity<List<String>> getAuditActionTypes(Authentication authentication) {
         return ResponseEntity.ok(auditLogService.getActionTypes(authentication));
     }

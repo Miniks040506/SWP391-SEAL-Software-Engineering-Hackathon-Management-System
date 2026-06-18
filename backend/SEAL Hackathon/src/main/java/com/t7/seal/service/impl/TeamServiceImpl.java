@@ -127,6 +127,8 @@ public class TeamServiceImpl implements TeamService {
                 team.getLeader() == null ? null : team.getLeader().getFullName(),
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
+                team.getJoinCode(),
+                team.getJoinCodeEnabled(),
                 members.stream().map(this::toTeamMemberResponse).toList()
         );
     }
@@ -217,7 +219,11 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamInvitationResponse> getMyInvitations(Authentication authentication) {
         User currentUser = currentUserService.getCurrentUser(authentication);
 
-        return teamInvitationRepository.findByInviteEmailIgnoreCaseOrderByCreatedAtDesc(currentUser.getEmail())
+        return teamInvitationRepository.findByInviteEmailIgnoreCaseAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
+                        currentUser.getEmail(),
+                        InvitationStatus.PENDING,
+                        LocalDateTime.now()
+                )
                 .stream()
                 .map(this::toTeamInvitationResponse)
                 .toList();
@@ -356,6 +362,14 @@ public class TeamServiceImpl implements TeamService {
         TeamInvitation invitation = teamInvitationRepository.findByToken(token)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
         rejectInvitationInternal(invitation, request, authentication);
+    }
+
+    @Transactional
+    @Override
+    public void rejectInvitationByToken(String token, ReasonRequest request) {
+        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+                .orElseThrow(() -> new NotFoundException("Invitation not found."));
+        rejectInvitationByTokenInternal(invitation, request);
     }
 
     @Transactional
@@ -584,6 +598,23 @@ public class TeamServiceImpl implements TeamService {
             throw new UnauthorizedException("This invitation is not for your account.");
         }
 
+        declineInvitation(invitation, request, currentUser, currentUser);
+    }
+
+    private void rejectInvitationByTokenInternal(TeamInvitation invitation, ReasonRequest request) {
+        User invitee = invitation.getInvitee();
+        if (invitee == null) {
+            invitee = userRepository.findByEmailIgnoreCase(invitation.getInviteEmail()).orElse(null);
+        }
+        declineInvitation(invitation, request, invitee, invitee == null ? invitation.getInvitedBy() : invitee);
+    }
+
+    private void declineInvitation(
+            TeamInvitation invitation,
+            ReasonRequest request,
+            User invitee,
+            User notificationActor
+    ) {
         if (!invitation.isPending()) {
             throw new ConflictException("This invitation is no longer pending.");
         }
@@ -594,9 +625,11 @@ public class TeamServiceImpl implements TeamService {
         }
 
         invitation.decline(now);
-        invitation.setInvitee(currentUser);
+        if (invitee != null) {
+            invitation.setInvitee(invitee);
+        }
         invitation.setResponseReason(blankToNull(request == null ? null : request.reason()));
-        createInvitationRejectedNotification(invitation, currentUser);
+        createInvitationRejectedNotification(invitation, notificationActor);
     }
 
     private void ensureActiveStudent(User user) {
@@ -712,7 +745,7 @@ public class TeamServiceImpl implements TeamService {
                 actor,
                 invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
                 NotificationType.TEAM_INVITATION_SENT,
-                "Team invitation",
+                "You are invited to join " + invitation.getTeam().getName(),
                 "You are invited to join team " + invitation.getTeam().getName() + ".",
                 NotificationTargetScope.SINGLE_USER,
                 invitation.getInvitee().getId(),
@@ -742,7 +775,7 @@ public class TeamServiceImpl implements TeamService {
                 actor,
                 invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
                 NotificationType.TEAM_INVITATION_ACCEPTED,
-                "Team invitation accepted",
+                actor.getFullName() + " accepted the invitation to join " + invitation.getTeam().getName(),
                 actor.getFullName() + " joined team " + invitation.getTeam().getName() + ".",
                 NotificationTargetScope.TEAM,
                 invitation.getTeam().getId(),
@@ -762,7 +795,7 @@ public class TeamServiceImpl implements TeamService {
                 invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
                 NotificationType.TEAM_INVITATION_REJECTED,
                 "Team invitation declined",
-                invitation.getInviteEmail() + " declined the invitation to join " + invitation.getTeam().getName() + ".",
+                invitation.getInviteEmail() + " declined the invitation to join team " + invitation.getTeam().getName() + ".",
                 NotificationTargetScope.SINGLE_USER,
                 leader.getId(),
                 null,
@@ -887,7 +920,9 @@ public class TeamServiceImpl implements TeamService {
                 team.getLeader().getFullName(),
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
-                team.getMemberCount() == null ? 0 : team.getMemberCount()
+                team.getMemberCount() == null ? 0 : team.getMemberCount(),
+                team.getJoinCode(),
+                team.getJoinCodeEnabled()
         );
     }
 

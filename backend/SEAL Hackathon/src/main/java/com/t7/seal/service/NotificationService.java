@@ -34,6 +34,8 @@ public interface NotificationService {
     NotificationResponse sendNotificationNow(UUID notificationId, Authentication authentication);
     void markAsRead(UUID notificationId, Authentication authentication);
     void markAllAsRead(Authentication authentication);
+    void deleteNotification(UUID notificationId, Authentication authentication);
+    int clearMyNotifications(Boolean read, Authentication authentication);
     UnreadCountResponse getUnreadCount(Authentication authentication);
     void sendTestEmail(TestEmailRequest request, Authentication authentication);
     void dispatchDueNotifications();

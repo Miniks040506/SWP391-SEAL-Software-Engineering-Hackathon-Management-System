@@ -62,14 +62,12 @@ public class TeamInvitationController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("isAuthenticated()")
     @PostMapping("/token/{token}/reject")
     public ResponseEntity<Void> rejectInvitationByToken(
             @PathVariable String token,
-            @Valid @RequestBody(required = false) ReasonRequest request,
-            Authentication authentication
+            @Valid @RequestBody(required = false) ReasonRequest request
     ) {
-        teamService.rejectInvitationByToken(token, request, authentication);
+        teamService.rejectInvitationByToken(token, request);
         return ResponseEntity.noContent().build();
     }
 

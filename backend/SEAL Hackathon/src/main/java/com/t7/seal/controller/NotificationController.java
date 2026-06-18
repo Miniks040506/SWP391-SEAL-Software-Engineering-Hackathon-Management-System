@@ -4,7 +4,6 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.system.CreateNotificationRequest;
 import com.t7.seal.request.system.TestEmailRequest;
 import com.t7.seal.response.PageResponse;
-import com.t7.seal.response.system.NotificationRecipientResolutionResponse;
 import com.t7.seal.response.system.NotificationResponse;
 import com.t7.seal.response.system.NotificationRecipientResolutionResponse;
 import com.t7.seal.response.system.UnreadCountResponse;
@@ -103,6 +102,24 @@ public class NotificationController {
     @PostMapping("/read-all")
     public ResponseEntity<Void> markAllAsRead(Authentication authentication) {
         notificationService.markAllAsRead(authentication);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<Void> deleteNotification(
+            @PathVariable("notificationId") UUID notificationId,
+            Authentication authentication
+    ) {
+        notificationService.deleteNotification(notificationId, authentication);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/clear")
+    public ResponseEntity<Void> clearNotifications(
+            @RequestParam(required = false) Boolean read,
+            Authentication authentication
+    ) {
+        notificationService.clearMyNotifications(read, authentication);
         return ResponseEntity.noContent().build();
     }
 

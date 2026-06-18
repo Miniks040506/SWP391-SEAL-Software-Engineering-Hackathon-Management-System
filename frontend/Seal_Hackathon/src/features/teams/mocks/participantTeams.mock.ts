@@ -33,6 +33,8 @@ export let mockTeams: TeamDetailResponse[] = [
     leaderName: "Nguyen Van A",
     trackId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" as UUID,
     status: "APPROVED",
+    joinCode: "SEAL-2026",
+    joinCodeEnabled: true,
     members: [
       {
         memberId: "member-aaaaaaaa-0001-0001-0001-000000000001" as UUID,
@@ -53,6 +55,8 @@ export let mockTeams: TeamDetailResponse[] = [
     leaderName: "Tran Minh B",
     trackId: null,
     status: "REGISTERED",
+    joinCode: "SEAL-2026",
+    joinCodeEnabled: true,
     members: [],
   }
 ];
@@ -98,6 +102,8 @@ const toTeamResponse = (team: TeamDetailResponse): TeamResponse => ({
   trackId: team.trackId,
   status: team.status,
   memberCount: team.members.length,
+  joinCode: team.joinCode,
+  joinCodeEnabled: team.joinCodeEnabled,
 });
 
 export const mockTeamService = {
@@ -256,6 +262,18 @@ export const mockTeamService = {
     });
   },
 
+  async toggleJoinCode(teamId: UUID, payload: { enabled: boolean }) {
+    await mockDelay();
+    let updatedTeam: TeamDetailResponse | undefined;
+    mockTeams = mockTeams.map((team) => {
+      if (team.id !== teamId) return team;
+      updatedTeam = { ...team, joinCodeEnabled: payload.enabled };
+      return updatedTeam;
+    });
+    if (!updatedTeam) throw new Error("Team not found.");
+    return toTeamResponse(updatedTeam);
+  },
+
   async getMyInvitations() {
     await mockDelay();
     return mockInvitations.filter((i) => i.invitedEmail === currentUserEmail && i.status === "PENDING");
@@ -286,7 +304,7 @@ export const mockTeamService = {
     return newMember as TeamMemberResponse;
   },
 
-  async rejectInvitation(invitationId: UUID, payload?: RejectInvitationRequest) {
+  async rejectInvitation(invitationId: UUID, _payload?: RejectInvitationRequest) {
     await mockDelay();
     const inv = mockInvitations.find((i) => i.id === invitationId);
     if (!inv || inv.status !== "PENDING") throw new Error("Invalid invitation.");

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 
 import { teamApi } from "@/api/team.api";
+import { NOTIFICATION_QUERY_KEY } from "@/features/notification/hooks/useNotificationQueries";
 import { mockTeamService } from "../mocks/participantTeams.mock"; 
 import type { UUID } from "@/types/common.types";
 import type {
@@ -67,12 +68,17 @@ export function useTeamInvitationsQuery(teamId?: string) {
   });
 }
 
-export function useMyInvitationsQuery() {
+export function useMyInvitationsQuery(enabled = true) {
   return useQuery({
     queryKey: participantTeamQueryKeys.myInvitations,
     queryFn: async () => {
       return activeTeamService.getMyInvitations();
     },
+    enabled,
+    refetchInterval: 10_000,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: "always",
   });
 }
 
@@ -139,6 +145,9 @@ export function useInviteTeamMemberMutation(teamId?: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.invitations(teamId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [NOTIFICATION_QUERY_KEY],
       });
       enqueueSnackbar("Invitation sent successfully.", { variant: "success" });
     },
@@ -276,6 +285,9 @@ const removeInvitationFromCache = (queryClient: any, idOrToken: string, isToken 
         void queryClient.invalidateQueries({
           queryKey: participantTeamQueryKeys.myInvitations,
         });
+        void queryClient.invalidateQueries({
+          queryKey: [NOTIFICATION_QUERY_KEY],
+        });
         enqueueSnackbar("You have joined the team successfully!", {
           variant: "success",
         });
@@ -299,6 +311,9 @@ const removeInvitationFromCache = (queryClient: any, idOrToken: string, isToken 
       onSuccess: () => {
         void queryClient.invalidateQueries({
           queryKey: participantTeamQueryKeys.myInvitations,
+        });
+        void queryClient.invalidateQueries({
+          queryKey: [NOTIFICATION_QUERY_KEY],
         });
         enqueueSnackbar("Invitation declined.", { variant: "info" });
       },
@@ -325,6 +340,9 @@ export function useAcceptInvitationByTokenMutation() {
         void queryClient.invalidateQueries({
           queryKey: participantTeamQueryKeys.myInvitations,
         });
+        void queryClient.invalidateQueries({
+          queryKey: [NOTIFICATION_QUERY_KEY],
+        });
         enqueueSnackbar("You have joined the team successfully!", {
           variant: "success",
         });
@@ -349,6 +367,7 @@ export function useRejectInvitationByTokenMutation() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: participantTeamQueryKeys.myInvitations });
+      await queryClient.invalidateQueries({ queryKey: [NOTIFICATION_QUERY_KEY] });
       enqueueSnackbar("Invitation declined.", { variant: "info" });
     },
     onError: (error: any) => enqueueSnackbar(error.message || "Failed to decline invitation.", { variant: "error" }),
@@ -383,6 +402,9 @@ export function useJoinTeamByCodeMutation() {
       void queryClient.invalidateQueries({
         queryKey: participantTeamQueryKeys.myTeams,
       });
+      void queryClient.invalidateQueries({
+        queryKey: [NOTIFICATION_QUERY_KEY],
+      });
       enqueueSnackbar("You have successfully joined the team!", {
         variant: "success",
       });
@@ -392,5 +414,26 @@ export function useJoinTeamByCodeMutation() {
         variant: "error",
       });
     },
+  });
+}
+
+export function useToggleJoinCodeMutation(teamId?: string) {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: (enabled: boolean) =>
+      activeTeamService.toggleJoinCode(teamId as UUID, { enabled }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: participantTeamQueryKeys.detail(teamId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: participantTeamQueryKeys.myTeams,
+      });
+      enqueueSnackbar("Join code setting updated.", { variant: "success" });
+    },
+    onError: () =>
+      enqueueSnackbar("Failed to update join code setting.", { variant: "error" }),
   });
 }

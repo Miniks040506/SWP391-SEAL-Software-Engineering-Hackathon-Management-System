@@ -38,6 +38,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationTemplateRepository notificationTemplateRepository;
     private final HackathonEventRepository eventRepository;
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final NotificationRecipientResolver recipientResolver;
     private final CurrentUserService currentUserService;
     private final EmailService emailService;
@@ -143,7 +144,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional(readOnly = true)
     public NotificationResponse getNotificationById(UUID notificationId, Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
-        NotificationRecipient recipient = notificationRecipientRepository.findByNotificationIdAndUserId(notificationId, user.getId())
+        NotificationRecipient recipient = notificationRecipientRepository.findActiveByNotificationIdAndUserId(notificationId, user.getId())
                 .orElseThrow(() -> new NotFoundException("Notification not found " + notificationId));
         return toInboxResponse(recipient);
     }
@@ -163,7 +164,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void markAsRead(UUID notificationId, Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
-        NotificationRecipient recipient = notificationRecipientRepository.findByNotificationIdAndUserId(notificationId, user.getId())
+        NotificationRecipient recipient = notificationRecipientRepository.findActiveByNotificationIdAndUserId(notificationId, user.getId())
                 .orElseThrow(() -> new NotFoundException("Notification not found " + notificationId));
         recipient.markRead();
         notificationRecipientRepository.save(recipient);
@@ -177,10 +178,32 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
+    public void deleteNotification(UUID notificationId, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+        int affected = notificationRecipientRepository.softDeleteOne(user.getId(), notificationId, LocalDateTime.now());
+        if (affected == 0) {
+            throw new NotFoundException("Notification not found " + notificationId);
+        }
+        auditLogService.record(user, AuditActionType.NOTIFICATION_DELETED, "notifications", notificationId, null,
+                Map.of("deletedForUserId", user.getId().toString()), null);
+    }
+
+    @Override
+    @Transactional
+    public int clearMyNotifications(Boolean read, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+        int affected = notificationRecipientRepository.softDeleteInbox(user.getId(), read, LocalDateTime.now());
+        auditLogService.record(user, AuditActionType.NOTIFICATION_CLEARED, "notification_recipients", user.getId(), null,
+                Map.of("deletedCount", affected, "read", read == null ? "ALL" : read.toString()), null);
+        return affected;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public UnreadCountResponse getUnreadCount(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
-        return new UnreadCountResponse(notificationRecipientRepository.countByUserIdAndReadAtIsNull(user.getId()));
+        return new UnreadCountResponse(notificationRecipientRepository.countByUserIdAndReadAtIsNullAndDeletedAtIsNull(user.getId()));
     }
 
     @Override
@@ -254,7 +277,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         int inAppCount = 0;
         if (saved.usesInAppChannel()) {
-            inAppCount = createInAppRecipients(saved, resolved.inAppRecipients());
+            inAppCount = createInAppRecipients(saved, resolveInAppRecipients(saved, resolved));
         }
 
         String emailFailure = null;
@@ -280,11 +303,26 @@ public class NotificationServiceImpl implements NotificationService {
         auditLogService.record(actor, AuditActionType.NOTIFICATION_SENT, "notifications", saved.getId(), null, auditState(saved), null);
     }
 
+    private List<NotificationRecipientResponse> resolveInAppRecipients(
+            Notification notification,
+            NotificationRecipientResolutionResponse resolved
+    ) {
+        if (notification.getType() == NotificationType.TEAM_INVITATION_SENT
+                && notification.getTargetScope() == NotificationTargetScope.SINGLE_USER
+                && notification.getTargetId() != null) {
+            return userRepository.findById(notification.getTargetId())
+                    .filter(this::canReceiveInvitationNotification)
+                    .map(user -> List.of(toRecipientResponse(user, "IN_APP")))
+                    .orElseGet(List::of);
+        }
+        return resolved.inAppRecipients();
+    }
+
     private int createInAppRecipients(Notification notification, List<NotificationRecipientResponse> recipients) {
         int count = 0;
         for (UUID userId : dedupeUserIds(recipients)) {
             User user = userRepository.findById(userId).orElse(null);
-            if (user == null || !user.isActive()) continue;
+            if (!canCreateInAppRecipient(notification, user)) continue;
             if (notificationRecipientRepository.findByNotificationIdAndUserId(notification.getId(), user.getId()).isPresent()) {
                 continue;
             }
@@ -297,6 +335,35 @@ public class NotificationServiceImpl implements NotificationService {
             count++;
         }
         return count;
+    }
+
+    private boolean canCreateInAppRecipient(Notification notification, User user) {
+        if (user == null) {
+            return false;
+        }
+        if (notification.getType() == NotificationType.TEAM_INVITATION_SENT) {
+            return canReceiveInvitationNotification(user);
+        }
+        return user.isActive();
+    }
+
+    private boolean canReceiveInvitationNotification(User user) {
+        return user != null
+                && user.getEmail() != null
+                && !user.getEmail().isBlank()
+                && user.getStatus() != UserStatus.SUSPENDED
+                && user.getStatus() != UserStatus.DEACTIVATED;
+    }
+
+    private NotificationRecipientResponse toRecipientResponse(User user, String deliveryRole) {
+        return new NotificationRecipientResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole() == null ? null : user.getRole().name(),
+                user.getStatus() == null ? null : user.getStatus().name(),
+                deliveryRole
+        );
     }
 
     private EmailDispatchResult createAndSendEmails(Notification notification, NotificationRecipientResolutionResponse resolved) {
@@ -425,28 +492,127 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private String renderSubject(Notification notification) {
+        if (notification.getType() == NotificationType.TEAM_INVITATION_ACCEPTED) {
+            Map<String, String> values = templateValues(notification, renderTargetPath(notification));
+            return valueOrDefault(values, "memberName", "A member")
+                    + " joined "
+                    + valueOrDefault(values, "teamName", "your team");
+        }
+        if (notification.getType() == NotificationType.TEAM_INVITATION_REJECTED) {
+            Map<String, String> values = templateValues(notification, renderTargetPath(notification));
+            String invitee = valueOrDefault(values, "inviteeEmail", valueOrDefault(values, "memberName", "A member"));
+            return invitee + " declined invitation to " + valueOrDefault(values, "teamName", "your team");
+        }
+
         String template = notificationTemplateRepository.findByTypeAndActiveTrue(notification.getType())
                 .map(NotificationTemplate::getSubjectTemplate)
-                .orElse(defaultSubject(notification.getType()));
-        return renderTemplate(template, notification, renderTargetPath(notification));
+                .orElse(null);
+        String rendered = renderTemplate(template, notification, renderTargetPath(notification));
+        if (isBlank(rendered) || containsUnresolvedPlaceholder(rendered)) {
+            rendered = notification.getTitle();
+        }
+        if (isBlank(rendered) || containsUnresolvedPlaceholder(rendered)) {
+            rendered = defaultSubject(notification.getType());
+        }
+        return rendered;
     }
 
     private String renderEmailHtml(Notification notification, String actionUrl) {
+        if (notification.getType() == NotificationType.TEAM_INVITATION_ACCEPTED) {
+            return renderTeamInvitationAcceptedEmail(notification, actionUrl);
+        }
+        if (notification.getType() == NotificationType.TEAM_INVITATION_REJECTED) {
+            return renderTeamInvitationRejectedEmail(notification, actionUrl);
+        }
+
         Optional<NotificationTemplate> template = notificationTemplateRepository.findByTypeAndActiveTrue(notification.getType());
         if (template.isPresent() && !isBlank(template.get().getHtmlTemplate())) {
-            return renderTemplate(template.get().getHtmlTemplate(), notification, actionUrl);
+            String html = renderTemplate(template.get().getHtmlTemplate(), notification, actionUrl);
+            if (!containsUnresolvedPlaceholder(html)) {
+                return html;
+            }
         }
 
         String bodyTemplate = template
                 .map(NotificationTemplate::getBodyTemplate)
                 .filter(value -> !isBlank(value))
                 .orElse(notification.getBody());
-        String body = renderTemplate(bodyTemplate, notification, actionUrl).replace("\n", "<br/>");
-        String cta = actionUrl == null ? "" : """
-                <div style="text-align:center;margin-top:28px;">
-                  <a href="%s" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;font-weight:900;padding:13px 24px;border-radius:12px;">Open in SEAL</a>
+        String renderedBody = renderTemplate(bodyTemplate, notification, actionUrl);
+        if (isBlank(renderedBody) || containsUnresolvedPlaceholder(renderedBody)) {
+            renderedBody = notification.getBody();
+        }
+        String body = nullToEmpty(renderedBody).replace("\n", "<br/>");
+        return renderNotificationEmailShell(notification.getTitle(), "Hackathon System Notification", body, actionUrl, "Open in SEAL");
+    }
+
+    private String renderTeamInvitationAcceptedEmail(Notification notification, String actionUrl) {
+        Map<String, String> values = templateValues(notification, actionUrl);
+        String memberName = valueOrDefault(values, "memberName", "A member");
+        String teamName = valueOrDefault(values, "teamName", "your team");
+        String body = """
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                  Hello,
+                </p>
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                  <strong>%s</strong> accepted the invitation to join team <strong>%s</strong>.
+                </p>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;margin:24px 0;">
+                  <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">New member</td>
+                      <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Team</td>
+                      <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                    </tr>
+                  </table>
                 </div>
-                """.formatted(escape(actionUrl));
+                <p style="margin:0;color:#475569;font-size:15px;line-height:1.7;">
+                  The team roster has been updated. Active team members are copied on this email when available.
+                </p>
+                """.formatted(escape(memberName), escape(teamName), escape(memberName), escape(teamName));
+
+        return renderNotificationEmailShell("New Team Member", "A team invitation was accepted", body, actionUrl, "Open Team");
+    }
+
+    private String renderTeamInvitationRejectedEmail(Notification notification, String actionUrl) {
+        Map<String, String> values = templateValues(notification, actionUrl);
+        String teamName = valueOrDefault(values, "teamName", "your team");
+        String invitee = valueOrDefault(values, "inviteeEmail", valueOrDefault(values, "memberName", "A member"));
+        String body = """
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                  Hello,
+                </p>
+                <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                  <strong>%s</strong> declined the invitation to join team <strong>%s</strong>.
+                </p>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;margin:24px 0;">
+                  <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Invitee</td>
+                      <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Team</td>
+                      <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                    </tr>
+                  </table>
+                </div>
+                <p style="margin:0;color:#475569;font-size:15px;line-height:1.7;">
+                  You can invite another member or review pending invitations from the team page.
+                </p>
+                """.formatted(escape(invitee), escape(teamName), escape(invitee), escape(teamName));
+
+        return renderNotificationEmailShell("Invitation Declined", "A team invitation was declined", body, actionUrl, "Open Team");
+    }
+
+    private String renderNotificationEmailShell(String title, String subtitle, String body, String actionUrl, String actionLabel) {
+        String cta = isBlank(actionUrl) ? "" : """
+                <div style="text-align:center;margin-top:28px;">
+                  <a href="%s" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;font-weight:900;padding:13px 24px;border-radius:12px;">%s</a>
+                </div>
+                """.formatted(escape(actionUrl), escape(actionLabel));
         return """
                 <!doctype html>
                 <html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
@@ -455,14 +621,14 @@ public class NotificationServiceImpl implements NotificationService {
                 <tr><td style="background:linear-gradient(135deg,#2563eb,#3b82f6,#60a5fa);padding:34px;color:#fff;">
                   <div style="font-size:20px;font-weight:900;">SEAL</div>
                   <h1 style="margin:28px 0 8px;font-size:28px;line-height:1.15;font-weight:900;">%s</h1>
-                  <p style="margin:0;color:#dbeafe;font-size:15px;font-weight:700;">Hackathon System Notification</p>
+                  <p style="margin:0;color:#dbeafe;font-size:15px;font-weight:700;">%s</p>
                 </td></tr>
                 <tr><td style="padding:34px;color:#475569;font-size:15px;line-height:1.7;">%s%s</td></tr>
                 <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:26px 34px;color:#64748b;font-size:12px;line-height:1.6;">
                   <strong style="display:block;color:#0f172a;font-size:14px;margin-bottom:8px;">SEAL Hackathon Team</strong>
                   This is an automated email. Please do not reply directly to this message.
                 </td></tr></table></td></tr></table></body></html>
-                """.formatted(escape(notification.getTitle()), body, cta);
+                """.formatted(escape(title), escape(subtitle), body, cta);
     }
 
     private String renderActionUrl(Notification notification) {
@@ -508,14 +674,116 @@ public class NotificationServiceImpl implements NotificationService {
         if (template == null) {
             return "";
         }
-        return template
-                .replace("{title}", nullToEmpty(notification.getTitle()))
-                .replace("{body}", nullToEmpty(notification.getBody()))
-                .replace("{type}", notification.getType() == null ? "" : notification.getType().name())
-                .replace("{targetScope}", notification.getTargetScope() == null ? "" : notification.getTargetScope().name())
-                .replace("{targetId}", notification.getTargetId() == null ? "" : notification.getTargetId().toString())
-                .replace("{eventName}", notification.getEvent() == null ? "" : nullToEmpty(notification.getEvent().getName()))
-                .replace("{actionUrl}", actionUrl == null ? "" : actionUrl);
+        String rendered = template;
+        for (Map.Entry<String, String> entry : templateValues(notification, actionUrl).entrySet()) {
+            rendered = rendered.replace("{" + entry.getKey() + "}", nullToEmpty(entry.getValue()));
+        }
+        return rendered.trim();
+    }
+
+    private Map<String, String> templateValues(Notification notification, String actionUrl) {
+        Map<String, String> values = new LinkedHashMap<>();
+        String actorName = displayName(notification.getCreatedBy());
+        String actorEmail = notification.getCreatedBy() == null ? "" : notification.getCreatedBy().getEmail();
+
+        values.put("title", notification.getTitle());
+        values.put("body", notification.getBody());
+        values.put("type", notification.getType() == null ? "" : notification.getType().name());
+        values.put("targetScope", notification.getTargetScope() == null ? "" : notification.getTargetScope().name());
+        values.put("targetId", notification.getTargetId() == null ? "" : notification.getTargetId().toString());
+        values.put("eventName", notification.getEvent() == null ? "" : notification.getEvent().getName());
+        values.put("actionUrl", actionUrl == null ? "" : actionUrl);
+        values.put("actorName", actorName);
+        values.put("actorEmail", actorEmail);
+        values.put("memberName", actorName);
+        values.put("inviteeEmail", actorEmail);
+        values.put("teamName", resolveTeamName(notification));
+        values.put("trackName", extractTrackName(notification));
+        values.put("roundName", extractRoundName(notification));
+        return values;
+    }
+
+    private String resolveTeamName(Notification notification) {
+        if (notification.getTargetScope() == NotificationTargetScope.TEAM && notification.getTargetId() != null) {
+            return teamRepository.findById(notification.getTargetId())
+                    .map(Team::getName)
+                    .filter(value -> !isBlank(value))
+                    .orElseGet(() -> extractTeamName(notification));
+        }
+        return extractTeamName(notification);
+    }
+
+    private String extractTeamName(Notification notification) {
+        String source = notificationText(notification);
+        String lower = source.toLowerCase(Locale.ROOT);
+        for (String marker : List.of(" join team ", " joined team ", " for team ", "team ")) {
+            int index = lower.indexOf(marker);
+            if (index >= 0) {
+                String tail = source.substring(index + marker.length()).trim();
+                return cleanExtractedName(tail, List.of(" has ", " using ", " for ", "."), "your team");
+            }
+        }
+        return "your team";
+    }
+
+    private String extractTrackName(Notification notification) {
+        String source = notificationText(notification);
+        String lower = source.toLowerCase(Locale.ROOT);
+        int index = lower.indexOf(" track ");
+        if (index < 0) {
+            return "";
+        }
+        String tail = source.substring(index + " track ".length()).trim();
+        return cleanExtractedName(tail, List.of(" in ", " for ", "."), "");
+    }
+
+    private String extractRoundName(Notification notification) {
+        String source = notificationText(notification);
+        String lower = source.toLowerCase(Locale.ROOT);
+        int index = lower.indexOf(" round ");
+        if (index < 0 && lower.startsWith("round ")) {
+            index = 0;
+        }
+        if (index < 0) {
+            return "";
+        }
+        String tail = source.substring(index + (index == 0 ? "round ".length() : " round ".length())).trim();
+        return cleanExtractedName(tail, List.of(" is ", " has ", " for ", " of ", "."), "");
+    }
+
+    private String notificationText(Notification notification) {
+        return (nullToEmpty(notification.getTitle()) + " " + nullToEmpty(notification.getBody())).trim();
+    }
+
+    private String cleanExtractedName(String value, List<String> endings, String fallback) {
+        String result = value;
+        String lower = result.toLowerCase(Locale.ROOT);
+        for (String ending : endings) {
+            int index = lower.indexOf(ending);
+            if (index >= 0) {
+                result = result.substring(0, index);
+                break;
+            }
+        }
+        result = result.trim();
+        return result.isBlank() ? fallback : result;
+    }
+
+    private String displayName(User user) {
+        if (user == null) {
+            return "A member";
+        }
+        if (!isBlank(user.getFullName())) {
+            return user.getFullName();
+        }
+        if (!isBlank(user.getEmail())) {
+            return user.getEmail();
+        }
+        return "A member";
+    }
+
+    private boolean containsUnresolvedPlaceholder(String value) {
+        return value != null && value.matches(".*\\{[A-Za-z0-9_]+}.*");
     }
 
     private String defaultSubject(NotificationType type) {
@@ -597,6 +865,11 @@ public class NotificationServiceImpl implements NotificationService {
 
     private String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private String valueOrDefault(Map<String, String> values, String key, String fallback) {
+        String value = values.get(key);
+        return isBlank(value) ? fallback : value;
     }
 
     private String stripTrailingSlash(String value) {
