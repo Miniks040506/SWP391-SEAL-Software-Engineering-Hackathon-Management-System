@@ -10,7 +10,7 @@ type CountValue = number | string | null | undefined;
 type CoordinatorEventCardProps = {
   event: EventSummaryResponse;
   trackCount?: CountValue;
-  approvedTeams?: CountValue;
+  registeredTeams?: CountValue;
   onEdit: (id: string) => void;
   onView: (id: string) => void;
 };
@@ -84,7 +84,7 @@ function Stat({ icon, value, label }: { icon: React.ReactNode; value: CountValue
   );
 }
 
-export function CoordinatorEventCard({ event, trackCount, approvedTeams, onEdit, onView }: CoordinatorEventCardProps) {
+export function CoordinatorEventCard({ event, trackCount, registeredTeams, onEdit, onView }: CoordinatorEventCardProps) {
   const status = normalizeStatus(event.status);
   const isHighlighted = status === "ONGOING" || status === "REGISTRATION";
 
@@ -103,7 +103,7 @@ export function CoordinatorEventCard({ event, trackCount, approvedTeams, onEdit,
       <div className="mt-5 space-y-3 border-y border-gray-100 py-5 dark:border-slate-700">
         <Stat icon={<LayersOutlinedIcon sx={{ fontSize: 16 }} />} value={trackCount ?? "—"} label="Tracks" />
 
-        <Stat icon={<GroupsOutlinedIcon sx={{ fontSize: 16 }} />} value={approvedTeams ?? "—"} label="Approved Teams" />
+        <Stat icon={<GroupsOutlinedIcon sx={{ fontSize: 16 }} />} value={registeredTeams ?? "—"} label="Registered Teams" />
       </div>
 
       <div className="mt-auto grid grid-cols-2 gap-2 pt-5">

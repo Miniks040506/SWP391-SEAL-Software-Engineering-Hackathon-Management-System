@@ -23,6 +23,7 @@ import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
+import { BrowseTeamsSection } from "../components/BrowseTeamsSection";
 import {
   useMyTeamsQuery,
   useMyInvitationsQuery,
@@ -111,7 +112,7 @@ export const MyTeamsPage = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          
+
           <IconButton
             onClick={handleOpenNotifications}
             className="border border-gray-200 bg-white transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
@@ -301,7 +302,7 @@ export const MyTeamsPage = () => {
 
       {myTeamsQuery.isError && <Alert severity="warning">Cannot connect right now. Try later.</Alert>}
       {myTeamsQuery.isLoading && <div className="flex justify-center py-24"><CircularProgress /></div>}
-      
+
       {showEmptyState && (
         <section className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
@@ -327,60 +328,62 @@ export const MyTeamsPage = () => {
       {!myTeamsQuery.isLoading && teams.length > 0 && (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {teams.map((team) => (
-             <Card key={team.id} variant="outlined" className="overflow-hidden rounded-2xl dark:border-slate-700 dark:bg-slate-800">
-             <CardContent>
-               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                 <div className="min-w-0 flex-1">
-                   <div className="flex flex-wrap items-center gap-3">
-                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
-                       <GroupsOutlinedIcon />
-                     </div>
-                     <div className="min-w-0 flex-1">
-                       <h2 className="truncate text-2xl font-extrabold text-gray-900 dark:text-white">
-                         {team.name}
-                       </h2>
-                       <p className="mt-1 truncate text-sm text-gray-500 dark:text-slate-400">
-                         {team.projectTitle || "No project title yet"}
-                       </p>
-                     </div>
-                   </div>
+            <Card key={team.id} variant="outlined" className="overflow-hidden rounded-2xl dark:border-slate-700 dark:bg-slate-800">
+              <CardContent>
+                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
+                        <GroupsOutlinedIcon />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="truncate text-2xl font-extrabold text-gray-900 dark:text-white">
+                          {team.name}
+                        </h2>
+                        <p className="mt-1 truncate text-sm text-gray-500 dark:text-slate-400">
+                          {team.projectTitle || "No project title yet"}
+                        </p>
+                      </div>
+                    </div>
 
-                   <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                     <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
-                       <p className="text-sm font-semibold text-gray-500">Role</p>
-                       <div className="mt-2"><TeamStatusBadge status={team.roleInTeam} /></div>
-                     </div>
-                     <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
-                       <p className="text-sm font-semibold text-gray-500">Status</p>
-                       <div className="mt-2"><TeamStatusBadge status={team.status} /></div>
-                     </div>
-                     <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
-                       <p className="text-sm font-semibold text-gray-500">Members</p>
-                       <div className="mt-2"><TeamStatusBadge memberCount={team.memberCount} /></div>
-                     </div>
-                   </div>
-                 </div>
+                    <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
+                        <p className="text-sm font-semibold text-gray-500">Role</p>
+                        <div className="mt-2"><TeamStatusBadge status={team.roleInTeam} /></div>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
+                        <p className="text-sm font-semibold text-gray-500">Status</p>
+                        <div className="mt-2"><TeamStatusBadge status={team.status} /></div>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
+                        <p className="text-sm font-semibold text-gray-500">Members</p>
+                        <div className="mt-2"><TeamStatusBadge memberCount={team.memberCount} /></div>
+                      </div>
+                    </div>
+                  </div>
 
-                 <Button
-                   variant="contained"
-                   onClick={() => navigate(`/participant/teams/${team.id}`)}
-                   sx={{
-                     bgcolor: "#2563eb",
-                     fontWeight: 800,
-                     textTransform: "none",
-                     borderRadius: "10px",
-                     boxShadow: "none",
-                     "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
-                   }}
-                 >
-                   View Team
-                 </Button>
-               </div>
-             </CardContent>
-           </Card>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate(`/participant/teams/${team.id}`)}
+                    sx={{
+                      bgcolor: "#2563eb",
+                      fontWeight: 800,
+                      textTransform: "none",
+                      borderRadius: "10px",
+                      boxShadow: "none",
+                      "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+                    }}
+                  >
+                    View Team
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
+
+      <BrowseTeamsSection />
     </div>
   );
 };

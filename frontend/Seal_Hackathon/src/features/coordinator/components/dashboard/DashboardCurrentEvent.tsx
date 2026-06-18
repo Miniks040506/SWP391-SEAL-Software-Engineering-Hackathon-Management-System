@@ -45,7 +45,7 @@ function getEmbeddedCount(value?: unknown[] | null) {
   return Array.isArray(value) ? value.length : "—";
 }
 
-function getApprovedTeamCount(event?: DashboardEvent | null) {
+function getRegisteredTeamCount(event?: DashboardEvent | null) {
   if (!event) return "—";
   return event.approvedTeamCount ?? event.approvedTeams ?? event.teamCount ?? "—";
 }
@@ -104,8 +104,8 @@ export function DashboardCurrentEvent({ event, isLoading }: Props) {
             <p className="mt-1 font-bold text-gray-900 dark:text-white">{getEmbeddedCount(event?.rounds)}</p>
           </div>
           <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-            <p className="text-sm text-gray-500">Approved Teams</p>
-            <p className="mt-1 font-bold text-gray-900 dark:text-white">{getApprovedTeamCount(event)}</p>
+            <p className="text-sm text-gray-500">Registered Teams</p>
+            <p className="mt-1 font-bold text-gray-900 dark:text-white">{getRegisteredTeamCount(event)}</p>
           </div>
         </div>
 

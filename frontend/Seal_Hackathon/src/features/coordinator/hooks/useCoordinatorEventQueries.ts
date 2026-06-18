@@ -6,6 +6,7 @@ import { eventApi } from "@/api/event.api";
 import { prizeApi } from "@/api/prize.api";
 import { roundApi } from "@/api/round.api";
 import { trackApi } from "@/api/track.api";
+import { teamApi } from "@/api/team.api";
 import { mockCoordinatorService } from "../mocks/coordinatorService.mock";
 
 import type { UUID } from "@/types/common.types";
@@ -144,6 +145,18 @@ export function useCoordinatorMultipleTracksQueries(eventIds: UUID[]) {
     queries: eventIds.map((eventId) => ({
       queryKey: coordinatorEventKeys.tracks(eventId),
       queryFn: () => activeTrackApi.getTracksByEvent(eventId),
+      enabled: Boolean(eventId),
+      staleTime: 30_000,
+      retry: false,
+    })),
+  });
+}
+
+export function useCoordinatorMultipleTeamsQueries(eventIds: UUID[]) {
+  return useQueries({
+    queries: eventIds.map((eventId) => ({
+      queryKey: ["coord-dashboard-teams", eventId],
+      queryFn: () => teamApi.getCoordinatorEventTeams(eventId, { page: 0, size: 1000 }),
       enabled: Boolean(eventId),
       staleTime: 30_000,
       retry: false,

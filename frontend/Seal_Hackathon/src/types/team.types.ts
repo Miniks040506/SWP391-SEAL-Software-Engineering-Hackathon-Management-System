@@ -2,7 +2,6 @@ import type { ISODateTime, UUID } from "@/types/common.types";
 
 export type TeamStatus =
   | "FORMING"
-  | "INCOMPLETE"
   | "REGISTERED"
   | "COMPETING"
   | "ADVANCED"

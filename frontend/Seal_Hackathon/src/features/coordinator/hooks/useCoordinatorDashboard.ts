@@ -48,7 +48,7 @@ export function useCoordinatorDashboard() {
 
   const teamsQuery = useQuery({
     queryKey: ["coord-dashboard-teams", currentEventId],
-    queryFn: () => teamApi.getCoordinatorEventTeams(currentEventId!, { page: 0, size: 1000 } as any),
+    queryFn: () => teamApi.getCoordinatorEventTeams(currentEventId!, { page: 0, size: 1000 }),
     enabled: Boolean(currentEventId) && !USE_MOCK,
   });
 
@@ -78,14 +78,16 @@ export function useCoordinatorDashboard() {
   const summaryCards: SummaryCardType[] = useMemo(() => {
     if (USE_MOCK) return mockCoordinatorDashboard.summaryCards;
 
-    const teamsList = teamsQuery.data?.content || (teamsQuery.data as any)?.data?.content || [];
-    const pendingTeamsCount = teamsList.filter((t: any) => t.status === "PENDING").length;
-    const totalSubmissions = submissionsQuery.data?.totalElements || (submissionsQuery.data as any)?.data?.totalElements || 0;
-    const draftScorecards = (scoringQuery.data as any)?.draftCount || (scoringQuery.data as any)?.data?.draftCount || 0;
+    const teamsList = teamsQuery.data?.content ?? [];
+    const registeredTeamsCount = teamsList.filter(
+      (t) => ["REGISTERED", "COMPETING", "ADVANCED", "WINNER"].includes((t.status ?? "").toUpperCase())
+    ).length;
+    const totalSubmissions = submissionsQuery.data?.totalElements ?? 0;
+    const draftScorecards = (scoringQuery.data as any)?.draftCount ?? 0;
 
     return [
       { title: "Active Events", value: activeEvents.length, description: "Currently running or registration open", iconType: "event", color: "bg-blue-50 text-blue-600" },
-      { title: "Pending Teams", value: pendingTeamsCount, description: "Waiting for approval", iconType: "team", color: "bg-orange-50 text-orange-600" },
+      { title: "Registered Teams", value: registeredTeamsCount, description: "Teams registered for this event", iconType: "team", color: "bg-orange-50 text-orange-600" },
       { title: "Submissions", value: totalSubmissions, description: "Total submissions received", iconType: "submission", color: "bg-purple-50 text-purple-600" },
       { title: "Draft Scorecards", value: draftScorecards, description: "Need judge completion", iconType: "grading", color: "bg-rose-50 text-rose-600" },
     ];
@@ -95,16 +97,18 @@ export function useCoordinatorDashboard() {
     if (USE_MOCK) return mockCoordinatorDashboard.pendingActions;
 
     const actions: PendingActionType[] = [];
-    const teamsList = teamsQuery.data?.content || (teamsQuery.data as any)?.data?.content || [];
-    const pendingTeamsCount = teamsList.filter((t: any) => t.status === "PENDING").length;
-    const draftScorecards = (scoringQuery.data as any)?.draftCount || (scoringQuery.data as any)?.data?.draftCount || 0;
+    const teamsList = teamsQuery.data?.content ?? [];
+    const formingTeamsCount = teamsList.filter(
+      (t) => (t.status ?? "").toUpperCase() === "FORMING"
+    ).length;
+    const draftScorecards = (scoringQuery.data as any)?.draftCount ?? 0;
 
-    if (pendingTeamsCount > 0) {
+    if (formingTeamsCount > 0) {
       actions.push({
         id: "pa-teams",
-        title: `${pendingTeamsCount} team registrations are waiting for approval`,
-        description: "Review team members, track selection, and eligibility before approving.",
-        actionLabel: "Review Teams",
+        title: `${formingTeamsCount} team${formingTeamsCount > 1 ? "s" : ""} still forming — not yet registered`,
+        description: "These teams haven't completed registration. Remind participants to register their team.",
+        actionLabel: "View Teams",
         path: "/coordinator/teams",
         priority: "High",
       });
@@ -135,12 +139,20 @@ export function useCoordinatorDashboard() {
   const recentActivities: RecentActivityType[] = useMemo(() => {
     if (USE_MOCK) return mockCoordinatorDashboard.recentActivities;
 
-    const notifsList = notifsQuery.data?.content || (notifsQuery.data as any)?.data?.content || [];
+    const normalizeText = (text: string | null | undefined): string => {
+      if (!text) return "";
+      return text
+        .replace(/approved teams?/gi, "registered team")
+        .replace(/team registration approved/gi, "Team registered")
+        .replace(/team registrations? (?:are )?waiting for approval/gi, "teams still forming — not yet registered");
+    };
+
+    const notifsList = notifsQuery.data?.content ?? [];
     return notifsList.slice(0, 4).map((n: any) => ({
       id: n.id,
       time: new Date(n.sentAt || n.createdAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
-      title: n.title,
-      description: n.body,
+      title: normalizeText(n.title),
+      description: normalizeText(n.body),
     }));
   }, [USE_MOCK, notifsQuery.data]);
 
