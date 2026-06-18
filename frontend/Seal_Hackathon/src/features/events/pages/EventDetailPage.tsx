@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
@@ -28,6 +28,11 @@ import {
 export function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const backPath = location.pathname.includes("/coordinator")
+    ? "/coordinator/events"
+    : "/events";
 
   const [selectedAnnouncement, setSelectedAnnouncement] =
     useState<PublicAnnouncementView | null>(null);
@@ -63,7 +68,7 @@ export function EventDetailPage() {
 
         <button
           type="button"
-          onClick={() => navigate("/events")}
+          onClick={() => navigate(backPath)}
           className="text-sm font-bold text-blue-500 hover:underline"
         >
           Back to events
@@ -132,7 +137,7 @@ export function EventDetailPage() {
 
       <button
         type="button"
-        onClick={() => navigate("/events")}
+        onClick={() => navigate(backPath)}
         className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-gray-400 transition-colors hover:text-blue-500"
       >
         <ArrowBackIcon style={{ fontSize: 15 }} />
