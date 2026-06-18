@@ -127,6 +127,8 @@ public class TeamServiceImpl implements TeamService {
                 team.getLeader() == null ? null : team.getLeader().getFullName(),
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
+                team.getJoinCode(),
+                team.getJoinCodeEnabled(),
                 members.stream().map(this::toTeamMemberResponse).toList()
         );
     }
@@ -704,7 +706,20 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private void createInvitationSentNotification(TeamInvitation invitation, User actor) {
-        if (invitation.getInvitee() == null) {
+        notificationService.createSystemNotification(
+                actor,
+                invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
+                NotificationType.TEAM_INVITATION_SENT,
+                "Invitation sent",
+                "Invitation sent to " + invitation.getInviteEmail() + " for team " + invitation.getTeam().getName() + ".",
+                NotificationTargetScope.SINGLE_USER,
+                actor.getId(),
+                null,
+                NotificationChannel.IN_APP,
+                null
+        );
+
+        if (invitation.getInvitee() == null || invitation.getInvitee().getId().equals(actor.getId())) {
             return;
         }
 
@@ -712,7 +727,7 @@ public class TeamServiceImpl implements TeamService {
                 actor,
                 invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
                 NotificationType.TEAM_INVITATION_SENT,
-                "Team invitation",
+                "You are invited to join " + invitation.getTeam().getName(),
                 "You are invited to join team " + invitation.getTeam().getName() + ".",
                 NotificationTargetScope.SINGLE_USER,
                 invitation.getInvitee().getId(),
@@ -742,7 +757,7 @@ public class TeamServiceImpl implements TeamService {
                 actor,
                 invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
                 NotificationType.TEAM_INVITATION_ACCEPTED,
-                "Team invitation accepted",
+                actor.getFullName() + " accepted the invitation to join " + invitation.getTeam().getName(),
                 actor.getFullName() + " joined team " + invitation.getTeam().getName() + ".",
                 NotificationTargetScope.TEAM,
                 invitation.getTeam().getId(),
@@ -762,7 +777,7 @@ public class TeamServiceImpl implements TeamService {
                 invitation.getTeam().getTrack() == null ? null : invitation.getTeam().getTrack().getEvent(),
                 NotificationType.TEAM_INVITATION_REJECTED,
                 "Team invitation declined",
-                invitation.getInviteEmail() + " declined the invitation to join " + invitation.getTeam().getName() + ".",
+                invitation.getInviteEmail() + " declined the invitation to join team " + invitation.getTeam().getName() + ".",
                 NotificationTargetScope.SINGLE_USER,
                 leader.getId(),
                 null,
@@ -887,7 +902,9 @@ public class TeamServiceImpl implements TeamService {
                 team.getLeader().getFullName(),
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
-                team.getMemberCount() == null ? 0 : team.getMemberCount()
+                team.getMemberCount() == null ? 0 : team.getMemberCount(),
+                team.getJoinCode(),
+                team.getJoinCodeEnabled()
         );
     }
 

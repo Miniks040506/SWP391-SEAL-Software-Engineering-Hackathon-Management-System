@@ -17,6 +17,7 @@ import java.util.UUID;
                 @Index(name = "idx_notification_recipient_notification", columnList = "notification_id"),
                 @Index(name = "idx_notification_recipient_user", columnList = "user_id"),
                 @Index(name = "idx_notification_recipient_read", columnList = "read_at"),
+                @Index(name = "idx_notification_recipient_deleted", columnList = "deleted_at"),
                 @Index(name = "idx_notification_recipient_created", columnList = "created_at")
         }
 )
@@ -45,12 +46,19 @@ public class NotificationRecipient {
     @Column(name = "read_at")
     private LocalDateTime readAt;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     public boolean isRead() {
         return readAt != null;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
     }
 
     public void markDelivered() {
@@ -64,5 +72,11 @@ public class NotificationRecipient {
             readAt = LocalDateTime.now();
         }
         markDelivered();
+    }
+
+    public void markDeleted() {
+        if (deletedAt == null) {
+            deletedAt = LocalDateTime.now();
+        }
     }
 }

@@ -365,7 +365,9 @@ public class TrackServiceImpl implements TrackService {
                 team.getLeader() == null ? null : team.getLeader().getFullName(),
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
-                team.getMemberCount() == null ? 0 : team.getMemberCount()
+                team.getMemberCount() == null ? 0 : team.getMemberCount(),
+                team.getJoinCode(),
+                team.getJoinCodeEnabled()
         );
     }
 
