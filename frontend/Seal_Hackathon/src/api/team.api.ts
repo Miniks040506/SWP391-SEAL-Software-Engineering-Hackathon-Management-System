@@ -5,6 +5,9 @@ import type {
   CoordinatorTeamListParams,
   CoordinatorTeamSummaryResponse,
   CreateTeamRequest,
+  CreateTeamJoinRequest,
+  FormingTeamListParams,
+  FormingTeamResponse,
   InviteMemberRequest,
   JoinTeamByCodeRequest,
   LeaveTeamRequest,
@@ -14,6 +17,7 @@ import type {
   TeamDetailResponse,
   TeamInvitationResponse,
   TeamJoinCodePreviewResponse,
+  TeamJoinRequestResponse,
   TeamMemberResponse,
   TeamResponse,
   TeamSummaryResponse,
@@ -29,6 +33,48 @@ export const teamApi = {
 
   getMyTeams() {
     return apiRequest.get<TeamSummaryResponse[]>("/teams/me");
+  },
+
+  getFormingTeams(params?: FormingTeamListParams) {
+    return apiRequest.get<PageResponse<FormingTeamResponse>>("/teams/forming", {
+      params,
+    });
+  },
+
+  requestToJoinTeam(teamId: UUID, payload?: CreateTeamJoinRequest) {
+    return apiRequest.post<TeamJoinRequestResponse>(
+      `/teams/${teamId}/join-requests`,
+      payload ?? {},
+    );
+  },
+
+  getTeamJoinRequests(teamId: UUID) {
+    return apiRequest.get<TeamJoinRequestResponse[]>(
+      `/teams/${teamId}/join-requests`,
+    );
+  },
+
+  getMyJoinRequests() {
+    return apiRequest.get<TeamJoinRequestResponse[]>("/teams/join-requests/me");
+  },
+
+  getJoinRequestByToken(token: string) {
+    return apiRequest.get<TeamJoinRequestResponse>(
+      `/team-join-requests/token/${encodeURIComponent(token)}`,
+    );
+  },
+
+  acceptJoinRequestByToken(token: string) {
+    return apiRequest.post<TeamMemberResponse>(
+      `/team-join-requests/token/${encodeURIComponent(token)}/accept`,
+    );
+  },
+
+  rejectJoinRequestByToken(token: string, payload?: RejectInvitationRequest) {
+    return apiRequest.post<void>(
+      `/team-join-requests/token/${encodeURIComponent(token)}/reject`,
+      payload ?? {},
+    );
   },
 
   getTeamById(teamId: UUID) {
