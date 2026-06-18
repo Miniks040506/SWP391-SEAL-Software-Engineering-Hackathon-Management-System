@@ -1,6 +1,11 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { NotificationDetailDialog } from "@/features/notification/components/NotificationDetailDialog";
 import { NotificationList } from "@/features/notification/components/NotificationList";
-import { useMarkNotificationReadMutation } from "@/features/notification/hooks/useNotificationMutations";
+import {
+  useDeleteNotificationMutation,
+  useMarkNotificationReadMutation,
+} from "@/features/notification/hooks/useNotificationMutations";
 import { useNotificationsQuery } from "@/features/notification/hooks/useNotificationQueries";
 import type { NotificationResponse } from "@/types/notification.types";
 
@@ -13,6 +18,9 @@ export function NotificationDropdown({ inboxPath, onClose }: Props) {
   const navigate = useNavigate();
   const notificationsQuery = useNotificationsQuery({ page: 0, size: 5 });
   const markReadMutation = useMarkNotificationReadMutation();
+  const deleteMutation = useDeleteNotificationMutation();
+  const [selectedNotification, setSelectedNotification] =
+    useState<NotificationResponse | null>(null);
 
   const notifications = notificationsQuery.data?.content ?? [];
 
@@ -20,12 +28,18 @@ export function NotificationDropdown({ inboxPath, onClose }: Props) {
     if (!notification.read) {
       await markReadMutation.mutateAsync(notification.id);
     }
+    setSelectedNotification({ ...notification, read: true });
+  };
+
+  const deleteNotification = async (notification: NotificationResponse) => {
+    await deleteMutation.mutateAsync(notification.id);
+    setSelectedNotification(null);
+  };
+
+  const openTarget = (notification: NotificationResponse) => {
     onClose();
-    navigate(
-      notification.targetUrl && notification.targetUrl !== "/notifications"
-        ? notification.targetUrl
-        : inboxPath,
-    );
+    setSelectedNotification(null);
+    navigate(notification.targetUrl ?? inboxPath);
   };
 
   return (
@@ -62,6 +76,16 @@ export function NotificationDropdown({ inboxPath, onClose }: Props) {
           />
         )}
       </div>
+      <NotificationDetailDialog
+        open={Boolean(selectedNotification)}
+        notification={selectedNotification}
+        onClose={() => setSelectedNotification(null)}
+        onMarkRead={(notification) => markReadMutation.mutate(notification.id)}
+        onDelete={deleteNotification}
+        onOpenTarget={openTarget}
+        markReadLoading={markReadMutation.isPending}
+        deleteLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }

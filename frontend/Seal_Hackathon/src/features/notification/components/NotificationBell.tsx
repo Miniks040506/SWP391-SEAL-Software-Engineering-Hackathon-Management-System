@@ -15,7 +15,9 @@ export function NotificationBell({ inboxPath }: Props) {
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
+      const target = event.target as HTMLElement;
+      if (target.closest(".MuiDialog-root")) return;
+      if (ref.current && !ref.current.contains(target)) {
         setOpen(false);
       }
     };

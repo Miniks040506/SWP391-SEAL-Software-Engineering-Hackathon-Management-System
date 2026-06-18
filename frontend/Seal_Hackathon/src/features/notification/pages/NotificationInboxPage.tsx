@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
+import DeleteSweepOutlinedIcon from "@mui/icons-material/DeleteSweepOutlined";
 import DoneAllOutlinedIcon from "@mui/icons-material/DoneAllOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
+import { NotificationDetailDialog } from "@/features/notification/components/NotificationDetailDialog";
 import { NotificationList } from "@/features/notification/components/NotificationList";
 import {
+  useClearNotificationsMutation,
+  useDeleteNotificationMutation,
   useMarkAllNotificationsReadMutation,
   useMarkNotificationReadMutation,
 } from "@/features/notification/hooks/useNotificationMutations";
@@ -24,9 +28,13 @@ export function NotificationInboxPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<NotificationFilter>("ALL");
   const [page, setPage] = useState(0);
+  const [selectedNotification, setSelectedNotification] =
+    useState<NotificationResponse | null>(null);
   const query = useNotificationsQuery({ read: filterToRead(filter), page, size: PAGE_SIZE });
   const markReadMutation = useMarkNotificationReadMutation();
   const markAllReadMutation = useMarkAllNotificationsReadMutation();
+  const deleteMutation = useDeleteNotificationMutation();
+  const clearMutation = useClearNotificationsMutation();
 
   const notifications = query.data?.content ?? [];
   const totalPages = query.data?.totalPages ?? 1;
@@ -41,10 +49,23 @@ export function NotificationInboxPage() {
       await markReadMutation.mutateAsync(notification.id);
       enqueueSnackbar("Notification marked as read.", { variant: "success" });
     }
+    setSelectedNotification({ ...notification, read: true });
+  };
 
+  const deleteNotification = async (notification: NotificationResponse) => {
+    await deleteMutation.mutateAsync(notification.id);
+    setSelectedNotification(null);
+  };
+
+  const openTarget = (notification: NotificationResponse) => {
     if (notification.targetUrl && notification.targetUrl !== "/notifications") {
       navigate(notification.targetUrl);
     }
+  };
+
+  const clearCurrentFilter = () => {
+    if (!window.confirm("Clean notifications in the current filter?")) return;
+    clearMutation.mutate(filterToRead(filter));
   };
 
   const setFilterAndReset = (next: NotificationFilter) => {
@@ -86,6 +107,15 @@ export function NotificationInboxPage() {
             >
               <DoneAllOutlinedIcon fontSize="small" />
               Mark all read
+            </button>
+            <button
+              type="button"
+              disabled={notifications.length === 0 || clearMutation.isPending}
+              onClick={clearCurrentFilter}
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/30 dark:bg-slate-950 dark:text-red-300 dark:hover:bg-red-500/10"
+            >
+              <DeleteSweepOutlinedIcon fontSize="small" />
+              Clean
             </button>
           </div>
         </div>
@@ -133,6 +163,17 @@ export function NotificationInboxPage() {
           onMarkRead={(notification) => markReadMutation.mutate(notification.id)}
         />
       )}
+
+      <NotificationDetailDialog
+        open={Boolean(selectedNotification)}
+        notification={selectedNotification}
+        onClose={() => setSelectedNotification(null)}
+        onMarkRead={(notification) => markReadMutation.mutate(notification.id)}
+        onDelete={deleteNotification}
+        onOpenTarget={openTarget}
+        markReadLoading={markReadMutation.isPending}
+        deleteLoading={deleteMutation.isPending}
+      />
 
       <div className="flex items-center justify-between pt-2">
         <button
