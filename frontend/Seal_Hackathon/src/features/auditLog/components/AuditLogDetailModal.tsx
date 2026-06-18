@@ -12,6 +12,16 @@ type Props = {
   onClose: () => void;
 };
 
+function hasAuditValue(value: unknown) {
+  return value !== null && value !== undefined;
+}
+
+function formatAuditValue(value: unknown) {
+  if (!hasAuditValue(value)) return "Null / Not applicable";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value, null, 2);
+}
+
 export const AuditLogDetailModal = ({ log, onClose }: Props) => {
   if (!log) return null;
 
@@ -21,7 +31,7 @@ export const AuditLogDetailModal = ({ log, onClose }: Props) => {
       onClose={onClose}
       fullWidth
       maxWidth="md"
-      PaperProps={{ sx: { borderRadius: "16px" } }}
+      slotProps={{ paper: { sx: { borderRadius: "16px" } } }}
     >
       <DialogTitle
         sx={{
@@ -63,11 +73,11 @@ export const AuditLogDetailModal = ({ log, onClose }: Props) => {
             </p>
           </div>
           
-          {log.context && (
+          {hasAuditValue(log.context) && (
             <div>
               <p className="text-slate-500 mb-1">Context</p>
               <pre className="font-mono text-xs text-slate-600 dark:text-slate-400">
-                {JSON.stringify(log.context)}
+                {formatAuditValue(log.context)}
               </pre>
             </div>
           )}
@@ -77,18 +87,14 @@ export const AuditLogDetailModal = ({ log, onClose }: Props) => {
           <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 shadow-sm">
             <h4 className="mb-2 font-black text-rose-600">Before State</h4>
             <pre className="text-xs text-slate-700 dark:text-slate-300 overflow-x-auto whitespace-pre-wrap font-mono">
-              {log.beforeState
-                ? JSON.stringify(log.beforeState, null, 2)
-                : "Null / Not applicable"}
+              {formatAuditValue(log.beforeState)}
             </pre>
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 shadow-sm">
             <h4 className="mb-2 font-black text-emerald-600">After State</h4>
             <pre className="text-xs text-slate-700 dark:text-slate-300 overflow-x-auto whitespace-pre-wrap font-mono">
-              {log.afterState
-                ? JSON.stringify(log.afterState, null, 2)
-                : "Null / Not applicable"}
+              {formatAuditValue(log.afterState)}
             </pre>
           </div>
         </div>

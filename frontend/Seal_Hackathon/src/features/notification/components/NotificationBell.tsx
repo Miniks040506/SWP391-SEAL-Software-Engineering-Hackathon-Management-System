@@ -15,7 +15,10 @@ export function NotificationBell({ inboxPath }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const unreadQuery = useUnreadNotificationCountQuery();
   const unreadPreviewQuery = useNotificationsQuery({ read: false, page: 0, size: 1 });
-  const unreadCount = unreadQuery.data?.unreadCount ?? unreadPreviewQuery.data?.totalElements ?? 0;
+  const unreadCount = Math.max(
+    unreadQuery.data?.unreadCount ?? 0,
+    unreadPreviewQuery.data?.totalElements ?? 0,
+  );
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
