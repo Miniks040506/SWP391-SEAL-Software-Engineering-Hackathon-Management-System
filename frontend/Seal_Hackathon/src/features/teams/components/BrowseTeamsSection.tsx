@@ -112,7 +112,7 @@ export function BrowseTeamsSection() {
 
                 <div className="mt-auto flex items-center justify-between pt-6">
                   <p className="text-xs font-semibold text-gray-400">Leader: {team.leaderName}</p>
-                  
+
                   <Button
                     variant={isSent ? "outlined" : "contained"}
                     size="small"
