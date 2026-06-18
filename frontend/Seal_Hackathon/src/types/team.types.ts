@@ -70,6 +70,8 @@ export type TeamResponse = {
   trackId?: UUID | null;
   status: TeamStatus;
   memberCount: number;
+  joinCode?: string | null;
+  joinCodeEnabled?: boolean | null;
 };
 
 export type TeamSummaryResponse = {
@@ -98,6 +100,8 @@ export type TeamDetailResponse = {
   leaderName: string;
   trackId?: UUID | null;
   status: TeamStatus;
+  joinCode?: string | null;
+  joinCodeEnabled?: boolean | null;
   members: TeamMemberResponse[];
 };
 
