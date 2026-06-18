@@ -1,4 +1,4 @@
-export { MentorDashboardPage } from "./pages/MentorDashboardPage";
-export { MentorSubmissionPage } from "./pages/MentorSubmissionPage";
-export { MentorSubmissionDetailPage } from "./pages/MentorSubmissionDetailPage";
-export { MentorTeamsPage } from "./pages/MentorTeamsPage";
+export * from "./pages/MentorDashboardPage";
+export * from "./pages/MentorSubmissionPage";
+export * from "./pages/MentorSubmissionDetailPage";
+export * from "./pages/MentorTeamsPage";
