@@ -18,7 +18,6 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import IconButton from "@mui/material/IconButton";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import TextField from "@mui/material/TextField";
@@ -44,6 +43,7 @@ import {
   useRemoveTeamMemberMutation,
   useTeamDetailQuery,
   useTeamInvitationsQuery,
+  useToggleJoinCodeMutation,
   useTransferTeamLeaderMutation,
   useUpdateTeamMutation,
 } from "../hooks/useParticipantTeams";
@@ -63,6 +63,7 @@ function isLeaderRole(role?: string) {
 export const TeamDetailPage = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [activeTab, setActiveTab] = useState<TeamDetailTab>("overview");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -77,6 +78,7 @@ export const TeamDetailPage = () => {
   const removeMemberMutation = useRemoveTeamMemberMutation(teamId);
   const transferLeaderMutation = useTransferTeamLeaderMutation(teamId);
   const leaveTeamMutation = useLeaveTeamMutation(teamId);
+  const toggleJoinCodeMutation = useToggleJoinCodeMutation(teamId);
 
   const team = teamQuery.data;
   const members = team?.members ?? [];
@@ -182,6 +184,16 @@ export const TeamDetailPage = () => {
     if (!window.confirm("Are you sure you want to leave this team?")) return;
     await leaveTeamMutation.mutateAsync({ reason: "Left by participant" });
     navigate("/participant/teams");
+  };
+
+  const handleCopyJoinCode = async () => {
+    if (!team.joinCode) return;
+    await navigator.clipboard.writeText(team.joinCode);
+    enqueueSnackbar("Join code copied to clipboard.", { variant: "success" });
+  };
+
+  const handleToggleJoinCode = () => {
+    toggleJoinCodeMutation.mutate(!team.joinCodeEnabled);
   };
 
   return (
@@ -319,16 +331,66 @@ export const TeamDetailPage = () => {
                 </form>
               </section>
 
+              <section className="rounded-lg border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-500/20 dark:bg-blue-500/10">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-blue-500">
+                      Team Join Code
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      Share this code with approved members, or disable it and use email invitations only.
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <code className="rounded-lg bg-white px-4 py-2 text-base font-black tracking-widest text-slate-900 ring-1 ring-blue-100 dark:bg-slate-950 dark:text-white dark:ring-blue-500/20">
+                        {team.joinCode || "Not generated"}
+                      </code>
+                      <span
+                        className={[
+                          "rounded-full px-3 py-1 text-xs font-black",
+                          team.joinCodeEnabled
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                            : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+                        ].join(" ")}
+                      >
+                        {team.joinCodeEnabled ? "Enabled" : "Disabled"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {currentUserIsLeader && (
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outlined"
+                        startIcon={<ContentCopyOutlinedIcon />}
+                        disabled={!team.joinCode}
+                        onClick={handleCopyJoinCode}
+                        sx={{ fontWeight: 800, textTransform: "none" }}
+                      >
+                        Copy
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={handleToggleJoinCode}
+                        disabled={toggleJoinCodeMutation.isPending}
+                        sx={{
+                          bgcolor: team.joinCodeEnabled ? "#64748b" : "#2563eb",
+                          fontWeight: 800,
+                          textTransform: "none",
+                          "&:hover": {
+                            bgcolor: team.joinCodeEnabled ? "#475569" : "#1d4ed8",
+                          },
+                        }}
+                      >
+                        {team.joinCodeEnabled ? "Disable" : "Enable"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </section>
+
               <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <InfoItem label="Leader" value={team.leaderName} />
                 <InfoItem label="Team Status" value={team.status} />
-
-                <CopyableInfoItem
-                  label="Join Code"
-                  value={(team as any).joinCode}
-                  fallback="Not Generated"
-                  highlight
-                />
 
                 <InfoItem
                   label="Track"
