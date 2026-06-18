@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import { NotificationDropdown } from "@/features/notification/components/NotificationDropdown";
-import { useUnreadNotificationCountQuery } from "@/features/notification/hooks/useNotificationQueries";
+import {
+  useNotificationsQuery,
+  useUnreadNotificationCountQuery,
+} from "@/features/notification/hooks/useNotificationQueries";
 
 type Props = {
   inboxPath: string;
@@ -11,7 +14,8 @@ export function NotificationBell({ inboxPath }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const unreadQuery = useUnreadNotificationCountQuery();
-  const unreadCount = unreadQuery.data?.unreadCount ?? 0;
+  const unreadPreviewQuery = useNotificationsQuery({ read: false, page: 0, size: 1 });
+  const unreadCount = unreadQuery.data?.unreadCount ?? unreadPreviewQuery.data?.totalElements ?? 0;
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
