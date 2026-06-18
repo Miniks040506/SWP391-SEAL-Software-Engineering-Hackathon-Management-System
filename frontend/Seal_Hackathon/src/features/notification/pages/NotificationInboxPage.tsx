@@ -59,6 +59,7 @@ export function NotificationInboxPage() {
 
   const openTarget = (notification: NotificationResponse) => {
     if (notification.targetUrl && notification.targetUrl !== "/notifications") {
+      setSelectedNotification(null);
       navigate(notification.targetUrl);
     }
   };

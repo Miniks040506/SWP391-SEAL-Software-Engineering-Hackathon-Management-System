@@ -304,7 +304,7 @@ export const mockTeamService = {
     return newMember as TeamMemberResponse;
   },
 
-  async rejectInvitation(invitationId: UUID, payload?: RejectInvitationRequest) {
+  async rejectInvitation(invitationId: UUID, _payload?: RejectInvitationRequest) {
     await mockDelay();
     const inv = mockInvitations.find((i) => i.id === invitationId);
     if (!inv || inv.status !== "PENDING") throw new Error("Invalid invitation.");
