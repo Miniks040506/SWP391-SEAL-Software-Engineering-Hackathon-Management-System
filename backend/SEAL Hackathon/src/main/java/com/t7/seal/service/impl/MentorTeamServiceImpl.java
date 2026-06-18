@@ -68,7 +68,7 @@ public class MentorTeamServiceImpl implements MentorTeamService {
                     )
                     .toList();
         } else {
-            assignments = mentorAssignmentRepository.findAssignedTrackByUserId(user.getId(), eventId);
+            assignments = mentorAssignmentRepository.findAssignedTracksByUserId(user.getId(), eventId);
         }
 
         return assignments.stream()
