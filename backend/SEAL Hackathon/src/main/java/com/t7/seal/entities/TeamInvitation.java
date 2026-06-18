@@ -1,6 +1,7 @@
 package com.t7.seal.entities;
 
 import com.t7.seal.domain.InvitationStatus;
+import com.t7.seal.domain.TeamInvitationType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,6 +13,10 @@ import java.util.UUID;
         name = "team_invitations",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uq_invitation_token", columnNames = "token")
+        },
+        indexes = {
+                @Index(name = "idx_team_invitation_team_type_status", columnList = "team_id,type,status"),
+                @Index(name = "idx_team_invitation_invitee_type", columnList = "invitee_user_id,type")
         }
 )
 @Getter
@@ -46,6 +51,14 @@ public class TeamInvitation {
     @Column(nullable = false)
     @Builder.Default
     private InvitationStatus status = InvitationStatus.PENDING;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private TeamInvitationType type = TeamInvitationType.INVITATION;
+
+    @Column(columnDefinition = "TEXT")
+    private String message;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;

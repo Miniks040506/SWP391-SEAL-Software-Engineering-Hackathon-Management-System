@@ -318,13 +318,26 @@ public class EmailServiceImpl implements EmailService {
                 "A team invitation was accepted",
                 """
                         <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                            <strong>%s</strong> accepted the invitation to join team <strong>%s</strong>.
+                            A new member has joined your SEAL team.
                         </p>
-                        
+
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;margin:24px 0;">
+                            <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">New member</td>
+                                    <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Team</td>
+                                    <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                                </tr>
+                            </table>
+                        </div>
+
                         <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
-                            The team roster has been updated.
+                            The team roster has been updated. Active team members are copied when available.
                         </p>
-                        
+
                         <div style="text-align:center;margin-top:28px;">
                             <a href="%s"
                                style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
@@ -426,6 +439,180 @@ public class EmailServiceImpl implements EmailService {
         );
 
         sendHtml(leaderEmail, cc, appName + " - Team registered: " + teamName, html);
+    }
+
+    @Override
+    public void sendTeamJoinRequestReceived(
+            String leaderEmail,
+            String leaderName,
+            String requesterName,
+            String requesterEmail,
+            String teamName,
+            String message,
+            String acceptUrl,
+            String rejectUrl,
+            LocalDateTime expiresAt
+    ) {
+        String safeLeaderName = escapeHtml(displayName(leaderName));
+        String safeRequesterName = escapeHtml(displayName(requesterName));
+        String safeRequesterEmail = escapeHtml(requesterEmail == null ? "" : requesterEmail);
+        String safeTeamName = escapeHtml(teamName);
+        String safeMessage = message == null || message.isBlank()
+                ? "No additional message was provided."
+                : escapeHtml(message).replace("\n", "<br/>");
+        String safeExpiresAt = expiresAt == null
+                ? "the request deadline"
+                : escapeHtml(expiresAt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+
+        String html = buildBaseTemplate(
+                "Join Request",
+                "A student wants to join your team",
+                """
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            <strong>%s</strong> sent a request to join team <strong>%s</strong>.
+                        </p>
+
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;margin:24px 0;">
+                            <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Requester</td>
+                                    <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Email</td>
+                                    <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Team</td>
+                                    <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;">Expires</td>
+                                    <td align="right" style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:900;">%s</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:16px;padding:16px 18px;margin:24px 0;color:#334155;font-size:14px;line-height:1.7;">
+                            <div style="font-size:12px;font-weight:900;color:#4f46e5;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">Message</div>
+                            %s
+                        </div>
+
+                        <div style="text-align:center;margin:28px 0;">
+                            <a href="%s"
+                               style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;margin:0 6px 10px;">
+                                Accept Request
+                            </a>
+                            <a href="%s"
+                               style="display:inline-block;background:#ef4444;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;margin:0 6px 10px;">
+                                Reject Request
+                            </a>
+                        </div>
+                        """.formatted(
+                        safeLeaderName,
+                        safeRequesterName,
+                        safeTeamName,
+                        safeRequesterName,
+                        safeRequesterEmail,
+                        safeTeamName,
+                        safeExpiresAt,
+                        safeMessage,
+                        escapeHtml(acceptUrl),
+                        escapeHtml(rejectUrl)
+                )
+        );
+
+        sendHtml(leaderEmail, appName + " - Join request for " + teamName, html);
+    }
+
+    @Override
+    public void sendTeamJoinRequestAccepted(
+            String requesterEmail,
+            String requesterName,
+            String teamName,
+            String teamUrl
+    ) {
+        String safeRequesterName = escapeHtml(displayName(requesterName));
+        String safeTeamName = escapeHtml(teamName);
+
+        String html = buildBaseTemplate(
+                "Join Request Accepted",
+                "You are now a member of the team",
+                """
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            Your request to join team <strong>%s</strong> has been accepted. You can now view the team workspace and participate as a member.
+                        </p>
+
+                        <div style="text-align:center;margin-top:28px;">
+                            <a href="%s"
+                               style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                                Open Team
+                            </a>
+                        </div>
+                        """.formatted(
+                        safeRequesterName,
+                        safeTeamName,
+                        escapeHtml(teamUrl)
+                )
+        );
+
+        sendHtml(requesterEmail, appName + " - Join request accepted: " + teamName, html);
+    }
+
+    @Override
+    public void sendTeamJoinRequestRejected(
+            String requesterEmail,
+            String requesterName,
+            String teamName,
+            String reason,
+            String teamsUrl
+    ) {
+        String safeRequesterName = escapeHtml(displayName(requesterName));
+        String safeTeamName = escapeHtml(teamName);
+        String reasonHtml = reason == null || reason.isBlank()
+                ? "The team leader did not provide an additional reason."
+                : escapeHtml(reason).replace("\n", "<br/>");
+
+        String html = buildBaseTemplate(
+                "Join Request Rejected",
+                "Your request could not be approved",
+                """
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            Your request to join team <strong>%s</strong> was rejected.
+                        </p>
+
+                        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:16px;padding:16px 18px;margin:24px 0;color:#334155;font-size:14px;line-height:1.7;">
+                            <div style="font-size:12px;font-weight:900;color:#ea580c;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">Leader response</div>
+                            %s
+                        </div>
+
+                        <div style="text-align:center;margin-top:28px;">
+                            <a href="%s"
+                               style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">
+                                Browse Teams
+                            </a>
+                        </div>
+                        """.formatted(
+                        safeRequesterName,
+                        safeTeamName,
+                        reasonHtml,
+                        escapeHtml(teamsUrl)
+                )
+        );
+
+        sendHtml(requesterEmail, appName + " - Join request rejected: " + teamName, html);
     }
 
     @Override

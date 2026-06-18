@@ -107,6 +107,9 @@ public class SecurityConfig {
                         // Public invitation token lookup. Reject can be confirmed directly from the email token.
                         .requestMatchers(HttpMethod.GET, API + "/invitations/token/*").permitAll()
                         .requestMatchers(HttpMethod.POST, API + "/invitations/token/*/reject").permitAll()
+                        .requestMatchers(HttpMethod.GET, API + "/team-join-requests/token/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, API + "/team-join-requests/token/*/accept").permitAll()
+                        .requestMatchers(HttpMethod.POST, API + "/team-join-requests/token/*/reject").permitAll()
 
                         // Current user routes. Must be before /users/*.
                         .requestMatchers(HttpMethod.GET, API + "/users/me").authenticated()
