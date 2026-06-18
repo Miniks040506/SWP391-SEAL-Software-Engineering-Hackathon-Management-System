@@ -32,6 +32,12 @@ export const notificationApi = {
 
   markAllAsRead: () => apiRequest.post<void>("/notifications/read-all"),
 
+  deleteNotification: (notificationId: UUID) =>
+    apiRequest.delete<void>(`/notifications/${notificationId}`),
+
+  clearNotifications: (read?: boolean) =>
+    apiRequest.delete<void>("/notifications/clear", { params: { read } }),
+
   createNotification: (payload: CreateNotificationRequest) =>
     apiRequest.post<NotificationResponse>("/notifications", payload),
 

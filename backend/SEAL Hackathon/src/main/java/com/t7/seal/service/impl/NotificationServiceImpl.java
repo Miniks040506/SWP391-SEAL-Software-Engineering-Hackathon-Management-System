@@ -591,7 +591,7 @@ public class NotificationServiceImpl implements NotificationService {
             int index = lower.indexOf(marker);
             if (index >= 0) {
                 String tail = source.substring(index + marker.length()).trim();
-                return cleanExtractedName(tail, List.of(" has ", " using ", " for ", "."));
+                return cleanExtractedName(tail, List.of(" has ", " using ", " for ", "."), "your team");
             }
         }
         return "your team";
@@ -605,7 +605,7 @@ public class NotificationServiceImpl implements NotificationService {
             return "";
         }
         String tail = source.substring(index + " track ".length()).trim();
-        return cleanExtractedName(tail, List.of(" in ", " for ", "."));
+        return cleanExtractedName(tail, List.of(" in ", " for ", "."), "");
     }
 
     private String extractRoundName(Notification notification) {
@@ -619,14 +619,14 @@ public class NotificationServiceImpl implements NotificationService {
             return "";
         }
         String tail = source.substring(index + (index == 0 ? "round ".length() : " round ".length())).trim();
-        return cleanExtractedName(tail, List.of(" is ", " has ", " for ", " of ", "."));
+        return cleanExtractedName(tail, List.of(" is ", " has ", " for ", " of ", "."), "");
     }
 
     private String notificationText(Notification notification) {
         return (nullToEmpty(notification.getTitle()) + " " + nullToEmpty(notification.getBody())).trim();
     }
 
-    private String cleanExtractedName(String value, List<String> endings) {
+    private String cleanExtractedName(String value, List<String> endings, String fallback) {
         String result = value;
         String lower = result.toLowerCase(Locale.ROOT);
         for (String ending : endings) {
@@ -637,7 +637,7 @@ public class NotificationServiceImpl implements NotificationService {
             }
         }
         result = result.trim();
-        return result.isBlank() ? "your team" : result;
+        return result.isBlank() ? fallback : result;
     }
 
     private String displayName(User user) {
