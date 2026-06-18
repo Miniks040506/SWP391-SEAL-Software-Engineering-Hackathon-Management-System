@@ -1,41 +1,35 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { submissionApi } from "@/api/submission.api";
 import type { UUID } from "@/types/common.types";
 
-import { mockTrackSubmissions, mockSubmissionDetail } from "../mocks/mentorSubmission.mock";
-
-const USE_MOCK = false; 
-
-// Hàm tiện ích giả lập network delay 500ms cho giống thật
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-export function useMentorSubmissions(trackId?: UUID | string) {
+export function useMentorSubmissions(teamIds?: string[]) {
   const { submissionId } = useParams<{ submissionId: string }>();
   const navigate = useNavigate();
 
-  const trackSubmissionsQuery = useQuery({
-    queryKey: ["mentor-track-submissions", trackId],
-    queryFn: async () => {
-      if (USE_MOCK) {
-        await delay(500); // Giả lập loading
-        return { data: mockTrackSubmissions }; // Bọc vào data để giống format axios
-      }
-      return submissionApi.getTrackSubmissions(trackId as UUID);
-    },
-    enabled: USE_MOCK || !!trackId,
-    staleTime: 60_000,
+  const teamSubmissionQueries = useQueries({
+    queries: (teamIds || []).map((teamId) => ({
+      queryKey: ["mentor-team-submissions", teamId],
+      queryFn: () => submissionApi.getMentorTeamSubmissions(teamId as UUID),
+      enabled: !!teamId,
+      staleTime: 60_000,
+    })),
   });
+
+  const isLoading = teamSubmissionQueries.some((q) => q.isLoading);
+  const allSubmissions = teamSubmissionQueries.flatMap((q) => {
+    const data = q.data as any;
+    return data?.data || data || [];
+  });
+
+  const trackSubmissionsQuery = {
+    data: allSubmissions,
+    isLoading,
+  };
 
   const submissionDetailQuery = useQuery({
     queryKey: ["mentor-submission-detail", submissionId],
-    queryFn: async () => {
-      if (USE_MOCK) {
-        await delay(500); // Giả lập loading
-        return { data: mockSubmissionDetail };
-      }
-      return submissionApi.getMentorSubmissionById(submissionId as UUID);
-    },
+    queryFn: () => submissionApi.getMentorSubmissionById(submissionId as UUID),
     enabled: !!submissionId,
     staleTime: 60_000,
   });

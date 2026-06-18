@@ -1,30 +1,13 @@
-import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  TextField,
-  Checkbox,
-  FormControlLabel,
-  Button,
-} from "@mui/material";
 
 import { teamApi } from "@/api/team.api";
 import {
   getTeamStatusColor,
   getSubmissionStatusColor,
 } from "@/features/teams/schemas/teams.schema";
-import {
-  useMentorTeamFeedbackQuery,
-  useCreateMentorFeedbackMutation,
-} from "../hooks/useMentorFeedback";
-import type {
-  MentorFeedbackCategory,
-  MentorFeedbackResponse,
-} from "@/types/mentorFeedback.types";
+import { useMentorTeamFeedbackQuery } from "../hooks/useMentorFeedback";
+import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
 
 export function MentorTeamDetailPage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -38,52 +21,6 @@ export function MentorTeamDetailPage() {
 
   const { data: rawFeedbacks } = useMentorTeamFeedbackQuery(teamId);
   const feedbacks = (rawFeedbacks as MentorFeedbackResponse[]) ?? [];
-  const createFeedbackMut = useCreateMentorFeedbackMutation();
-
-  const [addingFeedbackForRoundId, setAddingFeedbackForRoundId] = useState<
-    string | null
-  >(null);
-  const [newFeedbackContent, setNewFeedbackContent] = useState("");
-  const [newFeedbackCategory, setNewFeedbackCategory] =
-    useState<MentorFeedbackCategory>("GENERAL");
-  const [newFeedbackPublish, setNewFeedbackPublish] = useState(false);
-  const [newFeedbackVisibleToTeam, setNewFeedbackVisibleToTeam] =
-    useState(false);
-
-  const handleOpenForm = (roundId: string) => {
-    setAddingFeedbackForRoundId(roundId);
-    setNewFeedbackContent("");
-    setNewFeedbackCategory("GENERAL");
-    setNewFeedbackPublish(false);
-    setNewFeedbackVisibleToTeam(false);
-  };
-
-  const handleCloseForm = () => {
-    setAddingFeedbackForRoundId(null);
-  };
-
-  const handleSubmitFeedback = (submissionId: string, roundId: string) => {
-    if (!teamId || !newFeedbackContent.trim()) return;
-
-    createFeedbackMut.mutate(
-      {
-        teamId,
-        payload: {
-          submissionId,
-          roundId,
-          content: newFeedbackContent,
-          category: newFeedbackCategory,
-          publish: newFeedbackPublish,
-          visibleToTeam: newFeedbackVisibleToTeam,
-        },
-      },
-      {
-        onSuccess: () => {
-          handleCloseForm();
-        },
-      },
-    );
-  };
 
   return (
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
@@ -356,12 +293,11 @@ export function MentorTeamDetailPage() {
                                   (f) => f.roundId === sub.roundId,
                                 );
                                 if (roundFeedbacks.length === 0) {
-                                  return addingFeedbackForRoundId !==
-                                    sub.roundId ? (
+                                  return (
                                     <p className="text-xs text-slate-500 dark:text-slate-400 italic">
                                       No feedback for this round yet
                                     </p>
-                                  ) : null;
+                                  );
                                 }
                                 return roundFeedbacks.map((fb) => (
                                   <div
@@ -402,150 +338,6 @@ export function MentorTeamDetailPage() {
                               })()}
                             </div>
 
-                            {addingFeedbackForRoundId === sub.roundId && (
-                              <div className="mt-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-4">
-                                <FormControl fullWidth size="small">
-                                  <InputLabel
-                                    id={`category-label-${sub.roundId}`}
-                                    sx={{ fontSize: "12px" }}
-                                  >
-                                    Category
-                                  </InputLabel>
-                                  <Select
-                                    labelId={`category-label-${sub.roundId}`}
-                                    value={newFeedbackCategory}
-                                    label="Category"
-                                    onChange={(e) =>
-                                      setNewFeedbackCategory(
-                                        e.target
-                                          .value as MentorFeedbackCategory,
-                                      )
-                                    }
-                                    sx={{ fontSize: "14px" }}
-                                  >
-                                    <MenuItem value="GENERAL">GENERAL</MenuItem>
-                                    <MenuItem value="TECHNICAL">
-                                      TECHNICAL
-                                    </MenuItem>
-                                    <MenuItem value="PROCESS">PROCESS</MenuItem>
-                                    <MenuItem value="PRESENTATION">
-                                      PRESENTATION
-                                    </MenuItem>
-                                  </Select>
-                                </FormControl>
-
-                                <TextField
-                                  fullWidth
-                                  multiline
-                                  rows={4}
-                                  label="Content"
-                                  placeholder="Write your feedback here..."
-                                  value={newFeedbackContent}
-                                  onChange={(e) =>
-                                    setNewFeedbackContent(e.target.value)
-                                  }
-                                  required
-                                  size="small"
-                                  slotProps={{
-                                    input: { style: { fontSize: "14px" } },
-                                    inputLabel: { style: { fontSize: "12px" } },
-                                  }}
-                                />
-
-                                <div className="flex items-center gap-4">
-                                  <FormControlLabel
-                                    control={
-                                      <Checkbox
-                                        checked={newFeedbackVisibleToTeam}
-                                        onChange={(e) =>
-                                          setNewFeedbackVisibleToTeam(
-                                            e.target.checked,
-                                          )
-                                        }
-                                        color="primary"
-                                        size="small"
-                                      />
-                                    }
-                                    label={
-                                      <span className="text-sm text-slate-700 dark:text-slate-300">
-                                        Visible to team
-                                      </span>
-                                    }
-                                  />
-
-                                  <FormControlLabel
-                                    control={
-                                      <Checkbox
-                                        checked={newFeedbackPublish}
-                                        onChange={(e) =>
-                                          setNewFeedbackPublish(
-                                            e.target.checked,
-                                          )
-                                        }
-                                        color="primary"
-                                        size="small"
-                                      />
-                                    }
-                                    label={
-                                      <span className="text-sm text-slate-700 dark:text-slate-300">
-                                        Publish immediately
-                                      </span>
-                                    }
-                                  />
-                                </div>
-                                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                                  <Button
-                                    variant="outlined"
-                                    onClick={handleCloseForm}
-                                    size="small"
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    variant="contained"
-                                    color="primary"
-                                    onClick={() =>
-                                      handleSubmitFeedback(
-                                        sub.submissionId as string,
-                                        sub.roundId as string,
-                                      )
-                                    }
-                                    disabled={
-                                      createFeedbackMut.isPending ||
-                                      !newFeedbackContent.trim()
-                                    }
-                                    size="small"
-                                  >
-                                    {createFeedbackMut.isPending
-                                      ? "Saving..."
-                                      : "Save Feedback"}
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-
-                            {addingFeedbackForRoundId !== sub.roundId && (
-                              <Button
-                                variant="outlined"
-                                fullWidth
-                                onClick={() =>
-                                  handleOpenForm(sub.roundId as string)
-                                }
-                                sx={{
-                                  marginTop: "16px",
-                                  borderStyle: "dashed",
-                                  textTransform: "none",
-                                  borderColor: "divider",
-                                  color: "primary.main",
-                                  "&:hover": {
-                                    borderStyle: "dashed",
-                                    backgroundColor: "action.hover",
-                                  },
-                                }}
-                              >
-                                + Add Feedback
-                              </Button>
-                            )}
                           </div>
                         </div>
                       ))}

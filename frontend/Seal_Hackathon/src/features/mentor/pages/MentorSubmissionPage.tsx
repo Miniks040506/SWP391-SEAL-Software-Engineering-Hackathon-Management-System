@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import Button from "@mui/material/Button";
-import { useNavigate } from "react-router-dom";
+
+
 
 import { MentorSubmissionTable } from "../components/submission/MentorSubmissionTable";
 import {
@@ -12,16 +11,15 @@ import { useMentorSubmissions } from "../hooks/useMentorSubmission";
 import { useMentorDashboard } from "../hooks/useMentorDashboard";
 
 export const MentorSubmissionPage = () => {
-  const navigate = useNavigate();
-  const { dashboard } = useMentorDashboard();
 
-  const trackId = (dashboard?.assignedTrack as any)?.id;
+  const { dashboard, teamList } = useMentorDashboard();
+
+
   const trackName = dashboard?.assignedTrack?.trackName;
 
-  const { trackSubmissionsQuery, goToSubmissionDetail } =
-    useMentorSubmissions(trackId);
-  const { data: response, isLoading } = trackSubmissionsQuery || {};
-  const allSubmissions = response?.data || response || [];
+  const teamIds = (teamList || []).map((t: any) => t.teamId || t.id).filter(Boolean);
+  const { trackSubmissionsQuery, goToSubmissionDetail } = useMentorSubmissions(teamIds);
+  const { data: allSubmissions = [], isLoading } = trackSubmissionsQuery;
 
   const [filters, setFilters] = useState<MentorSubmissionFilters>({});
 

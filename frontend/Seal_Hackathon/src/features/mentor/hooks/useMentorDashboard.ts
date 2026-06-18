@@ -1,9 +1,7 @@
-import { useMemo } from "react";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { userApi } from "@/api/user.api";
-import { eventApi } from "@/api/event.api";
 import { trackApi } from "@/api/track.api";
 import { submissionApi } from "@/api/submission.api";
 import { mentorFeedbackApi } from "@/api/mentorFeedback.api";
@@ -22,56 +20,33 @@ export function useMentorDashboard() {
     enabled: !USE_MOCK,
   });
 
-  const eventsQuery = useQuery({
-    queryKey: ["mentor-dashboard-events"],
-    queryFn: () => eventApi.getPublicEvents({ page: 0, size: 100 }),
+  const myTracksQuery = useQuery({
+    queryKey: ["mentor-my-tracks"],
+    queryFn: () => trackApi.getMyAssignedTracks(),
     enabled: !USE_MOCK,
   });
+  const myTrackInfo = (myTracksQuery.data || [])[0] || null;
 
-  const myUserId = profileQuery.data?.id;
-  const apiEvents = eventsQuery.data?.content || (eventsQuery.data as any)?.data?.content || [];
-  const currentEvent = apiEvents.find((e: any) => ["ONGOING", "REGISTRATION"].includes((e.status || "").toUpperCase())) || apiEvents[0];
-  const activeEventsCount = apiEvents.filter((e: any) => ["ONGOING", "REGISTRATION"].includes((e.status || "").toUpperCase())).length;
-
-  const tracksQuery = useQuery({
-    queryKey: ["mentor-dashboard-tracks", currentEvent?.id],
-    queryFn: () => trackApi.getTracksByEvent(currentEvent!.id),
-    enabled: !USE_MOCK && Boolean(currentEvent?.id),
-  });
-
-  const tracks = tracksQuery.data || [];
-
-  const assignmentsQueries = useQueries({
-    queries: tracks.map((track) => ({
-      queryKey: ["mentor-assignments", track.id],
-      queryFn: () => trackApi.getMentorAssignments(track.id),
-      enabled: !USE_MOCK && Boolean(track.id),
-    })),
-  });
-
-  const myTrackInfo = useMemo(() => {
-    if (USE_MOCK || !myUserId) return null;
-    for (let i = 0; i < tracks.length; i++) {
-      const assignments = assignmentsQueries[i].data || [];
-      const isMyTrack = assignments.some((a) => a.mentorUserId === myUserId);
-      if (isMyTrack) return tracks[i];
-    }
-    return null;
-  }, [myUserId, tracks, assignmentsQueries, USE_MOCK]);
+  const activeEventsCount = myTracksQuery.data 
+    ? new Set(myTracksQuery.data.map((t: any) => t.eventId)).size 
+    : 0;
 
   const trackTeamsQuery = useQuery({
-    queryKey: ["mentor-dashboard-teams", myTrackInfo?.id],
-    queryFn: () => trackApi.getTrackTeams(myTrackInfo!.id, { page: 0, size: 1000 } as any),
-    enabled: !USE_MOCK && Boolean(myTrackInfo?.id),
-  });
-
-  const trackSubmissionsQuery = useQuery({
-    queryKey: ["mentor-dashboard-submissions", myTrackInfo?.id],
-    queryFn: () => submissionApi.getTrackSubmissions(myTrackInfo!.id),
-    enabled: !USE_MOCK && Boolean(myTrackInfo?.id),
+    queryKey: ["mentor-dashboard-teams", myTrackInfo?.trackId],
+    queryFn: () => trackApi.getTeamInAssignedTracks(myTrackInfo!.trackId, { page: 0, size: 1000 } as any),
+    enabled: !USE_MOCK && Boolean(myTrackInfo?.trackId),
   });
 
   const teamList = trackTeamsQuery.data?.content || (trackTeamsQuery.data as any)?.data?.content || [];
+  
+  const teamSubmissionQueries = useQueries({
+    queries: teamList.map((team: any) => ({
+      queryKey: ["mentor-dashboard-team-submissions", team.teamId],
+      queryFn: () => submissionApi.getMentorTeamSubmissions(team.teamId),
+      enabled: !USE_MOCK && Boolean(team.teamId),
+      staleTime: 60_000,
+    })),
+  });
   
   const feedbackQueries = useQueries({
     queries: teamList.map((team: any) => ({
@@ -92,10 +67,13 @@ export function useMentorDashboard() {
   if (USE_MOCK) {
     dashboard = mentorDashboardMock;
   } else {
-    const allSubmissions = trackSubmissionsQuery.data || [];
+    const allSubmissions = teamSubmissionQueries.flatMap((q) => {
+      const d = q.data as any;
+      return d?.data || d || [];
+    });
     const allFeedbacks = feedbackQueries.map((q) => q.data || []).flat();
     
-    const pendingReviewCount = allSubmissions.filter(s => {
+    const pendingReviewCount = allSubmissions.filter((s: any) => {
       if (s.status !== "SUBMITTED") return false;
       return !allFeedbacks.some((f: any) => f.submissionId === s.id);
     }).length;
@@ -118,14 +96,14 @@ export function useMentorDashboard() {
         { title: "Upcoming Deadlines", value: 0, description: "Important deadlines ahead", iconType: "deadline", color: "bg-rose-50 text-rose-600" },
       ],
       assignedTrack: {
-        eventName: currentEvent ? currentEvent.name : "No Active Event",
-        trackName: myTrackInfo ? myTrackInfo.name : "No Assigned Track",
+        eventName: myTrackInfo?.eventName || "No Active Event",
+        trackName: myTrackInfo?.trackName || "No Assigned Track",
         teamCount: teamList.length,
         recentSubmissionCount: allSubmissions.length,
         pendingFeedbackCount: pendingReviewCount,
       },
       recentSubmissions: allSubmissions
-        .sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime())
+        .sort((a: any, b: any) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime())
         .slice(0, 5)
         .map((s: any) => ({
           id: s.id,
@@ -144,11 +122,11 @@ export function useMentorDashboard() {
     };
   }
 
-  const isAssignmentsLoading = assignmentsQueries.some(q => q.isLoading);
   const isFeedbacksLoading = feedbackQueries.some(q => q.isLoading);
+  const isSubmissionsLoading = teamSubmissionQueries.some(q => q.isLoading);
   const isLoading = !USE_MOCK && (
-    profileQuery.isLoading || eventsQuery.isLoading || tracksQuery.isLoading || 
-    isAssignmentsLoading || trackTeamsQuery.isLoading || trackSubmissionsQuery.isLoading || 
+    profileQuery.isLoading || myTracksQuery.isLoading || 
+    trackTeamsQuery.isLoading || isSubmissionsLoading || 
     isFeedbacksLoading || notifsQuery.isLoading
   );
 
@@ -161,6 +139,8 @@ export function useMentorDashboard() {
   return {
     isLoading,
     dashboard,
+    myTrackId: myTrackInfo?.trackId ?? null,
+    teamList,
     goToTeams,
     goToSubmissions,
     goToSchedule,
