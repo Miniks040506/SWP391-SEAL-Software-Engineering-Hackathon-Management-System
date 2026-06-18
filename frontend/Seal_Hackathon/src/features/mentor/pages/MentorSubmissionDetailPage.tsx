@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useSnackbar } from "notistack";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -205,39 +204,45 @@ export const MentorSubmissionDetailPage = () => {
                 Submission Feedback
               </h2>
             </div>
-            <Button
-              variant="contained"
-              startIcon={<AddOutlinedIcon />}
-              onClick={handleOpenCreate}
-              sx={{
-                textTransform: "none",
-                fontWeight: 800,
-                borderRadius: "10px",
-                bgcolor: "#2563eb",
-                boxShadow: "none",
-                "&:hover": { bgcolor: "#1d4ed8" },
-              }}
-            >
-              Write Feedback
-            </Button>
+            {!isDialogOpen && (
+              <Button
+                variant="outlined"
+                onClick={handleOpenCreate}
+                sx={{
+                  borderStyle: "dashed",
+                  textTransform: "none",
+                  borderColor: "divider",
+                  color: "primary.main",
+                  borderRadius: "8px",
+                  "&:hover": {
+                    borderStyle: "dashed",
+                    backgroundColor: "action.hover",
+                  },
+                }}
+              >
+                + Add Feedback
+              </Button>
+            )}
           </div>
 
-          <MentorFeedbackList
-            feedbacks={submissionFeedbacks}
-            isLoading={isFbLoading}
-            onEdit={handleOpenEdit}
-            onDelete={handleDelete}
-            onPublish={handlePublish}
+          <MentorFeedbackDialog
+            open={isDialogOpen}
+            onClose={() => setIsDialogOpen(false)}
+            onSubmit={handleSubmit}
+            initialData={editingFeedback}
+            isLoading={isMutating}
           />
-        </div>
 
-        <MentorFeedbackDialog
-          open={isDialogOpen}
-          onClose={() => setIsDialogOpen(false)}
-          onSubmit={handleSubmit}
-          initialData={editingFeedback}
-          isLoading={isMutating}
-        />
+          {!(isDialogOpen && submissionFeedbacks.length === 0) && (
+            <MentorFeedbackList
+              feedbacks={submissionFeedbacks}
+              isLoading={isFbLoading}
+              onEdit={handleOpenEdit}
+              onDelete={handleDelete}
+              onPublish={handlePublish}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

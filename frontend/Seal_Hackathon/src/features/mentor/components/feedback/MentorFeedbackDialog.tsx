@@ -1,24 +1,14 @@
-import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-
+import { useEffect, useState } from "react";
 import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
-import FormHelperText from "@mui/material/FormHelperText";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
 
-import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
-
-import { mentorFeedbackSchema, type MentorFeedbackFormValues } from "../../schemas/mentorFeedback.schema";
+import type { MentorFeedbackFormValues } from "../../schemas/mentorFeedback.schema";
 import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
 
 type MentorFeedbackDialogProps = {
@@ -27,12 +17,6 @@ type MentorFeedbackDialogProps = {
   onSubmit: (data: MentorFeedbackFormValues, publish: boolean) => void;
   initialData?: MentorFeedbackResponse | null;
   isLoading?: boolean;
-};
-
-const CATEGORIES = ["TECHNICAL", "PROCESS", "PRESENTATION", "GENERAL"];
-
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
 };
 
 export const MentorFeedbackDialog = ({
@@ -44,128 +28,101 @@ export const MentorFeedbackDialog = ({
 }: MentorFeedbackDialogProps) => {
   const isEditing = Boolean(initialData);
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<MentorFeedbackFormValues>({
-    resolver: zodResolver(mentorFeedbackSchema),
-    defaultValues: { category: "TECHNICAL", content: "" },
-  });
+  const [category, setCategory] = useState("GENERAL");
+  const [content, setContent] = useState("");
+  const [visibleToTeam, setVisibleToTeam] = useState(false);
+  const [publish, setPublish] = useState(false);
 
-  // Tự động gán dữ liệu cũ vào Form khi đang ở chế độ Edit
   useEffect(() => {
     if (open) {
-      reset({
-        category: initialData?.category || "TECHNICAL",
-        content: initialData?.content || "",
-      });
+      setCategory(initialData?.category || "GENERAL");
+      setContent(initialData?.content || "");
+      setVisibleToTeam(initialData?.visibility === "PUBLISHED");
+      setPublish(false);
     }
-  }, [open, initialData, reset]);
+  }, [open, initialData]);
 
-  // Handle cho 2 nút bấm: Gửi dạng Draft(Nháp) hoặc Publish(Công khai) luôn
-  const handleSaveDraft = handleSubmit((data) => onSubmit(data, false));
-  const handlePublish = handleSubmit((data) => onSubmit(data, true));
+  if (!open) return null;
+
+  const handleSave = () => {
+    onSubmit({ category, content } as MentorFeedbackFormValues, publish || visibleToTeam);
+  };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="sm"
-      PaperProps={{ className: "rounded-3xl shadow-xl" }}
-    >
-      <DialogTitle className="border-b border-gray-100 pb-4 font-extrabold text-gray-900 dark:border-slate-700 dark:text-white">
-        {isEditing ? "Edit Feedback" : "Write Feedback"}
-      </DialogTitle>
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 flex flex-col gap-6 mt-8 shadow-sm">
+      <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg">
+        {isEditing ? "Edit Feedback" : "Add Feedback"}
+      </h3>
+      <FormControl fullWidth>
+        <InputLabel>Category</InputLabel>
+        <Select
+          value={category}
+          label="Category"
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          <MenuItem value="GENERAL">GENERAL</MenuItem>
+          <MenuItem value="TECHNICAL">TECHNICAL</MenuItem>
+          <MenuItem value="PROCESS">PROCESS</MenuItem>
+          <MenuItem value="PRESENTATION">PRESENTATION</MenuItem>
+        </Select>
+      </FormControl>
 
-      <DialogContent className="space-y-6 pt-6">
-        <Typography variant="body2" className="text-gray-500 dark:text-slate-400">
-          Provide constructive feedback to help the team improve. You can save it as a draft to review later, or publish it directly to the team.
-        </Typography>
+      <TextField
+        fullWidth
+        multiline
+        rows={4}
+        label="Content"
+        placeholder="Write your feedback here..."
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        required
+      />
 
-        {/* Lựa chọn Phân loại (Category) */}
-        <Controller
-          name="category"
-          control={control}
-          render={({ field }) => (
-            <FormControl fullWidth error={Boolean(errors.category)}>
-              <InputLabel>Feedback Category</InputLabel>
-              <Select {...field} label="Feedback Category" sx={textFieldSx}>
-                {CATEGORIES.map((cat) => (
-                  <MenuItem key={cat} value={cat}>
-                    {cat}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.category && (
-                <FormHelperText>{errors.category.message}</FormHelperText>
-              )}
-            </FormControl>
-          )}
-        />
-
-        {/* Khung nhập Nội dung */}
-        <Controller
-          name="content"
-          control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              label="Detailed Feedback"
-              multiline
-              rows={6}
-              fullWidth
-              sx={textFieldSx}
-              error={Boolean(errors.content)}
-              helperText={errors.content?.message}
-              placeholder="E.g., The system architecture is well-designed, but you should consider optimizing the database queries to avoid N+1 issues..."
+      <div className="flex items-center gap-6">
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={visibleToTeam}
+              onChange={(e) => setVisibleToTeam(e.target.checked)}
+              color="primary"
             />
-          )}
+          }
+          label={<span className="text-slate-700 dark:text-slate-300">Visible to team</span>}
         />
-      </DialogContent>
 
-      <DialogActions className="mt-2 border-t border-gray-100 p-5 pt-0 dark:border-slate-700">
-        <Button
-          onClick={onClose}
-          color="inherit"
+        {!isEditing && (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={publish}
+                onChange={(e) => setPublish(e.target.checked)}
+                color="primary"
+              />
+            }
+            label={<span className="text-slate-700 dark:text-slate-300">Publish immediately</span>}
+          />
+        )}
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+        <Button 
+          variant="outlined" 
+          onClick={onClose} 
           disabled={isLoading}
-          sx={{ textTransform: "none", fontWeight: 700 }}
+          sx={{ textTransform: "none", fontWeight: 600, px: 3 }}
         >
           Cancel
         </Button>
-        <div className="flex gap-3">
-          <Button
-            onClick={handleSaveDraft}
-            disabled={isLoading}
-            variant="outlined"
-            startIcon={<SaveOutlinedIcon />}
-            sx={{
-              textTransform: "none",
-              fontWeight: 800,
-              borderRadius: "10px",
-            }}
-          >
-            Save Draft
-          </Button>
-          <Button
-            onClick={handlePublish}
-            disabled={isLoading}
-            variant="contained"
-            startIcon={<SendOutlinedIcon />}
-            sx={{
-              textTransform: "none",
-              fontWeight: 800,
-              borderRadius: "10px",
-              bgcolor: "#2563eb",
-              "&:hover": { bgcolor: "#1d4ed8" },
-            }}
-          >
-            Publish
-          </Button>
-        </div>
-      </DialogActions>
-    </Dialog>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSave}
+          disabled={isLoading || !content.trim()}
+          sx={{ textTransform: "none", fontWeight: 600, px: 3, borderRadius: "8px" }}
+        >
+          {isLoading ? "Saving..." : "Save Feedback"}
+        </Button>
+      </div>
+    </div>
   );
 };
