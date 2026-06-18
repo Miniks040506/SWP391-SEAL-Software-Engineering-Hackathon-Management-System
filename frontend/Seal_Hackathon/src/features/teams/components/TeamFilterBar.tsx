@@ -18,7 +18,6 @@ import {
 } from "../schemas/teams.schema";
 
 const TEAM_STATUSES = [
-  "FORMING",
   "REGISTERED",
   "COMPETING",
   "ADVANCED",

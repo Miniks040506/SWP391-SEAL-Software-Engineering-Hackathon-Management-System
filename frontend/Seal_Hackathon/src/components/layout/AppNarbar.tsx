@@ -13,7 +13,7 @@ import { UserAvatarMenu } from "@/components/layout/UserAvatarMenu";
 import { NotificationBell } from "@/features/notification";
 import { useLogoutMutation } from "@/features/auth/hooks/useAuthMutations";
 import { useAuthStore } from "@/stores/authStore";
-import { getRoleRedirectPath } from "@/utils/roleRedirect";
+import { getPrimaryRole, getRoleRedirectPath } from "@/utils/roleRedirect";
 
 type NavbarLink = {
   label: string;
@@ -149,6 +149,9 @@ export function AppNavbar({
     link.label === "Dashboard" ? { ...link, path: dashboardPath } : link,
   );
 
+  const userRole = getPrimaryRole(user);
+  const canShowExplore = !isAuthenticated || userRole === "STUDENT" || userRole === "PARTICIPANT";
+
   const isExploreActive =
     location.pathname.startsWith("/events") ||
     exploreLinks.some((link) => isActive(link.path));
@@ -166,60 +169,62 @@ export function AppNavbar({
         <div className="flex items-center gap-2 md:gap-6">
           <div className="hidden items-center md:flex">
             {isPublicNavigation ? (
-              <div className="group relative">
-                <button
-                  type="button"
-                  onClick={() => handlePublicNavigate("/events#dashboard")}
-                  className={[
-                    "inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-all",
-                    isExploreActive
-                      ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"
-                      : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white",
-                  ].join(" ")}
-                  aria-haspopup="menu"
-                >
-                  Explore
-                  <KeyboardArrowDownRoundedIcon
-                    fontSize="small"
-                    className="transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
-                  />
-                </button>
+              canShowExplore && (
+                <div className="group relative">
+                  <button
+                    type="button"
+                    onClick={() => handlePublicNavigate("/events#dashboard")}
+                    className={[
+                      "inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                      isExploreActive
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"
+                        : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white",
+                    ].join(" ")}
+                    aria-haspopup="menu"
+                  >
+                    Explore
+                    <KeyboardArrowDownRoundedIcon
+                      fontSize="small"
+                      className="transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
+                    />
+                  </button>
 
-                <div className="invisible absolute left-1/2 top-full w-72 -translate-x-1/2 translate-y-3 pt-3 opacity-0 transition-all duration-200 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                  <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-xl shadow-blue-950/10 ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30 dark:ring-white/10">
-                    {exploreLinks.map((link) => {
-                      const Icon = link.icon;
+                  <div className="invisible absolute left-1/2 top-full w-72 -translate-x-1/2 translate-y-3 pt-3 opacity-0 transition-all duration-200 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-xl shadow-blue-950/10 ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30 dark:ring-white/10">
+                      {exploreLinks.map((link) => {
+                        const Icon = link.icon;
 
-                      return (
-                        <button
-                          key={`${link.label}-${link.path}`}
-                          type="button"
-                          onClick={() => handlePublicNavigate(link.path)}
-                          className={[
-                            "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all",
-                            isActive(link.path)
-                              ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200"
-                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
-                          ].join(" ")}
-                          role="menuitem"
-                        >
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                            <Icon fontSize="small" />
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block text-sm font-bold">
-                              {link.label}
+                        return (
+                          <button
+                            key={`${link.label}-${link.path}`}
+                            type="button"
+                            onClick={() => handlePublicNavigate(link.path)}
+                            className={[
+                              "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all",
+                              isActive(link.path)
+                                ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200"
+                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
+                            ].join(" ")}
+                            role="menuitem"
+                          >
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                              <Icon fontSize="small" />
                             </span>
-                            <span className="block truncate text-xs font-medium text-gray-400 dark:text-slate-500">
-                              {link.description}
+                            <span className="min-w-0">
+                              <span className="block text-sm font-bold">
+                                {link.label}
+                              </span>
+                              <span className="block truncate text-xs font-medium text-gray-400 dark:text-slate-500">
+                                {link.description}
+                              </span>
                             </span>
-                          </span>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             ) : (
               navLinks.map((link) => (
                 <button
