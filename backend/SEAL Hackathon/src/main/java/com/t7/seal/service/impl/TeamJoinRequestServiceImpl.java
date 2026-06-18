@@ -165,7 +165,8 @@ public class TeamJoinRequestServiceImpl implements TeamJoinRequestService {
     private TeamMemberResponse acceptLocked(TeamInvitation request, User actor) {
         ensurePendingAndCurrent(request);
         Team team = lockRequestTeam(request);
-        User requester = requireRequester(request);
+        User requester = requesterOrThrow(request);
+        ensureActiveStudent(requester);
         validateCanJoin(team, requester);
 
         LocalDateTime now = LocalDateTime.now();
@@ -254,12 +255,11 @@ public class TeamJoinRequestServiceImpl implements TeamJoinRequestService {
         }
     }
 
-    private User requireRequester(TeamInvitation request) {
+    private User requesterOrThrow(TeamInvitation request) {
         User requester = mapper.requesterOf(request);
         if (requester == null) {
             throw new ConflictException("The requester account is no longer available.");
         }
-        ensureActiveStudent(requester);
         return requester;
     }
 
@@ -296,7 +296,7 @@ public class TeamJoinRequestServiceImpl implements TeamJoinRequestService {
                 .targetId(request.getId())
                 .afterState(java.util.Map.of(
                         "teamId", request.getTeam().getId().toString(),
-                        "requesterId", requireRequester(request).getId().toString(),
+                        "requesterId", requesterOrThrow(request).getId().toString(),
                         "type", TeamInvitationType.JOIN_REQUEST.name(),
                         "status", request.getStatus().name()
                 ))

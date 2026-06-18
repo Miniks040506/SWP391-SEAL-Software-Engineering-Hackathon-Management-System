@@ -235,7 +235,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     @Override
     public TeamInvitationResponse getInvitationByToken(String token) {
-        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+        TeamInvitation invitation = teamInvitationRepository.findByTokenAndType(token, TeamInvitationType.INVITATION)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
 
         return toTeamInvitationResponse(invitation);
@@ -347,7 +347,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     @Override
     public TeamMemberResponse acceptInvitationByToken(String token, Authentication authentication) {
-        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+        TeamInvitation invitation = teamInvitationRepository.findByTokenAndType(token, TeamInvitationType.INVITATION)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
         return acceptInvitationInternal(invitation, authentication);
     }
@@ -362,7 +362,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     @Override
     public void rejectInvitationByToken(String token, ReasonRequest request, Authentication authentication) {
-        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+        TeamInvitation invitation = teamInvitationRepository.findByTokenAndType(token, TeamInvitationType.INVITATION)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
         rejectInvitationInternal(invitation, request, authentication);
     }
@@ -370,7 +370,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     @Override
     public void rejectInvitationByToken(String token, ReasonRequest request) {
-        TeamInvitation invitation = teamInvitationRepository.findByToken(token)
+        TeamInvitation invitation = teamInvitationRepository.findByTokenAndType(token, TeamInvitationType.INVITATION)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
         rejectInvitationByTokenInternal(invitation, request);
     }
@@ -1013,8 +1013,12 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private TeamInvitation getInvitation(UUID invitationId) {
-        return teamInvitationRepository.findById(invitationId)
+        TeamInvitation invitation = teamInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
+        if (invitation.getType() != TeamInvitationType.INVITATION) {
+            throw new NotFoundException("Invitation not found.");
+        }
+        return invitation;
     }
 
     private List<TeamMember> activeMembers(UUID teamId) {
