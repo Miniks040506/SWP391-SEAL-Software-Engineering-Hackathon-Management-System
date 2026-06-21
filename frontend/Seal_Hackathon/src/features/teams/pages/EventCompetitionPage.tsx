@@ -70,14 +70,17 @@ export function EventCompetitionPage() {
 
     const openRound = competition.rounds.find((round) => round.open);
     const openRoundId = openRound?.roundId ?? null;
-
-    if (openRoundId && openRoundId !== lastOpenRoundId.current) {
-      setSelectedRoundId(openRoundId);
-    } else if (!selectedRoundId) {
-      setSelectedRoundId((openRound ?? competition.rounds[0]).roundId);
-    }
+    const nextRoundId =
+      openRoundId && openRoundId !== lastOpenRoundId.current
+        ? openRoundId
+        : selectedRoundId || (openRound ?? competition.rounds[0]).roundId;
 
     lastOpenRoundId.current = openRoundId;
+    if (nextRoundId !== selectedRoundId) {
+      // Polling is the external source that advances the selected competition round.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedRoundId(nextRoundId);
+    }
   }, [competition, selectedRoundId]);
 
   const serverOffset = competition
