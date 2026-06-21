@@ -78,7 +78,6 @@ export function EventCompetitionPage() {
     lastOpenRoundId.current = openRoundId;
     if (nextRoundId !== selectedRoundId) {
       // Polling is the external source that advances the selected competition round.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedRoundId(nextRoundId);
     }
   }, [competition, selectedRoundId]);
