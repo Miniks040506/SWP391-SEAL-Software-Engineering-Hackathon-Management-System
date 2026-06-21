@@ -435,6 +435,18 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                   />
 
                   <TextField
+                    label="Round instructions / competing exam"
+                    fullWidth
+                    multiline
+                    minRows={3}
+                    sx={textFieldSx}
+                    error={Boolean(roundErrors?.description)}
+                    helperText={roundErrors?.description?.message}
+                    className="md:col-span-2"
+                    {...register(`rounds.${index}.description`)}
+                  />
+
+                  <TextField
                     label="Order index"
                     type="number"
                     fullWidth

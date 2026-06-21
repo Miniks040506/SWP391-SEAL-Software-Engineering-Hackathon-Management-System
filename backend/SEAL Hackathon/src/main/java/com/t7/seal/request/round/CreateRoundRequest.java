@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 
 public record CreateRoundRequest(
         @NotBlank @Size(max = 200) String name,
+        @Size(max = 10000) String description,
         @NotNull Integer orderIndex,
         Boolean isFinal,
         LocalDateTime submissionDeadline,

@@ -39,6 +39,14 @@ public class TeamController {
     }
 
     @PreAuthorize("hasRole('STUDENT')")
+    @GetMapping("/competitions/me")
+    public ResponseEntity<List<EventCompetitionSummaryResponse>> getMyActiveCompetitions(
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(teamService.getMyActiveCompetitions(authentication));
+    }
+
+    @PreAuthorize("hasRole('STUDENT')")
     @GetMapping("/join-code/{joinCode}")
     public ResponseEntity<TeamJoinCodePreviewResponse> previewJoinCode(
             @PathVariable String joinCode,

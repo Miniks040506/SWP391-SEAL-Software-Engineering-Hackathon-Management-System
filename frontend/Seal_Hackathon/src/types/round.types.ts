@@ -3,6 +3,7 @@ import type { RankingResponse } from "@/types/ranking.types";
 
 export type CreateRoundRequest = {
   name: string;
+  description?: string;
   orderIndex: number;
   isFinal?: boolean;
   submissionDeadline?: ISODateTime;
@@ -11,6 +12,7 @@ export type CreateRoundRequest = {
 
 export type UpdateRoundRequest = {
   name?: string;
+  description?: string;
   orderIndex?: number;
   isFinal?: boolean;
   submissionDeadline?: ISODateTime;
@@ -64,6 +66,7 @@ export type RoundResponse = {
   id: UUID;
   eventId: UUID;
   name: string;
+  description?: string | null;
   orderIndex: number;
   isFinal: boolean;
   status: string;
@@ -75,6 +78,7 @@ export type RoundDetailResponse = {
   id: UUID;
   eventId: UUID;
   name: string;
+  description?: string | null;
   orderIndex: number;
   isFinal: boolean;
   status: string;

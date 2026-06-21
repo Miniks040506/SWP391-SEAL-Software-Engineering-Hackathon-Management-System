@@ -62,6 +62,7 @@ public class RoundServiceImpl implements RoundService {
         Round round = new Round();
         round.setEvent(event);
         round.setName(trimToNull(request.name()));
+        round.setDescription(trimToNull(request.description()));
         round.setOrderIndex(request.orderIndex());
         round.setStatus(RoundStatus.UPCOMING);
         round.setIsFinal(Boolean.TRUE.equals(request.isFinal()));
@@ -111,6 +112,7 @@ public class RoundServiceImpl implements RoundService {
                 round.getId(),
                 round.getEvent().getId(),
                 round.getName(),
+                round.getDescription(),
                 round.getOrderIndex(),
                 round.getIsFinal(),
                 round.getStatus().name(),
@@ -139,6 +141,10 @@ public class RoundServiceImpl implements RoundService {
             }
 
             round.setName(name);
+        }
+
+        if (request.description() != null) {
+            round.setDescription(trimToNull(request.description()));
         }
 
         if (request.orderIndex() != null) {
@@ -482,6 +488,7 @@ public class RoundServiceImpl implements RoundService {
                 round.getId(),
                 round.getEvent().getId(),
                 round.getName(),
+                round.getDescription(),
                 round.getOrderIndex(),
                 round.getIsFinal(),
                 round.getStatus().name(),

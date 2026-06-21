@@ -169,6 +169,8 @@ export const createRoundSchema = z
       .min(1, "Round name is required.")
       .max(200, "Round name must not exceed 200 characters."),
 
+    description: optionalTrimmedString,
+
     orderIndex: z.coerce
       .number()
       .int("Order index must be an integer.")
@@ -345,6 +347,7 @@ export const createEmptyPrize = (): PrizeFormValues => ({
 export const createEmptyRound = (orderIndex = 0): RoundFormValues => ({
   id: crypto.randomUUID(),
   roundName: "",
+  description: "",
   orderIndex,
   submissionDeadline: "",
   judgingDeadline: "",

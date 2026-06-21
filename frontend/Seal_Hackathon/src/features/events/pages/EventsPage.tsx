@@ -10,12 +10,16 @@ import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import { CircularProgress, Pagination } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import { teamApi } from "@/api/team.api";
 import { EventCard } from "@/features/events/components/EventCard";
 import { usePublicEventsQuery } from "@/features/events/hooks/usePublicEventQueries";
 import {
   publicEventsFilterSchema,
   type PublicEventsFilterValues,
 } from "@/features/events/schemas/publicEvent.schema";
+import { useAuthStore } from "@/stores/authStore";
+import { getPrimaryRole } from "@/utils/roleRedirect";
 import type { EventSummaryResponse } from "@/types/event.types";
 
 const seasons: PublicEventsFilterValues["season"][] = [
@@ -123,6 +127,12 @@ export function EventsPage() {
   );
 
   const [activeSeason, setActiveSeason] = useState(filters.season);
+  const user = useAuthStore((state) => state.user);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const userRole = getPrimaryRole(user);
+  const canFetchCompetitions =
+    Boolean(accessToken) &&
+    (userRole === "STUDENT" || userRole === "PARTICIPANT");
 
   const eventsQuery = usePublicEventsQuery({
     season: activeSeason === "All" ? undefined : activeSeason,
@@ -130,8 +140,18 @@ export function EventsPage() {
     size: filters.size,
   });
 
+  const competitionsQuery = useQuery({
+    queryKey: ["my-active-competitions"],
+    queryFn: () => teamApi.getMyActiveCompetitions(),
+    enabled: canFetchCompetitions,
+    staleTime: 30_000,
+  });
+
   const events = eventsQuery.data?.content ?? [];
   const pageCount = eventsQuery.data?.totalPages ?? 0;
+  const competitionEventIds = new Set(
+    (competitionsQuery.data ?? []).map((competition) => competition.eventId),
+  );
 
   useEffect(() => {
     if (!location.hash) return;
@@ -167,6 +187,11 @@ export function EventsPage() {
   const handleSelectEvent = (event: EventSummaryResponse) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
     navigate(`/events/${event.id}`);
+  };
+
+  const handleGoCompeting = (event: EventSummaryResponse) => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    navigate(`/events/${event.id}/competing`);
   };
 
   const scrollToSchedule = () => {
@@ -298,6 +323,11 @@ export function EventsPage() {
                 key={event.id}
                 event={event}
                 onClick={handleSelectEvent}
+                onGoCompeting={handleGoCompeting}
+                canCompete={
+                  event.status === "ONGOING" &&
+                  competitionEventIds.has(event.id)
+                }
               />
             ))}
           </div>

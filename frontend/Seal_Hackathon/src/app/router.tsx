@@ -50,6 +50,7 @@ import {
 
 import {
   CreateTeamPage,
+  EventCompetitionPage,
   InvitationResponsePage,
   JoinRequestResponsePage,
   MyInvitationsPage,
@@ -79,6 +80,7 @@ export const router = createBrowserRouter([
       { path: "/events", element: <EventsPage /> },
       { path: "/explore", element: <EventsPage /> },
       { path: "/events/:eventId/prizes", element: <EventPrizesPage /> },
+      { path: "/events/:eventId/competing", element: <EventCompetitionPage /> },
       { path: "/events/:eventId", element: <EventDetailPage /> },
       { path: "/standings", element: <LeaderboardPage /> },
     ],

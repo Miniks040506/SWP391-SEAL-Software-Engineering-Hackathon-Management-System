@@ -95,6 +95,7 @@ async function createEventFlow(values: CreateEventFormValues) {
     values.rounds.map((round, index) =>
       roundApi.createRound(createdEvent.id, {
         name: round.roundName.trim(),
+        description: nullIfBlank(round.description) ?? undefined,
         orderIndex: index + 1,
         isFinal: (index + 1) === maxOrderIndex,
         submissionDeadline: toLocalDateTime(round.submissionDeadline),

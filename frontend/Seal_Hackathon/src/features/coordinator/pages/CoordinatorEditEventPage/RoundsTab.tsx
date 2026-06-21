@@ -44,6 +44,7 @@ type EditableRound = RoundResponse & {
   id: UUID;
   name?: string;
   roundName?: string;
+  description?: string | null;
   orderIndex?: number;
   isFinal?: boolean;
   submissionDeadline?: string | null;
@@ -52,6 +53,7 @@ type EditableRound = RoundResponse & {
 
 type RoundForm = {
   name: string;
+  description: string;
   orderIndex: string;
   submissionDeadline: string;
   judgingDeadline: string;
@@ -69,6 +71,7 @@ type RoundsTabProps = {
 
 const emptyRound: RoundForm = {
   name: "",
+  description: "",
   orderIndex: "",
   submissionDeadline: "",
   judgingDeadline: "",
@@ -122,6 +125,7 @@ function createRoundForm(round: RoundResponse): RoundForm {
 
   return {
     name: getName(round),
+    description: raw.description ?? "",
     orderIndex: String(raw.orderIndex ?? 0),
     submissionDeadline: toDateTimeLocal(raw.submissionDeadline),
     judgingDeadline: toDateTimeLocal(raw.judgingDeadline),
@@ -653,6 +657,7 @@ export function RoundsTab({
 
       await createRoundMutation.mutateAsync({
         name: newRound.name.trim(),
+        description: newRound.description.trim() || undefined,
         orderIndex,
         isFinal: true,
         submissionDeadline: newRound.submissionDeadline
@@ -709,6 +714,7 @@ export function RoundsTab({
         roundId: id,
         payload: {
           name: values.name.trim(),
+          description: values.description.trim(),
           orderIndex,
           isFinal,
           submissionDeadline: values.submissionDeadline
@@ -827,6 +833,22 @@ export function RoundsTab({
                 />
 
                 <TextField
+                  label="Round instructions / competing exam"
+                  value={newRound.description}
+                  onChange={(event) =>
+                    setNewRound((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  multiline
+                  minRows={3}
+                  size="small"
+                  sx={textFieldSx}
+                  className="md:col-span-2"
+                />
+
+                <TextField
                   label="Order index"
                   type="number"
                   value={rounds.length + 1}
@@ -930,6 +952,23 @@ export function RoundsTab({
                     }
                     size="small"
                     sx={textFieldSx}
+                    disabled={!canEdit}
+                  />
+
+                  <TextField
+                    label="Round instructions / competing exam"
+                    value={values.description}
+                    onChange={(event) =>
+                      setEditing((current) => ({
+                        ...current,
+                        [id]: { ...values, description: event.target.value },
+                      }))
+                    }
+                    multiline
+                    minRows={3}
+                    size="small"
+                    sx={textFieldSx}
+                    className="md:col-span-2"
                     disabled={!canEdit}
                   />
 
