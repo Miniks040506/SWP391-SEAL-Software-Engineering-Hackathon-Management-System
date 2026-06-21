@@ -128,6 +128,53 @@ export type TeamInvitationResponse = {
   rejectUrl: string;
 };
 
+export type EventCompetitionSummaryResponse = {
+  eventId: UUID;
+  eventName: string;
+  eventStatus: string;
+  teamId: UUID;
+  teamName: string;
+  teamStatus: TeamStatus;
+  trackId: UUID;
+  trackName: string;
+};
+
+export type EventCompetitionRoundResponse = {
+  roundId: UUID;
+  roundName: string;
+  orderIndex: number;
+  description?: string | null;
+  status: string;
+  isFinal: boolean;
+  submissionDeadline?: ISODateTime | null;
+  judgingDeadline?: ISODateTime | null;
+  submissionLockedAt?: ISODateTime | null;
+  open: boolean;
+  submissionLocked: boolean;
+  canSubmit: boolean;
+  submissionId?: UUID | null;
+  submissionStatus?: string | null;
+  submissionNumber?: number | null;
+  submittedAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
+  linkCount: number;
+};
+
+export type EventCompetitionResponse = {
+  eventId: UUID;
+  eventName: string;
+  eventStatus: string;
+  teamId: UUID;
+  teamName: string;
+  teamStatus: TeamStatus;
+  leader: boolean;
+  trackId: UUID;
+  trackName: string;
+  trackDescription?: string | null;
+  rounds: EventCompetitionRoundResponse[];
+  serverTime: ISODateTime;
+};
+
 export type TeamJoinCodePreviewResponse = {
   teamId: UUID;
   teamName: string;

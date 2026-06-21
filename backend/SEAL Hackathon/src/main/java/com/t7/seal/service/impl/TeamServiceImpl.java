@@ -21,6 +21,9 @@ import com.t7.seal.response.team.TeamJoinCodePreviewResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
 import com.t7.seal.response.team.TeamResponse;
 import com.t7.seal.response.team.TeamSummaryResponse;
+import com.t7.seal.response.team.EventCompetitionResponse;
+import com.t7.seal.response.team.EventCompetitionRoundResponse;
+import com.t7.seal.response.team.EventCompetitionSummaryResponse;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EmailService;
@@ -52,6 +55,8 @@ public class TeamServiceImpl implements TeamService {
     private final UserRepository userRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final TrackRepository trackRepository;
+    private final RoundRepository roundRepository;
+    private final SubmissionRepository submissionRepository;
     private final AuditLogRepository auditLogRepository;
 
     private final CurrentUserService currentUserService;
@@ -547,7 +552,132 @@ public class TeamServiceImpl implements TeamService {
         return toTeamResponse(teamSaved);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public EventCompetitionResponse getMyEventCompetition(UUID eventId, Authentication authentication) {
+        UUID currentUserId = CurrentUser.id(authentication);
+        Team team = findMyCompetitionTeam(eventId, currentUserId);
+        Track track = team.getTrack();
+        HackathonEvent event = track.getEvent();
+
+        if (event.getStatus() != RegistrationStatus.ONGOING) {
+            throw new ConflictException("Event competition is available only while the event is ongoing.");
+        }
+
+        Map<UUID, Submission> submissionByRoundId = new HashMap<>();
+        for (Submission submission : submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(team.getId())) {
+            if (submission.getRound() != null) {
+                submissionByRoundId.put(submission.getRound().getId(), submission);
+            }
+        }
+
+        boolean leader = team.getLeader() != null && team.getLeader().getId().equals(currentUserId);
+        boolean teamCanSubmit = team.getStatus() == TeamStatus.REGISTERED
+                || team.getStatus() == TeamStatus.COMPETING
+                || team.getStatus() == TeamStatus.ADVANCED;
+        List<EventCompetitionRoundResponse> rounds = roundRepository.findByEventIdOrderByOrderIndexAsc(eventId)
+                .stream()
+                .map(round -> toEventCompetitionRoundResponse(
+                        round,
+                        submissionByRoundId.get(round.getId()),
+                        leader && teamCanSubmit
+                ))
+                .toList();
+
+        return new EventCompetitionResponse(
+                event.getId(),
+                event.getName(),
+                event.getStatus().name(),
+                team.getId(),
+                team.getName(),
+                team.getStatus().name(),
+                leader,
+                track.getId(),
+                track.getName(),
+                track.getDescription(),
+                rounds,
+                LocalDateTime.now()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<EventCompetitionSummaryResponse> getMyActiveCompetitions(Authentication authentication) {
+        UUID currentUserId = CurrentUser.id(authentication);
+
+        return teamRepository.findActiveTeamByUserId(currentUserId)
+                .stream()
+                .filter(this::hasCompetitionAccess)
+                .filter(team -> team.getTrack().getEvent().getStatus() == RegistrationStatus.ONGOING)
+                .map(this::toEventCompetitionSummaryResponse)
+                .toList();
+    }
+
     //HELPERS
+
+    private Team findMyCompetitionTeam(UUID eventId, UUID currentUserId) {
+        return teamRepository.findActiveTeamByUserId(currentUserId)
+                .stream()
+                .filter(this::hasCompetitionAccess)
+                .filter(team -> team.getTrack().getEvent().getId().equals(eventId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("No registered team found for this event."));
+    }
+
+    private boolean hasCompetitionAccess(Team team) {
+        return team.getTrack() != null
+                && team.getTrack().getEvent() != null
+                && team.getStatus() != TeamStatus.FORMING;
+    }
+
+    private EventCompetitionRoundResponse toEventCompetitionRoundResponse(
+            Round round,
+            Submission submission,
+            boolean participantCanSubmit
+    ) {
+        boolean open = round.getStatus() == RoundStatus.OPEN;
+        boolean locked = round.getSubmissionLockedAt() != null;
+        long linkCount = submission == null || submission.getSubmissionLinks() == null
+                ? 0L
+                : submission.getSubmissionLinks().size();
+
+        return new EventCompetitionRoundResponse(
+                round.getId(),
+                round.getName(),
+                round.getOrderIndex(),
+                round.getDescription(),
+                round.getStatus().name(),
+                round.getIsFinal(),
+                round.getSubmissionDeadline(),
+                round.getJudgingDeadline(),
+                round.getSubmissionLockedAt(),
+                open,
+                locked,
+                participantCanSubmit && open && !locked,
+                submission == null ? null : submission.getId(),
+                submission == null ? null : submission.getStatus().name(),
+                submission == null ? null : submission.getSubmissionNumber(),
+                submission == null ? null : submission.getSubmittedAt(),
+                submission == null ? null : submission.getUpdatedAt(),
+                linkCount
+        );
+    }
+
+    private EventCompetitionSummaryResponse toEventCompetitionSummaryResponse(Team team) {
+        Track track = team.getTrack();
+        HackathonEvent event = track.getEvent();
+
+        return new EventCompetitionSummaryResponse(
+                event.getId(),
+                event.getName(),
+                event.getStatus().name(),
+                team.getId(),
+                team.getName(),
+                team.getStatus().name(),
+                track.getId(),
+                track.getName()
+        );
+    }
     private TeamMemberResponse acceptInvitationInternal(TeamInvitation invitation, Authentication authentication) {
         User currentUser = currentUserService.getCurrentUser(authentication);
         ensureActiveStudent(currentUser);

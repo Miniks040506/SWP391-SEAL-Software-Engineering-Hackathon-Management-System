@@ -54,4 +54,8 @@ public interface TeamService {
     TeamResponse toggleJoinCode(UUID teamId, ToggleJoinCodeRequest request, Authentication authentication);
 
     TeamResponse registerTeamForTrack(UUID teamId, RegisterTeamTrackRequest request, Authentication authentication);
+
+    EventCompetitionResponse getMyEventCompetition(UUID eventId, Authentication authentication);
+
+    List<EventCompetitionSummaryResponse> getMyActiveCompetitions(Authentication authentication);
 }

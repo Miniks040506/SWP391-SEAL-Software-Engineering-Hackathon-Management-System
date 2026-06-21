@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 public record UpdateRoundRequest(
         @Size(max = 200) String name,
+        @Size(max = 10000) String description,
         Integer orderIndex,
         Boolean isFinal,
         LocalDateTime submissionDeadline,

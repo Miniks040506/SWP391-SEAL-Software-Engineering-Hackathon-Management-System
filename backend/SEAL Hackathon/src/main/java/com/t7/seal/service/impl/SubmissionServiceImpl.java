@@ -542,8 +542,10 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     private void ensureTeamCanSubmit(Team team) {
-        if (team.getStatus() != TeamStatus.REGISTERED && team.getStatus() != TeamStatus.COMPETING) {
-            throw new ConflictException("Team must be registered or competing before submitting deliverables.");
+        if (team.getStatus() != TeamStatus.REGISTERED
+                && team.getStatus() != TeamStatus.COMPETING
+                && team.getStatus() != TeamStatus.ADVANCED) {
+            throw new ConflictException("Team must be registered, competing, or advanced before submitting deliverables.");
         }
     }
 

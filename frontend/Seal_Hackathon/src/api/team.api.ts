@@ -6,6 +6,8 @@ import type {
   CoordinatorTeamSummaryResponse,
   CreateTeamRequest,
   CreateTeamJoinRequest,
+  EventCompetitionResponse,
+  EventCompetitionSummaryResponse,
   FormingTeamListParams,
   FormingTeamResponse,
   InviteMemberRequest,
@@ -33,6 +35,16 @@ export const teamApi = {
 
   getMyTeams() {
     return apiRequest.get<TeamSummaryResponse[]>("/teams/me");
+  },
+
+  getMyActiveCompetitions() {
+    return apiRequest.get<EventCompetitionSummaryResponse[]>("/teams/competitions/me");
+  },
+
+  getMyEventCompetition(eventId: UUID) {
+    return apiRequest.get<EventCompetitionResponse>(
+      `/events/${eventId}/competition/me`,
+    );
   },
 
   getFormingTeams(params?: FormingTeamListParams) {

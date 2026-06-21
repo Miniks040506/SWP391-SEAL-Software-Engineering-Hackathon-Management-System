@@ -4,7 +4,10 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import LoginIcon from "@mui/icons-material/Login";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import { CircularProgress } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import { teamApi } from "@/api/team.api";
 import { AnnouncementModal } from "@/features/events/components/AnnouncementModal";
 import { EventAnnouncementsCard } from "@/features/events/components/EventAnnouncementsCard";
 import { EventMetaGrid } from "@/features/events/components/EventMetaGrid";
@@ -17,6 +20,8 @@ import {
   usePublicEventDetailQuery,
   usePublicEventPrizesQuery,
 } from "@/features/events/hooks/usePublicEventQueries";
+import { useAuthStore } from "@/stores/authStore";
+import { getPrimaryRole } from "@/utils/roleRedirect";
 import {
   getEventDescription,
   isCompletedEvent,
@@ -42,9 +47,22 @@ export function EventDetailPage() {
   const [showAnnouncementsList, setShowAnnouncementsList] = useState(false);
   const [cameFromList, setCameFromList] = useState(false);
 
+  const user = useAuthStore((state) => state.user);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const userRole = getPrimaryRole(user);
+  const canFetchCompetition =
+    Boolean(accessToken) &&
+    (userRole === "STUDENT" || userRole === "PARTICIPANT");
+
   const eventQuery = usePublicEventDetailQuery(eventId);
   const announcementsQuery = usePublicEventAnnouncementsQuery(eventId);
   const prizesQuery = usePublicEventPrizesQuery(eventId);
+  const competitionsQuery = useQuery({
+    queryKey: ["my-active-competitions"],
+    queryFn: () => teamApi.getMyActiveCompetitions(),
+    enabled: canFetchCompetition,
+    staleTime: 30_000,
+  });
 
   const { joinEvent, viewPrizes, viewResults } = usePublicEventActions();
 
@@ -80,6 +98,13 @@ export function EventDetailPage() {
   const event = eventQuery.data;
   const registrationOpen = isRegistrationOpen(event.status);
   const completed = isCompletedEvent(event.status);
+  const activeCompetition = (competitionsQuery.data ?? []).find(
+    (competition) =>
+      competition.eventId === event.id &&
+      competition.eventStatus === "ONGOING",
+  );
+  const showCompetingButton =
+    event.status === "ONGOING" && Boolean(activeCompetition);
 
   const handleSelectAnnouncement = (
     announcement: PublicAnnouncementView,
@@ -173,15 +198,26 @@ export function EventDetailPage() {
             <EventMetaGrid event={event} />
 
             <div className="flex flex-wrap gap-3 pt-2">
-              {registrationOpen && (
+              {showCompetingButton ? (
                 <button
                   type="button"
-                  onClick={() => joinEvent()}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-600 active:scale-95"
+                  onClick={() => navigate(`/events/${event.id}/competing`)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:scale-95 dark:shadow-none"
                 >
-                  <LoginIcon style={{ fontSize: 16 }} />
-                  Join Now
+                  <RocketLaunchIcon style={{ fontSize: 16 }} />
+                  Go to event competing
                 </button>
+              ) : (
+                registrationOpen && (
+                  <button
+                    type="button"
+                    onClick={() => joinEvent()}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:scale-95 dark:shadow-none"
+                  >
+                    <LoginIcon style={{ fontSize: 16 }} />
+                    Join now
+                  </button>
+                )
               )}
 
               {completed && (

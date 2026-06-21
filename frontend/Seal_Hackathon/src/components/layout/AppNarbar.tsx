@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
@@ -7,6 +8,7 @@ import LeaderboardOutlinedIcon from "@mui/icons-material/LeaderboardOutlined";
 import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 
+import { teamApi } from "@/api/team.api";
 import { AppLogo } from "@/components/layout/AppLogo";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { UserAvatarMenu } from "@/components/layout/UserAvatarMenu";
@@ -145,12 +147,32 @@ export function AppNavbar({
       ? homePath || getRoleRedirectPath(user)
       : "/events#dashboard";
 
-  const exploreLinks = publicExploreLinks.map((link) =>
-    link.label === "Dashboard" ? { ...link, path: dashboardPath } : link,
-  );
-
   const userRole = getPrimaryRole(user);
-  const canShowExplore = !isAuthenticated || userRole === "STUDENT" || userRole === "PARTICIPANT";
+  const canShowExplore =
+    !isAuthenticated || userRole === "STUDENT" || userRole === "PARTICIPANT";
+  const canFetchCompetitions =
+    isAuthenticated && (userRole === "STUDENT" || userRole === "PARTICIPANT");
+  const activeCompetitionsQuery = useQuery({
+    queryKey: ["my-active-competitions"],
+    queryFn: () => teamApi.getMyActiveCompetitions(),
+    enabled: canFetchCompetitions,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
+  const competitionLinks: ExploreLink[] = (
+    activeCompetitionsQuery.data ?? []
+  ).map((competition) => ({
+    label: "Event competing",
+    path: `/events/${competition.eventId}/competing`,
+    description: `${competition.eventName} - ${competition.trackName}`,
+    icon: RocketLaunchOutlinedIcon,
+  }));
+  const exploreLinks = [
+    ...publicExploreLinks.map((link) =>
+      link.label === "Dashboard" ? { ...link, path: dashboardPath } : link,
+    ),
+    ...competitionLinks,
+  ];
 
   const isExploreActive =
     location.pathname.startsWith("/events") ||

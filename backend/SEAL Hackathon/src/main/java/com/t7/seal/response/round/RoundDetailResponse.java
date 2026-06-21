@@ -7,6 +7,7 @@ public record RoundDetailResponse(
         UUID id,
         UUID eventId,
         String name,
+        String description,
         Integer orderIndex,
         Boolean isFinal,
         String status,
