@@ -285,6 +285,7 @@ public class EventServiceImpl implements EventService {
                 round.getId(),
                 round.getEvent().getId(),
                 round.getName(),
+                round.getDescription(),
                 round.getOrderIndex(),
                 round.getIsFinal(),
                 round.getStatus().name(),
