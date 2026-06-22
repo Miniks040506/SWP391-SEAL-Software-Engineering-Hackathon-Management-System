@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface CalibrationService {
+
     CalibrationRoundResponse createCalibrationRound(UUID eventId,
                                                     CreateCalibrationRoundRequest request,
                                                     Authentication authentication);
