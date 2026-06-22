@@ -1,6 +1,7 @@
 package com.t7.seal.repository;
 
 import com.t7.seal.entities.RoundJudgeAssignment;
+import com.t7.seal.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -94,8 +95,6 @@ public interface RoundJudgeAssignmentRepository extends JpaRepository<RoundJudge
             @Param("roundId") UUID roundId
     );
 
-
-
     @Query("""
             SELECT DISTINCT u
             FROM RoundJudgeAssignment rja
@@ -107,7 +106,7 @@ public interface RoundJudgeAssignmentRepository extends JpaRepository<RoundJudge
               AND u.status = com.t7.seal.domain.UserStatus.ACTIVE
             ORDER BY u.fullName ASC
             """)
-    List<com.t7.seal.entities.User> findActiveJudgeUsersByEventId(@Param("eventId") UUID eventId);
+    List<User> findActiveJudgeUsersByEventId(@Param("eventId") UUID eventId);
 
     @Query("""
             SELECT DISTINCT u
@@ -118,6 +117,20 @@ public interface RoundJudgeAssignmentRepository extends JpaRepository<RoundJudge
               AND u.status = com.t7.seal.domain.UserStatus.ACTIVE
             ORDER BY u.fullName ASC
             """)
-    List<com.t7.seal.entities.User> findActiveJudgeUsersByRoundId(@Param("roundId") UUID roundId);
+    List<User> findActiveJudgeUsersByRoundId(@Param("roundId") UUID roundId);
+
+    @Query("""
+            SELECT CASE WHEN COUNT(rja) > 0 THEN true ELSE false END
+            FROM RoundJudgeAssignment rja
+            JOIN rja.round r
+            JOIN r.event e
+            JOIN rja.judge j
+            WHERE j.id = :judgeId
+              AND e.id = :eventId
+            """)
+    boolean existsByJudgeIdAndEventId(
+            @Param("judgeId") UUID judgeId,
+            @Param("eventId") UUID eventId
+    );
 
 }
