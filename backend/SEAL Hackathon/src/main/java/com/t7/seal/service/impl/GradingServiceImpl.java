@@ -89,9 +89,45 @@ public class GradingServiceImpl implements GradingService {
         return toScoreSheetResponse(submission, judge);
     }
 
+    @Transactional
     @Override
-    public ScoreSheetResponse confirmScoreSheet(UUID submissionId, ConfirmScoreSheetRequest confirmScoreSheetRequest, Authentication authentication) {
-        return null;
+    public ScoreSheetResponse confirmScoreSheet(
+            UUID submissionId,
+            ConfirmScoreSheetRequest request,
+            Authentication authentication
+    ) {
+        Judge judge = currentJudge(authentication);
+        Submission submission = getSubmission(submissionId);
+        ensureJudgeCanMutate(submission, judge, true);
+
+        List<EventCriteria> activeCriteria = activeCriteriaFor(submission);
+        List<Score> existing = scoreRepository
+                .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(submission.getId(), judge.getId());
+
+        Map<UUID, Score> byCriteriaId = existing.stream()
+                .collect(Collectors.toMap(
+                        s -> s.getEventCriteria().getId(),
+                        Function.identity(),
+                        (a, b) -> a)
+                );
+
+        for (EventCriteria criterion : activeCriteria) {
+            Score score = byCriteriaId.get(criterion.getId());
+            if (score == null || score.getValue() == null) {
+                throw new BadRequestException("All active criteria must be scored before final submission.");
+            }
+
+            validateScoreValue(criterion, score.getValue().doubleValue());
+            score.confirm();
+        }
+
+        scoreRepository.saveAll(existing);
+
+        recordAuditLog(judge.getUser(), AuditActionType.SCORE_CONFIRMED,
+                submission, Map.of("confirmationNote", request == null
+                        || request.confirmationNote() == null ? "" : request.confirmationNote()));
+
+        return toScoreSheetResponse(submission, judge);
     }
 
     @Override
@@ -181,7 +217,7 @@ public class GradingServiceImpl implements GradingService {
                 .toList();
     }
 
-    private void validateCriteriaForValue(EventCriteria criterion, Double value) {
+    private void validateScoreValue(EventCriteria criterion, Double value) {
 
         if (value == null) {
             throw new BadRequestException("Score value cannot be null.");
@@ -255,7 +291,7 @@ public class GradingServiceImpl implements GradingService {
                         + scoreItem.eventCriteriaId());
             }
 
-            validateCriteriaForValue(criterion, scoreItem.value());
+            validateScoreValue(criterion, scoreItem.value());
 
             Score score = scoreRepository
                     .findBySubmissionIdAndJudgeIdAndEventCriteriaId(submission.getId(), judge.getId(), criterion.getId())
