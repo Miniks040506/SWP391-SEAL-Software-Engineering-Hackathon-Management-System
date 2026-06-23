@@ -8,15 +8,14 @@ import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
-import com.t7.seal.repository.CalibrationRoundRepository;
-import com.t7.seal.repository.EventCriteriaRepository;
-import com.t7.seal.repository.JudgeRepository;
-import com.t7.seal.repository.RoundJudgeAssignmentRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.calibration.CalibrationScoreItemRequest;
 import com.t7.seal.request.calibration.CreateCalibrationRoundRequest;
 import com.t7.seal.request.calibration.SubmitCalibrationScoreRequest;
 import com.t7.seal.request.calibration.UpdateCalibrationRoundRequest;
 import com.t7.seal.response.calibration.*;
+import com.t7.seal.response.criteria.EventCriteriaResponse;
+import com.t7.seal.response.submission.SubmissionLinkResponse;
 import com.t7.seal.service.CalibrationService;
 import com.t7.seal.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +37,7 @@ public class CalibrationServiceImpl implements CalibrationService {
     private final EventCriteriaRepository eventCriteriaRepository;
     private final JudgeRepository judgeRepository;
     private final RoundJudgeAssignmentRepository assignmentRepository;
+    private final SubmissionLinkRepository submissionLinkRepository;
 
     private final CurrentUserService currentUserService;
 
@@ -401,7 +401,96 @@ public class CalibrationServiceImpl implements CalibrationService {
                 .mapToDouble(value -> Math.pow(value - mean, 2))
                 .average()
                 .orElse(0.0);
-        
+
         return Math.sqrt(variance);
+    }
+
+    private CalibrationScoreSheetResponse toScoreSheetResponse(
+            CalibrationRound calibrationRound,
+            List<EventCriteria> criteria,
+            List<CalibrationScoreResponse> scores
+    ) {
+        Submission sample = calibrationRound.getSampleSubmission();
+        Team team = sample.getTeam();
+        LocalDateTime now = LocalDateTime.now();
+        long criteriaCount = criteria.size();
+        boolean submitted = criteriaCount > 0 && scores.size() >= criteriaCount;
+        return new CalibrationScoreSheetResponse(
+                calibrationRound.getId(),
+                calibrationRound.getEvent().getId(),
+                sample.getId(),
+                team == null ? null : team.getName(),
+                team == null ? null : team.getProjectTitle(),
+                sample.getNote(),
+                calibrationRound.getStartAt(),
+                calibrationRound.getEndAt(),
+                calibrationRound.getIsMandatory(),
+                calibrationRound.isDistributionPublished(),
+                calibrationRound.getDistributionPublishedAt(),
+                calibrationRound.isOpen(now) && !calibrationRound.isDistributionPublished(),
+                submitted,
+                now,
+                submissionLinkRepository.findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(sample.getId())
+                        .stream()
+                        .map(this::toLinkResponse)
+                        .toList(),
+                criteria.stream().map(this::toEventCriteriaResponse).toList(),
+                scores
+        );
+    }
+
+    private SubmissionLinkResponse toLinkResponse(SubmissionLink link) {
+        return new SubmissionLinkResponse(
+                link.getId(),
+                link.getLinkType() == null ? null : link.getLinkType().name(),
+                link.getUrl(),
+                link.getLabel(),
+                link.getStorageProvider() == null ? null : link.getStorageProvider().name(),
+                link.getObjectKey(),
+                link.getOriginalFileName(),
+                link.getContentType(),
+                link.getFileSizeBytes(),
+                link.getRepoMetadata(),
+                link.getIsPrimary(),
+                link.getDisplayOrder(),
+                link.getCreatedAt(),
+                link.getUpdatedAt()
+        );
+    }
+
+    private EventCriteriaResponse toEventCriteriaResponse(EventCriteria criteria) {
+        return new EventCriteriaResponse(
+                criteria.getId(),
+                criteria.getEvent().getId(),
+                criteria.getCriteria() == null ? null : criteria.getCriteria().getId(),
+                criteria.getCriteria() == null ? null : criteria.getCriteria().getName(),
+                criteria.getCriteria() == null || criteria.getCriteria().getCategory() == null
+                        ? null
+                        : criteria.getCriteria().getCategory().name(),
+                criteria.isCustomCriteria(),
+                criteria.getNameOverride(),
+                criteria.getDescriptionOverride(),
+                criteria.getRubricOverride(),
+                toDouble(criteria.getWeightOverride()),
+                toDouble(criteria.getMaxScoreOverride()),
+                criteria.getIsTechnicalOverride(),
+                criteria.getEffectiveName(),
+                criteria.getEffectiveDescription(),
+                criteria.getEffectiveRubric(),
+                toDouble(criteria.getEffectiveWeight()),
+                toDouble(criteria.getEffectiveMaxScore()),
+                criteria.getEffectiveIsTechnical(),
+                criteria.getAppliesToRoundIds(),
+                criteria.getDisplayOrder(),
+                criteria.getIsActive()
+        );
+    }
+
+    private Double toDouble(Float value) {
+        return value == null ? null : value.doubleValue();
+    }
+
+    private Object nullSafe(Object value) {
+        return value == null ? "" : value;
     }
 }
