@@ -25,9 +25,29 @@ export const gradingApi = {
     );
   },
 
+  getScoreSheet(submissionId: UUID) {
+    return apiRequest.get<ScoreSheetResponse>(
+      `/grading/submissions/${submissionId}/score-sheet`,
+    );
+  },
+
   getMyScoresForSubmission(submissionId: UUID) {
     return apiRequest.get<ScoreSheetResponse>(
       `/grading/submissions/${submissionId}/scores`,
+    );
+  },
+
+  saveDraftScores(submissionId: UUID, payload: SaveScoreSheetRequest) {
+    return apiRequest.post<ScoreSheetResponse>(
+      `/grading/submissions/${submissionId}/scores/draft`,
+      {...payload, draft: true},
+    );
+  },
+
+  submitFinalScores(submissionId: UUID, payload: SaveScoreSheetRequest) {
+    return apiRequest.post<ScoreSheetResponse>(
+      `/grading/submissions/${submissionId}/scores/submit`,
+      {...payload, draft: false},
     );
   },
 
@@ -38,7 +58,7 @@ export const gradingApi = {
     );
   },
 
-  confirmScores(submissionId: UUID, payload: ConfirmScoreSheetRequest) {
+  confirmScores(submissionId: UUID, payload: ConfirmScoreSheetRequest = {}) {
     return apiRequest.post<ScoreSheetResponse>(
       `/grading/submissions/${submissionId}/scores/confirm`,
       payload,
