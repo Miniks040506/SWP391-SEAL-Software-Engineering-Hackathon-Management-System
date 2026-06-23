@@ -13,4 +13,8 @@ public interface ScoreRepository extends JpaRepository<Score, UUID> {
     long countByEventCriteriaId(UUID eventCriteriaId);
 
     long countBySubmissionIdAndJudgeIdAndIsDraftFalse(UUID submissionId, UUID judgeId);
+
+    long countBySubmissionIdAndJudgeIdAndIsDraftTrue(UUID submissionId, UUID judgeId);
+
+    long countBySubmissionIdAndJudgeId(UUID submissionId, UUID judgeId);
 }
