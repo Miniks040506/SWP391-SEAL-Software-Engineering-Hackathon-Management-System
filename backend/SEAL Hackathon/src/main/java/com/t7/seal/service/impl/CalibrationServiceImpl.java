@@ -208,6 +208,7 @@ public class CalibrationServiceImpl implements CalibrationService {
     ) {
         CalibrationRound calibrationRound = findRound(calibrationRoundId);
         Judge judge = currentJudge(authentication);
+
         ensureJudgeCanAccessCalibration(judge, calibrationRound);
 
         List<EventCriteria> criteria = activeCriteriaForCalibration(calibrationRound);
@@ -227,7 +228,70 @@ public class CalibrationServiceImpl implements CalibrationService {
             SubmitCalibrationScoreRequest request,
             Authentication authentication
     ) {
-        return List.of();
+        CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        Judge judge = currentJudge(authentication);
+
+        ensureJudgeCanAccessCalibration(judge, calibrationRound);
+        ensureCalibrationOpen(calibrationRound);
+
+        if (request.scores() == null || request.scores().isEmpty()) {
+            throw new BadRequestException("At least one calibration score is required.");
+        }
+
+        List<EventCriteria> activeCriteria = activeCriteriaForCalibration(calibrationRound);
+        Map<UUID, EventCriteria> criteriaById = activeCriteria.stream()
+                .collect(Collectors.toMap(
+                        EventCriteria::getId,
+                        Function.identity()
+                ));
+
+        ensureNoDuplicateCriteria(request.scores());
+
+        List<CalibrationScore> savedScores = new ArrayList<>();
+        for (CalibrationScoreItemRequest item : request.scores()) {
+            EventCriteria criteria = criteriaById.get(item.eventCriteriaId());
+            if (criteria == null) {
+                throw new BadRequestException("Event criteria is not active for this calibration round: " + item.eventCriteriaId());
+            }
+
+            Float value = toFloat(item.value(), "score value");
+            validateScoreValue(value, criteria);
+
+            CalibrationScore score = calibrationScoreRepository
+                    .findByCalibrationRoundIdAndJudgeIdAndEventCriteriaId(
+                            calibrationRound.getId(),
+                            judge.getId(),
+                            criteria.getId()
+                    )
+                    .orElseGet(() -> CalibrationScore.builder()
+                            .calibrationRound(calibrationRound)
+                            .judge(judge)
+                            .eventCriteria(criteria)
+                            .build());
+
+            score.setValue(value);
+            savedScores.add(calibrationScoreRepository.save(score));
+        }
+
+        auditLogService.record(
+                judge.getUser(),
+                AuditActionType.CALIBRATION_SCORE_SUBMITTED,
+                "calibration_rounds",
+                calibrationRound.getId(),
+                null,
+                Map.of(
+                        "judgeId", judge.getId(),
+                        "scoreCount", savedScores.size()
+                ),
+                Map.of("source", "SPRINT_3_PERIOD_1")
+        );
+
+        return savedScores.stream()
+                .sorted(Comparator.comparing(
+                        score -> score.getEventCriteria().getDisplayOrder()
+                ))
+                .map(this::toScoreResponse)
+                .toList();
     }
 
     @Override
