@@ -70,7 +70,7 @@ public class GradingController {
             @PathVariable UUID submissionId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.getScoreSheets(submissionId, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
