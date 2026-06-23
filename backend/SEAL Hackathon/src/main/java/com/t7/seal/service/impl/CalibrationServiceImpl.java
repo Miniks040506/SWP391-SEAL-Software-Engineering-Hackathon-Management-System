@@ -2,6 +2,7 @@ package com.t7.seal.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
@@ -17,6 +18,7 @@ import com.t7.seal.request.calibration.SubmitCalibrationScoreRequest;
 import com.t7.seal.request.calibration.UpdateCalibrationRoundRequest;
 import com.t7.seal.response.calibration.*;
 import com.t7.seal.service.CalibrationService;
+import com.t7.seal.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,8 @@ public class CalibrationServiceImpl implements CalibrationService {
     private final EventCriteriaRepository eventCriteriaRepository;
     private final JudgeRepository judgeRepository;
     private final RoundJudgeAssignmentRepository assignmentRepository;
+
+    private final CurrentUserService currentUserService;
 
     @Override
     @Transactional
@@ -289,5 +293,36 @@ public class CalibrationServiceImpl implements CalibrationService {
             throw new UnauthorizedException("This calibration round is not assigned to you.");
         }
     }
+
+    private Judge currentJudge(Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+        if (!user.isJudge()) {
+            throw new UnauthorizedException("Only judges can use calibration scoring.");
+        }
+        if (!user.isActive()) {
+            throw new UnauthorizedException("Judge account is not ACTIVE.");
+        }
+        Judge judge = judgeRepository.findByUserId(user.getId())
+                .orElseThrow(() ->
+                        new UnauthorizedException("Judge profile was not found."));
+        if (Boolean.TRUE.equals(judge.getIsTemporary())
+                && !judge.isTemporaryActive(LocalDateTime.now())) {
+            throw new UnauthorizedException("Temporary judge account has expired.");
+        }
+        return judge;
+    }
+
+    private boolean canCoordinate(User user) {
+        return user != null
+                && (user.getRole() == UserRole.COORDINATOR
+                || user.getRole() == UserRole.ADMIN);
+    }
+
+    private void ensureCoordinatorOrAdmin(User user) {
+        if (!canCoordinate(user)) {
+            throw new UnauthorizedException("Only coordinator or admin can manage calibration rounds.");
+        }
+    }
+
 
 }
