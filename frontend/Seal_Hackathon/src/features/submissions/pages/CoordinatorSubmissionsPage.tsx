@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Pagination } from "@mui/material";
 import { eventApi } from "@/api/event.api";
@@ -118,6 +118,17 @@ export function CoordinatorSubmissionsPage() {
   const total = data?.totalElements ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
+  const progressSummary = useMemo(() => {
+    const stats = { pending: 0, draft: 0, submitted: 0, locked: 0, total: items.length };
+    items.forEach((sub: any) => {
+      if (sub.roundSubmissionLocked) stats.locked++;
+      else if (sub.gradingStatus === "GRADED") stats.submitted++;
+      else if (sub.gradingStatus === "READY") stats.draft++;
+      else stats.pending++;
+    });
+    return stats;
+  }, [items]);
+
   return (
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
       <div className="mb-6 flex items-center justify-between">
@@ -131,6 +142,21 @@ export function CoordinatorSubmissionsPage() {
           </p>
         </div>
       </div>
+
+      {items.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 mb-6">
+          <div className="flex items-center gap-2 pr-4 sm:border-r border-slate-200 dark:border-slate-700">
+            <span className="text-sm font-bold text-slate-500">Progress:</span>
+            <span className="text-xl font-extrabold text-slate-900 dark:text-white">{progressSummary.submitted} / {progressSummary.total}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
+            <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400"><span className="h-2.5 w-2.5 rounded-full bg-orange-500"></span>{progressSummary.pending} Pending</span>
+            <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400"><span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>{progressSummary.draft} Draft Saved</span>
+            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400"><span className="h-2.5 w-2.5 rounded-full bg-green-500"></span>{progressSummary.submitted} Submitted</span>
+            <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400"><span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>{progressSummary.locked} Locked</span>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col overflow-hidden">
         <SubmissionFilterBar

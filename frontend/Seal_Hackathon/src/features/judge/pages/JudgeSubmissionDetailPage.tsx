@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import CircularProgress from "@mui/material/CircularProgress";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -7,10 +7,13 @@ import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import Chip from "@mui/material/Chip";
 
 import { useJudgeSubmissionDetailQuery } from "../hooks/useJudge";
+import { JudgeGradingPanel } from "../components/submission/JudgeGradingPanel";
 
 export const JudgeSubmissionDetailPage = () => {
   const { submissionId } = useParams<{ submissionId: string }>();
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const isLocked = (state as { roundSubmissionLocked?: boolean })?.roundSubmissionLocked ?? false;
   
   const { data: response, isLoading, isError } = useJudgeSubmissionDetailQuery(submissionId);
   const detail = response;
@@ -68,53 +71,18 @@ export const JudgeSubmissionDetailPage = () => {
       </Card>
 
       {criteria.length > 0 ? (
-        <Card variant="outlined" className="rounded-2xl dark:border-slate-700 dark:bg-slate-800">
-          <CardContent className="p-8">
-            <div className="mb-6">
-              <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
-                Round criteria
-              </h2>
-              <p className="mt-1 text-sm font-medium text-gray-500 dark:text-slate-400">
-                Criteria configured for this submission's round.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {criteria.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900"
-                >
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <p className="font-extrabold text-gray-900 dark:text-white">
-                        {item.effectiveName}
-                      </p>
-                      {item.effectiveDescription && (
-                        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-                          {item.effectiveDescription}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 flex-wrap gap-2">
-                      <Chip
-                        size="small"
-                        label={`${item.effectiveMaxScore} pts`}
-                        sx={{ fontWeight: 800 }}
-                      />
-                      <Chip
-                        size="small"
-                        label={`${item.effectiveWeight}% weight`}
-                        variant="outlined"
-                        sx={{ fontWeight: 800 }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <JudgeGradingPanel
+          submissionId={detail.submissionId}
+          criteria={criteria.map(c => ({
+            id: c.id,
+            name: c.effectiveName || "",
+            description: c.effectiveDescription || "",
+            maxScore: c.effectiveMaxScore || 0
+          }))}
+          gradingStatus={(detail as any).gradingStatus || "PENDING"}
+          scoredData={(detail as any).scoredData}
+          isLocked={isLocked}
+        />
       ) : (
         <div className="rounded-2xl border border-dashed border-rose-300 bg-rose-50 p-8 text-center text-rose-600 dark:border-rose-900/50 dark:bg-rose-900/10">
           <p className="font-bold">No scoring criteria configured for this round.</p>

@@ -10,12 +10,16 @@ type Props = {
   submissions: JudgeSubmissionAssignmentResponse[];
 };
 
-function getGradingChip(status?: string | null) {
-  switch (status) {
+function getGradingChip(sub: JudgeSubmissionAssignmentResponse) {
+  if (sub.roundSubmissionLocked) {
+    return { label: "Locked", color: "error" as const, variant: "filled" as const };
+  }
+  switch (sub.gradingStatus) {
     case "GRADED":
-      return { label: "Graded", color: "success" as const, variant: "filled" as const };
+      return { label: "Submitted", color: "success" as const, variant: "filled" as const };
     case "READY":
-      return { label: "Ready", color: "info" as const, variant: "outlined" as const };
+      return { label: "Draft Saved", color: "info" as const, variant: "outlined" as const };
+    case "PENDING":
     default:
       return { label: "Pending", color: "warning" as const, variant: "outlined" as const };
   }
@@ -52,7 +56,8 @@ export const JudgeSubmissionTable = ({ submissions }: Props) => {
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
           {submissions.map((sub) => {
-            const chip = getGradingChip(sub.gradingStatus);
+            const chip = getGradingChip(sub);
+            const isLocked = sub.roundSubmissionLocked;
 
             return (
               <tr key={sub.submissionId} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
@@ -80,17 +85,20 @@ export const JudgeSubmissionTable = ({ submissions }: Props) => {
                   <Button
                     variant="contained"
                     size="small"
-                    onClick={() => navigate(`/judge/submissions/${sub.submissionId}`)}
+                    disabled={isLocked}
+                    onClick={() => navigate(`/judge/submissions/${sub.submissionId}`, {
+                      state: { roundSubmissionLocked: sub.roundSubmissionLocked }
+                    })}
                     sx={{
-                      bgcolor: "#2563eb",
+                      bgcolor: isLocked ? undefined : "#2563eb",
                       fontWeight: 700,
                       textTransform: "none",
                       borderRadius: "8px",
                       boxShadow: "none",
-                      "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+                      "&:hover": { bgcolor: isLocked ? undefined : "#1d4ed8", boxShadow: "none" },
                     }}
                   >
-                    View submission
+                    {isLocked ? "Locked" : "View submission"}
                   </Button>
                 </td>
               </tr>
