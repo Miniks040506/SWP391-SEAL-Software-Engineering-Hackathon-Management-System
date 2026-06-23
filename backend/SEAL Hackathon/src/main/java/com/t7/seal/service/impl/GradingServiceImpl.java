@@ -132,6 +132,8 @@ public class GradingServiceImpl implements GradingService {
 
     @Override
     public ScoreResponse updateScore(UUID scoreId, Authentication authentication) {
+        Judge judge = currentJudge(authentication);
+
         return null;
     }
 
@@ -161,7 +163,12 @@ public class GradingServiceImpl implements GradingService {
 
     private Submission getSubmission(UUID submissionId) {
         return submissionRepository.findDetailById(submissionId)
-                .orElseThrow(() -> new UnauthorizedException("Submission not found."));
+                .orElseThrow(() -> new BadRequestException("Submission not found."));
+    }
+
+    private Score getScore(UUID scoreId) {
+        return scoreRepository.findByIdWithSubmissionRoundJudgeCriteria(scoreId)
+                .orElseThrow(() -> new BadRequestException("Score not found."));
     }
 
     private void ensureJudgeCanView(Judge judge, Submission submission) {
