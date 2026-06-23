@@ -60,7 +60,7 @@ public class GradingServiceImpl implements GradingService {
 
         upsertScore(submission, judge, saveScoreSheetRequest, true, false);
 
-        return null;
+        return toScoreSheetResponse(submission, judge);
     }
 
     @Transactional
@@ -70,7 +70,14 @@ public class GradingServiceImpl implements GradingService {
             SaveScoreSheetRequest saveScoreSheetRequest,
             Authentication authentication
     ) {
-        return null;
+        Judge judge = currentJudge(authentication);
+        Submission submission = getSubmission(submissionId);
+
+        ensureJudgeCanMutate(submission, judge, true);
+
+        upsertScore(submission, judge, saveScoreSheetRequest, false, true);
+
+        return toScoreSheetResponse(submission, judge);
     }
 
     @Override
