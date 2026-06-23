@@ -54,7 +54,7 @@ public class GradingController {
             "/submissions/{submissionId}/score-sheet",
             "/submissions/{submissionId}/my-scores",
     })
-    public ResponseEntity<PageResponse<ScoreSheetResponse>> getScoreSheet(
+    public ResponseEntity<ScoreSheetResponse> getScoreSheet(
             @PathVariable UUID submissionId,
             Authentication authentication
     ) {
@@ -102,7 +102,7 @@ public class GradingController {
 
     @PreAuthorize("hasRole('JUDGE')")
     @PostMapping("/submissions/{submissionId}/scores/confirm")
-    public ResponseEntity<ScoreSheetResponse> confirmScores(
+    public ResponseEntity<ScoreSheetResponse> confirmScoreSheet(
             @PathVariable UUID submissionId,
             @Valid @RequestBody ConfirmScoreSheetRequest request,
             Authentication authentication
