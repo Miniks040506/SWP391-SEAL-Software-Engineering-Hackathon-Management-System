@@ -80,7 +80,7 @@ public class GradingController {
             @Valid @RequestBody SaveScoreSheetRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.saveDraft(submissionId, request, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
@@ -90,7 +90,7 @@ public class GradingController {
             @Valid @RequestBody SaveScoreSheetRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.submitFinal(submissionId, request, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
