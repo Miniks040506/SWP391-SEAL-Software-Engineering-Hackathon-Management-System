@@ -133,6 +133,6 @@ public class GradingController {
             @PathVariable("scoreId") UUID scoreId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.confirmScore(scoreId, authentication));
     }
 }
