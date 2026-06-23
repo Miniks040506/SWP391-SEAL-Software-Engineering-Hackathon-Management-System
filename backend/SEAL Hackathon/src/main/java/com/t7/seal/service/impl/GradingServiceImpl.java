@@ -3,10 +3,7 @@ package com.t7.seal.service.impl;
 import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.UnauthorizedException;
-import com.t7.seal.repository.JudgeRepository;
-import com.t7.seal.repository.RoundJudgeAssignmentRepository;
-import com.t7.seal.repository.ScoreRepository;
-import com.t7.seal.repository.SubmissionRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.grading.ConfirmScoreSheetRequest;
 import com.t7.seal.request.grading.SaveScoreSheetRequest;
 import com.t7.seal.response.grading.ScoreResponse;
@@ -16,8 +13,10 @@ import com.t7.seal.service.GradingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -25,16 +24,22 @@ import java.util.UUID;
 public class GradingServiceImpl implements GradingService {
 
     private final CurrentUserService currentUserService;
+
     private final JudgeRepository judgeRepository;
     private final SubmissionRepository submissionRepository;
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
+    private final EventCriteriaRepository eventCriteriaRepository;
+    private final ScoreRepository scoreRepository;
 
+    @Transactional(readOnly = true)
     @Override
     public ScoreSheetResponse getScoreSheets(UUID submissionId, Authentication authentication) {
         Judge judge = currentJudge(authentication);
         Submission submission = getSubmission(submissionId);
 
-        return null;
+        ensureJudgeCanView(judge, submission);
+
+        return toScoreSheetResponse(submission, judge);
     }
 
     @Override
@@ -114,5 +119,47 @@ public class GradingServiceImpl implements GradingService {
     private boolean isScorable(Submission submission) {
         return submission.getStatus() == SubmissionStatus.SUBMITTED
                 || submission.getStatus() == SubmissionStatus.LATE;
+    }
+
+    private ScoreSheetResponse toScoreSheetResponse(Submission submission, Judge judge) {
+        List<ScoreResponse> scores = scoreRepository
+                .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(submission.getId(), judge.getId())
+                .stream()
+                .map(this::toScoreResponse)
+                .toList();
+
+        long criteriaCount = activeCriteriaFor(submission).size();
+        long confirmedCount = scores.stream().filter(s -> Boolean.FALSE.equals(s.isDraft())).count();
+        boolean confirmed = criteriaCount > 0 && confirmedCount >= criteriaCount;
+
+        return new ScoreSheetResponse(
+                submission.getId(),
+                judge.getId(),
+                confirmed,
+                scores
+        );
+    }
+
+    private List<EventCriteria> activeCriteriaFor(Submission submission) {
+        Round round = submission.getRound();
+        UUID roundId = round.getId();
+
+        return eventCriteriaRepository.findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
+                .stream()
+                .filter(c -> c.appliesToRound(roundId))
+                .toList();
+    }
+
+    private ScoreResponse toScoreResponse(Score score) {
+        return new ScoreResponse(
+                score.getId(),
+                score.getSubmission().getId(),
+                score.getJudge().getId(),
+                score.getEventCriteria().getId(),
+                score.getValue() == null ? null : score.getValue().doubleValue(),
+                score.getComment(),
+                score.getIsDraft(),
+                score.getScoredAt()
+        );
     }
 }
