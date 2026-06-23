@@ -42,6 +42,7 @@ public class CalibrationServiceImpl implements CalibrationService {
     private final SubmissionLinkRepository submissionLinkRepository;
     private final HackathonEventRepository eventRepository;
     private final SubmissionRepository submissionRepository;
+    private final CalibrationScoreRepository calibrationScoreRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -195,7 +196,7 @@ public class CalibrationServiceImpl implements CalibrationService {
                 ),
                 Map.of("source", "SPRINT_3_PERIOD_1")
         );
-        
+
         return toRoundResponse(saved);
     }
 
@@ -205,7 +206,18 @@ public class CalibrationServiceImpl implements CalibrationService {
             UUID calibrationRoundId,
             Authentication authentication
     ) {
-        return null;
+        CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        Judge judge = currentJudge(authentication);
+        ensureJudgeCanAccessCalibration(judge, calibrationRound);
+
+        List<EventCriteria> criteria = activeCriteriaForCalibration(calibrationRound);
+        List<CalibrationScoreResponse> scores = calibrationScoreRepository
+                .findByCalibrationRoundIdAndJudgeId(calibrationRound.getId(), judge.getId())
+                .stream()
+                .map(this::toScoreResponse)
+                .toList();
+
+        return toScoreSheetResponse(calibrationRound, criteria, scores);
     }
 
     @Override
