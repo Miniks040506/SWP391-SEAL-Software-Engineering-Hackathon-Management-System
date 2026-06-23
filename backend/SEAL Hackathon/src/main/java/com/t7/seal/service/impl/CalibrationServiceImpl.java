@@ -2,12 +2,16 @@ package com.t7.seal.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.t7.seal.entities.CalibrationRound;
-import com.t7.seal.entities.EventCriteria;
-import com.t7.seal.entities.Submission;
+import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.CalibrationRoundRepository;
+import com.t7.seal.repository.EventCriteriaRepository;
+import com.t7.seal.repository.JudgeRepository;
+import com.t7.seal.repository.RoundJudgeAssignmentRepository;
+import com.t7.seal.request.calibration.CalibrationScoreItemRequest;
 import com.t7.seal.request.calibration.CreateCalibrationRoundRequest;
 import com.t7.seal.request.calibration.SubmitCalibrationScoreRequest;
 import com.t7.seal.request.calibration.UpdateCalibrationRoundRequest;
@@ -29,6 +33,9 @@ public class CalibrationServiceImpl implements CalibrationService {
 
     private final CalibrationRoundRepository calibrationRoundRepository;
     private final ObjectMapper objectMapper;
+    private final EventCriteriaRepository eventCriteriaRepository;
+    private final JudgeRepository judgeRepository;
+    private final RoundJudgeAssignmentRepository assignmentRepository;
 
     @Override
     @Transactional
@@ -147,11 +154,13 @@ public class CalibrationServiceImpl implements CalibrationService {
             throw new BadRequestException("endAt must be after startAt.");
         }
     }
+
     private Map<String, Float> parseBenchmarkScores(Object raw) {
         if (raw == null) {
             return null;
         }
-        Map<String, Object> input = objectMapper.convertValue(raw, new TypeReference<>() {});
+        Map<String, Object> input = objectMapper.convertValue(raw, new TypeReference<>() {
+        });
         if (input == null || input.isEmpty()) {
             return new LinkedHashMap<>();
         }
@@ -230,4 +239,55 @@ public class CalibrationServiceImpl implements CalibrationService {
             throw new BadRequestException("Score value must not exceed max score " + maxScore + " for " + criteria.getEffectiveName() + ".");
         }
     }
+
+    private void ensureNoDuplicateCriteria(List<CalibrationScoreItemRequest> items) {
+        Set<UUID> seen = new HashSet<>();
+        for (CalibrationScoreItemRequest item : items) {
+            if (item.eventCriteriaId() == null) {
+                throw new BadRequestException("eventCriteriaId is required.");
+            }
+            if (!seen.add(item.eventCriteriaId())) {
+                throw new BadRequestException("Duplicate calibration score for criterion: " + item.eventCriteriaId());
+            }
+        }
+    }
+
+    private void ensureCalibrationOpen(CalibrationRound calibrationRound) {
+        LocalDateTime now = LocalDateTime.now();
+        if (calibrationRound.isDistributionPublished()) {
+            throw new ConflictException("Calibration distribution is already published.");
+        }
+        if (!calibrationRound.isOpen(now)) {
+            throw new ConflictException("Calibration round is not currently open.");
+        }
+    }
+
+    private void ensureCanAccessEventCalibration(User user, UUID eventId) {
+        if (canCoordinate(user)) {
+            return;
+        }
+        if (!user.isJudge()) {
+            throw new UnauthorizedException("Only judges or coordinators can access calibration rounds.");
+        }
+        Judge judge = judgeRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new UnauthorizedException("Judge profile was not found."));
+        ensureJudgeCanAccessEvent(judge, eventId);
+    }
+
+    private void ensureJudgeCanAccessCalibration(Judge judge, CalibrationRound calibrationRound) {
+        ensureJudgeCanAccessEvent(judge, calibrationRound.getEvent().getId());
+    }
+
+    private void ensureJudgeCanAccessEvent(Judge judge, UUID eventId) {
+        if (judge == null || judge.getUser() == null || !judge.getUser().isActive()) {
+            throw new UnauthorizedException("Judge account is not ACTIVE.");
+        }
+        if (Boolean.TRUE.equals(judge.getIsTemporary()) && !judge.isTemporaryActive(LocalDateTime.now())) {
+            throw new UnauthorizedException("Temporary judge account has expired.");
+        }
+        if (!assignmentRepository.existsByJudgeIdAndEventId(judge.getId(), eventId)) {
+            throw new UnauthorizedException("This calibration round is not assigned to you.");
+        }
+    }
+
 }
