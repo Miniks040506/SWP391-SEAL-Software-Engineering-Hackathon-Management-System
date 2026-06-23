@@ -318,7 +318,28 @@ public class CalibrationServiceImpl implements CalibrationService {
             UUID calibrationRoundId,
             Authentication authentication
     ) {
-        return null;
+        CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        User user = currentUserService.getCurrentUser(authentication);
+
+        boolean coordinator = canCoordinate(user);
+
+        if (!coordinator) {
+            if (!user.isJudge()) {
+                throw new UnauthorizedException("Only judges or coordinators can view calibration distribution.");
+            }
+
+            Judge judge = currentJudge(authentication);
+            ensureJudgeCanAccessCalibration(judge, calibrationRound);
+
+            if (!calibrationRound.isDistributionPublished()) {
+                throw new ConflictException("Calibration distribution has not been published yet.");
+            }
+        }
+
+        List<EventCriteria> criteria = activeCriteriaForCalibration(calibrationRound);
+        List<CalibrationScore> scores = calibrationScoreRepository.findByCalibrationRoundId(calibrationRound.getId());
+
+        return buildDistribution(calibrationRound, criteria, scores);
     }
 
     @Override
