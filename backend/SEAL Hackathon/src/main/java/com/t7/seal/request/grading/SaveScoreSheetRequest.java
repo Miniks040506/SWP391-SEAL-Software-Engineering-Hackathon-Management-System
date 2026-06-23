@@ -6,5 +6,6 @@ import java.util.List;
 
 public record SaveScoreSheetRequest(
         @NotEmpty List<ScoreItemRequest> scores,
-        String generalComment, Boolean draft)
-{}
+        String generalComment, Boolean draft
+) {
+}

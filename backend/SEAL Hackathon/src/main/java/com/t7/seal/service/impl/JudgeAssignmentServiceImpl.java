@@ -235,7 +235,14 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                                 item.roundId(),
                                 item.trackId(),
                                 item.submissionStatus(),
-                                "GRADED".equals(item.gradingStatus())
+                                "SUBMITTED".equals(item.submissionStatus())
+                                        || "LOCKED".equals(item.submissionStatus()),
+                                item.gradingStatus(),
+                                item.criteriaCount(),
+                                item.confirmedScoreCount(),
+                                item.criteriaCount(),
+                                item.gradingLocked(),
+                                item.gradingLockedAt()
                         ))
                         .toList(),
                 queue.page(),
@@ -365,12 +372,15 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
     }
 
     private JudgeSubmissionAssignmentResponse toJudgeSubmissionResponse(Submission submission, Judge judge) {
+
         Team team = submission.getTeam();
         Track track = team == null ? null : team.getTrack();
         Round round = submission.getRound();
         long criteriaCount = countCriteriaForRound(round);
+        long draftScoreCount = scoreRepository.countBySubmissionIdAndJudgeIdAndIsDraftTrue(submission.getId(), judge.getId());
         long confirmedScoreCount = scoreRepository.countBySubmissionIdAndJudgeIdAndIsDraftFalse(submission.getId(), judge.getId());
-        String gradingStatus = resolveGradingStatus(round, criteriaCount, confirmedScoreCount);
+        long anyScoreCount = scoreRepository.countBySubmissionIdAndJudgeId(submission.getId(), judge.getId());
+        String gradingStatus = resolveGradingStatus(round, criteriaCount, confirmedScoreCount, draftScoreCount, anyScoreCount);
 
         return new JudgeSubmissionAssignmentResponse(
                 submission.getId(),
@@ -389,7 +399,10 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                 round == null ? null : round.getSubmissionLockedAt(),
                 confirmedScoreCount,
                 criteriaCount,
-                gradingStatus
+                draftScoreCount,
+                gradingStatus,
+                round != null && round.getGradingLockedAt() != null,
+                round == null ? null : round.getGradingLockedAt()
         );
     }
 
@@ -404,12 +417,16 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                 .count();
     }
 
-    private String resolveGradingStatus(Round round, long criteriaCount, long confirmedScoreCount) {
-        if (criteriaCount > 0 && confirmedScoreCount >= criteriaCount) {
-            return "GRADED";
+    private String resolveGradingStatus(Round round, long criteriaCount, long confirmedScoreCount,
+                                        long draftScoreCount, long anyScoreCount) {
+        if (round != null && round.getGradingLockedAt() != null) {
+            return "LOCKED";
         }
-        if (round != null && round.isSubmissionLocked()) {
-            return "READY";
+        if (criteriaCount > 0 && confirmedScoreCount >= criteriaCount) {
+            return "SUBMITTED";
+        }
+        if (draftScoreCount > 0 || anyScoreCount > 0) {
+            return "DRAFT_SAVED";
         }
         return "PENDING";
     }

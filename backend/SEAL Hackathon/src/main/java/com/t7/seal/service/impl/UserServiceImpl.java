@@ -24,6 +24,7 @@ import com.t7.seal.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -477,7 +478,7 @@ public class UserServiceImpl implements UserService {
 
         Page<User> result = userRepository.findAll(
                 spec,
-                PageRequest.of(safePage, safeSize)
+                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"))
         );
 
         return new PageResponse<>(
