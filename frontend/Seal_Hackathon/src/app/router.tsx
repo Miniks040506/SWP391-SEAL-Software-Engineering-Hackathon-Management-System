@@ -13,6 +13,7 @@ import {
   JudgeSubmissionDetailPage,
   JudgeSubmissionsPage,
 } from "@/features/judge";
+import { JudgeScoreSheetPage } from "@/features/grading/pages/JudgeScoreSheetPage";
 
 import {
   MentorDashboardPage,
@@ -202,6 +203,10 @@ export const router = createBrowserRouter([
       {
         path: "submissions/:submissionId",
         element: <JudgeSubmissionDetailPage />,
+      },
+      {
+        path: "submissions/:submissionId/score",
+        element: <JudgeScoreSheetPage />,
       },
       { path: "scoring", element: <NotFoundPage /> },
       { path: "calibration", element: <NotFoundPage /> },
