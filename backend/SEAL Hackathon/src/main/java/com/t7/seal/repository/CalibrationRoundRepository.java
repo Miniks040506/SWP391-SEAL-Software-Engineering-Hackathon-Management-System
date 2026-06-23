@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface CalibrationRoundRepository extends JpaRepository<CalibrationRound, UUID> {
 
+    List<CalibrationRound> findByEventIdOrderByStartAtAsc(UUID eventId);
+    
 }

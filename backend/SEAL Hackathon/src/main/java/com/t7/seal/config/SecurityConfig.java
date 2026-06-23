@@ -201,11 +201,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/criteria").hasAnyRole("JUDGE", "COORDINATOR")
 
                         // Calibration
-                        .requestMatchers(HttpMethod.POST, API + "/calibrations").hasRole("COORDINATOR")
-                        .requestMatchers(HttpMethod.PATCH, API + "/calibrations/*").hasRole("COORDINATOR")
-                        .requestMatchers(HttpMethod.POST, API + "/calibrations/*/publish-distribution").hasRole("COORDINATOR")
-                        .requestMatchers(HttpMethod.GET, API + "/calibrations/**").hasAnyRole("JUDGE", "COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/calibrations").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, API + "/events/*/calibration-rounds").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, API + "/calibrations/*").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, API + "/calibration-rounds/*").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, API + "/calibrations/*/publish-distribution").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, API + "/calibration-rounds/*/publish-distribution").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, API + "/calibrations/**").hasAnyRole("JUDGE", "COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, API + "/calibration-rounds/**").hasAnyRole("JUDGE", "COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, API + "/events/*/calibration-rounds").hasAnyRole("JUDGE", "COORDINATOR", "ADMIN")
                         .requestMatchers(HttpMethod.POST, API + "/calibrations/*/scores").hasRole("JUDGE")
+                        .requestMatchers(HttpMethod.POST, API + "/calibration-rounds/*/scores").hasRole("JUDGE")
 
                         // Disqualification
                         .requestMatchers(HttpMethod.POST, API + "/disqualifications").hasRole("COORDINATOR")

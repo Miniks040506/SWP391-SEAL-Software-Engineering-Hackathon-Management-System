@@ -67,9 +67,21 @@ export const roundApi = {
     );
   },
 
+  getGradingStatus(roundId: UUID) {
+    return apiRequest.get<ScoringProgressResponse>(
+      `/rounds/${roundId}/grading-status`,
+    );
+  },
+
   getAdvancementPreview(roundId: UUID) {
     return apiRequest.get<AdvancementPreviewResponse>(
       `/rounds/${roundId}/advancement-preview`,
+    );
+  },
+
+  previewAdvanceRules(roundId: UUID) {
+    return apiRequest.post<AdvancementPreviewResponse>(
+      `/rounds/${roundId}/advance-rules/preview`,
     );
   },
 
