@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
@@ -11,6 +12,7 @@ import com.t7.seal.request.grading.SaveScoreSheetRequest;
 import com.t7.seal.request.grading.ScoreItemRequest;
 import com.t7.seal.response.grading.ScoreResponse;
 import com.t7.seal.response.grading.ScoreSheetResponse;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.GradingService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ public class GradingServiceImpl implements GradingService {
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final EventCriteriaRepository eventCriteriaRepository;
     private final ScoreRepository scoreRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     @Override
@@ -60,6 +63,9 @@ public class GradingServiceImpl implements GradingService {
 
         upsertScore(submission, judge, saveScoreSheetRequest, true, false);
 
+        recordAuditLog(judge.getUser(), AuditActionType.SCORE_CREATE,
+                submission, Map.of("mode", "DRAFT"));
+
         return toScoreSheetResponse(submission, judge);
     }
 
@@ -76,6 +82,9 @@ public class GradingServiceImpl implements GradingService {
         ensureJudgeCanMutate(submission, judge, true);
 
         upsertScore(submission, judge, saveScoreSheetRequest, false, true);
+
+        recordAuditLog(judge.getUser(), AuditActionType.SCORE_CONFIRMED,
+                submission, Map.of("mode", "FINAL_SUBMIT"));
 
         return toScoreSheetResponse(submission, judge);
     }
@@ -273,5 +282,37 @@ public class GradingServiceImpl implements GradingService {
                 throw new BadRequestException("All active criteria must be scored before final submission.");
             }
         }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private void recordAuditLog(User actor, AuditActionType actionType,
+                                Submission submission, Map<String, Object> context) {
+
+        Map<String, Object> saveContext = new HashMap<>();
+        if (context != null) {
+            saveContext.putAll(context);
+        }
+        saveContext.put("roundId", submission.getRound().getId().toString());
+        saveContext.put("eventId", submission.getRound().getEvent().getId().toString());
+
+        if (submission.getTeam() != null) {
+            saveContext.put("teamId", submission.getTeam().getId().toString());
+        }
+
+        auditLogService.record(
+                actor,
+                actionType,
+                "score",
+                submission.getId(),
+                null,
+                Map.of("submissionId", submission.getId().toString()),
+                saveContext
+        );
     }
 }
