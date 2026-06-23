@@ -2,6 +2,7 @@ package com.t7.seal.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
@@ -16,6 +17,7 @@ import com.t7.seal.request.calibration.UpdateCalibrationRoundRequest;
 import com.t7.seal.response.calibration.*;
 import com.t7.seal.response.criteria.EventCriteriaResponse;
 import com.t7.seal.response.submission.SubmissionLinkResponse;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CalibrationService;
 import com.t7.seal.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
@@ -38,17 +40,65 @@ public class CalibrationServiceImpl implements CalibrationService {
     private final JudgeRepository judgeRepository;
     private final RoundJudgeAssignmentRepository assignmentRepository;
     private final SubmissionLinkRepository submissionLinkRepository;
+    private final HackathonEventRepository eventRepository;
+    private final SubmissionRepository submissionRepository;
 
     private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional
     public CalibrationRoundResponse createCalibrationRound(
-            UUID eventId,
+            UUID pathEventId,
             CreateCalibrationRoundRequest request,
             Authentication authentication
     ) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCoordinatorOrAdmin(actor);
+
+        UUID eventId = resolveEventId(pathEventId, request.eventId());
+        if (eventId == null) {
+            throw new BadRequestException("eventId is required.");
+        }
+        if (request.sampleSubmissionId() == null) {
+            throw new BadRequestException("sampleSubmissionId is required.");
+        }
+        validateTimeRange(request.startAt(), request.endAt());
+
+        HackathonEvent event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found."));
+        Submission sample = submissionRepository.findDetailById(request.sampleSubmissionId())
+                .orElseThrow(() -> new NotFoundException("Sample submission not found."));
+        ensureSubmissionBelongsToEvent(sample, event.getId());
+
+        Map<String, Float> benchmarkScores = parseBenchmarkScores(request.benchmarkScores());
+        validateBenchmarkCriteria(event.getId(), sample, benchmarkScores);
+
+        CalibrationRound calibrationRound = CalibrationRound.builder()
+                .event(event)
+                .sampleSubmission(sample)
+                .benchmarkScores(benchmarkScores)
+                .description(request.description())
+                .startAt(request.startAt())
+                .endAt(request.endAt())
+                .isMandatory(request.mandatory() == null || request.mandatory())
+                .build();
+
+        CalibrationRound saved = calibrationRoundRepository.save(calibrationRound);
+        auditLogService.record(
+                actor,
+                AuditActionType.CALIBRATION_ROUND_CREATED,
+                "calibration_rounds",
+                saved.getId(),
+                null,
+                Map.of(
+                        "eventId", event.getId(),
+                        "sampleSubmissionId", sample.getId(),
+                        "mandatory", saved.getIsMandatory()
+                ),
+                Map.of("source", "SPRINT_3_PERIOD_1")
+        );
+        return toRoundResponse(saved);
     }
 
     @Override
