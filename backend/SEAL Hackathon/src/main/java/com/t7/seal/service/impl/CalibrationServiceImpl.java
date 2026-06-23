@@ -104,7 +104,10 @@ public class CalibrationServiceImpl implements CalibrationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CalibrationRoundResponse> getCalibrationRoundsByEvent(UUID eventId, Authentication authentication) {
+    public List<CalibrationRoundResponse> getCalibrationRoundsByEvent(
+            UUID eventId,
+            Authentication authentication
+    ) {
         User user = currentUserService.getCurrentUser(authentication);
 
         if (eventId == null) {
@@ -126,7 +129,10 @@ public class CalibrationServiceImpl implements CalibrationService {
             UUID calibrationRoundId,
             Authentication authentication
     ) {
-        return null;
+        CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        User user = currentUserService.getCurrentUser(authentication);
+        ensureCanAccessEventCalibration(user, calibrationRound.getEvent().getId());
+        return toRoundDetailResponse(calibrationRound);
     }
 
     @Override
