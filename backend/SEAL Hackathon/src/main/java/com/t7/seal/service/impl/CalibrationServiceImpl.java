@@ -1,5 +1,9 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.entities.CalibrationRound;
+import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.repository.CalibrationRoundRepository;
 import com.t7.seal.request.calibration.CreateCalibrationRoundRequest;
 import com.t7.seal.request.calibration.SubmitCalibrationScoreRequest;
 import com.t7.seal.request.calibration.UpdateCalibrationRoundRequest;
@@ -16,6 +20,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class CalibrationServiceImpl implements CalibrationService {
+
+    private final CalibrationRoundRepository calibrationRoundRepository;
 
     @Override
     @Transactional
@@ -99,5 +105,20 @@ public class CalibrationServiceImpl implements CalibrationService {
             Authentication authentication
     ) {
         return null;
+    }
+
+    private CalibrationRound findRound(UUID calibrationRoundId) {
+        if (calibrationRoundId == null) {
+            throw new BadRequestException("calibrationRoundId is required.");
+        }
+        return calibrationRoundRepository.findById(calibrationRoundId)
+                .orElseThrow(() -> new NotFoundException("Calibration round not found."));
+    }
+
+    private UUID resolveEventId(UUID pathEventId, UUID bodyEventId) {
+        if (pathEventId != null && bodyEventId != null && !pathEventId.equals(bodyEventId)) {
+            throw new BadRequestException("Path eventId does not match request eventId.");
+        }
+        return pathEventId != null ? pathEventId : bodyEventId;
     }
 }
