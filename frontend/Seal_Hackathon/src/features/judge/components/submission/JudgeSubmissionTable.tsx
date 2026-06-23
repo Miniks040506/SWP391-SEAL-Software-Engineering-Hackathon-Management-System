@@ -12,16 +12,32 @@ type Props = {
 
 function getGradingChip(sub: JudgeSubmissionAssignmentResponse) {
   if (sub.roundSubmissionLocked) {
-    return { label: "Locked", color: "error" as const, variant: "filled" as const };
+    return {
+      label: "Locked",
+      color: "error" as const,
+      variant: "filled" as const,
+    };
   }
   switch (sub.gradingStatus) {
     case "GRADED":
-      return { label: "Submitted", color: "success" as const, variant: "filled" as const };
+      return {
+        label: "Submitted",
+        color: "success" as const,
+        variant: "filled" as const,
+      };
     case "READY":
-      return { label: "Draft Saved", color: "info" as const, variant: "outlined" as const };
+      return {
+        label: "Draft Saved",
+        color: "info" as const,
+        variant: "outlined" as const,
+      };
     case "PENDING":
     default:
-      return { label: "Pending", color: "warning" as const, variant: "outlined" as const };
+      return {
+        label: "Pending",
+        color: "warning" as const,
+        variant: "outlined" as const,
+      };
   }
 }
 
@@ -36,7 +52,8 @@ export const JudgeSubmissionTable = ({ submissions }: Props) => {
           No Submissions Assigned
         </h3>
         <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
-          You currently have no submissions in your grading queue for this round.
+          You currently have no submissions in your grading queue for this
+          round.
         </p>
       </div>
     );
@@ -60,17 +77,28 @@ export const JudgeSubmissionTable = ({ submissions }: Props) => {
             const isLocked = sub.roundSubmissionLocked;
 
             return (
-              <tr key={sub.submissionId} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <tr
+                key={sub.submissionId}
+                className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              >
                 <td className="px-6 py-4 min-w-[200px]">
-                  <p className="font-extrabold text-gray-900 dark:text-white">{sub.teamName}</p>
-                  <p className="truncate text-xs font-medium text-gray-500 max-w-[250px]">{sub.projectTitle || "No project title"}</p>
+                  <p className="font-extrabold text-gray-900 dark:text-white">
+                    {sub.teamName}
+                  </p>
+                  <p className="truncate text-xs font-medium text-gray-500 max-w-[250px]">
+                    {sub.projectTitle || "No project title"}
+                  </p>
                 </td>
                 <td className="px-6 py-4 min-w-[150px]">
-                  <p className="font-bold text-gray-700 dark:text-slate-200">{sub.trackName || "General"}</p>
+                  <p className="font-bold text-gray-700 dark:text-slate-200">
+                    {sub.trackName || "General"}
+                  </p>
                   <p className="text-xs text-gray-500">{sub.roundName}</p>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {sub.submittedAt ? format(new Date(sub.submittedAt), "MMM dd, yyyy HH:mm") : "Not submitted"}
+                  {sub.submittedAt
+                    ? format(new Date(sub.submittedAt), "MMM dd, yyyy HH:mm")
+                    : "Not submitted"}
                 </td>
                 <td className="px-6 py-4">
                   <Chip
@@ -86,16 +114,24 @@ export const JudgeSubmissionTable = ({ submissions }: Props) => {
                     variant="contained"
                     size="small"
                     disabled={isLocked}
-                    onClick={() => navigate(`/judge/submissions/${sub.submissionId}`, {
-                      state: { roundSubmissionLocked: sub.roundSubmissionLocked, assignmentInfo: sub }
-                    })}
+                    onClick={() =>
+                      navigate(`/judge/submissions/${sub.submissionId}`, {
+                        state: {
+                          roundSubmissionLocked: sub.roundSubmissionLocked,
+                          assignmentInfo: sub,
+                        },
+                      })
+                    }
                     sx={{
                       bgcolor: isLocked ? undefined : "#2563eb",
                       fontWeight: 700,
                       textTransform: "none",
                       borderRadius: "8px",
                       boxShadow: "none",
-                      "&:hover": { bgcolor: isLocked ? undefined : "#1d4ed8", boxShadow: "none" },
+                      "&:hover": {
+                        bgcolor: isLocked ? undefined : "#1d4ed8",
+                        boxShadow: "none",
+                      },
                     }}
                   >
                     {isLocked ? "Locked" : "View submission"}
