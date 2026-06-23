@@ -130,11 +130,35 @@ public class GradingServiceImpl implements GradingService {
         return toScoreSheetResponse(submission, judge);
     }
 
+    @Transactional
     @Override
     public ScoreResponse updateScore(UUID scoreId, Authentication authentication) {
         Judge judge = currentJudge(authentication);
+        Score score = getScore(scoreId);
 
-        return null;
+        if (!judge.getId().equals(score.getJudge().getId())) {
+            throw new UnauthorizedException("You are not authorized to modify this score.");
+        }
+
+        ensureJudgeCanMutate(score.getSubmission(), judge, false);
+
+        if (score.isConfirmed()) {
+            throw new ConflictException("Final submitted score cannot be edited.");
+        }
+
+        validateScoreValue(score.getEventCriteria(), score.getValue().doubleValue());
+
+        score.setValue(score.getValue().floatValue());
+        score.setComment(trimToNull(score.getComment()));
+        score.markAsDraft();
+
+        Score saved = scoreRepository.save(score);
+        recordAuditLog(judge.getUser(), AuditActionType.SCORE_UPDATE, score.getSubmission(), Map.of(
+                "scoreId", score.getId().toString(),
+                "eventCriteriaId", score.getEventCriteria().getId().toString()
+        ));
+
+        return toScoreResponse(saved);
     }
 
     @Override
