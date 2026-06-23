@@ -100,7 +100,11 @@ public class GradingController {
             @Valid @RequestBody SaveScoreSheetRequest request,
             Authentication authentication
     ) {
-        return null;
+        boolean draft = request.draft() == null || request.draft();
+
+        return ResponseEntity.ok(draft
+                ? gradingService.saveDraft(submissionId, request, authentication)
+                : gradingService.submitFinal(submissionId, request, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
