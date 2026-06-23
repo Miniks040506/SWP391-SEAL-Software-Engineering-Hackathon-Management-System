@@ -2,6 +2,7 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.entities.*;
+import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.grading.ConfirmScoreSheetRequest;
@@ -42,17 +43,26 @@ public class GradingServiceImpl implements GradingService {
         return toScoreSheetResponse(submission, judge);
     }
 
+    @Transactional
     @Override
     public ScoreSheetResponse saveDraft(
             UUID submissionId,
             SaveScoreSheetRequest saveScoreSheetRequest,
             Authentication authentication
     ) {
+        Judge judge = currentJudge(authentication);
+        Submission submission = getSubmission(submissionId);
+        ensureJudgeCanMutate(submission, judge);
         return null;
     }
 
+    @Transactional
     @Override
-    public ScoreSheetResponse submitFinal(UUID submissionId, SaveScoreSheetRequest saveScoreSheetRequest, Authentication authentication) {
+    public ScoreSheetResponse submitFinal(
+            UUID submissionId,
+            SaveScoreSheetRequest saveScoreSheetRequest,
+            Authentication authentication
+    ) {
         return null;
     }
 
@@ -101,7 +111,24 @@ public class GradingServiceImpl implements GradingService {
         }
 
         if (!isScorable(submission)) {
-            throw new UnauthorizedException("Only submitted or late submissions can be viewed and graded.");
+            throw new ConflictException("Only submitted or late submissions can be viewed and graded.");
+        }
+    }
+
+    private void ensureJudgeCanMutate(Submission submission, Judge judge, boolean finalSubmit) {
+        ensureJudgeCanView(judge, submission);
+
+        Round round = submission.getRound();
+        if (round.getSubmissionLockedAt() == null) {
+            throw new ConflictException("Submission window must be locked before judge can start.");
+        }
+
+        if (round.getGradingLockedAt() != null) {
+            throw new ConflictException("Grading is locked for this round.");
+        }
+
+        if (finalSubmit && activeCriteriaFor(submission).isEmpty()) {
+            throw new ConflictException("No active scoring criteria are available for this round.");
         }
     }
 
@@ -119,6 +146,16 @@ public class GradingServiceImpl implements GradingService {
     private boolean isScorable(Submission submission) {
         return submission.getStatus() == SubmissionStatus.SUBMITTED
                 || submission.getStatus() == SubmissionStatus.LATE;
+    }
+
+    private List<EventCriteria> activeCriteriaFor(Submission submission) {
+        Round round = submission.getRound();
+        UUID roundId = round.getId();
+
+        return eventCriteriaRepository.findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
+                .stream()
+                .filter(c -> c.appliesToRound(roundId))
+                .toList();
     }
 
     private ScoreSheetResponse toScoreSheetResponse(Submission submission, Judge judge) {
@@ -140,16 +177,6 @@ public class GradingServiceImpl implements GradingService {
         );
     }
 
-    private List<EventCriteria> activeCriteriaFor(Submission submission) {
-        Round round = submission.getRound();
-        UUID roundId = round.getId();
-
-        return eventCriteriaRepository.findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
-                .stream()
-                .filter(c -> c.appliesToRound(roundId))
-                .toList();
-    }
-
     private ScoreResponse toScoreResponse(Score score) {
         return new ScoreResponse(
                 score.getId(),
@@ -162,4 +189,5 @@ public class GradingServiceImpl implements GradingService {
                 score.getScoredAt()
         );
     }
+
 }
