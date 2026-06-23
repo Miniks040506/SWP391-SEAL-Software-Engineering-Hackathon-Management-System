@@ -7,7 +7,6 @@ import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import Chip from "@mui/material/Chip";
 
 import { useJudgeSubmissionDetailQuery } from "../hooks/useJudge";
-import { JudgeGradingPanel } from "../components/submission/JudgeGradingPanel";
 
 export const JudgeSubmissionDetailPage = () => {
   const { submissionId } = useParams<{ submissionId: string }>();
@@ -71,18 +70,23 @@ export const JudgeSubmissionDetailPage = () => {
       </Card>
 
       {criteria.length > 0 ? (
-        <JudgeGradingPanel
-          submissionId={detail.submissionId}
-          criteria={criteria.map(c => ({
-            id: c.id,
-            name: c.effectiveName || "",
-            description: c.effectiveDescription || "",
-            maxScore: c.effectiveMaxScore || 0
-          }))}
-          gradingStatus={(detail as any).gradingStatus || "PENDING"}
-          scoredData={(detail as any).scoredData}
-          isLocked={isLocked}
-        />
+        <Card variant="outlined" className="rounded-2xl border-blue-200 bg-blue-50/30 dark:border-blue-900/50 dark:bg-slate-800/80">
+          <CardContent className="p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div>
+              <h2 className="text-xl font-extrabold text-blue-900 dark:text-blue-400">Scoring Ready</h2>
+              <p className="mt-1 text-sm font-medium text-blue-600/80 dark:text-blue-300/80">
+                This submission is ready for grading. Click below to open the interactive score sheet.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate(`/judge/submissions/${detail.submissionId}/score`, { state })}
+              className="rounded-xl bg-blue-600 px-6 py-3 font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+              disabled={isLocked}
+            >
+              Open Score Sheet
+            </button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="rounded-2xl border border-dashed border-rose-300 bg-rose-50 p-8 text-center text-rose-600 dark:border-rose-900/50 dark:bg-rose-900/10">
           <p className="font-bold">No scoring criteria configured for this round.</p>
