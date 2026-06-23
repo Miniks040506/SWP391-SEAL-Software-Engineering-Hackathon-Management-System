@@ -55,8 +55,8 @@ public class CalibrationServiceImpl implements CalibrationService {
     ) {
         User actor = currentUserService.getCurrentUser(authentication);
         ensureCoordinatorOrAdmin(actor);
-
         UUID eventId = resolveEventId(pathEventId, request.eventId());
+
         if (eventId == null) {
             throw new BadRequestException("eventId is required.");
         }
@@ -98,16 +98,26 @@ public class CalibrationServiceImpl implements CalibrationService {
                 ),
                 Map.of("source", "SPRINT_3_PERIOD_1")
         );
+
         return toRoundResponse(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CalibrationRoundResponse> getCalibrationRoundsByEvent(
-            UUID eventId,
-            Authentication authentication
-    ) {
-        return List.of();
+    public List<CalibrationRoundResponse> getCalibrationRoundsByEvent(UUID eventId, Authentication authentication) {
+        User user = currentUserService.getCurrentUser(authentication);
+
+        if (eventId == null) {
+            throw new BadRequestException("eventId is required.");
+        }
+
+        eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found."));
+        ensureCanAccessEventCalibration(user, eventId);
+
+        return calibrationRoundRepository.findByEventIdOrderByStartAtAsc(eventId)
+                .stream()
+                .map(this::toRoundResponse)
+                .toList();
     }
 
     @Override
