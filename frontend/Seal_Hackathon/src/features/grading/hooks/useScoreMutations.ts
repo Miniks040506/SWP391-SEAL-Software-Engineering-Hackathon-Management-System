@@ -1,24 +1,32 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { gradingApi } from "@/api/grading.api";
+import type { SaveScoreSheetRequest } from "@/types/grading.types";
 
-export const useScoreMutations = () => {
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+export function useScoreMutations(submissionId: string) {
+  const queryClient = useQueryClient();
 
-  const saveDraft = async (data: any) => {
-    setIsSaving(true);
-    console.log("Saving draft...", data);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setLastSavedAt(new Date());
-    setIsSaving(false);
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["grading", "scoreSheet", submissionId] });
   };
 
-  const finalSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    console.log("Final submitting...", data);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSubmitting(false);
-  };
+  const saveDraft = useMutation({
+    mutationFn: (payload: SaveScoreSheetRequest) =>
+      gradingApi.saveDraftScores(submissionId, payload),
+    onSuccess: invalidate,
+  });
 
-  return { saveDraft, finalSubmit, isSaving, isSubmitting, lastSavedAt };
-};
+  const finalSubmit = useMutation({
+    mutationFn: (payload: SaveScoreSheetRequest) =>
+      gradingApi.submitFinalScores(submissionId, payload),
+    onSuccess: invalidate,
+  });
+
+  return {
+    saveDraft: saveDraft.mutateAsync,
+    finalSubmit: finalSubmit.mutateAsync,
+    isSaving: saveDraft.isPending,
+    isSubmitting: finalSubmit.isPending,
+    // Add dummy lastSavedAt to maintain interface compatibility with UI draft bar
+    lastSavedAt: new Date(),
+  };
+}

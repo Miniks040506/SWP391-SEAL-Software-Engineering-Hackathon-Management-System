@@ -1,8 +1,13 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import Card from "@mui/material/Card";
+import CircularProgress from "@mui/material/CircularProgress";
+
+import type { EventCriteriaResponse } from "@/types/criteria.types";
+import type { ScoreResponse } from "@/types/grading.types";
 
 import { useScoreSheet } from "../hooks/useScoreSheet";
 import { useScoreMutations } from "../hooks/useScoreMutations";
@@ -13,13 +18,48 @@ import { ScoreDraftBar } from "../components/ScoreDraftBar";
 
 export const JudgeScoreSheetPage = () => {
   const { submissionId } = useParams();
-  const { submission, criteria, isLocked, isFinalSubmitted, isNotReady, isNotAssigned } = useScoreSheet(submissionId);
-  const { saveDraft, finalSubmit, isSaving, isSubmitting, lastSavedAt } = useScoreMutations();
+  const { submission, scoreSheet, isLoading, isError } = useScoreSheet(submissionId!);
+  const { saveDraft, finalSubmit, isSaving, isSubmitting, lastSavedAt } = useScoreMutations(submissionId!);
 
-  const { control, handleSubmit, watch, formState: { isDirty } } = useForm({
+  const { control, handleSubmit, watch, reset, formState: { isDirty } } = useForm({
     defaultValues: { scores: {}, comments: {} },
     mode: "onChange",
   });
+
+  useEffect(() => {
+    if (scoreSheet?.scores) {
+      const defaultScores: Record<string, number> = {};
+      const defaultComments: Record<string, string> = {};
+      scoreSheet.scores.forEach((score: ScoreResponse) => {
+        defaultScores[score.eventCriteriaId] = score.value;
+        if (score.comment) {
+          defaultComments[score.eventCriteriaId] = score.comment;
+        }
+      });
+      reset({ scores: defaultScores, comments: defaultComments });
+    }
+  }, [scoreSheet, reset]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <CircularProgress />
+      </div>
+    );
+  }
+
+  if (isError || !submission) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
+        <Alert severity="error" sx={{ borderRadius: 2 }}>Error loading score sheet.</Alert>
+      </div>
+    );
+  }
+
+  const isLocked = false; // TODO: derive from round grading lock state when API provides it
+  const isFinalSubmitted = scoreSheet?.confirmed ?? false;
+  const isNotReady = false; // TODO: derive from round grading lock state when API provides it
+  const isNotAssigned = false; // TODO: derive from round grading lock state when API provides it
 
   if (isNotAssigned) {
     return (
@@ -41,16 +81,40 @@ export const JudgeScoreSheetPage = () => {
   const scoredCount = Object.values(scores || {}).filter(
     (v) => v !== undefined && v !== null && v.toString() !== ""
   ).length;
-  const allCriteriaScored = scoredCount === criteria.length;
+  const allCriteriaScored = scoredCount === submission.criteria.length;
 
-  const totalPossible = criteria.reduce((sum, c) => sum + c.maxScore * c.weight, 0);
-  const currentTotal = criteria.reduce((sum, c) => {
+  const totalPossible = submission.criteria.reduce((sum: number, c: EventCriteriaResponse) => sum + c.effectiveMaxScore * (c.effectiveWeight || 1), 0);
+  const currentTotal = submission.criteria.reduce((sum: number, c: EventCriteriaResponse) => {
     const val = scores?.[c.id];
-    return sum + (typeof val === "number" ? val * c.weight : 0);
+    return sum + (typeof val === "number" ? val * (c.effectiveWeight || 1) : 0);
   }, 0);
 
-  const onSaveDraft = handleSubmit((data) => saveDraft(data));
-  const onFinalSubmit = handleSubmit((data) => finalSubmit(data));
+  const preparePayload = (data: { scores: Record<string, number>; comments: Record<string, string> }) => {
+    const scoreItems = Object.keys(data.scores || {}).map((criteriaId) => ({
+      eventCriteriaId: criteriaId,
+      value: data.scores[criteriaId],
+      comment: data.comments?.[criteriaId] || undefined,
+    }));
+    return { scores: scoreItems };
+  };
+
+  const onSaveDraft = handleSubmit(async (data) => {
+    try {
+      await saveDraft(preparePayload(data as { scores: Record<string, number>; comments: Record<string, string> }));
+    } catch (err) {
+      console.error("Failed to save draft:", err);
+      // TODO: show toast notification
+    }
+  });
+
+  const onFinalSubmit = handleSubmit(async (data) => {
+    try {
+      await finalSubmit(preparePayload(data as { scores: Record<string, number>; comments: Record<string, string> }));
+    } catch (err) {
+      console.error("Failed to submit scores:", err);
+      // TODO: show toast notification
+    }
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 dark:bg-slate-950">
@@ -68,13 +132,18 @@ export const JudgeScoreSheetPage = () => {
           {/* Left Column (65%) */}
           <div className="flex w-full flex-col gap-6 lg:w-[65%]">
             <ScoreSheetHeader submission={submission} isLocked={isLocked} />
+            {submission.note && (
+              <Typography variant="body2" className="mt-1 text-gray-500 dark:text-slate-400">
+                {submission.note}
+              </Typography>
+            )}
             <SubmissionEvidencePanel links={submission.links} />
             
             <div className="space-y-4 pt-4">
               <Typography variant="h5" className="font-extrabold text-gray-900 dark:text-white">
                 Evaluation Criteria
               </Typography>
-              {criteria.map((crit) => (
+              {submission.criteria.map((crit: EventCriteriaResponse) => (
                 <CriteriaScoreCard
                   key={crit.id}
                   criterion={crit}
@@ -98,7 +167,7 @@ export const JudgeScoreSheetPage = () => {
                   <div className="flex justify-between border-b border-gray-100 pb-4 dark:border-slate-800">
                     <span className="text-gray-500 dark:text-slate-400">Criteria Scored</span>
                     <span className="font-bold text-gray-900 dark:text-white">
-                      {scoredCount} / {criteria.length}
+                      {scoredCount} / {submission.criteria.length}
                     </span>
                   </div>
                   
