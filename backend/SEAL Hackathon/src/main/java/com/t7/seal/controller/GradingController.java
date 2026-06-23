@@ -9,8 +9,10 @@ import com.t7.seal.response.grading.AssignedSubmissionResponse;
 import com.t7.seal.response.grading.GradingSubmissionDetailResponse;
 import com.t7.seal.response.grading.ScoreResponse;
 import com.t7.seal.response.grading.ScoreSheetResponse;
+import com.t7.seal.service.GradingService;
 import com.t7.seal.service.JudgeAssignmentService;
 import jakarta.validation.Valid;
+import jdk.management.jfr.RemoteRecordingStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class GradingController {
 
     private final JudgeAssignmentService judgeAssignmentService;
+    private final GradingService gradingService;
 
     @PreAuthorize("hasRole('JUDGE')")
     @GetMapping("/rounds/{roundId}/assigned-submissions")
@@ -49,43 +52,87 @@ public class GradingController {
         return ResponseEntity.ok(judgeAssignmentService.getMySubmissionDetail(submissionId, authentication));
     }
 
+    @PreAuthorize("hasRole('JUDGE')")
+    @GetMapping({
+            "/submissions/{submissionId}/score-sheet",
+            "/submissions/{submissionId}/my-scores",
+    })
+    public ResponseEntity<ScoreSheetResponse> getScoreSheet(
+            @PathVariable UUID submissionId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(gradingService.getScoreSheets(submissionId, authentication));
+    }
+
+    @PreAuthorize("hasRole('JUDGE')")
     @GetMapping("/submissions/{submissionId}/scores")
     public ResponseEntity<ScoreSheetResponse> getMyScoresForSubmission(
-            @PathVariable("submissionId") UUID submissionId
+            @PathVariable UUID submissionId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.getScoreSheets(submissionId, authentication));
     }
 
+    @PreAuthorize("hasRole('JUDGE')")
+    @PostMapping("/submissions/{submissionId}/scores/draft")
+    public ResponseEntity<ScoreSheetResponse> saveDraftScores(
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody SaveScoreSheetRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(gradingService.saveDraft(submissionId, request, authentication));
+    }
+
+    @PreAuthorize("hasRole('JUDGE')")
+    @PostMapping("/submissions/{submissionId}/scores/submit")
+    public ResponseEntity<ScoreSheetResponse> submitFinalScores(
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody SaveScoreSheetRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(gradingService.submitFinal(submissionId, request, authentication));
+    }
+
+    @PreAuthorize("hasRole('JUDGE')")
     @PostMapping("/submissions/{submissionId}/scores")
     public ResponseEntity<ScoreSheetResponse> saveScores(
-            @PathVariable("submissionId") UUID submissionId,
-            @Valid @RequestBody SaveScoreSheetRequest request
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody SaveScoreSheetRequest request,
+            Authentication authentication
     ) {
-        return null;
+        boolean draft = request.draft() == null || request.draft();
+
+        return ResponseEntity.ok(draft
+                ? gradingService.saveDraft(submissionId, request, authentication)
+                : gradingService.submitFinal(submissionId, request, authentication));
     }
 
+    @PreAuthorize("hasRole('JUDGE')")
     @PostMapping("/submissions/{submissionId}/scores/confirm")
-    public ResponseEntity<ScoreSheetResponse> confirmScores(
-            @PathVariable("submissionId") UUID submissionId,
-            @Valid @RequestBody ConfirmScoreSheetRequest request
+    public ResponseEntity<ScoreSheetResponse> confirmScoreSheet(
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody ConfirmScoreSheetRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.confirmScoreSheet(submissionId, request, authentication));
     }
 
+    @PreAuthorize("hasRole('JUDGE')")
     @PatchMapping("/scores/{scoreId}")
     public ResponseEntity<ScoreResponse> updateScore(
             @PathVariable("scoreId") UUID scoreId,
-            @Valid @RequestBody UpdateScoreRequest request
+            @Valid @RequestBody UpdateScoreRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.updateScore(scoreId, request, authentication));
     }
 
+    @PreAuthorize("hasRole('JUDGE')")
     @PostMapping("/scores/{scoreId}/confirm")
     public ResponseEntity<ScoreResponse> confirmScore(
-            @PathVariable("scoreId") UUID scoreId
+            @PathVariable("scoreId") UUID scoreId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.confirmScore(scoreId, authentication));
     }
-
-
 }

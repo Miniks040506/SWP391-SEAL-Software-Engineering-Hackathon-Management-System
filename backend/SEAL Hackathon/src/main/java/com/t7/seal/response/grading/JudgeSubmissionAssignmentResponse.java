@@ -20,6 +20,9 @@ public record JudgeSubmissionAssignmentResponse(
         LocalDateTime roundSubmissionLockedAt,
         long confirmedScoreCount,
         long criteriaCount,
-        String gradingStatus
+        long draftScoreCount,
+        String gradingStatus,
+        boolean gradingLocked,
+        LocalDateTime gradingLockedAt
 ) {
 }
