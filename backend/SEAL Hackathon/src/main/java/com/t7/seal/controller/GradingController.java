@@ -124,7 +124,7 @@ public class GradingController {
             @Valid @RequestBody UpdateScoreRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.updateScore(scoreId, request, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")

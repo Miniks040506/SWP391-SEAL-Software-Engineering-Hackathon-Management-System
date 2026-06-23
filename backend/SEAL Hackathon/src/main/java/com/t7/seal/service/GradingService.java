@@ -2,6 +2,7 @@ package com.t7.seal.service;
 
 import com.t7.seal.request.grading.ConfirmScoreSheetRequest;
 import com.t7.seal.request.grading.SaveScoreSheetRequest;
+import com.t7.seal.request.grading.UpdateScoreRequest;
 import com.t7.seal.response.grading.ScoreResponse;
 import com.t7.seal.response.grading.ScoreSheetResponse;
 import org.springframework.security.core.Authentication;
@@ -23,7 +24,7 @@ public interface GradingService {
                                          ConfirmScoreSheetRequest confirmScoreSheetRequest,
                                          Authentication authentication);
 
-    ScoreResponse updateScore(UUID scoreId, Authentication authentication);
+    ScoreResponse updateScore(UUID scoreId, UpdateScoreRequest request, Authentication authentication);
 
     ScoreResponse confirmScore(UUID scoreId, Authentication authentication);
 }

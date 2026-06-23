@@ -10,6 +10,7 @@ import com.t7.seal.repository.*;
 import com.t7.seal.request.grading.ConfirmScoreSheetRequest;
 import com.t7.seal.request.grading.SaveScoreSheetRequest;
 import com.t7.seal.request.grading.ScoreItemRequest;
+import com.t7.seal.request.grading.UpdateScoreRequest;
 import com.t7.seal.response.grading.ScoreResponse;
 import com.t7.seal.response.grading.ScoreSheetResponse;
 import com.t7.seal.service.AuditLogService;
@@ -132,7 +133,11 @@ public class GradingServiceImpl implements GradingService {
 
     @Transactional
     @Override
-    public ScoreResponse updateScore(UUID scoreId, Authentication authentication) {
+    public ScoreResponse updateScore(
+            UUID scoreId,
+            UpdateScoreRequest request,
+            Authentication authentication
+    ) {
         Judge judge = currentJudge(authentication);
         Score score = getScore(scoreId);
 
@@ -146,10 +151,10 @@ public class GradingServiceImpl implements GradingService {
             throw new ConflictException("Final submitted score cannot be edited.");
         }
 
-        validateScoreValue(score.getEventCriteria(), score.getValue().doubleValue());
+        validateScoreValue(score.getEventCriteria(), request.value());
 
-        score.setValue(score.getValue().floatValue());
-        score.setComment(trimToNull(score.getComment()));
+        score.setValue(request.value().floatValue());
+        score.setComment(trimToNull(request.comment()));
         score.markAsDraft();
 
         Score saved = scoreRepository.save(score);
