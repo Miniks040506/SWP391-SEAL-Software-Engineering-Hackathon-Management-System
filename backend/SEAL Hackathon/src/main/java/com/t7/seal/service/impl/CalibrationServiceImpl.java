@@ -348,7 +348,32 @@ public class CalibrationServiceImpl implements CalibrationService {
             UUID calibrationRoundId,
             Authentication authentication
     ) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCoordinatorOrAdmin(actor);
+
+        CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        if (calibrationRound.isDistributionPublished()) {
+            return toRoundResponse(calibrationRound);
+        }
+
+        long scoreRows = calibrationScoreRepository.countByCalibrationRoundId(calibrationRound.getId());
+        if (scoreRows == 0) {
+            throw new ConflictException("Cannot publish distribution before judges submit calibration scores.");
+        }
+        calibrationRound.publishDistribution();
+
+        CalibrationRound saved = calibrationRoundRepository.save(calibrationRound);
+        auditLogService.record(
+                actor,
+                AuditActionType.CALIBRATION_PUBLISHED,
+                "calibration_rounds",
+                saved.getId(),
+                null,
+                Map.of("distributionPublishedAt", saved.getDistributionPublishedAt()),
+                Map.of("source", "SPRINT_3_PERIOD_1")
+        );
+
+        return toRoundResponse(saved);
     }
 
     private CalibrationRound findRound(UUID calibrationRoundId) {
