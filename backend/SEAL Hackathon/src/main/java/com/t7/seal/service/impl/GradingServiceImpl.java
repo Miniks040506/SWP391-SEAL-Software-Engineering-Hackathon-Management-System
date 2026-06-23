@@ -2,11 +2,13 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.entities.*;
+import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.grading.ConfirmScoreSheetRequest;
 import com.t7.seal.request.grading.SaveScoreSheetRequest;
+import com.t7.seal.request.grading.ScoreItemRequest;
 import com.t7.seal.response.grading.ScoreResponse;
 import com.t7.seal.response.grading.ScoreSheetResponse;
 import com.t7.seal.service.CurrentUserService;
@@ -17,8 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +55,11 @@ public class GradingServiceImpl implements GradingService {
     ) {
         Judge judge = currentJudge(authentication);
         Submission submission = getSubmission(submissionId);
-        ensureJudgeCanMutate(submission, judge);
+
+        ensureJudgeCanMutate(submission, judge, false);
+
+        upsertScore(submission, judge, saveScoreSheetRequest, true, false);
+
         return null;
     }
 
@@ -158,6 +165,22 @@ public class GradingServiceImpl implements GradingService {
                 .toList();
     }
 
+    private void validateCriteriaForValue(EventCriteria criterion, Double value) {
+
+        if (value == null) {
+            throw new BadRequestException("Score value cannot be null.");
+        }
+
+        if (value < 0) {
+            throw new BadRequestException("Score value must be greater than or equal to 0.");
+        }
+
+        Float max = criterion.getEffectiveMaxScore();
+        if (max != null && value > max) {
+            throw new BadRequestException("Score value must be less than or equal to the max score.");
+        }
+    }
+
     private ScoreSheetResponse toScoreSheetResponse(Submission submission, Judge judge) {
         List<ScoreResponse> scores = scoreRepository
                 .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(submission.getId(), judge.getId())
@@ -190,4 +213,58 @@ public class GradingServiceImpl implements GradingService {
         );
     }
 
+    private void upsertScore(Submission submission, Judge judge, SaveScoreSheetRequest request,
+                             boolean draft, boolean requiredAllCriteria) {
+        if (request == null || request.scores() == null || request.scores().isEmpty()) {
+            throw new BadRequestException("Score sheet must contain at least one score.");
+        }
+
+        List<EventCriteria> activeCriteria = activeCriteriaFor(submission);
+        Map<UUID, EventCriteria> criteriaById = activeCriteria.stream()
+                .collect(Collectors.toMap(EventCriteria::getId, Function.identity()));
+        Set<UUID> seenCriteria = new HashSet<>();
+
+        if (requiredAllCriteria && request.scores().size() < activeCriteria.size()) {
+            throw new BadRequestException("All active must be score before final submission.");
+        }
+
+        for (ScoreItemRequest scoreItem : request.scores()) {
+            if (!seenCriteria.add(scoreItem.eventCriteriaId())) {
+                throw new BadRequestException("Duplicate score item for criteria.");
+            }
+
+            EventCriteria criterion = criteriaById.get(scoreItem.eventCriteriaId());
+            if (criterion == null) {
+                throw new BadRequestException("Criteria is inactive or not available for this round: "
+                        + scoreItem.eventCriteriaId());
+            }
+
+            validateCriteriaForValue(criterion, scoreItem.value());
+
+            Score score = scoreRepository
+                    .findBySubmissionIdAndJudgeIdAndEventCriteriaId(submission.getId(), judge.getId(), criterion.getId())
+                    .orElseGet(() -> Score.builder()
+                            .submission(submission)
+                            .judge(judge)
+                            .eventCriteria(criterion)
+                            .build());
+
+            if (score.isConfirmed()) {
+                throw new ConflictException("Final submitted score cannot be edited.");
+            }
+
+            score.setValue(scoreItem.value().floatValue());
+            score.setComment(scoreItem.comment());
+            score.setIsDraft(draft);
+            scoreRepository.save(score);
+        }
+
+        if (requiredAllCriteria) {
+            long confirmedCount = scoreRepository.countBySubmissionIdAndJudgeIdAndIsDraftFalse(submission.getId(), judge.getId());
+            long expectedCount = activeCriteria.size();
+            if (confirmedCount < expectedCount) {
+                throw new BadRequestException("All active criteria must be scored before final submission.");
+            }
+        }
+    }
 }

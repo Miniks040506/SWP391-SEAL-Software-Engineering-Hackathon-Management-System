@@ -19,4 +19,6 @@ public interface ScoreRepository extends JpaRepository<Score, UUID> {
     long countBySubmissionIdAndJudgeId(UUID submissionId, UUID judgeId);
 
     List<Score> findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(UUID submissionId, UUID judgeId);
+
+    Optional<Score> findBySubmissionIdAndJudgeIdAndEventCriteriaId(UUID submissionId, UUID judgeId, UUID eventCriteriaId);
 }
