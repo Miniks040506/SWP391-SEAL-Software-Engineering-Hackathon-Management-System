@@ -87,7 +87,7 @@ export const JudgeSubmissionTable = ({ submissions }: Props) => {
                     size="small"
                     disabled={isLocked}
                     onClick={() => navigate(`/judge/submissions/${sub.submissionId}`, {
-                      state: { roundSubmissionLocked: sub.roundSubmissionLocked }
+                      state: { roundSubmissionLocked: sub.roundSubmissionLocked, assignmentInfo: sub }
                     })}
                     sx={{
                       bgcolor: isLocked ? undefined : "#2563eb",

@@ -52,6 +52,11 @@ export const CriteriaScoreCard = ({
         <Controller
           name={`scores.${criterion.id}`}
           control={control}
+          rules={{
+            required: "Score is required",
+            min: { value: 0, message: "Min: 0" },
+            max: { value: criterion.effectiveMaxScore, message: `Max: ${criterion.effectiveMaxScore}` }
+          }}
           render={({ field, fieldState: { error } }) => (
             <FormControl
               error={Boolean(error)}

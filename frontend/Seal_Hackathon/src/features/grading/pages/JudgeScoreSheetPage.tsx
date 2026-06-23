@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import Card from "@mui/material/Card";
@@ -8,6 +8,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 
 import type { EventCriteriaResponse } from "@/types/criteria.types";
 import type { ScoreResponse } from "@/types/grading.types";
+import type { JudgeSubmissionAssignmentResponse } from "@/types/judge.types";
 
 import { useScoreSheet } from "../hooks/useScoreSheet";
 import { useScoreMutations } from "../hooks/useScoreMutations";
@@ -18,7 +19,10 @@ import { ScoreDraftBar } from "../components/ScoreDraftBar";
 
 export const JudgeScoreSheetPage = () => {
   const { submissionId } = useParams();
-  const { submission, scoreSheet, isLoading, isError } = useScoreSheet(
+  const { state } = useLocation();
+  const assignmentInfo = state?.assignmentInfo as JudgeSubmissionAssignmentResponse | undefined;
+
+  const { submission, scoreSheet, isLoading, isError, error } = useScoreSheet(
     submissionId!,
   );
   const { saveDraft, finalSubmit, isSaving, isSubmitting, lastSavedAt } =
@@ -57,6 +61,19 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
+  // Handle 403 Forbidden specifically to meet the requirement: "If user is not assigned: Show 403-style error page"
+  const isForbidden = (error as any)?.response?.status === 403;
+  
+  if (isForbidden) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
+        <Alert severity="error" sx={{ borderRadius: 2 }}>
+          You are not assigned to grade this submission. (403 Forbidden)
+        </Alert>
+      </div>
+    );
+  }
+
   if (isError || !submission) {
     return (
       <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
@@ -67,20 +84,13 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  const isLocked = false; // TODO: derive from round grading lock state when API provides it
+  const isLocked = assignmentInfo?.roundSubmissionLocked ?? false;
   const isFinalSubmitted = scoreSheet?.confirmed ?? false;
-  const isNotReady = false; // TODO: derive from round grading lock state when API provides it
-  const isNotAssigned = false; // TODO: derive from round grading lock state when API provides it
-
-  if (isNotAssigned) {
-    return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
-        <Alert severity="error" sx={{ borderRadius: 2 }}>
-          You are not assigned to grade this submission.
-        </Alert>
-      </div>
-    );
-  }
+  
+  // If assignmentInfo is missing (e.g., direct URL access), we assume it's ready and rely on backend API errors.
+  const isNotReady = assignmentInfo
+    ? assignmentInfo.submissionStatus !== "SUBMITTED" && assignmentInfo.submissionStatus !== "LOCKED"
+    : false;
 
   if (isNotReady) {
     return (
@@ -105,10 +115,13 @@ export const JudgeScoreSheetPage = () => {
   );
   const currentTotal = submission.criteria.reduce(
     (sum: number, c: EventCriteriaResponse) => {
-      const val = scores?.[c.id];
-      return (
-        sum + (typeof val === "number" ? val * (c.effectiveWeight || 1) : 0)
-      );
+      let val = scores?.[c.id];
+      if (typeof val === "number" && !isNaN(val)) {
+        if (val > c.effectiveMaxScore) val = c.effectiveMaxScore;
+        if (val < 0) val = 0;
+        return sum + val * (c.effectiveWeight || 1);
+      }
+      return sum;
     },
     0,
   );
@@ -175,7 +188,7 @@ export const JudgeScoreSheetPage = () => {
         <div className="flex flex-col items-start gap-8 lg:flex-row">
           {/* Left Column (65%) */}
           <div className="flex w-full flex-col gap-6 lg:w-[65%]">
-            <ScoreSheetHeader submission={submission} isLocked={isLocked} />
+            <ScoreSheetHeader submission={submission} isLocked={isLocked} assignmentInfo={assignmentInfo} />
             {submission.note && (
               <Typography
                 variant="body2"

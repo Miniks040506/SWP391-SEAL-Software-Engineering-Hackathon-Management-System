@@ -19,5 +19,6 @@ export function useScoreSheet(submissionId: string) {
     scoreSheet: scoreSheetQuery.data,
     isLoading: submissionQuery.isLoading || scoreSheetQuery.isLoading,
     isError: submissionQuery.isError || scoreSheetQuery.isError,
+    error: submissionQuery.error || scoreSheetQuery.error,
   };
 }
