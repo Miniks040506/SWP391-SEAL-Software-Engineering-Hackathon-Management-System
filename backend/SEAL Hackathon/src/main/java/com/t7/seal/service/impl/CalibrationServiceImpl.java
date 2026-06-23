@@ -142,7 +142,61 @@ public class CalibrationServiceImpl implements CalibrationService {
             UpdateCalibrationRoundRequest request,
             Authentication authentication
     ) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCoordinatorOrAdmin(actor);
+
+        CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        if (calibrationRound.isDistributionPublished()) {
+            throw new ConflictException("Cannot update calibration round after distribution is published.");
+        }
+
+        Map<String, Object> before = Map.of(
+                "description", nullSafe(calibrationRound.getDescription()),
+                "startAt", calibrationRound.getStartAt(),
+                "endAt", calibrationRound.getEndAt(),
+                "mandatory", calibrationRound.getIsMandatory()
+        );
+
+        if (request.description() != null) {
+            calibrationRound.setDescription(request.description());
+        }
+        if (request.startAt() != null) {
+            calibrationRound.setStartAt(request.startAt());
+        }
+        if (request.endAt() != null) {
+            calibrationRound.setEndAt(request.endAt());
+        }
+        if (request.mandatory() != null) {
+            calibrationRound.setIsMandatory(request.mandatory());
+        }
+        if (request.benchmarkScores() != null) {
+            Map<String, Float> benchmarkScores = parseBenchmarkScores(request.benchmarkScores());
+            validateBenchmarkCriteria(
+                    calibrationRound.getEvent().getId(),
+                    calibrationRound.getSampleSubmission(),
+                    benchmarkScores
+            );
+            calibrationRound.setBenchmarkScores(benchmarkScores);
+        }
+        validateTimeRange(calibrationRound.getStartAt(), calibrationRound.getEndAt());
+
+        CalibrationRound saved = calibrationRoundRepository.save(calibrationRound);
+        auditLogService.record(
+                actor,
+                AuditActionType.CALIBRATION_ROUND_UPDATED,
+                "calibration_rounds",
+                saved.getId(),
+                before,
+                Map.of(
+                        "description", nullSafe(saved.getDescription()),
+                        "startAt", saved.getStartAt(),
+                        "endAt", saved.getEndAt(),
+                        "mandatory", saved.getIsMandatory()
+                ),
+                Map.of("source", "SPRINT_3_PERIOD_1")
+        );
+        
+        return toRoundResponse(saved);
     }
 
     @Override
