@@ -300,7 +300,16 @@ public class CalibrationServiceImpl implements CalibrationService {
             UUID calibrationRoundId,
             Authentication authentication
     ) {
-        return List.of();
+        CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        Judge judge = currentJudge(authentication);
+
+        ensureJudgeCanAccessCalibration(judge, calibrationRound);
+
+        return calibrationScoreRepository
+                .findByCalibrationRoundIdAndJudgeId(calibrationRound.getId(), judge.getId())
+                .stream()
+                .map(this::toScoreResponse)
+                .toList();
     }
 
     @Override
