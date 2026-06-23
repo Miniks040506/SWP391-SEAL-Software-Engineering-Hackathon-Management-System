@@ -1,6 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.entities.CalibrationRound;
+import com.t7.seal.entities.Submission;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.CalibrationRoundRepository;
@@ -14,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -120,5 +122,24 @@ public class CalibrationServiceImpl implements CalibrationService {
             throw new BadRequestException("Path eventId does not match request eventId.");
         }
         return pathEventId != null ? pathEventId : bodyEventId;
+    }
+
+    private void ensureSubmissionBelongsToEvent(Submission submission, UUID eventId) {
+        if (submission.getRound() == null || submission.getRound().getEvent() == null
+                || !submission.getRound().getEvent().getId().equals(eventId)) {
+            throw new BadRequestException("Sample submission does not belong to the selected event.");
+        }
+    }
+
+    private void validateTimeRange(LocalDateTime startAt, LocalDateTime endAt) {
+        if (startAt == null) {
+            throw new BadRequestException("startAt is required.");
+        }
+        if (endAt == null) {
+            throw new BadRequestException("endAt is required.");
+        }
+        if (!endAt.isAfter(startAt)) {
+            throw new BadRequestException("endAt must be after startAt.");
+        }
     }
 }
