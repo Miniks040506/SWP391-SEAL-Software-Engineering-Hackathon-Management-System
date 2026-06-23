@@ -12,7 +12,12 @@ type Props = {
   isFinalSubmitted: boolean;
 };
 
-export const CriteriaScoreCard = ({ criterion, control, isLocked, isFinalSubmitted }: Props) => {
+export const CriteriaScoreCard = ({
+  criterion,
+  control,
+  isLocked,
+  isFinalSubmitted,
+}: Props) => {
   const disabled = isLocked || isFinalSubmitted;
 
   return (
@@ -20,8 +25,19 @@ export const CriteriaScoreCard = ({ criterion, control, isLocked, isFinalSubmitt
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="mb-2 flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-slate-500">{criterion.templateCategory}</span>
-            <Chip label={`Weight: ${criterion.effectiveWeight}x`} size="small" sx={{ height: "20px", fontSize: "10px", fontWeight: "bold", bgcolor: "rgba(0,0,0,0.05)" }} />
+            <span className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-slate-500">
+              {criterion.templateCategory}
+            </span>
+            <Chip
+              label={`Weight: ${criterion.effectiveWeight}x`}
+              size="small"
+              sx={{
+                height: "20px",
+                fontSize: "10px",
+                fontWeight: "bold",
+                bgcolor: "rgba(0,0,0,0.05)",
+              }}
+            />
           </div>
           <p className="font-extrabold text-gray-900 dark:text-white text-lg">
             {criterion.effectiveName}
@@ -37,7 +53,11 @@ export const CriteriaScoreCard = ({ criterion, control, isLocked, isFinalSubmitt
           name={`scores.${criterion.id}`}
           control={control}
           render={({ field, fieldState: { error } }) => (
-            <FormControl error={Boolean(error)} disabled={disabled} className="shrink-0">
+            <FormControl
+              error={Boolean(error)}
+              disabled={disabled}
+              className="shrink-0"
+            >
               <div className="flex items-center gap-3">
                 <TextField
                   {...field}
@@ -46,7 +66,11 @@ export const CriteriaScoreCard = ({ criterion, control, isLocked, isFinalSubmitt
                   type="number"
                   placeholder="0"
                   slotProps={{
-                    htmlInput: { min: 0, max: criterion.effectiveMaxScore, style: { textAlign: "center" } }
+                    htmlInput: {
+                      min: 0,
+                      max: criterion.effectiveMaxScore,
+                      style: { textAlign: "center" },
+                    },
                   }}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -68,14 +92,18 @@ export const CriteriaScoreCard = ({ criterion, control, isLocked, isFinalSubmitt
                       borderRadius: "8px",
                       bgcolor: disabled ? "rgba(0,0,0,0.03)" : "transparent",
                     },
-                    "& input": { fontWeight: "bold", fontSize: "1.125rem" }
+                    "& input": { fontWeight: "bold", fontSize: "1.125rem" },
                   }}
                 />
                 <span className="whitespace-nowrap font-bold text-gray-500 dark:text-slate-400">
                   / {criterion.effectiveMaxScore}
                 </span>
               </div>
-              {error && <FormHelperText sx={{ mx: 0, mt: 1 }}>{error.message}</FormHelperText>}
+              {error && (
+                <FormHelperText sx={{ mx: 0, mt: 1 }}>
+                  {error.message}
+                </FormHelperText>
+              )}
             </FormControl>
           )}
         />
@@ -92,7 +120,12 @@ export const CriteriaScoreCard = ({ criterion, control, isLocked, isFinalSubmitt
               minRows={2}
               fullWidth
               disabled={disabled}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", bgcolor: disabled ? "rgba(0,0,0,0.03)" : "transparent" } }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  bgcolor: disabled ? "rgba(0,0,0,0.03)" : "transparent",
+                },
+              }}
             />
           )}
         />
