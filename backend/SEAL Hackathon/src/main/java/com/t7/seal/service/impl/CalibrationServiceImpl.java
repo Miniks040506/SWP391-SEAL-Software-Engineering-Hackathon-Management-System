@@ -163,11 +163,13 @@ public class CalibrationServiceImpl implements CalibrationService {
         if (raw == null) {
             return null;
         }
+
         Map<String, Object> input = objectMapper.convertValue(raw, new TypeReference<>() {
         });
         if (input == null || input.isEmpty()) {
             return new LinkedHashMap<>();
         }
+
         Map<String, Float> result = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : input.entrySet()) {
             if (entry.getKey() == null || entry.getKey().isBlank()) {
@@ -180,6 +182,7 @@ public class CalibrationServiceImpl implements CalibrationService {
             }
             result.put(entry.getKey(), toFloat(entry.getValue(), "benchmark score"));
         }
+
         return result;
     }
 
@@ -190,6 +193,7 @@ public class CalibrationServiceImpl implements CalibrationService {
         if (raw instanceof Number number) {
             return number.floatValue();
         }
+
         try {
             return Float.parseFloat(raw.toString());
         } catch (NumberFormatException ex) {
@@ -201,12 +205,17 @@ public class CalibrationServiceImpl implements CalibrationService {
         if (benchmarkScores == null || benchmarkScores.isEmpty()) {
             return;
         }
+
         List<EventCriteria> activeCriteria = activeCriteriaForEventAndSampleRound(eventId, sample);
         Set<UUID> activeIds = activeCriteria.stream()
                 .map(EventCriteria::getId)
                 .collect(Collectors.toSet());
         Map<UUID, EventCriteria> byId = activeCriteria.stream()
-                .collect(Collectors.toMap(EventCriteria::getId, Function.identity()));
+                .collect(Collectors.toMap(
+                        EventCriteria::getId,
+                        Function.identity()
+                ));
+
         for (Map.Entry<String, Float> entry : benchmarkScores.entrySet()) {
             UUID criteriaId = UUID.fromString(entry.getKey());
             if (!activeIds.contains(criteriaId)) {
@@ -223,11 +232,15 @@ public class CalibrationServiceImpl implements CalibrationService {
         );
     }
 
-    private List<EventCriteria> activeCriteriaForEventAndSampleRound(UUID eventId, Submission sample) {
+    private List<EventCriteria> activeCriteriaForEventAndSampleRound(
+            UUID eventId, Submission sample
+    ) {
         UUID sampleRoundId = sample.getRound() == null ? null : sample.getRound().getId();
-        return eventCriteriaRepository.findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(eventId)
+        return eventCriteriaRepository
+                .findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(eventId)
                 .stream()
-                .filter(criteria -> sampleRoundId == null || criteria.appliesToRound(sampleRoundId))
+                .filter(criteria -> sampleRoundId == null
+                        || criteria.appliesToRound(sampleRoundId))
                 .toList();
     }
 
@@ -238,6 +251,7 @@ public class CalibrationServiceImpl implements CalibrationService {
         if (value < 0) {
             throw new BadRequestException("Score value must be greater than or equal to 0.");
         }
+
         Float maxScore = criteria.getEffectiveMaxScore();
         if (maxScore != null && value > maxScore) {
             throw new BadRequestException("Score value must not exceed max score " + maxScore + " for " + criteria.getEffectiveName() + ".");
@@ -273,6 +287,7 @@ public class CalibrationServiceImpl implements CalibrationService {
         if (!user.isJudge()) {
             throw new UnauthorizedException("Only judges or coordinators can access calibration rounds.");
         }
+
         Judge judge = judgeRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new UnauthorizedException("Judge profile was not found."));
         ensureJudgeCanAccessEvent(judge, eventId);
@@ -302,6 +317,7 @@ public class CalibrationServiceImpl implements CalibrationService {
         if (!user.isActive()) {
             throw new UnauthorizedException("Judge account is not ACTIVE.");
         }
+
         Judge judge = judgeRepository.findByUserId(user.getId())
                 .orElseThrow(() ->
                         new UnauthorizedException("Judge profile was not found."));
@@ -309,6 +325,7 @@ public class CalibrationServiceImpl implements CalibrationService {
                 && !judge.isTemporaryActive(LocalDateTime.now())) {
             throw new UnauthorizedException("Temporary judge account has expired.");
         }
+
         return judge;
     }
 
@@ -324,5 +341,67 @@ public class CalibrationServiceImpl implements CalibrationService {
         }
     }
 
+    private CalibrationDistributionResponse buildDistribution(
+            CalibrationRound calibrationRound,
+            List<EventCriteria> criteria,
+            List<CalibrationScore> scores
+    ) {
+        Map<UUID, List<CalibrationScore>> scoresByCriteria = scores.stream()
+                .collect(Collectors.groupingBy(score -> score.getEventCriteria().getId(), HashMap::new, Collectors.toList()));
 
+        List<CriterionDistributionResponse> distributions = criteria.stream()
+                .map(criteriaItem -> buildCriterionDistribution(calibrationRound, criteriaItem, scoresByCriteria.get(criteriaItem.getId())))
+                .toList();
+
+        return new CalibrationDistributionResponse(
+                calibrationRound.getId(),
+                calibrationRound.isDistributionPublished(),
+                calibrationRound.getDistributionPublishedAt(),
+                (long) scores.size(),
+                distributions
+        );
+    }
+
+    private CriterionDistributionResponse buildCriterionDistribution(
+            CalibrationRound calibrationRound,
+            EventCriteria criteria,
+            List<CalibrationScore> scores
+    ) {
+        List<Double> values = (scores == null) ? List.of() : scores.stream()
+                .map(score -> score.getValue().doubleValue()).toList();
+
+        Double mean = values.isEmpty() ? null : values.stream()
+                .mapToDouble(Double::doubleValue).average().orElse(0.0);
+        Double min = values.isEmpty() ? null : values.stream()
+                .mapToDouble(Double::doubleValue).min().orElse(0.0);
+        Double max = values.isEmpty() ? null : values.stream()
+                .mapToDouble(Double::doubleValue).max().orElse(0.0);
+
+        Double std = values.isEmpty() ? null : standardDeviation(values, mean);
+        Float benchmark = calibrationRound.getBenchmarkScore(criteria.getId());
+
+        return new CriterionDistributionResponse(
+                criteria.getId(),
+                criteria.getEffectiveName(),
+                benchmark == null ? null : benchmark.doubleValue(),
+                (long) values.size(),
+                mean,
+                min,
+                max,
+                std
+        );
+    }
+
+    private Double standardDeviation(List<Double> values, Double mean) {
+        if (values == null || values.isEmpty() || mean == null) {
+            return null;
+        }
+
+        double variance = values.stream()
+                .mapToDouble(value -> Math.pow(value - mean, 2))
+                .average()
+                .orElse(0.0);
+        
+        return Math.sqrt(variance);
+    }
 }
