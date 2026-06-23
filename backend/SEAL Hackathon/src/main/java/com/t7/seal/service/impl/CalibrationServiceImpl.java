@@ -413,8 +413,10 @@ public class CalibrationServiceImpl implements CalibrationService {
         Submission sample = calibrationRound.getSampleSubmission();
         Team team = sample.getTeam();
         LocalDateTime now = LocalDateTime.now();
+
         long criteriaCount = criteria.size();
         boolean submitted = criteriaCount > 0 && scores.size() >= criteriaCount;
+
         return new CalibrationScoreSheetResponse(
                 calibrationRound.getId(),
                 calibrationRound.getEvent().getId(),
@@ -439,13 +441,55 @@ public class CalibrationServiceImpl implements CalibrationService {
         );
     }
 
+    private CalibrationRoundResponse toRoundResponse(CalibrationRound calibrationRound) {
+        return new CalibrationRoundResponse(
+                calibrationRound.getId(),
+                calibrationRound.getEvent().getId(),
+                calibrationRound.getSampleSubmission().getId(),
+                calibrationRound.getDescription(),
+                calibrationRound.getStartAt(),
+                calibrationRound.getEndAt(),
+                calibrationRound.getIsMandatory(),
+                calibrationRound.getDistributionPublishedAt()
+        );
+    }
+
+    private CalibrationRoundDetailResponse toRoundDetailResponse(
+            CalibrationRound calibrationRound
+    ) {
+        return new CalibrationRoundDetailResponse(
+                calibrationRound.getId(),
+                calibrationRound.getEvent().getId(),
+                calibrationRound.getSampleSubmission().getId(),
+                calibrationRound.getBenchmarkScores(),
+                calibrationRound.getDescription(),
+                calibrationRound.getStartAt(),
+                calibrationRound.getEndAt(),
+                calibrationRound.getIsMandatory(),
+                calibrationRound.getDistributionPublishedAt()
+        );
+    }
+
+    private CalibrationScoreResponse toScoreResponse(CalibrationScore score) {
+        return new CalibrationScoreResponse(
+                score.getId(),
+                score.getCalibrationRound().getId(),
+                score.getJudge().getId(),
+                score.getEventCriteria().getId(),
+                score.getValue() == null ? null : score.getValue().doubleValue(),
+                score.getDeviationFromBenchmark() == null
+                        ? null : score.getDeviationFromBenchmark().doubleValue()
+        );
+    }
+
     private SubmissionLinkResponse toLinkResponse(SubmissionLink link) {
         return new SubmissionLinkResponse(
                 link.getId(),
                 link.getLinkType() == null ? null : link.getLinkType().name(),
                 link.getUrl(),
                 link.getLabel(),
-                link.getStorageProvider() == null ? null : link.getStorageProvider().name(),
+                link.getStorageProvider() == null
+                        ? null : link.getStorageProvider().name(),
                 link.getObjectKey(),
                 link.getOriginalFileName(),
                 link.getContentType(),
@@ -464,9 +508,9 @@ public class CalibrationServiceImpl implements CalibrationService {
                 criteria.getEvent().getId(),
                 criteria.getCriteria() == null ? null : criteria.getCriteria().getId(),
                 criteria.getCriteria() == null ? null : criteria.getCriteria().getName(),
-                criteria.getCriteria() == null || criteria.getCriteria().getCategory() == null
-                        ? null
-                        : criteria.getCriteria().getCategory().name(),
+                criteria.getCriteria() == null
+                        || criteria.getCriteria().getCategory() == null
+                        ? null : criteria.getCriteria().getCategory().name(),
                 criteria.isCustomCriteria(),
                 criteria.getNameOverride(),
                 criteria.getDescriptionOverride(),
