@@ -5,6 +5,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
 
 import { createJudgeGradingSchema, type JudgeGradingFormValues } from "../../schemas/judgeGrading.schema";
 import { useSubmitJudgeScoreMutation } from "../../hooks/useJudge";
@@ -21,9 +22,10 @@ type Props = {
   criteria: Criteria[];
   gradingStatus: string;
   scoredData?: any;
+  isLocked?: boolean;
 };
 
-export const JudgeGradingPanel = ({ submissionId, criteria, gradingStatus, scoredData }: Props) => {
+export const JudgeGradingPanel = ({ submissionId, criteria, gradingStatus, scoredData, isLocked }: Props) => {
   const isScored = gradingStatus === "SCORED";
   const submitMutation = useSubmitJudgeScoreMutation(submissionId);
 
@@ -78,7 +80,7 @@ export const JudgeGradingPanel = ({ submissionId, criteria, gradingStatus, score
                         label={`Score (Max: ${crit.maxScore})`}
                         fullWidth
                         size="small"
-                        disabled={isScored || submitMutation.isPending}
+                        disabled={isScored || isLocked || submitMutation.isPending}
                         error={Boolean(errors.scores?.[crit.id])} // Bắt lỗi màu đỏ
                         helperText={errors.scores?.[crit.id]?.message} // Hiển thị text cảnh báo
                         onChange={(e) => {
@@ -105,7 +107,7 @@ export const JudgeGradingPanel = ({ submissionId, criteria, gradingStatus, score
                   fullWidth
                   multiline
                   minRows={3}
-                  disabled={isScored || submitMutation.isPending}
+                  disabled={isScored || isLocked || submitMutation.isPending}
                   placeholder="Leave a note about why you gave these scores..."
                   sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
                 />
@@ -113,7 +115,7 @@ export const JudgeGradingPanel = ({ submissionId, criteria, gradingStatus, score
             />
           </div>
 
-          {!isScored && (
+          {!isScored && !isLocked && (
             <div className="flex justify-end pt-2">
               <Button
                 type="submit"
@@ -124,6 +126,11 @@ export const JudgeGradingPanel = ({ submissionId, criteria, gradingStatus, score
               >
                 {submitMutation.isPending ? "Submitting..." : "Submit Official Score"}
               </Button>
+            </div>
+          )}
+          {isLocked && (
+            <div className="flex justify-end pt-2">
+              <Chip label="Scoring locked" color="error" variant="filled" sx={{ fontWeight: 800 }} />
             </div>
           )}
         </form>

@@ -77,6 +77,7 @@ export function useSubmitJudgeScoreMutation(submissionId: string) {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: judgeKeys.submissionDetail(submissionId) });
       await queryClient.invalidateQueries({ queryKey: judgeKeys.submissions() });
+      await queryClient.invalidateQueries({ queryKey: [...judgeKeys.all, "roundSubmissions"] });
       enqueueSnackbar("Scores submitted successfully!", { variant: "success" });
     },
     onError: () => {

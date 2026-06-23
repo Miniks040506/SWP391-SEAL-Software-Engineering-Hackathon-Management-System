@@ -116,7 +116,7 @@ export type RoundOperationStatusResponse = {
 export type JudgeProgressResponse = {
   judgeId: UUID;
   judgeName: string;
-  trackId?: UUID;
+  trackId?: UUID | null;
   completed: number;
   total: number;
 };
