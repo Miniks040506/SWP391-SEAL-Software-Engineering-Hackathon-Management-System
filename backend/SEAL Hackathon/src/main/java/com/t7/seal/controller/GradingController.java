@@ -114,7 +114,7 @@ public class GradingController {
             @Valid @RequestBody ConfirmScoreSheetRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.confirmScoreSheet(submissionId, request, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
