@@ -9,8 +9,10 @@ import com.t7.seal.response.grading.AssignedSubmissionResponse;
 import com.t7.seal.response.grading.GradingSubmissionDetailResponse;
 import com.t7.seal.response.grading.ScoreResponse;
 import com.t7.seal.response.grading.ScoreSheetResponse;
+import com.t7.seal.service.GradingService;
 import com.t7.seal.service.JudgeAssignmentService;
 import jakarta.validation.Valid;
+import jdk.management.jfr.RemoteRecordingStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class GradingController {
 
     private final JudgeAssignmentService judgeAssignmentService;
+    private final GradingService gradingService;
 
     @PreAuthorize("hasRole('JUDGE')")
     @GetMapping("/rounds/{roundId}/assigned-submissions")
@@ -58,7 +61,7 @@ public class GradingController {
             @PathVariable UUID submissionId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.getScoreSheets(submissionId, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
