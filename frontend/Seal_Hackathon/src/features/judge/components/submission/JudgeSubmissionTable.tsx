@@ -31,6 +31,7 @@ export const JudgeSubmissionTable = ({ submissions }: JudgeSubmissionTableProps)
             <th className="px-6 py-4">Submission status</th>
             <th className="px-6 py-4">Grading status</th>
             <th className="px-6 py-4">Progress</th>
+            <th className="px-6 py-4 text-center">Locked</th>
             <th className="px-6 py-4 text-right">Action</th>
           </tr>
         </thead>
@@ -41,8 +42,11 @@ export const JudgeSubmissionTable = ({ submissions }: JudgeSubmissionTableProps)
             let actionLabel = "View";
             let actionDest = `/judge/submissions/${sub.submissionId}`;
 
-            if (sub.gradingStatus === "PENDING" || sub.gradingStatus === "READY") {
+            if (sub.gradingStatus === "PENDING") {
               actionLabel = "Start scoring";
+              actionDest = `/judge/submissions/${sub.submissionId}/score`;
+            } else if (sub.gradingStatus === "READY") {
+              actionLabel = "Continue scoring";
               actionDest = `/judge/submissions/${sub.submissionId}/score`;
             } else if (sub.gradingStatus === "GRADED") {
               actionLabel = "View score";
@@ -62,7 +66,6 @@ export const JudgeSubmissionTable = ({ submissions }: JudgeSubmissionTableProps)
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 font-semibold text-gray-900">
-                    {isLocked && <LockOutlinedIcon fontSize="small" className="text-gray-400" />}
                     {sub.teamName || "N/A"}
                   </div>
                 </td>
@@ -82,6 +85,11 @@ export const JudgeSubmissionTable = ({ submissions }: JudgeSubmissionTableProps)
                     confirmedScoreCount={sub.confirmedScoreCount}
                     criteriaCount={sub.criteriaCount}
                   />
+                </td>
+                <td className="px-6 py-4 text-center">
+                  {isLocked && (
+                    <LockOutlinedIcon fontSize="small" className="text-gray-400" />
+                  )}
                 </td>
                 <td className="px-6 py-4 text-right">
                   <button
