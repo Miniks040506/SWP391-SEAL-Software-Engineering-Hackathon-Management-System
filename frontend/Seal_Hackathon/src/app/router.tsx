@@ -1,12 +1,16 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
+
 import { NotFoundPage } from "@/components/common/NotFoundPage";
+
 
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
 import { RootLayout } from "@/components/layout/RootLayout";
 
+
 import { AuditLogsPage } from "../features/auditLog";
+
 
 import {
   JudgeDashboardPage,
@@ -15,6 +19,7 @@ import {
 } from "@/features/judge";
 import { JudgeScoreSheetPage } from "@/features/grading/pages/JudgeScoreSheetPage";
 
+
 import {
   MentorDashboardPage,
   MentorSubmissionDetailPage,
@@ -22,6 +27,7 @@ import {
   MentorTeamsPage,
   MentorTeamDetailPage,
 } from "@/features/mentor";
+
 
 import {
   ForgotPasswordPage,
@@ -33,13 +39,16 @@ import {
   VerifyEmailSuccessPage,
 } from "@/features/auth";
 
+
 import {
   EventDetailPage,
   EventPrizesPage,
   EventsPage,
 } from "@/features/events";
 
+
 import { LeaderboardPage } from "@/features/ranking";
+
 
 import {
   CoordinatorCreateEventPage,
@@ -48,6 +57,7 @@ import {
   CoordinatorEventsPage,
   CoordinatorAnnouncementPage,
 } from "@/features/coordinator";
+
 
 import {
   CreateTeamPage,
@@ -59,7 +69,9 @@ import {
   TeamDetailPage,
 } from "@/features/teams";
 
+
 import { CoordinatorUsersPage } from "@/features/coordinator/pages/CoordinatorUsersPage";
+
 
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
 import { PersonalProfilePage } from "@/features/profile";
@@ -72,6 +84,11 @@ import { CoordinatorTeamsPage } from "@/features/teams";
 import { ParticipantSubmissionsPage } from "@/features/submissions/pages/ParticipantSubmissionsPage";
 import { NotificationInboxPage } from "@/features/notification";
 import { SubmissionFormPage } from "@/features/submissions/pages/SubmissionFormPage";
+
+import {
+  CoordinatorCalibrationPage,
+  CalibrationRoundFormPage
+} from "@/features/calibration";
 
 export const router = createBrowserRouter([
   {
@@ -144,6 +161,22 @@ export const router = createBrowserRouter([
         element: <EventCriteriaViewPage mode="ROUND" />,
       },
       { path: "events/:eventId/view", element: <EventDetailPage /> },
+      {
+        path: "events/:eventId/calibrations",
+        element: <CoordinatorCalibrationPage />,
+      },
+      {
+        path: "events/:eventId/calibrations/create",
+        element: <CalibrationRoundFormPage />,
+      },
+      {
+        path: "calibrations/:calibrationId",
+        element: <CalibrationRoundFormPage />,
+      },
+      {
+        path: "calibrations/:calibrationId/edit",
+        element: <CalibrationRoundFormPage />,
+      },
       { path: "users", element: <CoordinatorUsersPage /> },
       { path: "teams", element: <CoordinatorTeamsPage /> },
       { path: "teams/:teamId", element: <CoordinatorTeamsPage /> },
