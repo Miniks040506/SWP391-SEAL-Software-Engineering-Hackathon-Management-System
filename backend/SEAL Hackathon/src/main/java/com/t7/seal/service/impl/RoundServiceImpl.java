@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +36,7 @@ public class RoundServiceImpl implements RoundService {
     private final NotificationService notificationService;
     private final ScoreRepository scoreRepository;
     private final RankingRepository rankingRepository;
+    private final TeamRepository teamRepository;
 
     private final CurrentUserService currentUserService;
 
@@ -462,6 +464,7 @@ public class RoundServiceImpl implements RoundService {
                 "Grading has been locked for round " + saved.getName() + ". Rankings can now be calculated.");
 
         ScoringProgressResponse progress = buildScoringProgress(saved);
+
         return new RoundLockResponse(
                 saved.getId(),
                 "Grading",
@@ -498,6 +501,7 @@ public class RoundServiceImpl implements RoundService {
         }
 
         List<Ranking> suggested = executeAdvanceRules(rankings, rules);
+
         return new AdvancementPreviewResponse(
                 roundId,
                 suggested.stream().map(this::toRankingResponse).toList(),
@@ -505,9 +509,76 @@ public class RoundServiceImpl implements RoundService {
         );
     }
 
+    @Transactional
     @Override
     public ConfirmAdvancementResponse confirmAdvancement(UUID roundId, ConfirmAdvancementRequest request, Authentication authentication) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getGradingLockedAt() == null) {
+            throw new ConflictException("Grading must be locked before confirming advancement.");
+        }
+        if (round.getAdvancementConfirmedAt() != null) {
+            throw new ConflictException("Advancement has already been confirmed for this round.");
+        }
+
+        List<Ranking> rankings = rankingRepository.findByRoundIdWithSubmissionTeamTrack(roundId);
+        if (rankings.isEmpty()) {
+            throw new ConflictException("No rankings found for this round.");
+        }
+
+        Set<UUID> advancedTeamIds;
+        if (request != null && request.advancedTeamIds() != null && !request.advancedTeamIds().isEmpty()) {
+            advancedTeamIds = new LinkedHashSet<>(request.advancedTeamIds());
+        } else {
+            advancedTeamIds = executeAdvanceRules(
+                    rankings,
+                    advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId)
+            )
+                    .stream()
+                    .map(r -> r.getSubmission().getTeam().getId())
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+
+        for (Ranking ranking : rankings) {
+            Team team = ranking.getSubmission().getTeam();
+            boolean advanced = advancedTeamIds.contains(team.getId());
+
+            if (advanced) {
+                ranking.markAdvanced(AdvanceReason.TOP_N);
+                if (team.getStatus() != TeamStatus.WINNER) {
+                    team.setStatus(TeamStatus.ADVANCED);
+                }
+            } else {
+                ranking.markNotAdvanced(AdvanceReason.NOT_ADVANCED);
+                if (team.getStatus() != TeamStatus.WINNER) {
+                    team.setStatus(TeamStatus.ELIMINATED);
+                }
+            }
+        }
+
+        LocalDateTime confirmedAt = LocalDateTime.now();
+        round.setAdvancementConfirmedAt(confirmedAt);
+        
+        rankingRepository.saveAll(rankings);
+        teamRepository.saveAll(rankings.stream()
+                .map(r -> r.getSubmission().getTeam()).toList());
+        roundRepository.save(round);
+
+        auditLogRepository.save(AuditLog.builder()
+                .actor(actor)
+                .actionType(AuditActionType.ADVANCEMENT_CONFIRMED)
+                .targetTable("rounds")
+                .targetId(round.getId())
+                .beforeState(null)
+                .afterState(Map.of("advancedTeamIds", advancedTeamIds.stream().map(UUID::toString).toList()))
+                .context(Map.of(
+                        "eventId", round.getEvent().getId().toString(),
+                        "note", request == null || request.note() == null ? "" : request.note()
+                ))
+                .build());
+
+        return new ConfirmAdvancementResponse(roundId, advancedTeamIds.size(), confirmedAt);
     }
 
     //HELPERS
