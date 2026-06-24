@@ -15,26 +15,45 @@ import type { AssignableUserRole } from "@/types/user.types";
 
 const USE_MOCK = false;
 
-const activeEventApi = USE_MOCK ? mockCoordinatorService.eventApi as any : eventApi;
-const activeTrackApi = USE_MOCK ? mockCoordinatorService.trackApi as any : trackApi;
-const activeRoundApi = USE_MOCK ? mockCoordinatorService.roundApi as any : roundApi;
-const activePrizeApi = USE_MOCK ? mockCoordinatorService.prizeApi as any : prizeApi;
-const activeUserApi = USE_MOCK ? mockCoordinatorService.assignableUserApi as any : assignableUserApi;
+const activeEventApi = USE_MOCK
+  ? (mockCoordinatorService.eventApi as any)
+  : eventApi;
+const activeTrackApi = USE_MOCK
+  ? (mockCoordinatorService.trackApi as any)
+  : trackApi;
+const activeRoundApi = USE_MOCK
+  ? (mockCoordinatorService.roundApi as any)
+  : roundApi;
+const activePrizeApi = USE_MOCK
+  ? (mockCoordinatorService.prizeApi as any)
+  : prizeApi;
+const activeUserApi = USE_MOCK
+  ? (mockCoordinatorService.assignableUserApi as any)
+  : assignableUserApi;
 
 export const coordinatorEventKeys = {
   all: ["coordinator-events"] as const,
-  list: (params?: GetEventsParams) => [...coordinatorEventKeys.all, "list", params] as const,
-  detail: (eventId?: UUID) => [...coordinatorEventKeys.all, "detail", eventId] as const,
-  tracks: (eventId?: UUID) => [...coordinatorEventKeys.all, "tracks", eventId] as const,
-  rounds: (eventId?: UUID) => [...coordinatorEventKeys.all, "rounds", eventId] as const,
-  roundOperationStatus: (roundId?: UUID) => [...coordinatorEventKeys.all, "round-operation-status", roundId] as const,
-  advanceRules: (roundId?: UUID) => [...coordinatorEventKeys.all, "advance-rules", roundId] as const,
-  prizes: (eventId?: UUID) => [...coordinatorEventKeys.all, "prizes", eventId] as const,
-  mentorAssignments: (trackId?: UUID) => [...coordinatorEventKeys.all, "mentor-assignments", trackId] as const,
-  judgeAssignments: (roundId?: UUID) => [...coordinatorEventKeys.all, "judge-assignments", roundId] as const,
-  assignableUsers: (role: AssignableUserRole, search?: string) => [...coordinatorEventKeys.all, "assignable-users", role, search] as const,
+  list: (params?: GetEventsParams) =>
+    [...coordinatorEventKeys.all, "list", params] as const,
+  detail: (eventId?: UUID) =>
+    [...coordinatorEventKeys.all, "detail", eventId] as const,
+  tracks: (eventId?: UUID) =>
+    [...coordinatorEventKeys.all, "tracks", eventId] as const,
+  rounds: (eventId?: UUID) =>
+    [...coordinatorEventKeys.all, "rounds", eventId] as const,
+  roundOperationStatus: (roundId?: UUID) =>
+    [...coordinatorEventKeys.all, "round-operation-status", roundId] as const,
+  advanceRules: (roundId?: UUID) =>
+    [...coordinatorEventKeys.all, "advance-rules", roundId] as const,
+  prizes: (eventId?: UUID) =>
+    [...coordinatorEventKeys.all, "prizes", eventId] as const,
+  mentorAssignments: (trackId?: UUID) =>
+    [...coordinatorEventKeys.all, "mentor-assignments", trackId] as const,
+  judgeAssignments: (roundId?: UUID) =>
+    [...coordinatorEventKeys.all, "judge-assignments", roundId] as const,
+  assignableUsers: (role: AssignableUserRole, search?: string) =>
+    [...coordinatorEventKeys.all, "assignable-users", role, search] as const,
 };
-
 
 export function useCoordinatorEventsQuery(params?: GetEventsParams) {
   return useQuery({
@@ -75,7 +94,10 @@ export function useCoordinatorEventPrizesQuery(eventId?: UUID) {
   });
 }
 
-export function useAssignableUsersQuery(role: AssignableUserRole, search?: string) {
+export function useAssignableUsersQuery(
+  role: AssignableUserRole,
+  search?: string,
+) {
   return useQuery({
     queryKey: coordinatorEventKeys.assignableUsers(role, search),
     queryFn: () => activeUserApi.getAssignableUsers(role, search),
@@ -131,10 +153,18 @@ export function useInvalidateEditEventData(eventId?: UUID) {
   return useCallback(async () => {
     if (!eventId) return;
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.detail(eventId) }),
-      queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.tracks(eventId) }),
-      queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.rounds(eventId) }),
-      queryClient.invalidateQueries({ queryKey: coordinatorEventKeys.prizes(eventId) }),
+      queryClient.invalidateQueries({
+        queryKey: coordinatorEventKeys.detail(eventId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: coordinatorEventKeys.tracks(eventId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: coordinatorEventKeys.rounds(eventId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: coordinatorEventKeys.prizes(eventId),
+      }),
       queryClient.invalidateQueries({ queryKey: ["event-criteria", eventId] }),
     ]);
   }, [queryClient, eventId]);
@@ -156,7 +186,8 @@ export function useCoordinatorMultipleTeamsQueries(eventIds: UUID[]) {
   return useQueries({
     queries: eventIds.map((eventId) => ({
       queryKey: ["coord-dashboard-teams", eventId],
-      queryFn: () => teamApi.getCoordinatorEventTeams(eventId, { page: 0, size: 1000 }),
+      queryFn: () =>
+        teamApi.getCoordinatorEventTeams(eventId, { page: 0, size: 1000 }),
       enabled: Boolean(eventId),
       staleTime: 30_000,
       retry: false,

@@ -8,7 +8,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 
 import type { EventCriteriaResponse } from "@/types/criteria.types";
 import type { ScoreResponse } from "@/types/grading.types";
-import type { JudgeSubmissionAssignmentResponse } from "@/types/judge.types";
+import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
 
 import { useScoreSheet } from "../hooks/useScoreSheet";
 import { useScoreMutations } from "../hooks/useScoreMutations";

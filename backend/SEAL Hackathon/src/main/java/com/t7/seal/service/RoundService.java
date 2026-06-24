@@ -1,9 +1,6 @@
 package com.t7.seal.service;
 
-import com.t7.seal.request.round.CreateAdvanceRuleRequest;
-import com.t7.seal.request.round.CreateRoundRequest;
-import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
-import com.t7.seal.request.round.UpdateRoundRequest;
+import com.t7.seal.request.round.*;
 import com.t7.seal.response.round.*;
 import org.springframework.security.core.Authentication;
 
@@ -38,4 +35,14 @@ public interface RoundService {
     RoundLockResponse lockSubmission(UUID roundId, Authentication authentication);
 
     RoundOperationStatusResponse getOperationStatus(UUID roundId, Authentication authentication);
+
+    RoundLockResponse lockGrading(UUID roundId, Authentication authentication);
+
+    ScoringProgressResponse getScoringProgress(UUID roundId, Authentication authentication);
+
+    AdvancementPreviewResponse previewAdvanceRules(UUID roundId, Authentication authentication);
+
+    ConfirmAdvancementResponse confirmAdvancement(UUID roundId,
+                                                  ConfirmAdvancementRequest request,
+                                                  Authentication authentication);
 }

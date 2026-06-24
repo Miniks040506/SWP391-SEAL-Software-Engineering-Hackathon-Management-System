@@ -6,10 +6,8 @@ import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.*;
-import com.t7.seal.request.round.CreateAdvanceRuleRequest;
-import com.t7.seal.request.round.CreateRoundRequest;
-import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
-import com.t7.seal.request.round.UpdateRoundRequest;
+import com.t7.seal.request.round.*;
+import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.round.*;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
@@ -21,9 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,13 +28,17 @@ public class RoundServiceImpl implements RoundService {
 
     private final HackathonEventRepository hackathonEventRepository;
     private final RoundRepository roundRepository;
-    private final CurrentUserService currentUserService;
     private final AdvanceRuleRepository advanceRuleRepository;
     private final TrackRepository trackRepository;
     private final AuditLogRepository auditLogRepository;
     private final SubmissionRepository submissionRepository;
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final NotificationService notificationService;
+    private final ScoreRepository scoreRepository;
+    private final RankingRepository rankingRepository;
+    private final TeamRepository teamRepository;
+
+    private final CurrentUserService currentUserService;
 
     @Transactional
     @Override
@@ -439,6 +440,147 @@ public class RoundServiceImpl implements RoundService {
         return toRoundOperationStatus(round);
     }
 
+    @Transactional
+    @Override
+    public RoundLockResponse lockGrading(UUID roundId, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getSubmissionLockedAt() == null) {
+            throw new ConflictException("Submission must be locked before grading can be locked.");
+        }
+        if (round.getGradingLockedAt() != null) {
+            throw new ConflictException("Grading is already locked for this round.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        RoundStatus before = round.getStatus();
+        round.setGradingLockedAt(now);
+        round.setStatus(RoundStatus.RESULTS_READY);
+        Round saved = roundRepository.save(round);
+
+        saveRoundAudit(actor, saved, AuditActionType.GRADING_LOCKED, before.name(), saved.getStatus().name());
+        saveRoundNotification(actor, saved, NotificationType.JUDGING_READY, "Grading locked",
+                "Grading has been locked for round " + saved.getName() + ". Rankings can now be calculated.");
+
+        ScoringProgressResponse progress = buildScoringProgress(saved);
+
+        return new RoundLockResponse(
+                saved.getId(),
+                "Grading",
+                now,
+                "Round grading locked successfully (" + progress.completed() + "/" + progress.total() + " assigned submissions completed)."
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ScoringProgressResponse getScoringProgress(UUID roundId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+        return buildScoringProgress(getRound(roundId));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public AdvancementPreviewResponse previewAdvanceRules(UUID roundId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        List<Ranking> rankings = rankingRepository.findByRoundIdWithSubmissionTeamTrack(roundId);
+        List<AdvanceRule> rules = advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId);
+        List<String> warnings = new ArrayList<>();
+
+        if (rankings.isEmpty()) {
+            warnings.add("No ranking rows found for this round. Calculate rankings before previewing advancement.");
+        }
+        if (rules.isEmpty()) {
+            warnings.add("No advance rules configured for this round.");
+        }
+        if (round.getGradingLockedAt() == null) {
+            warnings.add("Grading is not locked yet. Preview may change after judges finish scoring.");
+        }
+
+        List<Ranking> suggested = executeAdvanceRules(rankings, rules);
+
+        return new AdvancementPreviewResponse(
+                roundId,
+                suggested.stream().map(this::toRankingResponse).toList(),
+                warnings
+        );
+    }
+
+    @Transactional
+    @Override
+    public ConfirmAdvancementResponse confirmAdvancement(UUID roundId, ConfirmAdvancementRequest request, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getGradingLockedAt() == null) {
+            throw new ConflictException("Grading must be locked before confirming advancement.");
+        }
+        if (round.getAdvancementConfirmedAt() != null) {
+            throw new ConflictException("Advancement has already been confirmed for this round.");
+        }
+
+        List<Ranking> rankings = rankingRepository.findByRoundIdWithSubmissionTeamTrack(roundId);
+        if (rankings.isEmpty()) {
+            throw new ConflictException("No rankings found for this round.");
+        }
+
+        Set<UUID> advancedTeamIds;
+        if (request != null && request.advancedTeamIds() != null && !request.advancedTeamIds().isEmpty()) {
+            advancedTeamIds = new LinkedHashSet<>(request.advancedTeamIds());
+        } else {
+            advancedTeamIds = executeAdvanceRules(
+                    rankings,
+                    advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId)
+            )
+                    .stream()
+                    .map(r -> r.getSubmission().getTeam().getId())
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+
+        for (Ranking ranking : rankings) {
+            Team team = ranking.getSubmission().getTeam();
+            boolean advanced = advancedTeamIds.contains(team.getId());
+
+            if (advanced) {
+                ranking.markAdvanced(AdvanceReason.TOP_N);
+                if (team.getStatus() != TeamStatus.WINNER) {
+                    team.setStatus(TeamStatus.ADVANCED);
+                }
+            } else {
+                ranking.markNotAdvanced(AdvanceReason.NOT_ADVANCED);
+                if (team.getStatus() != TeamStatus.WINNER) {
+                    team.setStatus(TeamStatus.ELIMINATED);
+                }
+            }
+        }
+
+        LocalDateTime confirmedAt = LocalDateTime.now();
+        round.setAdvancementConfirmedAt(confirmedAt);
+        
+        rankingRepository.saveAll(rankings);
+        teamRepository.saveAll(rankings.stream()
+                .map(r -> r.getSubmission().getTeam()).toList());
+        roundRepository.save(round);
+
+        auditLogRepository.save(AuditLog.builder()
+                .actor(actor)
+                .actionType(AuditActionType.ADVANCEMENT_CONFIRMED)
+                .targetTable("rounds")
+                .targetId(round.getId())
+                .beforeState(null)
+                .afterState(Map.of("advancedTeamIds", advancedTeamIds.stream().map(UUID::toString).toList()))
+                .context(Map.of(
+                        "eventId", round.getEvent().getId().toString(),
+                        "note", request == null || request.note() == null ? "" : request.note()
+                ))
+                .build());
+
+        return new ConfirmAdvancementResponse(roundId, advancedTeamIds.size(), confirmedAt);
+    }
+
     //HELPERS
 
     private void assertTrackRoundEditable(HackathonEvent event) {
@@ -709,6 +851,114 @@ public class RoundServiceImpl implements RoundService {
             //TODO
             e.printStackTrace();
         }
+    }
+
+    private ScoringProgressResponse buildScoringProgress(Round round) {
+        List<RoundJudgeAssignment> assignments = roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(round.getId());
+        List<JudgeProgressResponse> judgeProgress = new ArrayList<>();
+
+        int completedTotal = 0;
+        int assignedTotal = 0;
+
+        for (RoundJudgeAssignment assignment : assignments) {
+            UUID trackId = assignment.getTrack() == null ? null : assignment.getTrack().getId();
+            List<Submission> submissions = submissionRepository.findSubmittedOrLateByRoundAndTrackNullable(round.getId(), trackId);
+            int total = submissions.size();
+            int completed = 0;
+
+            for (Submission submission : submissions) {
+                long criteriaCount = countCriteriaForRound(submission.getRound());
+                long confirmed = scoreRepository.countBySubmissionIdAndJudgeIdAndIsDraftFalse(
+                        submission.getId(), assignment.getJudge().getId());
+                if (criteriaCount > 0 && confirmed >= criteriaCount) {
+                    completed++;
+                }
+            }
+
+            assignment.setTotalToScore(total);
+            assignment.setScoringProgress(completed);
+            judgeProgress.add(new JudgeProgressResponse(
+                    assignment.getJudge().getId(),
+                    assignment.getJudge().getUser().getFullName(),
+                    trackId,
+                    completed,
+                    total
+            ));
+
+            completedTotal += completed;
+            assignedTotal += total;
+        }
+
+        double percent = assignedTotal == 0 ? 0.0 : completedTotal * 100.0 / assignedTotal;
+        return new ScoringProgressResponse(round.getId(), completedTotal, assignedTotal, percent, judgeProgress);
+    }
+
+    private long countCriteriaForRound(Round round) {
+        if (round == null || round.getEvent() == null) {
+            return 0;
+        }
+        return round.getEvent().getEventCriteria().stream()
+                .filter(EventCriteria::isActiveCriteria)
+                .filter(criteria -> criteria.appliesToRound(round.getId()))
+                .count();
+    }
+
+    private List<Ranking> executeAdvanceRules(List<Ranking> rankings, List<AdvanceRule> rules) {
+        if (rankings == null || rankings.isEmpty() || rules == null || rules.isEmpty()) {
+            return List.of();
+        }
+
+        List<Ranking> sorted = rankings.stream()
+                .sorted(Comparator
+                        .comparing((Ranking r) -> r.getTrack().getId().toString())
+                        .thenComparing(Ranking::getRankPosition)
+                        .thenComparing(Ranking::getTotalScore, Comparator.reverseOrder()))
+                .toList();
+
+        LinkedHashSet<Ranking> selected = new LinkedHashSet<>();
+
+        for (AdvanceRule rule : rules) {
+            List<Ranking> scoped = sorted.stream()
+                    .filter(r -> rule.appliesToTrack(r.getTrack().getId()))
+                    .sorted(Comparator.comparing(Ranking::getRankPosition))
+                    .toList();
+
+            switch (rule.getRuleType()) {
+                case TOP_N -> selected.addAll(scoped.stream()
+                        .limit(Math.max(0, Math.round(rule.getValue())))
+                        .toList());
+                case TOP_PERCENT -> {
+                    int limit = (int) Math.ceil(scoped.size() * (rule.getValue() / 100.0));
+                    selected.addAll(scoped.stream().limit(Math.max(0, limit)).toList());
+                }
+                case MIN_SCORE -> selected.addAll(scoped.stream()
+                        .filter(r -> r.getTotalScore() != null && r.getTotalScore() >= rule.getValue())
+                        .toList());
+                case WILDCARD -> selected.addAll(scoped.stream()
+                        .filter(r -> !selected.contains(r))
+                        .sorted(Comparator
+                                .comparing(Ranking::getTotalScore, Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(Ranking::getRankPosition))
+                        .limit(Math.max(0, Math.round(rule.getValue())))
+                        .toList());
+            }
+        }
+
+        return new ArrayList<>(selected);
+    }
+
+    private RankingResponse toRankingResponse(Ranking ranking) {
+        return new RankingResponse(
+                ranking.getId(),
+                ranking.getSubmission().getId(),
+                ranking.getSubmission().getTeam().getId(),
+                ranking.getSubmission().getTeam().getName(),
+                ranking.getRound().getId(),
+                ranking.getTrack().getId(),
+                ranking.getTotalScore(),
+                ranking.getRankPosition(),
+                ranking.getIsAdvanced()
+        );
     }
 
     private void saveRoundNotification(
