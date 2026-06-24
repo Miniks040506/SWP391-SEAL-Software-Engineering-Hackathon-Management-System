@@ -158,6 +158,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <EmojiEventsOutlinedIcon fontSize="small" />,
           },
           {
+            label: "Calibration",
+            path: "/coordinator/calibrations",
+            icon: <FactCheckOutlinedIcon fontSize="small" />,
+          },
+          {
             label: "Criteria",
             path: "/coordinator/criteria",
             icon: <VerifiedUserOutlinedIcon fontSize="small" />,
