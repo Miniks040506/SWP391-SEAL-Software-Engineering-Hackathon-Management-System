@@ -20,21 +20,47 @@ public interface ScoreRepository extends JpaRepository<Score, UUID> {
 
     long countBySubmissionIdAndJudgeId(UUID submissionId, UUID judgeId);
 
-    List<Score> findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(UUID submissionId, UUID judgeId);
-
     Optional<Score> findBySubmissionIdAndJudgeIdAndEventCriteriaId(UUID submissionId, UUID judgeId, UUID eventCriteriaId);
 
     @Query("""
-            SELECT s FROM Score s 
-                JOIN FETCH s.submission su 
-                JOIN FETCH su.round r 
-                JOIN FETCH r.event ew
-                JOIN FETCH s.judge j
-                JOIN FETCH j.user u 
-                JOIN FETCH s.eventCriteria ec 
-                WHERE s.id = :id 
+            SELECT s
+            FROM Score s
+            JOIN FETCH s.submission sub
+            JOIN FETCH s.judge j
+            JOIN FETCH s.eventCriteria ec
+            WHERE sub.id = :submissionId
+              AND j.id = :judgeId
+            ORDER BY ec.displayOrder ASC
             """)
-    Optional<Score> findByIdWithSubmissionRoundJudgeCriteria(
-            @Param("id") UUID id
+    List<Score> findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(
+            @Param("submissionId") UUID submissionId,
+            @Param("judgeId") UUID judgeId
     );
+
+    @Query("""
+            SELECT s
+            FROM Score s
+            JOIN FETCH s.submission sub
+            JOIN FETCH sub.round r
+            JOIN FETCH r.event e
+            JOIN FETCH s.judge j
+            JOIN FETCH j.user u
+            JOIN FETCH s.eventCriteria ec
+            WHERE s.id = :scoreId
+            """)
+    Optional<Score> findByIdWithSubmissionRoundJudgeCriteria(@Param("scoreId") UUID scoreId);
+
+    @Query("""
+            SELECT s
+            FROM Score s
+            JOIN FETCH s.submission sub
+            JOIN FETCH sub.team t
+            LEFT JOIN FETCH t.track tr
+            JOIN FETCH sub.round r
+            JOIN FETCH s.judge j
+            JOIN FETCH s.eventCriteria ec
+            WHERE r.id = :roundId
+              AND s.isDraft = false
+            """)
+    List<Score> findConfirmedByRoundId(@Param("roundId") UUID roundId);
 }

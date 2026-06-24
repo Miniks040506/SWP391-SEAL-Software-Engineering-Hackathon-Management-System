@@ -770,12 +770,12 @@ public class RoundServiceImpl implements RoundService {
             int completed = 0;
 
             for (Submission submission : submissions) {
-//                long criteriaCount = countCriteriaForRound(submission.getRound());
-//                long confirmed = scoreRepository.countBySubmissionIdAndJudgeIdAndIsDraftFalse(
-//                        submission.getId(), assignment.getJudge().getId());
-//                if (criteriaCount > 0 && confirmed >= criteriaCount) {
-//                    completed++;
-//                }
+                long criteriaCount = countCriteriaForRound(submission.getRound());
+                long confirmed = scoreRepository.countBySubmissionIdAndJudgeIdAndIsDraftFalse(
+                        submission.getId(), assignment.getJudge().getId());
+                if (criteriaCount > 0 && confirmed >= criteriaCount) {
+                    completed++;
+                }
             }
 
             assignment.setTotalToScore(total);
@@ -794,6 +794,16 @@ public class RoundServiceImpl implements RoundService {
 
         double percent = assignedTotal == 0 ? 0.0 : completedTotal * 100.0 / assignedTotal;
         return new ScoringProgressResponse(round.getId(), completedTotal, assignedTotal, percent, judgeProgress);
+    }
+
+    private long countCriteriaForRound(Round round) {
+        if (round == null || round.getEvent() == null) {
+            return 0;
+        }
+        return round.getEvent().getEventCriteria().stream()
+                .filter(EventCriteria::isActiveCriteria)
+                .filter(criteria -> criteria.appliesToRound(round.getId()))
+                .count();
     }
 
     private void saveRoundNotification(
