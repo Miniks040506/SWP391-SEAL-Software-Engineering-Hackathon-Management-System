@@ -24,7 +24,7 @@ export const useAllCalibrationRoundsQuery = () => {
         queryKey: calibrationQueryKeys.lists(),
         queryFn: () => USE_MOCK
             ? mockCalibrationService.getAllCalibrationRounds()
-            : calibrationApi.getAllCalibrationRounds(),
+            : calibrationApi.getCalibrationRoundsByEvent(),
     });
 };
 
