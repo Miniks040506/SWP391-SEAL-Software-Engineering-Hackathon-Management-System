@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -436,9 +437,36 @@ public class RoundServiceImpl implements RoundService {
         return toRoundOperationStatus(round);
     }
 
+    @Transactional
     @Override
     public RoundLockResponse lockGrading(UUID roundId, Authentication authentication) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        if (round.getSubmissionLockedAt() == null) {
+            throw new ConflictException("Submission must be locked before grading can be locked.");
+        }
+        if (round.getGradingLockedAt() != null) {
+            throw new ConflictException("Grading is already locked for this round.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        RoundStatus before = round.getStatus();
+        round.setGradingLockedAt(now);
+        round.setStatus(RoundStatus.RESULTS_READY);
+        Round saved = roundRepository.save(round);
+
+        saveRoundAudit(actor, saved, AuditActionType.GRADING_LOCKED, before.name(), saved.getStatus().name());
+        saveRoundNotification(actor, saved, NotificationType.JUDGING_READY, "Grading locked",
+                "Grading has been locked for round " + saved.getName() + ". Rankings can now be calculated.");
+
+        ScoringProgressResponse progress = buildScoringProgress(saved);
+        return new RoundLockResponse(
+                saved.getId(),
+                "Grading",
+                now,
+                "Round grading locked successfully (" + progress.completed() + "/" + progress.total() + " assigned submissions completed)."
+        );
     }
 
     @Override
@@ -726,6 +754,46 @@ public class RoundServiceImpl implements RoundService {
             //TODO
             e.printStackTrace();
         }
+    }
+
+    private ScoringProgressResponse buildScoringProgress(Round round) {
+        List<RoundJudgeAssignment> assignments = roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(round.getId());
+        List<JudgeProgressResponse> judgeProgress = new ArrayList<>();
+
+        int completedTotal = 0;
+        int assignedTotal = 0;
+
+        for (RoundJudgeAssignment assignment : assignments) {
+            UUID trackId = assignment.getTrack() == null ? null : assignment.getTrack().getId();
+            List<Submission> submissions = submissionRepository.findSubmittedOrLateByRoundAndTrackNullable(round.getId(), trackId);
+            int total = submissions.size();
+            int completed = 0;
+
+            for (Submission submission : submissions) {
+//                long criteriaCount = countCriteriaForRound(submission.getRound());
+//                long confirmed = scoreRepository.countBySubmissionIdAndJudgeIdAndIsDraftFalse(
+//                        submission.getId(), assignment.getJudge().getId());
+//                if (criteriaCount > 0 && confirmed >= criteriaCount) {
+//                    completed++;
+//                }
+            }
+
+            assignment.setTotalToScore(total);
+            assignment.setScoringProgress(completed);
+            judgeProgress.add(new JudgeProgressResponse(
+                    assignment.getJudge().getId(),
+                    assignment.getJudge().getUser().getFullName(),
+                    trackId,
+                    completed,
+                    total
+            ));
+
+            completedTotal += completed;
+            assignedTotal += total;
+        }
+
+        double percent = assignedTotal == 0 ? 0.0 : completedTotal * 100.0 / assignedTotal;
+        return new ScoringProgressResponse(round.getId(), completedTotal, assignedTotal, percent, judgeProgress);
     }
 
     private void saveRoundNotification(
