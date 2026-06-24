@@ -29,13 +29,15 @@ public class RoundServiceImpl implements RoundService {
 
     private final HackathonEventRepository hackathonEventRepository;
     private final RoundRepository roundRepository;
-    private final CurrentUserService currentUserService;
     private final AdvanceRuleRepository advanceRuleRepository;
     private final TrackRepository trackRepository;
     private final AuditLogRepository auditLogRepository;
     private final SubmissionRepository submissionRepository;
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final NotificationService notificationService;
+    private final ScoreRepository scoreRepository;
+
+    private final CurrentUserService currentUserService;
 
     @Transactional
     @Override
@@ -470,8 +472,10 @@ public class RoundServiceImpl implements RoundService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ScoringProgressResponse getScoringProgress(UUID roundId, Authentication authentication) {
-        return null;
+        currentUserService.getCurrentUser(authentication);
+        return buildScoringProgress(getRound(roundId));
     }
 
     @Override

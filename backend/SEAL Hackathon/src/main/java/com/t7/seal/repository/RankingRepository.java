@@ -44,4 +44,18 @@ public interface RankingRepository extends JpaRepository<Ranking, UUID> {
             """)
     List<Ranking> findPublicTeamHistory(
             @Param("teamId") UUID teamId);
+
+
+    @Query("""
+            SELECT r
+            FROM Ranking r
+            JOIN FETCH r.submission s
+            JOIN FETCH s.team t
+            JOIN FETCH r.round rd
+            JOIN FETCH r.track tr
+            WHERE rd.id = :roundId
+            ORDER BY tr.name ASC, r.rankPosition ASC
+            """)
+    List<Ranking> findByRoundIdWithSubmissionTeamTrack(@Param("roundId") UUID roundId);
+
 }
