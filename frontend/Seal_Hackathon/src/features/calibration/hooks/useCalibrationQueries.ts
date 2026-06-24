@@ -14,6 +14,9 @@ export const calibrationQueryKeys = {
     detail: (id: UUID) => [...calibrationQueryKeys.details(), id] as const,
     distributions: () => [...calibrationQueryKeys.all, "distribution"] as const,
     distribution: (id: UUID) => [...calibrationQueryKeys.distributions(), id] as const,
+    scoreSheets: () => [...calibrationQueryKeys.all, "scoreSheet"] as const,
+    scoreSheet: (id: UUID) => [...calibrationQueryKeys.scoreSheets(), id] as const,
+    myScores: (id: UUID) => [...calibrationQueryKeys.all, "myScores", id] as const,
 };
 
 export const useAllCalibrationRoundsQuery = () => {
@@ -51,6 +54,26 @@ export const useCalibrationDistributionQuery = (calibrationId?: UUID) => {
         queryFn: () => USE_MOCK
             ? mockCalibrationService.getDistributionAlias(calibrationId!)
             : calibrationApi.getDistributionAlias(calibrationId!),
+        enabled: !!calibrationId,
+    });
+};
+
+export const useCalibrationScoreSheetQuery = (calibrationId?: UUID) => {
+    return useQuery({
+        queryKey: calibrationQueryKeys.scoreSheet(calibrationId!),
+        queryFn: () => USE_MOCK
+            ? mockCalibrationService.getScoreSheetAlias(calibrationId!)
+            : calibrationApi.getScoreSheetAlias(calibrationId!),
+        enabled: !!calibrationId,
+    });
+};
+
+export const useMyCalibrationScoresQuery = (calibrationId?: UUID) => {
+    return useQuery({
+        queryKey: calibrationQueryKeys.myScores(calibrationId!),
+        queryFn: () => USE_MOCK
+            ? mockCalibrationService.getMyScores(calibrationId!)
+            : calibrationApi.getMyScores(calibrationId!),
         enabled: !!calibrationId,
     });
 };

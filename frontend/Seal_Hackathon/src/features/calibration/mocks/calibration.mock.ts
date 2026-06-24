@@ -100,5 +100,24 @@ export const mockCalibrationService = {
         };
 
         return mockCalibrationRounds.find(c => c.id === calibrationId) as CalibrationRoundDetailResponse;
+    },
+
+    getScoreSheetAlias: async (calibrationId: UUID) => {
+        await delay(500);
+        return {
+            calibrationRoundId: calibrationId,
+            sampleSubmissionId: "sub-alpha-001" as UUID,
+            criteria: [], // mock criteria
+        } as any;
+    },
+
+    submitCalibrationScoreAlias: async (calibrationId: UUID, payload: any) => {
+        await delay(500);
+        return [];
+    },
+
+    getMyScores: async (calibrationId: UUID) => {
+        await delay(500);
+        return [];
     }
 };
