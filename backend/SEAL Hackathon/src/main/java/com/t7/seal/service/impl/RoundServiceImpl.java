@@ -7,6 +7,7 @@ import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.round.*;
+import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.round.*;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
@@ -18,10 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +34,7 @@ public class RoundServiceImpl implements RoundService {
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final NotificationService notificationService;
     private final ScoreRepository scoreRepository;
+    private final RankingRepository rankingRepository;
 
     private final CurrentUserService currentUserService;
 
@@ -478,9 +477,32 @@ public class RoundServiceImpl implements RoundService {
         return buildScoringProgress(getRound(roundId));
     }
 
+    @Transactional(readOnly = true)
     @Override
     public AdvancementPreviewResponse previewAdvanceRules(UUID roundId, Authentication authentication) {
-        return null;
+        currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+
+        List<Ranking> rankings = rankingRepository.findByRoundIdWithSubmissionTeamTrack(roundId);
+        List<AdvanceRule> rules = advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId);
+        List<String> warnings = new ArrayList<>();
+
+        if (rankings.isEmpty()) {
+            warnings.add("No ranking rows found for this round. Calculate rankings before previewing advancement.");
+        }
+        if (rules.isEmpty()) {
+            warnings.add("No advance rules configured for this round.");
+        }
+        if (round.getGradingLockedAt() == null) {
+            warnings.add("Grading is not locked yet. Preview may change after judges finish scoring.");
+        }
+
+        List<Ranking> suggested = executeAdvanceRules(rankings, rules);
+        return new AdvancementPreviewResponse(
+                roundId,
+                suggested.stream().map(this::toRankingResponse).toList(),
+                warnings
+        );
     }
 
     @Override
@@ -808,6 +830,64 @@ public class RoundServiceImpl implements RoundService {
                 .filter(EventCriteria::isActiveCriteria)
                 .filter(criteria -> criteria.appliesToRound(round.getId()))
                 .count();
+    }
+
+    private List<Ranking> executeAdvanceRules(List<Ranking> rankings, List<AdvanceRule> rules) {
+        if (rankings == null || rankings.isEmpty() || rules == null || rules.isEmpty()) {
+            return List.of();
+        }
+
+        List<Ranking> sorted = rankings.stream()
+                .sorted(Comparator
+                        .comparing((Ranking r) -> r.getTrack().getId().toString())
+                        .thenComparing(Ranking::getRankPosition)
+                        .thenComparing(Ranking::getTotalScore, Comparator.reverseOrder()))
+                .toList();
+
+        LinkedHashSet<Ranking> selected = new LinkedHashSet<>();
+
+        for (AdvanceRule rule : rules) {
+            List<Ranking> scoped = sorted.stream()
+                    .filter(r -> rule.appliesToTrack(r.getTrack().getId()))
+                    .sorted(Comparator.comparing(Ranking::getRankPosition))
+                    .toList();
+
+            switch (rule.getRuleType()) {
+                case TOP_N -> selected.addAll(scoped.stream()
+                        .limit(Math.max(0, Math.round(rule.getValue())))
+                        .toList());
+                case TOP_PERCENT -> {
+                    int limit = (int) Math.ceil(scoped.size() * (rule.getValue() / 100.0));
+                    selected.addAll(scoped.stream().limit(Math.max(0, limit)).toList());
+                }
+                case MIN_SCORE -> selected.addAll(scoped.stream()
+                        .filter(r -> r.getTotalScore() != null && r.getTotalScore() >= rule.getValue())
+                        .toList());
+                case WILDCARD -> selected.addAll(scoped.stream()
+                        .filter(r -> !selected.contains(r))
+                        .sorted(Comparator
+                                .comparing(Ranking::getTotalScore, Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(Ranking::getRankPosition))
+                        .limit(Math.max(0, Math.round(rule.getValue())))
+                        .toList());
+            }
+        }
+
+        return new ArrayList<>(selected);
+    }
+
+    private RankingResponse toRankingResponse(Ranking ranking) {
+        return new RankingResponse(
+                ranking.getId(),
+                ranking.getSubmission().getId(),
+                ranking.getSubmission().getTeam().getId(),
+                ranking.getSubmission().getTeam().getName(),
+                ranking.getRound().getId(),
+                ranking.getTrack().getId(),
+                ranking.getTotalScore(),
+                ranking.getRankPosition(),
+                ranking.getIsAdvanced()
+        );
     }
 
     private void saveRoundNotification(
