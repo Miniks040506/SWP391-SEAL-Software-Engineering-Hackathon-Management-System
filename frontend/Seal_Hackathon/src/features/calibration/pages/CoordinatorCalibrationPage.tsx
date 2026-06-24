@@ -1,6 +1,12 @@
 import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
+import { Button, CircularProgress } from "@mui/material";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
+
+import type { UUID } from "@/types/common.types";
 import {
     useEventCalibrationRoundsQuery,
     useAllCalibrationRoundsQuery,
@@ -10,12 +16,12 @@ import {
 } from "@/features/calibration/hooks/useCalibrationMutations";
 import { CalibrationRoundTable } from "@/features/calibration/components/CalibrationRoundTable";
 
-
 export const CoordinatorCalibrationPage = () => {
     const { eventId } = useParams<{ eventId: string }>();
+    const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
 
-    const eventQuery = useEventCalibrationRoundsQuery(eventId);
+    const eventQuery = useEventCalibrationRoundsQuery(eventId as UUID);
     const allQuery = useAllCalibrationRoundsQuery();
 
     const {
@@ -24,19 +30,16 @@ export const CoordinatorCalibrationPage = () => {
         isError,
     } = eventId ? eventQuery : allQuery;
 
-
     const publishMutation = usePublishCalibrationDistributionMutation();
     const [publishingId, setPublishingId] = useState<string | null>(null);
-
 
     const handlePublish = async (id: string) => {
         if (!window.confirm("Are you sure you want to publish the distribution? This action cannot be undone and will prevent further edits.")) {
             return;
         }
 
-
         setPublishingId(id);
-        publishMutation.mutate(id, {
+        publishMutation.mutate(id as UUID, {
             onSuccess: () => {
                 enqueueSnackbar("Distribution published successfully", { variant: "success" });
             },
@@ -52,83 +55,97 @@ export const CoordinatorCalibrationPage = () => {
         });
     };
 
-
     const totalRounds = calibrationRounds?.length || 0;
     const openRounds = calibrationRounds?.filter((r) => !r.distributionPublishedAt).length || 0;
     const publishedDistributions = calibrationRounds?.filter((r) => r.distributionPublishedAt).length || 0;
     const pendingJudgeSubmissions = 0;
 
-
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-            {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="mx-auto max-w-6xl animate-in fade-in duration-500 space-y-7">
+            <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                        Calibration Rounds
-                    </h1>
-                    <p className="text-gray-500 mt-1">
-                        Setup benchmark scoring before real judging
-                    </p>
-                </div>
-                {eventId && (
-                    <div className="flex items-center gap-3">
-                        <Link
-                            to={`/coordinator/events/${eventId}/edit`}
-                            className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-colors shadow-sm"
+                    {eventId && (
+                        <Button
+                            startIcon={<ArrowBackOutlinedIcon />}
+                            onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
+                            sx={{ mb: 1, textTransform: "none", fontWeight: 800 }}
                         >
                             Back to Event
-                        </Link>
-                        <Link
-                            to={`/coordinator/events/${eventId}/calibrations/create`}
-                            className="px-4 py-2 bg-blue-600 rounded-md text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                        </Button>
+                    )}
+                    <h1 className="flex items-center gap-3 text-3xl font-black text-slate-950 dark:text-white">
+                        Calibration Rounds
+                    </h1>
+                    <p className="mt-2 max-w-2xl text-sm font-medium text-slate-500 dark:text-slate-400">
+                        Setup benchmark scoring before real judging.
+                    </p>
+                </div>
+                {eventId ? (
+                    <div className="flex gap-2">
+                        <Button
+                            variant="contained"
+                            startIcon={<AddOutlinedIcon />}
+                            onClick={() => navigate(`/coordinator/events/${eventId}/calibrations/create`)}
+                            sx={{
+                                borderRadius: "12px",
+                                textTransform: "none",
+                                fontWeight: 900,
+                                bgcolor: "#059669",
+                                "&:hover": { bgcolor: "#047857" },
+                                height: 48,
+                            }}
                         >
                             Create Calibration Round
-                        </Link>
+                        </Button>
                     </div>
+                ) : (
+                    <Button
+                        variant="contained"
+                        startIcon={<AddOutlinedIcon />}
+                        onClick={() => navigate(`/coordinator/calibrations/create`)}
+                        sx={{
+                            borderRadius: "12px",
+                            textTransform: "none",
+                            fontWeight: 900,
+                            bgcolor: "#059669",
+                            "&:hover": { bgcolor: "#047857" },
+                            height: 48,
+                        }}
+                    >
+                        Create Calibration Round
+                    </Button>
                 )}
-            </div>
+            </header>
 
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col">
-                    <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                        Total calibration rounds
-                    </span>
-                    <span className="text-3xl font-bold text-gray-900 mt-2">{totalRounds}</span>
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Total Rounds</p>
+                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{totalRounds}</p>
                 </div>
-                <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col">
-                    <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                        Open calibration rounds
-                    </span>
-                    <span className="text-3xl font-bold text-blue-600 mt-2">{openRounds}</span>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Open</p>
+                    <p className="mt-1 text-2xl font-black text-blue-600 dark:text-blue-400">{openRounds}</p>
                 </div>
-                <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col">
-                    <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                        Published distributions
-                    </span>
-                    <span className="text-3xl font-bold text-green-600 mt-2">{publishedDistributions}</span>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Published</p>
+                    <p className="mt-1 text-2xl font-black text-emerald-600 dark:text-emerald-400">{publishedDistributions}</p>
                 </div>
-                <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col">
-                    <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                        Pending submissions
-                    </span>
-                    <span className="text-3xl font-bold text-amber-600 mt-2">{pendingJudgeSubmissions}</span>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Pending Submissions</p>
+                    <p className="mt-1 text-2xl font-black text-amber-600 dark:text-amber-400">{pendingJudgeSubmissions}</p>
                 </div>
             </div>
 
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                <h2 className="mb-6 text-lg font-bold text-slate-900 dark:text-white">
                     All Calibration Rounds
                 </h2>
                 {isLoading ? (
-                    <div className="py-12 flex justify-center items-center">
-                        <span className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></span>
+                    <div className="flex justify-center py-12">
+                        <CircularProgress />
                     </div>
                 ) : isError ? (
-                    <div className="py-12 text-center text-red-500">
+                    <div className="py-12 text-center font-medium text-rose-500">
                         Failed to load calibration rounds. Please try again.
                     </div>
                 ) : (

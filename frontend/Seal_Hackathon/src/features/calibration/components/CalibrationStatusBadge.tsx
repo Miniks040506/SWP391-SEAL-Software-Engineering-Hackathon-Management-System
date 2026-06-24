@@ -1,11 +1,9 @@
 import React from "react";
 
-
 interface CalibrationStatusBadgeProps {
     distributionPublished: boolean;
     mandatory?: boolean;
 }
-
 
 export const CalibrationStatusBadge = ({
     distributionPublished,
@@ -14,18 +12,17 @@ export const CalibrationStatusBadge = ({
     return (
         <div className="flex items-center gap-2">
             {distributionPublished ? (
-                <span className="px-2.5 py-1 rounded text-xs font-bold tracking-tight shadow-sm text-green-600 bg-green-50 border border-green-100">
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-600 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
                     PUBLISHED
                 </span>
             ) : (
-                <span className="px-2.5 py-1 rounded text-xs font-bold tracking-tight shadow-sm text-amber-600 bg-amber-50 border border-amber-100">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
                     DRAFT
                 </span>
             )}
 
-
             {mandatory && (
-                <span className="px-2.5 py-1 rounded text-xs font-bold tracking-tight shadow-sm text-red-600 bg-red-50 border border-red-100">
+                <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-rose-600 shadow-sm dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">
                     MANDATORY
                 </span>
             )}

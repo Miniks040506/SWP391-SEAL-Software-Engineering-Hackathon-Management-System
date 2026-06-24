@@ -7,7 +7,12 @@ import type { EventCriteriaResponse } from "@/types/criteria.types";
 import type { SubmissionSummaryResponse, CoordinatorSubmissionSummaryResponse } from "@/types/submission.types";
 import type { RoundResponse } from "@/types/round.types";
 import { format, parseISO } from "date-fns";
-
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import FileCopyOutlinedIcon from "@mui/icons-material/FileCopyOutlined";
+import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
+import GridOnOutlinedIcon from "@mui/icons-material/GridOnOutlined";
+import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
+import { Button, Checkbox, FormControlLabel, MenuItem, TextField } from "@mui/material";
 
 const calibrationFormSchema = z.object({
     description: z.string().optional(),
@@ -27,9 +32,7 @@ const calibrationFormSchema = z.object({
     path: ["endAt"],
 });
 
-
 export type CalibrationFormValues = z.infer<typeof calibrationFormSchema>;
-
 
 interface CalibrationRoundFormProps {
     initialValues?: Partial<CalibrationFormValues>;
@@ -42,7 +45,6 @@ interface CalibrationRoundFormProps {
     isReadOnly?: boolean;
 }
 
-
 const formatDateForInput = (isoDate?: string | null) => {
     if (!isoDate) return "";
     try {
@@ -52,6 +54,12 @@ const formatDateForInput = (isoDate?: string | null) => {
     }
 };
 
+const textFieldSx = { "& .MuiOutlinedInput-root": { borderRadius: "10px" } };
+const dateTimeFieldSx = {
+    "& .MuiOutlinedInput-root": { borderRadius: "10px" },
+    "& .MuiInputLabel-root": { backgroundColor: "white", paddingInline: "4px" },
+    ".dark & .MuiInputLabel-root": { backgroundColor: "#0f172a" },
+};
 
 export const CalibrationRoundForm = ({
     initialValues,
@@ -76,7 +84,6 @@ export const CalibrationRoundForm = ({
         },
     });
 
-
     const {
         register,
         handleSubmit,
@@ -84,10 +91,8 @@ export const CalibrationRoundForm = ({
         formState: { errors },
     } = methods;
 
-
     const selectedRoundId = watch("roundId");
     const selectedSubmissionId = watch("sampleSubmissionId");
-
 
     useEffect(() => {
         if (selectedRoundId) {
@@ -95,240 +100,192 @@ export const CalibrationRoundForm = ({
         }
     }, [selectedRoundId, onRoundChange]);
 
-
     const selectedSubmission = useMemo(() => {
         return submissions.find((s) => s.id === selectedSubmissionId);
     }, [submissions, selectedSubmissionId]);
 
-
     return (
         <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                {/* Section 1: Basic Information */}
-                <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
-                        <p className="text-sm text-gray-500">
-                            Calibration scores are used only for judge alignment, not final ranking.
-                        </p>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pb-24">
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800/50">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Section 1: Basic Information</h2>
                     </div>
-
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Description / Name
-                        </label>
-                        <input
-                            type="text"
+                    <div className="space-y-5 p-6">
+                        <TextField
+                            label="Description / Name"
+                            fullWidth
                             {...register("description")}
                             disabled={isReadOnly}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                            placeholder="e.g. Preliminary Calibration Round 1"
+                            error={!!errors.description}
+                            helperText={errors.description?.message as string}
+                            sx={textFieldSx}
                         />
-                        {errors.description && (
-                            <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-                        )}
-                    </div>
-
-
-                    <div className="flex items-start gap-2">
-                        <input
-                            type="checkbox"
-                            {...register("mandatory")}
-                            disabled={isReadOnly}
-                            id="mandatory-checkbox"
-                            className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:bg-gray-100"
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    {...register("mandatory")}
+                                    disabled={isReadOnly}
+                                    checked={watch("mandatory")}
+                                />
+                            }
+                            label={
+                                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                    Mandatory for judges before real grading
+                                </span>
+                            }
                         />
-                        <label htmlFor="mandatory-checkbox" className="text-sm text-gray-700">
-                            <span className="font-medium block">Mandatory for judges</span>
-                            <span className="text-gray-500">
-                                Judges must complete this calibration before they can grade real submissions in the event.
-                            </span>
-                        </label>
                     </div>
-                </div>
+                </section>
 
-
-                <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Sample Submission</h3>
-                        <p className="text-sm text-gray-500">
-                            Select a submission from a round to be used as the benchmark reference.
-                        </p>
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800/50">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Section 2: Sample Submission</h2>
                     </div>
-
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Round
-                            </label>
-                            <select
+                    <div className="space-y-5 p-6">
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                            <TextField
+                                select
+                                label="Round"
+                                fullWidth
                                 {...register("roundId")}
+                                value={watch("roundId") || ""}
                                 disabled={isReadOnly}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                error={!!errors.roundId}
+                                helperText={errors.roundId?.message as string}
+                                sx={textFieldSx}
                             >
-                                <option value="">Select a round</option>
+                                <MenuItem value="">Select a round</MenuItem>
                                 {rounds.map((r) => (
-                                    <option key={r.id} value={r.id}>
+                                    <MenuItem key={r.id} value={r.id}>
                                         {r.name}
-                                    </option>
+                                    </MenuItem>
                                 ))}
-                            </select>
-                            {errors.roundId && (
-                                <p className="mt-1 text-sm text-red-600">{errors.roundId.message}</p>
-                            )}
-                        </div>
+                            </TextField>
 
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Submission
-                            </label>
-                            <select
+                            <TextField
+                                select
+                                label="Submission"
+                                fullWidth
                                 {...register("sampleSubmissionId")}
+                                value={watch("sampleSubmissionId") || ""}
                                 disabled={isReadOnly || !selectedRoundId}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                error={!!errors.sampleSubmissionId}
+                                helperText={errors.sampleSubmissionId?.message as string}
+                                sx={textFieldSx}
                             >
-                                <option value="">Select a submission</option>
+                                <MenuItem value="">Select a submission</MenuItem>
                                 {submissions.map((s) => (
-                                    <option key={s.id} value={s.id}>
+                                    <MenuItem key={s.id} value={s.id}>
                                         {s.teamName || `Team ID: ${s.teamId}`} - {s.projectTitle || "Untitled"}
-                                    </option>
+                                    </MenuItem>
                                 ))}
-                            </select>
-                            {errors.sampleSubmissionId && (
-                                <p className="mt-1 text-sm text-red-600">
-                                    {errors.sampleSubmissionId.message}
-                                </p>
-                            )}
+                            </TextField>
                         </div>
-                    </div>
 
-
-                    {selectedSubmission && (
-                        <div className="mt-4 p-4 bg-blue-50 rounded-md border border-blue-100">
-                            <h4 className="font-medium text-blue-900 mb-2">Submission Preview</h4>
-                            <div className="grid grid-cols-2 gap-y-2 text-sm">
-                                <div>
-                                    <span className="text-blue-700 font-medium">Team:</span>{" "}
-                                    {selectedSubmission.teamName || "N/A"}
-                                </div>
-                                <div>
-                                    <span className="text-blue-700 font-medium">Title:</span>{" "}
-                                    {selectedSubmission.projectTitle || "N/A"}
-                                </div>
-                                <div>
-                                    <span className="text-blue-700 font-medium">Status:</span>{" "}
-                                    {selectedSubmission.status}
-                                </div>
-                                <div>
-                                    <span className="text-blue-700 font-medium">Track:</span>{" "}
-                                    {selectedSubmission.trackName || "N/A"}
+                        {selectedSubmission && (
+                            <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-500/30 dark:bg-blue-500/10">
+                                <h4 className="mb-3 font-bold tracking-tight text-blue-900 dark:text-blue-300">Submission Preview</h4>
+                                <div className="grid grid-cols-2 gap-y-3 text-sm">
+                                    <div>
+                                        <span className="font-semibold text-blue-700 dark:text-blue-400">Team:</span>{" "}
+                                        <span className="font-medium text-slate-900 dark:text-white">{selectedSubmission.teamName || "N/A"}</span>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold text-blue-700 dark:text-blue-400">Title:</span>{" "}
+                                        <span className="font-medium text-slate-900 dark:text-white">{selectedSubmission.projectTitle || "N/A"}</span>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold text-blue-700 dark:text-blue-400">Status:</span>{" "}
+                                        <span className="font-medium text-slate-900 dark:text-white">{selectedSubmission.status}</span>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold text-blue-700 dark:text-blue-400">Track:</span>{" "}
+                                        <span className="font-medium text-slate-900 dark:text-white">{selectedSubmission.trackName || "N/A"}</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                    {!selectedSubmission && selectedSubmissionId && (
-                        <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200 text-sm text-gray-500">
-                            Submission selected. View details below if available.
-                        </div>
-                    )}
-                </div>
-
-                <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Schedule</h3>
-                        <p className="text-sm text-gray-500">
-                            Set the active period for judges to submit their calibration scores.
-                        </p>
+                        )}
+                        {!selectedSubmission && selectedSubmissionId && (
+                            <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+                                Submission selected. View details below if available.
+                            </div>
+                        )}
                     </div>
+                </section>
 
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Start Time
-                            </label>
-                            <input
-                                type="datetime-local"
-                                {...register("startAt")}
-                                disabled={isReadOnly}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                            />
-                            {errors.startAt && (
-                                <p className="mt-1 text-sm text-red-600">{errors.startAt.message}</p>
-                            )}
-                        </div>
-
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                End Time
-                            </label>
-                            <input
-                                type="datetime-local"
-                                {...register("endAt")}
-                                disabled={isReadOnly}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                            />
-                            {errors.endAt && (
-                                <p className="mt-1 text-sm text-red-600">{errors.endAt.message}</p>
-                            )}
-                        </div>
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800/50">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Section 3: Schedule</h2>
                     </div>
-                </div>
-
-
-                <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900">Benchmark Score Matrix</h3>
-                            <p className="text-sm text-gray-500">
-                                Enter the ideal benchmark scores for the selected submission.
-                            </p>
-                        </div>
+                    <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
+                        <TextField
+                            label="Start Time"
+                            type="datetime-local"
+                            fullWidth
+                            {...register("startAt")}
+                            disabled={isReadOnly}
+                            error={!!errors.startAt}
+                            helperText={errors.startAt?.message as string}
+                            slotProps={{ inputLabel: { shrink: true } }}
+                            sx={dateTimeFieldSx}
+                        />
+                        <TextField
+                            label="End Time"
+                            type="datetime-local"
+                            fullWidth
+                            {...register("endAt")}
+                            disabled={isReadOnly}
+                            error={!!errors.endAt}
+                            helperText={errors.endAt?.message as string}
+                            slotProps={{ inputLabel: { shrink: true } }}
+                            sx={dateTimeFieldSx}
+                        />
                     </div>
+                </section>
 
-
-                    {selectedSubmissionId ? (
-                        <BenchmarkScoreMatrix criteria={criteria} />
-                    ) : (
-                        <div className="p-8 text-center bg-gray-50 rounded border border-dashed border-gray-300 text-gray-500">
-                            Please select a sample submission to view the scoring matrix.
-                        </div>
-                    )}
-                    {errors.benchmarkScores && (
-                        <p className="mt-1 text-sm text-red-600 text-center">Please ensure all benchmark scores are valid.</p>
-                    )}
-                </div>
-
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800/50">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Section 4: Benchmark Score Matrix</h2>
+                    </div>
+                    <div className="p-6">
+                        {selectedSubmissionId ? (
+                            <BenchmarkScoreMatrix criteria={criteria} />
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+                                Please select a sample submission to view the scoring matrix.
+                            </div>
+                        )}
+                        {errors.benchmarkScores && (
+                            <p className="mt-3 text-center text-sm font-bold text-rose-600">Please ensure all benchmark scores are valid.</p>
+                        )}
+                    </div>
+                </section>
 
                 {!isReadOnly && (
-                    <div className="flex gap-2 justify-end">
-                        <button
-                            type="button"
-                            className="px-4 py-2 border border-gray-300 rounded text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-                            onClick={() => window.history.back()}
-                        >
+                    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-end gap-4 border-t border-slate-200 bg-white/80 p-4 pr-10 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80">
+                        <Button onClick={() => window.history.back()} sx={{ fontWeight: 800, textTransform: "none" }}>
                             Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="submit"
+                            variant="contained"
                             disabled={isLoading || !selectedSubmissionId}
-                            className="px-6 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors disabled:bg-blue-300 flex items-center gap-2"
+                            startIcon={<SaveOutlinedIcon />}
+                            sx={{
+                                borderRadius: "10px",
+                                textTransform: "none",
+                                fontWeight: 800,
+                                bgcolor: "#059669",
+                                "&:hover": { bgcolor: "#047857" },
+                                px: 4,
+                            }}
                         >
-                            {isLoading && (
-                                <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                            )}
-                            Save Calibration Round
-                        </button>
+                            {isLoading ? "Saving..." : "Save Calibration Round"}
+                        </Button>
                     </div>
                 )}
             </form>
         </FormProvider>
     );
 };
-
-
-

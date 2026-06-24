@@ -1,16 +1,18 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
+import { Button } from "@mui/material";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import type { CalibrationRoundResponse } from "@/types/calibration.types";
 import { CalibrationStatusBadge } from "./CalibrationStatusBadge";
-
 
 interface CalibrationRoundTableProps {
     rounds: CalibrationRoundResponse[];
     onPublish: (id: string) => void;
     isPublishing: string | null;
 }
-
 
 const formatDate = (isoString?: string | null) => {
     if (!isoString) return "N/A";
@@ -21,7 +23,6 @@ const formatDate = (isoString?: string | null) => {
     }
 };
 
-
 export const CalibrationRoundTable = ({
     rounds,
     onPublish,
@@ -29,109 +30,100 @@ export const CalibrationRoundTable = ({
 }: CalibrationRoundTableProps) => {
     if (!rounds || rounds.length === 0) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-500">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center text-sm font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
                 No calibration rounds found. Create one to get started.
             </div>
         );
     }
 
-
     return (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-medium">
-                        <tr>
-                            <th className="py-3 px-4">Name / Description</th>
-                            <th className="py-3 px-4">Sample / Team</th>
-                            <th className="py-3 px-4">Start Time</th>
-                            <th className="py-3 px-4">End Time</th>
-                            <th className="py-3 px-4">Status</th>
-                            <th className="py-3 px-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 text-gray-700">
-                        {rounds.map((round) => {
-                            const isDistributionPublished = !!round.distributionPublishedAt;
+        <div className="space-y-4">
+            {rounds.map((round) => {
+                const isDistributionPublished = !!round.distributionPublishedAt;
 
+                return (
+                    <div
+                        key={round.id}
+                        className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md md:flex-row md:items-center md:justify-between dark:border-slate-700 dark:bg-slate-900"
+                    >
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                                    {round.description || "Calibration Round"}
+                                </h3>
+                                <CalibrationStatusBadge
+                                    distributionPublished={isDistributionPublished}
+                                    mandatory={round.mandatory}
+                                />
+                            </div>
+                            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                                Sample Submission:{" "}
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                    {round.sampleSubmissionId}
+                                </span>
+                            </p>
+                            <div className="mt-3 flex items-center gap-6 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                <p>Start: {formatDate(round.startAt)}</p>
+                                <p>End: {formatDate(round.endAt)}</p>
+                            </div>
+                        </div>
 
-                            return (
-                                <tr key={round.id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="py-3 px-4">
-                                        <div className="font-medium text-gray-900">
-                                            {round.description || "Calibration Round"}
-                                        </div>
-                                    </td>
-                                    <td className="py-3 px-4">
-                                        {/* Without extra query, we just have sampleSubmissionId. We might need a generic lookup if we want team name, or we just display ID.
-                        The API response 'CalibrationRoundResponse' does not include sample team name directly unless we enhance the response.
-                        For now, we display the ID or 'View Details' */}
-                                        <span className="text-gray-500 font-mono text-xs">
-                                            Sub ID: {round.sampleSubmissionId.substring(0, 8)}...
-                                        </span>
-                                    </td>
-                                    <td className="py-3 px-4">{formatDate(round.startAt)}</td>
-                                    <td className="py-3 px-4">{formatDate(round.endAt)}</td>
-                                    <td className="py-3 px-4">
-                                        <CalibrationStatusBadge
-                                            distributionPublished={isDistributionPublished}
-                                            mandatory={round.mandatory}
-                                        />
-                                    </td>
-                                    <td className="py-3 px-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Link
-                                                to={`/coordinator/calibrations/${round.id}`}
-                                                className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                                            >
-                                                View
-                                            </Link>
+                        <div className="flex items-center gap-3">
+                            <Button
+                                component={Link}
+                                to={`/coordinator/calibrations/${round.id}`}
+                                variant="outlined"
+                                color="inherit"
+                                size="small"
+                                startIcon={<VisibilityOutlinedIcon />}
+                                sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}
+                            >
+                                View
+                            </Button>
 
+                            {!isDistributionPublished && (
+                                <>
+                                    <Button
+                                        component={Link}
+                                        to={`/coordinator/calibrations/${round.id}/edit`}
+                                        variant="outlined"
+                                        color="warning"
+                                        size="small"
+                                        startIcon={<EditOutlinedIcon />}
+                                        sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}
+                                    >
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        size="small"
+                                        startIcon={<PublishOutlinedIcon />}
+                                        onClick={() => onPublish(round.id)}
+                                        disabled={isPublishing === round.id}
+                                        sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}
+                                    >
+                                        {isPublishing === round.id ? "Publishing..." : "Publish"}
+                                    </Button>
+                                </>
+                            )}
 
-                                            {!isDistributionPublished && (
-                                                <>
-                                                    <span className="text-gray-300">|</span>
-                                                    <Link
-                                                        to={`/coordinator/calibrations/${round.id}/edit`}
-                                                        className="text-amber-600 hover:text-amber-800 font-medium transition-colors"
-                                                    >
-                                                        Edit
-                                                    </Link>
-                                                    <span className="text-gray-300">|</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onPublish(round.id)}
-                                                        disabled={isPublishing === round.id}
-                                                        className="text-green-600 hover:text-green-800 font-medium transition-colors disabled:opacity-50"
-                                                    >
-                                                        {isPublishing === round.id ? "Publishing..." : "Publish Distribution"}
-                                                    </button>
-                                                </>
-                                            )}
-
-
-                                            {isDistributionPublished && (
-                                                <>
-                                                    <span className="text-gray-300">|</span>
-                                                    <Link
-                                                        to={`/coordinator/calibrations/${round.id}#distribution`}
-                                                        className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-                                                    >
-                                                        Distribution
-                                                    </Link>
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
+                            {isDistributionPublished && (
+                                <Button
+                                    component={Link}
+                                    to={`/coordinator/calibrations/${round.id}#distribution`}
+                                    variant="outlined"
+                                    color="primary"
+                                    size="small"
+                                    sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}
+                                >
+                                    Distribution
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 };
-
-
-
