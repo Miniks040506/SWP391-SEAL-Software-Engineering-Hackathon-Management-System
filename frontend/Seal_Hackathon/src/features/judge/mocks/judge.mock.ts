@@ -1,9 +1,9 @@
 import type { UUID } from "@/types/common.types";
 import type { PageResponse } from "@/types/common.types";
+import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
 import type {
   GetJudgeSubmissionsParams,
   JudgeAssignmentListItem,
-  JudgeSubmissionAssignmentResponse,
 } from "@/types/judge.types";
 
 export const mockJudgeAssignments: JudgeAssignmentListItem[] = [
@@ -34,6 +34,8 @@ export const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
     roundSubmissionLocked: false,
     confirmedScoreCount: 1,
     criteriaCount: 3,
+    draftScoreCount: 0,
+    gradingLocked: false,
     gradingStatus: "PENDING",
   },
   {
@@ -51,7 +53,9 @@ export const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
     roundSubmissionLocked: true,
     confirmedScoreCount: 5,
     criteriaCount: 3,
-    gradingStatus: "SCORED",
+    draftScoreCount: 0,
+    gradingLocked: false,
+    gradingStatus: "SUBMITTED",
   },
 ];
 
@@ -93,7 +97,7 @@ export const mockScoredSubmissionDetail = {
   trackName: "Software Engineering",
   roundName: "Final Round",
   status: "LATE",
-  gradingStatus: "SCORED",
+  gradingStatus: "SUBMITTED",
   description: "A comprehensive management system for university students.",
   submittedAt: "2026-05-26T14:30:00",
   links: [
@@ -152,11 +156,11 @@ export const mockJudgeService = {
   async submitScore(submissionId: UUID, payload: any) {
     await delay(600);
     if (submissionId === "sub-1111") {
-      mockPendingSubmissionDetail.gradingStatus = "SCORED";
+      mockPendingSubmissionDetail.gradingStatus = "SUBMITTED";
       mockPendingSubmissionDetail.scoredData = payload; 
       
       const targetSub = mockJudgeSubmissions.find(s => s.submissionId === "sub-1111");
-      if (targetSub) targetSub.gradingStatus = "SCORED";
+      if (targetSub) targetSub.gradingStatus = "SUBMITTED";
     }
     return { success: true };
   }

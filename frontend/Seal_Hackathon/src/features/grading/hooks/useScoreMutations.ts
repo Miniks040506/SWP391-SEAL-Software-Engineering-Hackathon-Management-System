@@ -7,6 +7,7 @@ export function useScoreMutations(submissionId: string) {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["grading", "scoreSheet", submissionId] });
+    queryClient.invalidateQueries({ queryKey: ["judge", "submissions"] });
   };
 
   const saveDraft = useMutation({
