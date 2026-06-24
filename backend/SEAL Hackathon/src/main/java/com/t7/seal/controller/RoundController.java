@@ -71,33 +71,47 @@ public class RoundController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @PostMapping("/rounds/{roundId}/lock-grading")
     public ResponseEntity<RoundLockResponse> lockGrading(
-            @PathVariable UUID roundId
+            @PathVariable UUID roundId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.lockGrading(roundId, authentication));
     }
 
-    @GetMapping("/rounds/{roundId}/scoring-progress")
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @GetMapping({
+            "/rounds/{roundId}/scoring-progress",
+            "/rounds/{roundId}/grading-status"
+    })
     public ResponseEntity<ScoringProgressResponse> getScoringProgress(
-            @PathVariable UUID roundId
+            @PathVariable UUID roundId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.getScoringProgress(roundId, authentication));
     }
 
-    @GetMapping("/rounds/{roundId}/advancement-preview")
-    public ResponseEntity<AdvancementPreviewResponse> getAdvancementPreview(
-            @PathVariable UUID roundId
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @PostMapping({
+            "/rounds/{roundId}/advance-rules/preview",
+            "/rounds/{roundId}/advancement-preview"
+    })
+    public ResponseEntity<AdvancementPreviewResponse> previewAdvanceRules(
+            @PathVariable UUID roundId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.previewAdvanceRules(roundId, authentication));
     }
 
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @PostMapping("/rounds/{roundId}/confirm-advancement")
     public ResponseEntity<ConfirmAdvancementResponse> confirmAdvancement(
             @PathVariable UUID roundId,
-            @Valid @RequestBody ConfirmAdvancementRequest request
+            @Valid @RequestBody ConfirmAdvancementRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(roundService.confirmAdvancement(roundId, request, authentication));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
