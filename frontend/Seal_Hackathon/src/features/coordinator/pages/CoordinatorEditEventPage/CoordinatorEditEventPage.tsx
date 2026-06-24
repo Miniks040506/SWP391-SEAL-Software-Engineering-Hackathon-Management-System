@@ -58,7 +58,7 @@ export function CoordinatorEditEventPage() {
   const tracksQuery = useCoordinatorEventTracksQuery(eventId);
   const roundsQuery = useCoordinatorEventRoundsQuery(eventId);
   const prizesQuery = useCoordinatorEventPrizesQuery(eventId);
-  
+
   const invalidateEditData = useInvalidateEditEventData(eventId);
 
   const eventName = useMemo(() => getEventName(eventQuery.data), [eventQuery.data]);
@@ -104,6 +104,16 @@ export function CoordinatorEditEventPage() {
             <p className="mt-1 text-sm font-medium text-slate-500">
               Edit event information, tracks, rounds, mentors, judges, and prizes.
             </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="contained"
+              startIcon={<FactCheckOutlinedIcon />}
+              onClick={() => navigate(`/coordinator/events/${eventId}/calibrations`)}
+              sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+            >
+              Manage Calibration
+            </Button>
           </div>
         </div>
       </header>
