@@ -1,9 +1,9 @@
 import { apiRequest } from "@/api/apiRequest";
+import type { JudgeSubmissionAssignmentResponse } from "@/types";
 import type { PageResponse, UUID } from "@/types/common.types";
 import type {
   GetJudgeSubmissionsParams,
   JudgeAssignmentListItem,
-  JudgeSubmissionAssignmentResponse,
   JudgeSubmissionDetailResponse,
 } from "@/types/judge.types";
 
