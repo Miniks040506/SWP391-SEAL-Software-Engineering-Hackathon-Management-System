@@ -17,11 +17,14 @@ export const JudgeAssignedSubmissionPage = () => {
   const pendingCount = submissions.filter(
     (s) => s.gradingStatus === "PENDING",
   ).length;
-  const readyCount = submissions.filter(
-    (s) => s.gradingStatus === "READY",
+  const draftSavedCount = submissions.filter(
+    (s) => s.gradingStatus === "DRAFT_SAVED",
   ).length;
-  const gradedCount = submissions.filter(
-    (s) => s.gradingStatus === "GRADED",
+  const submittedCount = submissions.filter(
+    (s) => s.gradingStatus === "SUBMITTED",
+  ).length;
+  const lockedCount = submissions.filter(
+    (s) => s.gradingStatus === "LOCKED",
   ).length;
 
   const filteredSubmissions = submissions.filter((sub) => {
@@ -52,7 +55,7 @@ export const JudgeAssignedSubmissionPage = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center">
           <span className="text-sm text-gray-500 font-medium">
             Total Assigned
@@ -67,16 +70,22 @@ export const JudgeAssignedSubmissionPage = () => {
             {pendingCount}
           </span>
         </div>
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center">
-          <span className="text-sm text-amber-700 font-medium">Ready</span>
-          <span className="text-2xl font-bold text-amber-700">
-            {readyCount}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center">
+          <span className="text-sm text-blue-700 font-medium">Draft saved</span>
+          <span className="text-2xl font-bold text-blue-700">
+            {draftSavedCount}
           </span>
         </div>
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center">
-          <span className="text-sm text-green-700 font-medium">Graded</span>
+          <span className="text-sm text-green-700 font-medium">Submitted</span>
           <span className="text-2xl font-bold text-green-700">
-            {gradedCount}
+            {submittedCount}
+          </span>
+        </div>
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center">
+          <span className="text-sm text-purple-700 font-medium">Locked</span>
+          <span className="text-2xl font-bold text-purple-700">
+            {lockedCount}
           </span>
         </div>
       </div>

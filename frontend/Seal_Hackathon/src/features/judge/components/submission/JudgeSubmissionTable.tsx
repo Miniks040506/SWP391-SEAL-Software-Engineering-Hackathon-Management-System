@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import type { JudgeSubmissionAssignmentResponse } from "@/types/judge.types";
+import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
 import { GradingStatusBadge } from "../GradingStatusBadge";
 import { JudgeSubmissionProgressCell } from "../JudgeSubmissionProgressCell";
 
@@ -37,7 +37,7 @@ export const JudgeSubmissionTable = ({ submissions }: JudgeSubmissionTableProps)
         </thead>
         <tbody className="divide-y divide-gray-100">
           {submissions.map((sub) => {
-            const isLocked = sub.roundSubmissionLocked;
+            const isLocked = sub.gradingLocked;
 
             let actionLabel = "View";
             let actionDest = `/judge/submissions/${sub.submissionId}`;
@@ -45,10 +45,10 @@ export const JudgeSubmissionTable = ({ submissions }: JudgeSubmissionTableProps)
             if (sub.gradingStatus === "PENDING") {
               actionLabel = "Start scoring";
               actionDest = `/judge/submissions/${sub.submissionId}/score`;
-            } else if (sub.gradingStatus === "READY") {
+            } else if (sub.gradingStatus === "DRAFT_SAVED") {
               actionLabel = "Continue scoring";
               actionDest = `/judge/submissions/${sub.submissionId}/score`;
-            } else if (sub.gradingStatus === "GRADED") {
+            } else if (sub.gradingStatus === "SUBMITTED") {
               actionLabel = "View score";
               actionDest = `/judge/submissions/${sub.submissionId}`;
             }

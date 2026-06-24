@@ -1,10 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { judgeApi } from "@/api/judge.api";
 import type { PageResponse, UUID } from "@/types/common.types";
-import type {
-  GetJudgeSubmissionsParams,
-  JudgeSubmissionAssignmentResponse,
-} from "@/types/judge.types";
+import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
+import type { GetJudgeSubmissionsParams } from "@/types/judge.types";
 
 const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
   {
@@ -22,6 +20,8 @@ const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
     roundSubmissionLocked: true,
     confirmedScoreCount: 0,
     criteriaCount: 5,
+    draftScoreCount: 0,
+    gradingLocked: false,
     gradingStatus: "PENDING",
   },
   {
@@ -39,7 +39,9 @@ const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
     roundSubmissionLocked: true,
     confirmedScoreCount: 0,
     criteriaCount: 5,
-    gradingStatus: "READY",
+    draftScoreCount: 3,
+    gradingLocked: false,
+    gradingStatus: "DRAFT_SAVED",
   },
   {
     submissionId: "sub-3",
@@ -56,7 +58,9 @@ const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
     roundSubmissionLocked: true,
     confirmedScoreCount: 5,
     criteriaCount: 5,
-    gradingStatus: "GRADED",
+    draftScoreCount: 0,
+    gradingLocked: false,
+    gradingStatus: "SUBMITTED",
   },
   {
     submissionId: "sub-4",
@@ -71,9 +75,12 @@ const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
     submissionNumber: 4,
     submittedAt: new Date().toISOString(),
     roundSubmissionLocked: false,
-    confirmedScoreCount: 0,
+    confirmedScoreCount: 5,
     criteriaCount: 5,
-    gradingStatus: "PENDING",
+    draftScoreCount: 0,
+    gradingLocked: true,
+    gradingLockedAt: new Date().toISOString(),
+    gradingStatus: "LOCKED",
   },
 ];
 

@@ -78,8 +78,9 @@ export const JudgeAssignedSubmissionFilters = ({
         >
           <option value="">All Statuses</option>
           <option value="PENDING">Not started</option>
-          <option value="READY">Ready</option>
-          <option value="GRADED">Graded</option>
+          <option value="DRAFT_SAVED">Draft saved</option>
+          <option value="SUBMITTED">Submitted</option>
+          <option value="LOCKED">Locked</option>
         </select>
       </div>
     </div>
