@@ -70,10 +70,10 @@ const mockJudgeSubmissions: JudgeSubmissionAssignmentResponse[] = [
     submissionStatus: "SUBMITTED",
     submissionNumber: 4,
     submittedAt: new Date().toISOString(),
-    roundSubmissionLocked: true,
-    confirmedScoreCount: 5,
+    roundSubmissionLocked: false,
+    confirmedScoreCount: 0,
     criteriaCount: 5,
-    gradingStatus: "GRADED",
+    gradingStatus: "PENDING",
   },
 ];
 

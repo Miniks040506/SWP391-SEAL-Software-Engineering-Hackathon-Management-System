@@ -19,10 +19,6 @@ export const GradingStatusBadge = ({ status }: GradingStatusBadgeProps) => {
       style = "text-green-600 bg-green-50 border border-green-200";
       label = "Graded";
       break;
-    default:
-      style = "text-gray-600 bg-gray-50 border border-gray-200";
-      label = "Unknown";
-      break;
   }
 
   return (

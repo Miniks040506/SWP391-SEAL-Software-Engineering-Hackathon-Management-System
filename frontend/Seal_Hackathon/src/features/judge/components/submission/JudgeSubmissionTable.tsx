@@ -81,7 +81,6 @@ export const JudgeSubmissionTable = ({ submissions }: JudgeSubmissionTableProps)
                   <JudgeSubmissionProgressCell
                     confirmedScoreCount={sub.confirmedScoreCount}
                     criteriaCount={sub.criteriaCount}
-                    gradingStatus={sub.gradingStatus}
                   />
                 </td>
                 <td className="px-6 py-4 text-right">
