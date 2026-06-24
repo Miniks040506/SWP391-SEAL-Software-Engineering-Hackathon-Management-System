@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import {
     useEventCalibrationRoundsQuery,
+    useAllCalibrationRoundsQuery,
 } from "@/features/calibration/hooks/useCalibrationQueries";
 import {
     usePublishCalibrationDistributionMutation,
@@ -14,20 +15,18 @@ export const CoordinatorCalibrationPage = () => {
     const { eventId } = useParams<{ eventId: string }>();
     const { enqueueSnackbar } = useSnackbar();
 
+    const eventQuery = useEventCalibrationRoundsQuery(eventId);
+    const allQuery = useAllCalibrationRoundsQuery();
+
     const {
         data: calibrationRounds,
         isLoading,
         isError,
-    } = useEventCalibrationRoundsQuery(eventId);
+    } = eventId ? eventQuery : allQuery;
 
 
     const publishMutation = usePublishCalibrationDistributionMutation();
     const [publishingId, setPublishingId] = useState<string | null>(null);
-
-
-    if (!eventId) {
-        return <div className="p-8 text-center text-red-500">Event ID is required</div>;
-    }
 
 
     const handlePublish = async (id: string) => {
@@ -72,20 +71,22 @@ export const CoordinatorCalibrationPage = () => {
                         Setup benchmark scoring before real judging
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Link
-                        to={`/coordinator/events/${eventId}/edit`}
-                        className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-colors shadow-sm"
-                    >
-                        Back to Event
-                    </Link>
-                    <Link
-                        to={`/coordinator/events/${eventId}/calibrations/create`}
-                        className="px-4 py-2 bg-blue-600 rounded-md text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                    >
-                        Create Calibration Round
-                    </Link>
-                </div>
+                {eventId && (
+                    <div className="flex items-center gap-3">
+                        <Link
+                            to={`/coordinator/events/${eventId}/edit`}
+                            className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-colors shadow-sm"
+                        >
+                            Back to Event
+                        </Link>
+                        <Link
+                            to={`/coordinator/events/${eventId}/calibrations/create`}
+                            className="px-4 py-2 bg-blue-600 rounded-md text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                        >
+                            Create Calibration Round
+                        </Link>
+                    </div>
+                )}
             </div>
 
 

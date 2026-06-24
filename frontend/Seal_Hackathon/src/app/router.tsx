@@ -162,6 +162,10 @@ export const router = createBrowserRouter([
       },
       { path: "events/:eventId/view", element: <EventDetailPage /> },
       {
+        path: "calibrations",
+        element: <CoordinatorCalibrationPage />,
+      },
+      {
         path: "events/:eventId/calibrations",
         element: <CoordinatorCalibrationPage />,
       },
