@@ -90,6 +90,8 @@ import {
   CalibrationRoundFormPage
 } from "@/features/calibration";
 
+import { RoundAdvancementPage } from "@/features/advancement/pages/RoundAdvancementPage";
+
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -159,6 +161,18 @@ export const router = createBrowserRouter([
       {
         path: "rounds/:roundId/criteria",
         element: <EventCriteriaViewPage mode="ROUND" />,
+      },
+      {
+        path: "rounds/:roundId/advance-rules",
+        element: <RoundAdvancementPage />,
+      },
+      {
+        path: "rounds/:roundId/advancement",
+        element: <RoundAdvancementPage />,
+      },
+      {
+        path: "events/:eventId/advancement",
+        element: <RoundAdvancementPage />,
       },
       { path: "events/:eventId/view", element: <EventDetailPage /> },
       {
