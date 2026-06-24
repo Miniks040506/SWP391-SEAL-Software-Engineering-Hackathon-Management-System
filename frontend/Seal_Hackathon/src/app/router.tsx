@@ -22,6 +22,7 @@ import { JudgeScoreSheetPage } from "@/features/grading/pages/JudgeScoreSheetPag
 import {
   JudgeCalibrationListPage,
   JudgeCalibrationScorePage,
+  CalibrationDistributionPage,
 } from "@/features/calibration";
 
 
@@ -187,6 +188,10 @@ export const router = createBrowserRouter([
         element: <CalibrationRoundFormPage />,
       },
       {
+        path: "calibrations/:calibrationId/distribution",
+        element: <CalibrationDistributionPage />,
+      },
+      {
         path: "calibrations/:calibrationId/edit",
         element: <CalibrationRoundFormPage />,
       },
@@ -262,6 +267,7 @@ export const router = createBrowserRouter([
       { path: "calibrations", element: <JudgeCalibrationListPage /> },
       { path: "calibrations/:calibrationId", element: <Navigate to="score" replace /> },
       { path: "calibrations/:calibrationId/score", element: <JudgeCalibrationScorePage /> },
+      { path: "calibrations/:calibrationId/distribution", element: <CalibrationDistributionPage /> },
       {
         path: "rounds/:roundId/criteria",
         element: <EventCriteriaViewPage mode="ROUND" />,
