@@ -11,7 +11,7 @@ import { AuditLogsPage } from "../features/auditLog";
 import {
   JudgeDashboardPage,
   JudgeSubmissionDetailPage,
-  JudgeSubmissionsPage,
+  JudgeAssignedSubmissionPage,
 } from "@/features/judge";
 import { JudgeScoreSheetPage } from "@/features/grading/pages/JudgeScoreSheetPage";
 
@@ -199,7 +199,11 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <JudgeDashboardPage /> },
       { path: "events", element: <NotFoundPage /> },
-      { path: "submissions", element: <JudgeSubmissionsPage /> },
+      { path: "submissions", element: <JudgeAssignedSubmissionPage /> },
+      {
+        path: "rounds/:roundId/submissions",
+        element: <JudgeAssignedSubmissionPage />,
+      },
       {
         path: "submissions/:submissionId",
         element: <JudgeSubmissionDetailPage />,
