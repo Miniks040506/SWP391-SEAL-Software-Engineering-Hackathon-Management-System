@@ -10,9 +10,27 @@ import {
   type EventTrack,
 } from "../mocks/coordinatorEditEvent.mock";
 
-// ─── TYPES ───────────────────────────────────────────────────────────────────
+const USE_MOCK = false;
 
-export type TabId = "info" | "tracks" | "rounds" | "prizes" | "assignments" | "criteria" | "teams";
+const emptyEvent: EditEventData = {
+  id: "",
+  name: "",
+  season: "Spring",
+  description: "",
+  startDate: "",
+  endDate: "",
+  status: "DRAFT",
+  tracks: [],
+};
+
+export type TabId =
+  | "info"
+  | "tracks"
+  | "rounds"
+  | "prizes"
+  | "assignments"
+  | "criteria"
+  | "teams";
 
 export type TeamStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -59,9 +77,9 @@ export type DialogState =
   | { kind: "teamDetail"; team: EventTeam }
   | null;
 
-export type UseEditEventMutationReturn = ReturnType<typeof useEditEventMutation>;
-
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
+export type UseEditEventMutationReturn = ReturnType<
+  typeof useEditEventMutation
+>;
 
 function validateEvent(data: EditEventData): EventFormErrors {
   const errors: EventFormErrors = {};
@@ -81,17 +99,24 @@ function patchTrack(
   return tracks.map((t) => (t.id === trackId ? { ...t, ...patch } : t));
 }
 
-// ─── HOOK ─────────────────────────────────────────────────────────────────────
-
 export function useEditEventMutation() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<TabId>("info");
-  const [event, setEvent] = useState<EditEventData>(editEventMock);
-  const [teams, setTeams] = useState<EventTeam[]>(eventTeamsMock);
-  const [expandedTracks, setExpandedTracks] = useState<Record<string, boolean>>(
-    Object.fromEntries(editEventMock.tracks.map((t) => [t.id, true])),
+
+  // Áp dụng USE_MOCK vào khởi tạo State
+  const [event, setEvent] = useState<EditEventData>(
+    USE_MOCK ? editEventMock : emptyEvent,
   );
+  const [teams, setTeams] = useState<EventTeam[]>(
+    USE_MOCK ? eventTeamsMock : [],
+  );
+  const [expandedTracks, setExpandedTracks] = useState<Record<string, boolean>>(
+    Object.fromEntries(
+      (USE_MOCK ? editEventMock.tracks : []).map((t) => [t.id, true]),
+    ),
+  );
+
   const [dialog, setDialog] = useState<DialogState>(null);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -117,7 +142,8 @@ export function useEditEventMutation() {
     });
   };
 
-  const openAddRound = (trackId: string) => setDialog({ kind: "addRound", trackId });
+  const openAddRound = (trackId: string) =>
+    setDialog({ kind: "addRound", trackId });
 
   const openEditRound = (trackId: string, roundId: string) => {
     const round = event.tracks
@@ -159,9 +185,8 @@ export function useEditEventMutation() {
     setDialog({ kind: "editCriteria", trackId, roundId, initialSelectedIds });
   };
 
-  const openTeamDetail = (team: EventTeam) => setDialog({ kind: "teamDetail", team });
-
-  // ── Dialog confirms ────
+  const openTeamDetail = (team: EventTeam) =>
+    setDialog({ kind: "teamDetail", team });
 
   const confirmAddTrack = (name: string, desc: string) => {
     if (!name.trim()) return;
@@ -169,7 +194,7 @@ export function useEditEventMutation() {
       id: `track-${Date.now()}`,
       name,
       description: desc,
-      mentorIds: [], // Đã xóa judgeIds khỏi Track
+      mentorIds: [],
       rounds: [],
     };
     setEvent((prev) => ({ ...prev, tracks: [...prev.tracks, newTrack] }));
@@ -181,7 +206,10 @@ export function useEditEventMutation() {
     if (dialog?.kind !== "editTrack" || !name.trim()) return;
     setEvent((prev) => ({
       ...prev,
-      tracks: patchTrack(prev.tracks, dialog.trackId, { name, description: desc }),
+      tracks: patchTrack(prev.tracks, dialog.trackId, {
+        name,
+        description: desc,
+      }),
     }));
     closeDialog();
   };
@@ -273,8 +301,6 @@ export function useEditEventMutation() {
     closeDialog();
   };
 
-  // ── Event handlers ──────────────────────────────────────────────────────────
-
   const handleSave = async () => {
     const validationErrors = validateEvent(event);
     if (Object.keys(validationErrors).length > 0) {
@@ -289,8 +315,8 @@ export function useEditEventMutation() {
   };
 
   const handleDiscard = () => {
-    setEvent(editEventMock);
-    setTeams(eventTeamsMock);
+    setEvent(USE_MOCK ? editEventMock : emptyEvent);
+    setTeams(USE_MOCK ? eventTeamsMock : []);
     setErrors({});
     navigate("/coordinator/events");
   };
@@ -300,8 +326,6 @@ export function useEditEventMutation() {
     if (errors[field as keyof EventFormErrors])
       setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
-
-  // ── Track/Round handlers ────────────────────────────────────────────────────
 
   const toggleExpand = (id: string) =>
     setExpandedTracks((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -349,8 +373,6 @@ export function useEditEventMutation() {
       ),
     }));
 
-  // ── Team handlers ───────────────────────────────────────────────────────────
-
   const updateTeamStatus = (teamId: string, status: TeamStatus) =>
     setTeams((prev) =>
       prev.map((t) => (t.id === teamId ? { ...t, status } : t)),
@@ -364,7 +386,6 @@ export function useEditEventMutation() {
     );
   };
 
-  // Đã bổ sung lại hàm bị thiếu
   const handleToggleSelectTeam = (teamId: string) => {
     setSelectedTeamIds((prev) =>
       prev.includes(teamId)
@@ -373,7 +394,10 @@ export function useEditEventMutation() {
     );
   };
 
-  const handleBulkTeamStatusUpdate = (teamIds: string[], status: TeamStatus) => {
+  const handleBulkTeamStatusUpdate = (
+    teamIds: string[],
+    status: TeamStatus,
+  ) => {
     const toUpdate = selectedTeamIds.filter((id) => teamIds.includes(id));
     setTeams((prev) =>
       prev.map((t) => (toUpdate.includes(t.id) ? { ...t, status } : t)),
