@@ -20,9 +20,6 @@ export const CalibrationScoreSheet = ({ criteria, disabled }: CalibrationScoreSh
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3 border-b border-slate-100 pb-2 dark:border-slate-800">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-                    <AssignmentTurnedInOutlinedIcon />
-                </div>
                 <div>
                     <h2 className="text-xl font-black text-slate-900 dark:text-white">
                         Score Sheet

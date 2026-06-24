@@ -77,3 +77,15 @@ export const useMyCalibrationScoresQuery = (calibrationId?: UUID) => {
         enabled: !!calibrationId,
     });
 };
+
+import { submissionApi } from "@/api/submission.api";
+
+export const useCalibrationSubmissionQuery = (submissionId?: UUID) => {
+    return useQuery({
+        queryKey: ["submission", submissionId],
+        queryFn: () => USE_MOCK
+            ? mockCalibrationService.getSubmissionAlias(submissionId!)
+            : submissionApi.getSubmissionById(submissionId!),
+        enabled: !!submissionId,
+    });
+};

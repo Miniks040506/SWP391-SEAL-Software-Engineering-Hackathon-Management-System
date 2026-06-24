@@ -3,7 +3,7 @@ import type { SubmissionDetailResponse } from "@/types/submission.types";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import LinkIcon from "@mui/icons-material/Link";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
-import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
@@ -54,7 +54,7 @@ export const CalibrationSubmissionPreview = ({ submission, isLoading }: Calibrat
                 <h2 className="mb-2 text-xl font-black text-slate-900 dark:text-white">
                     Sample Submission Preview
                 </h2>
-                <div className="grid grid-cols-2 gap-y-3 text-sm">
+                <div className="grid grid-cols-1 gap-y-3 text-sm">
                     <div>
                         <span className="font-semibold text-slate-500 dark:text-slate-400">Team: </span>
                         <span className="font-medium text-slate-900 dark:text-slate-200">{submission.teamName || "N/A"}</span>
@@ -103,22 +103,22 @@ export const CalibrationSubmissionPreview = ({ submission, isLoading }: Calibrat
                                 href={link.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-500/50 dark:hover:bg-blue-900/20"
+                                className="group flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-500/50 dark:hover:bg-blue-900/20"
                             >
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition group-hover:bg-blue-100 group-hover:text-blue-600 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-blue-900/50 dark:group-hover:text-blue-400">
+                                <div className="flex min-w-0 flex-1 items-center gap-3">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition group-hover:bg-blue-100 group-hover:text-blue-600 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-blue-900/50 dark:group-hover:text-blue-400">
                                         {getLinkIcon(link.linkType)}
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-slate-900 dark:text-slate-200">
+                                    <div className="flex min-w-0 flex-col">
+                                        <span className="truncate text-sm font-bold text-slate-900 dark:text-slate-200">
                                             {link.label || link.linkType}
                                         </span>
-                                        <span className="max-w-[200px] truncate text-xs text-slate-500 sm:max-w-xs md:max-w-sm dark:text-slate-400">
+                                        <span className="truncate text-xs text-slate-500 dark:text-slate-400">
                                             {link.url}
                                         </span>
                                     </div>
                                 </div>
-                                <OpenInNewIcon fontSize="small" className="text-slate-400 opacity-0 transition group-hover:opacity-100 dark:text-slate-500" />
+                                <OpenInNewIcon fontSize="small" className="shrink-0 text-slate-400 opacity-0 transition group-hover:opacity-100 dark:text-slate-500" />
                             </a>
                         ))}
                     </div>

@@ -6,11 +6,11 @@ import { formatDistanceToNow } from "date-fns";
 import { CircularProgress, Button, Chip } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 
-import { submissionApi } from "@/api/submission.api";
 import {
     useCalibrationScoreSheetQuery,
     useMyCalibrationScoresQuery,
     useCalibrationRoundQuery,
+    useCalibrationSubmissionQuery,
 } from "@/features/calibration/hooks/useCalibrationQueries";
 import { useSubmitCalibrationScoresMutation } from "@/features/calibration/hooks/useCalibrationMutations";
 
@@ -36,11 +36,7 @@ export const JudgeCalibrationScorePage = () => {
     const { data: round, isLoading: isLoadingRound } = useCalibrationRoundQuery(calibrationId as UUID);
 
     const submissionId = scoreSheet?.sampleSubmissionId;
-    const { data: submission, isLoading: isLoadingSubmission } = useQuery({
-        queryKey: ["submission", submissionId],
-        queryFn: () => submissionApi.getSubmissionById(submissionId as UUID),
-        enabled: !!submissionId,
-    });
+    const { data: submission, isLoading: isLoadingSubmission } = useCalibrationSubmissionQuery(submissionId as UUID);
 
     const submitMutation = useSubmitCalibrationScoresMutation();
 
@@ -121,7 +117,7 @@ export const JudgeCalibrationScorePage = () => {
 
     return (
         <FormProvider {...methods}>
-            <div className="mx-auto max-w-7xl animate-in fade-in duration-500 space-y-7 pb-32 pt-6">
+            <div className="mx-auto max-w-7xl animate-in fade-in duration-500 space-y-7 pb-10 pt-6">
                 <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <Button

@@ -47,15 +47,13 @@ export const CalibrationRoundTable = ({
                         className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md md:flex-row md:items-center md:justify-between dark:border-slate-700 dark:bg-slate-900"
                     >
                         <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                                    {round.description || "Calibration Round"}
-                                </h3>
-                                <CalibrationStatusBadge
-                                    distributionPublished={isDistributionPublished}
-                                    mandatory={round.mandatory}
-                                />
-                            </div>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                                {round.description || "Calibration Round"}
+                            </h3>
+                            <CalibrationStatusBadge
+                                distributionPublished={isDistributionPublished}
+                                mandatory={round.mandatory}
+                            />
                             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                                 Sample Submission:{" "}
                                 <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">

@@ -86,10 +86,8 @@ export const CalibrationSubmitBar = ({
 
     return (
         <>
-            <div className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-slate-200 bg-white/80 p-4 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80">
-                <div className="mx-auto flex w-full max-w-7xl items-center justify-center md:justify-end">
-                    {content}
-                </div>
+            <div className="mx-auto flex w-full max-w-7xl items-center justify-center md:justify-end">
+                {content}
             </div>
 
             <Dialog open={open} onClose={() => setOpen(false)} PaperProps={{ sx: { borderRadius: "16px" } }}>

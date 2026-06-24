@@ -19,6 +19,11 @@ import {
 } from "@/features/judge";
 import { JudgeScoreSheetPage } from "@/features/grading/pages/JudgeScoreSheetPage";
 
+import {
+  JudgeCalibrationListPage,
+  JudgeCalibrationScorePage,
+} from "@/features/calibration";
+
 
 import {
   MentorDashboardPage,
@@ -250,7 +255,9 @@ export const router = createBrowserRouter([
         element: <JudgeScoreSheetPage />,
       },
       { path: "scoring", element: <NotFoundPage /> },
-      { path: "calibration", element: <NotFoundPage /> },
+      { path: "calibrations", element: <JudgeCalibrationListPage /> },
+      { path: "calibrations/:calibrationId", element: <Navigate to="score" replace /> },
+      { path: "calibrations/:calibrationId/score", element: <JudgeCalibrationScorePage /> },
       {
         path: "rounds/:roundId/criteria",
         element: <EventCriteriaViewPage mode="ROUND" />,

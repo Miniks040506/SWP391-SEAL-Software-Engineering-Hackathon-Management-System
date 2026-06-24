@@ -19,6 +19,7 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
 import StickyNote2OutlinedIcon from "@mui/icons-material/StickyNote2Outlined";
+import ModelTrainingOutlinedIcon from "@mui/icons-material/ModelTrainingOutlined";
 
 export type SidebarItem = {
   label: string;
@@ -231,8 +232,8 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
           },
           {
             label: "Calibration",
-            path: "/judge/calibration",
-            icon: <FactCheckOutlinedIcon fontSize="small" />,
+            path: "/judge/calibrations",
+            icon: <ModelTrainingOutlinedIcon fontSize="small" />,
           },
           {
             label: "Schedule",

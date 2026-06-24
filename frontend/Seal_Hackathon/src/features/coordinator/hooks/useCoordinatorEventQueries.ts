@@ -13,7 +13,7 @@ import type { UUID } from "@/types/common.types";
 import type { GetEventsParams } from "@/types/event.types";
 import type { AssignableUserRole } from "@/types/user.types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const activeEventApi = USE_MOCK ? mockCoordinatorService.eventApi as any : eventApi;
 const activeTrackApi = USE_MOCK ? mockCoordinatorService.trackApi as any : trackApi;

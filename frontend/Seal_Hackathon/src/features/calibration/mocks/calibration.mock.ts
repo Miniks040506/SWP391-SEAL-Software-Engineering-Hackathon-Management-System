@@ -106,18 +106,90 @@ export const mockCalibrationService = {
         await delay(500);
         return {
             calibrationRoundId: calibrationId,
+            eventId: "seal-spring-2026" as UUID,
             sampleSubmissionId: "sub-alpha-001" as UUID,
-            criteria: [], // mock criteria
+            criteria: [
+                {
+                    id: "sc-1" as UUID,
+                    effectiveName: "Innovation and Creativity",
+                    effectiveDescription: "How innovative is the idea? Does it solve a real problem in a unique way?",
+                    templateCategory: "IDEA",
+                    effectiveWeight: 2,
+                    effectiveMaxScore: 100,
+                },
+                {
+                    id: "sc-2" as UUID,
+                    effectiveName: "Technical Implementation",
+                    effectiveDescription: "Code quality, architecture, and technology stack choices.",
+                    templateCategory: "TECH",
+                    effectiveWeight: 3,
+                    effectiveMaxScore: 100,
+                },
+                {
+                    id: "sc-3" as UUID,
+                    effectiveName: "User Experience",
+                    effectiveDescription: "Is the UI/UX intuitive and well designed?",
+                    templateCategory: "UI/UX",
+                    effectiveWeight: 1,
+                    effectiveMaxScore: 100,
+                }
+            ],
         } as any;
     },
 
     submitCalibrationScoreAlias: async (calibrationId: UUID, payload: any) => {
         await delay(500);
+        // Save the submitted scores
+        mockDistributions[calibrationId] = {
+            ...mockDistributions[calibrationId],
+            myScores: payload.scores.map((s: any) => ({
+                id: `score-${Date.now()}-${s.eventCriteriaId}` as UUID,
+                calibrationRoundId: calibrationId,
+                judgeId: "judge-1" as UUID,
+                eventCriteriaId: s.eventCriteriaId,
+                value: s.value,
+                comment: s.comment,
+            })),
+        } as any;
         return [];
     },
 
     getMyScores: async (calibrationId: UUID) => {
         await delay(500);
-        return [];
+        return (mockDistributions[calibrationId] as any)?.myScores || [];
+    },
+
+    getSubmissionAlias: async (submissionId: UUID) => {
+        await delay(500);
+        return {
+            id: submissionId,
+            teamName: "Alpha Geeks",
+            eventName: "SEAL Spring 2026",
+            trackName: "Web Application",
+            roundName: "Final Pitch",
+            note: "Here is our project for the calibration phase. We focused on AI integration and performance.",
+            status: "SUBMITTED",
+            submissionNumber: 1,
+            links: [
+                {
+                    id: "link-1" as UUID,
+                    linkType: "REPOSITORY",
+                    url: "https://github.com/alpha-geeks/project",
+                    label: "GitHub Source",
+                },
+                {
+                    id: "link-2" as UUID,
+                    linkType: "DEMO",
+                    url: "https://demo.alphageeks.com",
+                    label: "Live Demo",
+                },
+                {
+                    id: "link-3" as UUID,
+                    linkType: "SLIDE",
+                    url: "https://docs.google.com/presentation/d/123",
+                    label: "Pitch Deck",
+                }
+            ]
+        } as any;
     }
 };
