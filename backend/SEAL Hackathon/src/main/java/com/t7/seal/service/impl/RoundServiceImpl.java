@@ -6,10 +6,7 @@ import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.*;
-import com.t7.seal.request.round.CreateAdvanceRuleRequest;
-import com.t7.seal.request.round.CreateRoundRequest;
-import com.t7.seal.request.round.UpdateAdvanceRuleRequest;
-import com.t7.seal.request.round.UpdateRoundRequest;
+import com.t7.seal.request.round.*;
 import com.t7.seal.response.round.*;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
@@ -437,6 +434,26 @@ public class RoundServiceImpl implements RoundService {
         Round round = getRound(roundId);
 
         return toRoundOperationStatus(round);
+    }
+
+    @Override
+    public RoundLockResponse lockGrading(UUID roundId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public ScoringProgressResponse getScoringProgress(UUID roundId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public AdvancementPreviewResponse previewAdvanceRules(UUID roundId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public ConfirmAdvancementResponse confirmAdvancement(UUID roundId, ConfirmAdvancementRequest request, Authentication authentication) {
+        return null;
     }
 
     //HELPERS
