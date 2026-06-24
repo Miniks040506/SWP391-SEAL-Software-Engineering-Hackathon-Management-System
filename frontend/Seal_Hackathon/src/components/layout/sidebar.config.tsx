@@ -159,7 +159,7 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <EmojiEventsOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Calibration",
+            label: "Calibration Rounds",
             path: "/coordinator/calibrations",
             icon: <FactCheckOutlinedIcon fontSize="small" />,
           },
@@ -231,7 +231,7 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <GradingOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Calibration",
+            label: "Calibration Tasks",
             path: "/judge/calibrations",
             icon: <ModelTrainingOutlinedIcon fontSize="small" />,
           },

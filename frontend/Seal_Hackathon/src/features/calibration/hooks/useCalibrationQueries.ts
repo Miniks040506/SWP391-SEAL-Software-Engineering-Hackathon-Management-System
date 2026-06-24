@@ -6,7 +6,6 @@ import { mockCalibrationService } from "../mocks/calibration.mock"; // <-- Thêm
 const USE_MOCK = false;
 
 export const calibrationQueryKeys = {
-<<<<<<< HEAD
     all: ["calibrations"] as const,
     lists: () => [...calibrationQueryKeys.all, "list"] as const,
     listByEvent: (eventId: UUID) =>
@@ -25,55 +24,31 @@ export const useAllCalibrationRoundsQuery = () => {
         queryKey: calibrationQueryKeys.lists(),
         queryFn: () => USE_MOCK
             ? mockCalibrationService.getAllCalibrationRounds()
-            : calibrationApi.getCalibrationRoundsByEvent(),
+            : calibrationApi.getCalibrationRoundsByEvent("" as UUID),
     });
-=======
-  all: ["calibrations"] as const,
-  lists: () => [...calibrationQueryKeys.all, "list"] as const,
-  listByEvent: (eventId: UUID) =>
-    [...calibrationQueryKeys.lists(), { eventId }] as const,
-  details: () => [...calibrationQueryKeys.all, "detail"] as const,
-  detail: (id: UUID) => [...calibrationQueryKeys.details(), id] as const,
-  distributions: () => [...calibrationQueryKeys.all, "distribution"] as const,
-  distribution: (id: UUID) =>
-    [...calibrationQueryKeys.distributions(), id] as const,
-};
-
-export const useAllCalibrationRoundsQuery = () => {
-  return useQuery({
-    queryKey: calibrationQueryKeys.lists(),
-    queryFn: () =>
-      USE_MOCK
-        ? mockCalibrationService.getAllCalibrationRounds()
-        : calibrationApi.getAllCalibrationRounds(),
-  });
->>>>>>> 2a33be3fec8203dd2e4a73cecb976b5ba4dd421e
 };
 
 export const useEventCalibrationRoundsQuery = (eventId?: UUID) => {
-  return useQuery({
-    queryKey: calibrationQueryKeys.listByEvent(eventId!),
-    queryFn: () =>
-      USE_MOCK
-        ? mockCalibrationService.getEventCalibrationRounds(eventId!)
-        : calibrationApi.getEventCalibrationRounds(eventId!),
-    enabled: !!eventId,
-  });
+    return useQuery({
+        queryKey: calibrationQueryKeys.listByEvent(eventId!),
+        queryFn: () => USE_MOCK
+            ? mockCalibrationService.getEventCalibrationRounds(eventId!)
+            : calibrationApi.getEventCalibrationRounds(eventId!),
+        enabled: !!eventId,
+    });
 };
 
 export const useCalibrationRoundQuery = (calibrationId?: UUID) => {
-  return useQuery({
-    queryKey: calibrationQueryKeys.detail(calibrationId!),
-    queryFn: () =>
-      USE_MOCK
-        ? mockCalibrationService.getCalibrationRoundAlias(calibrationId!)
-        : calibrationApi.getCalibrationRoundAlias(calibrationId!),
-    enabled: !!calibrationId,
-  });
+    return useQuery({
+        queryKey: calibrationQueryKeys.detail(calibrationId!),
+        queryFn: () => USE_MOCK
+            ? mockCalibrationService.getCalibrationRoundAlias(calibrationId!)
+            : calibrationApi.getCalibrationRoundAlias(calibrationId!),
+        enabled: !!calibrationId,
+    });
 };
 
 export const useCalibrationDistributionQuery = (calibrationId?: UUID) => {
-<<<<<<< HEAD
     return useQuery({
         queryKey: calibrationQueryKeys.distribution(calibrationId!),
         queryFn: () => USE_MOCK
@@ -114,14 +89,3 @@ export const useCalibrationSubmissionQuery = (submissionId?: UUID) => {
         enabled: !!submissionId,
     });
 };
-=======
-  return useQuery({
-    queryKey: calibrationQueryKeys.distribution(calibrationId!),
-    queryFn: () =>
-      USE_MOCK
-        ? mockCalibrationService.getDistributionAlias(calibrationId!)
-        : calibrationApi.getDistributionAlias(calibrationId!),
-    enabled: !!calibrationId,
-  });
-};
->>>>>>> 2a33be3fec8203dd2e4a73cecb976b5ba4dd421e

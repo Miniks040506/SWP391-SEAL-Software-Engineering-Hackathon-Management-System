@@ -6,7 +6,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import type { CalibrationRoundResponse } from "@/types/calibration.types";
-import { CalibrationStatusBadge } from "./CalibrationStatusBadge";
+import { CalibrationStatusBadge } from "../JudgeCalibration/CalibrationStatusBadge";
 
 interface CalibrationRoundTableProps {
     rounds: CalibrationRoundResponse[];
@@ -106,18 +106,16 @@ export const CalibrationRoundTable = ({
                                 </>
                             )}
 
-                            {isDistributionPublished && (
-                                <Button
-                                    component={Link}
-                                    to={`/coordinator/calibrations/${round.id}#distribution`}
-                                    variant="outlined"
-                                    color="primary"
-                                    size="small"
-                                    sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}
-                                >
-                                    Distribution
-                                </Button>
-                            )}
+                            <Button
+                                component={Link}
+                                to={`/coordinator/calibrations/${round.id}/distribution`}
+                                variant="outlined"
+                                color="primary"
+                                size="small"
+                                sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}
+                            >
+                                Distribution
+                            </Button>
                         </div>
                     </div>
                 );

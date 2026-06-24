@@ -23,8 +23,8 @@ export const PublishDistributionDialog = ({
     onConfirm,
 }: PublishDistributionDialogProps) => {
     return (
-        <Dialog 
-            open={open} 
+        <Dialog
+            open={open}
             onClose={isPublishing ? undefined : onClose}
             PaperProps={{ sx: { borderRadius: "16px" } }}
         >
@@ -37,8 +37,8 @@ export const PublishDistributionDialog = ({
                 </DialogContentText>
             </DialogContent>
             <DialogActions sx={{ p: 2, pt: 0 }}>
-                <Button 
-                    onClick={onClose} 
+                <Button
+                    onClick={onClose}
                     disabled={isPublishing}
                     sx={{ textTransform: "none", fontWeight: 700, color: "slate.500" }}
                 >
@@ -50,10 +50,10 @@ export const PublishDistributionDialog = ({
                     variant="contained"
                     color="primary"
                     startIcon={<AssessmentIcon />}
-                    sx={{ 
-                        textTransform: "none", 
-                        fontWeight: 800, 
-                        borderRadius: "10px", 
+                    sx={{
+                        textTransform: "none",
+                        fontWeight: 800,
+                        borderRadius: "10px",
                     }}
                 >
                     {isPublishing ? "Publishing..." : "Publish distribution"}

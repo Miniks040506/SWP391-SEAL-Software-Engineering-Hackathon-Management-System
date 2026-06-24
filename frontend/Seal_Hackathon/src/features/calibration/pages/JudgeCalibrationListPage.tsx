@@ -11,8 +11,6 @@ import { format } from "date-fns";
 import { useAllCalibrationRoundsQuery, useMyCalibrationScoresQuery } from "@/features/calibration/hooks/useCalibrationQueries";
 import type { CalibrationRoundResponse } from "@/types/calibration.types";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import AssessmentIcon from "@mui/icons-material/Assessment";
 
 const getCalibrationStatus = (
     round: CalibrationRoundResponse,
@@ -77,30 +75,27 @@ const JudgeCalibrationListItem = ({ round }: { round: CalibrationRoundResponse }
                 Start Scoring
             </Button>
         );
-    } else if (statusValue === "SUBMITTED" || statusValue === "CLOSED") {
+    } else if (statusValue === "SUBMITTED" || statusValue === "CLOSED" || statusValue === "DISTRIBUTION_PUBLISHED") {
         actionButton = (
-            <Button
-                variant="outlined"
-                size="small"
-                startIcon={<VisibilityOutlinedIcon />}
-                onClick={handleActionClick}
-                sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
-            >
-                View Scores
-            </Button>
-        );
-    } else if (statusValue === "DISTRIBUTION_PUBLISHED") {
-        actionButton = (
-            <Button
-                variant="contained"
-                size="small"
-                color="info"
-                startIcon={<AssessmentIcon />}
-                onClick={handleActionClick}
-                sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
-            >
-                View Distribution
-            </Button>
+            <div className="flex justify-end gap-2">
+                <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleActionClick}
+                    sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+                >
+                    View Scores
+                </Button>
+                <Button
+                    variant={statusValue === "DISTRIBUTION_PUBLISHED" ? "contained" : "outlined"}
+                    size="small"
+                    color="info"
+                    onClick={() => navigate(`/judge/calibrations/${round.id}/distribution`)}
+                    sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+                >
+                    Distribution
+                </Button>
+            </div>
         );
     }
 

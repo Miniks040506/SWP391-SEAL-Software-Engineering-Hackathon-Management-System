@@ -14,7 +14,7 @@ import {
 import {
     usePublishCalibrationDistributionMutation,
 } from "@/features/calibration/hooks/useCalibrationMutations";
-import { CalibrationRoundTable } from "@/features/calibration/components/CalibrationRoundTable";
+import { CalibrationRoundTable } from "@/features/calibration/components/CoordinatorCalibration/CalibrationRoundTable";
 
 export const CoordinatorCalibrationPage = () => {
     const { eventId } = useParams<{ eventId: string }>();

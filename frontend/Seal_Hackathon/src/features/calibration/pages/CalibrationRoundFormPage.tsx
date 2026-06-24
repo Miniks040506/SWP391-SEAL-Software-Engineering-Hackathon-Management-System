@@ -8,7 +8,7 @@ import { Button, CircularProgress, MenuItem, TextField } from "@mui/material";
 import {
     CalibrationRoundForm,
     type CalibrationFormValues,
-} from "@/features/calibration/components/CalibrationRoundForm";
+} from "@/features/calibration/components/CoordinatorCalibration/CalibrationRoundForm";
 
 import {
     useCalibrationRoundQuery,

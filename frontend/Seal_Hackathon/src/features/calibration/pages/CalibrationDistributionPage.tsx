@@ -7,17 +7,17 @@ import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
 
 import { useCalibrationDistributionQuery } from "@/features/calibration/hooks/useCalibrationQueries";
 import { usePublishCalibrationDistributionMutation } from "@/features/calibration/hooks/useCalibrationMutations";
-import { CalibrationDistributionChart } from "../components/CalibrationDistributionChart";
-import { CalibrationDistributionTable } from "../components/CalibrationDistributionTable";
-import { CriterionVarianceCard } from "../components/CriterionVarianceCard";
-import { PublishDistributionDialog } from "../components/PublishDistributionDialog";
+import { CalibrationDistributionChart } from "../components/CalibrationChart/CalibrationDistributionChart";
+import { CalibrationDistributionTable } from "../components/CalibrationChart/CalibrationDistributionTable";
+import { CriterionVarianceCard } from "../components/CalibrationChart/CriterionVarianceCard";
+import { PublishDistributionDialog } from "../components/CoordinatorCalibration/PublishDistributionDialog";
 import type { UUID } from "@/types/common.types";
 
 export const CalibrationDistributionPage = () => {
     const { calibrationId } = useParams<{ calibrationId: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    
+
     const isCoordinator = location.pathname.startsWith("/coordinator");
     const backPath = isCoordinator ? `/coordinator/calibrations` : `/judge/calibrations`;
 
@@ -35,7 +35,7 @@ export const CalibrationDistributionPage = () => {
     }
 
     const isPublished = distribution?.published;
-    
+
     // If Judge and not published, show locked state
     if (!isCoordinator && !isPublished) {
         return (
@@ -65,7 +65,7 @@ export const CalibrationDistributionPage = () => {
     const criteriaData = distribution?.criteriaDistributions || [];
     const judgeCount = distribution?.judgeCount || 0;
     const criteriaCount = criteriaData.length;
-    
+
     // Compute stats
     let highestVarianceCriterion = "N/A";
     let maxVariance = -1;
@@ -115,20 +115,20 @@ export const CalibrationDistributionPage = () => {
                 </div>
                 <div className="flex flex-col items-end gap-3">
                     {isPublished ? (
-                        <Chip 
-                            label="Published" 
-                            color="info" 
+                        <Chip
+                            label="Published"
+                            color="info"
                             icon={<PublicOutlinedIcon />}
-                            sx={{ fontWeight: 800, borderRadius: "8px", pl: 0.5 }} 
+                            sx={{ fontWeight: 800, borderRadius: "8px", pl: 0.5 }}
                         />
                     ) : (
-                        <Chip 
-                            label="Draft Preview" 
-                            color="warning" 
-                            sx={{ fontWeight: 800, borderRadius: "8px" }} 
+                        <Chip
+                            label="Draft Preview"
+                            color="warning"
+                            sx={{ fontWeight: 800, borderRadius: "8px" }}
                         />
                     )}
-                    
+
                     {isCoordinator && !isPublished && (
                         <Button
                             variant="contained"
@@ -172,9 +172,9 @@ export const CalibrationDistributionPage = () => {
             </div>
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 px-6 xl:px-0">
-                <div className="flex flex-col gap-8 lg:col-span-8">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="grid grid-cols-1 gap-8 px-6 xl:px-0">
+                <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+                    <div className="lg:col-span-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                         <div className="mb-6">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Benchmark vs Judge Mean</h3>
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -183,19 +183,16 @@ export const CalibrationDistributionPage = () => {
                         </div>
                         <CalibrationDistributionChart data={criteriaData} />
                     </div>
-
-                    <div>
-                        <div className="mb-4">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Distribution Details</h3>
-                        </div>
-                        <CalibrationDistributionTable data={criteriaData} />
+                    <div className="lg:col-span-4 lg:sticky lg:top-6">
+                        <CriterionVarianceCard data={criteriaData} />
                     </div>
                 </div>
 
-                <div className="lg:col-span-4">
-                    <div className="sticky top-6">
-                        <CriterionVarianceCard data={criteriaData} />
+                <div className="w-full">
+                    <div className="mb-4">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Distribution Details</h3>
                     </div>
+                    <CalibrationDistributionTable data={criteriaData} />
                 </div>
             </div>
 

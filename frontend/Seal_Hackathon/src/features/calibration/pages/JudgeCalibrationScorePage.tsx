@@ -14,9 +14,9 @@ import {
 } from "@/features/calibration/hooks/useCalibrationQueries";
 import { useSubmitCalibrationScoresMutation } from "@/features/calibration/hooks/useCalibrationMutations";
 
-import { CalibrationSubmissionPreview } from "../components/CalibrationSubmissionPreview";
-import { CalibrationScoreSheet } from "../components/CalibrationScoreSheet";
-import { CalibrationSubmitBar, type CalibrationStatusType } from "../components/CalibrationSubmitBar";
+import { CalibrationSubmissionPreview } from "../components/JudgeCalibration/CalibrationSubmissionPreview";
+import { CalibrationScoreSheet } from "../components/JudgeCalibration/CalibrationScoreSheet";
+import { CalibrationSubmitBar, type CalibrationStatusType } from "../components/JudgeCalibration/CalibrationSubmitBar";
 import type { UUID } from "@/types/common.types";
 
 type ScoreFormValues = {
@@ -30,7 +30,6 @@ export const JudgeCalibrationScorePage = () => {
     const { calibrationId } = useParams<{ calibrationId: string }>();
     const navigate = useNavigate();
 
-    // Queries
     const { data: scoreSheet, isLoading: isLoadingScoreSheet } = useCalibrationScoreSheetQuery(calibrationId as UUID);
     const { data: myScores = [], isLoading: isLoadingMyScores } = useMyCalibrationScoresQuery(calibrationId as UUID);
     const { data: round, isLoading: isLoadingRound } = useCalibrationRoundQuery(calibrationId as UUID);
@@ -40,7 +39,6 @@ export const JudgeCalibrationScorePage = () => {
 
     const submitMutation = useSubmitCalibrationScoresMutation();
 
-    // Determine status
     const now = new Date();
     const start = round?.startAt ? new Date(round.startAt) : null;
     const end = round?.endAt ? new Date(round.endAt) : null;
@@ -60,7 +58,6 @@ export const JudgeCalibrationScorePage = () => {
 
     const isReadOnly = status !== "OPEN";
 
-    // Form setup
     const defaultValues = useMemo(() => {
         const initialScores: Record<string, any> = {};
         if (scoreSheet?.criteria) {
@@ -80,7 +77,6 @@ export const JudgeCalibrationScorePage = () => {
         mode: "onBlur",
     });
 
-    // Reset form when myScores load (if there's existing data)
     useEffect(() => {
         if (myScores.length > 0 && scoreSheet?.criteria) {
             methods.reset(defaultValues);
@@ -88,7 +84,6 @@ export const JudgeCalibrationScorePage = () => {
     }, [myScores, scoreSheet?.criteria, methods, defaultValues]);
 
     const onSubmit = (values: ScoreFormValues) => {
-        // Validation: ensure all scores are filled
         const scoresArray = Object.entries(values.scores).map(([criteriaId, data]) => ({
             eventCriteriaId: criteriaId as UUID,
             value: Number(data.score),
@@ -152,7 +147,6 @@ export const JudgeCalibrationScorePage = () => {
                 </header>
 
                 <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-                    {/* Left Column: Submission Preview */}
                     <div className="lg:col-span-5 xl:col-span-4">
                         <div className="sticky top-6">
                             <CalibrationSubmissionPreview
@@ -162,7 +156,6 @@ export const JudgeCalibrationScorePage = () => {
                         </div>
                     </div>
 
-                    {/* Right Column: Scoring Area */}
                     <div className="lg:col-span-7 xl:col-span-8">
                         <CalibrationScoreSheet
                             criteria={scoreSheet?.criteria || []}

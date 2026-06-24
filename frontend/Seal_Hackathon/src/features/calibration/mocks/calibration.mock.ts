@@ -53,45 +53,51 @@ export const mockCalibrationService = {
     async getDistributionAlias(calibrationId: UUID) {
         await delay(500);
         const round = mockCalibrationRounds.find(c => c.id === calibrationId);
-        const isPublished = !!round?.distributionPublishedAt;
-        
+        const isPublished = round ? !!round.distributionPublishedAt : false;
+
+        const criteriaDistributions = [];
+        let benchmarkScores = round?.benchmarkScores;
+        if (!benchmarkScores || Object.keys(benchmarkScores).length === 0) {
+            benchmarkScores = {
+                "sc-1": 85,
+                "sc-2": 90,
+                "sc-3": 75,
+                "sc-4": 80
+            };
+        }
+
+        let i = 0;
+        for (const [criteriaId, benchmarkScore] of Object.entries(benchmarkScores)) {
+            const varianceLevels = [0.8, 1.5, 2.8, 1.2, 0.4];
+            const stdDev = varianceLevels[i % varianceLevels.length];
+
+            const criteriaNameMap: Record<string, string> = {
+                "sc-1": "Innovation and Creativity",
+                "sc-2": "Technical Implementation",
+                "sc-3": "User Experience",
+                "sc-4": "Business Value",
+                "sc-7": "Business Value"
+            };
+
+            criteriaDistributions.push({
+                eventCriteriaId: criteriaId as UUID,
+                criteriaName: criteriaNameMap[criteriaId] || `Criterion ${i + 1}`,
+                benchmarkScore: benchmarkScore as number,
+                judgeCount: 5,
+                mean: benchmarkScore ? (benchmarkScore as number) - (stdDev * 1.5) : 80,
+                min: benchmarkScore ? Math.max(0, (benchmarkScore as number) - 15) : 60,
+                max: benchmarkScore ? Math.min(100, (benchmarkScore as number) + 10) : 95,
+                standardDeviation: stdDev,
+            });
+            i++;
+        }
+
         return {
             calibrationRoundId: calibrationId,
             published: isPublished,
             publishedAt: round?.distributionPublishedAt || null,
             judgeCount: 5,
-            criteriaDistributions: [
-                {
-                    eventCriteriaId: "sc-1" as UUID,
-                    criteriaName: "Innovation and Creativity",
-                    benchmarkScore: 85,
-                    judgeCount: 5,
-                    mean: 82.5,
-                    min: 70,
-                    max: 95,
-                    standardDeviation: 0.8, // Low
-                },
-                {
-                    eventCriteriaId: "sc-2" as UUID,
-                    criteriaName: "Technical Implementation",
-                    benchmarkScore: 90,
-                    judgeCount: 5,
-                    mean: 88,
-                    min: 60,
-                    max: 95,
-                    standardDeviation: 1.5, // Medium
-                },
-                {
-                    eventCriteriaId: "sc-3" as UUID,
-                    criteriaName: "User Experience",
-                    benchmarkScore: 75,
-                    judgeCount: 5,
-                    mean: 80,
-                    min: 50,
-                    max: 95,
-                    standardDeviation: 2.3, // High
-                }
-            ]
+            criteriaDistributions: criteriaDistributions
         } as any;
     },
 
@@ -99,7 +105,23 @@ export const mockCalibrationService = {
         await delay(500);
         const newCal: CalibrationRoundDetailResponse = {
             id: `cal-${Date.now()}` as UUID,
-            eventId: payload.eventId,
+            eventId: payload.eventId as UUID,
+            sampleSubmissionId: payload.sampleSubmissionId as UUID,
+            description: payload.description,
+            startAt: payload.startAt,
+            endAt: payload.endAt,
+            mandatory: payload.mandatory ?? false,
+            benchmarkScores: payload.benchmarkScores,
+        };
+        mockCalibrationRounds.push(newCal);
+        return newCal;
+    },
+
+    async createEventCalibrationRound(eventId: UUID, payload: CreateCalibrationRoundRequest) {
+        await delay(500);
+        const newCal: CalibrationRoundDetailResponse = {
+            id: `cal-${Date.now()}` as UUID,
+            eventId: eventId,
             sampleSubmissionId: payload.sampleSubmissionId as UUID,
             description: payload.description,
             startAt: payload.startAt,
@@ -124,15 +146,6 @@ export const mockCalibrationService = {
         mockCalibrationRounds = mockCalibrationRounds.map((cal) =>
             cal.id === calibrationId ? { ...cal, distributionPublishedAt: new Date().toISOString() } : cal
         );
-
-        // Tạo phân bổ giả
-        mockDistributions[calibrationId] = {
-            calibrationRoundId: calibrationId,
-            published: true,
-            distributionPublishedAt: new Date().toISOString(),
-            totalScoreRows: 5,
-            distributions: []
-        };
 
         return mockCalibrationRounds.find(c => c.id === calibrationId) as CalibrationRoundDetailResponse;
     },
@@ -227,58 +240,4 @@ export const mockCalibrationService = {
             ]
         } as any;
     },
-
-    getDistributionAlias: async (calibrationId: UUID) => {
-        await delay(500);
-        const round = mockCalibrationRounds.find(c => c.id === calibrationId);
-        const isPublished = !!round?.distributionPublishedAt;
-        
-        return {
-            calibrationRoundId: calibrationId,
-            published: isPublished,
-            publishedAt: round?.distributionPublishedAt || null,
-            judgeCount: 5,
-            criteriaDistributions: [
-                {
-                    eventCriteriaId: "sc-1" as UUID,
-                    criteriaName: "Innovation and Creativity",
-                    benchmarkScore: 85,
-                    judgeCount: 5,
-                    mean: 82.5,
-                    min: 70,
-                    max: 95,
-                    standardDeviation: 0.8, // Low
-                },
-                {
-                    eventCriteriaId: "sc-2" as UUID,
-                    criteriaName: "Technical Implementation",
-                    benchmarkScore: 90,
-                    judgeCount: 5,
-                    mean: 88,
-                    min: 60,
-                    max: 95,
-                    standardDeviation: 1.5, // Medium
-                },
-                {
-                    eventCriteriaId: "sc-3" as UUID,
-                    criteriaName: "User Experience",
-                    benchmarkScore: 75,
-                    judgeCount: 5,
-                    mean: 80,
-                    min: 50,
-                    max: 95,
-                    standardDeviation: 2.3, // High
-                }
-            ]
-        } as any;
-    },
-
-    publishDistributionAlias: async (calibrationId: UUID) => {
-        await delay(500);
-        const round = mockCalibrationRounds.find(c => c.id === calibrationId);
-        if (round) {
-            round.distributionPublishedAt = new Date().toISOString();
-        }
-        return round as any;
-    }
 };

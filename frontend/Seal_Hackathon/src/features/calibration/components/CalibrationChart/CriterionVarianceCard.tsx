@@ -45,8 +45,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                     </p>
                     <p className="flex items-center justify-between gap-4">
                         <span className="text-slate-500 dark:text-slate-400">Level:</span>
-                        <span 
-                            className="font-bold" 
+                        <span
+                            className="font-bold"
                             style={{ color: getVarianceColor(stdDev) }}
                         >
                             {getVarianceLabel(stdDev)}
@@ -76,7 +76,7 @@ export const CriterionVarianceCard = ({ data }: CriterionVarianceCardProps) => {
                     Standard deviation of judge scores per criterion.
                 </p>
             </div>
-            
+
             <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -89,8 +89,8 @@ export const CriterionVarianceCard = ({ data }: CriterionVarianceCardProps) => {
                         }}
                     >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis 
-                            dataKey="criteriaName" 
+                        <XAxis
+                            dataKey="criteriaName"
                             axisLine={false}
                             tickLine={false}
                             tick={{ fill: "#64748b", fontSize: 12 }}
@@ -99,15 +99,15 @@ export const CriterionVarianceCard = ({ data }: CriterionVarianceCardProps) => {
                             textAnchor="end"
                             height={60}
                         />
-                        <YAxis 
+                        <YAxis
                             axisLine={false}
                             tickLine={false}
                             tick={{ fill: "#64748b", fontSize: 12 }}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f1f5f9", opacity: 0.5 }} />
-                        <Bar 
-                            dataKey="standardDeviation" 
-                            radius={[4, 4, 0, 0]} 
+                        <Bar
+                            dataKey="standardDeviation"
+                            radius={[4, 4, 0, 0]}
                             barSize={40}
                         >
                             {data.map((entry, index) => (
