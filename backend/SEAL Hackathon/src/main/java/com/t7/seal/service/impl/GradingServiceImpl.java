@@ -479,11 +479,16 @@ public class GradingServiceImpl implements GradingService {
         boolean canLockGrading = submissionLocked && !gradingLocked;
         String warning = null;
 
-        if(!submissionLocked) {
+        if (!submissionLocked) {
             warning = "Submissions must be locked before grading can be locked.";
         } else if (gradingLocked) {
             warning = "Grading is ready to lock for this round.";
+        } else if (totalAssigned == 0) {
+            warning = "No assigned submission found for grading.";
+        } else if (completed < totalAssigned) {
+            warning = "Some assigned submissions are not fully submitted by judges yet.";
         }
+        double percent = totalAssigned == 0 ? 0.0 : completed * 100.0 / totalAssigned;
 
         return new RoundGradingProgressResponse(
                 round.getId(),
@@ -507,7 +512,8 @@ public class GradingServiceImpl implements GradingService {
                 draftScoreCount,
                 confirmedScoreCount,
                 expectedFinalScoreCount,
-                
+                percent,
+                assignmentProgress
         );
     }
 
