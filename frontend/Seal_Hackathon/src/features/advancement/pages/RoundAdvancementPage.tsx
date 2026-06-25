@@ -11,15 +11,12 @@ import {
 import { AdvanceRulePanel } from "../components/AdvanceRulePanel";
 import { AdvancementPreviewTable } from "../components/AdvancementPreviewTable";
 import { AdvancementConfirmDialog } from "../components/AdvancementConfirmDialog";
+import type { RoundDetailResponse } from "@/types/round.types";
 import type {
+  AdvancementCandidateRow,
   AdvancementPreviewResponse,
-  RoundDetailResponse,
-} from "@/types/round.types";
-import type {
-  AdvancementPreviewResponse as NewAdvancementPreviewResponse,
-  SuggestedAdvancementStatus,
+  FinalAdvancementStatus,
 } from "@/types/advancement.types";
-import type { RankingResponse } from "@/types/ranking.types";
 
 type LocalRoundDetail = RoundDetailResponse & {
   eventName?: string;
@@ -27,17 +24,15 @@ type LocalRoundDetail = RoundDetailResponse & {
   rankingCalculatedAt?: string;
 };
 
-type LocalPreviewTeam = RankingResponse & {
-  teamId?: string;
-  status?: string;
-  overrideReason?: string;
-};
-
 export function RoundAdvancementPage() {
   const { roundId } = useParams<{ roundId: string }>();
   const validRoundId = roundId || "";
 
-  const { data: roundDetail, isLoading: isRoundLoading } = useQuery({
+  const {
+    data: roundDetail,
+    isLoading: isRoundLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["roundDetail", validRoundId],
     queryFn: () => roundApi.getRoundById(validRoundId),
     enabled: !!validRoundId,
@@ -56,12 +51,8 @@ export function RoundAdvancementPage() {
 
   const handlePreview = async () => {
     try {
-      const result = (await previewMutation.mutateAsync(validRoundId)) as
-        | AdvancementPreviewResponse
-        | { data: AdvancementPreviewResponse };
-      // Depending on axios response format, it might be nested in data or direct
-      const responseData = "data" in result ? result.data : result;
-      setPreviewData(responseData);
+      const result = await previewMutation.mutateAsync(validRoundId);
+      setPreviewData(result.data);
       // Clear previous overrides when getting new preview
       setOverrides(new Map());
       enqueueSnackbar("Preview generated successfully.", {
@@ -87,23 +78,32 @@ export function RoundAdvancementPage() {
     });
   };
 
+  const handleClearOverride = (teamId: string) => {
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      next.delete(teamId);
+      return next;
+    });
+    enqueueSnackbar("Override cleared. Note: not yet saved.", {
+      variant: "info",
+    });
+  };
+
   // Merge overrides into preview data for display
   const displayPreviewData = previewData
     ? {
         ...previewData,
-        suggestedAdvancedTeams: previewData.suggestedAdvancedTeams.map(
-          (team: LocalPreviewTeam) => {
-            const teamId = team.teamId || team.id;
-            const override = overrides.get(teamId!);
+        candidates: previewData.candidates.map(
+          (team: AdvancementCandidateRow) => {
+            const override = overrides.get(team.teamId);
             if (override) {
               return {
                 ...team,
-                status: override.status,
+                finalStatus: override.status as FinalAdvancementStatus,
                 overrideReason: override.reason,
               };
             }
-            // Default status if not present
-            return { ...team, status: team.status || "ADVANCED" };
+            return team;
           },
         ),
       }
@@ -141,21 +141,75 @@ export function RoundAdvancementPage() {
   };
 
   const advancedCount =
-    displayPreviewData?.suggestedAdvancedTeams.filter(
-      (t: LocalPreviewTeam) =>
-        t.status === "ADVANCED" || t.status === "WILDCARD",
-    ).length || 0;
+    displayPreviewData?.candidates.filter((t: AdvancementCandidateRow) => {
+      const activeStatus = t.finalStatus || t.suggestedStatus;
+      return activeStatus === "ADVANCED" || activeStatus === "WILDCARD";
+    }).length || 0;
 
   const eliminatedCount =
-    displayPreviewData?.suggestedAdvancedTeams.filter(
-      (t: LocalPreviewTeam) => t.status === "ELIMINATED",
-    ).length || 0;
+    displayPreviewData?.candidates.filter((t: AdvancementCandidateRow) => {
+      const activeStatus = t.finalStatus || t.suggestedStatus;
+      return activeStatus === "ELIMINATED";
+    }).length || 0;
 
   return (
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
-      <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-300 mb-6">
-        Round Advancement
-      </h1>
+      <div className="mb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div>
+          <Typography variant="body2" className="text-slate-500 mb-1">
+            Coordinator / Rounds /{" "}
+            {roundDetail ? roundDetail.name : validRoundId} / Advancement
+          </Typography>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-300 mb-1">
+            Round Advancement
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400">
+            Preview and confirm which teams advance to the next round.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outlined"
+            onClick={() => refetch()}
+            disabled={isRoundLoading}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: "10px",
+            }}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handlePreview}
+            disabled={previewMutation.isPending || isRoundLoading}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: "10px",
+              boxShadow: "none",
+            }}
+          >
+            Preview Advancement
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={!displayPreviewData || confirmMutation.isPending}
+            onClick={() => setConfirmDialogOpen(true)}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: "10px",
+              boxShadow: "none",
+            }}
+          >
+            Confirm Advancement
+          </Button>
+        </div>
+      </div>
 
       {/* Section 1 - Round context card */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 mb-6">
@@ -216,6 +270,30 @@ export function RoundAdvancementPage() {
                   : "Not Calculated"}
               </span>
             </div>
+            <div className="text-sm">
+              <span className="text-slate-500 font-medium">
+                Advancement Confirmed:
+              </span>{" "}
+              <span className="text-slate-800 dark:text-slate-200">
+                {(roundDetail as any).advancementConfirmed ? "Yes" : "No"}
+              </span>
+            </div>
+            <div className="text-sm">
+              <span className="text-slate-500 font-medium">
+                Advanced Count:
+              </span>{" "}
+              <span className="text-slate-800 dark:text-slate-200">
+                {advancedCount}
+              </span>
+            </div>
+            <div className="text-sm">
+              <span className="text-slate-500 font-medium">
+                Eliminated Count:
+              </span>{" "}
+              <span className="text-slate-800 dark:text-slate-200">
+                {eliminatedCount}
+              </span>
+            </div>
           </div>
         ) : (
           <Typography color="error">Failed to load round context.</Typography>
@@ -223,22 +301,27 @@ export function RoundAdvancementPage() {
 
         {roundDetail && !roundDetail.gradingLockedAt && (
           <Alert severity="warning" className="mb-2">
-            Advancement preview should be run after grading is locked.
+            Lock grading before confirming advancement.
           </Alert>
         )}
         {roundDetail &&
           !(roundDetail as LocalRoundDetail).rankingCalculatedAt && (
             <Alert severity="warning" className="mb-2">
-              Ranking is required before confirming advancement.
+              Calculate ranking before previewing advancement.
             </Alert>
           )}
+        {roundDetail && (roundDetail as any).advancementConfirmed && (
+          <Alert severity="info" className="mb-2">
+            Advancement has already been confirmed. Manual changes require
+            override flow.
+          </Alert>
+        )}
       </div>
 
       {/* Section 2 - Advance rule panel */}
       <AdvanceRulePanel
         roundId={validRoundId}
-        onPreview={handlePreview}
-        isPreviewing={previewMutation.isPending}
+        isLocked={!!roundDetail?.gradingLockedAt || !!previewData?.advancementConfirmed}
       />
 
       {/* Section 3 - Advancement preview table */}
@@ -246,53 +329,11 @@ export function RoundAdvancementPage() {
         <>
           <AdvancementPreviewTable
             roundId={validRoundId}
-            previewData={
-              displayPreviewData
-                ? ({
-                    ...displayPreviewData,
-                    candidates: displayPreviewData.suggestedAdvancedTeams.map(
-                      (team: LocalPreviewTeam) => ({
-                        teamId: team.teamId || team.id || "",
-                        teamName: team.teamName || team.teamId || "Unknown",
-                        projectTitle: team.projectTitle ?? null,
-                        trackId: null,
-                        trackName: team.trackName ?? null,
-                        roundId: displayPreviewData.roundId ?? "",
-                        roundName: "",
-                        rankPosition: team.rankPosition ?? null,
-                        totalScore: team.totalScore ?? null,
-                        ruleType: null,
-                        ruleMatched: false,
-                        suggestedStatus:
-                          (team.status as SuggestedAdvancementStatus) ??
-                          "WAITING",
-                        finalStatus: null,
-                        overrideReason: team.overrideReason ?? null,
-                      }),
-                    ),
-                  } as unknown as NewAdvancementPreviewResponse)
-                : undefined
-            }
+            previewData={displayPreviewData as AdvancementPreviewResponse | undefined}
             isLoading={previewMutation.isPending}
             onOverride={handleOverride}
+            onClearOverride={handleClearOverride}
           />
-          <div className="flex justify-end mt-4">
-            <Button
-              variant="contained"
-              color="primary"
-              disabled={!displayPreviewData || confirmMutation.isPending}
-              onClick={() => setConfirmDialogOpen(true)}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: "10px",
-                boxShadow: "none",
-                height: 40,
-              }}
-            >
-              Confirm advancement
-            </Button>
-          </div>
         </>
       )}
 

@@ -20,7 +20,9 @@ export function TeamAdvancementPage() {
   if (isError && isAxiosError(error) && error.response?.status === 403) {
     return (
       <div className="space-y-4 py-32 text-center">
-        <p className="font-semibold text-gray-400">You don't have access to this team.</p>
+        <p className="font-semibold text-gray-400">
+          You don't have access to this team.
+        </p>
         <button
           type="button"
           onClick={() => navigate("/participant/teams")}

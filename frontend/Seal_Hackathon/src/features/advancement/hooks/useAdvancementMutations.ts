@@ -64,7 +64,8 @@ export function useDeleteAdvanceRuleMutation() {
 
 export function usePreviewAdvanceRulesMutation() {
   return useMutation({
-    mutationFn: (roundId: string) => roundApi.previewAdvanceRules(roundId),
+    mutationFn: (roundId: string) =>
+      advancementApi.previewRoundAdvanceRules(roundId),
   });
 }
 
@@ -80,14 +81,15 @@ export function useOverrideAdvancementMutation(roundId: string) {
     },
     onError: (error: any) => {
       if (isAxiosError(error) && error.response?.status === 409) {
-        enqueueSnackbar(
-          "Cannot override: advancement state conflict.",
-          { variant: "error" }
-        );
+        enqueueSnackbar("Cannot override: advancement state conflict.", {
+          variant: "error",
+        });
       } else {
         enqueueSnackbar(
-          error?.response?.data?.message || error?.message || "Failed to override advancement.",
-          { variant: "error" }
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to override advancement.",
+          { variant: "error" },
         );
       }
     },
@@ -117,12 +119,14 @@ export function useConfirmAdvancementMutation() {
       if (isAxiosError(error) && error.response?.status === 409) {
         enqueueSnackbar(
           "Cannot confirm advancement: ranking not calculated, grading not locked, or advancement already confirmed.",
-          { variant: "error" }
+          { variant: "error" },
         );
       } else {
         enqueueSnackbar(
-          error?.response?.data?.message || error?.message || "Failed to confirm advancement.",
-          { variant: "error" }
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to confirm advancement.",
+          { variant: "error" },
         );
       }
     },

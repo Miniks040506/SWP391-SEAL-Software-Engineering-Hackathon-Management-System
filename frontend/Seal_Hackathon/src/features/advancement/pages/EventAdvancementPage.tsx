@@ -57,11 +57,24 @@ export function EventAdvancementPage() {
           next.set(teamId, { status: newStatus, reason });
           return next;
         });
-        enqueueSnackbar("Override applied.", { variant: "info" });
+        enqueueSnackbar("Override applied. Note: not yet saved.", {
+          variant: "info",
+        });
       },
       onError: () => {
         enqueueSnackbar("Failed to apply override.", { variant: "error" });
       },
+    });
+  };
+
+  const handleClearOverride = (teamId: string) => {
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      next.delete(teamId);
+      return next;
+    });
+    enqueueSnackbar("Override cleared. Note: not yet saved.", {
+      variant: "info",
     });
   };
 
@@ -158,6 +171,7 @@ export function EventAdvancementPage() {
             previewData={previewData as unknown as AdvancementPreviewResponse}
             isLoading={isLoading}
             onOverride={handleOverride}
+            onClearOverride={handleClearOverride}
           />
 
           <div className="flex justify-end mt-4">
