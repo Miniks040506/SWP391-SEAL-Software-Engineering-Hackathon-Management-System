@@ -3,13 +3,17 @@ import type { PageResponse, UUID } from "@/types/common.types";
 import type {
   AssignedSubmissionResponse,
   ConfirmScoreSheetRequest,
+  EventGradingProgressResponse,
   GetAssignedSubmissionsParams,
   GradingSubmissionDetailResponse,
+  JudgeAssignmentProgressResponse,
+  RoundGradingProgressResponse,
   SaveScoreSheetRequest,
   ScoreResponse,
   ScoreSheetResponse,
   UpdateScoreRequest,
 } from "@/types/grading.types";
+import type { RoundLockResponse } from "@/types/round.types";
 
 export const gradingApi = {
   getAssignedSubmissions(roundId: UUID, params?: GetAssignedSubmissionsParams) {
@@ -71,5 +75,27 @@ export const gradingApi = {
 
   confirmScore(scoreId: UUID) {
     return apiRequest.post<ScoreResponse>(`/grading/scores/${scoreId}/confirm`);
+  },
+
+  getEventGradingProgress(eventId: UUID) {
+    return apiRequest.get<EventGradingProgressResponse>(
+      `/events/${eventId}/grading-progress`,
+    );
+  },
+
+  getRoundGradingProgress(roundId: UUID) {
+    return apiRequest.get<RoundGradingProgressResponse>(
+      `/rounds/${roundId}/grading-progress`,
+    );
+  },
+
+  getJudgeAssignmentProgress(assignmentId: UUID) {
+    return apiRequest.get<JudgeAssignmentProgressResponse>(
+      `/judge-assignments/${assignmentId}/progress`,
+    );
+  },
+
+  lockGrading(roundId: UUID) {
+    return apiRequest.post<RoundLockResponse>(`/rounds/${roundId}/lock-grading`);
   },
 };
