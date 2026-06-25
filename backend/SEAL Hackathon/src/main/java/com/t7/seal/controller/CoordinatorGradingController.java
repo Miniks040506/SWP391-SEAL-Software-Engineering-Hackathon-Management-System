@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.response.grading.EventGradingProgressResponse;
 import com.t7.seal.response.grading.JudgeAssignmentProgressResponse;
 import com.t7.seal.response.grading.RoundGradingProgressResponse;
+import com.t7.seal.service.GradingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,12 +20,14 @@ import java.util.UUID;
 @RequestMapping(ApiPaths.API_V1)
 public class CoordinatorGradingController {
 
+    private final GradingService gradingService;
+
     @GetMapping("/events/{eventId}/grading-progress")
     public ResponseEntity<EventGradingProgressResponse> getEventGradingProgress(
             @PathVariable UUID eventId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.getEventGradingProgress(eventId, authentication));
     }
 
     @GetMapping("/rounds/{roundId}/grading-progress")
@@ -32,7 +35,7 @@ public class CoordinatorGradingController {
             @PathVariable UUID roundId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.getRoundGradingProgress(roundId, authentication));
     }
 
     @GetMapping("/judge-assignments/{assignmentId}/progress")
@@ -40,6 +43,6 @@ public class CoordinatorGradingController {
             @PathVariable UUID assignmentId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(gradingService.getJudgeAssignmentProgress(assignmentId, authentication));
     }
 }
