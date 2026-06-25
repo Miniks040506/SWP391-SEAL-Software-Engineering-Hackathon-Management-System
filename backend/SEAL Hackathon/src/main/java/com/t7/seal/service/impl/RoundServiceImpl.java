@@ -559,7 +559,7 @@ public class RoundServiceImpl implements RoundService {
 
         LocalDateTime confirmedAt = LocalDateTime.now();
         round.setAdvancementConfirmedAt(confirmedAt);
-        
+
         rankingRepository.saveAll(rankings);
         teamRepository.saveAll(rankings.stream()
                 .map(r -> r.getSubmission().getTeam()).toList());
