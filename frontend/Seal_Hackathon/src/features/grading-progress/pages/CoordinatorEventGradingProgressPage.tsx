@@ -47,13 +47,7 @@ export const CoordinatorEventGradingProgressPage = () => {
                         Monitor judge scoring progress before locking grading.
                     </p>
                     <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
-                        <span>Coordinator</span>
-                        <span>/</span>
-                        <span>Events</span>
-                        <span>/</span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">{eventProgress.eventName}</span>
-                        <span>/</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">Grading Progress</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">Event: {eventProgress.eventName}</span>
                     </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
