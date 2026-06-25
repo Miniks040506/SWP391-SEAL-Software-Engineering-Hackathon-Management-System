@@ -1,10 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { roundApi } from "@/api/round.api";
+import { advancementApi } from "@/api/advancement.api";
 import type {
   CreateAdvanceRuleRequest,
   UpdateAdvanceRuleRequest,
-  ConfirmAdvancementRequest,
 } from "@/types/round.types";
+import type {
+  ConfirmAdvancementRequest,
+  AdvancementOverrideRequest,
+} from "@/types/advancement.types";
 
 export function useCreateAdvanceRuleMutation() {
   const queryClient = useQueryClient();
@@ -45,13 +49,28 @@ export function usePreviewAdvanceRulesMutation() {
   });
 }
 
+export function useOverrideAdvancementMutation(roundId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AdvancementOverrideRequest) =>
+      advancementApi.overrideRoundAdvancement(roundId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["advancementPreview", roundId] });
+    },
+  });
+}
+
 export function useConfirmAdvancementMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ roundId, payload }: { roundId: string; payload: ConfirmAdvancementRequest }) =>
-      roundApi.confirmAdvancement(roundId, payload),
+      advancementApi.confirmRoundAdvancement(roundId, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["advancementPreview", variables.roundId] });
+      queryClient.invalidateQueries({ queryKey: ["teamAdvancementStatus"] });
+      queryClient.invalidateQueries({ queryKey: ["teamCompetition"] });
+      queryClient.invalidateQueries({ queryKey: ["eventCompetition"] });
+      queryClient.invalidateQueries({ queryKey: ["rankings"] });
     },
   });
 }
