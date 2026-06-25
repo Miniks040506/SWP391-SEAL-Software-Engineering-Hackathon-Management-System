@@ -12,6 +12,7 @@ import { AdvanceRulePanel } from "../components/AdvanceRulePanel";
 import { AdvancementPreviewTable } from "../components/AdvancementPreviewTable";
 import { AdvancementConfirmDialog } from "../components/AdvancementConfirmDialog";
 import type { AdvancementPreviewResponse, RoundDetailResponse } from "@/types/round.types";
+import type { AdvancementPreviewResponse as NewAdvancementPreviewResponse } from "@/types/advancement.types";
 import type { RankingResponse } from "@/types/ranking.types";
 
 type LocalRoundDetail = RoundDetailResponse & {
@@ -105,19 +106,16 @@ export function RoundAdvancementPage() {
   const handleConfirm = async () => {
     if (!displayPreviewData) return;
 
-    // Build the list of advanced team IDs based on the display data
-    const advancedTeamIds = displayPreviewData.suggestedAdvancedTeams
-      .filter(
-        (t: LocalPreviewTeam) => t.status === "ADVANCED" || t.status === "WILDCARD"
-      )
-      .map((t: LocalPreviewTeam) => t.teamId || t.id) as string[];
-
     try {
       await confirmMutation.mutateAsync({
         roundId: validRoundId,
         payload: {
-          advancedTeamIds,
-          note: overrides.size > 0 ? JSON.stringify(Object.fromEntries(overrides)) : "System advancement",
+          overrideRows: Array.from(overrides.entries()).map(([teamId, override]) => ({
+            teamId,
+            finalStatus: override.status as "ADVANCED" | "ELIMINATED",
+            reason: override.reason,
+          })),
+          confirmNote: overrides.size > 0 ? "Manual overrides applied" : undefined,
         },
       });
       enqueueSnackbar("Advancement confirmed successfully.", {
@@ -235,7 +233,7 @@ export function RoundAdvancementPage() {
         <>
           <AdvancementPreviewTable
             roundId={validRoundId}
-            previewData={displayPreviewData as AdvancementPreviewResponse}
+            previewData={displayPreviewData as unknown as NewAdvancementPreviewResponse}
             isLoading={previewMutation.isPending}
             onOverride={handleOverride}
           />

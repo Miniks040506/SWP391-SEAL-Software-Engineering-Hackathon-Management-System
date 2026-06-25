@@ -42,11 +42,16 @@ type RuleFormData = z.infer<typeof ruleSchema>;
 
 const getRuleValue = (rule: any) => {
   switch (rule.ruleType) {
-    case "TOP_N": return rule.topN;
-    case "TOP_PERCENT": return rule.topPercent;
-    case "MIN_SCORE": return rule.minScore;
-    case "WILDCARD": return rule.wildCardSlots;
-    default: return "-";
+    case "TOP_N":
+      return rule.topN;
+    case "TOP_PERCENT":
+      return rule.topPercent;
+    case "MIN_SCORE":
+      return rule.minScore;
+    case "WILDCARD":
+      return rule.wildCardSlots;
+    default:
+      return "-";
   }
 };
 
@@ -98,7 +103,11 @@ export function AdvanceRulePanel({
     };
 
     if (editingRuleId) {
-      await updateMutation.mutateAsync({ ruleId: editingRuleId, roundId, payload });
+      await updateMutation.mutateAsync({
+        ruleId: editingRuleId,
+        roundId,
+        payload,
+      });
       setEditingRuleId(null);
     } else {
       await createMutation.mutateAsync({ roundId, payload });
@@ -154,7 +163,9 @@ export function AdvanceRulePanel({
               isPreviewing || isLoading || (rules && rules.length === 0)
             }
             startIcon={
-              isPreviewing ? <CircularProgress size={20} color="inherit" /> : null
+              isPreviewing ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : null
             }
             sx={{
               textTransform: "none",
@@ -209,7 +220,10 @@ export function AdvanceRulePanel({
                     </Typography>
                   )}
                   {ruleHelperText[rule.ruleType] && (
-                    <Typography variant="caption" className="text-slate-400 dark:text-slate-500 italic">
+                    <Typography
+                      variant="caption"
+                      className="text-slate-400 dark:text-slate-500 italic"
+                    >
                       {ruleHelperText[rule.ruleType]}
                     </Typography>
                   )}
@@ -218,14 +232,18 @@ export function AdvanceRulePanel({
                   <IconButton
                     color="primary"
                     onClick={() => handleEdit(rule)}
-                    disabled={deleteMutation.isPending || updateMutation.isPending}
+                    disabled={
+                      deleteMutation.isPending || updateMutation.isPending
+                    }
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton
                     color="error"
                     onClick={() => handleDelete(rule.id)}
-                    disabled={deleteMutation.isPending || updateMutation.isPending}
+                    disabled={
+                      deleteMutation.isPending || updateMutation.isPending
+                    }
                   >
                     <DeleteIcon />
                   </IconButton>

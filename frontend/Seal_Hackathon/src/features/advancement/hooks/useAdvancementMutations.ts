@@ -13,10 +13,17 @@ import type {
 export function useCreateAdvanceRuleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roundId, payload }: { roundId: string; payload: CreateAdvanceRuleRequest }) =>
-      roundApi.createAdvanceRule(roundId, payload),
+    mutationFn: ({
+      roundId,
+      payload,
+    }: {
+      roundId: string;
+      payload: CreateAdvanceRuleRequest;
+    }) => roundApi.createAdvanceRule(roundId, payload),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["advanceRules", variables.roundId] });
+      queryClient.invalidateQueries({
+        queryKey: ["advanceRules", variables.roundId],
+      });
     },
   });
 }
@@ -24,10 +31,18 @@ export function useCreateAdvanceRuleMutation() {
 export function useUpdateAdvanceRuleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ ruleId, payload }: { ruleId: string; roundId: string; payload: UpdateAdvanceRuleRequest }) =>
-      roundApi.updateAdvanceRule(ruleId, payload),
+    mutationFn: ({
+      ruleId,
+      payload,
+    }: {
+      ruleId: string;
+      roundId: string;
+      payload: UpdateAdvanceRuleRequest;
+    }) => roundApi.updateAdvanceRule(ruleId, payload),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["advanceRules", variables.roundId] });
+      queryClient.invalidateQueries({
+        queryKey: ["advanceRules", variables.roundId],
+      });
     },
   });
 }
@@ -38,7 +53,9 @@ export function useDeleteAdvanceRuleMutation() {
     mutationFn: ({ ruleId }: { ruleId: string; roundId: string }) =>
       roundApi.deleteAdvanceRule(ruleId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["advanceRules", variables.roundId] });
+      queryClient.invalidateQueries({
+        queryKey: ["advanceRules", variables.roundId],
+      });
     },
   });
 }
@@ -55,7 +72,9 @@ export function useOverrideAdvancementMutation(roundId: string) {
     mutationFn: (payload: AdvancementOverrideRequest) =>
       advancementApi.overrideRoundAdvancement(roundId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["advancementPreview", roundId] });
+      queryClient.invalidateQueries({
+        queryKey: ["advancementPreview", roundId],
+      });
     },
   });
 }
@@ -63,10 +82,17 @@ export function useOverrideAdvancementMutation(roundId: string) {
 export function useConfirmAdvancementMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roundId, payload }: { roundId: string; payload: ConfirmAdvancementRequest }) =>
-      advancementApi.confirmRoundAdvancement(roundId, payload),
+    mutationFn: ({
+      roundId,
+      payload,
+    }: {
+      roundId: string;
+      payload: ConfirmAdvancementRequest;
+    }) => advancementApi.confirmRoundAdvancement(roundId, payload),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["advancementPreview", variables.roundId] });
+      queryClient.invalidateQueries({
+        queryKey: ["advancementPreview", variables.roundId],
+      });
       queryClient.invalidateQueries({ queryKey: ["teamAdvancementStatus"] });
       queryClient.invalidateQueries({ queryKey: ["teamCompetition"] });
       queryClient.invalidateQueries({ queryKey: ["eventCompetition"] });

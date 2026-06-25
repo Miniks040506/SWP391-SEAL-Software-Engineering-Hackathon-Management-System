@@ -1,5 +1,10 @@
 import { Alert, AlertTitle, Button } from "@mui/material";
-import { CheckCircleOutlined, CancelOutlined, HourglassEmptyOutlined, ArrowForwardOutlined } from "@mui/icons-material";
+import {
+  CheckCircleOutlined,
+  CancelOutlined,
+  HourglassEmptyOutlined,
+  ArrowForwardOutlined,
+} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import type { FinalAdvancementStatus } from "@/types/advancement.types";
 
@@ -24,24 +29,17 @@ export function TeamAdvancementStatusBanner({
 
   if (status === "WAITING") {
     return (
-      <Alert
-        severity="info"
-        icon={<HourglassEmptyOutlined />}
-        className="mb-4"
-      >
+      <Alert severity="info" icon={<HourglassEmptyOutlined />} className="mb-4">
         <AlertTitle>Waiting for advancement result</AlertTitle>
-        {message || "Your team result for this round has not been confirmed yet."}
+        {message ||
+          "Your team result for this round has not been confirmed yet."}
       </Alert>
     );
   }
 
   if (status === "ELIMINATED") {
     return (
-      <Alert
-        severity="error"
-        icon={<CancelOutlined />}
-        className="mb-4"
-      >
+      <Alert severity="error" icon={<CancelOutlined />} className="mb-4">
         <AlertTitle>Eliminated</AlertTitle>
         {message || "Your team cannot submit deliverables for later rounds."}
       </Alert>

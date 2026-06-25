@@ -1,4 +1,9 @@
-import { CheckCircleOutlined, CancelOutlined, PeopleOutlined, EditOutlined } from "@mui/icons-material";
+import {
+  CheckCircleOutlined,
+  CancelOutlined,
+  PeopleOutlined,
+  EditOutlined,
+} from "@mui/icons-material";
 
 interface AdvancementSummaryCardsProps {
   advancedCount: number;
@@ -18,7 +23,8 @@ export function AdvancementSummaryCards({
       label: "Advanced",
       value: advancedCount,
       icon: <CheckCircleOutlined className="text-green-500" />,
-      color: "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950",
+      color:
+        "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950",
       textColor: "text-green-700 dark:text-green-300",
     },
     {
@@ -39,7 +45,8 @@ export function AdvancementSummaryCards({
       label: "Manual Overrides",
       value: overrideCount,
       icon: <EditOutlined className="text-amber-500" />,
-      color: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950",
+      color:
+        "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950",
       textColor: "text-amber-700 dark:text-amber-300",
     },
   ];

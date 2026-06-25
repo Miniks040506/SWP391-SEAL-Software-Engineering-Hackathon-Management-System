@@ -11,8 +11,7 @@ import {
 import { AdvancementPreviewTable } from "../components/AdvancementPreviewTable";
 import { AdvancementConfirmDialog } from "../components/AdvancementConfirmDialog";
 import { AdvancementSummaryCards } from "../components/AdvancementSummaryCards";
-import type { AdvancementOverrideRequest } from "@/types/advancement.types";
-import type { AdvancementPreviewResponse } from "@/types/round.types";
+import type { AdvancementOverrideRequest, AdvancementPreviewResponse } from "@/types/advancement.types";
 
 export function EventAdvancementPage() {
   const { eventId } = useParams<{ eventId: string }>();

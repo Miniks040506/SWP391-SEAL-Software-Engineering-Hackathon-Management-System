@@ -7,7 +7,11 @@ export function TeamAdvancementPage() {
   const { teamId } = useParams<{ teamId: string }>();
   const validTeamId = teamId || "";
 
-  const { data: response, isLoading, isError } = useTeamAdvancementStatusQuery(validTeamId);
+  const {
+    data: response,
+    isLoading,
+    isError,
+  } = useTeamAdvancementStatusQuery(validTeamId);
   const data = response?.data;
 
   return (
@@ -25,13 +29,17 @@ export function TeamAdvancementPage() {
 
       {isLoading && (
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
-          <Typography className="text-slate-500">Loading advancement status...</Typography>
+          <Typography className="text-slate-500">
+            Loading advancement status...
+          </Typography>
         </div>
       )}
 
       {isError && (
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
-          <Typography color="error">Failed to load advancement status.</Typography>
+          <Typography color="error">
+            Failed to load advancement status.
+          </Typography>
         </div>
       )}
 

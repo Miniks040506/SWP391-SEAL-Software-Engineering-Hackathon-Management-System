@@ -14,7 +14,10 @@ import {
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useState } from "react";
-import type { AdvancementPreviewResponse, AdvancementCandidateRow } from "@/types/advancement.types";
+import type {
+  AdvancementPreviewResponse,
+  AdvancementCandidateRow,
+} from "@/types/advancement.types";
 
 import {
   AdvancementStatusBadge,
@@ -57,7 +60,7 @@ export function AdvancementPreviewTable({
     teamId: string,
     teamName: string,
     currentStatus: string,
-    newStatus: string
+    newStatus: string,
   ) => {
     if (currentStatus !== newStatus) {
       setOverrideState({
@@ -85,7 +88,8 @@ export function AdvancementPreviewTable({
       </div>
 
       <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-lg text-sm">
-        Rules applied for cutoff calculation. Teams matching rules advance automatically.
+        Rules applied for cutoff calculation. Teams matching rules advance
+        automatically.
       </div>
 
       <TableContainer
@@ -129,78 +133,89 @@ export function AdvancementPreviewTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {previewData.candidates.map((team: AdvancementCandidateRow, index: number) => {
-              const teamId = team.teamId || `team-${index}`;
-              const teamName = team.teamName || "Unknown Team";
-              const currentStatus = team.finalStatus || team.suggestedStatus || "PENDING_CONFIRMATION";
-              const isOverridden = !!team.overrideReason;
+            {previewData.candidates.map(
+              (team: AdvancementCandidateRow, index: number) => {
+                const teamId = team.teamId || `team-${index}`;
+                const teamName = team.teamName || "Unknown Team";
+                const currentStatus =
+                  team.finalStatus ||
+                  team.suggestedStatus ||
+                  "PENDING_CONFIRMATION";
+                const isOverridden = !!team.overrideReason;
 
-              return (
-                <TableRow
-                  key={teamId}
-                  className={team.suggestedStatus === "ADVANCED" ? "bg-green-50 dark:bg-green-950/20" : ""}
-                  style={
-                    isOverridden ? { borderLeft: "3px solid #f59e0b" } : {}
-                  }
-                >
-                  <TableCell>{team.rankPosition || index + 1}</TableCell>
-                  <TableCell className="font-medium text-slate-800 dark:text-slate-200">
-                    <div className="flex items-center">
-                      {teamName}
-                      {isOverridden && (
-                        <Tooltip title={`Overridden: ${team.overrideReason}`}>
-                          <EditOutlinedIcon
-                            fontSize="small"
-                            className="ml-2 text-amber-500"
-                          />
-                        </Tooltip>
+                return (
+                  <TableRow
+                    key={teamId}
+                    className={
+                      team.suggestedStatus === "ADVANCED"
+                        ? "bg-green-50 dark:bg-green-950/20"
+                        : ""
+                    }
+                    style={
+                      isOverridden ? { borderLeft: "3px solid #f59e0b" } : {}
+                    }
+                  >
+                    <TableCell>{team.rankPosition || index + 1}</TableCell>
+                    <TableCell className="font-medium text-slate-800 dark:text-slate-200">
+                      <div className="flex items-center">
+                        {teamName}
+                        {isOverridden && (
+                          <Tooltip title={`Overridden: ${team.overrideReason}`}>
+                            <EditOutlinedIcon
+                              fontSize="small"
+                              className="ml-2 text-amber-500"
+                            />
+                          </Tooltip>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-400">
+                      {team.projectTitle || "—"}
+                    </TableCell>
+                    <TableCell>{team.trackName || "N/A"}</TableCell>
+                    <TableCell>{team.totalScore || 0}</TableCell>
+                    <TableCell>{team.ruleType || "-"}</TableCell>
+                    <TableCell>
+                      <AdvancementStatusBadge
+                        status={team.suggestedStatus as AdvancementStatus}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {team.finalStatus ? (
+                        <AdvancementStatusBadge
+                          status={team.finalStatus as AdvancementStatus}
+                        />
+                      ) : (
+                        <span className="text-slate-400 text-sm">—</span>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-slate-600 dark:text-slate-400">
-                    {team.projectTitle || "—"}
-                  </TableCell>
-                  <TableCell>{team.trackName || "N/A"}</TableCell>
-                  <TableCell>{team.totalScore || 0}</TableCell>
-                  <TableCell>{team.ruleType || "-"}</TableCell>
-                  <TableCell>
-                    <AdvancementStatusBadge
-                      status={team.suggestedStatus as AdvancementStatus}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {team.finalStatus ? (
-                      <AdvancementStatusBadge status={team.finalStatus as AdvancementStatus} />
-                    ) : (
-                      <span className="text-slate-400 text-sm">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{team.overrideReason || ""}</TableCell>
-                  <TableCell>
-                    <Select
-                      size="small"
-                      value={currentStatus}
-                      onChange={(e) =>
-                        handleSelectChange(
-                          teamId,
-                          teamName,
-                          currentStatus,
-                          e.target.value as string
-                        )
-                      }
-                      className="min-w-[140px]"
-                    >
-                      <MenuItem value="ADVANCED">Advanced</MenuItem>
-                      <MenuItem value="ELIMINATED">Eliminated</MenuItem>
-                      <MenuItem value="WILDCARD">Wildcard</MenuItem>
-                      <MenuItem value="PENDING_CONFIRMATION" disabled>
-                        Pending
-                      </MenuItem>
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                    </TableCell>
+                    <TableCell>{team.overrideReason || ""}</TableCell>
+                    <TableCell>
+                      <Select
+                        size="small"
+                        value={currentStatus}
+                        onChange={(e) =>
+                          handleSelectChange(
+                            teamId,
+                            teamName,
+                            currentStatus,
+                            e.target.value as string,
+                          )
+                        }
+                        className="min-w-[140px]"
+                      >
+                        <MenuItem value="ADVANCED">Advanced</MenuItem>
+                        <MenuItem value="ELIMINATED">Eliminated</MenuItem>
+                        <MenuItem value="WILDCARD">Wildcard</MenuItem>
+                        <MenuItem value="PENDING_CONFIRMATION" disabled>
+                          Pending
+                        </MenuItem>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                );
+              },
+            )}
             {previewData.candidates.length === 0 && (
               <TableRow>
                 <TableCell
