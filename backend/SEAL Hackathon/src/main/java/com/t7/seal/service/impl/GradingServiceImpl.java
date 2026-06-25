@@ -445,7 +445,34 @@ public class GradingServiceImpl implements GradingService {
                 .map(a -> buildJudgeAssignmentProgress(a, criteriaCount))
                 .toList();
 
-        int totalAssigned;
+        int totalAssigned = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::totalAssignedSubmissions)
+                .sum();
+        int completed = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::completedAssignedSubmissions)
+                .sum();
+        int pending = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::pendingSubmissions)
+                .sum();
+        int draft = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::draftSavedSubmissions)
+                .sum();
+        int submitted = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::submittedSubmissions)
+                .sum();
+        int locked = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::lockedSubmissions)
+                .sum();
+
+        long draftScoreCount = assignmentProgress.stream()
+                .mapToLong(JudgeAssignmentProgressResponse::draftScoreCount)
+                .sum();
+        long confirmedScoreCount = assignmentProgress.stream()
+                .mapToLong(JudgeAssignmentProgressResponse::confirmedScoreCount)
+                .sum();
+        long expectedFinalScoreCount = assignmentProgress.stream()
+                .mapToLong(JudgeAssignmentProgressResponse::expectedFinalScoreCount)
+                .sum();
 
         boolean submissionLocked = round.getSubmissionLockedAt() != null;
         boolean gradingLocked = round.getGradingLockedAt() != null;
@@ -470,7 +497,17 @@ public class GradingServiceImpl implements GradingService {
                 canLockGrading,
                 warning,
                 assignments.size(),
-
+                totalAssigned,
+                completed,
+                pending,
+                draft,
+                submitted,
+                locked,
+                criteriaCount,
+                draftScoreCount,
+                confirmedScoreCount,
+                expectedFinalScoreCount,
+                
         );
     }
 
