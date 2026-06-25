@@ -97,6 +97,7 @@ import {
 } from "@/features/calibration";
 
 import { RoundAdvancementPage } from "@/features/advancement/pages/RoundAdvancementPage";
+import { TeamAdvancementPage } from "@/features/advancement/pages/TeamAdvancementPage";
 
 export const router = createBrowserRouter([
   {
@@ -134,6 +135,14 @@ export const router = createBrowserRouter([
       { path: "teams", element: <MyTeamsPage /> },
       { path: "teams/create", element: <CreateTeamPage /> },
       { path: "teams/:teamId", element: <TeamDetailPage /> },
+      {
+        path: "teams/:teamId/advancement",
+        element: <TeamAdvancementPage />,
+      },
+      {
+        path: "events/:eventId/competing",
+        element: <EventCompetitionPage />,
+      },
       {
         path: "teams/:teamId/submissions",
         element: <ParticipantSubmissionsPage />,

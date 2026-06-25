@@ -26,6 +26,9 @@ import Tooltip from "@mui/material/Tooltip";
 import type { UUID } from "@/types/common.types";
 import type { TeamMemberResponse } from "@/types/team.types";
 
+import { useTeamAdvancementStatusQuery } from "@/features/advancement/hooks/useAdvancementQueries";
+import { TeamAdvancementStatusBanner } from "@/features/advancement/components/TeamAdvancementStatusBanner";
+
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
 import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
 import { TeamJoinRequestsPanel } from "../components/TeamJoinRequestsPanel";
@@ -82,6 +85,8 @@ export const TeamDetailPage = () => {
   const toggleJoinCodeMutation = useToggleJoinCodeMutation(teamId);
 
   const team = teamQuery.data;
+  const advancementQuery = useTeamAdvancementStatusQuery(teamId ?? "");
+  const advancementData = advancementQuery.data?.data;
   const members = team?.members ?? [];
   const invitations = invitationsQuery.data ?? [];
 
@@ -249,6 +254,16 @@ export const TeamDetailPage = () => {
 
           {activeTab === "overview" && (
             <div className="space-y-6 pt-6">
+              {advancementData && (
+                <TeamAdvancementStatusBanner
+                  status={advancementData.status}
+                  message={advancementData.message}
+                  nextRoundId={advancementData.nextRoundId}
+                  nextRoundName={advancementData.nextRoundName}
+                  canAccessNextRound={advancementData.canAccessNextRound}
+                  eventId={advancementData.eventId}
+                />
+              )}
               <section className="space-y-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
