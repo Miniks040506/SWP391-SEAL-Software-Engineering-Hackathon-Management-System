@@ -564,7 +564,68 @@ public class GradingServiceImpl implements GradingService {
             RoundJudgeAssignment assignment,
             Long criteriaCount
     ) {
-        return null;
+        UUID trackId = assignment.getTrack() == null ? null : assignment.getTrack().getId();
+
+        List<Submission> submissions = submissionRepository
+                .findSubmittedOrLateByRoundAndTrackNullable(assignment.getRound().getId(), trackId);
+
+        List<SubmissionGradingProgressResponse> submissionProgress = submissions.stream()
+                .map(s -> buildSubmissionGradingProgress(s, assignment.getJudge(), criteriaCount))
+                .toList();
+
+        User judgeUser = assignment.getJudge().getUser();
+
+        int total = submissions.size();
+        int completed = (int) submissionProgress.stream()
+                .filter(SubmissionGradingProgressResponse::completed)
+                .count();
+        int pending = (int) submissionProgress.stream()
+                .filter(s -> "PENDING".equals(s.gradingStatus()))
+                .count();
+        int draft = (int) submissionProgress.stream()
+                .filter(s -> "DRAFT_SAVED".equals(s.gradingStatus()))
+                .count();
+        int submitted = (int) submissionProgress.stream()
+                .filter(s -> "SUBMITTED".equals(s.gradingStatus()))
+                .count();
+        int locked = (int) submissionProgress.stream()
+                .filter(s -> "LOCKED".equals(s.gradingStatus()))
+                .count();
+
+        long draftScoreCount = submissionProgress.stream()
+                .mapToLong(SubmissionGradingProgressResponse::draftScoreCount)
+                .sum();
+        long confirmedScoreCount = submissionProgress.stream()
+                .mapToLong(SubmissionGradingProgressResponse::confirmedScoreCount)
+                .sum();
+        long expectedFinalScoreCount = total * criteriaCount;
+
+        double percent = total == 0 ? 0.0 : completed * 100.0 / total;
+
+        assignment.setTotalToScore(total);
+        assignment.setScoringProgress(completed);
+
+        return new JudgeAssignmentProgressResponse(
+                assignment.getId(),
+                assignment.getJudge().getId(),
+                judgeUser.getFullName(),
+                judgeUser.getEmail(),
+                assignment.getJudge().getJudgeType() == null ? null : assignment.getJudge().getJudgeType().name(),
+                trackId,
+                assignment.getTrack() == null ? "All tracks" : assignment.getTrack().getName(),
+                total,
+                completed,
+                pending,
+                draft,
+                submitted,
+                locked,
+                criteriaCount,
+                draftScoreCount,
+                confirmedScoreCount,
+                expectedFinalScoreCount,
+                percent,
+                submissionProgress
+        );
     }
 
     private long countCriteriaForRound(Round round) {
@@ -576,5 +637,13 @@ public class GradingServiceImpl implements GradingService {
                 .stream()
                 .filter(c -> c.appliesToRound(round.getId()))
                 .count();
+    }
+
+    private SubmissionGradingProgressResponse buildSubmissionGradingProgress(
+            Submission submission,
+            Judge judge,
+            long criteriaCount
+    ) {
+        return null;
     }
 }
