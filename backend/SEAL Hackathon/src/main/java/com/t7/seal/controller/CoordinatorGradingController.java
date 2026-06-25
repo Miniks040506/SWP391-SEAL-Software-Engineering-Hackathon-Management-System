@@ -7,6 +7,7 @@ import com.t7.seal.response.grading.RoundGradingProgressResponse;
 import com.t7.seal.service.GradingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +23,7 @@ public class CoordinatorGradingController {
 
     private final GradingService gradingService;
 
+    @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @GetMapping("/events/{eventId}/grading-progress")
     public ResponseEntity<EventGradingProgressResponse> getEventGradingProgress(
             @PathVariable UUID eventId,
@@ -30,6 +32,7 @@ public class CoordinatorGradingController {
         return ResponseEntity.ok(gradingService.getEventGradingProgress(eventId, authentication));
     }
 
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @GetMapping("/rounds/{roundId}/grading-progress")
     public ResponseEntity<RoundGradingProgressResponse> getRoundGradingProgress(
             @PathVariable UUID roundId,
@@ -38,6 +41,7 @@ public class CoordinatorGradingController {
         return ResponseEntity.ok(gradingService.getRoundGradingProgress(roundId, authentication));
     }
 
+    @PreAuthorize("hasRole('COORDINATOR')")
     @GetMapping("/judge-assignments/{assignmentId}/progress")
     public ResponseEntity<JudgeAssignmentProgressResponse> getJudgeAssignmentProgress(
             @PathVariable UUID assignmentId,
