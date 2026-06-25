@@ -265,7 +265,10 @@ public class GradingServiceImpl implements GradingService {
     public JudgeAssignmentProgressResponse getJudgeAssignmentProgress(UUID judgeAssignmentId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
-        return null;
+        RoundJudgeAssignment judgeAssignment = roundJudgeAssignmentRepository.findById(judgeAssignmentId)
+                .orElseThrow(() -> new NotFoundException("Judge assignment not found."));
+
+        return buildJudgeAssignmentProgress(judgeAssignment, countCriteriaForRound(judgeAssignment.getRound()));
     }
 
     //HELPERS
