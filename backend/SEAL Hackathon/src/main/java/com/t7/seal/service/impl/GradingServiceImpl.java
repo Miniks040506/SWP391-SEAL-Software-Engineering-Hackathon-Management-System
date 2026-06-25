@@ -200,10 +200,53 @@ public class GradingServiceImpl implements GradingService {
 
         List<RoundGradingProgressResponse> rounds = roundRepository.findPublicByEventIdOrderByOrderIndexAsc(eventId)
                 .stream()
-                .map()
+                .map(this::buildRoundGradingProgress)
                 .toList();
 
-        return null;
+        int totalAssigned = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::totalAssignedSubmissions)
+                .sum();
+        int completed = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::completedAssignedSubmissions)
+                .sum();
+        int pending = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::pendingSubmissions)
+                .sum();
+        int draft = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::draftSavedSubmissions)
+                .sum();
+        int submitted = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::submittedSubmissions)
+                .sum();
+        int locked = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::lockedSubmissions)
+                .sum();
+
+        long confirmedScoreCount = rounds.stream()
+                .mapToLong(RoundGradingProgressResponse::confirmedScoreCount)
+                .sum();
+        long expectedFinalScoreCount = rounds.stream()
+                .mapToLong(RoundGradingProgressResponse::expectedFinalScoreCount)
+                .sum();
+
+        double percent = totalAssigned == 0 ? 0.0 : completed * 100.0 / totalAssigned;
+
+        return new EventGradingProgressResponse(
+                eventId,
+                event.getName(),
+                event.getStatus().name(),
+                rounds.size(),
+                totalAssigned,
+                completed,
+                pending,
+                draft,
+                submitted,
+                locked,
+                expectedFinalScoreCount,
+                confirmedScoreCount,
+                percent,
+                rounds
+        );
     }
 
     @Transactional(readOnly = true)
