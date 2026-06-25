@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { roundApi } from "@/api/round.api";
 import { advancementApi } from "@/api/advancement.api";
+import { enqueueSnackbar } from "notistack";
+import { isAxiosError } from "axios";
 import type {
   CreateAdvanceRuleRequest,
   UpdateAdvanceRuleRequest,
@@ -76,6 +78,19 @@ export function useOverrideAdvancementMutation(roundId: string) {
         queryKey: ["advancementPreview", roundId],
       });
     },
+    onError: (error: any) => {
+      if (isAxiosError(error) && error.response?.status === 409) {
+        enqueueSnackbar(
+          "Cannot override: advancement state conflict.",
+          { variant: "error" }
+        );
+      } else {
+        enqueueSnackbar(
+          error?.response?.data?.message || error?.message || "Failed to override advancement.",
+          { variant: "error" }
+        );
+      }
+    },
   });
 }
 
@@ -97,6 +112,19 @@ export function useConfirmAdvancementMutation() {
       queryClient.invalidateQueries({ queryKey: ["teamCompetition"] });
       queryClient.invalidateQueries({ queryKey: ["eventCompetition"] });
       queryClient.invalidateQueries({ queryKey: ["rankings"] });
+    },
+    onError: (error: any) => {
+      if (isAxiosError(error) && error.response?.status === 409) {
+        enqueueSnackbar(
+          "Cannot confirm advancement: ranking not calculated, grading not locked, or advancement already confirmed.",
+          { variant: "error" }
+        );
+      } else {
+        enqueueSnackbar(
+          error?.response?.data?.message || error?.message || "Failed to confirm advancement.",
+          { variant: "error" }
+        );
+      }
     },
   });
 }

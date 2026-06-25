@@ -11,7 +11,10 @@ import {
 import { AdvancementPreviewTable } from "../components/AdvancementPreviewTable";
 import { AdvancementConfirmDialog } from "../components/AdvancementConfirmDialog";
 import { AdvancementSummaryCards } from "../components/AdvancementSummaryCards";
-import type { AdvancementOverrideRequest, AdvancementPreviewResponse } from "@/types/advancement.types";
+import type {
+  AdvancementOverrideRequest,
+  AdvancementPreviewResponse,
+} from "@/types/advancement.types";
 
 export function EventAdvancementPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -22,7 +25,12 @@ export function EventAdvancementPage() {
     Map<string, { status: string; reason: string }>
   >(new Map());
 
-  const { data: response, isLoading, isError, refetch } = useAdvancementPreviewQuery(validEventId);
+  const {
+    data: response,
+    isLoading,
+    isError,
+    refetch,
+  } = useAdvancementPreviewQuery(validEventId);
   const previewData = response?.data;
 
   const confirmMutation = useConfirmAdvancementMutation();
@@ -32,7 +40,11 @@ export function EventAdvancementPage() {
     refetch();
   };
 
-  const handleOverride = (teamId: string, newStatus: string, reason: string) => {
+  const handleOverride = (
+    teamId: string,
+    newStatus: string,
+    reason: string,
+  ) => {
     const payload: AdvancementOverrideRequest = {
       teamId,
       finalStatus: newStatus as "ADVANCED" | "ELIMINATED",
@@ -60,7 +72,9 @@ export function EventAdvancementPage() {
         roundId: validEventId,
         payload: { overrideRows: [] },
       });
-      enqueueSnackbar("Advancement confirmed successfully.", { variant: "success" });
+      enqueueSnackbar("Advancement confirmed successfully.", {
+        variant: "success",
+      });
       setConfirmDialogOpen(false);
       refetch();
     } catch {
@@ -90,7 +104,12 @@ export function EventAdvancementPage() {
           startIcon={<RefreshOutlined />}
           onClick={handleRefresh}
           disabled={isLoading}
-          sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px", height: 40 }}
+          sx={{
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: "10px",
+            height: 40,
+          }}
         >
           Refresh
         </Button>
@@ -122,7 +141,8 @@ export function EventAdvancementPage() {
           )}
           {previewData.advancementConfirmed && (
             <Alert severity="info" className="mb-4">
-              Advancement has already been confirmed. Manual changes require override flow.
+              Advancement has already been confirmed. Manual changes require
+              override flow.
             </Alert>
           )}
 
@@ -144,9 +164,17 @@ export function EventAdvancementPage() {
             <Button
               variant="contained"
               color="primary"
-              disabled={previewData.advancementConfirmed || confirmMutation.isPending}
+              disabled={
+                previewData.advancementConfirmed || confirmMutation.isPending
+              }
               onClick={() => setConfirmDialogOpen(true)}
-              sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px", boxShadow: "none", height: 40 }}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: "10px",
+                boxShadow: "none",
+                height: 40,
+              }}
             >
               Confirm Advancement
             </Button>

@@ -1,18 +1,36 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Typography } from "@mui/material";
+import { isAxiosError } from "axios";
 import { useTeamAdvancementStatusQuery } from "../hooks/useAdvancementQueries";
 import { TeamAdvancementStatusBanner } from "../components/TeamAdvancementStatusBanner";
 
 export function TeamAdvancementPage() {
   const { teamId } = useParams<{ teamId: string }>();
   const validTeamId = teamId || "";
+  const navigate = useNavigate();
 
   const {
     data: response,
     isLoading,
     isError,
+    error,
   } = useTeamAdvancementStatusQuery(validTeamId);
   const data = response?.data;
+
+  if (isError && isAxiosError(error) && error.response?.status === 403) {
+    return (
+      <div className="space-y-4 py-32 text-center">
+        <p className="font-semibold text-gray-400">You don't have access to this team.</p>
+        <button
+          type="button"
+          onClick={() => navigate("/participant/teams")}
+          className="text-sm font-bold text-blue-500 hover:underline"
+        >
+          Back to My Teams
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">

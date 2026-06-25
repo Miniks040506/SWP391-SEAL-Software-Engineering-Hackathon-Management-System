@@ -11,8 +11,14 @@ import {
 import { AdvanceRulePanel } from "../components/AdvanceRulePanel";
 import { AdvancementPreviewTable } from "../components/AdvancementPreviewTable";
 import { AdvancementConfirmDialog } from "../components/AdvancementConfirmDialog";
-import type { AdvancementPreviewResponse, RoundDetailResponse } from "@/types/round.types";
-import type { AdvancementPreviewResponse as NewAdvancementPreviewResponse } from "@/types/advancement.types";
+import type {
+  AdvancementPreviewResponse,
+  RoundDetailResponse,
+} from "@/types/round.types";
+import type {
+  AdvancementPreviewResponse as NewAdvancementPreviewResponse,
+  SuggestedAdvancementStatus,
+} from "@/types/advancement.types";
 import type { RankingResponse } from "@/types/ranking.types";
 
 type LocalRoundDetail = RoundDetailResponse & {
@@ -69,7 +75,7 @@ export function RoundAdvancementPage() {
   const handleOverride = (
     teamId: string,
     newStatus: string,
-    reason: string
+    reason: string,
   ) => {
     setOverrides((prev) => {
       const next = new Map(prev);
@@ -98,7 +104,7 @@ export function RoundAdvancementPage() {
             }
             // Default status if not present
             return { ...team, status: team.status || "ADVANCED" };
-          }
+          },
         ),
       }
     : undefined;
@@ -110,12 +116,15 @@ export function RoundAdvancementPage() {
       await confirmMutation.mutateAsync({
         roundId: validRoundId,
         payload: {
-          overrideRows: Array.from(overrides.entries()).map(([teamId, override]) => ({
-            teamId,
-            finalStatus: override.status as "ADVANCED" | "ELIMINATED",
-            reason: override.reason,
-          })),
-          confirmNote: overrides.size > 0 ? "Manual overrides applied" : undefined,
+          overrideRows: Array.from(overrides.entries()).map(
+            ([teamId, override]) => ({
+              teamId,
+              finalStatus: override.status as "ADVANCED" | "ELIMINATED",
+              reason: override.reason,
+            }),
+          ),
+          confirmNote:
+            overrides.size > 0 ? "Manual overrides applied" : undefined,
         },
       });
       enqueueSnackbar("Advancement confirmed successfully.", {
@@ -133,12 +142,13 @@ export function RoundAdvancementPage() {
 
   const advancedCount =
     displayPreviewData?.suggestedAdvancedTeams.filter(
-      (t: LocalPreviewTeam) => t.status === "ADVANCED" || t.status === "WILDCARD"
+      (t: LocalPreviewTeam) =>
+        t.status === "ADVANCED" || t.status === "WILDCARD",
     ).length || 0;
 
   const eliminatedCount =
     displayPreviewData?.suggestedAdvancedTeams.filter(
-      (t: LocalPreviewTeam) => t.status === "ELIMINATED"
+      (t: LocalPreviewTeam) => t.status === "ELIMINATED",
     ).length || 0;
 
   return (
@@ -201,7 +211,9 @@ export function RoundAdvancementPage() {
                 Ranking Calculation:
               </span>{" "}
               <span className="text-slate-800 dark:text-slate-200">
-                {(roundDetail as LocalRoundDetail).rankingCalculatedAt ? "Calculated" : "Not Calculated"}
+                {(roundDetail as LocalRoundDetail).rankingCalculatedAt
+                  ? "Calculated"
+                  : "Not Calculated"}
               </span>
             </div>
           </div>
@@ -214,11 +226,12 @@ export function RoundAdvancementPage() {
             Advancement preview should be run after grading is locked.
           </Alert>
         )}
-        {roundDetail && !(roundDetail as LocalRoundDetail).rankingCalculatedAt && (
-          <Alert severity="warning" className="mb-2">
-            Ranking is required before confirming advancement.
-          </Alert>
-        )}
+        {roundDetail &&
+          !(roundDetail as LocalRoundDetail).rankingCalculatedAt && (
+            <Alert severity="warning" className="mb-2">
+              Ranking is required before confirming advancement.
+            </Alert>
+          )}
       </div>
 
       {/* Section 2 - Advance rule panel */}
@@ -233,7 +246,33 @@ export function RoundAdvancementPage() {
         <>
           <AdvancementPreviewTable
             roundId={validRoundId}
-            previewData={displayPreviewData as unknown as NewAdvancementPreviewResponse}
+            previewData={
+              displayPreviewData
+                ? ({
+                    ...displayPreviewData,
+                    candidates: displayPreviewData.suggestedAdvancedTeams.map(
+                      (team: LocalPreviewTeam) => ({
+                        teamId: team.teamId || team.id || "",
+                        teamName: team.teamName || team.teamId || "Unknown",
+                        projectTitle: team.projectTitle ?? null,
+                        trackId: null,
+                        trackName: team.trackName ?? null,
+                        roundId: displayPreviewData.roundId ?? "",
+                        roundName: "",
+                        rankPosition: team.rankPosition ?? null,
+                        totalScore: team.totalScore ?? null,
+                        ruleType: null,
+                        ruleMatched: false,
+                        suggestedStatus:
+                          (team.status as SuggestedAdvancementStatus) ??
+                          "WAITING",
+                        finalStatus: null,
+                        overrideReason: team.overrideReason ?? null,
+                      }),
+                    ),
+                  } as unknown as NewAdvancementPreviewResponse)
+                : undefined
+            }
             isLoading={previewMutation.isPending}
             onOverride={handleOverride}
           />
