@@ -1,5 +1,6 @@
 import { apiRequest } from "@/api/apiRequest";
 import type { PageResponse, UUID } from "@/types/common.types";
+import type { TeamDetailedScoreResponse } from "@/types/ranking.types";
 import type {
   CoordinatorTeamDetailResponse,
   CoordinatorTeamListParams,
@@ -23,6 +24,7 @@ import type {
   TeamMemberResponse,
   TeamResponse,
   TeamSummaryResponse,
+  TeamAdvancementStatusResponse,
   ToggleJoinCodeRequest,
   TransferLeaderRequest,
   UpdateTeamRequest,
@@ -44,6 +46,23 @@ export const teamApi = {
   getMyEventCompetition(eventId: UUID) {
     return apiRequest.get<EventCompetitionResponse>(
       `/events/${eventId}/competition/me`,
+    );
+  },
+
+  getTeamAdvancementStatus(teamId: UUID, roundId?: UUID) {
+    const url = roundId
+      ? `/teams/${teamId}/rounds/${roundId}/advancement-status`
+      : `/teams/${teamId}/advancement-status`;
+    return apiRequest.get<TeamAdvancementStatusResponse>(url);
+  },
+
+  getTeamPublishedScores(teamId: UUID) {
+    return apiRequest.get<TeamDetailedScoreResponse[]>(`/teams/${teamId}/scores`);
+  },
+
+  getTeamPublishedRoundScore(teamId: UUID, roundId: UUID) {
+    return apiRequest.get<TeamDetailedScoreResponse>(
+      `/teams/${teamId}/rounds/${roundId}/scores`,
     );
   },
 

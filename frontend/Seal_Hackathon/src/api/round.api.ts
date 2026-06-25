@@ -75,7 +75,7 @@ export const roundApi = {
 
   getAdvancementPreview(roundId: UUID) {
     return apiRequest.get<AdvancementPreviewResponse>(
-      `/rounds/${roundId}/advancement-preview`,
+      `/rounds/${roundId}/advancement/suggestions`,
     );
   },
 
@@ -87,7 +87,14 @@ export const roundApi = {
 
   confirmAdvancement(roundId: UUID, payload: ConfirmAdvancementRequest) {
     return apiRequest.post<ConfirmAdvancementResponse>(
-      `/rounds/${roundId}/confirm-advancement`,
+      `/rounds/${roundId}/advancement/confirm`,
+      payload,
+    );
+  },
+
+  overrideAdvancement(roundId: UUID, payload: ConfirmAdvancementRequest) {
+    return apiRequest.post<ConfirmAdvancementResponse>(
+      `/rounds/${roundId}/advancement/override`,
       payload,
     );
   },

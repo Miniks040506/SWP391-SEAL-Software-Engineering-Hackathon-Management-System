@@ -152,6 +152,14 @@ export type EventCompetitionRoundResponse = {
   open: boolean;
   submissionLocked: boolean;
   canSubmit: boolean;
+  canAccessRound: boolean;
+  advancementConfirmed: boolean;
+  advancementConfirmedAt?: ISODateTime | null;
+  advanced?: boolean | null;
+  eliminated: boolean;
+  advanceReason?: string | null;
+  rankPosition?: number | null;
+  totalScore?: number | null;
   submissionId?: UUID | null;
   submissionStatus?: string | null;
   submissionNumber?: number | null;
@@ -173,6 +181,31 @@ export type EventCompetitionResponse = {
   trackDescription?: string | null;
   rounds: EventCompetitionRoundResponse[];
   serverTime: ISODateTime;
+};
+
+
+export type TeamAdvancementStatusResponse = {
+  eventId: UUID;
+  eventName: string;
+  teamId: UUID;
+  teamName: string;
+  teamStatus: TeamStatus;
+  trackId: UUID;
+  trackName: string;
+  roundId: UUID;
+  roundName: string;
+  advancementConfirmed: boolean;
+  advancementConfirmedAt?: ISODateTime | null;
+  advanced?: boolean | null;
+  eliminated: boolean;
+  advanceReason?: string | null;
+  rankPosition?: number | null;
+  totalScore?: number | null;
+  nextRoundId?: UUID | null;
+  nextRoundName?: string | null;
+  nextRoundStatus?: string | null;
+  canAccessNextRound: boolean;
+  message: string;
 };
 
 export type TeamJoinCodePreviewResponse = {

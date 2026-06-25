@@ -20,8 +20,17 @@ export type UpdateRoundRequest = {
   status?: string;
 };
 
+export type AdvancementOverrideRequest = {
+  teamId: UUID;
+  advanced: boolean;
+  reason: string;
+};
+
 export type ConfirmAdvancementRequest = {
-  advancedTeamIds: UUID[];
+  /** If omitted, backend uses AdvanceRule suggestions. */
+  advancedTeamIds?: UUID[];
+  /** Manual advance/eliminate changes. Each override requires a reason. */
+  overrides?: AdvancementOverrideRequest[];
   note?: string;
 };
 
@@ -129,16 +138,35 @@ export type ScoringProgressResponse = {
   judges: JudgeProgressResponse[];
 };
 
+export type TeamAdvancementDecisionResponse = {
+  teamId: UUID;
+  teamName: string;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  rankPosition?: number | null;
+  totalScore?: number | null;
+  suggestedAdvanced: boolean;
+  finalAdvanced: boolean;
+  teamStatus?: string | null;
+  advanceReason?: string | null;
+  overrideReason?: string | null;
+};
+
 export type AdvancementPreviewResponse = {
   roundId: UUID;
   suggestedAdvancedTeams: RankingResponse[];
+  allRankings: RankingResponse[];
+  decisions: TeamAdvancementDecisionResponse[];
   warnings: string[];
 };
 
 export type ConfirmAdvancementResponse = {
   roundId: UUID;
   advancedCount: number;
+  eliminatedCount: number;
   confirmedAt: ISODateTime;
+  decisions: TeamAdvancementDecisionResponse[];
+  warnings: string[];
 };
 
 export type AdvanceRuleResponse = {
