@@ -644,6 +644,45 @@ public class GradingServiceImpl implements GradingService {
             Judge judge,
             long criteriaCount
     ) {
-        return null;
+        long draftCount = scoreRepository
+                .countBySubmissionIdAndJudgeIdAndIsDraftTrue(submission.getId(), judge.getId());
+        long confirmedCount = scoreRepository
+                .countBySubmissionIdAndJudgeIdAndIsDraftFalse(submission.getId(), judge.getId());
+        boolean completed = criteriaCount > 0 && confirmedCount >= criteriaCount;
+        boolean locked = submission.getRound().getGradingLockedAt() != null;
+
+        String gradingStatus;
+        if (locked) {
+            gradingStatus = "LOCKED";
+        } else if (completed) {
+            gradingStatus = "COMPLETED";
+        } else if (draftCount > 0 || confirmedCount > 0) {
+            gradingStatus = "DRAFT_SAVED";
+        } else {
+            gradingStatus = "PENDING";
+        }
+
+        Team team = submission.getTeam();
+        Track track = team == null ? null : team.getTrack();
+        Round round = submission.getRound();
+
+
+        return new SubmissionGradingProgressResponse(
+                submission.getId(),
+                team == null ? null : team.getId(),
+                team == null ? null : team.getName(),
+                track == null ? null : track.getId(),
+                track == null ? null : track.getName(),
+                round.getId(),
+                round.getName(),
+                submission.getStatus() == null ? null : submission.getStatus().name(),
+                gradingStatus,
+                draftCount,
+                confirmedCount,
+                criteriaCount,
+                completed,
+                locked,
+                round.getGradingLockedAt()
+        );
     }
 }
