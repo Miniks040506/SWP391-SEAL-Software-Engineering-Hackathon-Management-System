@@ -1,6 +1,9 @@
 package com.t7.seal.controller;
 
 import com.t7.seal.config.ApiPaths;
+import com.t7.seal.response.grading.EventGradingProgressResponse;
+import com.t7.seal.response.grading.JudgeAssignmentProgressResponse;
+import com.t7.seal.response.grading.RoundGradingProgressResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,7 +20,7 @@ import java.util.UUID;
 public class CoordinatorGradingController {
 
     @GetMapping("/events/{eventId}/grading-progress")
-    public ResponseEntity<?> getEventGradingProgress(
+    public ResponseEntity<EventGradingProgressResponse> getEventGradingProgress(
             @PathVariable UUID eventId,
             Authentication authentication
     ) {
@@ -25,7 +28,7 @@ public class CoordinatorGradingController {
     }
 
     @GetMapping("/rounds/{roundId}/grading-progress")
-    public ResponseEntity<?> getRoundGradingProgress(
+    public ResponseEntity<RoundGradingProgressResponse> getRoundGradingProgress(
             @PathVariable UUID roundId,
             Authentication authentication
     ) {
@@ -33,7 +36,7 @@ public class CoordinatorGradingController {
     }
 
     @GetMapping("/judge-assignments/{assignmentId}/progress")
-    public ResponseEntity<?> getJudgeAssignmentProgress(
+    public ResponseEntity<JudgeAssignmentProgressResponse> getJudgeAssignmentProgress(
             @PathVariable UUID assignmentId,
             Authentication authentication
     ) {
