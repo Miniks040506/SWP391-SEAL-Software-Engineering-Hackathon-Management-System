@@ -19,6 +19,12 @@ import {
 } from "@/features/judge";
 import { JudgeScoreSheetPage } from "@/features/grading/pages/JudgeScoreSheetPage";
 
+import {
+  JudgeCalibrationListPage,
+  JudgeCalibrationScorePage,
+  CalibrationDistributionPage,
+} from "@/features/calibration";
+
 
 import {
   MentorDashboardPage,
@@ -196,6 +202,10 @@ export const router = createBrowserRouter([
         element: <CalibrationRoundFormPage />,
       },
       {
+        path: "calibrations/:calibrationId/distribution",
+        element: <CalibrationDistributionPage />,
+      },
+      {
         path: "calibrations/:calibrationId/edit",
         element: <CalibrationRoundFormPage />,
       },
@@ -268,7 +278,10 @@ export const router = createBrowserRouter([
         element: <JudgeScoreSheetPage />,
       },
       { path: "scoring", element: <NotFoundPage /> },
-      { path: "calibration", element: <NotFoundPage /> },
+      { path: "calibrations", element: <JudgeCalibrationListPage /> },
+      { path: "calibrations/:calibrationId", element: <Navigate to="score" replace /> },
+      { path: "calibrations/:calibrationId/score", element: <JudgeCalibrationScorePage /> },
+      { path: "calibrations/:calibrationId/distribution", element: <CalibrationDistributionPage /> },
       {
         path: "rounds/:roundId/criteria",
         element: <EventCriteriaViewPage mode="ROUND" />,
