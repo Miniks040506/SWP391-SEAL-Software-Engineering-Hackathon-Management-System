@@ -185,14 +185,29 @@ export type GetEventSubmissionsParams = {
 export type CriterionAverageScoreResponse = {
   eventCriteriaId: UUID;
   criteriaName: string;
+  category?: string | null;
+  technical?: boolean | null;
   averageScore: number;
-  maxScore: number;
+  maxScore?: number | null;
+  weight?: number | null;
+  judgeCount: number;
 };
 
 export type TeamDetailedScoreResponse = {
-  submissionId: UUID;
+  eventId: UUID;
+  eventName: string;
   teamId: UUID;
+  teamName: string;
+  submissionId: UUID;
+  roundId: UUID;
+  roundName: string;
+  trackId: UUID;
+  trackName: string;
   totalScore: number;
+  rankPosition: number;
+  advanced: boolean;
+  judgeCount: number;
+  publishedAt?: ISODateTime | null;
   criteriaScores: CriterionAverageScoreResponse[];
 };
 
