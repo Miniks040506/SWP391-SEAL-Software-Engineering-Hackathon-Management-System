@@ -16,7 +16,7 @@ interface SubmissionGradingProgressTableProps {
     submissions: SubmissionGradingProgressResponse[];
 }
 
-export const SubmissionGradingProgressTable = ({ submissions }: SubmissionGradingProgressTableProps) => {
+export const SubmissionGradingProgressTable = ({ submissions = [] }: SubmissionGradingProgressTableProps) => {
     return (
         <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: "16px" }}>
             <Table size="small">

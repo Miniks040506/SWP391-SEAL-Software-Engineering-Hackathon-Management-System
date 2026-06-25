@@ -63,7 +63,6 @@ export const CoordinatorJudgeAssignmentProgressPage = () => {
                         Refresh
                     </Button>
                     <Button
-                        variant="contained"
                         startIcon={<ArrowBackOutlinedIcon />}
                         onClick={() => navigate(-1)}
                         sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}

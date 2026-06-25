@@ -19,7 +19,7 @@ interface RoundGradingProgressTableProps {
     rounds: RoundGradingProgressResponse[];
 }
 
-export const RoundGradingProgressTable = ({ rounds }: RoundGradingProgressTableProps) => {
+export const RoundGradingProgressTable = ({ rounds = [] }: RoundGradingProgressTableProps) => {
     return (
         <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: "16px" }}>
             <Table size="small">

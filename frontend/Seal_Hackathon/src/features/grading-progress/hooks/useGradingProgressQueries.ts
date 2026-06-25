@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { gradingApi } from "@/api/grading.api";
 import type { UUID } from "@/types/common.types";
+import { mockGradingProgressService } from "../mocks/gradingProgress.mock"; // <-- Import mock service
+
+const USE_MOCK = false;
 
 export const gradingProgressQueryKeys = {
     all: ["grading-progress"] as const,
@@ -15,13 +18,15 @@ export const gradingProgressQueryKeys = {
 export const useEventGradingProgressQuery = (eventId?: UUID, eventStatus?: string) => {
     return useQuery({
         queryKey: gradingProgressQueryKeys.eventProgress(eventId!),
-        queryFn: () => gradingApi.getEventGradingProgress(eventId!),
+        queryFn: () => USE_MOCK
+            ? mockGradingProgressService.getEventGradingProgress(eventId!)
+            : gradingApi.getEventGradingProgress(eventId!),
         enabled: !!eventId,
         refetchInterval: (query) => {
             if (eventStatus === "JUDGING" || eventStatus === "ONGOING") {
-                return 30000; // Refetch every 30 seconds
+                return 30000;
             }
-            const data = query.state?.data;
+            const data = query.state?.data as any;
             if (data && (data.eventStatus === "JUDGING" || data.eventStatus === "ONGOING")) {
                 return 30000;
             }
@@ -33,7 +38,9 @@ export const useEventGradingProgressQuery = (eventId?: UUID, eventStatus?: strin
 export const useRoundGradingProgressQuery = (roundId?: UUID) => {
     return useQuery({
         queryKey: gradingProgressQueryKeys.roundProgress(roundId!),
-        queryFn: () => gradingApi.getRoundGradingProgress(roundId!),
+        queryFn: () => USE_MOCK
+            ? mockGradingProgressService.getRoundGradingProgress(roundId!)
+            : gradingApi.getRoundGradingProgress(roundId!),
         enabled: !!roundId,
     });
 };
@@ -41,7 +48,9 @@ export const useRoundGradingProgressQuery = (roundId?: UUID) => {
 export const useJudgeAssignmentProgressQuery = (assignmentId?: UUID) => {
     return useQuery({
         queryKey: gradingProgressQueryKeys.judgeAssignmentProgress(assignmentId!),
-        queryFn: () => gradingApi.getJudgeAssignmentProgress(assignmentId!),
+        queryFn: () => USE_MOCK
+            ? mockGradingProgressService.getJudgeAssignmentProgress(assignmentId!)
+            : gradingApi.getJudgeAssignmentProgress(assignmentId!),
         enabled: !!assignmentId,
     });
 };

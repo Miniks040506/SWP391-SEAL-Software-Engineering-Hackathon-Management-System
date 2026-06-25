@@ -64,6 +64,12 @@ import {
   CoordinatorAnnouncementPage,
 } from "@/features/coordinator";
 
+import {
+  CoordinatorEventGradingProgressPage,
+  CoordinatorRoundGradingProgressPage,
+  CoordinatorJudgeAssignmentProgressPage,
+} from "@/features/grading-progress";
+
 
 import {
   CreateTeamPage,
@@ -179,6 +185,22 @@ export const router = createBrowserRouter([
       {
         path: "events/:eventId/advancement",
         element: <RoundAdvancementPage />,
+      },
+      {
+        path: "events/:eventId/grading-progress",
+        element: <CoordinatorEventGradingProgressPage />,
+      },
+      {
+        path: "grading-progress",
+        element: <Navigate to="/coordinator/events" replace />,
+      },
+      {
+        path: "rounds/:roundId/grading-progress",
+        element: <CoordinatorRoundGradingProgressPage />,
+      },
+      {
+        path: "judge-assignments/:assignmentId/progress",
+        element: <CoordinatorJudgeAssignmentProgressPage />,
       },
       { path: "events/:eventId/view", element: <EventDetailPage /> },
       {

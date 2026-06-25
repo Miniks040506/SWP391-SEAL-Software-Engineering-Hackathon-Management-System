@@ -17,7 +17,7 @@ interface JudgeAssignmentProgressTableProps {
     assignments: JudgeAssignmentProgressResponse[];
 }
 
-export const JudgeAssignmentProgressTable = ({ assignments }: JudgeAssignmentProgressTableProps) => {
+export const JudgeAssignmentProgressTable = ({ assignments = [] }: JudgeAssignmentProgressTableProps) => {
     return (
         <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: "16px" }}>
             <Table size="small">

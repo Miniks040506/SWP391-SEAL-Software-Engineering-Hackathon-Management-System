@@ -154,6 +154,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <GavelOutlinedIcon fontSize="small" />,
           },
           {
+            label: "Grading Progress",
+            path: "/coordinator/grading-progress",
+            icon: <AssessmentOutlinedIcon fontSize="small" />,
+          },
+          {
             label: "Results",
             path: "/coordinator/results",
             icon: <EmojiEventsOutlinedIcon fontSize="small" />,
