@@ -5,6 +5,7 @@ import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.grading.ConfirmScoreSheetRequest;
@@ -36,6 +37,9 @@ public class GradingServiceImpl implements GradingService {
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final EventCriteriaRepository eventCriteriaRepository;
     private final ScoreRepository scoreRepository;
+    private final HackathonEventRepository eventRepository;
+    private final RoundRepository roundRepository;
+
     private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
@@ -187,16 +191,28 @@ public class GradingServiceImpl implements GradingService {
         return toScoreResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public EventGradingProgressResponse getEventGradingProgress(UUID eventId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+        HackathonEvent event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found."));
+
+        List<RoundGradingProgressResponse> rounds = roundRepository.findPublicByEventIdOrderByOrderIndexAsc(eventId)
+                .stream()
+                .map()
+                .toList();
+
         return null;
     }
 
+    @Transactional(readOnly = true)
     @Override
     public RoundGradingProgressResponse getRoundGradingProgress(UUID roundId, Authentication authentication) {
         return null;
     }
 
+    @Transactional(readOnly = true)
     @Override
     public JudgeAssignmentProgressResponse getJudgeAssignmentProgress(UUID judgeAssignmentId, Authentication authentication) {
         return null;
@@ -417,5 +433,62 @@ public class GradingServiceImpl implements GradingService {
                 Map.of("submissionId", submission.getId().toString()),
                 saveContext
         );
+    }
+
+    private RoundGradingProgressResponse buildRoundGradingProgress(Round round) {
+
+        List<RoundJudgeAssignment> assignments = roundJudgeAssignmentRepository
+                .findByRoundIdWithJudgeAndTrack(round.getId());
+        long criteriaCount = countCriteriaForRound(round);
+
+        List<JudgeAssignmentProgressResponse> assignmentProgress = assignments.stream()
+                .map(a -> buildJudgeAssignmentProgress(a, criteriaCount))
+                .toList();
+
+        int totalAssigned;
+
+        boolean submissionLocked = round.getSubmissionLockedAt() != null;
+        boolean gradingLocked = round.getGradingLockedAt() != null;
+        boolean canLockGrading = submissionLocked && !gradingLocked;
+        String warning = null;
+
+        if(!submissionLocked) {
+            warning = "Submissions must be locked before grading can be locked.";
+        } else if (gradingLocked) {
+            warning = "Grading is ready to lock for this round.";
+        }
+
+        return new RoundGradingProgressResponse(
+                round.getId(),
+                round.getEvent().getId(),
+                round.getName(),
+                round.getStatus().name(),
+                round.getSubmissionLockedAt(),
+                round.getGradingLockedAt(),
+                submissionLocked,
+                gradingLocked,
+                canLockGrading,
+                warning,
+                assignments.size(),
+
+        );
+    }
+
+    private JudgeAssignmentProgressResponse buildJudgeAssignmentProgress(
+            RoundJudgeAssignment assignment,
+            Long criteriaCount
+    ) {
+        return null;
+    }
+
+    private long countCriteriaForRound(Round round) {
+        if (round == null || round.getEvent() == null) {
+            return 0;
+        }
+
+        return eventCriteriaRepository.findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
+                .stream()
+                .filter(c -> c.appliesToRound(round.getId()))
+                .count();
     }
 }
