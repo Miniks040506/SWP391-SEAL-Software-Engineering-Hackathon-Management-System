@@ -129,7 +129,7 @@ export const router = createBrowserRouter([
 
   {
     path: "/participant",
-    element: <RootLayout />,
+    element: <LoggedinLayout sectionRole="PARTICIPANT" />,
     children: [
       { index: true, element: <Navigate to="teams" replace /> },
       { path: "teams", element: <MyTeamsPage /> },

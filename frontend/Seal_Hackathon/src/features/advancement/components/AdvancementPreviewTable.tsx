@@ -11,30 +11,16 @@ import {
   Select,
   Tooltip,
   Chip,
-  Typography,
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useState } from "react";
-import type { AdvancementPreviewResponse } from "@/types/round.types";
-import type { RankingResponse } from "@/types/ranking.types";
+import type { AdvancementPreviewResponse, AdvancementCandidateRow } from "@/types/advancement.types";
 
 import {
   AdvancementStatusBadge,
   type AdvancementStatus,
 } from "./AdvancementStatusBadge";
 import { OverrideReasonDialog } from "./OverrideReasonDialog";
-
-type LocalPreviewTeam = RankingResponse & {
-  teamId?: string;
-  teamName?: string;
-  name?: string;
-  rank?: number;
-  trackName?: string;
-  totalScore?: number;
-  ruleMatched?: string;
-  status?: string;
-  overrideReason?: string;
-};
 
 interface AdvancementPreviewTableProps {
   roundId: string;
@@ -98,16 +84,6 @@ export function AdvancementPreviewTable({
         />
       </div>
 
-      {previewData.warnings && previewData.warnings.length > 0 && (
-        <div className="mb-4 space-y-2">
-          {previewData.warnings.map((warning, idx) => (
-            <Typography key={idx} color="warning.main" variant="body2">
-              Warning: {warning}
-            </Typography>
-          ))}
-        </div>
-      )}
-
       <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-lg text-sm">
         Rules applied for cutoff calculation. Teams matching rules advance automatically.
       </div>
@@ -127,6 +103,9 @@ export function AdvancementPreviewTable({
                 Team
               </TableCell>
               <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
+                Project Title
+              </TableCell>
+              <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
                 Track
               </TableCell>
               <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
@@ -139,6 +118,9 @@ export function AdvancementPreviewTable({
                 Suggested Status
               </TableCell>
               <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
+                Final Status
+              </TableCell>
+              <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
                 Reason
               </TableCell>
               <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
@@ -147,20 +129,21 @@ export function AdvancementPreviewTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {previewData.suggestedAdvancedTeams.map((team: LocalPreviewTeam, index: number) => {
-              const teamId = team.teamId || team.id || `team-${index}`;
-              const teamName = team.teamName || team.name || "Unknown Team";
-              const currentStatus = team.status || "PENDING_CONFIRMATION";
+            {previewData.candidates.map((team: AdvancementCandidateRow, index: number) => {
+              const teamId = team.teamId || `team-${index}`;
+              const teamName = team.teamName || "Unknown Team";
+              const currentStatus = team.finalStatus || team.suggestedStatus || "PENDING_CONFIRMATION";
               const isOverridden = !!team.overrideReason;
 
               return (
                 <TableRow
                   key={teamId}
+                  className={team.suggestedStatus === "ADVANCED" ? "bg-green-50 dark:bg-green-950/20" : ""}
                   style={
                     isOverridden ? { borderLeft: "3px solid #f59e0b" } : {}
                   }
                 >
-                  <TableCell>{team.rank || index + 1}</TableCell>
+                  <TableCell>{team.rankPosition || index + 1}</TableCell>
                   <TableCell className="font-medium text-slate-800 dark:text-slate-200">
                     <div className="flex items-center">
                       {teamName}
@@ -174,13 +157,23 @@ export function AdvancementPreviewTable({
                       )}
                     </div>
                   </TableCell>
+                  <TableCell className="text-slate-600 dark:text-slate-400">
+                    {team.projectTitle || "—"}
+                  </TableCell>
                   <TableCell>{team.trackName || "N/A"}</TableCell>
                   <TableCell>{team.totalScore || 0}</TableCell>
-                  <TableCell>{team.ruleMatched || "-"}</TableCell>
+                  <TableCell>{team.ruleType || "-"}</TableCell>
                   <TableCell>
                     <AdvancementStatusBadge
-                      status={currentStatus as AdvancementStatus}
+                      status={team.suggestedStatus as AdvancementStatus}
                     />
+                  </TableCell>
+                  <TableCell>
+                    {team.finalStatus ? (
+                      <AdvancementStatusBadge status={team.finalStatus as AdvancementStatus} />
+                    ) : (
+                      <span className="text-slate-400 text-sm">—</span>
+                    )}
                   </TableCell>
                   <TableCell>{team.overrideReason || ""}</TableCell>
                   <TableCell>
@@ -208,10 +201,10 @@ export function AdvancementPreviewTable({
                 </TableRow>
               );
             })}
-            {previewData.suggestedAdvancedTeams.length === 0 && (
+            {previewData.candidates.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={10}
                   className="text-center py-8 text-slate-500"
                 >
                   No teams found or ranking not yet calculated.

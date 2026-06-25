@@ -50,6 +50,13 @@ const getRuleValue = (rule: any) => {
   }
 };
 
+const ruleHelperText: Record<string, string> = {
+  TOP_N: "Advance the top N teams in each track.",
+  TOP_PERCENT: "Advance the top percentage of ranked teams.",
+  MIN_SCORE: "Advance teams whose total score is above the threshold.",
+  WILDCARD: "Coordinator manually selects extra teams.",
+};
+
 export function AdvanceRulePanel({
   roundId,
   onPreview,
@@ -199,6 +206,11 @@ export function AdvanceRulePanel({
                   {rule.description && (
                     <Typography variant="body2" className="text-slate-500">
                       {rule.description}
+                    </Typography>
+                  )}
+                  {ruleHelperText[rule.ruleType] && (
+                    <Typography variant="caption" className="text-slate-400 dark:text-slate-500 italic">
+                      {ruleHelperText[rule.ruleType]}
                     </Typography>
                   )}
                 </div>
