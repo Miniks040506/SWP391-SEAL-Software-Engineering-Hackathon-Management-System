@@ -252,12 +252,19 @@ public class GradingServiceImpl implements GradingService {
     @Transactional(readOnly = true)
     @Override
     public RoundGradingProgressResponse getRoundGradingProgress(UUID roundId, Authentication authentication) {
-        return null;
+        currentUserService.getCurrentUser(authentication);
+
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found."));
+
+        return buildRoundGradingProgress(round);
     }
 
     @Transactional(readOnly = true)
     @Override
     public JudgeAssignmentProgressResponse getJudgeAssignmentProgress(UUID judgeAssignmentId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
         return null;
     }
 
