@@ -53,10 +53,17 @@ export const eventApi = {
     return apiRequest.get<RankingResponse[]>(`/events/${eventId}/ranking`, {params});
   },
 
-  publishResults(eventId: UUID, payload: PublishResultsRequest) {
+  publishResults(eventId: UUID, payload?: PublishResultsRequest) {
     return apiRequest.post<PublishResultsResponse>(
       `/events/${eventId}/publish-results`,
-      payload,
+      payload ?? {},
+    );
+  },
+
+  publishResultsV2(eventId: UUID, payload?: PublishResultsRequest) {
+    return apiRequest.post<PublishResultsResponse>(
+      `/events/${eventId}/results/publish`,
+      payload ?? {},
     );
   },
 
