@@ -93,9 +93,9 @@ public class CalibrationServiceImpl implements CalibrationService {
                 saved.getId(),
                 null,
                 Map.of(
-                        "eventId", event.getId(),
-                        "sampleSubmissionId", sample.getId(),
-                        "mandatory", saved.getIsMandatory()
+                        "eventId", event.getId().toString(),
+                        "sampleSubmissionId", sample.getId().toString(),
+                        "mandatory", saved.getIsMandatory().toString()
                 ),
                 Map.of("source", "SPRINT_3_PERIOD_1")
         );
@@ -153,9 +153,9 @@ public class CalibrationServiceImpl implements CalibrationService {
 
         Map<String, Object> before = Map.of(
                 "description", nullSafe(calibrationRound.getDescription()),
-                "startAt", calibrationRound.getStartAt(),
-                "endAt", calibrationRound.getEndAt(),
-                "mandatory", calibrationRound.getIsMandatory()
+                "startAt", calibrationRound.getStartAt().toString(),
+                "endAt", calibrationRound.getEndAt().toString(),
+                "mandatory", calibrationRound.getIsMandatory().toString()
         );
 
         if (request.description() != null) {
@@ -190,9 +190,9 @@ public class CalibrationServiceImpl implements CalibrationService {
                 before,
                 Map.of(
                         "description", nullSafe(saved.getDescription()),
-                        "startAt", saved.getStartAt(),
-                        "endAt", saved.getEndAt(),
-                        "mandatory", saved.getIsMandatory()
+                        "startAt", saved.getStartAt().toString(),
+                        "endAt", saved.getEndAt().toString(),
+                        "mandatory", saved.getIsMandatory().toString()
                 ),
                 Map.of("source", "SPRINT_3_PERIOD_1")
         );
@@ -280,7 +280,7 @@ public class CalibrationServiceImpl implements CalibrationService {
                 calibrationRound.getId(),
                 null,
                 Map.of(
-                        "judgeId", judge.getId(),
+                        "judgeId", judge.getId().toString(),
                         "scoreCount", savedScores.size()
                 ),
                 Map.of("source", "SPRINT_3_PERIOD_1")
@@ -369,7 +369,8 @@ public class CalibrationServiceImpl implements CalibrationService {
                 "calibration_rounds",
                 saved.getId(),
                 null,
-                Map.of("distributionPublishedAt", saved.getDistributionPublishedAt()),
+                Map.of("distributionPublishedAt",
+                        saved.getDistributionPublishedAt().toString()),
                 Map.of("source", "SPRINT_3_PERIOD_1")
         );
 
