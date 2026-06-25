@@ -121,7 +121,7 @@ export function EventCompetitionPage() {
     );
   }
 
-  const canOpenSubmission = selectedRound?.canSubmit;
+  const canOpenSubmission = selectedRound?.canSubmit && competition.teamStatus !== "ELIMINATED";
 
   return (
     <div className="space-y-7 animate-in slide-in-from-bottom-4 duration-500">
@@ -167,6 +167,22 @@ export function EventCompetitionPage() {
           </div>
         </div>
       </section>
+
+      {competition.teamStatus === "ELIMINATED" && (
+        <Alert severity="error">
+          Your team has been eliminated and can no longer participate in this event.
+        </Alert>
+      )}
+      {competition.teamStatus === "ADVANCED" && (
+        <Alert severity="success">
+          Your team has advanced! You are eligible for the next round when it opens.
+        </Alert>
+      )}
+      {competition.teamStatus === "WINNER" && (
+        <Alert severity="success">
+          Congratulations! Your team has won this event.
+        </Alert>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.4fr]">
         <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
