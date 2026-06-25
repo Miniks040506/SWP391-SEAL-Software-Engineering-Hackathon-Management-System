@@ -11,8 +11,7 @@ import com.t7.seal.request.grading.ConfirmScoreSheetRequest;
 import com.t7.seal.request.grading.SaveScoreSheetRequest;
 import com.t7.seal.request.grading.ScoreItemRequest;
 import com.t7.seal.request.grading.UpdateScoreRequest;
-import com.t7.seal.response.grading.ScoreResponse;
-import com.t7.seal.response.grading.ScoreSheetResponse;
+import com.t7.seal.response.grading.*;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.GradingService;
@@ -186,6 +185,21 @@ public class GradingServiceImpl implements GradingService {
                 "eventCriteriaId", score.getEventCriteria().getId().toString()
         ));
         return toScoreResponse(saved);
+    }
+
+    @Override
+    public EventGradingProgressResponse getEventGradingProgress(UUID eventId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public RoundGradingProgressResponse getRoundGradingProgress(UUID roundId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public JudgeAssignmentProgressResponse getJudgeAssignmentProgress(UUID judgeAssignmentId, Authentication authentication) {
+        return null;
     }
 
     //HELPERS
