@@ -12,6 +12,7 @@ import com.t7.seal.response.results.RankingRecalculationResponse;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.results.TeamRankingHistoryResponse;
 import com.t7.seal.response.submission.TeamDetailedScoreResponse;
+import com.t7.seal.response.submission.TeamScoreCriterionResponse;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
@@ -326,6 +327,33 @@ public class RankingServiceImpl implements RankingService {
         return count;
     }
 
+    private TeamDetailedScoreResponse toTeamDetailedScoreResponse(Ranking ranking) {
+        Submission submission = ranking.getSubmission();
+        Team team = submission.getTeam();
+        Round round = ranking.getRound();
+        HackathonEvent event = round.getEvent();
+        Track track = ranking.getTrack();
+
+        List<TeamScoreCriterionResponse> criteriaScores = buildCriterionAverageScores(submission.getId());
+
+        return new TeamDetailedScoreResponse(
+                event.getId(),
+                event.getName(),
+                team.getId(),
+                team.getName(),
+                submission.getId(),
+                round.getId(),
+                round.getName(),
+                track.getId(),
+                track.getName(),
+                ranking.getTotalScore(),
+                ranking.getRankPosition(),
+                ranking.getIsAdvanced(),
+                ranking.getJudgeCount(),
+                publishedAt(ranking),
+                criteriaScores
+        );
+    }
 
     private RankingResponse toRankingResponse(Ranking ranking) {
         Submission submission = ranking.getSubmission();
