@@ -17,6 +17,7 @@ import java.util.UUID;
 
 public interface NotificationService {
     NotificationResponse createNotification(CreateNotificationRequest request, Authentication authentication);
+
     NotificationResponse createSystemNotification(
             User actor,
             HackathonEvent event,
@@ -29,15 +30,26 @@ public interface NotificationService {
             NotificationChannel channel,
             LocalDateTime scheduledAt
     );
+
     PageResponse<NotificationResponse> getMyNotifications(Boolean read, int page, int size, Authentication authentication);
+
     NotificationResponse getNotificationById(UUID notificationId, Authentication authentication);
+
     NotificationResponse sendNotificationNow(UUID notificationId, Authentication authentication);
+
     void markAsRead(UUID notificationId, Authentication authentication);
+
     void markAllAsRead(Authentication authentication);
+
     void deleteNotification(UUID notificationId, Authentication authentication);
+
     int clearMyNotifications(Boolean read, Authentication authentication);
+
     UnreadCountResponse getUnreadCount(Authentication authentication);
+
     void sendTestEmail(TestEmailRequest request, Authentication authentication);
+
     void dispatchDueNotifications();
+
     void dispatchQueuedEmails();
 }

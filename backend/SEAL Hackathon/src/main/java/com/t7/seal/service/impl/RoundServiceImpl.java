@@ -617,7 +617,28 @@ public class RoundServiceImpl implements RoundService {
             Round round,
             List<TeamAdvancementDecisionResponse> decisions
     ) {
-
+        for (TeamAdvancementDecisionResponse decision : decisions) {
+            try {
+                boolean advanced = Boolean.TRUE.equals(decision.finalAdvanced());
+                notificationService.createSystemNotification(
+                        user,
+                        round.getEvent(),
+                        advanced ? NotificationType.TEAM_ADVANCED : NotificationType.TEAM_ELIMINATED,
+                        advanced ? "Your team advanced" : "Your team eliminated",
+                        advanced
+                                ? "Team " + decision.teamName() + " advanced after round " + round.getName() + "."
+                                : "Team " + decision.teamName() + " did not advance after round " + round.getName() + ".",
+                        NotificationTargetScope.TEAM,
+                        decision.teamId(),
+                        null,
+                        NotificationChannel.BOTH,
+                        null
+                );
+            } catch (Exception e) {
+                //TODO
+                e.printStackTrace();
+            }
+        }
     }
 
     private Map<UUID, String> validateAndMapOverrideReason(
