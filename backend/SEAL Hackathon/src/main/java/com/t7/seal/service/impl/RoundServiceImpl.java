@@ -506,7 +506,8 @@ public class RoundServiceImpl implements RoundService {
                                 suggestedTeamIds.contains(r.getSubmission().getTeam().getId()),
                                 suggestedTeamIds.contains(r.getSubmission().getTeam().getId()),
                                 null
-                        )).toList(),
+                        ))
+                        .toList(),
                 warnings
         );
     }
@@ -529,18 +530,15 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException("No rankings found for this round.");
         }
 
-        Set<UUID> advancedTeamIds;
-        if (request != null && request.advancedTeamIds() != null && !request.advancedTeamIds().isEmpty()) {
-            advancedTeamIds = new LinkedHashSet<>(request.advancedTeamIds());
-        } else {
-            advancedTeamIds = executeAdvanceRules(
-                    rankings,
-                    advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId)
-            )
-                    .stream()
-                    .map(r -> r.getSubmission().getTeam().getId())
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-        }
+        List<AdvanceRule> rules = advanceRuleRepository
+                .findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId);
+
+        Set<UUID> suggestedTeamIds = executeAdvanceRules(rankings, rules)
+                .stream()
+                .map(r -> r.getSubmission().getTeam().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Set<UUID> finalAdvancedTeamIds = resolveFinalAdvanceTeamId(request, suggestedTeamIds, rankings);
 
         for (Ranking ranking : rankings) {
             Team team = ranking.getSubmission().getTeam();
@@ -584,6 +582,45 @@ public class RoundServiceImpl implements RoundService {
     }
 
     //HELPERS
+
+    private Set<UUID> resolveFinalAdvanceTeamId(
+            ConfirmAdvancementRequest request,
+            Set<UUID> suggestedTeamIds,
+            List<Ranking> rankings
+    ) {
+        Set<UUID> validTeamIds = rankings.stream()
+                .map(r -> r.getSubmission().getTeam().getId())
+                .collect(Collectors.toSet());
+
+        Set<UUID> finalAdvancedTeamIds;
+        if (request != null && request.advancedTeamIds() != null && !request.advancedTeamIds().isEmpty()) {
+            finalAdvancedTeamIds = new LinkedHashSet<>(request.advancedTeamIds());
+        } else {
+            finalAdvancedTeamIds = new LinkedHashSet<>(suggestedTeamIds);
+        }
+
+        if (!validTeamIds.containsAll(finalAdvancedTeamIds)) {
+            throw new BadRequestException("Advanced team list contains team that do not belong to this round ranking.");
+        }
+
+        if (request != null && request.overrides() != null) {
+            for (AdvancementOverrideRequest override : request.overrides()) {
+                if (override == null || override.teamId() == null || override.advanced() == null) {
+                    throw new BadRequestException("Override team ID and advanced flag are required");
+                }
+                if (!validTeamIds.contains(override.teamId())) {
+                    throw new BadRequestException("Override team does not belong to this round ranking: " + override.teamId());
+                }
+
+                if (Boolean.TRUE.equals(override.advanced())) {
+                    finalAdvancedTeamIds.add(override.teamId());
+                } else {
+                    finalAdvancedTeamIds.remove(override.teamId());
+                }
+            }
+        }
+        return finalAdvancedTeamIds;
+    }
 
     private TeamAdvancementDecisionResponse toTeamAdvancementDecisionResponse(
             Ranking ranking,
