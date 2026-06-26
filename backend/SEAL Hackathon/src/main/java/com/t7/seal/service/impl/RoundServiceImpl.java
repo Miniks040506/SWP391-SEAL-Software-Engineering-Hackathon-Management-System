@@ -9,10 +9,13 @@ import com.t7.seal.repository.*;
 import com.t7.seal.request.round.*;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.round.*;
+import com.t7.seal.response.team.TeamAdvancementDecisionResponse;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
+import org.flywaydb.core.api.callback.Warning;
+import org.springframework.boot.webmvc.autoconfigure.WebMvcProperties;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -488,23 +491,24 @@ public class RoundServiceImpl implements RoundService {
 
         List<Ranking> rankings = rankingRepository.findByRoundIdWithSubmissionTeamTrack(roundId);
         List<AdvanceRule> rules = advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId);
-        List<String> warnings = new ArrayList<>();
-
-        if (rankings.isEmpty()) {
-            warnings.add("No ranking rows found for this round. Calculate rankings before previewing advancement.");
-        }
-        if (rules.isEmpty()) {
-            warnings.add("No advance rules configured for this round.");
-        }
-        if (round.getGradingLockedAt() == null) {
-            warnings.add("Grading is not locked yet. Preview may change after judges finish scoring.");
-        }
-
+        List<String> warnings = buildAvancementWarnings(round, rankings, rules);
         List<Ranking> suggested = executeAdvanceRules(rankings, rules);
+        Set<UUID> suggestedTeamIds = suggested.stream()
+                .map(r -> r.getSubmission().getTeam().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return new AdvancementPreviewResponse(
                 roundId,
                 suggested.stream().map(this::toRankingResponse).toList(),
+                rankings.stream().map(this::toRankingResponse).toList(),
+                rankings.stream()
+                        .map(r -> toTeamAdvancementDecisionResponse(
+                                r,
+                                suggestedTeamIds.contains(r.getSubmission().getTeam().getId()),
+                                suggestedTeamIds.contains(r.getSubmission().getTeam().getId()),
+                                null
+                        ))
+                        .toList(),
                 warnings
         );
     }
@@ -527,25 +531,27 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException("No rankings found for this round.");
         }
 
-        Set<UUID> advancedTeamIds;
-        if (request != null && request.advancedTeamIds() != null && !request.advancedTeamIds().isEmpty()) {
-            advancedTeamIds = new LinkedHashSet<>(request.advancedTeamIds());
-        } else {
-            advancedTeamIds = executeAdvanceRules(
-                    rankings,
-                    advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId)
-            )
-                    .stream()
-                    .map(r -> r.getSubmission().getTeam().getId())
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-        }
+        List<AdvanceRule> rules = advanceRuleRepository
+                .findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId);
+
+        Set<UUID> suggestedTeamIds = executeAdvanceRules(rankings, rules)
+                .stream()
+                .map(r -> r.getSubmission().getTeam().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Set<UUID> finalAdvancedTeamIds = resolveFinalAdvanceTeamId(request, suggestedTeamIds, rankings);
+        Map<UUID, String> overrideReasons = validateAndMapOverrideReason(request, rankings);
+        List<TeamAdvancementDecisionResponse> decisions = new ArrayList<>();
 
         for (Ranking ranking : rankings) {
             Team team = ranking.getSubmission().getTeam();
-            boolean advanced = advancedTeamIds.contains(team.getId());
+            UUID teamId = team.getId();
+            boolean suggestedAdvanced = suggestedTeamIds.contains(teamId);
+            boolean finalAdvanced = finalAdvancedTeamIds.contains(teamId);
+            String overrideReasonForTeam = overrideReasons.get(teamId);
 
-            if (advanced) {
-                ranking.markAdvanced(AdvanceReason.TOP_N);
+            if (finalAdvanced) {
+                ranking.markAdvanced(suggestedAdvanced ? AdvanceReason.TOP_N : AdvanceReason.MANUAL_ADVANCE);
                 if (team.getStatus() != TeamStatus.WINNER) {
                     team.setStatus(TeamStatus.ADVANCED);
                 }
@@ -555,6 +561,9 @@ public class RoundServiceImpl implements RoundService {
                     team.setStatus(TeamStatus.ELIMINATED);
                 }
             }
+            decisions.add(toTeamAdvancementDecisionResponse(
+                    ranking, suggestedAdvanced, finalAdvanced, overrideReasonForTeam)
+            );
         }
 
         LocalDateTime confirmedAt = LocalDateTime.now();
@@ -571,17 +580,179 @@ public class RoundServiceImpl implements RoundService {
                 .targetTable("rounds")
                 .targetId(round.getId())
                 .beforeState(null)
-                .afterState(Map.of("advancedTeamIds", advancedTeamIds.stream().map(UUID::toString).toList()))
+                .afterState(Map.of(
+                        "advancedTeamIds", finalAdvancedTeamIds.stream().map(UUID::toString),
+                        "eliminatedTeamIds", rankings.stream()
+                                .map(r -> r.getSubmission().getTeam().getId())
+                                .filter(id -> !finalAdvancedTeamIds.contains(id))
+                                .map(UUID::toString)
+                                .toList(),
+                        "overrideReasons", overrideReasons
+                ))
                 .context(Map.of(
                         "eventId", round.getEvent().getId().toString(),
                         "note", request == null || request.note() == null ? "" : request.note()
                 ))
                 .build());
 
-        return new ConfirmAdvancementResponse(roundId, advancedTeamIds.size(), confirmedAt);
+        notifyAdvancementTypeId(actor, round, decisions);
+
+        int advancedCount = finalAdvancedTeamIds.size();
+        int eliminatedCount = rankings.size() - advancedCount;
+
+        return new ConfirmAdvancementResponse(
+                roundId,
+                advancedCount,
+                eliminatedCount,
+                confirmedAt,
+                decisions,
+                buildAvancementWarnings(round, rankings, rules)
+        );
     }
 
     //HELPERS
+
+    private void notifyAdvancementTypeId(
+            User user,
+            Round round,
+            List<TeamAdvancementDecisionResponse> decisions
+    ) {
+        for (TeamAdvancementDecisionResponse decision : decisions) {
+            try {
+                boolean advanced = Boolean.TRUE.equals(decision.finalAdvanced());
+                notificationService.createSystemNotification(
+                        user,
+                        round.getEvent(),
+                        advanced ? NotificationType.TEAM_ADVANCED : NotificationType.TEAM_ELIMINATED,
+                        advanced ? "Your team advanced" : "Your team eliminated",
+                        advanced
+                                ? "Team " + decision.teamName() + " advanced after round " + round.getName() + "."
+                                : "Team " + decision.teamName() + " did not advance after round " + round.getName() + ".",
+                        NotificationTargetScope.TEAM,
+                        decision.teamId(),
+                        null,
+                        NotificationChannel.BOTH,
+                        null
+                );
+            } catch (Exception e) {
+                //TODO
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private Map<UUID, String> validateAndMapOverrideReason(
+            ConfirmAdvancementRequest request,
+            List<Ranking> rankings
+    ) {
+        if (request == null || request.overrides() == null || request.overrides().isEmpty()) {
+            return Map.of();
+        }
+
+        Set<UUID> validTeamIds = rankings.stream()
+                .map(r -> r.getSubmission().getTeam().getId())
+                .collect(Collectors.toSet());
+
+        Map<UUID, String> reasons = new LinkedHashMap<>();
+        for (AdvancementOverrideRequest override : request.overrides()) {
+            if (override == null || override.teamId() == null || override.advanced() == null) {
+                throw new BadRequestException("Override team ID and advanced flag are required");
+            }
+            if (!validTeamIds.contains(override.teamId())) {
+                throw new BadRequestException("Override team does not belong to this round ranking: " + override.teamId());
+            }
+            String reason = trimToNull(override.reason());
+            if (reason == null) {
+                throw new BadRequestException("Override reason is required for team: " + override.teamId());
+            }
+            reasons.put(override.teamId(), reason);
+        }
+
+        return reasons;
+    }
+
+    private Set<UUID> resolveFinalAdvanceTeamId(
+            ConfirmAdvancementRequest request,
+            Set<UUID> suggestedTeamIds,
+            List<Ranking> rankings
+    ) {
+        Set<UUID> validTeamIds = rankings.stream()
+                .map(r -> r.getSubmission().getTeam().getId())
+                .collect(Collectors.toSet());
+
+        Set<UUID> finalAdvancedTeamIds;
+        if (request != null && request.advancedTeamIds() != null && !request.advancedTeamIds().isEmpty()) {
+            finalAdvancedTeamIds = new LinkedHashSet<>(request.advancedTeamIds());
+        } else {
+            finalAdvancedTeamIds = new LinkedHashSet<>(suggestedTeamIds);
+        }
+
+        if (!validTeamIds.containsAll(finalAdvancedTeamIds)) {
+            throw new BadRequestException("Advanced team list contains team that do not belong to this round ranking.");
+        }
+
+        if (request != null && request.overrides() != null) {
+            for (AdvancementOverrideRequest override : request.overrides()) {
+                if (override == null || override.teamId() == null || override.advanced() == null) {
+                    throw new BadRequestException("Override team ID and advanced flag are required");
+                }
+                if (!validTeamIds.contains(override.teamId())) {
+                    throw new BadRequestException("Override team does not belong to this round ranking: " + override.teamId());
+                }
+
+                if (Boolean.TRUE.equals(override.advanced())) {
+                    finalAdvancedTeamIds.add(override.teamId());
+                } else {
+                    finalAdvancedTeamIds.remove(override.teamId());
+                }
+            }
+        }
+        return finalAdvancedTeamIds;
+    }
+
+    private TeamAdvancementDecisionResponse toTeamAdvancementDecisionResponse(
+            Ranking ranking,
+            boolean suggestedAdvanced,
+            boolean finalAdvanced,
+            String overrideReason
+    ) {
+        Team team = ranking.getSubmission().getTeam();
+        Track track = ranking.getTrack();
+
+        return new TeamAdvancementDecisionResponse(
+                team.getId(),
+                team.getName(),
+                track == null ? null : track.getId(),
+                track == null ? null : track.getName(),
+                ranking.getRankPosition(),
+                ranking.getTotalScore(),
+                suggestedAdvanced,
+                finalAdvanced,
+                team.getStatus() == null ? null : team.getStatus().name(),
+                ranking.getAdvanceReason() == null ? null : ranking.getAdvanceReason().name(),
+                overrideReason
+        );
+    }
+
+    private List<String> buildAvancementWarnings(
+            Round round,
+            List<Ranking> rankings,
+            List<AdvanceRule> rules
+    ) {
+        List<String> warnings = new ArrayList<>();
+
+        if (rankings.isEmpty()) {
+            warnings.add("No ranking rows found for this round. Calculate rankings before previewing advancement.");
+        }
+        if (rules.isEmpty()) {
+            warnings.add("No advance rules configured for this round.");
+        }
+        if (round.getGradingLockedAt() == null) {
+            warnings.add("Grading is not locked yet. Preview may change after judges finish scoring.");
+        }
+
+        return warnings;
+    }
 
     private void assertTrackRoundEditable(HackathonEvent event) {
         RegistrationStatus status = event.getStatus();
@@ -948,16 +1119,31 @@ public class RoundServiceImpl implements RoundService {
     }
 
     private RankingResponse toRankingResponse(Ranking ranking) {
+        Submission submission = ranking.getSubmission();
+        Team team = submission.getTeam();
+        Round round = ranking.getRound();
+        HackathonEvent event = round.getEvent();
+        Track track = ranking.getTrack();
+
         return new RankingResponse(
                 ranking.getId(),
-                ranking.getSubmission().getId(),
-                ranking.getSubmission().getTeam().getId(),
-                ranking.getSubmission().getTeam().getName(),
-                ranking.getRound().getId(),
-                ranking.getTrack().getId(),
+                event.getId(),
+                event.getName(),
+                submission.getId(),
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                round.getId(),
+                round.getName(),
+                track.getId(),
+                track.getName(),
                 ranking.getTotalScore(),
                 ranking.getRankPosition(),
-                ranking.getIsAdvanced()
+                ranking.getIsAdvanced(),
+                ranking.getJudgeCount(),
+                ranking.getScoreBreakdown(),
+                ranking.getCalculatedAt(),
+                event.getResultPublishedAt() != null
         );
     }
 

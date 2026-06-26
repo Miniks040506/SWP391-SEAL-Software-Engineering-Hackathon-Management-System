@@ -95,7 +95,8 @@ public class RoundController {
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @PostMapping({
             "/rounds/{roundId}/advance-rules/preview",
-            "/rounds/{roundId}/advancement-preview"
+            "/rounds/{roundId}/advancement-preview",
+            "/rounds/{roundId}/advancement/suggestions"
     })
     public ResponseEntity<AdvancementPreviewResponse> previewAdvanceRules(
             @PathVariable UUID roundId,
@@ -105,7 +106,11 @@ public class RoundController {
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
-    @PostMapping("/rounds/{roundId}/confirm-advancement")
+    @PostMapping({
+            "/rounds/{roundId}/confirm-advancement",
+            "/rounds/{roundId}/advancement/confirm",
+            "/rounds/{roundId}/advancement/override"
+    })
     public ResponseEntity<ConfirmAdvancementResponse> confirmAdvancement(
             @PathVariable UUID roundId,
             @Valid @RequestBody ConfirmAdvancementRequest request,

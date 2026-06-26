@@ -5,14 +5,14 @@ import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.grading.ConfirmScoreSheetRequest;
 import com.t7.seal.request.grading.SaveScoreSheetRequest;
 import com.t7.seal.request.grading.ScoreItemRequest;
 import com.t7.seal.request.grading.UpdateScoreRequest;
-import com.t7.seal.response.grading.ScoreResponse;
-import com.t7.seal.response.grading.ScoreSheetResponse;
+import com.t7.seal.response.grading.*;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.GradingService;
@@ -37,6 +37,9 @@ public class GradingServiceImpl implements GradingService {
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final EventCriteriaRepository eventCriteriaRepository;
     private final ScoreRepository scoreRepository;
+    private final HackathonEventRepository eventRepository;
+    private final RoundRepository roundRepository;
+
     private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
@@ -186,6 +189,86 @@ public class GradingServiceImpl implements GradingService {
                 "eventCriteriaId", score.getEventCriteria().getId().toString()
         ));
         return toScoreResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public EventGradingProgressResponse getEventGradingProgress(UUID eventId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+        HackathonEvent event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found."));
+
+        List<RoundGradingProgressResponse> rounds = roundRepository.findPublicByEventIdOrderByOrderIndexAsc(eventId)
+                .stream()
+                .map(this::buildRoundGradingProgress)
+                .toList();
+
+        int totalAssigned = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::totalAssignedSubmissions)
+                .sum();
+        int completed = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::completedAssignedSubmissions)
+                .sum();
+        int pending = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::pendingSubmissions)
+                .sum();
+        int draft = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::draftSavedSubmissions)
+                .sum();
+        int submitted = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::submittedSubmissions)
+                .sum();
+        int locked = rounds.stream()
+                .mapToInt(RoundGradingProgressResponse::lockedSubmissions)
+                .sum();
+
+        long confirmedScoreCount = rounds.stream()
+                .mapToLong(RoundGradingProgressResponse::confirmedScoreCount)
+                .sum();
+        long expectedFinalScoreCount = rounds.stream()
+                .mapToLong(RoundGradingProgressResponse::expectedFinalScoreCount)
+                .sum();
+
+        double percent = totalAssigned == 0 ? 0.0 : completed * 100.0 / totalAssigned;
+
+        return new EventGradingProgressResponse(
+                eventId,
+                event.getName(),
+                event.getStatus().name(),
+                rounds.size(),
+                totalAssigned,
+                completed,
+                pending,
+                draft,
+                submitted,
+                locked,
+                expectedFinalScoreCount,
+                confirmedScoreCount,
+                percent,
+                rounds
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public RoundGradingProgressResponse getRoundGradingProgress(UUID roundId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found."));
+
+        return buildRoundGradingProgress(round);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public JudgeAssignmentProgressResponse getJudgeAssignmentProgress(UUID judgeAssignmentId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+
+        RoundJudgeAssignment judgeAssignment = roundJudgeAssignmentRepository.findById(judgeAssignmentId)
+                .orElseThrow(() -> new NotFoundException("Judge assignment not found."));
+
+        return buildJudgeAssignmentProgress(judgeAssignment, countCriteriaForRound(judgeAssignment.getRound()));
     }
 
     //HELPERS
@@ -402,6 +485,214 @@ public class GradingServiceImpl implements GradingService {
                 null,
                 Map.of("submissionId", submission.getId().toString()),
                 saveContext
+        );
+    }
+
+    private RoundGradingProgressResponse buildRoundGradingProgress(Round round) {
+
+        List<RoundJudgeAssignment> assignments = roundJudgeAssignmentRepository
+                .findByRoundIdWithJudgeAndTrack(round.getId());
+        long criteriaCount = countCriteriaForRound(round);
+
+        List<JudgeAssignmentProgressResponse> assignmentProgress = assignments.stream()
+                .map(a -> buildJudgeAssignmentProgress(a, criteriaCount))
+                .toList();
+
+        int totalAssigned = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::totalAssignedSubmissions)
+                .sum();
+        int completed = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::completedAssignedSubmissions)
+                .sum();
+        int pending = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::pendingSubmissions)
+                .sum();
+        int draft = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::draftSavedSubmissions)
+                .sum();
+        int submitted = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::submittedSubmissions)
+                .sum();
+        int locked = assignmentProgress.stream()
+                .mapToInt(JudgeAssignmentProgressResponse::lockedSubmissions)
+                .sum();
+
+        long draftScoreCount = assignmentProgress.stream()
+                .mapToLong(JudgeAssignmentProgressResponse::draftScoreCount)
+                .sum();
+        long confirmedScoreCount = assignmentProgress.stream()
+                .mapToLong(JudgeAssignmentProgressResponse::confirmedScoreCount)
+                .sum();
+        long expectedFinalScoreCount = assignmentProgress.stream()
+                .mapToLong(JudgeAssignmentProgressResponse::expectedFinalScoreCount)
+                .sum();
+
+        boolean submissionLocked = round.getSubmissionLockedAt() != null;
+        boolean gradingLocked = round.getGradingLockedAt() != null;
+        boolean canLockGrading = submissionLocked && !gradingLocked;
+        String warning = null;
+
+        if (!submissionLocked) {
+            warning = "Submissions must be locked before grading can be locked.";
+        } else if (gradingLocked) {
+            warning = "Grading is ready to lock for this round.";
+        } else if (totalAssigned == 0) {
+            warning = "No assigned submission found for grading.";
+        } else if (completed < totalAssigned) {
+            warning = "Some assigned submissions are not fully submitted by judges yet.";
+        }
+        double percent = totalAssigned == 0 ? 0.0 : completed * 100.0 / totalAssigned;
+
+        return new RoundGradingProgressResponse(
+                round.getId(),
+                round.getEvent().getId(),
+                round.getName(),
+                round.getStatus().name(),
+                round.getSubmissionLockedAt(),
+                round.getGradingLockedAt(),
+                submissionLocked,
+                gradingLocked,
+                canLockGrading,
+                warning,
+                assignments.size(),
+                totalAssigned,
+                completed,
+                pending,
+                draft,
+                submitted,
+                locked,
+                criteriaCount,
+                draftScoreCount,
+                confirmedScoreCount,
+                expectedFinalScoreCount,
+                percent,
+                assignmentProgress
+        );
+    }
+
+    private JudgeAssignmentProgressResponse buildJudgeAssignmentProgress(
+            RoundJudgeAssignment assignment,
+            Long criteriaCount
+    ) {
+        UUID trackId = assignment.getTrack() == null ? null : assignment.getTrack().getId();
+
+        List<Submission> submissions = submissionRepository
+                .findSubmittedOrLateByRoundAndTrackNullable(assignment.getRound().getId(), trackId);
+
+        List<SubmissionGradingProgressResponse> submissionProgress = submissions.stream()
+                .map(s -> buildSubmissionGradingProgress(s, assignment.getJudge(), criteriaCount))
+                .toList();
+
+        User judgeUser = assignment.getJudge().getUser();
+
+        int total = submissions.size();
+        int completed = (int) submissionProgress.stream()
+                .filter(SubmissionGradingProgressResponse::completed)
+                .count();
+        int pending = (int) submissionProgress.stream()
+                .filter(s -> "PENDING".equals(s.gradingStatus()))
+                .count();
+        int draft = (int) submissionProgress.stream()
+                .filter(s -> "DRAFT_SAVED".equals(s.gradingStatus()))
+                .count();
+        int submitted = (int) submissionProgress.stream()
+                .filter(s -> "SUBMITTED".equals(s.gradingStatus()))
+                .count();
+        int locked = (int) submissionProgress.stream()
+                .filter(s -> "LOCKED".equals(s.gradingStatus()))
+                .count();
+
+        long draftScoreCount = submissionProgress.stream()
+                .mapToLong(SubmissionGradingProgressResponse::draftScoreCount)
+                .sum();
+        long confirmedScoreCount = submissionProgress.stream()
+                .mapToLong(SubmissionGradingProgressResponse::confirmedScoreCount)
+                .sum();
+        long expectedFinalScoreCount = total * criteriaCount;
+
+        double percent = total == 0 ? 0.0 : completed * 100.0 / total;
+
+        assignment.setTotalToScore(total);
+        assignment.setScoringProgress(completed);
+
+        return new JudgeAssignmentProgressResponse(
+                assignment.getId(),
+                assignment.getJudge().getId(),
+                judgeUser.getFullName(),
+                judgeUser.getEmail(),
+                assignment.getJudge().getJudgeType() == null ? null : assignment.getJudge().getJudgeType().name(),
+                trackId,
+                assignment.getTrack() == null ? "All tracks" : assignment.getTrack().getName(),
+                total,
+                completed,
+                pending,
+                draft,
+                submitted,
+                locked,
+                criteriaCount,
+                draftScoreCount,
+                confirmedScoreCount,
+                expectedFinalScoreCount,
+                percent,
+                submissionProgress
+        );
+    }
+
+    private long countCriteriaForRound(Round round) {
+        if (round == null || round.getEvent() == null) {
+            return 0;
+        }
+
+        return eventCriteriaRepository.findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
+                .stream()
+                .filter(c -> c.appliesToRound(round.getId()))
+                .count();
+    }
+
+    private SubmissionGradingProgressResponse buildSubmissionGradingProgress(
+            Submission submission,
+            Judge judge,
+            long criteriaCount
+    ) {
+        long draftCount = scoreRepository
+                .countBySubmissionIdAndJudgeIdAndIsDraftTrue(submission.getId(), judge.getId());
+        long confirmedCount = scoreRepository
+                .countBySubmissionIdAndJudgeIdAndIsDraftFalse(submission.getId(), judge.getId());
+        boolean completed = criteriaCount > 0 && confirmedCount >= criteriaCount;
+        boolean locked = submission.getRound().getGradingLockedAt() != null;
+
+        String gradingStatus;
+        if (locked) {
+            gradingStatus = "LOCKED";
+        } else if (completed) {
+            gradingStatus = "COMPLETED";
+        } else if (draftCount > 0 || confirmedCount > 0) {
+            gradingStatus = "DRAFT_SAVED";
+        } else {
+            gradingStatus = "PENDING";
+        }
+
+        Team team = submission.getTeam();
+        Track track = team == null ? null : team.getTrack();
+        Round round = submission.getRound();
+
+
+        return new SubmissionGradingProgressResponse(
+                submission.getId(),
+                team == null ? null : team.getId(),
+                team == null ? null : team.getName(),
+                track == null ? null : track.getId(),
+                track == null ? null : track.getName(),
+                round.getId(),
+                round.getName(),
+                submission.getStatus() == null ? null : submission.getStatus().name(),
+                gradingStatus,
+                draftCount,
+                confirmedCount,
+                criteriaCount,
+                completed,
+                locked,
+                round.getGradingLockedAt()
         );
     }
 }

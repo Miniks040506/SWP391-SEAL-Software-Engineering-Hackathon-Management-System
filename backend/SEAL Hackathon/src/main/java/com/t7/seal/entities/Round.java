@@ -63,6 +63,9 @@ public class Round {
     @Column(name = "advancement_confirmed_at")
     private LocalDateTime advancementConfirmedAt;
 
+    @Column(name = "result_published_at")
+    private LocalDateTime resultPublishedAt;
+
     @OneToMany(
             mappedBy = "round",
             fetch = FetchType.LAZY
@@ -90,6 +93,16 @@ public class Round {
     // Checks whether advancement has been confirmed.
     public boolean isAdvancementConfirmed() {
         return advancementConfirmedAt != null;
+    }
+
+    // Checks whether round result has been published.
+    public boolean isResultPublished() {
+        return resultPublishedAt != null || (event != null && event.areResultsPublished());
+    }
+
+    // Publishes this round result without necessarily publishing the whole event.
+    public void publishResults(LocalDateTime now) {
+        resultPublishedAt = now == null ? LocalDateTime.now() : now;
     }
 
     // Checks whether this round is marked as the final round.
