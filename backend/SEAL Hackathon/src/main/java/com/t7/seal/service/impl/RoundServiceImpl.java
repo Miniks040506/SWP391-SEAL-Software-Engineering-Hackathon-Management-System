@@ -539,14 +539,18 @@ public class RoundServiceImpl implements RoundService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         Set<UUID> finalAdvancedTeamIds = resolveFinalAdvanceTeamId(request, suggestedTeamIds, rankings);
-        Map<UUID, String> overrideReason;
+        Map<UUID, String> overrideReason = validateAndMapOverrideReason(request, rankings);
+        List<TeamAdvancementDecisionResponse> decisions = new ArrayList<>();
 
         for (Ranking ranking : rankings) {
             Team team = ranking.getSubmission().getTeam();
-            boolean advanced = advancedTeamIds.contains(team.getId());
+            UUID teamId = team.getId();
+            boolean suggestedAdvanced = suggestedTeamIds.contains(teamId);
+            boolean finalAdvanced = finalAdvancedTeamIds.contains(teamId);
+            String overrideReasonForTeam = overrideReason.get(teamId);
 
-            if (advanced) {
-                ranking.markAdvanced(AdvanceReason.TOP_N);
+            if (finalAdvanced) {
+                ranking.markAdvanced(suggestedAdvanced ? AdvanceReason.TOP_N : AdvanceReason.MANUAL_ADVANCE);
                 if (team.getStatus() != TeamStatus.WINNER) {
                     team.setStatus(TeamStatus.ADVANCED);
                 }
@@ -556,6 +560,7 @@ public class RoundServiceImpl implements RoundService {
                     team.setStatus(TeamStatus.ELIMINATED);
                 }
             }
+            decisions.add(toTeamAdvancementDecisionResponse(ranking, suggestedAdvanced, finalAdvanced, overrideReasonForTeam));
         }
 
         LocalDateTime confirmedAt = LocalDateTime.now();
@@ -610,7 +615,7 @@ public class RoundServiceImpl implements RoundService {
             }
             reasons.put(override.teamId(), reason);
         }
-        
+
         return reasons;
     }
 
@@ -655,11 +660,26 @@ public class RoundServiceImpl implements RoundService {
 
     private TeamAdvancementDecisionResponse toTeamAdvancementDecisionResponse(
             Ranking ranking,
-            boolean suggestedAdvance,
-            boolean finalAdvance,
+            boolean suggestedAdvanced,
+            boolean finalAdvanced,
             String overrideReason
     ) {
-        return null;
+        Team team = ranking.getSubmission().getTeam();
+        Track track = ranking.getTrack();
+
+        return new TeamAdvancementDecisionResponse(
+                team.getId(),
+                team.getName(),
+                track == null ? null : track.getId(),
+                track == null ? null : track.getName(),
+                ranking.getRankPosition(),
+                ranking.getTotalScore(),
+                suggestedAdvanced,
+                finalAdvanced,
+                team.getStatus() == null ? null : team.getStatus().name(),
+                ranking.getAdvanceReason() == null ? null : ranking.getAdvanceReason().name(),
+                overrideReason
+        );
     }
 
     private List<String> buildAvancementWarnings(
