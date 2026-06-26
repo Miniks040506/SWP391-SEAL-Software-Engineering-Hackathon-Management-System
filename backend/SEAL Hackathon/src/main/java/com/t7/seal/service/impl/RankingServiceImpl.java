@@ -1,6 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.AuditActionType;
+import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
@@ -156,6 +157,13 @@ public class RankingServiceImpl implements RankingService {
     }
 
     //HELPERS
+    private void ensureEventCanPublish(HackathonEvent event) {
+        if (event.getStatus() != RegistrationStatus.JUDGING
+                && event.getStatus() != RegistrationStatus.COMPLETED) {
+            throw new ConflictException("Results can only be published when event is JUDGING or COMPLETED.");
+        }
+    }
+
     private RankingResponse toRankingResponse(Ranking ranking) {
         Submission submission = ranking.getSubmission();
         Team team = submission.getTeam();
