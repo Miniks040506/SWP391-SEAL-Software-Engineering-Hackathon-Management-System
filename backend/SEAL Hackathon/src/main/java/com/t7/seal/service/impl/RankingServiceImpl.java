@@ -1,6 +1,10 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.entities.*;
+import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RankingRepository;
 import com.t7.seal.request.results.PublishResultsRequest;
 import com.t7.seal.response.results.PublishResultsResponse;
@@ -8,8 +12,10 @@ import com.t7.seal.response.results.RankingRecalculationResponse;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.results.TeamRankingHistoryResponse;
 import com.t7.seal.response.submission.TeamDetailedScoreResponse;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RankingService;
+import jdk.jfr.Event;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -17,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -24,8 +31,10 @@ import java.util.UUID;
 public class RankingServiceImpl implements RankingService {
 
     private final RankingRepository rankingRepository;
+    private final HackathonEventRepository eventRepository;
 
     private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     @Override
@@ -61,7 +70,46 @@ public class RankingServiceImpl implements RankingService {
             PublishResultsRequest request,
             Authentication authentication
     ) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        HackathonEvent event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+
+        ensureEventCanPublish(event);
+
+        List<Ranking> rankings = rankingRepository.findByEventRoundTrackWithDetails(eventId, null, null);
+        if (rankings.isEmpty()) {
+            throw new ConflictException("Cannot publish results before rankings are calculated.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        event.publishResults(now);
+        eventRepository.save(event);
+
+        UUID announcementId = createResultAnnouncement(event, null, actor, request, now);
+        int notifiedCount = sendResultNotifications(event, null, rankings, actor, request);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.RESULT_PUBLISHED,
+                "hackathon_events",
+                event.getId(),
+                null,
+                Map.of(
+                        "eventId", event.getId().toString(),
+                        "publishedAt", now.toString(),
+                        "rankingCount", rankings.size(),
+                        "scope", "EVENT"
+                ),
+                null
+        );
+
+        return new PublishResultsResponse(
+                event.getId(),
+                null,
+                now,
+                announcementId,
+                notifiedCount
+        );
     }
 
     @Override
