@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   IconButton,
   MenuItem,
   Skeleton,
@@ -27,8 +26,7 @@ import type { AdvanceRuleType } from "@/types/round.types";
 
 interface AdvanceRulePanelProps {
   roundId: string;
-  onPreview: () => void;
-  isPreviewing: boolean;
+  isLocked?: boolean;
 }
 
 const ruleSchema = z.object({
@@ -42,19 +40,27 @@ type RuleFormData = z.infer<typeof ruleSchema>;
 
 const getRuleValue = (rule: any) => {
   switch (rule.ruleType) {
-    case "TOP_N": return rule.topN;
-    case "TOP_PERCENT": return rule.topPercent;
-    case "MIN_SCORE": return rule.minScore;
-    case "WILDCARD": return rule.wildCardSlots;
-    default: return "-";
+    case "TOP_N":
+      return rule.topN;
+    case "TOP_PERCENT":
+      return rule.topPercent;
+    case "MIN_SCORE":
+      return rule.minScore;
+    case "WILDCARD":
+      return rule.wildCardSlots;
+    default:
+      return "-";
   }
 };
 
-export function AdvanceRulePanel({
-  roundId,
-  onPreview,
-  isPreviewing,
-}: AdvanceRulePanelProps) {
+const ruleHelperText: Record<string, string> = {
+  TOP_N: "Advance the top N teams in each track.",
+  TOP_PERCENT: "Advance the top percentage of ranked teams.",
+  MIN_SCORE: "Advance teams whose total score is above the threshold.",
+  WILDCARD: "Coordinator manually selects extra teams.",
+};
+
+export function AdvanceRulePanel({ roundId, isLocked }: AdvanceRulePanelProps) {
   const { data: rules, isLoading } = useAdvanceRulesQuery(roundId);
   const createMutation = useCreateAdvanceRuleMutation();
   const updateMutation = useUpdateAdvanceRuleMutation();
@@ -91,7 +97,11 @@ export function AdvanceRulePanel({
     };
 
     if (editingRuleId) {
-      await updateMutation.mutateAsync({ ruleId: editingRuleId, roundId, payload });
+      await updateMutation.mutateAsync({
+        ruleId: editingRuleId,
+        roundId,
+        payload,
+      });
       setEditingRuleId(null);
     } else {
       await createMutation.mutateAsync({ roundId, payload });
@@ -128,7 +138,7 @@ export function AdvanceRulePanel({
             variant="outlined"
             startIcon={<AddIcon />}
             onClick={() => setIsAdding(true)}
-            disabled={isAdding}
+            disabled={isAdding || isLocked}
             sx={{
               textTransform: "none",
               fontWeight: 700,
@@ -138,26 +148,6 @@ export function AdvanceRulePanel({
             }}
           >
             Add rule
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={onPreview}
-            disabled={
-              isPreviewing || isLoading || (rules && rules.length === 0)
-            }
-            startIcon={
-              isPreviewing ? <CircularProgress size={20} color="inherit" /> : null
-            }
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              borderRadius: "10px",
-              boxShadow: "none",
-              height: 40,
-            }}
-          >
-            Preview advancement
           </Button>
         </div>
       </div>
@@ -201,19 +191,41 @@ export function AdvanceRulePanel({
                       {rule.description}
                     </Typography>
                   )}
+                  {ruleHelperText[rule.ruleType] && (
+                    <Typography
+                      variant="caption"
+                      className="text-slate-400 dark:text-slate-500 italic"
+                    >
+                      {ruleHelperText[rule.ruleType]}
+                    </Typography>
+                  )}
+                  {(rule as any).createdAt && (
+                    <Typography variant="caption" className="text-slate-400 ml-2">
+                      Created: {new Date((rule as any).createdAt).toLocaleString()}
+                    </Typography>
+                  )}
+                  {(rule as any).updatedAt && (
+                    <Typography variant="caption" className="text-slate-400 ml-2">
+                      Updated: {new Date((rule as any).updatedAt).toLocaleString()}
+                    </Typography>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <IconButton
                     color="primary"
                     onClick={() => handleEdit(rule)}
-                    disabled={deleteMutation.isPending || updateMutation.isPending}
+                    disabled={
+                      deleteMutation.isPending || updateMutation.isPending || isLocked
+                    }
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton
                     color="error"
                     onClick={() => handleDelete(rule.id)}
-                    disabled={deleteMutation.isPending || updateMutation.isPending}
+                    disabled={
+                      deleteMutation.isPending || updateMutation.isPending || isLocked
+                    }
                   >
                     <DeleteIcon />
                   </IconButton>

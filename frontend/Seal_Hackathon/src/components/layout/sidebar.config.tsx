@@ -149,9 +149,9 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <UploadFileOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Grading",
-            path: "/coordinator/grading",
-            icon: <GavelOutlinedIcon fontSize="small" />,
+            label: "Grading Progress",
+            path: "/coordinator/grading-progress",
+            icon: <AssessmentOutlinedIcon fontSize="small" />,
           },
           {
             label: "Results",

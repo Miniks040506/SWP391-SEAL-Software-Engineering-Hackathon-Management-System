@@ -17,6 +17,7 @@ import {
   JudgeSubmissionDetailPage,
   JudgeAssignedSubmissionPage,
 } from "@/features/judge";
+
 import { JudgeScoreSheetPage } from "@/features/grading/pages/JudgeScoreSheetPage";
 
 import {
@@ -64,6 +65,13 @@ import {
   CoordinatorAnnouncementPage,
 } from "@/features/coordinator";
 
+import {
+  CoordinatorEventGradingProgressPage,
+  CoordinatorRoundGradingProgressPage,
+  CoordinatorJudgeAssignmentProgressPage,
+  GradingProgressRedirectPage,
+} from "@/features/grading-progress";
+
 
 import {
   CreateTeamPage,
@@ -97,6 +105,7 @@ import {
 } from "@/features/calibration";
 
 import { RoundAdvancementPage } from "@/features/advancement/pages/RoundAdvancementPage";
+import { TeamAdvancementPage } from "@/features/advancement/pages/TeamAdvancementPage";
 
 export const router = createBrowserRouter([
   {
@@ -134,6 +143,14 @@ export const router = createBrowserRouter([
       { path: "teams", element: <MyTeamsPage /> },
       { path: "teams/create", element: <CreateTeamPage /> },
       { path: "teams/:teamId", element: <TeamDetailPage /> },
+      {
+        path: "teams/:teamId/advancement",
+        element: <TeamAdvancementPage />,
+      },
+      {
+        path: "events/:eventId/competing",
+        element: <EventCompetitionPage />,
+      },
       {
         path: "teams/:teamId/submissions",
         element: <ParticipantSubmissionsPage />,
@@ -179,6 +196,22 @@ export const router = createBrowserRouter([
       {
         path: "events/:eventId/advancement",
         element: <RoundAdvancementPage />,
+      },
+      {
+        path: "events/:eventId/grading-progress",
+        element: <CoordinatorEventGradingProgressPage />,
+      },
+      {
+        path: "grading-progress",
+        element: <GradingProgressRedirectPage />,
+      },
+      {
+        path: "rounds/:roundId/grading-progress",
+        element: <CoordinatorRoundGradingProgressPage />,
+      },
+      {
+        path: "judge-assignments/:assignmentId/progress",
+        element: <CoordinatorJudgeAssignmentProgressPage />,
       },
       { path: "events/:eventId/view", element: <EventDetailPage /> },
       {

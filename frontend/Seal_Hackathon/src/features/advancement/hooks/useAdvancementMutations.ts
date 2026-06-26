@@ -1,18 +1,31 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { roundApi } from "@/api/round.api";
+import { advancementApi } from "@/api/advancement.api";
+import { enqueueSnackbar } from "notistack";
+import { isAxiosError } from "axios";
 import type {
   CreateAdvanceRuleRequest,
   UpdateAdvanceRuleRequest,
-  ConfirmAdvancementRequest,
 } from "@/types/round.types";
+import type {
+  ConfirmAdvancementRequest,
+  AdvancementOverrideRequest,
+} from "@/types/advancement.types";
 
 export function useCreateAdvanceRuleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roundId, payload }: { roundId: string; payload: CreateAdvanceRuleRequest }) =>
-      roundApi.createAdvanceRule(roundId, payload),
+    mutationFn: ({
+      roundId,
+      payload,
+    }: {
+      roundId: string;
+      payload: CreateAdvanceRuleRequest;
+    }) => roundApi.createAdvanceRule(roundId, payload),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["advanceRules", variables.roundId] });
+      queryClient.invalidateQueries({
+        queryKey: ["advanceRules", variables.roundId],
+      });
     },
   });
 }
@@ -20,10 +33,18 @@ export function useCreateAdvanceRuleMutation() {
 export function useUpdateAdvanceRuleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ ruleId, payload }: { ruleId: string; roundId: string; payload: UpdateAdvanceRuleRequest }) =>
-      roundApi.updateAdvanceRule(ruleId, payload),
+    mutationFn: ({
+      ruleId,
+      payload,
+    }: {
+      ruleId: string;
+      roundId: string;
+      payload: UpdateAdvanceRuleRequest;
+    }) => roundApi.updateAdvanceRule(ruleId, payload),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["advanceRules", variables.roundId] });
+      queryClient.invalidateQueries({
+        queryKey: ["advanceRules", variables.roundId],
+      });
     },
   });
 }
@@ -34,24 +55,80 @@ export function useDeleteAdvanceRuleMutation() {
     mutationFn: ({ ruleId }: { ruleId: string; roundId: string }) =>
       roundApi.deleteAdvanceRule(ruleId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["advanceRules", variables.roundId] });
+      queryClient.invalidateQueries({
+        queryKey: ["advanceRules", variables.roundId],
+      });
     },
   });
 }
 
 export function usePreviewAdvanceRulesMutation() {
   return useMutation({
-    mutationFn: (roundId: string) => roundApi.previewAdvanceRules(roundId),
+    mutationFn: (roundId: string) =>
+      advancementApi.previewRoundAdvanceRules(roundId),
+  });
+}
+
+export function useOverrideAdvancementMutation(roundId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AdvancementOverrideRequest) =>
+      advancementApi.overrideRoundAdvancement(roundId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["advancementPreview", roundId],
+      });
+    },
+    onError: (error: any) => {
+      if (isAxiosError(error) && error.response?.status === 409) {
+        enqueueSnackbar("Cannot override: advancement state conflict.", {
+          variant: "error",
+        });
+      } else {
+        enqueueSnackbar(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to override advancement.",
+          { variant: "error" },
+        );
+      }
+    },
   });
 }
 
 export function useConfirmAdvancementMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roundId, payload }: { roundId: string; payload: ConfirmAdvancementRequest }) =>
-      roundApi.confirmAdvancement(roundId, payload),
+    mutationFn: ({
+      roundId,
+      payload,
+    }: {
+      roundId: string;
+      payload: ConfirmAdvancementRequest;
+    }) => advancementApi.confirmRoundAdvancement(roundId, payload),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["advancementPreview", variables.roundId] });
+      queryClient.invalidateQueries({
+        queryKey: ["advancementPreview", variables.roundId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["teamAdvancementStatus"] });
+      queryClient.invalidateQueries({ queryKey: ["teamCompetition"] });
+      queryClient.invalidateQueries({ queryKey: ["eventCompetition"] });
+      queryClient.invalidateQueries({ queryKey: ["rankings"] });
+    },
+    onError: (error: any) => {
+      if (isAxiosError(error) && error.response?.status === 409) {
+        enqueueSnackbar(
+          "Cannot confirm advancement: ranking not calculated, grading not locked, or advancement already confirmed.",
+          { variant: "error" },
+        );
+      } else {
+        enqueueSnackbar(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to confirm advancement.",
+          { variant: "error" },
+        );
+      }
     },
   });
 }

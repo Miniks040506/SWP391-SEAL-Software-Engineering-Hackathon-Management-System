@@ -6,6 +6,7 @@ import {
   Button,
   TextField,
   Typography,
+  MenuItem,
 } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,8 +22,8 @@ interface OverrideReasonDialogProps {
   open: boolean;
   teamName: string;
   currentStatus: string;
-  newStatus: string;
-  onConfirm: (reason: string) => void;
+  initialStatus: string;
+  onConfirm: (newStatus: string, reason: string) => void;
   onClose: () => void;
 }
 
@@ -30,7 +31,7 @@ export function OverrideReasonDialog({
   open,
   teamName,
   currentStatus,
-  newStatus,
+  initialStatus,
   onConfirm,
   onClose,
 }: OverrideReasonDialogProps) {
@@ -39,13 +40,17 @@ export function OverrideReasonDialog({
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<OverrideFormData>({
-    resolver: zodResolver(overrideSchema),
-    defaultValues: { reason: "" },
+  } = useForm<OverrideFormData & { newStatus: string }>({
+    resolver: zodResolver(
+      overrideSchema.extend({
+        newStatus: z.string().min(1, "Please select a final status"),
+      })
+    ),
+    defaultValues: { reason: "", newStatus: initialStatus },
   });
 
-  const onSubmit = (data: OverrideFormData) => {
-    onConfirm(data.reason);
+  const onSubmit = (data: OverrideFormData & { newStatus: string }) => {
+    onConfirm(data.newStatus, data.reason);
     reset();
   };
 
@@ -64,10 +69,36 @@ export function OverrideReasonDialog({
           variant="body1"
           className="mb-4 text-slate-600 dark:text-slate-400"
         >
-          Changing status for <strong>{teamName}</strong> from{" "}
-          <strong>{currentStatus}</strong> to <strong>{newStatus}</strong>.
+          Changing status for <strong>{teamName}</strong>. Current status is{" "}
+          <strong>{currentStatus}</strong>.
         </Typography>
-        <form id="override-form" onSubmit={handleSubmit(onSubmit)}>
+        <Typography
+          variant="body2"
+          className="mb-4 text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg border border-amber-200 dark:border-amber-900"
+        >
+          Manual override will be recorded in the audit log. Please provide a
+          clear reason.
+        </Typography>
+        <form id="override-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <Controller
+            name="newStatus"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                label="Final Status"
+                fullWidth
+                required
+                error={!!errors.newStatus}
+                helperText={errors.newStatus?.message as string}
+                variant="outlined"
+              >
+                <MenuItem value="ADVANCED">Advanced</MenuItem>
+                <MenuItem value="ELIMINATED">Eliminated</MenuItem>
+              </TextField>
+            )}
+          />
           <Controller
             name="reason"
             control={control}

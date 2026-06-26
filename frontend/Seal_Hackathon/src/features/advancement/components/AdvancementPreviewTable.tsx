@@ -7,16 +7,16 @@ import {
   TableRow,
   Paper,
   Skeleton,
-  MenuItem,
-  Select,
   Tooltip,
   Chip,
-  Typography,
+  Button,
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useState } from "react";
-import type { AdvancementPreviewResponse } from "@/types/round.types";
-import type { RankingResponse } from "@/types/ranking.types";
+import type {
+  AdvancementPreviewResponse,
+  AdvancementCandidateRow,
+} from "@/types/advancement.types";
 
 import {
   AdvancementStatusBadge,
@@ -24,36 +24,25 @@ import {
 } from "./AdvancementStatusBadge";
 import { OverrideReasonDialog } from "./OverrideReasonDialog";
 
-type LocalPreviewTeam = RankingResponse & {
-  teamId?: string;
-  teamName?: string;
-  name?: string;
-  rank?: number;
-  trackName?: string;
-  totalScore?: number;
-  ruleMatched?: string;
-  status?: string;
-  overrideReason?: string;
-};
-
 interface AdvancementPreviewTableProps {
   roundId: string;
   previewData: AdvancementPreviewResponse | undefined;
   isLoading: boolean;
   onOverride: (teamId: string, newStatus: string, reason: string) => void;
+  onClearOverride?: (teamId: string) => void;
 }
 
 export function AdvancementPreviewTable({
   previewData,
   isLoading,
   onOverride,
+  onClearOverride,
 }: AdvancementPreviewTableProps) {
   const [overrideState, setOverrideState] = useState<{
     open: boolean;
     teamId: string;
     teamName: string;
     currentStatus: string;
-    newStatus: string;
   } | null>(null);
 
   if (isLoading) {
@@ -67,21 +56,17 @@ export function AdvancementPreviewTable({
 
   if (!previewData) return null;
 
-  const handleSelectChange = (
+  const handleOpenDialog = (
     teamId: string,
     teamName: string,
     currentStatus: string,
-    newStatus: string
   ) => {
-    if (currentStatus !== newStatus) {
-      setOverrideState({
-        open: true,
-        teamId,
-        teamName,
-        currentStatus,
-        newStatus,
-      });
-    }
+    setOverrideState({
+      open: true,
+      teamId,
+      teamName,
+      currentStatus,
+    });
   };
 
   return (
@@ -98,18 +83,9 @@ export function AdvancementPreviewTable({
         />
       </div>
 
-      {previewData.warnings && previewData.warnings.length > 0 && (
-        <div className="mb-4 space-y-2">
-          {previewData.warnings.map((warning, idx) => (
-            <Typography key={idx} color="warning.main" variant="body2">
-              Warning: {warning}
-            </Typography>
-          ))}
-        </div>
-      )}
-
       <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-lg text-sm">
-        Rules applied for cutoff calculation. Teams matching rules advance automatically.
+        Rules applied for cutoff calculation. Teams matching rules advance
+        automatically.
       </div>
 
       <TableContainer
@@ -127,6 +103,9 @@ export function AdvancementPreviewTable({
                 Team
               </TableCell>
               <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
+                Project Title
+              </TableCell>
+              <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
                 Track
               </TableCell>
               <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
@@ -139,6 +118,9 @@ export function AdvancementPreviewTable({
                 Suggested Status
               </TableCell>
               <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
+                Final Status
+              </TableCell>
+              <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
                 Reason
               </TableCell>
               <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
@@ -147,71 +129,114 @@ export function AdvancementPreviewTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {previewData.suggestedAdvancedTeams.map((team: LocalPreviewTeam, index: number) => {
-              const teamId = team.teamId || team.id || `team-${index}`;
-              const teamName = team.teamName || team.name || "Unknown Team";
-              const currentStatus = team.status || "PENDING_CONFIRMATION";
-              const isOverridden = !!team.overrideReason;
+            {previewData.candidates.map(
+              (team: AdvancementCandidateRow, index: number) => {
+                const teamId = team.teamId || `team-${index}`;
+                const teamName = team.teamName || "Unknown Team";
+                const currentStatus =
+                  team.finalStatus ||
+                  team.suggestedStatus ||
+                  "PENDING_CONFIRMATION";
+                const isOverridden = !!team.overrideReason;
 
-              return (
-                <TableRow
-                  key={teamId}
-                  style={
-                    isOverridden ? { borderLeft: "3px solid #f59e0b" } : {}
-                  }
-                >
-                  <TableCell>{team.rank || index + 1}</TableCell>
-                  <TableCell className="font-medium text-slate-800 dark:text-slate-200">
-                    <div className="flex items-center">
-                      {teamName}
-                      {isOverridden && (
-                        <Tooltip title={`Overridden: ${team.overrideReason}`}>
-                          <EditOutlinedIcon
-                            fontSize="small"
-                            className="ml-2 text-amber-500"
-                          />
-                        </Tooltip>
+                const isDisqualified =
+                  (team.suggestedStatus as string) === "DISQUALIFIED" ||
+                  (team.finalStatus as string) === "DISQUALIFIED";
+
+                return (
+                  <TableRow
+                    key={teamId}
+                    className={
+                      isDisqualified
+                        ? "bg-red-50 dark:bg-red-950/20 opacity-75"
+                        : team.suggestedStatus === "ADVANCED"
+                        ? "bg-green-50 dark:bg-green-950/20"
+                        : ""
+                    }
+                    style={
+                      isOverridden ? { borderLeft: "3px solid #f59e0b" } : {}
+                    }
+                  >
+                    <TableCell>{team.rankPosition || index + 1}</TableCell>
+                    <TableCell className="font-medium text-slate-800 dark:text-slate-200">
+                      <div className="flex items-center">
+                        {teamName}
+                        {isOverridden && (
+                          <Tooltip title={`Overridden: ${team.overrideReason}`}>
+                            <EditOutlinedIcon
+                              fontSize="small"
+                              className="ml-2 text-amber-500"
+                            />
+                          </Tooltip>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-400">
+                      {team.projectTitle || "—"}
+                    </TableCell>
+                    <TableCell>{team.trackName || "N/A"}</TableCell>
+                    <TableCell>{team.totalScore || 0}</TableCell>
+                    <TableCell>{team.ruleType || "-"}</TableCell>
+                    <TableCell>
+                      {(team.suggestedStatus as string) === "DISQUALIFIED" ? (
+                        <Chip label="DISQUALIFIED" color="error" size="small" />
+                      ) : (
+                        <AdvancementStatusBadge
+                          status={team.suggestedStatus as AdvancementStatus}
+                        />
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{team.trackName || "N/A"}</TableCell>
-                  <TableCell>{team.totalScore || 0}</TableCell>
-                  <TableCell>{team.ruleMatched || "-"}</TableCell>
-                  <TableCell>
-                    <AdvancementStatusBadge
-                      status={currentStatus as AdvancementStatus}
-                    />
-                  </TableCell>
-                  <TableCell>{team.overrideReason || ""}</TableCell>
-                  <TableCell>
-                    <Select
-                      size="small"
-                      value={currentStatus}
-                      onChange={(e) =>
-                        handleSelectChange(
-                          teamId,
-                          teamName,
-                          currentStatus,
-                          e.target.value as string
+                    </TableCell>
+                    <TableCell>
+                      {team.finalStatus ? (
+                        (team.finalStatus as string) === "DISQUALIFIED" ? (
+                          <Chip label="DISQUALIFIED" color="error" size="small" />
+                        ) : (
+                          <AdvancementStatusBadge
+                            status={team.finalStatus as AdvancementStatus}
+                          />
                         )
-                      }
-                      className="min-w-[140px]"
-                    >
-                      <MenuItem value="ADVANCED">Advanced</MenuItem>
-                      <MenuItem value="ELIMINATED">Eliminated</MenuItem>
-                      <MenuItem value="WILDCARD">Wildcard</MenuItem>
-                      <MenuItem value="PENDING_CONFIRMATION" disabled>
-                        Pending
-                      </MenuItem>
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {previewData.suggestedAdvancedTeams.length === 0 && (
+                      ) : (
+                        <span className="text-slate-400 text-sm">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{team.overrideReason || ""}</TableCell>
+                    <TableCell>
+                      {isDisqualified ? (
+                        <span className="text-red-500 text-sm font-medium">
+                          Disqualified
+                        </span>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() =>
+                              handleOpenDialog(teamId, teamName, currentStatus)
+                            }
+                          >
+                            {isOverridden ? "Edit Override" : "Override"}
+                          </Button>
+                          {isOverridden && onClearOverride && (
+                            <Button
+                              size="small"
+                              color="error"
+                              variant="text"
+                              onClick={() => onClearOverride(teamId)}
+                            >
+                              Clear
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              },
+            )}
+            {previewData.candidates.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={10}
                   className="text-center py-8 text-slate-500"
                 >
                   No teams found or ranking not yet calculated.
@@ -227,10 +252,14 @@ export function AdvancementPreviewTable({
           open={overrideState.open}
           teamName={overrideState.teamName}
           currentStatus={overrideState.currentStatus}
-          newStatus={overrideState.newStatus}
+          initialStatus={
+            overrideState.currentStatus === "ADVANCED"
+              ? "ELIMINATED"
+              : "ADVANCED"
+          }
           onClose={() => setOverrideState(null)}
-          onConfirm={(reason) => {
-            onOverride(overrideState.teamId, overrideState.newStatus, reason);
+          onConfirm={(newStatus, reason) => {
+            onOverride(overrideState.teamId, newStatus, reason);
             setOverrideState(null);
           }}
         />

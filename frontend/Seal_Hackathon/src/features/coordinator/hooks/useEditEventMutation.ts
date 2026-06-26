@@ -42,38 +42,38 @@ export type EventFormErrors = {
 
 export type DialogState =
   | {
-      kind: "addJudge";
-      trackId: string;
-      roundId: string;
-      initialSelectedIds: string[];
-    }
+    kind: "addJudge";
+    trackId: string;
+    roundId: string;
+    initialSelectedIds: string[];
+  }
   | {
-      kind: "addMentor";
-      trackId: string;
-      initialSelectedIds: string[];
-    }
+    kind: "addMentor";
+    trackId: string;
+    initialSelectedIds: string[];
+  }
   | {
-      kind: "editCriteria";
-      trackId: string;
-      roundId: string;
-      initialSelectedIds: string[];
-    }
+    kind: "editCriteria";
+    trackId: string;
+    roundId: string;
+    initialSelectedIds: string[];
+  }
   | { kind: "addRound"; trackId: string }
   | { kind: "addTrack" }
   | {
-      kind: "editTrack";
-      trackId: string;
-      initialName: string;
-      initialDesc: string;
-    }
+    kind: "editTrack";
+    trackId: string;
+    initialName: string;
+    initialDesc: string;
+  }
   | {
-      kind: "editRound";
-      trackId: string;
-      roundId: string;
-      initialName: string;
-      initialStart: string;
-      initialEnd: string;
-    }
+    kind: "editRound";
+    trackId: string;
+    roundId: string;
+    initialName: string;
+    initialStart: string;
+    initialEnd: string;
+  }
   | { kind: "teamDetail"; team: EventTeam }
   | null;
 
@@ -243,13 +243,13 @@ export function useEditEventMutation() {
       tracks: prev.tracks.map((t) =>
         t.id === dialog.trackId
           ? {
-              ...t,
-              rounds: t.rounds.map((r) =>
-                r.id === dialog.roundId
-                  ? { ...r, name, startDate: start, endDate: end }
-                  : r,
-              ),
-            }
+            ...t,
+            rounds: t.rounds.map((r) =>
+              r.id === dialog.roundId
+                ? { ...r, name, startDate: start, endDate: end }
+                : r,
+            ),
+          }
           : t,
       ),
     }));
@@ -263,11 +263,11 @@ export function useEditEventMutation() {
       tracks: prev.tracks.map((t) =>
         t.id === dialog.trackId
           ? {
-              ...t,
-              rounds: t.rounds.map((r) =>
-                r.id === dialog.roundId ? { ...r, judgeIds: ids } : r,
-              ),
-            }
+            ...t,
+            rounds: t.rounds.map((r) =>
+              r.id === dialog.roundId ? { ...r, judgeIds: ids } : r,
+            ),
+          }
           : t,
       ),
     }));
@@ -290,11 +290,11 @@ export function useEditEventMutation() {
       tracks: prev.tracks.map((t) =>
         t.id === dialog.trackId
           ? {
-              ...t,
-              rounds: t.rounds.map((r) =>
-                r.id === dialog.roundId ? { ...r, criteriaIds: ids } : r,
-              ),
-            }
+            ...t,
+            rounds: t.rounds.map((r) =>
+              r.id === dialog.roundId ? { ...r, criteriaIds: ids } : r,
+            ),
+          }
           : t,
       ),
     }));
@@ -362,13 +362,13 @@ export function useEditEventMutation() {
       tracks: prev.tracks.map((t) =>
         t.id === trackId
           ? {
-              ...t,
-              rounds: t.rounds.map((r) =>
-                r.id === roundId
-                  ? { ...r, judgeIds: r.judgeIds.filter((id) => id !== userId) }
-                  : r,
-              ),
-            }
+            ...t,
+            rounds: t.rounds.map((r) =>
+              r.id === roundId
+                ? { ...r, judgeIds: r.judgeIds.filter((id) => id !== userId) }
+                : r,
+            ),
+          }
           : t,
       ),
     }));
