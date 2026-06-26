@@ -8,6 +8,7 @@ import com.t7.seal.response.results.RankingRecalculationResponse;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.results.TeamRankingHistoryResponse;
 import com.t7.seal.response.submission.TeamDetailedScoreResponse;
+import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RankingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -24,6 +25,8 @@ public class RankingServiceImpl implements RankingService {
 
     private final RankingRepository rankingRepository;
 
+    private final CurrentUserService currentUserService;
+
     @Transactional(readOnly = true)
     @Override
     public List<RankingResponse> getRankings(UUID eventId, UUID trackId, UUID roundId) {
@@ -33,14 +36,14 @@ public class RankingServiceImpl implements RankingService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<RankingResponse> getCoordinatorRankings(
-            UUID eventId,
-            UUID trackId,
-            UUID roundId,
-            Authentication authentication
-    ) {
-        return List.of();
+    public List<RankingResponse> getCoordinatorRankings(UUID eventId, UUID trackId, UUID roundId, Authentication authentication) {
+        currentUserService.getCurrentUser(authentication);
+        return rankingRepository.getCoordinatorRankings(eventId, trackId, roundId)
+                .stream()
+                .map(this::toRankingResponse)
+                .toList();
     }
 
     @Override
