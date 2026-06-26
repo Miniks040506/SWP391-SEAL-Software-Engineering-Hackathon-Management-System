@@ -24,10 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -40,6 +37,7 @@ public class RankingServiceImpl implements RankingService {
     private final EventAnnouncementRepository eventAnnouncementRepository;
     private final RoundRepository roundRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final ScoreRepository scoreRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -355,6 +353,50 @@ public class RankingServiceImpl implements RankingService {
         );
     }
 
+    private List<TeamScoreCriterionResponse> buildCriterionAverageScores(UUID submissionId) {
+        List<Score> confirmedScores = scoreRepository
+                .findConfirmedBySubmissionIdWithCriteria(submissionId);
+
+        Map<UUID, List<Score>> byCriteria = confirmedScores.stream()
+                .filter(score -> score.getEventCriteria() != null)
+                .collect(Collectors.groupingBy(
+                        score -> score.getEventCriteria().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList())
+                );
+
+        return byCriteria.values().stream()
+                .map(scores -> {
+                    EventCriteria criterion = scores.get(0).getEventCriteria();
+
+                    double average = scores.stream()
+                            .map(Score::getValue)
+                            .filter(Objects::nonNull)
+                            .mapToDouble(Float::doubleValue)
+                            .average()
+                            .orElse(0.0);
+
+                    String category = criterion.getCriteria() == null
+                            || criterion.getCriteria().getCategory() == null
+                            ? null : criterion.getCriteria().getCategory().name();
+
+                    return new TeamScoreCriterionResponse(
+                            criterion.getId(),
+                            criterion.getEffectiveName(),
+                            category,
+                            criterion.getEffectiveIsTechnical(),
+                            round2(average),
+                            criterion.getEffectiveMaxScore() == null
+                                    ? null : criterion.getEffectiveMaxScore().doubleValue(),
+                            criterion.getEffectiveWeight() == null
+                                    ? null : criterion.getEffectiveWeight().doubleValue(),
+                            scores.size()
+                    );
+                })
+                .toList();
+    }
+
+
     private RankingResponse toRankingResponse(Ranking ranking) {
         Submission submission = ranking.getSubmission();
         Team team = submission.getTeam();
@@ -427,5 +469,9 @@ public class RankingServiceImpl implements RankingService {
 
     private String safeString(String value) {
         return value == null ? "" : value;
+    }
+
+    private double round2(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 }
