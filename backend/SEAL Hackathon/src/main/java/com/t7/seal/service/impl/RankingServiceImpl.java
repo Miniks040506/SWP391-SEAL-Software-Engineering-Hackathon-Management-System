@@ -4,10 +4,8 @@ import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.repository.EventAnnouncementRepository;
-import com.t7.seal.repository.HackathonEventRepository;
-import com.t7.seal.repository.RankingRepository;
-import com.t7.seal.repository.RoundRepository;
+import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.results.PublishResultsRequest;
 import com.t7.seal.response.results.PublishResultsResponse;
 import com.t7.seal.response.results.RankingRecalculationResponse;
@@ -40,6 +38,7 @@ public class RankingServiceImpl implements RankingService {
     private final HackathonEventRepository eventRepository;
     private final EventAnnouncementRepository eventAnnouncementRepository;
     private final RoundRepository roundRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -170,12 +169,16 @@ public class RankingServiceImpl implements RankingService {
         );
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<TeamDetailedScoreResponse> getPublishedTeamScores(
-            UUID teamId,
-            Authentication authentication
-    ) {
-        return List.of();
+    public List<TeamDetailedScoreResponse> getPublishedTeamScores(UUID teamId, Authentication authentication) {
+        User viewer = currentUserService.getCurrentUser(authentication);
+        ensureCanViewTeamScores(teamId, viewer);
+
+        return rankingRepository.findPublishedByTeamIdWithDetails(teamId)
+                .stream()
+                .map(this::toTeamDetailedScoreResponse)
+                .toList();
     }
 
     @Override
@@ -205,11 +208,25 @@ public class RankingServiceImpl implements RankingService {
     }
 
     //HELPERS
+
     private void ensureEventCanPublish(HackathonEvent event) {
         if (event.getStatus() != RegistrationStatus.JUDGING
                 && event.getStatus() != RegistrationStatus.COMPLETED) {
             throw new ConflictException("Results can only be published when event is JUDGING or COMPLETED.");
         }
+    }
+
+    private void ensureCanViewTeamScores(UUID teamId, User viewer) {
+        if (viewer == null) {
+            throw new UnauthorizedException("Authentication is required.");
+        }
+        if (viewer.isAdmin() || viewer.isCoordinator()) {
+            return;
+        }
+        if (viewer.isStudent() && teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, viewer.getId())) {
+            return;
+        }
+        throw new UnauthorizedException("You can only view your own team's published scores.");
     }
 
     private UUID createResultAnnouncement(HackathonEvent event,
