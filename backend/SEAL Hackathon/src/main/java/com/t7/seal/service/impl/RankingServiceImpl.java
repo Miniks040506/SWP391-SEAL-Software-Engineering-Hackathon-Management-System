@@ -1,6 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.*;
+import com.t7.seal.dto.RankingDraft;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
@@ -38,6 +39,8 @@ public class RankingServiceImpl implements RankingService {
     private final RoundRepository roundRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final ScoreRepository scoreRepository;
+    private final EventCriteriaRepository eventCriteriaRepository;
+    private final SubmissionRepository submissionRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -62,13 +65,113 @@ public class RankingServiceImpl implements RankingService {
                 .toList();
     }
 
+    @Transactional
     @Override
     public RankingRecalculationResponse calculateRoundRankings(
             UUID roundId,
             UUID trackId,
             Authentication authentication
     ) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+
+        if (round.getGradingLockedAt() == null) {
+            throw new ConflictException("Grading must be locked before calculating rankings.");
+        }
+
+        List<EventCriteria> activeCriteria = eventCriteriaRepository
+                .findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
+                .stream()
+                .filter(criteria -> criteria.appliesToRound(round.getId()))
+                .toList();
+
+        if (activeCriteria.isEmpty()) {
+            throw new ConflictException("No active scoring criteria are configured for this round.");
+        }
+
+        Set<UUID> activeCriteriaIds = activeCriteria.stream()
+                .map(EventCriteria::getId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, Submission> scorableSubmissions = submissionRepository
+                .findSubmittedOrLateByRoundAndTrackNullable(roundId, trackId)
+                .stream()
+                .filter(submission -> submission.getStatus() != SubmissionStatus.DISQUALIFIED)
+                .filter(submission -> submission.getTeam() != null && submission.getTeam().getTrack() != null)
+                .collect(Collectors.toMap(Submission::getId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
+
+        List<Score> confirmedScores = scoreRepository.findConfirmedByRoundId(roundId)
+                .stream()
+                .filter(score -> scorableSubmissions.containsKey(score.getSubmission().getId()))
+                .filter(score -> score.getEventCriteria() != null && activeCriteriaIds.contains(score.getEventCriteria().getId()))
+                .toList();
+
+        Map<UUID, List<Score>> scoresBySubmission = confirmedScores.stream()
+                .collect(Collectors.groupingBy(score -> score.getSubmission().getId(), LinkedHashMap::new, Collectors.toList()));
+
+        List<RankingDraft> rankingDrafts = new ArrayList<>();
+        for (Submission submission : scorableSubmissions.values()) {
+            List<Score> submissionScores = scoresBySubmission.getOrDefault(submission.getId(), List.of());
+            Optional<RankingDraft> draft = buildRankingDraft(submission, submissionScores, activeCriteriaIds);
+            draft.ifPresent(rankingDrafts::add);
+        }
+
+        rankingRepository.deleteByRoundIdAndTrackIdNullable(roundId, trackId);
+        rankingRepository.flush();
+
+        LocalDateTime calculatedAt = LocalDateTime.now();
+        List<Ranking> rankings = new ArrayList<>();
+
+        Map<UUID, List<RankingDraft>> draftsByTrack = rankingDrafts.stream()
+                .collect(Collectors.groupingBy(draft -> draft.track().getId(), LinkedHashMap::new, Collectors.toList()));
+
+        for (List<RankingDraft> trackDrafts : draftsByTrack.values()) {
+            List<RankingDraft> sorted = trackDrafts.stream()
+                    .sorted(Comparator
+                            .comparing(RankingDraft::totalScore, Comparator.reverseOrder())
+                            .thenComparing(draft -> draft.submission().getSubmittedAt(), Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(draft -> safeString(draft.submission().getTeam().getName())))
+                    .toList();
+
+            int rank = 1;
+            for (RankingDraft draft : sorted) {
+                Ranking ranking = Ranking.builder()
+                        .submission(draft.submission())
+                        .round(round)
+                        .track(draft.track())
+                        .totalScore(draft.totalScore())
+                        .scoreBreakdown(draft.scoreBreakdown())
+                        .judgeCount(draft.judgeCount())
+                        .rankPosition(rank++)
+                        .isAdvanced(false)
+                        .calculatedAt(calculatedAt)
+                        .calculatedBy(actor)
+                        .build();
+                rankings.add(ranking);
+            }
+        }
+
+        rankingRepository.saveAll(rankings);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.RANKING_RECALCULATED,
+                "rounds",
+                round.getId(),
+                null,
+                Map.of(
+                        "roundId", round.getId().toString(),
+                        "trackId", trackId == null ? "ALL" : trackId.toString(),
+                        "rankingCount", rankings.size()
+                ),
+                Map.of(
+                        "eventId", round.getEvent().getId().toString(),
+                        "calculatedAt", calculatedAt.toString()
+                )
+        );
+
+        return new RankingRecalculationResponse(roundId, trackId, rankings.size(), calculatedAt);
     }
 
     @Override
@@ -207,7 +310,7 @@ public class RankingServiceImpl implements RankingService {
             Authentication authentication
     ) {
         User viewer = currentUserService.getCurrentUser(authentication);
-        
+
         Ranking ranking = rankingRepository.findPublishedBySubmissionIdWithDetails(submissionId)
                 .orElseThrow(() -> new NotFoundException("Published score was not found for this submission."));
 
