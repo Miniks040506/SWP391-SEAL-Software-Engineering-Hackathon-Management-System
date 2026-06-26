@@ -15,15 +15,7 @@ import com.t7.seal.request.team.ToggleJoinCodeRequest;
 import com.t7.seal.request.team.TransferLeaderRequest;
 import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.request.track.RegisterTeamTrackRequest;
-import com.t7.seal.response.team.TeamDetailResponse;
-import com.t7.seal.response.team.TeamInvitationResponse;
-import com.t7.seal.response.team.TeamJoinCodePreviewResponse;
-import com.t7.seal.response.team.TeamMemberResponse;
-import com.t7.seal.response.team.TeamResponse;
-import com.t7.seal.response.team.TeamSummaryResponse;
-import com.t7.seal.response.team.EventCompetitionResponse;
-import com.t7.seal.response.team.EventCompetitionRoundResponse;
-import com.t7.seal.response.team.EventCompetitionSummaryResponse;
+import com.t7.seal.response.team.*;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EmailService;
@@ -613,6 +605,11 @@ public class TeamServiceImpl implements TeamService {
                 .toList();
     }
 
+    @Override
+    public TeamAdvancementStatusResponse getMyTeamAdvancementStatus(UUID teamId, UUID roundId, Authentication authentication) {
+        return null;
+    }
+
     //HELPERS
 
     private Team findMyCompetitionTeam(UUID eventId, UUID currentUserId) {
@@ -678,6 +675,7 @@ public class TeamServiceImpl implements TeamService {
                 track.getName()
         );
     }
+
     private TeamMemberResponse acceptInvitationInternal(TeamInvitation invitation, Authentication authentication) {
         User currentUser = currentUserService.getCurrentUser(authentication);
         ensureActiveStudent(currentUser);

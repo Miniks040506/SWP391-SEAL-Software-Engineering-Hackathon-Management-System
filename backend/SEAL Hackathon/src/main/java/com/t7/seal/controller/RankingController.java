@@ -9,6 +9,8 @@ import com.t7.seal.service.RankingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,14 +29,18 @@ public class RankingController {
             @RequestParam(required = false) UUID roundId,
             @RequestParam(required = false) UUID trackId
     ) {
-        return ResponseEntity.ok(rankingService.getRankings(eventId, roundId, trackId));
+        return ResponseEntity.ok(rankingService.getRankings(eventId, trackId, roundId));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PostMapping("/recalculate")
     public ResponseEntity<RankingRecalculationResponse> recalculateRanking(
-            @Valid @RequestBody RecalculateRankingRequest request
+            @Valid @RequestBody RecalculateRankingRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService
+                .calculateRoundRankings(request.roundId(), request.trackId(), authentication)
+        );
     }
 
     @GetMapping("/teams/{teamId}")

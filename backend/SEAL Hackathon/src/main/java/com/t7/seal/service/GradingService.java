@@ -3,8 +3,7 @@ package com.t7.seal.service;
 import com.t7.seal.request.grading.ConfirmScoreSheetRequest;
 import com.t7.seal.request.grading.SaveScoreSheetRequest;
 import com.t7.seal.request.grading.UpdateScoreRequest;
-import com.t7.seal.response.grading.ScoreResponse;
-import com.t7.seal.response.grading.ScoreSheetResponse;
+import com.t7.seal.response.grading.*;
 import org.springframework.security.core.Authentication;
 
 import java.util.UUID;
@@ -27,4 +26,10 @@ public interface GradingService {
     ScoreResponse updateScore(UUID scoreId, UpdateScoreRequest request, Authentication authentication);
 
     ScoreResponse confirmScore(UUID scoreId, Authentication authentication);
+
+    EventGradingProgressResponse getEventGradingProgress(UUID eventId, Authentication authentication);
+
+    RoundGradingProgressResponse getRoundGradingProgress(UUID roundId, Authentication authentication);
+
+    JudgeAssignmentProgressResponse getJudgeAssignmentProgress(UUID judgeAssignmentId, Authentication authentication);
 }
