@@ -653,14 +653,52 @@ public class TeamServiceImpl implements TeamService {
         boolean advanced = confirmed ? mayBeRanking.map(Ranking::hasAdvanced).orElse(false) : null;
         boolean eliminated = confirmed && !Boolean.TRUE.equals(advanced);
 
-        Round nextRound =
-        return null;
+        Round nextRound = findNextRound(event.getId(), round.getOrderIndex()).orElse(null);
+        boolean canAccessNextRound = Boolean.TRUE.equals(advanced)
+                && nextRound != null
+                && nextRound.getStatus() == RoundStatus.OPEN;
+
+        String message;
+        if (!confirmed) {
+            message = "Advancement is waiting for coordinator confirmation.";
+        } else if (Boolean.TRUE.equals(advanced)) {
+            message = (nextRound == null)
+                    ? "Your team advanced. This was the final configured round."
+                    : "Your team advanced to the next round.";
+        } else {
+            message = "Your team did not advance to the next round.";
+        }
+
+        return new TeamAdvancementStatusResponse(
+                event.getId(),
+                event.getName(),
+                teamId,
+                team.getName(),
+                team.getStatus().name(),
+                team.getTrack().getId(),
+                team.getTrack().getName(),
+                roundId,
+                round.getName(),
+                confirmed,
+                round.getAdvancementConfirmedAt(),
+                advanced,
+                eliminated,
+                mayBeRanking.map(r -> r.getAdvanceReason() == null
+                        ? null : r.getAdvanceReason().name()).orElse(null),
+                mayBeRanking.map(Ranking::getRankPosition).orElse(null),
+                mayBeRanking.map(Ranking::getTotalScore).orElse(null),
+                nextRound == null ? null : nextRound.getId(),
+                nextRound == null ? null : nextRound.getName(),
+                nextRound == null ? null : nextRound.getStatus().name(),
+                canAccessNextRound,
+                message
+        );
     }
 
     //HELPERS
 
     private Optional<Round> findNextRound(UUID eventId, Integer currentOrderIndex) {
-        if(currentOrderIndex == null) {
+        if (currentOrderIndex == null) {
             return Optional.empty();
         }
         return roundRepository.findByEventIdOrderByOrderIndexAsc(eventId)
