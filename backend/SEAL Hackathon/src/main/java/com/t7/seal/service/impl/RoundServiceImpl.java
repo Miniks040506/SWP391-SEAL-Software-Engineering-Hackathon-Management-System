@@ -15,6 +15,7 @@ import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.callback.Warning;
+import org.springframework.boot.webmvc.autoconfigure.WebMvcProperties;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -539,7 +540,7 @@ public class RoundServiceImpl implements RoundService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         Set<UUID> finalAdvancedTeamIds = resolveFinalAdvanceTeamId(request, suggestedTeamIds, rankings);
-        Map<UUID, String> overrideReason = validateAndMapOverrideReason(request, rankings);
+        Map<UUID, String> overrideReasons = validateAndMapOverrideReason(request, rankings);
         List<TeamAdvancementDecisionResponse> decisions = new ArrayList<>();
 
         for (Ranking ranking : rankings) {
@@ -547,7 +548,7 @@ public class RoundServiceImpl implements RoundService {
             UUID teamId = team.getId();
             boolean suggestedAdvanced = suggestedTeamIds.contains(teamId);
             boolean finalAdvanced = finalAdvancedTeamIds.contains(teamId);
-            String overrideReasonForTeam = overrideReason.get(teamId);
+            String overrideReasonForTeam = overrideReasons.get(teamId);
 
             if (finalAdvanced) {
                 ranking.markAdvanced(suggestedAdvanced ? AdvanceReason.TOP_N : AdvanceReason.MANUAL_ADVANCE);
@@ -560,7 +561,9 @@ public class RoundServiceImpl implements RoundService {
                     team.setStatus(TeamStatus.ELIMINATED);
                 }
             }
-            decisions.add(toTeamAdvancementDecisionResponse(ranking, suggestedAdvanced, finalAdvanced, overrideReasonForTeam));
+            decisions.add(toTeamAdvancementDecisionResponse(
+                    ranking, suggestedAdvanced, finalAdvanced, overrideReasonForTeam)
+            );
         }
 
         LocalDateTime confirmedAt = LocalDateTime.now();
@@ -577,17 +580,45 @@ public class RoundServiceImpl implements RoundService {
                 .targetTable("rounds")
                 .targetId(round.getId())
                 .beforeState(null)
-                .afterState(Map.of("advancedTeamIds", advancedTeamIds.stream().map(UUID::toString).toList()))
+                .afterState(Map.of(
+                        "advancedTeamIds", finalAdvancedTeamIds.stream().map(UUID::toString),
+                        "eliminatedTeamIds", rankings.stream()
+                                .map(r -> r.getSubmission().getTeam().getId())
+                                .filter(id -> !finalAdvancedTeamIds.contains(id))
+                                .map(UUID::toString)
+                                .toList(),
+                        "overrideReasons", overrideReasons
+                ))
                 .context(Map.of(
                         "eventId", round.getEvent().getId().toString(),
                         "note", request == null || request.note() == null ? "" : request.note()
                 ))
                 .build());
 
-        return new ConfirmAdvancementResponse(roundId, advancedTeamIds.size(), confirmedAt);
+        notifyAdvancementTypeId(actor, round, decisions);
+
+        int advancedCount = finalAdvancedTeamIds.size();
+        int eliminatedCount = rankings.size() - advancedCount;
+
+        return new ConfirmAdvancementResponse(
+                roundId,
+                advancedCount,
+                eliminatedCount,
+                confirmedAt,
+                decisions,
+                buildAvancementWarnings(round, rankings, rules)
+        );
     }
 
     //HELPERS
+
+    private void notifyAdvancementTypeId(
+            User user,
+            Round round,
+            List<TeamAdvancementDecisionResponse> decisions
+    ) {
+
+    }
 
     private Map<UUID, String> validateAndMapOverrideReason(
             ConfirmAdvancementRequest request,
