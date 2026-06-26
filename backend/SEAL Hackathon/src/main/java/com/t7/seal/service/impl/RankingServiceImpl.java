@@ -1,10 +1,12 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.AuditActionType;
+import com.t7.seal.domain.NotificationTargetScope;
 import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
+import com.t7.seal.repository.EventAnnouncementRepository;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RankingRepository;
 import com.t7.seal.request.results.PublishResultsRequest;
@@ -33,6 +35,7 @@ public class RankingServiceImpl implements RankingService {
 
     private final RankingRepository rankingRepository;
     private final HackathonEventRepository eventRepository;
+    private final EventAnnouncementRepository eventAnnouncementRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -164,6 +167,52 @@ public class RankingServiceImpl implements RankingService {
         }
     }
 
+    private UUID createResultAnnouncement(HackathonEvent event,
+                                          Round round,
+                                          User actor,
+                                          PublishResultsRequest request,
+                                          LocalDateTime publishedAt) {
+        if (request != null && Boolean.FALSE.equals(request.createAnnouncement())) {
+            return null;
+        }
+
+        String title = request == null || isBlank(request.title())
+                ? defaultResultTitle(event, round)
+                : request.title().trim();
+        String content = request == null || isBlank(request.content())
+                ? defaultResultContent(event, round)
+                : request.content().trim();
+
+        EventAnnouncement announcement = EventAnnouncement.builder()
+                .event(event)
+                .title(title)
+                .content(content)
+                .isPinned(true)
+                .isResultAnnouncement(true)
+                .sendEmail(false)
+                .sendInApp(true)
+                .targetScope(NotificationTargetScope.ALL_EVENT_USERS)
+                .createdBy(actor)
+                .build();
+        announcement.publish(publishedAt);
+        EventAnnouncement saved = eventAnnouncementRepository.save(announcement);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.ANNOUNCEMENT_PUBLISHED,
+                "event_announcements",
+                saved.getId(),
+                null,
+                Map.of(
+                        "eventId", event.getId().toString(),
+                        "roundId", round == null ? "" : round.getId().toString(),
+                        "resultAnnouncement", true
+                ),
+                null
+        );
+        return saved.getId();
+    }
+
     private RankingResponse toRankingResponse(Ranking ranking) {
         Submission submission = ranking.getSubmission();
         Team team = submission.getTeam();
@@ -214,5 +263,27 @@ public class RankingServiceImpl implements RankingService {
             return ranking.getRound().getResultPublishedAt();
         }
         return ranking.getRound().getEvent().getResultPublishedAt();
+    }
+
+    private String defaultResultTitle(HackathonEvent event, Round round) {
+        if (round == null) {
+            return "Final results published for " + event.getName();
+        }
+        return "Results published for " + round.getName();
+    }
+
+    private String defaultResultContent(HackathonEvent event, Round round) {
+        if (round == null) {
+            return "Final rankings and team scores for " + event.getName() + " are now available.";
+        }
+        return "Rankings and team scores for round " + round.getName() + " are now available.";
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private String safeString(String value) {
+        return value == null ? "" : value;
     }
 }
