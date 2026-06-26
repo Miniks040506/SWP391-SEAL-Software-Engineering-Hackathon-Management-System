@@ -33,7 +33,12 @@ public class RankingServiceImpl implements RankingService {
     }
 
     @Override
-    public List<RankingResponse> getCoordinatorRankings(UUID eventId, UUID trackId, UUID roundId, Authentication authentication) {
+    public List<RankingResponse> getCoordinatorRankings(
+            UUID eventId,
+            UUID trackId,
+            UUID roundId,
+            Authentication authentication
+    ) {
         return List.of();
     }
 
