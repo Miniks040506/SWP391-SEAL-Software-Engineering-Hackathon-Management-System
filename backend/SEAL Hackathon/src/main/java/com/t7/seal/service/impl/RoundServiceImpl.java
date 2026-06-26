@@ -539,6 +539,7 @@ public class RoundServiceImpl implements RoundService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         Set<UUID> finalAdvancedTeamIds = resolveFinalAdvanceTeamId(request, suggestedTeamIds, rankings);
+        Map<UUID, String> overrideReason;
 
         for (Ranking ranking : rankings) {
             Team team = ranking.getSubmission().getTeam();
@@ -582,6 +583,36 @@ public class RoundServiceImpl implements RoundService {
     }
 
     //HELPERS
+
+    private Map<UUID, String> validateAndMapOverrideReason(
+            ConfirmAdvancementRequest request,
+            List<Ranking> rankings
+    ) {
+        if (request == null || request.overrides() == null || request.overrides().isEmpty()) {
+            return Map.of();
+        }
+
+        Set<UUID> validTeamIds = rankings.stream()
+                .map(r -> r.getSubmission().getTeam().getId())
+                .collect(Collectors.toSet());
+
+        Map<UUID, String> reasons = new LinkedHashMap<>();
+        for (AdvancementOverrideRequest override : request.overrides()) {
+            if (override == null || override.teamId() == null || override.advanced() == null) {
+                throw new BadRequestException("Override team ID and advanced flag are required");
+            }
+            if (!validTeamIds.contains(override.teamId())) {
+                throw new BadRequestException("Override team does not belong to this round ranking: " + override.teamId());
+            }
+            String reason = trimToNull(override.reason());
+            if (reason == null) {
+                throw new BadRequestException("Override reason is required for team: " + override.teamId());
+            }
+            reasons.put(override.teamId(), reason);
+        }
+        
+        return reasons;
+    }
 
     private Set<UUID> resolveFinalAdvanceTeamId(
             ConfirmAdvancementRequest request,
