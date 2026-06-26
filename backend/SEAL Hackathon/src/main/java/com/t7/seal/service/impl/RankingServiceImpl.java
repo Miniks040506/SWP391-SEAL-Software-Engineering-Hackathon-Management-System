@@ -1,8 +1,6 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.domain.AuditActionType;
-import com.t7.seal.domain.NotificationTargetScope;
-import com.t7.seal.domain.RegistrationStatus;
+import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
@@ -17,6 +15,7 @@ import com.t7.seal.response.results.TeamRankingHistoryResponse;
 import com.t7.seal.response.submission.TeamDetailedScoreResponse;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
+import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RankingService;
 import jdk.jfr.Event;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +24,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +41,7 @@ public class RankingServiceImpl implements RankingService {
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     @Override
@@ -210,8 +213,60 @@ public class RankingServiceImpl implements RankingService {
                 ),
                 null
         );
+
         return saved.getId();
     }
+
+    private int sendResultNotifications(HackathonEvent event,
+                                        Round round,
+                                        List<Ranking> rankings,
+                                        User actor,
+                                        PublishResultsRequest request) {
+        if (request != null && Boolean.FALSE.equals(request.sendNotification())) {
+            return 0;
+        }
+
+        Map<UUID, Ranking> rankingByTeam = rankings.stream()
+                .filter(ranking -> ranking.getSubmission() != null
+                        && ranking.getSubmission().getTeam() != null)
+                .collect(Collectors.toMap(
+                        ranking -> ranking.getSubmission().getTeam().getId(),
+                        Function.identity(),
+                        (first, ignored) -> first,
+                        LinkedHashMap::new)
+                );
+
+        int count = 0;
+        for (Ranking ranking : rankingByTeam.values()) {
+            Team team = ranking.getSubmission().getTeam();
+            String title = "Results published for " + event.getName();
+            String body = "%s result is available. Rank #%d in %s%s with total score %.2f."
+                    .formatted(
+                            team.getName(),
+                            ranking.getRankPosition(),
+                            ranking.getTrack().getName(),
+                            round == null ? "" : " / " + round.getName(),
+                            ranking.getTotalScore()
+                    );
+
+            notificationService.createSystemNotification(
+                    actor,
+                    event,
+                    NotificationType.RESULT_PUBLISHED,
+                    title,
+                    body,
+                    NotificationTargetScope.TEAM,
+                    team.getId(),
+                    null,
+                    NotificationChannel.BOTH,
+                    null
+            );
+            count++;
+        }
+        
+        return count;
+    }
+
 
     private RankingResponse toRankingResponse(Ranking ranking) {
         Submission submission = ranking.getSubmission();
