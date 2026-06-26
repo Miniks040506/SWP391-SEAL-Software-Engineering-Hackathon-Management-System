@@ -48,6 +48,19 @@ public class TeamController {
     ) {
         return ResponseEntity.ok(teamService.getMyActiveCompetitions(authentication));
     }
+    
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping({
+            "/{teamId}/advancement-status",
+            "/{teamId}/rounds/{roundId}/advancement-status"
+    })
+    public ResponseEntity<TeamAdvancementStatusResponse> getMyTeamAdvancementStatus(
+            @PathVariable UUID teamId,
+            @PathVariable(required = false) UUID roundId,
+            Authentication authentication
+    ) {
+        return null;
+    }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{teamId}/scores")
