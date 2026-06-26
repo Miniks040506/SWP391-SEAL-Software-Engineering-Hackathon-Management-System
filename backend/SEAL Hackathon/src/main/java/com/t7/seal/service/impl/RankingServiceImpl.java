@@ -122,7 +122,10 @@ public class RankingServiceImpl implements RankingService {
 
     @Transactional
     @Override
-    public PublishResultsResponse publishRoundResults(UUID roundId, PublishResultsRequest request, Authentication authentication) {
+    public PublishResultsResponse publishRoundResults(
+            UUID roundId,
+            PublishResultsRequest request,
+            Authentication authentication) {
         User actor = currentUserService.getCurrentUser(authentication);
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
@@ -170,7 +173,8 @@ public class RankingServiceImpl implements RankingService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<TeamDetailedScoreResponse> getPublishedTeamScores(UUID teamId, Authentication authentication) {
+    public List<TeamDetailedScoreResponse> getPublishedTeamScores(
+            UUID teamId, Authentication authentication) {
         User viewer = currentUserService.getCurrentUser(authentication);
         ensureCanViewTeamScores(teamId, viewer);
 
@@ -180,21 +184,36 @@ public class RankingServiceImpl implements RankingService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public TeamDetailedScoreResponse getPublishedTeamRoundScore(
             UUID teamId,
             UUID roundId,
             Authentication authentication
     ) {
-        return null;
+        User viewer = currentUserService.getCurrentUser(authentication);
+        ensureCanViewTeamScores(teamId, viewer);
+
+        Ranking ranking = rankingRepository.findPublishedByRoundIdAndTeamIdWithDetails(roundId, teamId)
+                .orElseThrow(() -> new NotFoundException("Published team score was not found for this round."));
+
+        return toTeamDetailedScoreResponse(ranking);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TeamDetailedScoreResponse getPublishedSubmissionScore(
             UUID submissionId,
             Authentication authentication
     ) {
-        return null;
+        User viewer = currentUserService.getCurrentUser(authentication);
+        
+        Ranking ranking = rankingRepository.findPublishedBySubmissionIdWithDetails(submissionId)
+                .orElseThrow(() -> new NotFoundException("Published score was not found for this submission."));
+
+        ensureCanViewTeamScores(ranking.getSubmission().getTeam().getId(), viewer);
+
+        return toTeamDetailedScoreResponse(ranking);
     }
 
     @Transactional(readOnly = true)
@@ -332,7 +351,8 @@ public class RankingServiceImpl implements RankingService {
         HackathonEvent event = round.getEvent();
         Track track = ranking.getTrack();
 
-        List<TeamScoreCriterionResponse> criteriaScores = buildCriterionAverageScores(submission.getId());
+        List<TeamScoreCriterionResponse> criteriaScores =
+                buildCriterionAverageScores(submission.getId());
 
         return new TeamDetailedScoreResponse(
                 event.getId(),
