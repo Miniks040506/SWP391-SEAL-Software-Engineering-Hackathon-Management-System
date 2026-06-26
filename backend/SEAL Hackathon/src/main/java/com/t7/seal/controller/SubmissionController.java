@@ -6,6 +6,7 @@ import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
+import com.t7.seal.service.RankingService;
 import com.t7.seal.service.SubmissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class SubmissionController {
 
     private final SubmissionService submissionService;
+    private final RankingService rankingService;
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping({
@@ -243,10 +245,12 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.createSubmissionFileDownloadUrl(linkId, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/submissions/{submissionId}/scores/me")
     public ResponseEntity<TeamDetailedScoreResponse> getMyTeamDetailedScores(
-            @PathVariable UUID submissionId
+            @PathVariable UUID submissionId,
+            Authentication authentication
     ) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        return ResponseEntity.ok(rankingService.getPublishedSubmissionScore(submissionId, authentication));
     }
 }

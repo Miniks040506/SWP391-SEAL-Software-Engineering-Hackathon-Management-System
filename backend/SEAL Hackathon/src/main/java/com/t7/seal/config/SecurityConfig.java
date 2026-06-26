@@ -101,6 +101,8 @@ public class SecurityConfig {
                                 API + "/prizes/*",
                                 API + "/announcements/*",
                                 API + "/rankings/**",
+                                API + "/public/events/*/leaderboard",
+                                API + "/public/events/*/tracks/*/leaderboard",
                                 API + "/prizes/events/*"
                         ).permitAll()
 
@@ -158,6 +160,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, API + "/events/*").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.DELETE, API + "/events/*").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/events/*/publish-results").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/events/*/results/publish").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/events/*/variance-dashboard").hasRole("COORDINATOR")
 
                         // Announcements
@@ -184,6 +187,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/operation-status").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/scoring-progress").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/grading-status").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/rounds/*/grading-progress").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/events/*/grading-progress").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/judge-assignments/*/progress").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rounds/*/rankings/calculate").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rankings/recalculate").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/events/*/results").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/rounds/*/results").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rounds/*/results/publish").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/advancement-preview").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/confirm-advancement").hasRole("COORDINATOR")
 

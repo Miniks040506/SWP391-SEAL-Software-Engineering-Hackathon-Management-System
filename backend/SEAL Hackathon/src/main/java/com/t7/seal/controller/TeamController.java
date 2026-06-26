@@ -3,6 +3,8 @@ package com.t7.seal.controller;
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.team.*;
 import com.t7.seal.response.team.*;
+import com.t7.seal.response.submission.TeamDetailedScoreResponse;
+import com.t7.seal.service.RankingService;
 import com.t7.seal.service.TeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import java.util.UUID;
 public class TeamController {
 
     private final TeamService teamService;
+    private final RankingService rankingService;
 
     @PreAuthorize("hasRole('STUDENT')")
     @PostMapping
@@ -44,6 +47,25 @@ public class TeamController {
             Authentication authentication
     ) {
         return ResponseEntity.ok(teamService.getMyActiveCompetitions(authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{teamId}/scores")
+    public ResponseEntity<List<TeamDetailedScoreResponse>> getTeamPublishedScores(
+            @PathVariable UUID teamId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(rankingService.getPublishedTeamScores(teamId, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{teamId}/rounds/{roundId}/scores")
+    public ResponseEntity<TeamDetailedScoreResponse> getTeamPublishedRoundScore(
+            @PathVariable UUID teamId,
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(rankingService.getPublishedTeamRoundScore(teamId, roundId, authentication));
     }
 
     @PreAuthorize("hasRole('STUDENT')")

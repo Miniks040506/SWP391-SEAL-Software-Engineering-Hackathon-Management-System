@@ -63,4 +63,17 @@ public interface ScoreRepository extends JpaRepository<Score, UUID> {
               AND s.isDraft = false
             """)
     List<Score> findConfirmedByRoundId(@Param("roundId") UUID roundId);
+
+    @Query("""
+            SELECT s
+            FROM Score s
+            JOIN FETCH s.submission sub
+            JOIN FETCH s.judge j
+            JOIN FETCH s.eventCriteria ec
+            LEFT JOIN FETCH ec.criteria c
+            WHERE sub.id = :submissionId
+              AND s.isDraft = false
+            ORDER BY ec.displayOrder ASC
+            """)
+    List<Score> findConfirmedBySubmissionIdWithCriteria(@Param("submissionId") UUID submissionId);
 }
