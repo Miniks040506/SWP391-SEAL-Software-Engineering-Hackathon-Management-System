@@ -12,4 +12,3 @@ public record RankingDraft(
         Integer judgeCount,
         Map<String, Map<String, Float>> scoreBreakdown
 ) {}
-}

@@ -97,23 +97,43 @@ public class RankingServiceImpl implements RankingService {
         Map<UUID, Submission> scorableSubmissions = submissionRepository
                 .findSubmittedOrLateByRoundAndTrackNullable(roundId, trackId)
                 .stream()
-                .filter(submission -> submission.getStatus() != SubmissionStatus.DISQUALIFIED)
-                .filter(submission -> submission.getTeam() != null && submission.getTeam().getTrack() != null)
-                .collect(Collectors.toMap(Submission::getId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
+                .filter(submission ->
+                        submission.getStatus() != SubmissionStatus.DISQUALIFIED)
+                .filter(submission -> submission.getTeam() != null
+                        && submission.getTeam().getTrack() != null)
+                .collect(Collectors.toMap(
+                        Submission::getId,
+                        Function.identity(),
+                        (a, b) -> a,
+                        LinkedHashMap::new)
+                );
 
         List<Score> confirmedScores = scoreRepository.findConfirmedByRoundId(roundId)
                 .stream()
-                .filter(score -> scorableSubmissions.containsKey(score.getSubmission().getId()))
-                .filter(score -> score.getEventCriteria() != null && activeCriteriaIds.contains(score.getEventCriteria().getId()))
+                .filter(score -> scorableSubmissions
+                        .containsKey(score.getSubmission().getId()))
+                .filter(score -> score.getEventCriteria() != null
+                        && activeCriteriaIds.contains(score.getEventCriteria().getId()))
                 .toList();
 
         Map<UUID, List<Score>> scoresBySubmission = confirmedScores.stream()
-                .collect(Collectors.groupingBy(score -> score.getSubmission().getId(), LinkedHashMap::new, Collectors.toList()));
+                .collect(Collectors.groupingBy(
+                        score -> score.getSubmission().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList())
+                );
 
         List<RankingDraft> rankingDrafts = new ArrayList<>();
         for (Submission submission : scorableSubmissions.values()) {
-            List<Score> submissionScores = scoresBySubmission.getOrDefault(submission.getId(), List.of());
-            Optional<RankingDraft> draft = buildRankingDraft(submission, submissionScores, activeCriteriaIds);
+            List<Score> submissionScores = scoresBySubmission
+                    .getOrDefault(submission.getId(), List.of());
+
+            Optional<RankingDraft> draft = buildRankingDraft(
+                    submission,
+                    submissionScores,
+                    activeCriteriaIds
+            );
+
             draft.ifPresent(rankingDrafts::add);
         }
 
@@ -124,14 +144,26 @@ public class RankingServiceImpl implements RankingService {
         List<Ranking> rankings = new ArrayList<>();
 
         Map<UUID, List<RankingDraft>> draftsByTrack = rankingDrafts.stream()
-                .collect(Collectors.groupingBy(draft -> draft.track().getId(), LinkedHashMap::new, Collectors.toList()));
+                .collect(Collectors.groupingBy(
+                        draft -> draft.track().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList())
+                );
 
         for (List<RankingDraft> trackDrafts : draftsByTrack.values()) {
             List<RankingDraft> sorted = trackDrafts.stream()
                     .sorted(Comparator
-                            .comparing(RankingDraft::totalScore, Comparator.reverseOrder())
-                            .thenComparing(draft -> draft.submission().getSubmittedAt(), Comparator.nullsLast(Comparator.naturalOrder()))
-                            .thenComparing(draft -> safeString(draft.submission().getTeam().getName())))
+                            .comparing(
+                                    RankingDraft::totalScore,
+                                    Comparator.reverseOrder()
+                            )
+                            .thenComparing(
+                                    draft -> draft.submission().getSubmittedAt(),
+                                    Comparator.nullsLast(Comparator.naturalOrder())
+                            )
+                            .thenComparing(draft ->
+                                    safeString(draft.submission().getTeam().getName()))
+                    )
                     .toList();
 
             int rank = 1;
@@ -171,7 +203,12 @@ public class RankingServiceImpl implements RankingService {
                 )
         );
 
-        return new RankingRecalculationResponse(roundId, trackId, rankings.size(), calculatedAt);
+        return new RankingRecalculationResponse(
+                roundId,
+                trackId,
+                rankings.size(),
+                calculatedAt
+        );
     }
 
     @Override
@@ -445,6 +482,14 @@ public class RankingServiceImpl implements RankingService {
         }
 
         return count;
+    }
+
+    private Optional<RankingDraft> buildRankingDraft(
+            Submission submission,
+            List<Score> scores,
+            Set<UUID> activeCriteriaIds
+    ) {
+        return null;
     }
 
     private TeamDetailedScoreResponse toTeamDetailedScoreResponse(Ranking ranking) {
