@@ -133,15 +133,17 @@ public class EventController {
             @RequestParam(required = false) UUID roundId,
             @RequestParam(required = false) UUID trackId
     ) {
-        return ResponseEntity.ok(rankingService.getRankings(eventId, roundId, trackId));
+        return ResponseEntity.ok(rankingService.getRankings(eventId, trackId, roundId));
     }
 
+    @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @PostMapping("/{eventId}/publish-results")
     public ResponseEntity<PublishResultsResponse> publishResults(
             @PathVariable UUID eventId,
-            @Valid @RequestBody PublishResultsRequest request
+            @Valid @RequestBody(required = false) PublishResultsRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService.publishEventResults(eventId, request, authentication));
     }
 
     @GetMapping("/{eventId}/variance-dashboard")
