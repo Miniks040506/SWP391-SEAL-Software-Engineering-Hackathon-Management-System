@@ -1,16 +1,43 @@
-import { Box, Typography, Stack, Paper } from "@mui/material";
+import { Box, Typography, Stack, Paper, CircularProgress, Alert } from "@mui/material";
 import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { teamApi } from "@/api/team.api";
 import { JudgeAnonymityNotice } from "../components/JudgeAnonymityNotice";
 import { ScoreSummaryCard } from "../components/ScoreSummaryCard";
 import { CriterionScoreBreakdownTable } from "../components/CriterionScoreBreakdownTable";
 
 export const TeamDetailedScorePage = () => {
-  const { teamId: _teamId, roundId: _roundId } = useParams<{ teamId: string; roundId: string }>();
+  const { teamId, roundId } = useParams<{ teamId: string; roundId: string }>();
 
-  // Placeholder for published state check
-  const isPublished = true;
+  const { data: scoreData, isLoading, isError, error } = useQuery({
+    queryKey: ["teamPublishedScore", teamId, roundId],
+    queryFn: () => teamApi.getTeamPublishedRoundScore(teamId!, roundId!),
+    enabled: Boolean(teamId && roundId),
+  });
 
-  if (!isPublished) {
+  if (isLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", p: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Alert severity="error">
+          Failed to load score data: {(error as Error)?.message || "Unknown error"}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (!scoreData) {
+    return null;
+  }
+
+  if (!scoreData.publishedAt) {
     return (
       <Box sx={{ p: 4 }}>
         <Typography variant="body1">
@@ -25,26 +52,26 @@ export const TeamDetailedScorePage = () => {
       {/* 1. Header Block */}
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold" }}>
-          —
+          {scoreData.teamName}
         </Typography>
         <Stack direction="row" spacing={3} sx={{ flexWrap: "wrap", rowGap: 1 }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>Event:</strong> —
+            <strong>Event:</strong> {scoreData.eventName}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            <strong>Round:</strong> —
+            <strong>Round:</strong> {scoreData.roundName}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            <strong>Track:</strong> —
+            <strong>Track:</strong> {scoreData.trackName}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            <strong>Rank:</strong> —
+            <strong>Rank:</strong> #{scoreData.rankPosition}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            <strong>Total Score:</strong> —
+            <strong>Total Score:</strong> {scoreData.totalScore}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            <strong>Judges:</strong> —
+            <strong>Judges:</strong> {scoreData.judgeCount}
           </Typography>
         </Stack>
       </Paper>
@@ -54,11 +81,11 @@ export const TeamDetailedScorePage = () => {
 
       {/* 3. ScoreSummaryCard */}
       <ScoreSummaryCard
-        totalScore={0}
-        rankPosition={0}
-        trackName="—"
-        roundName="—"
-        advanced={false}
+        totalScore={scoreData.totalScore}
+        rankPosition={scoreData.rankPosition}
+        trackName={scoreData.trackName}
+        roundName={scoreData.roundName}
+        advanced={scoreData.advanced}
       />
 
       {/* 4. CriterionScoreBreakdownTable */}
@@ -66,7 +93,7 @@ export const TeamDetailedScorePage = () => {
         <Typography variant="h6" gutterBottom>
           Criteria Score Breakdown
         </Typography>
-        <CriterionScoreBreakdownTable criteria={[]} />
+        <CriterionScoreBreakdownTable criteria={scoreData.criteriaScores} />
       </Box>
     </Stack>
   );
