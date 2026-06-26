@@ -9,10 +9,12 @@ import com.t7.seal.repository.*;
 import com.t7.seal.request.round.*;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.round.*;
+import com.t7.seal.response.team.TeamAdvancementDecisionResponse;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
+import org.flywaydb.core.api.callback.Warning;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -488,23 +490,23 @@ public class RoundServiceImpl implements RoundService {
 
         List<Ranking> rankings = rankingRepository.findByRoundIdWithSubmissionTeamTrack(roundId);
         List<AdvanceRule> rules = advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId);
-        List<String> warnings = new ArrayList<>();
-
-        if (rankings.isEmpty()) {
-            warnings.add("No ranking rows found for this round. Calculate rankings before previewing advancement.");
-        }
-        if (rules.isEmpty()) {
-            warnings.add("No advance rules configured for this round.");
-        }
-        if (round.getGradingLockedAt() == null) {
-            warnings.add("Grading is not locked yet. Preview may change after judges finish scoring.");
-        }
-
+        List<String> warnings = buildAvancementWarnings(round, rankings, rules);
         List<Ranking> suggested = executeAdvanceRules(rankings, rules);
+        Set<UUID> suggestedTeamIds = suggested.stream()
+                .map(r -> r.getSubmission().getTeam().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return new AdvancementPreviewResponse(
                 roundId,
                 suggested.stream().map(this::toRankingResponse).toList(),
+                rankings.stream().map(this::toRankingResponse).toList(),
+                rankings.stream()
+                        .map(r -> toTeamAdvancementDecisionResponse(
+                                r,
+                                suggestedTeamIds.contains(r.getSubmission().getTeam().getId()),
+                                suggestedTeamIds.contains(r.getSubmission().getTeam().getId()),
+                                null
+                        )).toList(),
                 warnings
         );
     }
@@ -582,6 +584,35 @@ public class RoundServiceImpl implements RoundService {
     }
 
     //HELPERS
+
+    private TeamAdvancementDecisionResponse toTeamAdvancementDecisionResponse(
+            Ranking ranking,
+            boolean suggestedAdvance,
+            boolean finalAdvance,
+            String overrideReason
+    ) {
+        return null;
+    }
+
+    private List<String> buildAvancementWarnings(
+            Round round,
+            List<Ranking> rankings,
+            List<AdvanceRule> rules
+    ) {
+        List<String> warnings = new ArrayList<>();
+
+        if (rankings.isEmpty()) {
+            warnings.add("No ranking rows found for this round. Calculate rankings before previewing advancement.");
+        }
+        if (rules.isEmpty()) {
+            warnings.add("No advance rules configured for this round.");
+        }
+        if (round.getGradingLockedAt() == null) {
+            warnings.add("Grading is not locked yet. Preview may change after judges finish scoring.");
+        }
+
+        return warnings;
+    }
 
     private void assertTrackRoundEditable(HackathonEvent event) {
         RegistrationStatus status = event.getStatus();
