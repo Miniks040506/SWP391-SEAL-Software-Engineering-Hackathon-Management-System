@@ -29,6 +29,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.swing.text.html.Option;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -646,12 +647,27 @@ public class TeamServiceImpl implements TeamService {
 
         HackathonEvent event = team.getTrack().getEvent();
         Round round = resolveAdvancementRound(event.getId(), team.getId(), roundId);
+        Optional<Ranking> mayBeRanking = rankingRepository.findByRoundIdAndTeamIdWithDetails(round.getId(), team.getId());
 
-        
+        boolean confirmed = round.getAdvancementConfirmedAt() != null;
+        boolean advanced = confirmed ? mayBeRanking.map(Ranking::hasAdvanced).orElse(false) : null;
+        boolean eliminated = confirmed && !Boolean.TRUE.equals(advanced);
+
+        Round nextRound =
         return null;
     }
 
     //HELPERS
+
+    private Optional<Round> findNextRound(UUID eventId, Integer currentOrderIndex) {
+        if(currentOrderIndex == null) {
+            return Optional.empty();
+        }
+        return roundRepository.findByEventIdOrderByOrderIndexAsc(eventId)
+                .stream()
+                .filter(r -> r.getOrderIndex() != null && r.getOrderIndex() > currentOrderIndex)
+                .min(Comparator.comparing(Round::getOrderIndex));
+    }
 
     private Round resolveAdvancementRound(UUID eventId, UUID teamId, UUID roundId) {
         if (roundId != null) {
