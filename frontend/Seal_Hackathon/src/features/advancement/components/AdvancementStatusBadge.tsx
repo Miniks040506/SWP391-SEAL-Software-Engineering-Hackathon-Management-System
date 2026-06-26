@@ -1,5 +1,10 @@
 import { Chip } from "@mui/material";
-import { CheckCircleOutlined, CancelOutlined, StarOutlined, HourglassEmptyOutlined } from "@mui/icons-material";
+import {
+  CheckCircleOutlined,
+  CancelOutlined,
+  StarOutlined,
+  HourglassEmptyOutlined,
+} from "@mui/icons-material";
 
 export type AdvancementStatus =
   | "ADVANCED"
@@ -11,7 +16,9 @@ interface AdvancementStatusBadgeProps {
   status: AdvancementStatus;
 }
 
-export function AdvancementStatusBadge({ status }: AdvancementStatusBadgeProps) {
+export function AdvancementStatusBadge({
+  status,
+}: AdvancementStatusBadgeProps) {
   let color: "success" | "error" | "warning" | "default" = "default";
   let icon = <HourglassEmptyOutlined />;
   let label = "Pending Confirmation";

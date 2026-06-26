@@ -46,12 +46,12 @@ export function AdvancementConfirmDialog({
       fullWidth
     >
       <DialogTitle className="text-2xl font-bold text-slate-800 dark:text-slate-300">
-        Confirm advancement?
+        Confirm round advancement?
       </DialogTitle>
       <DialogContent>
         <div className="space-y-4 py-2 mt-2">
           <Typography className="text-slate-600 dark:text-slate-400">
-            This will update team statuses and determine next-round eligibility.
+            This action updates team statuses and controls next-round eligibility.
           </Typography>
           <ul className="list-disc pl-5 space-y-1 text-slate-700 dark:text-slate-300">
             <li>
@@ -74,7 +74,7 @@ export function AdvancementConfirmDialog({
                 disabled={isPending}
               />
             }
-            label="I understand this action will affect next round access."
+            label="I understand this action will update advancement status for all listed teams."
             className="mt-4"
           />
         </div>

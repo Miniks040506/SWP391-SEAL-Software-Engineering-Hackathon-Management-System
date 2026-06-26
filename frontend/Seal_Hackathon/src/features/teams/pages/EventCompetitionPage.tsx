@@ -11,6 +11,9 @@ import { useQuery } from "@tanstack/react-query";
 import { teamApi } from "@/api/team.api";
 import type { EventCompetitionRoundResponse } from "@/types/team.types";
 
+import { useTeamAdvancementStatusQuery } from "@/features/advancement/hooks/useAdvancementQueries";
+import { TeamAdvancementStatusBanner } from "@/features/advancement/components/TeamAdvancementStatusBanner";
+
 function formatDateTime(value?: string | null) {
   if (!value) return "Not set";
   return new Intl.DateTimeFormat("en", {
@@ -59,6 +62,9 @@ export function EventCompetitionPage() {
   });
 
   const competition = competitionQuery.data;
+
+  const advancementQuery = useTeamAdvancementStatusQuery(competition?.teamId ?? "");
+  const advancementData = advancementQuery.data?.data;
 
   useEffect(() => {
     const interval = window.setInterval(() => setClock(Date.now()), 1000);
@@ -182,6 +188,16 @@ export function EventCompetitionPage() {
         <Alert severity="success">
           Congratulations! Your team has won this event.
         </Alert>
+      )}
+      {advancementData && (
+        <TeamAdvancementStatusBanner
+          status={advancementData.status}
+          message={advancementData.message}
+          nextRoundId={advancementData.nextRoundId}
+          nextRoundName={advancementData.nextRoundName}
+          canAccessNextRound={advancementData.canAccessNextRound}
+          eventId={competition.eventId}
+        />
       )}
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.4fr]">
