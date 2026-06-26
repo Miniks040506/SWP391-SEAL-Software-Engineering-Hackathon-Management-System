@@ -552,7 +552,7 @@ public class RankingServiceImpl implements RankingService {
                 .orElse(0.0);
 
         Track track = submission.getTeam().getTrack();
-        
+
         return Optional.of(new RankingDraft(
                 submission,
                 track,
