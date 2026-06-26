@@ -15,6 +15,7 @@ import com.t7.seal.request.team.ToggleJoinCodeRequest;
 import com.t7.seal.request.team.TransferLeaderRequest;
 import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.request.track.RegisterTeamTrackRequest;
+import com.t7.seal.response.round.RoundDetailResponse;
 import com.t7.seal.response.team.*;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.CurrentUserService;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +52,7 @@ public class TeamServiceImpl implements TeamService {
     private final RoundRepository roundRepository;
     private final SubmissionRepository submissionRepository;
     private final AuditLogRepository auditLogRepository;
+    private final RankingRepository rankingRepository;
 
     private final CurrentUserService currentUserService;
     private final EmailService emailService;
@@ -563,6 +566,19 @@ public class TeamServiceImpl implements TeamService {
             }
         }
 
+        Map<UUID, Ranking> rankingByRoundId = rankingRepository
+                .findTeamRankingsWithDetails(team.getId())
+                .stream()
+                .filter(r -> r.getRound() != null
+                        && r.getRound().getEvent() != null
+                        && r.getRound().getEvent().getId() != null)
+                .collect(Collectors.toMap(
+                        r -> r.getRound().getId(),
+                        r -> r,
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+
         boolean leader = team.getLeader() != null && team.getLeader().getId().equals(currentUserId);
         boolean teamCanSubmit = team.getStatus() == TeamStatus.REGISTERED
                 || team.getStatus() == TeamStatus.COMPETING
@@ -572,6 +588,7 @@ public class TeamServiceImpl implements TeamService {
                 .map(round -> toEventCompetitionRoundResponse(
                         round,
                         submissionByRoundId.get(round.getId()),
+                        rankingByRoundId.get(round.getId()),
                         leader && teamCanSubmit
                 ))
                 .toList();
@@ -630,6 +647,7 @@ public class TeamServiceImpl implements TeamService {
     private EventCompetitionRoundResponse toEventCompetitionRoundResponse(
             Round round,
             Submission submission,
+            Ranking ranking,
             boolean participantCanSubmit
     ) {
         boolean open = round.getStatus() == RoundStatus.OPEN;
@@ -637,6 +655,12 @@ public class TeamServiceImpl implements TeamService {
         long linkCount = submission == null || submission.getSubmissionLinks() == null
                 ? 0L
                 : submission.getSubmissionLinks().size();
+
+        boolean advancementConfirmed = round.getAdvancementConfirmedAt() != null;
+        boolean advanced = advancementConfirmed
+                ? (ranking != null && ranking.hasAdvanced()) : null;
+        boolean eliminated = advancementConfirmed && !Boolean.TRUE.equals(advanced);
+        boolean canAccessRound = !eliminated || submission != null;
 
         return new EventCompetitionRoundResponse(
                 round.getId(),
@@ -650,7 +674,16 @@ public class TeamServiceImpl implements TeamService {
                 round.getSubmissionLockedAt(),
                 open,
                 locked,
-                participantCanSubmit && open && !locked,
+                participantCanSubmit && open && !locked && canAccessRound,
+                canAccessRound,
+                advancementConfirmed,
+                round.getAdvancementConfirmedAt(),
+                advanced,
+                eliminated,
+                ranking == null || ranking.getAdvanceReason() == null
+                        ? null : ranking.getAdvanceReason().name(),
+                ranking == null ? null : ranking.getRankPosition(),
+                ranking == null ? null : ranking.getTotalScore(),
                 submission == null ? null : submission.getId(),
                 submission == null ? null : submission.getStatus().name(),
                 submission == null ? null : submission.getSubmissionNumber(),
