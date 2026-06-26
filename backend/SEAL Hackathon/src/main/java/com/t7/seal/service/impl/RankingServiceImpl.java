@@ -2,10 +2,15 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.entities.Ranking;
 import com.t7.seal.repository.RankingRepository;
+import com.t7.seal.request.results.PublishResultsRequest;
+import com.t7.seal.response.results.PublishResultsResponse;
+import com.t7.seal.response.results.RankingRecalculationResponse;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.results.TeamRankingHistoryResponse;
+import com.t7.seal.response.submission.TeamDetailedScoreResponse;
 import com.t7.seal.service.RankingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +30,41 @@ public class RankingServiceImpl implements RankingService {
                 .stream()
                 .map(this::toRankingResponse)
                 .toList();
+    }
+
+    @Override
+    public List<RankingResponse> getCoordinatorRankings(UUID eventId, UUID trackId, UUID roundId, Authentication authentication) {
+        return List.of();
+    }
+
+    @Override
+    public RankingRecalculationResponse calculateRoundRankings(UUID roundId, UUID trackId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public PublishResultsResponse publishEventResults(UUID eventId, PublishResultsRequest request, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public PublishResultsResponse publishRoundResults(UUID roundId, PublishResultsRequest request, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public List<TeamDetailedScoreResponse> getPublishedTeamScores(UUID teamId, Authentication authentication) {
+        return List.of();
+    }
+
+    @Override
+    public TeamDetailedScoreResponse getPublishedTeamRoundScore(UUID teamId, UUID roundId, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public TeamDetailedScoreResponse getPublishedSubmissionScore(UUID submissionId, Authentication authentication) {
+        return null;
     }
 
     @Transactional(readOnly = true)
