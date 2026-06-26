@@ -17,6 +17,7 @@ import {
   JudgeSubmissionDetailPage,
   JudgeAssignedSubmissionPage,
 } from "@/features/judge";
+
 import { JudgeScoreSheetPage } from "@/features/grading/pages/JudgeScoreSheetPage";
 
 import {
@@ -63,6 +64,13 @@ import {
   CoordinatorEventsPage,
   CoordinatorAnnouncementPage,
 } from "@/features/coordinator";
+
+import {
+  CoordinatorEventGradingProgressPage,
+  CoordinatorRoundGradingProgressPage,
+  CoordinatorJudgeAssignmentProgressPage,
+  GradingProgressRedirectPage,
+} from "@/features/grading-progress";
 
 
 import {
@@ -179,6 +187,22 @@ export const router = createBrowserRouter([
       {
         path: "events/:eventId/advancement",
         element: <RoundAdvancementPage />,
+      },
+      {
+        path: "events/:eventId/grading-progress",
+        element: <CoordinatorEventGradingProgressPage />,
+      },
+      {
+        path: "grading-progress",
+        element: <GradingProgressRedirectPage />,
+      },
+      {
+        path: "rounds/:roundId/grading-progress",
+        element: <CoordinatorRoundGradingProgressPage />,
+      },
+      {
+        path: "judge-assignments/:assignmentId/progress",
+        element: <CoordinatorJudgeAssignmentProgressPage />,
       },
       { path: "events/:eventId/view", element: <EventDetailPage /> },
       {

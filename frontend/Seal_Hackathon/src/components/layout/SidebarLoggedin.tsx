@@ -21,8 +21,17 @@ export function SidebarLoggedin({
   const logoutMutation = useLogoutMutation();
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
+  const isGradingProgressPage =
+    location.pathname.includes("/grading-progress") ||
+    location.pathname.includes("/judge-assignments/");
+
   const isActive = (path: string, end?: boolean) => {
     if (end) return location.pathname === path;
+
+    if (path === "/coordinator/events" && isGradingProgressPage) {
+      return false;
+    }
+
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
@@ -49,7 +58,11 @@ export function SidebarLoggedin({
 
               <div className="flex flex-col gap-1">
                 {section.items.map((item) => {
-                  const active = isActive(item.path, item.end);
+                  let active = isActive(item.path, item.end);
+
+                  if (item.path === "/coordinator/grading-progress" && isGradingProgressPage) {
+                    active = true;
+                  }
 
                   return (
                     <button

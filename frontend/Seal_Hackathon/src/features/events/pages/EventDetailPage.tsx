@@ -5,6 +5,7 @@ import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import LoginIcon from "@mui/icons-material/Login";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import { CircularProgress } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { teamApi } from "@/api/team.api";
@@ -240,6 +241,17 @@ export function EventDetailPage() {
                     View Results
                   </button>
                 </>
+              )}
+
+              {userRole === "COORDINATOR" && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/coordinator/events/${event.id}/grading-progress`)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-100 transition-all hover:bg-indigo-600 active:scale-95 dark:shadow-none"
+                >
+                  <AssessmentOutlinedIcon style={{ fontSize: 16 }} />
+                  View Grading Progress
+                </button>
               )}
             </div>
           </section>
