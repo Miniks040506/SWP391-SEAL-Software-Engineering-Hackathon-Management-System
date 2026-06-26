@@ -7,6 +7,7 @@ import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.EventAnnouncementRepository;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RankingRepository;
+import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.request.results.PublishResultsRequest;
 import com.t7.seal.response.results.PublishResultsResponse;
 import com.t7.seal.response.results.RankingRecalculationResponse;
@@ -38,6 +39,7 @@ public class RankingServiceImpl implements RankingService {
     private final RankingRepository rankingRepository;
     private final HackathonEventRepository eventRepository;
     private final EventAnnouncementRepository eventAnnouncementRepository;
+    private final RoundRepository roundRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -72,6 +74,7 @@ public class RankingServiceImpl implements RankingService {
     }
 
     @Override
+    @Transactional
     public PublishResultsResponse publishEventResults(
             UUID eventId,
             PublishResultsRequest request,
@@ -119,13 +122,52 @@ public class RankingServiceImpl implements RankingService {
         );
     }
 
+    @Transactional
     @Override
-    public PublishResultsResponse publishRoundResults(
-            UUID roundId,
-            PublishResultsRequest request,
-            Authentication authentication
-    ) {
-        return null;
+    public PublishResultsResponse publishRoundResults(UUID roundId, PublishResultsRequest request, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+
+        if (round.getGradingLockedAt() == null) {
+            throw new ConflictException("Grading must be locked before publishing round results.");
+        }
+
+        List<Ranking> rankings = rankingRepository.findByRoundIdAndTrackIdWithDetails(roundId, null);
+        if (rankings.isEmpty()) {
+            throw new ConflictException("Cannot publish round results before rankings are calculated.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        round.publishResults(now);
+        roundRepository.save(round);
+
+        UUID announcementId = createResultAnnouncement(round.getEvent(), round, actor, request, now);
+        int notifiedCount = sendResultNotifications(round.getEvent(), round, rankings, actor, request);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.RESULT_PUBLISHED,
+                "rounds",
+                round.getId(),
+                null,
+                Map.of(
+                        "eventId", round.getEvent().getId().toString(),
+                        "roundId", round.getId().toString(),
+                        "publishedAt", now.toString(),
+                        "rankingCount", rankings.size(),
+                        "scope", "ROUND"
+                ),
+                null
+        );
+
+        return new PublishResultsResponse(
+                round.getEvent().getId(),
+                round.getId(),
+                now,
+                announcementId,
+                notifiedCount
+        );
     }
 
     @Override
@@ -263,7 +305,7 @@ public class RankingServiceImpl implements RankingService {
             );
             count++;
         }
-        
+
         return count;
     }
 
