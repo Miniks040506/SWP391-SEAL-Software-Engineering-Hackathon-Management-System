@@ -1,13 +1,12 @@
 package com.t7.seal.controller;
 
-
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.results.PublishResultsRequest;
 import com.t7.seal.response.results.PublishResultsResponse;
 import com.t7.seal.response.results.RankingRecalculationResponse;
 import com.t7.seal.response.results.RankingResponse;
-import com.t7.seal.service.RankingService;
 import jakarta.validation.Valid;
+import com.t7.seal.service.RankingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,8 +30,10 @@ public class ResultRankingController {
             @RequestParam(required = false) UUID trackId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService.calculateRoundRankings(roundId, trackId, authentication));
     }
+
+
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @PostMapping("/events/{eventId}/results/publish")
@@ -41,7 +42,7 @@ public class ResultRankingController {
             @Valid @RequestBody(required = false) PublishResultsRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService.publishEventResults(eventId, request, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
@@ -51,7 +52,7 @@ public class ResultRankingController {
             @Valid @RequestBody(required = false) PublishResultsRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService.publishRoundResults(roundId, request, authentication));
     }
 
     @GetMapping("/rounds/{roundId}/rankings")
@@ -106,7 +107,7 @@ public class ResultRankingController {
             @RequestParam(required = false) UUID trackId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService.getCoordinatorRankings(eventId, trackId, roundId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
@@ -116,6 +117,6 @@ public class ResultRankingController {
             @RequestParam(required = false) UUID trackId,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(rankingService.getCoordinatorRankings(null, trackId, roundId, authentication));
     }
 }
