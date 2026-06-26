@@ -44,32 +44,54 @@ public class RankingServiceImpl implements RankingService {
     }
 
     @Override
-    public RankingRecalculationResponse calculateRoundRankings(UUID roundId, UUID trackId, Authentication authentication) {
+    public RankingRecalculationResponse calculateRoundRankings(
+            UUID roundId,
+            UUID trackId,
+            Authentication authentication
+    ) {
         return null;
     }
 
     @Override
-    public PublishResultsResponse publishEventResults(UUID eventId, PublishResultsRequest request, Authentication authentication) {
+    public PublishResultsResponse publishEventResults(
+            UUID eventId,
+            PublishResultsRequest request,
+            Authentication authentication
+    ) {
         return null;
     }
 
     @Override
-    public PublishResultsResponse publishRoundResults(UUID roundId, PublishResultsRequest request, Authentication authentication) {
+    public PublishResultsResponse publishRoundResults(
+            UUID roundId,
+            PublishResultsRequest request,
+            Authentication authentication
+    ) {
         return null;
     }
 
     @Override
-    public List<TeamDetailedScoreResponse> getPublishedTeamScores(UUID teamId, Authentication authentication) {
+    public List<TeamDetailedScoreResponse> getPublishedTeamScores(
+            UUID teamId,
+            Authentication authentication
+    ) {
         return List.of();
     }
 
     @Override
-    public TeamDetailedScoreResponse getPublishedTeamRoundScore(UUID teamId, UUID roundId, Authentication authentication) {
+    public TeamDetailedScoreResponse getPublishedTeamRoundScore(
+            UUID teamId,
+            UUID roundId,
+            Authentication authentication
+    ) {
         return null;
     }
 
     @Override
-    public TeamDetailedScoreResponse getPublishedSubmissionScore(UUID submissionId, Authentication authentication) {
+    public TeamDetailedScoreResponse getPublishedSubmissionScore(
+            UUID submissionId,
+            Authentication authentication
+    ) {
         return null;
     }
 
