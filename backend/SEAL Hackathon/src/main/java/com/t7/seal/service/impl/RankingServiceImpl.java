@@ -489,7 +489,77 @@ public class RankingServiceImpl implements RankingService {
             List<Score> scores,
             Set<UUID> activeCriteriaIds
     ) {
-        return null;
+        if (scores == null || scores.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Map<UUID, List<Score>> scoresByJudge = scores.stream()
+                .filter(score -> score.getJudge() != null)
+                .collect(Collectors.groupingBy(
+                        score -> score.getJudge().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList())
+                );
+
+        List<Double> judgeWeightedScores = new ArrayList<>();
+        Map<String, Map<String, Float>> breakdown = new LinkedHashMap<>();
+
+        for (Map.Entry<UUID, List<Score>> entry : scoresByJudge.entrySet()) {
+            Map<UUID, Score> byCriteria = entry.getValue().stream()
+                    .collect(Collectors.toMap(
+                            score -> score.getEventCriteria().getId(),
+                            Function.identity(),
+                            (a, b) -> b,
+                            LinkedHashMap::new));
+
+            if (!byCriteria.keySet().containsAll(activeCriteriaIds)) {
+                // Skip incomplete final sheets.
+                // They should not happen when final-submit validation is used,
+                // but this keeps ranking calculation safe with old seed/test data.
+                continue;
+            }
+
+            double weightedSum = 0.0;
+            double weightSum = 0.0;
+            Map<String, Float> judgeBreakdown = new LinkedHashMap<>();
+
+            for (UUID criteriaId : activeCriteriaIds) {
+                Score score = byCriteria.get(criteriaId);
+                EventCriteria criterion = score.getEventCriteria();
+
+                double weight = criterion.getEffectiveWeight() == null
+                        ? 1.0 : criterion.getEffectiveWeight();
+
+                weightedSum += score.getValue() * weight;
+                weightSum += weight;
+
+                judgeBreakdown.put(criteriaId.toString(), score.getValue());
+            }
+
+            if (weightSum > 0) {
+                judgeWeightedScores.add(weightedSum / weightSum);
+                breakdown.put(entry.getKey().toString(), judgeBreakdown);
+            }
+        }
+
+        if (judgeWeightedScores.isEmpty()) {
+            return Optional.empty();
+        }
+
+        double totalScore = judgeWeightedScores.stream()
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
+
+        Track track = submission.getTeam().getTrack();
+        
+        return Optional.of(new RankingDraft(
+                submission,
+                track,
+                round2(totalScore),
+                judgeWeightedScores.size(),
+                breakdown
+        ));
     }
 
     private TeamDetailedScoreResponse toTeamDetailedScoreResponse(Ranking ranking) {
