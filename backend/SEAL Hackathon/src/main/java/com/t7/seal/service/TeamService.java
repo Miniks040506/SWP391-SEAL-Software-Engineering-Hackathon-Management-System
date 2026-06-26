@@ -58,4 +58,6 @@ public interface TeamService {
     EventCompetitionResponse getMyEventCompetition(UUID eventId, Authentication authentication);
 
     List<EventCompetitionSummaryResponse> getMyActiveCompetitions(Authentication authentication);
+
+    TeamAdvancementStatusResponse getMyTeamAdvancementStatus(UUID teamId, UUID roundId, Authentication authentication);
 }

@@ -16,10 +16,19 @@ public record EventCompetitionRoundResponse(
         Boolean open,
         Boolean submissionLocked,
         Boolean canSubmit,
+        Boolean canAccessRound,
+        Boolean advancementConfirmed,
+        LocalDateTime advancementConfirmedAt,
+        Boolean advanced,
+        Boolean eliminated,
+        String advanceReason,
+        Integer rankPosition,
+        Double totalScore,
         UUID submissionId,
         String submissionStatus,
         Integer submissionNumber,
         LocalDateTime submittedAt,
         LocalDateTime updatedAt,
         Long linkCount
-) {}
+) {
+}
