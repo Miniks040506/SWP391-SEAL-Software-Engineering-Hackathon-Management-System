@@ -1,6 +1,6 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.entities.Ranking;
+import com.t7.seal.entities.*;
 import com.t7.seal.repository.RankingRepository;
 import com.t7.seal.request.results.PublishResultsRequest;
 import com.t7.seal.response.results.PublishResultsResponse;
@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -82,21 +83,36 @@ public class RankingServiceImpl implements RankingService {
     }
 
     //HELPERS
-    RankingResponse toRankingResponse(Ranking ranking) {
+    private RankingResponse toRankingResponse(Ranking ranking) {
+        Submission submission = ranking.getSubmission();
+        Team team = submission.getTeam();
+        Round round = ranking.getRound();
+        HackathonEvent event = round.getEvent();
+        Track track = ranking.getTrack();
+
         return new RankingResponse(
                 ranking.getId(),
-                ranking.getSubmission().getId(),
-                ranking.getSubmission().getTeam().getId(),
-                ranking.getSubmission().getTeam().getName(),
-                ranking.getRound().getId(),
-                ranking.getTrack().getId(),
+                event.getId(),
+                event.getName(),
+                submission.getId(),
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                round.getId(),
+                round.getName(),
+                track.getId(),
+                track.getName(),
                 ranking.getTotalScore(),
                 ranking.getRankPosition(),
-                ranking.getIsAdvanced()
+                ranking.getIsAdvanced(),
+                ranking.getJudgeCount(),
+                ranking.getScoreBreakdown(),
+                ranking.getCalculatedAt(),
+                isRankingPublished(ranking)
         );
     }
 
-    TeamRankingHistoryResponse toTeamRankingHistoryResponse(Ranking ranking) {
+    private TeamRankingHistoryResponse toTeamRankingHistoryResponse(Ranking ranking) {
         return new TeamRankingHistoryResponse(
                 ranking.getRound().getId(),
                 ranking.getRound().getName(),
@@ -106,5 +122,16 @@ public class RankingServiceImpl implements RankingService {
                 ranking.getRankPosition(),
                 ranking.getIsAdvanced()
         );
+    }
+
+    private boolean isRankingPublished(Ranking ranking) {
+        return publishedAt(ranking) != null;
+    }
+
+    private LocalDateTime publishedAt(Ranking ranking) {
+        if (ranking.getRound().getResultPublishedAt() != null) {
+            return ranking.getRound().getResultPublishedAt();
+        }
+        return ranking.getRound().getEvent().getResultPublishedAt();
     }
 }
