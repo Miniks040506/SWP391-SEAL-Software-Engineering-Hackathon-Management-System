@@ -1119,16 +1119,31 @@ public class RoundServiceImpl implements RoundService {
     }
 
     private RankingResponse toRankingResponse(Ranking ranking) {
+        Submission submission = ranking.getSubmission();
+        Team team = submission.getTeam();
+        Round round = ranking.getRound();
+        HackathonEvent event = round.getEvent();
+        Track track = ranking.getTrack();
+
         return new RankingResponse(
                 ranking.getId(),
-                ranking.getSubmission().getId(),
-                ranking.getSubmission().getTeam().getId(),
-                ranking.getSubmission().getTeam().getName(),
-                ranking.getRound().getId(),
-                ranking.getTrack().getId(),
+                event.getId(),
+                event.getName(),
+                submission.getId(),
+                team.getId(),
+                team.getName(),
+                team.getProjectTitle(),
+                round.getId(),
+                round.getName(),
+                track.getId(),
+                track.getName(),
                 ranking.getTotalScore(),
                 ranking.getRankPosition(),
-                ranking.getIsAdvanced()
+                ranking.getIsAdvanced(),
+                ranking.getJudgeCount(),
+                ranking.getScoreBreakdown(),
+                ranking.getCalculatedAt(),
+                event.getResultPublishedAt() != null
         );
     }
 
