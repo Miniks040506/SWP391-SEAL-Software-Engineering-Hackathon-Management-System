@@ -622,12 +622,59 @@ public class TeamServiceImpl implements TeamService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public TeamAdvancementStatusResponse getMyTeamAdvancementStatus(UUID teamId, UUID roundId, Authentication authentication) {
+    public TeamAdvancementStatusResponse getMyTeamAdvancementStatus(
+            UUID teamId,
+            UUID roundId,
+            Authentication authentication
+    ) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+        Team team = teamRepository.findCoordinatorDetailById(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found."));
+
+        boolean coordinatorOrAdmin = currentUser.isAdmin() || currentUser.isCoordinator();
+        boolean activeMember = teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, currentUser.getId());
+
+        if (!coordinatorOrAdmin && !activeMember) {
+            throw new UnauthorizedException("You can only view advancement status for your own active team.");
+        }
+
+        if (team.getTrack() == null || team.getTrack().getEvent() == null) {
+            throw new ConflictException("Team is not registered to an event track.");
+        }
+
+        HackathonEvent event = team.getTrack().getEvent();
+        Round round = resolveAdvancementRound(event.getId(), team.getId(), roundId);
+
+        
         return null;
     }
 
     //HELPERS
+
+    private Round resolveAdvancementRound(UUID eventId, UUID teamId, UUID roundId) {
+        if (roundId != null) {
+            Round round = roundRepository.findById(roundId)
+                    .orElseThrow(() -> new NotFoundException("Round not found."));
+
+            if (!round.getEvent().getId().equals(eventId)) {
+                throw new BadRequestException("Round does not belong to this event.");
+            }
+            return round;
+        }
+
+        return rankingRepository.findTeamRankingsWithDetails(teamId)
+                .stream()
+                .findFirst()
+                .map(Ranking::getRound)
+                .orElseGet(() -> roundRepository.findByEventIdOrderByOrderIndexAsc(eventId)
+                        .stream()
+                        .filter(r -> r.getAdvancementConfirmedAt() != null)
+                        .reduce((first, second) -> second)
+                        .orElseThrow(() -> new NotFoundException("No advancement round found for this team."))
+                );
+    }
 
     private Team findMyCompetitionTeam(UUID eventId, UUID currentUserId) {
         return teamRepository.findActiveTeamByUserId(currentUserId)
