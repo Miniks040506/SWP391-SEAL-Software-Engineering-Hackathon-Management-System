@@ -1,6 +1,7 @@
 import { apiRequest } from './apiRequest';
 import { axiosClient } from './axiosClient';
 import type {
+  AdvancementCandidateRow,
   AdvancementPreviewResponse,
   ConfirmAdvancementRequest,
   AdvancementOverrideRequest,
@@ -17,7 +18,7 @@ function toUiPreview(
   response: BackendAdvancementPreviewResponse,
 ): AdvancementPreviewResponse {
   const firstRanking = response.allRankings[0];
-  const candidates = response.decisions.map((decision) => {
+  const candidates: AdvancementCandidateRow[] = response.decisions.map((decision) => {
     const ranking = response.allRankings.find(
       (item) => item.teamId === decision.teamId,
     );
