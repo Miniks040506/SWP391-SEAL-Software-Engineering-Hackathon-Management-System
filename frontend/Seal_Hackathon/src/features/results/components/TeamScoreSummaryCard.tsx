@@ -1,18 +1,18 @@
 import { Card, CardContent, Typography, Chip, Box } from "@mui/material";
 import type { TeamDetailedScoreResponse } from "@/types/ranking.types";
 
-export type ScoreSummaryCardProps = Pick<
+export type TeamScoreSummaryCardProps = Pick<
   TeamDetailedScoreResponse,
   "totalScore" | "rankPosition" | "trackName" | "roundName" | "advanced"
 >;
 
-export const ScoreSummaryCard = ({
+export const TeamScoreSummaryCard = ({
   totalScore,
   rankPosition,
   trackName,
   roundName,
   advanced,
-}: ScoreSummaryCardProps) => {
+}: TeamScoreSummaryCardProps) => {
   return (
     <Card variant="outlined">
       <CardContent>

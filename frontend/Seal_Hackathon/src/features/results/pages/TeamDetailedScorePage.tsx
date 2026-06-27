@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { teamApi } from "@/api/team.api";
 import { JudgeAnonymityNotice } from "../components/JudgeAnonymityNotice";
-import { ScoreSummaryCard } from "../components/ScoreSummaryCard";
+import { TeamScoreSummaryCard } from "../components/TeamScoreSummaryCard";
 import { CriterionScoreBreakdownTable } from "../components/CriterionScoreBreakdownTable";
 
 export const TeamDetailedScorePage = () => {
@@ -79,8 +79,8 @@ export const TeamDetailedScorePage = () => {
       {/* 2. JudgeAnonymityNotice */}
       <JudgeAnonymityNotice />
 
-      {/* 3. ScoreSummaryCard */}
-      <ScoreSummaryCard
+      {/* 3. TeamScoreSummaryCard */}
+      <TeamScoreSummaryCard
         totalScore={scoreData.totalScore}
         rankPosition={scoreData.rankPosition}
         trackName={scoreData.trackName}
