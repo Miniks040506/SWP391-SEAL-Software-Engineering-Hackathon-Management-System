@@ -492,8 +492,15 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
             throw new UnauthorizedException("Judge account is not ACTIVE.");
         }
 
-        return judgeRepository.findByUserId(user.getId())
+        Judge judge = judgeRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new UnauthorizedException("Judge profile was not found."));
+
+        if (Boolean.TRUE.equals(judge.getIsTemporary())
+                && !judge.isTemporaryActive(LocalDateTime.now())) {
+            throw new UnauthorizedException("Temporary judge account has expired.");
+        }
+
+        return judge;
     }
 
 
