@@ -528,14 +528,24 @@ public class CalibrationServiceImpl implements CalibrationService {
     }
 
     private void validateBenchmarkCriteria(UUID eventId, Submission sample, Map<String, Float> benchmarkScores) {
+        List<EventCriteria> activeCriteria = activeCriteriaForEventAndSampleRound(eventId, sample);
+        if (activeCriteria.isEmpty()) {
+            throw new BadRequestException("At least one active criterion is required for calibration.");
+        }
         if (benchmarkScores == null || benchmarkScores.isEmpty()) {
-            return;
+            throw new BadRequestException("Benchmark scores are required for all active criteria.");
         }
 
-        List<EventCriteria> activeCriteria = activeCriteriaForEventAndSampleRound(eventId, sample);
         Set<UUID> activeIds = activeCriteria.stream()
                 .map(EventCriteria::getId)
                 .collect(Collectors.toSet());
+        Set<UUID> benchmarkIds = benchmarkScores.keySet().stream()
+                .map(UUID::fromString)
+                .collect(Collectors.toSet());
+        if (!benchmarkIds.equals(activeIds)) {
+            throw new BadRequestException("Benchmark scores must include every active criterion exactly once.");
+        }
+
         Map<UUID, EventCriteria> byId = activeCriteria.stream()
                 .collect(Collectors.toMap(
                         EventCriteria::getId,
