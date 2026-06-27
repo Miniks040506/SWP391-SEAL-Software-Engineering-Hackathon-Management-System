@@ -1,14 +1,71 @@
+import { apiRequest } from './apiRequest';
 import { axiosClient } from './axiosClient';
 import type {
   AdvancementPreviewResponse,
   ConfirmAdvancementRequest,
   AdvancementOverrideRequest,
+  SuggestedAdvancementStatus,
   TeamAdvancementStatusResponse,
 } from '../types/advancement.types';
 import type {
+  AdvancementPreviewResponse as BackendAdvancementPreviewResponse,
   ConfirmAdvancementRequest as BackendConfirmAdvancementRequest,
   ConfirmAdvancementResponse as BackendConfirmAdvancementResponse,
 } from '../types/round.types';
+
+function toUiPreview(
+  response: BackendAdvancementPreviewResponse,
+): AdvancementPreviewResponse {
+  const firstRanking = response.allRankings[0];
+  const candidates = response.decisions.map((decision) => {
+    const ranking = response.allRankings.find(
+      (item) => item.teamId === decision.teamId,
+    );
+    const suggestedStatus: SuggestedAdvancementStatus = decision.suggestedAdvanced
+      ? decision.advanceReason === 'WILDCARD'
+        ? 'WILDCARD'
+        : 'ADVANCED'
+      : 'ELIMINATED';
+
+    return {
+      teamId: decision.teamId,
+      teamName: decision.teamName,
+      projectTitle: ranking?.projectTitle,
+      trackId: decision.trackId,
+      trackName: decision.trackName,
+      roundId: response.roundId,
+      roundName: ranking?.roundName ?? '',
+      rankingId: ranking?.id,
+      rankPosition: decision.rankPosition,
+      totalScore: decision.totalScore,
+      ruleType: decision.advanceReason,
+      ruleMatched: decision.suggestedAdvanced,
+      suggestedStatus,
+      finalStatus: decision.finalAdvanced ? 'ADVANCED' : 'ELIMINATED',
+      overrideReason: decision.overrideReason,
+    };
+  });
+
+  return {
+    roundId: response.roundId,
+    roundName: firstRanking?.roundName ?? '',
+    eventId: firstRanking?.eventId ?? '',
+    eventName: firstRanking?.eventName ?? '',
+    gradingLocked: !response.warnings.some((warning) => warning.includes('not locked')),
+    rankingCalculated: response.allRankings.length > 0,
+    advancementConfirmed: response.decisions.some(
+      (decision) => decision.advanceReason != null,
+    ),
+    advancedCount: candidates.filter(
+      (candidate) => candidate.suggestedStatus === 'ADVANCED'
+        || candidate.suggestedStatus === 'WILDCARD',
+    ).length,
+    eliminatedCount: candidates.filter(
+      (candidate) => candidate.suggestedStatus === 'ELIMINATED',
+    ).length,
+    candidates,
+  };
+}
 
 function toBackendConfirmRequest(
   payload: ConfirmAdvancementRequest,
@@ -24,11 +81,21 @@ function toBackendConfirmRequest(
 }
 
 export const advancementApi = {
-  previewRoundAdvancement: (roundId: string) =>
-    axiosClient.get<AdvancementPreviewResponse>(`/rounds/${roundId}/advancement/suggestions`),
+  previewRoundAdvancement: async (roundId: string) => ({
+    data: toUiPreview(
+      await apiRequest.post<BackendAdvancementPreviewResponse>(
+        `/rounds/${roundId}/advancement/suggestions`,
+      ),
+    ),
+  }),
 
-  previewRoundAdvanceRules: (roundId: string) =>
-    axiosClient.post<AdvancementPreviewResponse>(`/rounds/${roundId}/advance-rules/preview`),
+  previewRoundAdvanceRules: async (roundId: string) => ({
+    data: toUiPreview(
+      await apiRequest.post<BackendAdvancementPreviewResponse>(
+        `/rounds/${roundId}/advance-rules/preview`,
+      ),
+    ),
+  }),
 
   confirmRoundAdvancement: (roundId: string, payload: ConfirmAdvancementRequest) =>
     axiosClient.post<BackendConfirmAdvancementResponse>(
