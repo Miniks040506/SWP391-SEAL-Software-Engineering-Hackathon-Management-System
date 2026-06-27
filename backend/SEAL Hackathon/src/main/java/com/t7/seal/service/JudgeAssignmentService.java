@@ -5,6 +5,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.grading.AssignedSubmissionResponse;
 import com.t7.seal.response.grading.GradingSubmissionDetailResponse;
 import com.t7.seal.response.grading.JudgeSubmissionAssignmentResponse;
+import com.t7.seal.response.grading.JudgeSubmissionQueueSummaryResponse;
 import com.t7.seal.response.round.JudgeAssignmentResponse;
 import org.springframework.security.core.Authentication;
 
@@ -28,6 +29,11 @@ public interface JudgeAssignmentService {
             String status,
             int page,
             int size,
+            Authentication authentication
+    );
+
+    JudgeSubmissionQueueSummaryResponse getMySubmissionQueueSummary(
+            UUID roundId,
             Authentication authentication
     );
 

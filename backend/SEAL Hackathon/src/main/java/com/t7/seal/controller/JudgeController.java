@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.grading.GradingSubmissionDetailResponse;
 import com.t7.seal.response.grading.JudgeSubmissionAssignmentResponse;
+import com.t7.seal.response.grading.JudgeSubmissionQueueSummaryResponse;
 import com.t7.seal.response.round.JudgeAssignmentResponse;
 import com.t7.seal.service.JudgeAssignmentService;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,31 @@ public class JudgeController {
             Authentication authentication
     ) {
         return ResponseEntity.ok(judgeAssignmentService.getMySubmissionQueue(roundId, status, page, size, authentication));
+    }
+
+    @PreAuthorize("hasRole('JUDGE')")
+    @GetMapping({
+            "/judge/submissions/summary",
+            "/judges/me/submissions/summary"
+    })
+    public ResponseEntity<JudgeSubmissionQueueSummaryResponse> getMySubmissionSummary(
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(judgeAssignmentService
+                .getMySubmissionQueueSummary(null, authentication));
+    }
+
+    @PreAuthorize("hasRole('JUDGE')")
+    @GetMapping({
+            "/judge/rounds/{roundId}/submissions/summary",
+            "/judges/me/rounds/{roundId}/submissions/summary"
+    })
+    public ResponseEntity<JudgeSubmissionQueueSummaryResponse> getMyRoundSubmissionSummary(
+            @PathVariable UUID roundId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(judgeAssignmentService
+                .getMySubmissionQueueSummary(roundId, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
