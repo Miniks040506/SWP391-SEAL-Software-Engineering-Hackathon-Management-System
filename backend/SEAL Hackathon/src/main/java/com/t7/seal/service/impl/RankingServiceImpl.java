@@ -222,6 +222,16 @@ public class RankingServiceImpl implements RankingService {
         HackathonEvent event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
+        if (event.getResultPublishedAt() != null) {
+            return new PublishResultsResponse(
+                    event.getId(),
+                    null,
+                    event.getResultPublishedAt(),
+                    null,
+                    0
+            );
+        }
+
         ensureEventCanPublish(event);
 
         List<Ranking> rankings = rankingRepository.findByEventRoundTrackWithDetails(eventId, null, null);
@@ -269,6 +279,16 @@ public class RankingServiceImpl implements RankingService {
         User actor = currentUserService.getCurrentUser(authentication);
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+
+        if (round.getResultPublishedAt() != null) {
+            return new PublishResultsResponse(
+                    round.getEvent().getId(),
+                    round.getId(),
+                    round.getResultPublishedAt(),
+                    null,
+                    0
+            );
+        }
 
         if (round.getGradingLockedAt() == null) {
             throw new ConflictException("Grading must be locked before publishing round results.");
