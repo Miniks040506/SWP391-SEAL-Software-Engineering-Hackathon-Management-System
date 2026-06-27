@@ -15,6 +15,7 @@ import com.t7.seal.request.team.ToggleJoinCodeRequest;
 import com.t7.seal.request.team.TransferLeaderRequest;
 import com.t7.seal.request.team.UpdateTeamRequest;
 import com.t7.seal.request.track.RegisterTeamTrackRequest;
+import com.t7.seal.response.round.RoundDetailResponse;
 import com.t7.seal.response.team.*;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.CurrentUserService;
@@ -28,9 +29,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.swing.text.html.Option;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +53,7 @@ public class TeamServiceImpl implements TeamService {
     private final RoundRepository roundRepository;
     private final SubmissionRepository submissionRepository;
     private final AuditLogRepository auditLogRepository;
+    private final RankingRepository rankingRepository;
 
     private final CurrentUserService currentUserService;
     private final EmailService emailService;
@@ -563,6 +567,19 @@ public class TeamServiceImpl implements TeamService {
             }
         }
 
+        Map<UUID, Ranking> rankingByRoundId = rankingRepository
+                .findTeamRankingsWithDetails(team.getId())
+                .stream()
+                .filter(r -> r.getRound() != null
+                        && r.getRound().getEvent() != null
+                        && r.getRound().getEvent().getId() != null)
+                .collect(Collectors.toMap(
+                        r -> r.getRound().getId(),
+                        r -> r,
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+
         boolean leader = team.getLeader() != null && team.getLeader().getId().equals(currentUserId);
         boolean teamCanSubmit = team.getStatus() == TeamStatus.REGISTERED
                 || team.getStatus() == TeamStatus.COMPETING
@@ -572,6 +589,7 @@ public class TeamServiceImpl implements TeamService {
                 .map(round -> toEventCompetitionRoundResponse(
                         round,
                         submissionByRoundId.get(round.getId()),
+                        rankingByRoundId.get(round.getId()),
                         leader && teamCanSubmit
                 ))
                 .toList();
@@ -605,12 +623,112 @@ public class TeamServiceImpl implements TeamService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public TeamAdvancementStatusResponse getMyTeamAdvancementStatus(UUID teamId, UUID roundId, Authentication authentication) {
-        return null;
+    public TeamAdvancementStatusResponse getMyTeamAdvancementStatus(
+            UUID teamId,
+            UUID roundId,
+            Authentication authentication
+    ) {
+        User currentUser = currentUserService.getCurrentUser(authentication);
+        Team team = teamRepository.findCoordinatorDetailById(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found."));
+
+        boolean coordinatorOrAdmin = currentUser.isAdmin() || currentUser.isCoordinator();
+        boolean activeMember = teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, currentUser.getId());
+
+        if (!coordinatorOrAdmin && !activeMember) {
+            throw new UnauthorizedException("You can only view advancement status for your own active team.");
+        }
+
+        if (team.getTrack() == null || team.getTrack().getEvent() == null) {
+            throw new ConflictException("Team is not registered to an event track.");
+        }
+
+        HackathonEvent event = team.getTrack().getEvent();
+        Round round = resolveAdvancementRound(event.getId(), team.getId(), roundId);
+        Optional<Ranking> mayBeRanking = rankingRepository.findByRoundIdAndTeamIdWithDetails(round.getId(), team.getId());
+
+        boolean confirmed = round.getAdvancementConfirmedAt() != null;
+        boolean advanced = confirmed ? mayBeRanking.map(Ranking::hasAdvanced).orElse(false) : null;
+        boolean eliminated = confirmed && !Boolean.TRUE.equals(advanced);
+
+        Round nextRound = findNextRound(event.getId(), round.getOrderIndex()).orElse(null);
+        boolean canAccessNextRound = Boolean.TRUE.equals(advanced)
+                && nextRound != null
+                && nextRound.getStatus() == RoundStatus.OPEN;
+
+        String message;
+        if (!confirmed) {
+            message = "Advancement is waiting for coordinator confirmation.";
+        } else if (Boolean.TRUE.equals(advanced)) {
+            message = (nextRound == null)
+                    ? "Your team advanced. This was the final configured round."
+                    : "Your team advanced to the next round.";
+        } else {
+            message = "Your team did not advance to the next round.";
+        }
+
+        return new TeamAdvancementStatusResponse(
+                event.getId(),
+                event.getName(),
+                teamId,
+                team.getName(),
+                team.getStatus().name(),
+                team.getTrack().getId(),
+                team.getTrack().getName(),
+                roundId,
+                round.getName(),
+                confirmed,
+                round.getAdvancementConfirmedAt(),
+                advanced,
+                eliminated,
+                mayBeRanking.map(r -> r.getAdvanceReason() == null
+                        ? null : r.getAdvanceReason().name()).orElse(null),
+                mayBeRanking.map(Ranking::getRankPosition).orElse(null),
+                mayBeRanking.map(Ranking::getTotalScore).orElse(null),
+                nextRound == null ? null : nextRound.getId(),
+                nextRound == null ? null : nextRound.getName(),
+                nextRound == null ? null : nextRound.getStatus().name(),
+                canAccessNextRound,
+                message
+        );
     }
 
     //HELPERS
+
+    private Optional<Round> findNextRound(UUID eventId, Integer currentOrderIndex) {
+        if (currentOrderIndex == null) {
+            return Optional.empty();
+        }
+        return roundRepository.findByEventIdOrderByOrderIndexAsc(eventId)
+                .stream()
+                .filter(r -> r.getOrderIndex() != null && r.getOrderIndex() > currentOrderIndex)
+                .min(Comparator.comparing(Round::getOrderIndex));
+    }
+
+    private Round resolveAdvancementRound(UUID eventId, UUID teamId, UUID roundId) {
+        if (roundId != null) {
+            Round round = roundRepository.findById(roundId)
+                    .orElseThrow(() -> new NotFoundException("Round not found."));
+
+            if (!round.getEvent().getId().equals(eventId)) {
+                throw new BadRequestException("Round does not belong to this event.");
+            }
+            return round;
+        }
+
+        return rankingRepository.findTeamRankingsWithDetails(teamId)
+                .stream()
+                .findFirst()
+                .map(Ranking::getRound)
+                .orElseGet(() -> roundRepository.findByEventIdOrderByOrderIndexAsc(eventId)
+                        .stream()
+                        .filter(r -> r.getAdvancementConfirmedAt() != null)
+                        .reduce((first, second) -> second)
+                        .orElseThrow(() -> new NotFoundException("No advancement round found for this team."))
+                );
+    }
 
     private Team findMyCompetitionTeam(UUID eventId, UUID currentUserId) {
         return teamRepository.findActiveTeamByUserId(currentUserId)
@@ -630,6 +748,7 @@ public class TeamServiceImpl implements TeamService {
     private EventCompetitionRoundResponse toEventCompetitionRoundResponse(
             Round round,
             Submission submission,
+            Ranking ranking,
             boolean participantCanSubmit
     ) {
         boolean open = round.getStatus() == RoundStatus.OPEN;
@@ -637,6 +756,12 @@ public class TeamServiceImpl implements TeamService {
         long linkCount = submission == null || submission.getSubmissionLinks() == null
                 ? 0L
                 : submission.getSubmissionLinks().size();
+
+        boolean advancementConfirmed = round.getAdvancementConfirmedAt() != null;
+        boolean advanced = advancementConfirmed
+                ? (ranking != null && ranking.hasAdvanced()) : null;
+        boolean eliminated = advancementConfirmed && !Boolean.TRUE.equals(advanced);
+        boolean canAccessRound = !eliminated || submission != null;
 
         return new EventCompetitionRoundResponse(
                 round.getId(),
@@ -650,7 +775,16 @@ public class TeamServiceImpl implements TeamService {
                 round.getSubmissionLockedAt(),
                 open,
                 locked,
-                participantCanSubmit && open && !locked,
+                participantCanSubmit && open && !locked && canAccessRound,
+                canAccessRound,
+                advancementConfirmed,
+                round.getAdvancementConfirmedAt(),
+                advanced,
+                eliminated,
+                ranking == null || ranking.getAdvanceReason() == null
+                        ? null : ranking.getAdvanceReason().name(),
+                ranking == null ? null : ranking.getRankPosition(),
+                ranking == null ? null : ranking.getTotalScore(),
                 submission == null ? null : submission.getId(),
                 submission == null ? null : submission.getStatus().name(),
                 submission == null ? null : submission.getSubmissionNumber(),

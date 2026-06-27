@@ -61,9 +61,8 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  // Handle 403 Forbidden specifically to meet the requirement: "If user is not assigned: Show 403-style error page"
   const isForbidden = (error as any)?.response?.status === 403;
-  
+
   if (isForbidden) {
     return (
       <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
@@ -84,10 +83,9 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  const isLocked = assignmentInfo?.roundSubmissionLocked ?? false;
+  const isLocked = assignmentInfo?.gradingLocked ?? false;
   const isFinalSubmitted = scoreSheet?.confirmed ?? false;
-  
-  // If assignmentInfo is missing (e.g., direct URL access), we assume it's ready and rely on backend API errors.
+
   const isNotReady = assignmentInfo
     ? assignmentInfo.submissionStatus !== "SUBMITTED" && assignmentInfo.submissionStatus !== "LOCKED"
     : false;
@@ -150,7 +148,6 @@ export const JudgeScoreSheetPage = () => {
       );
     } catch (err) {
       console.error("Failed to save draft:", err);
-      // TODO: show toast notification
     }
   });
 
@@ -166,7 +163,6 @@ export const JudgeScoreSheetPage = () => {
       );
     } catch (err) {
       console.error("Failed to submit scores:", err);
-      // TODO: show toast notification
     }
   });
 
@@ -186,7 +182,6 @@ export const JudgeScoreSheetPage = () => {
         )}
 
         <div className="flex flex-col items-start gap-8 lg:flex-row">
-          {/* Left Column (65%) */}
           <div className="flex w-full flex-col gap-6 lg:w-[65%]">
             <ScoreSheetHeader submission={submission} isLocked={isLocked} assignmentInfo={assignmentInfo} />
             {submission.note && (
@@ -218,7 +213,6 @@ export const JudgeScoreSheetPage = () => {
             </div>
           </div>
 
-          {/* Right Column (35%) */}
           <div className="w-full lg:sticky lg:top-8 lg:w-[35%]">
             <Card
               variant="outlined"
