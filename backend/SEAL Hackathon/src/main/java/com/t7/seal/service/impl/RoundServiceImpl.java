@@ -1092,12 +1092,16 @@ public class RoundServiceImpl implements RoundService {
         LinkedHashSet<Ranking> selected = new LinkedHashSet<>();
 
         for (AdvanceRule rule : rules) {
-            List<Ranking> scoped = sorted.stream()
+            Map<UUID, List<Ranking>> scopedByTrack = sorted.stream()
                     .filter(r -> rule.appliesToTrack(r.getTrack().getId()))
-                    .sorted(Comparator.comparing(Ranking::getRankPosition))
-                    .toList();
+                    .collect(Collectors.groupingBy(
+                            r -> r.getTrack().getId(),
+                            LinkedHashMap::new,
+                            Collectors.toList()
+                    ));
 
-            switch (rule.getRuleType()) {
+            for (List<Ranking> scoped : scopedByTrack.values()) {
+                switch (rule.getRuleType()) {
                 case TOP_N -> selected.addAll(scoped.stream()
                         .limit(Math.max(0, Math.round(rule.getValue())))
                         .toList());
