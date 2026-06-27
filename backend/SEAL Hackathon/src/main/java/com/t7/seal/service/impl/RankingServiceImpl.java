@@ -51,7 +51,7 @@ public class RankingServiceImpl implements RankingService {
     public List<RankingResponse> getRankings(UUID eventId, UUID trackId, UUID roundId) {
         return rankingRepository.getPublicRankings(eventId, trackId, roundId)
                 .stream()
-                .map(this::toRankingResponse)
+                .map(this::toPublicRankingResponse)
                 .toList();
     }
 
@@ -636,6 +636,14 @@ public class RankingServiceImpl implements RankingService {
 
 
     private RankingResponse toRankingResponse(Ranking ranking) {
+        return toRankingResponse(ranking, true);
+    }
+
+    private RankingResponse toPublicRankingResponse(Ranking ranking) {
+        return toRankingResponse(ranking, false);
+    }
+
+    private RankingResponse toRankingResponse(Ranking ranking, boolean includeScoreBreakdown) {
         Submission submission = ranking.getSubmission();
         Team team = submission.getTeam();
         Round round = ranking.getRound();
@@ -658,7 +666,7 @@ public class RankingServiceImpl implements RankingService {
                 ranking.getRankPosition(),
                 ranking.getIsAdvanced(),
                 ranking.getJudgeCount(),
-                ranking.getScoreBreakdown(),
+                includeScoreBreakdown ? ranking.getScoreBreakdown() : null,
                 ranking.getCalculatedAt(),
                 isRankingPublished(ranking)
         );
