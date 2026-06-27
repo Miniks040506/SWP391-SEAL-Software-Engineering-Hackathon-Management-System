@@ -855,10 +855,13 @@ public class RoundServiceImpl implements RoundService {
     private void assertAdvanceRuleEditable(Round round) {
         RegistrationStatus status = round.getEvent().getStatus();
 
-        if (status == RegistrationStatus.JUDGING
-                || status == RegistrationStatus.COMPLETED
+        if (status == RegistrationStatus.COMPLETED
                 || status == RegistrationStatus.CANCELLED) {
             throw new ConflictException("Advance rules cannot be edited in this status " + status + ".");
+        }
+
+        if (round.getGradingLockedAt() != null) {
+            throw new ConflictException("Advance rules cannot be edited after grading is locked.");
         }
 
         if (round.getAdvancementConfirmedAt() != null) {
