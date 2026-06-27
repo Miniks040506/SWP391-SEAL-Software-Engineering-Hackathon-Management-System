@@ -109,7 +109,7 @@ export function useJudgeDashboard() {
         description: "You must finish calibration before official grading is available.",
         priority: "High",
         actionLabel: "Start Calibration",
-        path: "/judge/calibration"
+        path: "/judge/calibrations"
       });
     }
 
@@ -120,7 +120,7 @@ export function useJudgeDashboard() {
         description: `${totalPending} submissions are waiting for your scorecards.`,
         priority: "High",
         actionLabel: "Start Grading",
-        path: "/judge/scoring"
+        path: "/judge/submissions"
       });
     }
 
@@ -167,8 +167,8 @@ export function useJudgeDashboard() {
   const gradingProgressPercent = totalScorecards === 0 ? 0 : Math.round((dashboard.currentGrading.completedSubmissions / totalScorecards) * 100);
 
   const goToEvents = () => navigate("/judge/events");
-  const goToScoring = () => navigate("/judge/scoring");
-  const goToCalibration = () => navigate("/judge/calibration");
+  const goToScoring = () => navigate("/judge/submissions");
+  const goToCalibration = () => navigate("/judge/calibrations");
   const goToPath = (path: string) => navigate(path);
 
   return {
