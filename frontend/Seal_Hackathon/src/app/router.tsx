@@ -54,6 +54,7 @@ import {
 } from "@/features/events";
 
 
+<<<<<<< HEAD
 
 import {
   CoordinatorRankingPage,
@@ -61,6 +62,10 @@ import {
   PublicEventLeaderboardPage,
   StandingsPage
 } from "@/features/ranking";
+=======
+import { LeaderboardPage } from "@/features/ranking";
+import { TeamDetailedScorePage } from "@/features/results/pages/TeamDetailedScorePage";
+>>>>>>> ac9c1c0be83e4880668118b1f821e8495df92b54
 
 
 import {
@@ -167,6 +172,10 @@ export const router = createBrowserRouter([
         path: "teams/:teamId/rounds/:roundId/submission",
         element: <SubmissionFormPage />,
       },
+      {
+        path: "teams/:teamId/rounds/:roundId/scores",
+        element: <TeamDetailedScorePage />,
+      },
       { path: "invitations", element: <MyInvitationsPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
     ],
@@ -199,10 +208,6 @@ export const router = createBrowserRouter([
       },
       {
         path: "rounds/:roundId/advancement",
-        element: <RoundAdvancementPage />,
-      },
-      {
-        path: "events/:eventId/advancement",
         element: <RoundAdvancementPage />,
       },
       {

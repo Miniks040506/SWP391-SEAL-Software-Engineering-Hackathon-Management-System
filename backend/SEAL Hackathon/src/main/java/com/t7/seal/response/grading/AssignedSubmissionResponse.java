@@ -13,7 +13,7 @@ public record AssignedSubmissionResponse(
         boolean graded,
         String gradingStatus,
         long draftScoreCount,
-        long confirmScoreCount,
+        long confirmedScoreCount,
         long criteriaCount,
         boolean gradingLocked,
         LocalDateTime gradingLockedAt

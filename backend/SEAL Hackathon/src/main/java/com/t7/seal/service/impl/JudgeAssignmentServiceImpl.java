@@ -235,10 +235,10 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                                 item.roundId(),
                                 item.trackId(),
                                 item.submissionStatus(),
-                                "SUBMITTED".equals(item.submissionStatus())
-                                        || "LOCKED".equals(item.submissionStatus()),
+                                item.criteriaCount() > 0
+                                        && item.confirmedScoreCount() >= item.criteriaCount(),
                                 item.gradingStatus(),
-                                item.criteriaCount(),
+                                item.draftScoreCount(),
                                 item.confirmedScoreCount(),
                                 item.criteriaCount(),
                                 item.gradingLocked(),
@@ -492,8 +492,15 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
             throw new UnauthorizedException("Judge account is not ACTIVE.");
         }
 
-        return judgeRepository.findByUserId(user.getId())
+        Judge judge = judgeRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new UnauthorizedException("Judge profile was not found."));
+
+        if (Boolean.TRUE.equals(judge.getIsTemporary())
+                && !judge.isTemporaryActive(LocalDateTime.now())) {
+            throw new UnauthorizedException("Temporary judge account has expired.");
+        }
+
+        return judge;
     }
 
 

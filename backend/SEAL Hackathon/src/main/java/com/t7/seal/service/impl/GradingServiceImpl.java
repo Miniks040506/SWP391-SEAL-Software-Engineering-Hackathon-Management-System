@@ -37,6 +37,8 @@ public class GradingServiceImpl implements GradingService {
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final EventCriteriaRepository eventCriteriaRepository;
     private final ScoreRepository scoreRepository;
+    private final CalibrationRoundRepository calibrationRoundRepository;
+    private final CalibrationScoreRepository calibrationScoreRepository;
     private final HackathonEventRepository eventRepository;
     private final RoundRepository roundRepository;
 
@@ -169,28 +171,6 @@ public class GradingServiceImpl implements GradingService {
         return toScoreResponse(saved);
     }
 
-    @Transactional
-    @Override
-    public ScoreResponse confirmScore(UUID scoreId, Authentication authentication) {
-        Judge judge = currentJudge(authentication);
-        Score score = getScore(scoreId);
-
-        if (!judge.getId().equals(score.getJudge().getId())) {
-            throw new UnauthorizedException("You can only confirm your own scores.");
-        }
-
-        ensureJudgeCanMutate(score.getSubmission(), judge, false);
-        validateScoreValue(score.getEventCriteria(), score.getValue().doubleValue());
-        score.confirm();
-
-        Score saved = scoreRepository.save(score);
-        recordAuditLog(judge.getUser(), AuditActionType.SCORE_CONFIRMED, score.getSubmission(), Map.of(
-                "scoreId", score.getId().toString(),
-                "eventCriteriaId", score.getEventCriteria().getId().toString()
-        ));
-        return toScoreResponse(saved);
-    }
-
     @Transactional(readOnly = true)
     @Override
     public EventGradingProgressResponse getEventGradingProgress(UUID eventId, Authentication authentication) {
@@ -312,6 +292,9 @@ public class GradingServiceImpl implements GradingService {
 
     private void ensureJudgeCanMutate(Submission submission, Judge judge, boolean finalSubmit) {
         ensureJudgeCanView(judge, submission);
+        if (!hasCompletedMandatoryCalibration(submission, judge)) {
+            throw new ConflictException("Complete all mandatory calibration rounds before grading submissions.");
+        }
 
         Round round = submission.getRound();
         if (round.getSubmissionLockedAt() == null) {
@@ -325,6 +308,43 @@ public class GradingServiceImpl implements GradingService {
         if (finalSubmit && activeCriteriaFor(submission).isEmpty()) {
             throw new ConflictException("No active scoring criteria are available for this round.");
         }
+    }
+
+    private boolean hasCompletedMandatoryCalibration(Submission submission, Judge judge) {
+        UUID eventId = submission.getRound().getEvent().getId();
+
+        for (CalibrationRound calibrationRound :
+                calibrationRoundRepository.findByEventIdOrderByStartAtAsc(eventId)) {
+            if (!calibrationRound.isMandatoryRound()) {
+                continue;
+            }
+
+            Submission sample = calibrationRound.getSampleSubmission();
+            UUID sampleRoundId = sample.getRound() == null ? null : sample.getRound().getId();
+
+            Set<UUID> requiredCriteriaIds = eventCriteriaRepository
+                    .findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(eventId)
+                    .stream()
+                    .filter(criteria -> sampleRoundId == null || criteria.appliesToRound(sampleRoundId))
+                    .map(EventCriteria::getId)
+                    .collect(Collectors.toSet());
+
+            if (requiredCriteriaIds.isEmpty()) {
+                return false;
+            }
+
+            Set<UUID> scoredCriteriaIds = calibrationScoreRepository
+                    .findByCalibrationRoundIdAndJudgeId(calibrationRound.getId(), judge.getId())
+                    .stream()
+                    .map(score -> score.getEventCriteria().getId())
+                    .collect(Collectors.toSet());
+
+            if (!scoredCriteriaIds.containsAll(requiredCriteriaIds)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private boolean isAssigned(Submission submission, Judge judge) {
@@ -379,11 +399,23 @@ public class GradingServiceImpl implements GradingService {
         long criteriaCount = activeCriteriaFor(submission).size();
         long confirmedCount = scores.stream().filter(s -> Boolean.FALSE.equals(s.isDraft())).count();
         boolean confirmed = criteriaCount > 0 && confirmedCount >= criteriaCount;
+        boolean submissionLocked = submission.getRound().getSubmissionLockedAt() != null;
+        boolean gradingLocked = submission.getRound().getGradingLockedAt() != null;
+        boolean calibrationCompleted = hasCompletedMandatoryCalibration(submission, judge);
+        boolean canEdit = criteriaCount > 0
+                && submissionLocked
+                && !gradingLocked
+                && calibrationCompleted
+                && !confirmed;
 
         return new ScoreSheetResponse(
                 submission.getId(),
                 judge.getId(),
                 confirmed,
+                submissionLocked,
+                gradingLocked,
+                calibrationCompleted,
+                canEdit,
                 scores
         );
     }
@@ -529,13 +561,18 @@ public class GradingServiceImpl implements GradingService {
 
         boolean submissionLocked = round.getSubmissionLockedAt() != null;
         boolean gradingLocked = round.getGradingLockedAt() != null;
-        boolean canLockGrading = submissionLocked && !gradingLocked;
+        boolean canLockGrading = submissionLocked
+                && !gradingLocked
+                && criteriaCount > 0
+                && totalAssigned > 0;
         String warning = null;
 
         if (!submissionLocked) {
             warning = "Submissions must be locked before grading can be locked.";
         } else if (gradingLocked) {
-            warning = "Grading is ready to lock for this round.";
+            warning = "Grading is already locked for this round.";
+        } else if (criteriaCount == 0) {
+            warning = "No active scoring criteria are configured for this round.";
         } else if (totalAssigned == 0) {
             warning = "No assigned submission found for grading.";
         } else if (completed < totalAssigned) {

@@ -456,6 +456,17 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException("Grading is already locked for this round.");
         }
 
+        if (countCriteriaForRound(round) == 0) {
+            throw new ConflictException(
+                    "At least one active scoring criterion is required before locking grading.");
+        }
+
+        ScoringProgressResponse progress = buildScoringProgress(round);
+        if (progress.total() == 0) {
+            throw new ConflictException(
+                    "At least one assigned submission is required before locking grading.");
+        }
+
         LocalDateTime now = LocalDateTime.now();
         RoundStatus before = round.getStatus();
         round.setGradingLockedAt(now);
@@ -465,8 +476,6 @@ public class RoundServiceImpl implements RoundService {
         saveRoundAudit(actor, saved, AuditActionType.GRADING_LOCKED, before.name(), saved.getStatus().name());
         saveRoundNotification(actor, saved, NotificationType.JUDGING_READY, "Grading locked",
                 "Grading has been locked for round " + saved.getName() + ". Rankings can now be calculated.");
-
-        ScoringProgressResponse progress = buildScoringProgress(saved);
 
         return new RoundLockResponse(
                 saved.getId(),
@@ -534,13 +543,15 @@ public class RoundServiceImpl implements RoundService {
         List<AdvanceRule> rules = advanceRuleRepository
                 .findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId);
 
-        Set<UUID> suggestedTeamIds = executeAdvanceRules(rankings, rules)
+        Map<UUID, AdvanceReason> suggestedReasonsByTeam = new LinkedHashMap<>();
+        Set<UUID> suggestedTeamIds = executeAdvanceRules(rankings, rules, suggestedReasonsByTeam)
                 .stream()
                 .map(r -> r.getSubmission().getTeam().getId())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         Set<UUID> finalAdvancedTeamIds = resolveFinalAdvanceTeamId(request, suggestedTeamIds, rankings);
         Map<UUID, String> overrideReasons = validateAndMapOverrideReason(request, rankings);
+        validateOverrideCoverage(request, suggestedTeamIds, finalAdvancedTeamIds);
         List<TeamAdvancementDecisionResponse> decisions = new ArrayList<>();
 
         for (Ranking ranking : rankings) {
@@ -551,7 +562,9 @@ public class RoundServiceImpl implements RoundService {
             String overrideReasonForTeam = overrideReasons.get(teamId);
 
             if (finalAdvanced) {
-                ranking.markAdvanced(suggestedAdvanced ? AdvanceReason.TOP_N : AdvanceReason.MANUAL_ADVANCE);
+                ranking.markAdvanced(suggestedAdvanced
+                        ? suggestedReasonsByTeam.get(teamId)
+                        : AdvanceReason.MANUAL_ADVANCE);
                 if (team.getStatus() != TeamStatus.WINNER) {
                     team.setStatus(TeamStatus.ADVANCED);
                 }
@@ -581,7 +594,9 @@ public class RoundServiceImpl implements RoundService {
                 .targetId(round.getId())
                 .beforeState(null)
                 .afterState(Map.of(
-                        "advancedTeamIds", finalAdvancedTeamIds.stream().map(UUID::toString),
+                        "advancedTeamIds", finalAdvancedTeamIds.stream()
+                                .map(UUID::toString)
+                                .toList(),
                         "eliminatedTeamIds", rankings.stream()
                                 .map(r -> r.getSubmission().getTeam().getId())
                                 .filter(id -> !finalAdvancedTeamIds.contains(id))
@@ -665,6 +680,9 @@ public class RoundServiceImpl implements RoundService {
             if (reason == null) {
                 throw new BadRequestException("Override reason is required for team: " + override.teamId());
             }
+            if (reasons.containsKey(override.teamId())) {
+                throw new BadRequestException("Duplicate override for team: " + override.teamId());
+            }
             reasons.put(override.teamId(), reason);
         }
 
@@ -708,6 +726,43 @@ public class RoundServiceImpl implements RoundService {
             }
         }
         return finalAdvancedTeamIds;
+    }
+
+    private void validateOverrideCoverage(
+            ConfirmAdvancementRequest request,
+            Set<UUID> suggestedTeamIds,
+            Set<UUID> finalAdvancedTeamIds
+    ) {
+        Set<UUID> changedTeamIds = new LinkedHashSet<>(suggestedTeamIds);
+        changedTeamIds.addAll(finalAdvancedTeamIds);
+        changedTeamIds.removeIf(teamId -> suggestedTeamIds.contains(teamId)
+                == finalAdvancedTeamIds.contains(teamId));
+
+        if (changedTeamIds.isEmpty()) {
+            return;
+        }
+
+        Map<UUID, AdvancementOverrideRequest> overridesByTeam = new LinkedHashMap<>();
+        if (request != null && request.overrides() != null) {
+            for (AdvancementOverrideRequest override : request.overrides()) {
+                if (override != null && override.teamId() != null) {
+                    overridesByTeam.put(override.teamId(), override);
+                }
+            }
+        }
+
+        for (UUID teamId : changedTeamIds) {
+            AdvancementOverrideRequest override = overridesByTeam.get(teamId);
+            if (override == null) {
+                throw new BadRequestException("Override reason is required for changed team: " + teamId);
+            }
+
+            boolean finalAdvanced = finalAdvancedTeamIds.contains(teamId);
+            if (!Boolean.valueOf(finalAdvanced).equals(override.advanced())) {
+                throw new BadRequestException(
+                        "Override advanced flag does not match final decision for team: " + teamId);
+            }
+        }
     }
 
     private TeamAdvancementDecisionResponse toTeamAdvancementDecisionResponse(
@@ -855,10 +910,13 @@ public class RoundServiceImpl implements RoundService {
     private void assertAdvanceRuleEditable(Round round) {
         RegistrationStatus status = round.getEvent().getStatus();
 
-        if (status == RegistrationStatus.JUDGING
-                || status == RegistrationStatus.COMPLETED
+        if (status == RegistrationStatus.COMPLETED
                 || status == RegistrationStatus.CANCELLED) {
             throw new ConflictException("Advance rules cannot be edited in this status " + status + ".");
+        }
+
+        if (round.getGradingLockedAt() != null) {
+            throw new ConflictException("Advance rules cannot be edited after grading is locked.");
         }
 
         if (round.getAdvancementConfirmedAt() != null) {
@@ -1075,6 +1133,14 @@ public class RoundServiceImpl implements RoundService {
     }
 
     private List<Ranking> executeAdvanceRules(List<Ranking> rankings, List<AdvanceRule> rules) {
+        return executeAdvanceRules(rankings, rules, null);
+    }
+
+    private List<Ranking> executeAdvanceRules(
+            List<Ranking> rankings,
+            List<AdvanceRule> rules,
+            Map<UUID, AdvanceReason> reasonsByTeam
+    ) {
         if (rankings == null || rankings.isEmpty() || rules == null || rules.isEmpty()) {
             return List.of();
         }
@@ -1089,33 +1155,73 @@ public class RoundServiceImpl implements RoundService {
         LinkedHashSet<Ranking> selected = new LinkedHashSet<>();
 
         for (AdvanceRule rule : rules) {
-            List<Ranking> scoped = sorted.stream()
+            Map<UUID, List<Ranking>> scopedByTrack = sorted.stream()
                     .filter(r -> rule.appliesToTrack(r.getTrack().getId()))
-                    .sorted(Comparator.comparing(Ranking::getRankPosition))
-                    .toList();
+                    .collect(Collectors.groupingBy(
+                            r -> r.getTrack().getId(),
+                            LinkedHashMap::new,
+                            Collectors.toList()
+                    ));
 
-            switch (rule.getRuleType()) {
-                case TOP_N -> selected.addAll(scoped.stream()
-                        .limit(Math.max(0, Math.round(rule.getValue())))
-                        .toList());
-                case TOP_PERCENT -> {
-                    int limit = (int) Math.ceil(scoped.size() * (rule.getValue() / 100.0));
-                    selected.addAll(scoped.stream().limit(Math.max(0, limit)).toList());
+            for (List<Ranking> scoped : scopedByTrack.values()) {
+                switch (rule.getRuleType()) {
+                    case TOP_N -> addSelected(
+                            selected,
+                            scoped.stream()
+                                    .limit(Math.max(0, Math.round(rule.getValue())))
+                                    .toList(),
+                            AdvanceReason.TOP_N,
+                            reasonsByTeam
+                    );
+                    case TOP_PERCENT -> {
+                        int limit = (int) Math.ceil(scoped.size() * (rule.getValue() / 100.0));
+                        addSelected(
+                                selected,
+                                scoped.stream().limit(Math.max(0, limit)).toList(),
+                                AdvanceReason.TOP_PERCENT,
+                                reasonsByTeam
+                        );
+                    }
+                    case MIN_SCORE -> addSelected(
+                            selected,
+                            scoped.stream()
+                                    .filter(r -> r.getTotalScore() != null
+                                            && r.getTotalScore() >= rule.getValue())
+                                    .toList(),
+                            AdvanceReason.MIN_SCORE,
+                            reasonsByTeam
+                    );
+                    case WILDCARD -> addSelected(
+                            selected,
+                            scoped.stream()
+                                    .filter(r -> !selected.contains(r))
+                                    .sorted(Comparator
+                                            .comparing(Ranking::getTotalScore,
+                                                    Comparator.nullsLast(Comparator.reverseOrder()))
+                                            .thenComparing(Ranking::getRankPosition))
+                                    .limit(Math.max(0, Math.round(rule.getValue())))
+                                    .toList(),
+                            AdvanceReason.WILDCARD,
+                            reasonsByTeam
+                    );
                 }
-                case MIN_SCORE -> selected.addAll(scoped.stream()
-                        .filter(r -> r.getTotalScore() != null && r.getTotalScore() >= rule.getValue())
-                        .toList());
-                case WILDCARD -> selected.addAll(scoped.stream()
-                        .filter(r -> !selected.contains(r))
-                        .sorted(Comparator
-                                .comparing(Ranking::getTotalScore, Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(Ranking::getRankPosition))
-                        .limit(Math.max(0, Math.round(rule.getValue())))
-                        .toList());
             }
         }
 
         return new ArrayList<>(selected);
+    }
+
+    private void addSelected(
+            Set<Ranking> selected,
+            List<Ranking> candidates,
+            AdvanceReason reason,
+            Map<UUID, AdvanceReason> reasonsByTeam
+    ) {
+        for (Ranking ranking : candidates) {
+            if (selected.add(ranking) && reasonsByTeam != null) {
+                reasonsByTeam.put(ranking.getSubmission().getTeam().getId(), reason);
+            }
+        }
     }
 
     private RankingResponse toRankingResponse(Ranking ranking) {
