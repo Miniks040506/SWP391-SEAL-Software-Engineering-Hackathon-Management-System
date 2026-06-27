@@ -126,6 +126,24 @@ public class CalibrationServiceImpl implements CalibrationService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<CalibrationRoundResponse> getMyCalibrationRounds(Authentication authentication) {
+        Judge judge = currentJudge(authentication);
+        Set<UUID> assignedEventIds = assignmentRepository
+                .findByJudgeIdWithRoundAndTrack(judge.getId())
+                .stream()
+                .map(assignment -> assignment.getRound().getEvent().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        return assignedEventIds.stream()
+                .flatMap(eventId -> calibrationRoundRepository
+                        .findByEventIdOrderByStartAtAsc(eventId)
+                        .stream())
+                .map(this::toRoundResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public CalibrationRoundDetailResponse getCalibrationRoundById(
             UUID calibrationRoundId,
             Authentication authentication

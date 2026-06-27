@@ -44,6 +44,14 @@ public class CalibrationController {
                 .getCalibrationRoundsByEvent(eventId, authentication));
     }
 
+    @PreAuthorize("hasRole('JUDGE')")
+    @GetMapping("/calibrations/my")
+    public ResponseEntity<List<CalibrationRoundResponse>> getMyCalibrationRounds(
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(calibrationService.getMyCalibrationRounds(authentication));
+    }
+
     @PreAuthorize("hasRole('JUDGE') or hasRole('COORDINATOR') or hasRole('ADMIN')")
     @GetMapping({"/calibrations/{calibrationId}", "/calibration-rounds/{calibrationId}"})
     public ResponseEntity<CalibrationRoundDetailResponse> getCalibrationRoundById(
