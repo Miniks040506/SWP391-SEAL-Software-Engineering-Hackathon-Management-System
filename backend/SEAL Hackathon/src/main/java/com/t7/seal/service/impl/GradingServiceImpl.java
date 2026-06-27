@@ -37,6 +37,8 @@ public class GradingServiceImpl implements GradingService {
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final EventCriteriaRepository eventCriteriaRepository;
     private final ScoreRepository scoreRepository;
+    private final CalibrationRoundRepository calibrationRoundRepository;
+    private final CalibrationScoreRepository calibrationScoreRepository;
     private final HackathonEventRepository eventRepository;
     private final RoundRepository roundRepository;
 
@@ -290,6 +292,7 @@ public class GradingServiceImpl implements GradingService {
 
     private void ensureJudgeCanMutate(Submission submission, Judge judge, boolean finalSubmit) {
         ensureJudgeCanView(judge, submission);
+        ensureMandatoryCalibrationCompleted(submission, judge);
 
         Round round = submission.getRound();
         if (round.getSubmissionLockedAt() == null) {
@@ -302,6 +305,43 @@ public class GradingServiceImpl implements GradingService {
 
         if (finalSubmit && activeCriteriaFor(submission).isEmpty()) {
             throw new ConflictException("No active scoring criteria are available for this round.");
+        }
+    }
+
+    private void ensureMandatoryCalibrationCompleted(Submission submission, Judge judge) {
+        UUID eventId = submission.getRound().getEvent().getId();
+
+        for (CalibrationRound calibrationRound :
+                calibrationRoundRepository.findByEventIdOrderByStartAtAsc(eventId)) {
+            if (!calibrationRound.isMandatoryRound()) {
+                continue;
+            }
+
+            Submission sample = calibrationRound.getSampleSubmission();
+            UUID sampleRoundId = sample.getRound() == null ? null : sample.getRound().getId();
+
+            Set<UUID> requiredCriteriaIds = eventCriteriaRepository
+                    .findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(eventId)
+                    .stream()
+                    .filter(criteria -> sampleRoundId == null || criteria.appliesToRound(sampleRoundId))
+                    .map(EventCriteria::getId)
+                    .collect(Collectors.toSet());
+
+            if (requiredCriteriaIds.isEmpty()) {
+                throw new ConflictException("Mandatory calibration round has no active criteria: "
+                        + calibrationRound.getId());
+            }
+
+            Set<UUID> scoredCriteriaIds = calibrationScoreRepository
+                    .findByCalibrationRoundIdAndJudgeId(calibrationRound.getId(), judge.getId())
+                    .stream()
+                    .map(score -> score.getEventCriteria().getId())
+                    .collect(Collectors.toSet());
+
+            if (!scoredCriteriaIds.containsAll(requiredCriteriaIds)) {
+                throw new ConflictException("Complete mandatory calibration round before grading submissions: "
+                        + calibrationRound.getId());
+            }
         }
     }
 
