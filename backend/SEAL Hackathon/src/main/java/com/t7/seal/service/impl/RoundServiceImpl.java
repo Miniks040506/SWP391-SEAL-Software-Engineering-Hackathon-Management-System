@@ -1102,23 +1102,25 @@ public class RoundServiceImpl implements RoundService {
 
             for (List<Ranking> scoped : scopedByTrack.values()) {
                 switch (rule.getRuleType()) {
-                case TOP_N -> selected.addAll(scoped.stream()
-                        .limit(Math.max(0, Math.round(rule.getValue())))
-                        .toList());
-                case TOP_PERCENT -> {
-                    int limit = (int) Math.ceil(scoped.size() * (rule.getValue() / 100.0));
-                    selected.addAll(scoped.stream().limit(Math.max(0, limit)).toList());
+                    case TOP_N -> selected.addAll(scoped.stream()
+                            .limit(Math.max(0, Math.round(rule.getValue())))
+                            .toList());
+                    case TOP_PERCENT -> {
+                        int limit = (int) Math.ceil(scoped.size() * (rule.getValue() / 100.0));
+                        selected.addAll(scoped.stream().limit(Math.max(0, limit)).toList());
+                    }
+                    case MIN_SCORE -> selected.addAll(scoped.stream()
+                            .filter(r -> r.getTotalScore() != null && r.getTotalScore() >= rule.getValue())
+                            .toList());
+                    case WILDCARD -> selected.addAll(scoped.stream()
+                            .filter(r -> !selected.contains(r))
+                            .sorted(Comparator
+                                    .comparing(Ranking::getTotalScore,
+                                            Comparator.nullsLast(Comparator.reverseOrder()))
+                                    .thenComparing(Ranking::getRankPosition))
+                            .limit(Math.max(0, Math.round(rule.getValue())))
+                            .toList());
                 }
-                case MIN_SCORE -> selected.addAll(scoped.stream()
-                        .filter(r -> r.getTotalScore() != null && r.getTotalScore() >= rule.getValue())
-                        .toList());
-                case WILDCARD -> selected.addAll(scoped.stream()
-                        .filter(r -> !selected.contains(r))
-                        .sorted(Comparator
-                                .comparing(Ranking::getTotalScore, Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(Ranking::getRankPosition))
-                        .limit(Math.max(0, Math.round(rule.getValue())))
-                        .toList());
             }
         }
 
