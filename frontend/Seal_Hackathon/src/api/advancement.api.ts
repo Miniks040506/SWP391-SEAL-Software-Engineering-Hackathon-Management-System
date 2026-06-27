@@ -4,7 +4,6 @@ import type {
   AdvancementCandidateRow,
   AdvancementPreviewResponse,
   ConfirmAdvancementRequest,
-  AdvancementOverrideRequest,
   FinalAdvancementStatus,
   SuggestedAdvancementStatus,
   TeamAdvancementStatusResponse,
@@ -130,12 +129,6 @@ export const advancementApi = {
     axiosClient.post<BackendConfirmAdvancementResponse>(
       `/rounds/${roundId}/advancement/confirm`,
       toBackendConfirmRequest(payload),
-    ),
-
-  overrideRoundAdvancement: (roundId: string, payload: AdvancementOverrideRequest) =>
-    axiosClient.post<BackendConfirmAdvancementResponse>(
-      `/rounds/${roundId}/advancement/override`,
-      toBackendConfirmRequest({ overrideRows: [payload] }),
     ),
 
   getTeamAdvancementStatus: async (teamId: string) => ({

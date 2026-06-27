@@ -6,15 +6,11 @@ import { useState } from "react";
 import { useAdvancementPreviewQuery } from "../hooks/useAdvancementQueries";
 import {
   useConfirmAdvancementMutation,
-  useOverrideAdvancementMutation,
 } from "../hooks/useAdvancementMutations";
 import { AdvancementPreviewTable } from "../components/AdvancementPreviewTable";
 import { AdvancementConfirmDialog } from "../components/AdvancementConfirmDialog";
 import { AdvancementSummaryCards } from "../components/AdvancementSummaryCards";
-import type {
-  AdvancementOverrideRequest,
-  AdvancementPreviewResponse,
-} from "@/types/advancement.types";
+import type { AdvancementPreviewResponse } from "@/types/advancement.types";
 
 export function EventAdvancementPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -34,7 +30,6 @@ export function EventAdvancementPage() {
   const previewData = response?.data;
 
   const confirmMutation = useConfirmAdvancementMutation();
-  const overrideMutation = useOverrideAdvancementMutation(validEventId);
 
   const handleRefresh = () => {
     refetch();
@@ -45,25 +40,13 @@ export function EventAdvancementPage() {
     newStatus: string,
     reason: string,
   ) => {
-    const payload: AdvancementOverrideRequest = {
-      teamId,
-      finalStatus: newStatus as "ADVANCED" | "ELIMINATED",
-      reason,
-    };
-    overrideMutation.mutate(payload, {
-      onSuccess: () => {
-        setOverrides((prev) => {
-          const next = new Map(prev);
-          next.set(teamId, { status: newStatus, reason });
-          return next;
-        });
-        enqueueSnackbar("Override applied. Note: not yet saved.", {
-          variant: "info",
-        });
-      },
-      onError: () => {
-        enqueueSnackbar("Failed to apply override.", { variant: "error" });
-      },
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(teamId, { status: newStatus, reason });
+      return next;
+    });
+    enqueueSnackbar("Override applied. Note: not yet saved.", {
+      variant: "info",
     });
   };
 

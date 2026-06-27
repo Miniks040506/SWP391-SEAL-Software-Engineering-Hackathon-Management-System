@@ -108,8 +108,7 @@ public class RoundController {
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
     @PostMapping({
             "/rounds/{roundId}/confirm-advancement",
-            "/rounds/{roundId}/advancement/confirm",
-            "/rounds/{roundId}/advancement/override"
+            "/rounds/{roundId}/advancement/confirm"
     })
     public ResponseEntity<ConfirmAdvancementResponse> confirmAdvancement(
             @PathVariable UUID roundId,
