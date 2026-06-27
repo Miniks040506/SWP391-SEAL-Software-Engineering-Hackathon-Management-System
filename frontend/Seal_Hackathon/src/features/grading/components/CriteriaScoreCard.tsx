@@ -4,10 +4,11 @@ import FormControl from "@mui/material/FormControl";
 import FormHelperText from "@mui/material/FormHelperText";
 import Chip from "@mui/material/Chip";
 import type { EventCriteriaResponse } from "@/types/criteria.types";
+import type { JudgeScoreFormValues } from "@/types/grading.types";
 
 type Props = {
   criterion: EventCriteriaResponse;
-  control: Control<any>;
+  control: Control<JudgeScoreFormValues>;
   isLocked: boolean;
   isFinalSubmitted: boolean;
 };
@@ -53,9 +54,15 @@ export const CriteriaScoreCard = ({
           name={`scores.${criterion.id}`}
           control={control}
           rules={{
-            required: "Score is required",
-            min: { value: 0, message: "Min: 0" },
-            max: { value: criterion.effectiveMaxScore, message: `Max: ${criterion.effectiveMaxScore}` }
+            validate: (value) => {
+              if (value === "" || value === undefined || value === null) return true;
+              if (!Number.isFinite(value)) return "Score must be a number";
+              if (value < 0) return "Min: 0";
+              if (value > criterion.effectiveMaxScore) {
+                return `Max: ${criterion.effectiveMaxScore}`;
+              }
+              return true;
+            },
           }}
           render={({ field, fieldState: { error } }) => (
             <FormControl
@@ -85,7 +92,10 @@ export const CriteriaScoreCard = ({
                   onBlur={(e) => {
                     field.onBlur();
                     const val = e.target.value;
-                    if (val === "" || Number(val) < 0) {
+                    if (val === "") {
+                      return;
+                    }
+                    if (Number(val) < 0) {
                       field.onChange(0);
                     } else if (Number(val) > criterion.effectiveMaxScore) {
                       field.onChange(criterion.effectiveMaxScore);

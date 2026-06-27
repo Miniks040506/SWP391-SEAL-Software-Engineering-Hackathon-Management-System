@@ -77,6 +77,11 @@ export type SaveScoreSheetRequest = {
   draft?: boolean;
 };
 
+export type JudgeScoreFormValues = {
+  scores: Record<string, number | "">;
+  comments: Record<string, string>;
+};
+
 export type ConfirmScoreSheetRequest = {
   confirmationNote?: string;
 };

@@ -7,7 +7,7 @@ import Card from "@mui/material/Card";
 import CircularProgress from "@mui/material/CircularProgress";
 
 import type { EventCriteriaResponse } from "@/types/criteria.types";
-import type { ScoreResponse } from "@/types/grading.types";
+import type { JudgeScoreFormValues, ScoreResponse } from "@/types/grading.types";
 import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
 
 import { useScoreSheet } from "../hooks/useScoreSheet";
@@ -34,7 +34,7 @@ export const JudgeScoreSheetPage = () => {
     watch,
     reset,
     formState: { isDirty },
-  } = useForm({
+  } = useForm<JudgeScoreFormValues>({
     defaultValues: { scores: {}, comments: {} },
     mode: "onChange",
   });
@@ -99,9 +99,9 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  const scores = watch("scores") as Record<string, number>;
+  const scores = watch("scores");
   const scoredCount = Object.values(scores || {}).filter(
-    (v) => v !== undefined && v !== null && v.toString() !== "",
+    (value) => typeof value === "number" && Number.isFinite(value),
   ).length;
   const allCriteriaScored = scoredCount === submission.criteria.length;
 
@@ -123,28 +123,20 @@ export const JudgeScoreSheetPage = () => {
     0,
   );
 
-  const preparePayload = (data: {
-    scores: Record<string, number>;
-    comments: Record<string, string>;
-  }) => {
-    const scoreItems = Object.keys(data.scores || {}).map((criteriaId) => ({
-      eventCriteriaId: criteriaId,
-      value: data.scores[criteriaId],
-      comment: data.comments?.[criteriaId] || undefined,
-    }));
+  const preparePayload = (data: JudgeScoreFormValues) => {
+    const scoreItems = Object.entries(data.scores || {})
+      .filter((entry): entry is [string, number] => Number.isFinite(entry[1]))
+      .map(([criteriaId, value]) => ({
+        eventCriteriaId: criteriaId,
+        value,
+        comment: data.comments?.[criteriaId] || undefined,
+      }));
     return { scores: scoreItems };
   };
 
   const onSaveDraft = handleSubmit(async (data) => {
     try {
-      await saveDraft(
-        preparePayload(
-          data as {
-            scores: Record<string, number>;
-            comments: Record<string, string>;
-          },
-        ),
-      );
+      await saveDraft(preparePayload(data));
     } catch (err) {
       console.error("Failed to save draft:", err);
     }
@@ -152,14 +144,7 @@ export const JudgeScoreSheetPage = () => {
 
   const onFinalSubmit = handleSubmit(async (data) => {
     try {
-      await finalSubmit(
-        preparePayload(
-          data as {
-            scores: Record<string, number>;
-            comments: Record<string, string>;
-          },
-        ),
-      );
+      await finalSubmit(preparePayload(data));
     } catch (err) {
       console.error("Failed to submit scores:", err);
     }
