@@ -199,10 +199,6 @@ export const router = createBrowserRouter([
         element: <RoundAdvancementPage />,
       },
       {
-        path: "events/:eventId/advancement",
-        element: <RoundAdvancementPage />,
-      },
-      {
         path: "events/:eventId/grading-progress",
         element: <CoordinatorEventGradingProgressPage />,
       },
