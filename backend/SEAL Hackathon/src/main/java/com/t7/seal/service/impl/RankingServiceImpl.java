@@ -469,20 +469,24 @@ public class RankingServiceImpl implements RankingService {
                 .collect(Collectors.toMap(
                         ranking -> ranking.getSubmission().getTeam().getId(),
                         Function.identity(),
-                        (first, ignored) -> first,
+                        (first, second) -> first.getRound().getOrderIndex()
+                                >= second.getRound().getOrderIndex()
+                                ? first
+                                : second,
                         LinkedHashMap::new)
                 );
 
         int count = 0;
         for (Ranking ranking : rankingByTeam.values()) {
             Team team = ranking.getSubmission().getTeam();
+            Round resultRound = round == null ? ranking.getRound() : round;
             String title = "Results published for " + event.getName();
             String body = "%s result is available. Rank #%d in %s%s with total score %.2f."
                     .formatted(
                             team.getName(),
                             ranking.getRankPosition(),
                             ranking.getTrack().getName(),
-                            round == null ? "" : " / " + round.getName(),
+                            " / " + resultRound.getName(),
                             ranking.getTotalScore()
                     );
 
