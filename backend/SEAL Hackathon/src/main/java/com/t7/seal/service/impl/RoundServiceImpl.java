@@ -671,6 +671,9 @@ public class RoundServiceImpl implements RoundService {
             if (reason == null) {
                 throw new BadRequestException("Override reason is required for team: " + override.teamId());
             }
+            if (reasons.containsKey(override.teamId())) {
+                throw new BadRequestException("Duplicate override for team: " + override.teamId());
+            }
             reasons.put(override.teamId(), reason);
         }
 
