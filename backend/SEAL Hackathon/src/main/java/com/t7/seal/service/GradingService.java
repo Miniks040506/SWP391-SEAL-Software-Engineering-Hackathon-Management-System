@@ -25,8 +25,6 @@ public interface GradingService {
 
     ScoreResponse updateScore(UUID scoreId, UpdateScoreRequest request, Authentication authentication);
 
-    ScoreResponse confirmScore(UUID scoreId, Authentication authentication);
-
     EventGradingProgressResponse getEventGradingProgress(UUID eventId, Authentication authentication);
 
     RoundGradingProgressResponse getRoundGradingProgress(UUID roundId, Authentication authentication);

@@ -169,28 +169,6 @@ public class GradingServiceImpl implements GradingService {
         return toScoreResponse(saved);
     }
 
-    @Transactional
-    @Override
-    public ScoreResponse confirmScore(UUID scoreId, Authentication authentication) {
-        Judge judge = currentJudge(authentication);
-        Score score = getScore(scoreId);
-
-        if (!judge.getId().equals(score.getJudge().getId())) {
-            throw new UnauthorizedException("You can only confirm your own scores.");
-        }
-
-        ensureJudgeCanMutate(score.getSubmission(), judge, false);
-        validateScoreValue(score.getEventCriteria(), score.getValue().doubleValue());
-        score.confirm();
-
-        Score saved = scoreRepository.save(score);
-        recordAuditLog(judge.getUser(), AuditActionType.SCORE_CONFIRMED, score.getSubmission(), Map.of(
-                "scoreId", score.getId().toString(),
-                "eventCriteriaId", score.getEventCriteria().getId().toString()
-        ));
-        return toScoreResponse(saved);
-    }
-
     @Transactional(readOnly = true)
     @Override
     public EventGradingProgressResponse getEventGradingProgress(UUID eventId, Authentication authentication) {
