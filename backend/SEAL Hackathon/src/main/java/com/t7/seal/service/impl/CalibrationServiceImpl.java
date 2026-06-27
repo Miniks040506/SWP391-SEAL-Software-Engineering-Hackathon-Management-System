@@ -736,6 +736,11 @@ public class CalibrationServiceImpl implements CalibrationService {
     }
 
     private CalibrationRoundResponse toRoundResponse(CalibrationRound calibrationRound) {
+        long assignedJudgeCount = assignmentRepository
+                .findActiveJudgeUsersByEventId(calibrationRound.getEvent().getId())
+                .size();
+        long submittedJudgeCount = countSubmittedJudges(calibrationRound);
+
         return new CalibrationRoundResponse(
                 calibrationRound.getId(),
                 calibrationRound.getEvent().getId(),
@@ -744,8 +749,32 @@ public class CalibrationServiceImpl implements CalibrationService {
                 calibrationRound.getStartAt(),
                 calibrationRound.getEndAt(),
                 calibrationRound.getIsMandatory(),
+                assignedJudgeCount,
+                submittedJudgeCount,
+                Math.max(0, assignedJudgeCount - submittedJudgeCount),
                 calibrationRound.getDistributionPublishedAt()
         );
+    }
+
+    private long countSubmittedJudges(CalibrationRound calibrationRound) {
+        int requiredCriteriaCount = activeCriteriaForCalibration(calibrationRound).size();
+        if (requiredCriteriaCount == 0) {
+            return 0;
+        }
+
+        return calibrationScoreRepository.findByCalibrationRoundId(calibrationRound.getId())
+                .stream()
+                .collect(Collectors.groupingBy(
+                        score -> score.getJudge().getId(),
+                        Collectors.mapping(
+                                score -> score.getEventCriteria().getId(),
+                                Collectors.toSet()
+                        )
+                ))
+                .values()
+                .stream()
+                .filter(criteriaIds -> criteriaIds.size() >= requiredCriteriaCount)
+                .count();
     }
 
     private CalibrationRoundDetailResponse toRoundDetailResponse(

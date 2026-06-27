@@ -38,10 +38,16 @@ export type CalibrationRoundResponse = {
   startAt?: ISODateTime | null;
   endAt?: ISODateTime | null;
   mandatory: boolean;
+  assignedJudgeCount: number;
+  submittedJudgeCount: number;
+  pendingJudgeCount: number;
   distributionPublishedAt?: ISODateTime | null;
 };
 
-export type CalibrationRoundDetailResponse = CalibrationRoundResponse & {
+export type CalibrationRoundDetailResponse = Omit<
+  CalibrationRoundResponse,
+  "assignedJudgeCount" | "submittedJudgeCount" | "pendingJudgeCount"
+> & {
   benchmarkScores?: Record<string, number> | unknown;
 };
 

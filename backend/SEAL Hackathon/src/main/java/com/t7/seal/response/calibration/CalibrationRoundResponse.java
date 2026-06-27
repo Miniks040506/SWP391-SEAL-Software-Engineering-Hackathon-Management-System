@@ -10,5 +10,8 @@ public record CalibrationRoundResponse(
         LocalDateTime startAt,
         LocalDateTime endAt,
         Boolean mandatory,
+        long assignedJudgeCount,
+        long submittedJudgeCount,
+        long pendingJudgeCount,
         LocalDateTime distributionPublishedAt)
 {}
