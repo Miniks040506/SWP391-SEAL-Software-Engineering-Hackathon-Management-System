@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useBlocker } from "react-router-dom";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import Card from "@mui/material/Card";
@@ -38,6 +38,13 @@ export const JudgeScoreSheetPage = () => {
     defaultValues: { scores: {}, comments: {} },
     mode: "onChange",
   });
+  const canEdit = scoreSheet?.canEdit ?? false;
+  const navigationBlocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty &&
+      canEdit &&
+      currentLocation.pathname !== nextLocation.pathname,
+  );
 
   useEffect(() => {
     if (scoreSheet?.scores) {
@@ -52,6 +59,27 @@ export const JudgeScoreSheetPage = () => {
       reset({ scores: defaultScores, comments: defaultComments });
     }
   }, [scoreSheet, reset]);
+
+  useEffect(() => {
+    if (navigationBlocker.state !== "blocked") return;
+
+    if (window.confirm("You have unsaved score changes. Leave this page?")) {
+      navigationBlocker.proceed();
+    } else {
+      navigationBlocker.reset();
+    }
+  }, [navigationBlocker]);
+
+  useEffect(() => {
+    if (!isDirty || !canEdit) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty, canEdit]);
 
   if (isLoading) {
     return (
@@ -86,7 +114,6 @@ export const JudgeScoreSheetPage = () => {
   const isGradingLocked = scoreSheet.gradingLocked;
   const isFinalSubmitted = scoreSheet.confirmed;
   const isCalibrationIncomplete = !scoreSheet.calibrationCompleted;
-  const canEdit = scoreSheet.canEdit;
   const isNotReady = !scoreSheet.submissionLocked;
 
   if (isNotReady) {
