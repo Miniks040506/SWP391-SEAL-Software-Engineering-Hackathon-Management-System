@@ -654,6 +654,11 @@ public class CalibrationServiceImpl implements CalibrationService {
         return new CriterionDistributionResponse(
                 criteria.getId(),
                 criteria.getEffectiveName(),
+                criteria.getCriteria() == null
+                        || criteria.getCriteria().getCategory() == null
+                        ? null
+                        : criteria.getCriteria().getCategory().name(),
+                criteria.getEffectiveIsTechnical(),
                 benchmark == null ? null : benchmark.doubleValue(),
                 (long) values.size(),
                 mean,
