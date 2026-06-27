@@ -127,12 +127,4 @@ public class GradingController {
         return ResponseEntity.ok(gradingService.updateScore(scoreId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('JUDGE')")
-    @PostMapping("/scores/{scoreId}/confirm")
-    public ResponseEntity<ScoreResponse> confirmScore(
-            @PathVariable("scoreId") UUID scoreId,
-            Authentication authentication
-    ) {
-        return ResponseEntity.ok(gradingService.confirmScore(scoreId, authentication));
-    }
 }

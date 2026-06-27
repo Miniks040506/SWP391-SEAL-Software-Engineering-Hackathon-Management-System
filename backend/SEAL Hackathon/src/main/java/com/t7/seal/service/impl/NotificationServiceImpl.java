@@ -648,6 +648,15 @@ public class NotificationServiceImpl implements NotificationService {
                 || notification.getType() == NotificationType.TEAM_JOIN_REQUEST_REJECTED) {
             return "/participant/teams";
         }
+        if (notification.getType() == NotificationType.RESULT_PUBLISHED) {
+            if (notification.getTargetScope() == NotificationTargetScope.TEAM && notification.getTargetId() != null) {
+                return "/participant/teams/" + notification.getTargetId() + "/scores";
+            }
+            if (notification.getEvent() != null) {
+                return "/events/" + notification.getEvent().getId() + "/leaderboard";
+            }
+            return "/standings";
+        }
         if (notification.getType() == NotificationType.SUBMISSION_SUBMITTED
                 || notification.getType() == NotificationType.SUBMISSION_UPDATED) {
             if ("MENTOR".equalsIgnoreCase(notification.getTargetRole())) {
@@ -808,6 +817,7 @@ public class NotificationServiceImpl implements NotificationService {
             case MENTOR_FEEDBACK_PUBLISHED, MENTOR_FEEDBACK -> "Mentor feedback is available";
             case JUDGE_ASSIGNED -> "You have assigned submissions to review";
             case ANNOUNCEMENT_PUBLISHED -> "New SEAL announcement";
+            case RESULT_PUBLISHED -> "SEAL results are published";
             case DEADLINE_REMINDER, SUBMISSION_REMINDER, JUDGING_REMINDER -> "SEAL deadline reminder";
             default -> "SEAL notification";
         };

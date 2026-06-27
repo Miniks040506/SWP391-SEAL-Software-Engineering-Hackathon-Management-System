@@ -51,7 +51,7 @@ public class RankingServiceImpl implements RankingService {
     public List<RankingResponse> getRankings(UUID eventId, UUID trackId, UUID roundId) {
         return rankingRepository.getPublicRankings(eventId, trackId, roundId)
                 .stream()
-                .map(this::toRankingResponse)
+                .map(this::toPublicRankingResponse)
                 .toList();
     }
 
@@ -222,11 +222,38 @@ public class RankingServiceImpl implements RankingService {
         HackathonEvent event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
+        if (event.getResultPublishedAt() != null) {
+            return new PublishResultsResponse(
+                    event.getId(),
+                    null,
+                    event.getResultPublishedAt(),
+                    null,
+                    0
+            );
+        }
+
         ensureEventCanPublish(event);
+
+        List<Round> eventRounds = roundRepository.findByEventIdOrderByOrderIndexAsc(eventId);
+        if (eventRounds.isEmpty()) {
+            throw new ConflictException("Cannot publish event results without a configured round.");
+        }
+
+        Round finalRound = eventRounds.get(eventRounds.size() - 1);
+        if (finalRound.getGradingLockedAt() == null) {
+            throw new ConflictException(
+                    "Final round grading must be locked before publishing event results.");
+        }
 
         List<Ranking> rankings = rankingRepository.findByEventRoundTrackWithDetails(eventId, null, null);
         if (rankings.isEmpty()) {
             throw new ConflictException("Cannot publish results before rankings are calculated.");
+        }
+        boolean finalRoundRanked = rankings.stream()
+                .anyMatch(ranking -> ranking.getRound().getId().equals(finalRound.getId()));
+        if (!finalRoundRanked) {
+            throw new ConflictException(
+                    "Final round rankings must be calculated before publishing event results.");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -269,6 +296,16 @@ public class RankingServiceImpl implements RankingService {
         User actor = currentUserService.getCurrentUser(authentication);
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+
+        if (round.getResultPublishedAt() != null) {
+            return new PublishResultsResponse(
+                    round.getEvent().getId(),
+                    round.getId(),
+                    round.getResultPublishedAt(),
+                    null,
+                    0
+            );
+        }
 
         if (round.getGradingLockedAt() == null) {
             throw new ConflictException("Grading must be locked before publishing round results.");
@@ -449,20 +486,24 @@ public class RankingServiceImpl implements RankingService {
                 .collect(Collectors.toMap(
                         ranking -> ranking.getSubmission().getTeam().getId(),
                         Function.identity(),
-                        (first, ignored) -> first,
+                        (first, second) -> first.getRound().getOrderIndex()
+                                >= second.getRound().getOrderIndex()
+                                ? first
+                                : second,
                         LinkedHashMap::new)
                 );
 
         int count = 0;
         for (Ranking ranking : rankingByTeam.values()) {
             Team team = ranking.getSubmission().getTeam();
+            Round resultRound = round == null ? ranking.getRound() : round;
             String title = "Results published for " + event.getName();
             String body = "%s result is available. Rank #%d in %s%s with total score %.2f."
                     .formatted(
                             team.getName(),
                             ranking.getRankPosition(),
                             ranking.getTrack().getName(),
-                            round == null ? "" : " / " + round.getName(),
+                            " / " + resultRound.getName(),
                             ranking.getTotalScore()
                     );
 
@@ -570,7 +611,7 @@ public class RankingServiceImpl implements RankingService {
         Track track = ranking.getTrack();
 
         List<TeamScoreCriterionResponse> criteriaScores =
-                buildCriterionAverageScores(submission.getId());
+                buildCriterionAverageScores(ranking);
 
         return new TeamDetailedScoreResponse(
                 event.getId(),
@@ -591,9 +632,26 @@ public class RankingServiceImpl implements RankingService {
         );
     }
 
-    private List<TeamScoreCriterionResponse> buildCriterionAverageScores(UUID submissionId) {
+    private List<TeamScoreCriterionResponse> buildCriterionAverageScores(Ranking ranking) {
+        if (ranking.getScoreBreakdown() == null || ranking.getScoreBreakdown().isEmpty()) {
+            return List.of();
+        }
+
+        Set<String> includedJudgeIds = ranking.getScoreBreakdown().keySet();
+        Set<String> includedCriteriaIds = ranking.getScoreBreakdown()
+                .values()
+                .stream()
+                .flatMap(scores -> scores.keySet().stream())
+                .collect(Collectors.toSet());
+
         List<Score> confirmedScores = scoreRepository
-                .findConfirmedBySubmissionIdWithCriteria(submissionId);
+                .findConfirmedBySubmissionIdWithCriteria(ranking.getSubmission().getId())
+                .stream()
+                .filter(score -> score.getJudge() != null
+                        && includedJudgeIds.contains(score.getJudge().getId().toString()))
+                .filter(score -> score.getEventCriteria() != null
+                        && includedCriteriaIds.contains(score.getEventCriteria().getId().toString()))
+                .toList();
 
         Map<UUID, List<Score>> byCriteria = confirmedScores.stream()
                 .filter(score -> score.getEventCriteria() != null)
@@ -636,6 +694,14 @@ public class RankingServiceImpl implements RankingService {
 
 
     private RankingResponse toRankingResponse(Ranking ranking) {
+        return toRankingResponse(ranking, true);
+    }
+
+    private RankingResponse toPublicRankingResponse(Ranking ranking) {
+        return toRankingResponse(ranking, false);
+    }
+
+    private RankingResponse toRankingResponse(Ranking ranking, boolean includeScoreBreakdown) {
         Submission submission = ranking.getSubmission();
         Team team = submission.getTeam();
         Round round = ranking.getRound();
@@ -658,7 +724,7 @@ public class RankingServiceImpl implements RankingService {
                 ranking.getRankPosition(),
                 ranking.getIsAdvanced(),
                 ranking.getJudgeCount(),
-                ranking.getScoreBreakdown(),
+                includeScoreBreakdown ? ranking.getScoreBreakdown() : null,
                 ranking.getCalculatedAt(),
                 isRankingPublished(ranking)
         );

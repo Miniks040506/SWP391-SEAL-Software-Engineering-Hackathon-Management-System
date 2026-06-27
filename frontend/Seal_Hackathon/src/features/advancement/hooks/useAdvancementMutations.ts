@@ -7,10 +7,7 @@ import type {
   CreateAdvanceRuleRequest,
   UpdateAdvanceRuleRequest,
 } from "@/types/round.types";
-import type {
-  ConfirmAdvancementRequest,
-  AdvancementOverrideRequest,
-} from "@/types/advancement.types";
+import type { ConfirmAdvancementRequest } from "@/types/advancement.types";
 
 export function useCreateAdvanceRuleMutation() {
   const queryClient = useQueryClient();
@@ -66,33 +63,6 @@ export function usePreviewAdvanceRulesMutation() {
   return useMutation({
     mutationFn: (roundId: string) =>
       advancementApi.previewRoundAdvanceRules(roundId),
-  });
-}
-
-export function useOverrideAdvancementMutation(roundId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: AdvancementOverrideRequest) =>
-      advancementApi.overrideRoundAdvancement(roundId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["advancementPreview", roundId],
-      });
-    },
-    onError: (error: any) => {
-      if (isAxiosError(error) && error.response?.status === 409) {
-        enqueueSnackbar("Cannot override: advancement state conflict.", {
-          variant: "error",
-        });
-      } else {
-        enqueueSnackbar(
-          error?.response?.data?.message ||
-            error?.message ||
-            "Failed to override advancement.",
-          { variant: "error" },
-        );
-      }
-    },
   });
 }
 

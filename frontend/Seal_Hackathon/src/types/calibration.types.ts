@@ -77,6 +77,8 @@ export type CalibrationScoreSheetResponse = {
 export type CriterionDistributionResponse = {
   eventCriteriaId: UUID;
   criteriaName: string;
+  category?: string | null;
+  technical?: boolean | null;
   benchmarkScore?: number | null;
   judgeCount: number;
   mean?: number | null;

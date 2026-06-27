@@ -5,6 +5,8 @@ import java.util.UUID;
 public record CriterionDistributionResponse(
         UUID eventCriteriaId,
         String criteriaName,
+        String category,
+        Boolean technical,
         Double benchmarkScore,
         Long judgeCount,
         Double mean,

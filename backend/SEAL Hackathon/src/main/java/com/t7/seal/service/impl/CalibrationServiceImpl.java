@@ -152,6 +152,7 @@ public class CalibrationServiceImpl implements CalibrationService {
         }
 
         Map<String, Object> before = Map.of(
+                "sampleSubmissionId", calibrationRound.getSampleSubmission().getId().toString(),
                 "description", nullSafe(calibrationRound.getDescription()),
                 "startAt", calibrationRound.getStartAt().toString(),
                 "endAt", calibrationRound.getEndAt().toString(),
@@ -170,6 +171,17 @@ public class CalibrationServiceImpl implements CalibrationService {
         if (request.mandatory() != null) {
             calibrationRound.setIsMandatory(request.mandatory());
         }
+        if (request.sampleSubmissionId() != null
+                && !request.sampleSubmissionId().equals(calibrationRound.getSampleSubmission().getId())) {
+            if (calibrationScoreRepository.countByCalibrationRoundId(calibrationRound.getId()) > 0) {
+                throw new ConflictException("Cannot change sample submission after calibration scores exist.");
+            }
+
+            Submission sample = submissionRepository.findDetailById(request.sampleSubmissionId())
+                    .orElseThrow(() -> new NotFoundException("Sample submission not found."));
+            ensureSubmissionBelongsToEvent(sample, calibrationRound.getEvent().getId());
+            calibrationRound.setSampleSubmission(sample);
+        }
         if (request.benchmarkScores() != null) {
             Map<String, Float> benchmarkScores = parseBenchmarkScores(request.benchmarkScores());
             validateBenchmarkCriteria(
@@ -178,6 +190,12 @@ public class CalibrationServiceImpl implements CalibrationService {
                     benchmarkScores
             );
             calibrationRound.setBenchmarkScores(benchmarkScores);
+        } else if (request.sampleSubmissionId() != null) {
+            validateBenchmarkCriteria(
+                    calibrationRound.getEvent().getId(),
+                    calibrationRound.getSampleSubmission(),
+                    calibrationRound.getBenchmarkScores()
+            );
         }
         validateTimeRange(calibrationRound.getStartAt(), calibrationRound.getEndAt());
 
@@ -189,6 +207,7 @@ public class CalibrationServiceImpl implements CalibrationService {
                 saved.getId(),
                 before,
                 Map.of(
+                        "sampleSubmissionId", saved.getSampleSubmission().getId().toString(),
                         "description", nullSafe(saved.getDescription()),
                         "startAt", saved.getStartAt().toString(),
                         "endAt", saved.getEndAt().toString(),
@@ -635,6 +654,11 @@ public class CalibrationServiceImpl implements CalibrationService {
         return new CriterionDistributionResponse(
                 criteria.getId(),
                 criteria.getEffectiveName(),
+                criteria.getCriteria() == null
+                        || criteria.getCriteria().getCategory() == null
+                        ? null
+                        : criteria.getCriteria().getCategory().name(),
+                criteria.getEffectiveIsTechnical(),
                 benchmark == null ? null : benchmark.doubleValue(),
                 (long) values.size(),
                 mean,

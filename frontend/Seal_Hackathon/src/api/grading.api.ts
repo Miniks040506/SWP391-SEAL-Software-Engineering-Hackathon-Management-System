@@ -73,10 +73,6 @@ export const gradingApi = {
     return apiRequest.patch<ScoreResponse>(`/grading/scores/${scoreId}`, payload);
   },
 
-  confirmScore(scoreId: UUID) {
-    return apiRequest.post<ScoreResponse>(`/grading/scores/${scoreId}/confirm`);
-  },
-
   getEventGradingProgress(eventId: UUID) {
     return apiRequest.get<EventGradingProgressResponse>(
       `/events/${eventId}/grading-progress`,
