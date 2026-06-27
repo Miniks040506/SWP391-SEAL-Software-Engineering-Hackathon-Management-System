@@ -456,6 +456,17 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException("Grading is already locked for this round.");
         }
 
+        if (countCriteriaForRound(round) == 0) {
+            throw new ConflictException(
+                    "At least one active scoring criterion is required before locking grading.");
+        }
+
+        ScoringProgressResponse progress = buildScoringProgress(round);
+        if (progress.total() == 0) {
+            throw new ConflictException(
+                    "At least one assigned submission is required before locking grading.");
+        }
+
         LocalDateTime now = LocalDateTime.now();
         RoundStatus before = round.getStatus();
         round.setGradingLockedAt(now);
@@ -465,8 +476,6 @@ public class RoundServiceImpl implements RoundService {
         saveRoundAudit(actor, saved, AuditActionType.GRADING_LOCKED, before.name(), saved.getStatus().name());
         saveRoundNotification(actor, saved, NotificationType.JUDGING_READY, "Grading locked",
                 "Grading has been locked for round " + saved.getName() + ". Rankings can now be calculated.");
-
-        ScoringProgressResponse progress = buildScoringProgress(saved);
 
         return new RoundLockResponse(
                 saved.getId(),

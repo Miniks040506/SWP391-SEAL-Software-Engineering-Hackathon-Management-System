@@ -561,13 +561,18 @@ public class GradingServiceImpl implements GradingService {
 
         boolean submissionLocked = round.getSubmissionLockedAt() != null;
         boolean gradingLocked = round.getGradingLockedAt() != null;
-        boolean canLockGrading = submissionLocked && !gradingLocked;
+        boolean canLockGrading = submissionLocked
+                && !gradingLocked
+                && criteriaCount > 0
+                && totalAssigned > 0;
         String warning = null;
 
         if (!submissionLocked) {
             warning = "Submissions must be locked before grading can be locked.";
         } else if (gradingLocked) {
-            warning = "Grading is ready to lock for this round.";
+            warning = "Grading is already locked for this round.";
+        } else if (criteriaCount == 0) {
+            warning = "No active scoring criteria are configured for this round.";
         } else if (totalAssigned == 0) {
             warning = "No assigned submission found for grading.";
         } else if (completed < totalAssigned) {
