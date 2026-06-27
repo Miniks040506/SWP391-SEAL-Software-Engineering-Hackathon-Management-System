@@ -541,6 +541,7 @@ public class RoundServiceImpl implements RoundService {
 
         Set<UUID> finalAdvancedTeamIds = resolveFinalAdvanceTeamId(request, suggestedTeamIds, rankings);
         Map<UUID, String> overrideReasons = validateAndMapOverrideReason(request, rankings);
+        validateOverrideCoverage(request, suggestedTeamIds, finalAdvancedTeamIds);
         List<TeamAdvancementDecisionResponse> decisions = new ArrayList<>();
 
         for (Ranking ranking : rankings) {
@@ -708,6 +709,43 @@ public class RoundServiceImpl implements RoundService {
             }
         }
         return finalAdvancedTeamIds;
+    }
+
+    private void validateOverrideCoverage(
+            ConfirmAdvancementRequest request,
+            Set<UUID> suggestedTeamIds,
+            Set<UUID> finalAdvancedTeamIds
+    ) {
+        Set<UUID> changedTeamIds = new LinkedHashSet<>(suggestedTeamIds);
+        changedTeamIds.addAll(finalAdvancedTeamIds);
+        changedTeamIds.removeIf(teamId -> suggestedTeamIds.contains(teamId)
+                == finalAdvancedTeamIds.contains(teamId));
+
+        if (changedTeamIds.isEmpty()) {
+            return;
+        }
+
+        Map<UUID, AdvancementOverrideRequest> overridesByTeam = new LinkedHashMap<>();
+        if (request != null && request.overrides() != null) {
+            for (AdvancementOverrideRequest override : request.overrides()) {
+                if (override != null && override.teamId() != null) {
+                    overridesByTeam.put(override.teamId(), override);
+                }
+            }
+        }
+
+        for (UUID teamId : changedTeamIds) {
+            AdvancementOverrideRequest override = overridesByTeam.get(teamId);
+            if (override == null) {
+                throw new BadRequestException("Override reason is required for changed team: " + teamId);
+            }
+
+            boolean finalAdvanced = finalAdvancedTeamIds.contains(teamId);
+            if (!Boolean.valueOf(finalAdvanced).equals(override.advanced())) {
+                throw new BadRequestException(
+                        "Override advanced flag does not match final decision for team: " + teamId);
+            }
+        }
     }
 
     private TeamAdvancementDecisionResponse toTeamAdvancementDecisionResponse(
