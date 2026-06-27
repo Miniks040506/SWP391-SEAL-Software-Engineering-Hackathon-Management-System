@@ -95,6 +95,7 @@ export type ScoreSheetResponse = {
   confirmed: boolean;
   submissionLocked: boolean;
   gradingLocked: boolean;
+  calibrationCompleted: boolean;
   canEdit: boolean;
   scores: ScoreResponse[];
 };

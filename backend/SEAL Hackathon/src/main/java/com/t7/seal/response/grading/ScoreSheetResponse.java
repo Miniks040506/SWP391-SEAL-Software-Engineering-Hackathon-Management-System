@@ -9,6 +9,7 @@ public record ScoreSheetResponse(
         Boolean confirmed,
         Boolean submissionLocked,
         Boolean gradingLocked,
+        Boolean calibrationCompleted,
         Boolean canEdit,
         List<ScoreResponse> scores
 ) {}

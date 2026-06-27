@@ -292,7 +292,9 @@ public class GradingServiceImpl implements GradingService {
 
     private void ensureJudgeCanMutate(Submission submission, Judge judge, boolean finalSubmit) {
         ensureJudgeCanView(judge, submission);
-        ensureMandatoryCalibrationCompleted(submission, judge);
+        if (!hasCompletedMandatoryCalibration(submission, judge)) {
+            throw new ConflictException("Complete all mandatory calibration rounds before grading submissions.");
+        }
 
         Round round = submission.getRound();
         if (round.getSubmissionLockedAt() == null) {
@@ -308,7 +310,7 @@ public class GradingServiceImpl implements GradingService {
         }
     }
 
-    private void ensureMandatoryCalibrationCompleted(Submission submission, Judge judge) {
+    private boolean hasCompletedMandatoryCalibration(Submission submission, Judge judge) {
         UUID eventId = submission.getRound().getEvent().getId();
 
         for (CalibrationRound calibrationRound :
@@ -328,8 +330,7 @@ public class GradingServiceImpl implements GradingService {
                     .collect(Collectors.toSet());
 
             if (requiredCriteriaIds.isEmpty()) {
-                throw new ConflictException("Mandatory calibration round has no active criteria: "
-                        + calibrationRound.getId());
+                return false;
             }
 
             Set<UUID> scoredCriteriaIds = calibrationScoreRepository
@@ -339,10 +340,11 @@ public class GradingServiceImpl implements GradingService {
                     .collect(Collectors.toSet());
 
             if (!scoredCriteriaIds.containsAll(requiredCriteriaIds)) {
-                throw new ConflictException("Complete mandatory calibration round before grading submissions: "
-                        + calibrationRound.getId());
+                return false;
             }
         }
+
+        return true;
     }
 
     private boolean isAssigned(Submission submission, Judge judge) {
@@ -399,9 +401,11 @@ public class GradingServiceImpl implements GradingService {
         boolean confirmed = criteriaCount > 0 && confirmedCount >= criteriaCount;
         boolean submissionLocked = submission.getRound().getSubmissionLockedAt() != null;
         boolean gradingLocked = submission.getRound().getGradingLockedAt() != null;
+        boolean calibrationCompleted = hasCompletedMandatoryCalibration(submission, judge);
         boolean canEdit = criteriaCount > 0
                 && submissionLocked
                 && !gradingLocked
+                && calibrationCompleted
                 && !confirmed;
 
         return new ScoreSheetResponse(
@@ -410,6 +414,7 @@ public class GradingServiceImpl implements GradingService {
                 confirmed,
                 submissionLocked,
                 gradingLocked,
+                calibrationCompleted,
                 canEdit,
                 scores
         );
