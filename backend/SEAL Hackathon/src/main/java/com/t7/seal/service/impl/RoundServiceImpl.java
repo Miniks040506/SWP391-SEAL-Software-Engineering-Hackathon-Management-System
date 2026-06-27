@@ -585,7 +585,9 @@ public class RoundServiceImpl implements RoundService {
                 .targetId(round.getId())
                 .beforeState(null)
                 .afterState(Map.of(
-                        "advancedTeamIds", finalAdvancedTeamIds.stream().map(UUID::toString),
+                        "advancedTeamIds", finalAdvancedTeamIds.stream()
+                                .map(UUID::toString)
+                                .toList(),
                         "eliminatedTeamIds", rankings.stream()
                                 .map(r -> r.getSubmission().getTeam().getId())
                                 .filter(id -> !finalAdvancedTeamIds.contains(id))
