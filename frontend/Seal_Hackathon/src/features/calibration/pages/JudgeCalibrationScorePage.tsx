@@ -8,7 +8,6 @@ import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 
 import {
     useCalibrationScoreSheetQuery,
-    useMyCalibrationScoresQuery,
     useCalibrationRoundQuery,
     useCalibrationSubmissionQuery,
 } from "@/features/calibration/hooks/useCalibrationQueries";
@@ -31,7 +30,6 @@ export const JudgeCalibrationScorePage = () => {
     const navigate = useNavigate();
 
     const { data: scoreSheet, isLoading: isLoadingScoreSheet } = useCalibrationScoreSheetQuery(calibrationId as UUID);
-    const { data: myScores = [], isLoading: isLoadingMyScores } = useMyCalibrationScoresQuery(calibrationId as UUID);
     const { data: round, isLoading: isLoadingRound } = useCalibrationRoundQuery(calibrationId as UUID);
 
     const submissionId = scoreSheet?.sampleSubmissionId;
@@ -40,10 +38,10 @@ export const JudgeCalibrationScorePage = () => {
     const submitMutation = useSubmitCalibrationScoresMutation();
 
     const now = new Date();
-    const start = round?.startAt ? new Date(round.startAt) : null;
-    const end = round?.endAt ? new Date(round.endAt) : null;
-    const isSubmitted = myScores.length > 0;
-    const isPublished = !!round?.distributionPublishedAt;
+    const start = scoreSheet?.startAt ? new Date(scoreSheet.startAt) : null;
+    const end = scoreSheet?.endAt ? new Date(scoreSheet.endAt) : null;
+    const isSubmitted = scoreSheet?.submitted ?? false;
+    const isPublished = scoreSheet?.distributionPublished ?? false;
 
     let status: CalibrationStatusType = "OPEN";
     if (isPublished) {
@@ -56,13 +54,13 @@ export const JudgeCalibrationScorePage = () => {
         status = "CLOSED";
     }
 
-    const isReadOnly = status !== "OPEN";
+    const isReadOnly = !(scoreSheet?.canSubmit ?? false);
 
     const defaultValues = useMemo(() => {
         const initialScores: Record<string, any> = {};
         if (scoreSheet?.criteria) {
             scoreSheet.criteria.forEach((c: any) => {
-                const existing = myScores.find((s) => s.eventCriteriaId === c.id);
+                const existing = scoreSheet.scores.find((score) => score.eventCriteriaId === c.id);
                 initialScores[c.id] = {
                     score: existing ? existing.value : "",
                     comment: (existing as any)?.comment || "",
@@ -70,7 +68,7 @@ export const JudgeCalibrationScorePage = () => {
             });
         }
         return { scores: initialScores };
-    }, [scoreSheet?.criteria, myScores]);
+    }, [scoreSheet?.criteria, scoreSheet?.scores]);
 
     const methods = useForm<ScoreFormValues>({
         defaultValues,
@@ -78,10 +76,10 @@ export const JudgeCalibrationScorePage = () => {
     });
 
     useEffect(() => {
-        if (myScores.length > 0 && scoreSheet?.criteria) {
+        if (scoreSheet?.criteria) {
             methods.reset(defaultValues);
         }
-    }, [myScores, scoreSheet?.criteria, methods, defaultValues]);
+    }, [scoreSheet?.criteria, methods, defaultValues]);
 
     const onSubmit = (values: ScoreFormValues) => {
         const scoresArray = Object.entries(values.scores).map(([criteriaId, data]) => ({
@@ -100,7 +98,7 @@ export const JudgeCalibrationScorePage = () => {
         navigate(`/judge/calibrations/${calibrationId}/distribution`);
     };
 
-    const isLoadingData = isLoadingScoreSheet || isLoadingMyScores || isLoadingRound;
+    const isLoadingData = isLoadingScoreSheet || isLoadingRound;
 
     if (isLoadingData) {
         return (

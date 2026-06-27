@@ -99,7 +99,9 @@ export const useSubmitCalibrationScoresMutation = () => {
                 : calibrationApi.submitCalibrationScoreAlias(calibrationId, payload),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: calibrationQueryKeys.detail(variables.calibrationId) });
+            queryClient.invalidateQueries({ queryKey: calibrationQueryKeys.scoreSheet(variables.calibrationId) });
             queryClient.invalidateQueries({ queryKey: calibrationQueryKeys.myScores(variables.calibrationId) });
+            queryClient.invalidateQueries({ queryKey: calibrationQueryKeys.myList() });
             enqueueSnackbar("Scores submitted successfully", { variant: "success" });
         },
         onError: (error: any) => {

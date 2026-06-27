@@ -747,6 +747,9 @@ public class CalibrationServiceImpl implements CalibrationService {
 
         long criteriaCount = criteria.size();
         boolean submitted = criteriaCount > 0 && scores.size() >= criteriaCount;
+        boolean canSubmit = calibrationRound.isOpen(now)
+                && !calibrationRound.isDistributionPublished()
+                && !submitted;
 
         return new CalibrationScoreSheetResponse(
                 calibrationRound.getId(),
@@ -760,7 +763,7 @@ public class CalibrationServiceImpl implements CalibrationService {
                 calibrationRound.getIsMandatory(),
                 calibrationRound.isDistributionPublished(),
                 calibrationRound.getDistributionPublishedAt(),
-                calibrationRound.isOpen(now) && !calibrationRound.isDistributionPublished(),
+                canSubmit,
                 submitted,
                 now,
                 submissionLinkRepository.findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(sample.getId())
