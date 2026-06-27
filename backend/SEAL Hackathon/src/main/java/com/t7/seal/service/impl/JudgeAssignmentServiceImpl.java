@@ -235,10 +235,10 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                                 item.roundId(),
                                 item.trackId(),
                                 item.submissionStatus(),
-                                "SUBMITTED".equals(item.submissionStatus())
-                                        || "LOCKED".equals(item.submissionStatus()),
+                                item.criteriaCount() > 0
+                                        && item.confirmedScoreCount() >= item.criteriaCount(),
                                 item.gradingStatus(),
-                                item.criteriaCount(),
+                                item.draftScoreCount(),
                                 item.confirmedScoreCount(),
                                 item.criteriaCount(),
                                 item.gradingLocked(),
