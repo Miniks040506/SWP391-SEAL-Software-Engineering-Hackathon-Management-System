@@ -144,6 +144,24 @@ public class CalibrationServiceImpl implements CalibrationService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<CalibrationRoundResponse> getManagedCalibrationRounds(Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCoordinatorOrAdmin(actor);
+
+        List<HackathonEvent> events = actor.isAdmin()
+                ? eventRepository.findAll()
+                : eventRepository.findByCreatedByIdOrderByYearDescCreatedAtDesc(actor.getId());
+
+        return events.stream()
+                .flatMap(event -> calibrationRoundRepository
+                        .findByEventIdOrderByStartAtAsc(event.getId())
+                        .stream())
+                .map(this::toRoundResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public CalibrationRoundDetailResponse getCalibrationRoundById(
             UUID calibrationRoundId,
             Authentication authentication

@@ -20,6 +20,8 @@ public interface CalibrationService {
 
     List<CalibrationRoundResponse> getMyCalibrationRounds(Authentication authentication);
 
+    List<CalibrationRoundResponse> getManagedCalibrationRounds(Authentication authentication);
+
     CalibrationRoundDetailResponse getCalibrationRoundById(UUID calibrationRoundId,
                                                            Authentication authentication);
 

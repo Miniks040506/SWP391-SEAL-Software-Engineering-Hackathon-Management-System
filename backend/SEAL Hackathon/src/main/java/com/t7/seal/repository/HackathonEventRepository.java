@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -53,6 +54,8 @@ public interface HackathonEventRepository extends JpaRepository<HackathonEvent, 
 
     boolean existsByNameIgnoreCaseAndYear(
             String name, Integer year);
+
+    List<HackathonEvent> findByCreatedByIdOrderByYearDescCreatedAtDesc(UUID userId);
 
     @Query("""
                     SELECT e FROM HackathonEvent e 
