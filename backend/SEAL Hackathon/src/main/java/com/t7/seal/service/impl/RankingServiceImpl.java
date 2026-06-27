@@ -234,9 +234,26 @@ public class RankingServiceImpl implements RankingService {
 
         ensureEventCanPublish(event);
 
+        List<Round> eventRounds = roundRepository.findByEventIdOrderByOrderIndexAsc(eventId);
+        if (eventRounds.isEmpty()) {
+            throw new ConflictException("Cannot publish event results without a configured round.");
+        }
+
+        Round finalRound = eventRounds.get(eventRounds.size() - 1);
+        if (finalRound.getGradingLockedAt() == null) {
+            throw new ConflictException(
+                    "Final round grading must be locked before publishing event results.");
+        }
+
         List<Ranking> rankings = rankingRepository.findByEventRoundTrackWithDetails(eventId, null, null);
         if (rankings.isEmpty()) {
             throw new ConflictException("Cannot publish results before rankings are calculated.");
+        }
+        boolean finalRoundRanked = rankings.stream()
+                .anyMatch(ranking -> ranking.getRound().getId().equals(finalRound.getId()));
+        if (!finalRoundRanked) {
+            throw new ConflictException(
+                    "Final round rankings must be calculated before publishing event results.");
         }
 
         LocalDateTime now = LocalDateTime.now();
