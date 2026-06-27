@@ -62,8 +62,11 @@ export const CalibrationDistributionPage = () => {
         );
     }
 
-    const criteriaData = distribution?.criteriaDistributions || [];
-    const judgeCount = distribution?.judgeCount || 0;
+    const criteriaData = distribution?.distributions ?? [];
+    const judgeCount = criteriaData.reduce(
+        (maximum, criterion) => Math.max(maximum, criterion.judgeCount),
+        0,
+    );
     const criteriaCount = criteriaData.length;
 
     // Compute stats
