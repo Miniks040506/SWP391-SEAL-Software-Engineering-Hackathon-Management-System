@@ -534,7 +534,8 @@ public class RoundServiceImpl implements RoundService {
         List<AdvanceRule> rules = advanceRuleRepository
                 .findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId);
 
-        Set<UUID> suggestedTeamIds = executeAdvanceRules(rankings, rules)
+        Map<UUID, AdvanceReason> suggestedReasonsByTeam = new LinkedHashMap<>();
+        Set<UUID> suggestedTeamIds = executeAdvanceRules(rankings, rules, suggestedReasonsByTeam)
                 .stream()
                 .map(r -> r.getSubmission().getTeam().getId())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -552,7 +553,9 @@ public class RoundServiceImpl implements RoundService {
             String overrideReasonForTeam = overrideReasons.get(teamId);
 
             if (finalAdvanced) {
-                ranking.markAdvanced(suggestedAdvanced ? AdvanceReason.TOP_N : AdvanceReason.MANUAL_ADVANCE);
+                ranking.markAdvanced(suggestedAdvanced
+                        ? suggestedReasonsByTeam.get(teamId)
+                        : AdvanceReason.MANUAL_ADVANCE);
                 if (team.getStatus() != TeamStatus.WINNER) {
                     team.setStatus(TeamStatus.ADVANCED);
                 }
@@ -1116,6 +1119,14 @@ public class RoundServiceImpl implements RoundService {
     }
 
     private List<Ranking> executeAdvanceRules(List<Ranking> rankings, List<AdvanceRule> rules) {
+        return executeAdvanceRules(rankings, rules, null);
+    }
+
+    private List<Ranking> executeAdvanceRules(
+            List<Ranking> rankings,
+            List<AdvanceRule> rules,
+            Map<UUID, AdvanceReason> reasonsByTeam
+    ) {
         if (rankings == null || rankings.isEmpty() || rules == null || rules.isEmpty()) {
             return List.of();
         }
@@ -1140,29 +1151,63 @@ public class RoundServiceImpl implements RoundService {
 
             for (List<Ranking> scoped : scopedByTrack.values()) {
                 switch (rule.getRuleType()) {
-                    case TOP_N -> selected.addAll(scoped.stream()
-                            .limit(Math.max(0, Math.round(rule.getValue())))
-                            .toList());
+                    case TOP_N -> addSelected(
+                            selected,
+                            scoped.stream()
+                                    .limit(Math.max(0, Math.round(rule.getValue())))
+                                    .toList(),
+                            AdvanceReason.TOP_N,
+                            reasonsByTeam
+                    );
                     case TOP_PERCENT -> {
                         int limit = (int) Math.ceil(scoped.size() * (rule.getValue() / 100.0));
-                        selected.addAll(scoped.stream().limit(Math.max(0, limit)).toList());
+                        addSelected(
+                                selected,
+                                scoped.stream().limit(Math.max(0, limit)).toList(),
+                                AdvanceReason.TOP_PERCENT,
+                                reasonsByTeam
+                        );
                     }
-                    case MIN_SCORE -> selected.addAll(scoped.stream()
-                            .filter(r -> r.getTotalScore() != null && r.getTotalScore() >= rule.getValue())
-                            .toList());
-                    case WILDCARD -> selected.addAll(scoped.stream()
-                            .filter(r -> !selected.contains(r))
-                            .sorted(Comparator
-                                    .comparing(Ranking::getTotalScore,
-                                            Comparator.nullsLast(Comparator.reverseOrder()))
-                                    .thenComparing(Ranking::getRankPosition))
-                            .limit(Math.max(0, Math.round(rule.getValue())))
-                            .toList());
+                    case MIN_SCORE -> addSelected(
+                            selected,
+                            scoped.stream()
+                                    .filter(r -> r.getTotalScore() != null
+                                            && r.getTotalScore() >= rule.getValue())
+                                    .toList(),
+                            AdvanceReason.MIN_SCORE,
+                            reasonsByTeam
+                    );
+                    case WILDCARD -> addSelected(
+                            selected,
+                            scoped.stream()
+                                    .filter(r -> !selected.contains(r))
+                                    .sorted(Comparator
+                                            .comparing(Ranking::getTotalScore,
+                                                    Comparator.nullsLast(Comparator.reverseOrder()))
+                                            .thenComparing(Ranking::getRankPosition))
+                                    .limit(Math.max(0, Math.round(rule.getValue())))
+                                    .toList(),
+                            AdvanceReason.WILDCARD,
+                            reasonsByTeam
+                    );
                 }
             }
         }
 
         return new ArrayList<>(selected);
+    }
+
+    private void addSelected(
+            Set<Ranking> selected,
+            List<Ranking> candidates,
+            AdvanceReason reason,
+            Map<UUID, AdvanceReason> reasonsByTeam
+    ) {
+        for (Ranking ranking : candidates) {
+            if (selected.add(ranking) && reasonsByTeam != null) {
+                reasonsByTeam.put(ranking.getSubmission().getTeam().getId(), reason);
+            }
+        }
     }
 
     private RankingResponse toRankingResponse(Ranking ranking) {
