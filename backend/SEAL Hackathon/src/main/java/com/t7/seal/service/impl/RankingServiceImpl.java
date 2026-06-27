@@ -594,7 +594,7 @@ public class RankingServiceImpl implements RankingService {
         Track track = ranking.getTrack();
 
         List<TeamScoreCriterionResponse> criteriaScores =
-                buildCriterionAverageScores(submission.getId());
+                buildCriterionAverageScores(ranking);
 
         return new TeamDetailedScoreResponse(
                 event.getId(),
@@ -615,9 +615,26 @@ public class RankingServiceImpl implements RankingService {
         );
     }
 
-    private List<TeamScoreCriterionResponse> buildCriterionAverageScores(UUID submissionId) {
+    private List<TeamScoreCriterionResponse> buildCriterionAverageScores(Ranking ranking) {
+        if (ranking.getScoreBreakdown() == null || ranking.getScoreBreakdown().isEmpty()) {
+            return List.of();
+        }
+
+        Set<String> includedJudgeIds = ranking.getScoreBreakdown().keySet();
+        Set<String> includedCriteriaIds = ranking.getScoreBreakdown()
+                .values()
+                .stream()
+                .flatMap(scores -> scores.keySet().stream())
+                .collect(Collectors.toSet());
+
         List<Score> confirmedScores = scoreRepository
-                .findConfirmedBySubmissionIdWithCriteria(submissionId);
+                .findConfirmedBySubmissionIdWithCriteria(ranking.getSubmission().getId())
+                .stream()
+                .filter(score -> score.getJudge() != null
+                        && includedJudgeIds.contains(score.getJudge().getId().toString()))
+                .filter(score -> score.getEventCriteria() != null
+                        && includedCriteriaIds.contains(score.getEventCriteria().getId().toString()))
+                .toList();
 
         Map<UUID, List<Score>> byCriteria = confirmedScores.stream()
                 .filter(score -> score.getEventCriteria() != null)
