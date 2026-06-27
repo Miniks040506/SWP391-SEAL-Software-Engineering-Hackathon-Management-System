@@ -1,9 +1,37 @@
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
+import { useSnackbar } from "notistack";
 import { gradingApi } from "@/api/grading.api";
 import type { SaveScoreSheetRequest } from "@/types/grading.types";
 
+const getMutationErrorMessage = (error: unknown) => {
+  if (!isAxiosError<{ message?: string }>(error)) {
+    return "Could not save scores. Please try again.";
+  }
+
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  }
+
+  switch (error.response?.status) {
+    case 400:
+      return "One or more scores are invalid.";
+    case 403:
+      return "You are not assigned to this submission.";
+    case 404:
+      return "Submission or score sheet not found.";
+    case 409:
+      return "Scores cannot be changed because grading is locked or already submitted.";
+    default:
+      return "Could not save scores. Please try again.";
+  }
+};
+
 export function useScoreMutations(submissionId: string) {
   const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["grading", "scoreSheet", submissionId] });
@@ -13,13 +41,26 @@ export function useScoreMutations(submissionId: string) {
   const saveDraft = useMutation({
     mutationFn: (payload: SaveScoreSheetRequest) =>
       gradingApi.saveDraftScores(submissionId, payload),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setLastSavedAt(new Date());
+      invalidate();
+      enqueueSnackbar("Draft scores saved.", { variant: "success" });
+    },
+    onError: (error) => {
+      enqueueSnackbar(getMutationErrorMessage(error), { variant: "error" });
+    },
   });
 
   const finalSubmit = useMutation({
     mutationFn: (payload: SaveScoreSheetRequest) =>
       gradingApi.submitFinalScores(submissionId, payload),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      enqueueSnackbar("Scores submitted successfully.", { variant: "success" });
+    },
+    onError: (error) => {
+      enqueueSnackbar(getMutationErrorMessage(error), { variant: "error" });
+    },
   });
 
   return {
@@ -27,7 +68,6 @@ export function useScoreMutations(submissionId: string) {
     finalSubmit: finalSubmit.mutateAsync,
     isSaving: saveDraft.isPending,
     isSubmitting: finalSubmit.isPending,
-    // Add dummy lastSavedAt to maintain interface compatibility with UI draft bar
-    lastSavedAt: new Date(),
+    lastSavedAt,
   };
 }
