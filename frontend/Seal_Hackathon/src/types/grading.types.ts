@@ -48,6 +48,14 @@ export type JudgeSubmissionAssignmentResponse = {
   gradingStatus: JudgeGradingStatus;
 };
 
+export type JudgeSubmissionQueueSummaryResponse = {
+  totalAssigned: number;
+  pending: number;
+  draftSaved: number;
+  submitted: number;
+  locked: number;
+};
+
 export type GradingSubmissionDetailResponse = {
   submissionId: UUID;
   teamName: string;
