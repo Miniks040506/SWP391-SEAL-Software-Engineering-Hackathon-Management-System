@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { useQuery } from "@tanstack/react-query";
@@ -68,6 +68,17 @@ export const CalibrationRoundFormPage = () => {
         queryFn: () => submissionApi.getRoundSubmissions(selectedRoundId as UUID),
         enabled: !!selectedRoundId,
     });
+
+    const applicableCriteria = useMemo(
+        () => selectedRoundId
+            ? criteria.filter(
+                (criterion) => criterion.isActive
+                    && (!criterion.appliesToRoundIds?.length
+                        || criterion.appliesToRoundIds.includes(selectedRoundId as UUID))
+            )
+            : [],
+        [criteria, selectedRoundId]
+    );
 
     const handleSubmit = (values: CalibrationFormValues) => {
         if (isCreateMode && effectiveEventId) {
@@ -198,7 +209,7 @@ export const CalibrationRoundFormPage = () => {
                 <div className="space-y-6">
                     <CalibrationRoundForm
                         initialValues={initialValues}
-                        criteria={criteria}
+                        criteria={applicableCriteria}
                         rounds={rounds}
                         submissions={submissions}
                         onRoundChange={setSelectedRoundId}

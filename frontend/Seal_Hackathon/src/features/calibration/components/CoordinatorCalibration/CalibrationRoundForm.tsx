@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -88,17 +88,24 @@ export const CalibrationRoundForm = ({
         register,
         handleSubmit,
         watch,
+        setValue,
         formState: { errors },
     } = methods;
 
     const selectedRoundId = watch("roundId");
     const selectedSubmissionId = watch("sampleSubmissionId");
+    const previousRoundId = useRef(initialValues?.roundId || "");
 
     useEffect(() => {
         if (selectedRoundId) {
+            if (previousRoundId.current && previousRoundId.current !== selectedRoundId) {
+                setValue("sampleSubmissionId", "", { shouldDirty: true });
+                setValue("benchmarkScores", {}, { shouldDirty: true });
+            }
+            previousRoundId.current = selectedRoundId;
             onRoundChange(selectedRoundId);
         }
-    }, [selectedRoundId, onRoundChange]);
+    }, [selectedRoundId, onRoundChange, setValue]);
 
     const selectedSubmission = useMemo(() => {
         return submissions.find((s) => s.id === selectedSubmissionId);
