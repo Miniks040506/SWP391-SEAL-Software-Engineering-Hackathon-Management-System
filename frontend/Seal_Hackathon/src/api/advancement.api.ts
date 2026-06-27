@@ -5,6 +5,7 @@ import type {
   AdvancementPreviewResponse,
   ConfirmAdvancementRequest,
   AdvancementOverrideRequest,
+  FinalAdvancementStatus,
   SuggestedAdvancementStatus,
   TeamAdvancementStatusResponse,
 } from '../types/advancement.types';
@@ -13,6 +14,33 @@ import type {
   ConfirmAdvancementRequest as BackendConfirmAdvancementRequest,
   ConfirmAdvancementResponse as BackendConfirmAdvancementResponse,
 } from '../types/round.types';
+import type {
+  TeamAdvancementStatusResponse as BackendTeamAdvancementStatusResponse,
+} from '../types/team.types';
+
+function toUiTeamAdvancementStatus(
+  response: BackendTeamAdvancementStatusResponse,
+): TeamAdvancementStatusResponse {
+  const status: FinalAdvancementStatus = !response.advancementConfirmed
+    ? 'WAITING'
+    : response.advanced
+      ? 'ADVANCED'
+      : 'ELIMINATED';
+
+  return {
+    teamId: response.teamId,
+    teamName: response.teamName,
+    eventId: response.eventId,
+    eventName: response.eventName,
+    currentRoundId: response.roundId,
+    currentRoundName: response.roundName,
+    status,
+    message: response.message,
+    nextRoundId: response.nextRoundId,
+    nextRoundName: response.nextRoundName,
+    canAccessNextRound: response.canAccessNextRound,
+  };
+}
 
 function toUiPreview(
   response: BackendAdvancementPreviewResponse,
@@ -110,6 +138,11 @@ export const advancementApi = {
       toBackendConfirmRequest({ overrideRows: [payload] }),
     ),
 
-  getTeamAdvancementStatus: (teamId: string) =>
-    axiosClient.get<TeamAdvancementStatusResponse>(`/teams/${teamId}/advancement`),
+  getTeamAdvancementStatus: async (teamId: string) => ({
+    data: toUiTeamAdvancementStatus(
+      await apiRequest.get<BackendTeamAdvancementStatusResponse>(
+        `/teams/${teamId}/advancement`,
+      ),
+    ),
+  }),
 };
