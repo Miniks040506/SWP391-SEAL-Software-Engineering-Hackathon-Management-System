@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import { format } from "date-fns";
 
-import { useAllCalibrationRoundsQuery, useMyCalibrationScoresQuery } from "@/features/calibration/hooks/useCalibrationQueries";
+import { useJudgeCalibrationRoundsQuery, useMyCalibrationScoresQuery } from "@/features/calibration/hooks/useCalibrationQueries";
 import type { CalibrationRoundResponse } from "@/types/calibration.types";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
@@ -135,7 +135,7 @@ const JudgeCalibrationListItem = ({ round }: { round: CalibrationRoundResponse }
 };
 
 export const JudgeCalibrationListPage = () => {
-    const { data: rounds = [], isLoading } = useAllCalibrationRoundsQuery();
+    const { data: rounds = [], isLoading } = useJudgeCalibrationRoundsQuery();
 
     return (
         <div className="mx-auto max-w-6xl animate-in fade-in duration-500 space-y-7 pb-20 pt-6">

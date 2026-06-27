@@ -9,7 +9,7 @@ import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import type { UUID } from "@/types/common.types";
 import {
     useEventCalibrationRoundsQuery,
-    useAllCalibrationRoundsQuery,
+    useManagedCalibrationRoundsQuery,
 } from "@/features/calibration/hooks/useCalibrationQueries";
 import {
     usePublishCalibrationDistributionMutation,
@@ -22,7 +22,7 @@ export const CoordinatorCalibrationPage = () => {
     const { enqueueSnackbar } = useSnackbar();
 
     const eventQuery = useEventCalibrationRoundsQuery(eventId as UUID);
-    const allQuery = useAllCalibrationRoundsQuery();
+    const allQuery = useManagedCalibrationRoundsQuery();
 
     const {
         data: calibrationRounds,

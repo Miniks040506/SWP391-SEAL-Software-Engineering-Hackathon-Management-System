@@ -39,6 +39,10 @@ export const calibrationApi = {
     return apiRequest.get<CalibrationRoundResponse[]>("/calibrations/my");
   },
 
+  getManagedCalibrationRounds() {
+    return apiRequest.get<CalibrationRoundResponse[]>("/calibrations/managed");
+  },
+
   getCalibrationRoundById(calibrationId: UUID) {
     return apiRequest.get<CalibrationRoundDetailResponse>(
       `/calibrations/${calibrationId}`,
