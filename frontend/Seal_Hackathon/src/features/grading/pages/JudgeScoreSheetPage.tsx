@@ -73,7 +73,7 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  if (isError || !submission) {
+  if (isError || !submission || !scoreSheet) {
     return (
       <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
         <Alert severity="error" sx={{ borderRadius: 2 }}>
@@ -83,12 +83,11 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  const isLocked = assignmentInfo?.gradingLocked ?? false;
-  const isFinalSubmitted = scoreSheet?.confirmed ?? false;
-
-  const isNotReady = assignmentInfo
-    ? assignmentInfo.submissionStatus !== "SUBMITTED" && assignmentInfo.submissionStatus !== "LOCKED"
-    : false;
+  const isGradingLocked = scoreSheet.gradingLocked;
+  const isFinalSubmitted = scoreSheet.confirmed;
+  const isCalibrationIncomplete = !scoreSheet.calibrationCompleted;
+  const canEdit = scoreSheet.canEdit;
+  const isNotReady = !scoreSheet.submissionLocked;
 
   if (isNotReady) {
     return (
@@ -169,9 +168,15 @@ export const JudgeScoreSheetPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pb-20 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-        {isLocked && (
+        {isGradingLocked && (
           <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
             Grading is currently locked by the coordinator.
+          </Alert>
+        )}
+
+        {isCalibrationIncomplete && (
+          <Alert severity="warning" sx={{ mb: 4, borderRadius: 2 }}>
+            Complete all mandatory calibration rounds before grading this submission.
           </Alert>
         )}
 
@@ -183,7 +188,7 @@ export const JudgeScoreSheetPage = () => {
 
         <div className="flex flex-col items-start gap-8 lg:flex-row">
           <div className="flex w-full flex-col gap-6 lg:w-[65%]">
-            <ScoreSheetHeader submission={submission} isLocked={isLocked} assignmentInfo={assignmentInfo} />
+            <ScoreSheetHeader submission={submission} isLocked={isGradingLocked} assignmentInfo={assignmentInfo} />
             {submission.note && (
               <Typography
                 variant="body2"
@@ -206,7 +211,7 @@ export const JudgeScoreSheetPage = () => {
                   key={crit.id}
                   criterion={crit}
                   control={control}
-                  isLocked={isLocked}
+                  isLocked={!canEdit}
                   isFinalSubmitted={isFinalSubmitted}
                 />
               ))}
@@ -249,7 +254,7 @@ export const JudgeScoreSheetPage = () => {
                 <div className="mt-8">
                   <ScoreDraftBar
                     isDirty={isDirty}
-                    isLocked={isLocked}
+                    isLocked={!canEdit}
                     isFinalSubmitted={isFinalSubmitted}
                     isSaving={isSaving}
                     isSubmitting={isSubmitting}
