@@ -294,6 +294,10 @@ public class CalibrationServiceImpl implements CalibrationService {
         }
 
         List<EventCriteria> activeCriteria = activeCriteriaForCalibration(calibrationRound);
+        if (activeCriteria.isEmpty()) {
+            throw new ConflictException("No active scoring criteria are available for this calibration round.");
+        }
+
         Map<UUID, EventCriteria> criteriaById = activeCriteria.stream()
                 .collect(Collectors.toMap(
                         EventCriteria::getId,
@@ -301,6 +305,21 @@ public class CalibrationServiceImpl implements CalibrationService {
                 ));
 
         ensureNoDuplicateCriteria(request.scores());
+
+        Set<UUID> requiredCriteriaIds = criteriaById.keySet();
+        Set<UUID> existingCriteriaIds = calibrationScoreRepository
+                .findByCalibrationRoundIdAndJudgeId(calibrationRound.getId(), judge.getId())
+                .stream()
+                .map(score -> score.getEventCriteria().getId())
+                .collect(Collectors.toSet());
+
+        if (existingCriteriaIds.containsAll(requiredCriteriaIds)) {
+            throw new ConflictException("Calibration scores have already been submitted.");
+        }
+
+        if (request.scores().size() != requiredCriteriaIds.size()) {
+            throw new BadRequestException("Every active criterion must be scored before calibration submission.");
+        }
 
         List<CalibrationScore> savedScores = new ArrayList<>();
         for (CalibrationScoreItemRequest item : request.scores()) {
