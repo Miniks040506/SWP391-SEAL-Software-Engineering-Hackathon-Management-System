@@ -2,6 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { rankingApi } from "@/api/ranking.api";
 import type { UUID } from "@/types/common.types";
 import type { LeaderboardParams, RoundRankingParams } from "@/types/ranking.types";
+import { mockRankingService } from "../mocks/ranking.mock";
+
+const USE_MOCK = false;
 
 export const rankingQueryKeys = {
     all: ["rankings"] as const,
@@ -18,7 +21,9 @@ export const rankingQueryKeys = {
 export const useRoundRankingsQuery = (roundId?: UUID, params?: RoundRankingParams) => {
     return useQuery({
         queryKey: rankingQueryKeys.roundRankings(roundId!, params),
-        queryFn: () => rankingApi.getRoundRankings(roundId!, params),
+        queryFn: () => USE_MOCK
+            ? mockRankingService.getRoundRankings(roundId!, params)
+            : rankingApi.getRoundRankings(roundId!, params),
         enabled: !!roundId,
     });
 };
@@ -26,7 +31,9 @@ export const useRoundRankingsQuery = (roundId?: UUID, params?: RoundRankingParam
 export const useEventRankingsQuery = (eventId?: UUID, params?: LeaderboardParams) => {
     return useQuery({
         queryKey: rankingQueryKeys.eventRankings(eventId!, params),
-        queryFn: () => rankingApi.getEventRankings(eventId!, params),
+        queryFn: () => USE_MOCK
+            ? mockRankingService.getEventRankings(eventId!, params)
+            : rankingApi.getEventRankings(eventId!, params),
         enabled: !!eventId,
     });
 };
@@ -34,7 +41,9 @@ export const useEventRankingsQuery = (eventId?: UUID, params?: LeaderboardParams
 export const usePublicEventLeaderboardQuery = (eventId?: UUID, params?: LeaderboardParams) => {
     return useQuery({
         queryKey: rankingQueryKeys.publicEventLeaderboard(eventId!, params),
-        queryFn: () => rankingApi.getPublicEventLeaderboard(eventId!, params),
+        queryFn: () => USE_MOCK
+            ? mockRankingService.getPublicEventLeaderboard(eventId!, params)
+            : rankingApi.getPublicEventLeaderboard(eventId!, params),
         enabled: !!eventId,
     });
 };
@@ -42,7 +51,9 @@ export const usePublicEventLeaderboardQuery = (eventId?: UUID, params?: Leaderbo
 export const usePublicTrackLeaderboardQuery = (eventId?: UUID, trackId?: UUID, params?: Omit<LeaderboardParams, "trackId">) => {
     return useQuery({
         queryKey: rankingQueryKeys.publicTrackLeaderboard(eventId!, trackId!, params),
-        queryFn: () => rankingApi.getPublicTrackLeaderboard(eventId!, trackId!, params),
+        queryFn: () => USE_MOCK
+            ? mockRankingService.getPublicTrackLeaderboard(eventId!, trackId!, params)
+            : rankingApi.getPublicTrackLeaderboard(eventId!, trackId!, params),
         enabled: !!eventId && !!trackId,
     });
 };

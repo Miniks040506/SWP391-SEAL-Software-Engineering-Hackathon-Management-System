@@ -4,14 +4,18 @@ import { useQuery } from "@tanstack/react-query";
 import { CircularProgress, Button } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 
-import { usePublicEventDetailQuery } from "@/features/events/hooks/usePublicEventQueries";
+import {
+    usePublicEventDetailQuery,
+    usePublicEventRoundsQuery,
+    usePublicEventTracksQuery,
+} from "../../events/hooks/usePublicEventQueries";
 import { usePublicEventLeaderboardQuery, usePublicTrackLeaderboardQuery } from "../hooks/useRankingQueries";
-import { roundApi } from "@/api/round.api";
-import { trackApi } from "@/api/track.api";
 
 import { LeaderboardHeader } from "../components/LeaderboardHeader";
 import { LeaderboardEmptyState } from "../components/LeaderboardEmptyState";
 import { RankingTable } from "../components/RankingTable";
+import { RankingPodium } from "../components/RankingPodium";
+import { RankingFilterBar } from "../components/RankingFilterBar";
 import { MobileRankingCard } from "../components/MobileRankingCard";
 
 export const PublicEventLeaderboardPage = () => {
@@ -31,17 +35,8 @@ export const PublicEventLeaderboardPage = () => {
 
     const { data: event, isLoading: isLoadingEvent } = usePublicEventDetailQuery(eventId);
 
-    const { data: rounds = [] } = useQuery({
-        queryKey: ["public-rounds", eventId],
-        queryFn: () => roundApi.getRoundsByEvent(eventId!),
-        enabled: !!eventId,
-    });
-
-    const { data: tracks = [] } = useQuery({
-        queryKey: ["public-tracks", eventId],
-        queryFn: () => trackApi.getTracksByEvent(eventId!),
-        enabled: !!eventId,
-    });
+    const { data: rounds = [] } = usePublicEventRoundsQuery(eventId);
+    const { data: tracks = [] } = usePublicEventTracksQuery(eventId);
 
     const { data: rankings = [], isLoading: isLoadingRankings } = selectedTrackId === "all"
         ? usePublicEventLeaderboardQuery(eventId, { roundId: selectedRoundId !== "all" ? selectedRoundId : undefined })
@@ -91,6 +86,15 @@ export const PublicEventLeaderboardPage = () => {
                     eventName={event.name}
                     title="Official Leaderboard"
                     publishedDate={publishedDate}
+                />
+            </div>
+
+            {!isLoadingRankings && isPublished && (
+                <RankingPodium rankings={rankings} />
+            )}
+
+            <div className="mb-6 flex shrink-0 items-center">
+                <RankingFilterBar
                     rounds={roundOptions}
                     tracks={trackOptions}
                     selectedRoundId={selectedRoundId}

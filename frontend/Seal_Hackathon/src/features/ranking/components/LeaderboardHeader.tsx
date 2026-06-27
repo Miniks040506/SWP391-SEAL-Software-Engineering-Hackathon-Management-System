@@ -1,35 +1,13 @@
-import { RankingFilterBar } from "./RankingFilterBar";
-
-
-interface FilterOption {
-    id: string;
-    name: string;
-}
-
-
 interface LeaderboardHeaderProps {
     eventName: string;
     title: string;
     publishedDate?: string | null;
-    rounds: FilterOption[];
-    tracks: FilterOption[];
-    selectedRoundId: string;
-    selectedTrackId: string;
-    onRoundChange: (roundId: string) => void;
-    onTrackChange: (trackId: string) => void;
 }
-
 
 export const LeaderboardHeader = ({
     eventName,
     title,
     publishedDate,
-    rounds,
-    tracks,
-    selectedRoundId,
-    selectedTrackId,
-    onRoundChange,
-    onTrackChange,
 }: LeaderboardHeaderProps) => {
     return (
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
@@ -49,18 +27,6 @@ export const LeaderboardHeader = ({
                         Results are currently unpublished
                     </div>
                 )}
-            </div>
-
-
-            <div className="flex shrink-0 items-center">
-                <RankingFilterBar
-                    rounds={rounds}
-                    tracks={tracks}
-                    selectedRoundId={selectedRoundId}
-                    selectedTrackId={selectedTrackId}
-                    onRoundChange={onRoundChange}
-                    onTrackChange={onTrackChange}
-                />
             </div>
         </div>
     );

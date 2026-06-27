@@ -13,6 +13,7 @@ import { useCalculateRoundRankingMutation } from "../hooks/useRankingMutations";
 
 import { CalculateRankingPanel } from "../components/CalculateRankingPanel";
 import { RankingFilterBar } from "../components/RankingFilterBar";
+import { RankingPodium } from "../components/RankingPodium";
 import { RankingTable } from "../components/RankingTable";
 import { MobileRankingCard } from "../components/MobileRankingCard";
 
@@ -158,6 +159,9 @@ export const CoordinatorRoundRankingPage = () => {
                     </div>
                 ) : (
                     <>
+                        <div className="mb-8">
+                            <RankingPodium rankings={rankings} />
+                        </div>
                         <div className="hidden md:block">
                             <RankingTable rankings={rankings} />
                         </div>

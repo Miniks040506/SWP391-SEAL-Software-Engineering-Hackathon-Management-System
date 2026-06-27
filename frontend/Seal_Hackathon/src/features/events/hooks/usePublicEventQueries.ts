@@ -4,6 +4,9 @@ import { eventApi } from "@/api/event.api";
 import { prizeApi } from "@/api/prize.api";
 import type { UUID } from "@/types/common.types";
 import type { GetEventsParams } from "@/types/event.types";
+import { mockCoordinatorService } from "@/features/coordinator/mocks/coordinatorService.mock";
+
+const USE_MOCK = false;
 
 export const publicEventKeys = {
   all: ["public-events"] as const,
@@ -13,6 +16,12 @@ export const publicEventKeys = {
 
   detail: (eventId?: UUID) =>
     [...publicEventKeys.all, "detail", eventId] as const,
+
+  tracks: (eventId?: UUID) =>
+    [...publicEventKeys.all, "tracks", eventId] as const,
+
+  rounds: (eventId?: UUID) =>
+    [...publicEventKeys.all, "rounds", eventId] as const,
 
   announcements: (eventId?: UUID) =>
     [...publicEventKeys.all, "announcements", eventId] as const,
@@ -24,14 +33,30 @@ export const publicEventKeys = {
 export function usePublicEventsQuery(params?: GetEventsParams) {
   return useQuery({
     queryKey: publicEventKeys.list(params),
-    queryFn: () => eventApi.getPublicEvents(params),
+    queryFn: () => USE_MOCK ? mockCoordinatorService.eventApi.getAllEvents(params) : eventApi.getPublicEvents(params),
   });
 }
 
 export function usePublicEventDetailQuery(eventId?: UUID) {
   return useQuery({
     queryKey: publicEventKeys.detail(eventId),
-    queryFn: () => eventApi.getEventById(eventId!),
+    queryFn: () => USE_MOCK ? mockCoordinatorService.eventApi.getEventById(eventId!) as any : eventApi.getEventById(eventId!),
+    enabled: Boolean(eventId),
+  });
+}
+
+export function usePublicEventTracksQuery(eventId?: UUID) {
+  return useQuery({
+    queryKey: publicEventKeys.tracks(eventId),
+    queryFn: () => USE_MOCK ? mockCoordinatorService.trackApi.getTracksByEvent(eventId!) as any : trackApi.getTracksByEvent(eventId!),
+    enabled: Boolean(eventId),
+  });
+}
+
+export function usePublicEventRoundsQuery(eventId?: UUID) {
+  return useQuery({
+    queryKey: publicEventKeys.rounds(eventId),
+    queryFn: () => USE_MOCK ? mockCoordinatorService.roundApi.getRoundsByEvent(eventId!) as any : roundApi.getRoundsByEvent(eventId!),
     enabled: Boolean(eventId),
   });
 }

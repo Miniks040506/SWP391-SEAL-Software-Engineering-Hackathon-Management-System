@@ -12,6 +12,7 @@ import { useRoundGradingProgressQuery } from "@/features/grading-progress/hooks/
 
 import { CalculateRankingPanel } from "../components/CalculateRankingPanel";
 import { RankingFilterBar } from "../components/RankingFilterBar";
+import { RankingPodium } from "../components/RankingPodium";
 import { RankingTable } from "../components/RankingTable";
 import { MobileRankingCard } from "../components/MobileRankingCard";
 
@@ -117,6 +118,12 @@ export const CoordinatorRankingPage = () => {
                     </Button>
                 </div>
             </header>
+
+            {!isLoading && rankings.length > 0 && (
+                <div className="mb-8">
+                    <RankingPodium rankings={rankings} />
+                </div>
+            )}
 
             <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <RankingFilterBar
