@@ -58,7 +58,10 @@ export const CoordinatorCalibrationPage = () => {
     const totalRounds = calibrationRounds?.length || 0;
     const openRounds = calibrationRounds?.filter((r) => !r.distributionPublishedAt).length || 0;
     const publishedDistributions = calibrationRounds?.filter((r) => r.distributionPublishedAt).length || 0;
-    const pendingJudgeSubmissions = 0;
+    const pendingJudgeSubmissions = calibrationRounds?.reduce(
+        (total, round) => total + round.pendingJudgeCount,
+        0,
+    ) || 0;
 
     return (
         <div className="mx-auto max-w-6xl animate-in fade-in duration-500 space-y-7">
