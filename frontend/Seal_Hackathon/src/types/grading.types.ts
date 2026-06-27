@@ -93,6 +93,9 @@ export type ScoreSheetResponse = {
   submissionId: UUID;
   judgeId: UUID;
   confirmed: boolean;
+  submissionLocked: boolean;
+  gradingLocked: boolean;
+  canEdit: boolean;
   scores: ScoreResponse[];
 };
 

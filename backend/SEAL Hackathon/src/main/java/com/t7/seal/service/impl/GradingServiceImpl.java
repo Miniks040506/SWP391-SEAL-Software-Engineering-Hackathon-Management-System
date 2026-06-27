@@ -379,11 +379,20 @@ public class GradingServiceImpl implements GradingService {
         long criteriaCount = activeCriteriaFor(submission).size();
         long confirmedCount = scores.stream().filter(s -> Boolean.FALSE.equals(s.isDraft())).count();
         boolean confirmed = criteriaCount > 0 && confirmedCount >= criteriaCount;
+        boolean submissionLocked = submission.getRound().getSubmissionLockedAt() != null;
+        boolean gradingLocked = submission.getRound().getGradingLockedAt() != null;
+        boolean canEdit = criteriaCount > 0
+                && submissionLocked
+                && !gradingLocked
+                && !confirmed;
 
         return new ScoreSheetResponse(
                 submission.getId(),
                 judge.getId(),
                 confirmed,
+                submissionLocked,
+                gradingLocked,
+                canEdit,
                 scores
         );
     }
