@@ -5,6 +5,7 @@ import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
@@ -147,7 +148,7 @@ public class GradingServiceImpl implements GradingService {
         Score score = getScore(scoreId);
 
         if (!judge.getId().equals(score.getJudge().getId())) {
-            throw new UnauthorizedException("You can only update your own scores.");
+            throw new ForbiddenException("You can only update your own scores.");
         }
 
         ensureJudgeCanMutate(score.getSubmission(), judge, false);
@@ -282,7 +283,7 @@ public class GradingServiceImpl implements GradingService {
 
     private void ensureJudgeCanView(Judge judge, Submission submission) {
         if (!isAssigned(submission, judge)) {
-            throw new UnauthorizedException("This submission is not assigned to you.");
+            throw new ForbiddenException("This submission is not assigned to you.");
         }
 
         if (!isScorable(submission)) {

@@ -16,6 +16,7 @@ import com.t7.seal.entities.Track;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.EventCriteriaRepository;
@@ -298,7 +299,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                 .anyMatch(assignment -> assignment.canScore(roundId, trackId));
 
         if (!allowed) {
-            throw new UnauthorizedException("This submission is not assigned to you.");
+            throw new ForbiddenException("This submission is not assigned to you.");
         }
 
         if (!submission.isScorable()) {
