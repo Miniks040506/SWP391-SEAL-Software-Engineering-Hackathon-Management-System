@@ -7,21 +7,29 @@ import type { EventCriteriaResponse } from "@/types/criteria.types";
 import type { SubmissionSummaryResponse, CoordinatorSubmissionSummaryResponse } from "@/types/submission.types";
 import type { RoundResponse } from "@/types/round.types";
 import { format, parseISO } from "date-fns";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import FileCopyOutlinedIcon from "@mui/icons-material/FileCopyOutlined";
-import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
-import GridOnOutlinedIcon from "@mui/icons-material/GridOnOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import { Button, Checkbox, FormControlLabel, MenuItem, TextField } from "@mui/material";
 
-const calibrationFormSchema = z.object({
+const createCalibrationFormSchema = (criteria: EventCriteriaResponse[]) => z.object({
     description: z.string().optional(),
-    mandatory: z.boolean().default(false),
+    mandatory: z.boolean(),
     roundId: z.string().min(1, "Round is required"),
     sampleSubmissionId: z.string().min(1, "Sample submission is required"),
     startAt: z.string().min(1, "Start time is required"),
     endAt: z.string().min(1, "End time is required"),
-    benchmarkScores: z.record(z.string(), z.number().min(0)),
+    benchmarkScores: z.object(
+        Object.fromEntries(
+            criteria.map((criterion) => [
+                criterion.id,
+                z.number({ error: "Benchmark score is required" })
+                    .min(0, "Benchmark score must be at least 0")
+                    .max(
+                        criterion.effectiveMaxScore,
+                        `Benchmark score must not exceed ${criterion.effectiveMaxScore}`
+                    ),
+            ])
+        )
+    ),
 }).refine((data) => {
     if (data.startAt && data.endAt) {
         return new Date(data.endAt) > new Date(data.startAt);
@@ -32,7 +40,7 @@ const calibrationFormSchema = z.object({
     path: ["endAt"],
 });
 
-export type CalibrationFormValues = z.infer<typeof calibrationFormSchema>;
+export type CalibrationFormValues = z.infer<ReturnType<typeof createCalibrationFormSchema>>;
 
 interface CalibrationRoundFormProps {
     initialValues?: Partial<CalibrationFormValues>;
@@ -71,8 +79,12 @@ export const CalibrationRoundForm = ({
     isLoading,
     isReadOnly,
 }: CalibrationRoundFormProps) => {
+    const validationSchema = useMemo(
+        () => createCalibrationFormSchema(criteria),
+        [criteria]
+    );
     const methods = useForm<CalibrationFormValues>({
-        resolver: zodResolver(calibrationFormSchema),
+        resolver: zodResolver(validationSchema),
         defaultValues: {
             description: initialValues?.description || "",
             mandatory: initialValues?.mandatory || false,
@@ -184,7 +196,7 @@ export const CalibrationRoundForm = ({
                                 <MenuItem value="">Select a submission</MenuItem>
                                 {submissions.map((s) => (
                                     <MenuItem key={s.id} value={s.id}>
-                                        {s.teamName || `Team ID: ${s.teamId}`} - {s.projectTitle || "Untitled"}
+                                        {s.teamName || `Team ID: ${s.teamId}`} - Submission #{s.submissionNumber}
                                     </MenuItem>
                                 ))}
                             </TextField>
@@ -199,8 +211,8 @@ export const CalibrationRoundForm = ({
                                         <span className="font-medium text-slate-900 dark:text-white">{selectedSubmission.teamName || "N/A"}</span>
                                     </div>
                                     <div>
-                                        <span className="font-semibold text-blue-700 dark:text-blue-400">Title:</span>{" "}
-                                        <span className="font-medium text-slate-900 dark:text-white">{selectedSubmission.projectTitle || "N/A"}</span>
+                                        <span className="font-semibold text-blue-700 dark:text-blue-400">Round:</span>{" "}
+                                        <span className="font-medium text-slate-900 dark:text-white">{selectedSubmission.roundName}</span>
                                     </div>
                                     <div>
                                         <span className="font-semibold text-blue-700 dark:text-blue-400">Status:</span>{" "}
@@ -277,7 +289,7 @@ export const CalibrationRoundForm = ({
                         <Button
                             type="submit"
                             variant="contained"
-                            disabled={isLoading || !selectedSubmissionId}
+                            disabled={isLoading || !selectedSubmissionId || criteria.length === 0}
                             startIcon={<SaveOutlinedIcon />}
                             sx={{
                                 borderRadius: "10px",
