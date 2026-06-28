@@ -509,6 +509,7 @@ public class RoundServiceImpl implements RoundService {
 
         return new AdvancementPreviewResponse(
                 roundId,
+                round.getAdvancementConfirmedAt() != null,
                 suggested.stream().map(this::toRankingResponse).toList(),
                 rankings.stream().map(this::toRankingResponse).toList(),
                 rankings.stream()

@@ -81,9 +81,7 @@ function toUiPreview(
     eventName: firstRanking?.eventName ?? '',
     gradingLocked: !response.warnings.some((warning) => warning.includes('not locked')),
     rankingCalculated: response.allRankings.length > 0,
-    advancementConfirmed: response.decisions.some(
-      (decision) => decision.advanceReason != null,
-    ),
+    advancementConfirmed: response.advancementConfirmed,
     advancedCount: candidates.filter(
       (candidate) => candidate.suggestedStatus === 'ADVANCED'
         || candidate.suggestedStatus === 'WILDCARD',

@@ -154,6 +154,7 @@ export type TeamAdvancementDecisionResponse = {
 
 export type AdvancementPreviewResponse = {
   roundId: UUID;
+  advancementConfirmed: boolean;
   suggestedAdvancedTeams: RankingResponse[];
   allRankings: RankingResponse[];
   decisions: TeamAdvancementDecisionResponse[];
