@@ -31,9 +31,27 @@ interface AdvanceRulePanelProps {
 
 const ruleSchema = z.object({
   ruleType: z.string().min(1, "Rule type is required"),
-  value: z.coerce.number().min(0, "Value must be positive"),
+  value: z.coerce.number().positive("Value must be greater than 0"),
   trackId: z.string().optional(),
   description: z.string().optional(),
+}).superRefine((data, context) => {
+  if (
+    ["TOP_N", "WILDCARD"].includes(data.ruleType) &&
+    !Number.isInteger(data.value)
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["value"],
+      message: "Value must be a whole number",
+    });
+  }
+  if (data.ruleType === "TOP_PERCENT" && data.value > 100) {
+    context.addIssue({
+      code: "custom",
+      path: ["value"],
+      message: "Percentage must not exceed 100",
+    });
+  }
 });
 
 type RuleFormData = z.infer<typeof ruleSchema>;
@@ -93,7 +111,6 @@ export function AdvanceRulePanel({ roundId, isLocked }: AdvanceRulePanelProps) {
       wildCardSlots: data.ruleType === "WILDCARD" ? data.value : undefined,
       trackId: data.trackId || null,
       description: data.description || "",
-      priority: 1,
     };
 
     if (editingRuleId) {

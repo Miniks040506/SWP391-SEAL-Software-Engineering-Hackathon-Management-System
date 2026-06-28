@@ -1002,7 +1002,7 @@ public class RoundServiceImpl implements RoundService {
             }
 
             case MIN_SCORE -> {
-                if (minScore == null || minScore < 0) {
+                if (minScore == null || minScore <= 0) {
                     throw new BadRequestException("minScore must be greater than 0 for MIN_SCORE rule type.");
                 }
                 yield minScore.floatValue();
