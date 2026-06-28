@@ -54,8 +54,18 @@ import {
 } from "@/features/events";
 
 
+<<<<<<< HEAD
+
+import {
+  CoordinatorRankingPage,
+  CoordinatorRoundRankingPage,
+  PublicEventLeaderboardPage,
+  StandingsPage
+} from "@/features/ranking";
+=======
 import { LeaderboardPage } from "@/features/ranking";
 import { TeamDetailedScorePage } from "@/features/results/pages/TeamDetailedScorePage";
+>>>>>>> ac9c1c0be83e4880668118b1f821e8495df92b54
 
 
 import {
@@ -118,7 +128,9 @@ export const router = createBrowserRouter([
       { path: "/events/:eventId/prizes", element: <EventPrizesPage /> },
       { path: "/events/:eventId/competing", element: <EventCompetitionPage /> },
       { path: "/events/:eventId", element: <EventDetailPage /> },
-      { path: "/standings", element: <LeaderboardPage /> },
+      { path: "/standings", element: <StandingsPage /> },
+      { path: "/events/:eventId/leaderboard", element: <PublicEventLeaderboardPage /> },
+      { path: "/events/:eventId/tracks/:trackId/leaderboard", element: <PublicEventLeaderboardPage /> },
     ],
   },
 
@@ -205,6 +217,14 @@ export const router = createBrowserRouter([
       {
         path: "grading-progress",
         element: <GradingProgressRedirectPage />,
+      },
+      {
+        path: "events/:eventId/rankings",
+        element: <CoordinatorRankingPage />,
+      },
+      {
+        path: "rounds/:roundId/rankings",
+        element: <CoordinatorRoundRankingPage />,
       },
       {
         path: "rounds/:roundId/grading-progress",
