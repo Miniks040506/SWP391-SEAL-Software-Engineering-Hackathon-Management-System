@@ -2,7 +2,8 @@ import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { formatDistanceToNow } from "date-fns";
-import { CircularProgress, Button, Chip } from "@mui/material";
+import { isAxiosError } from "axios";
+import { Alert, CircularProgress, Button, Chip } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 
 import {
@@ -28,7 +29,12 @@ export const JudgeCalibrationScorePage = () => {
     const { calibrationId } = useParams<{ calibrationId: string }>();
     const navigate = useNavigate();
 
-    const { data: scoreSheet, isLoading: isLoadingScoreSheet } = useCalibrationScoreSheetQuery(calibrationId as UUID);
+    const {
+        data: scoreSheet,
+        isLoading: isLoadingScoreSheet,
+        isError: isScoreSheetError,
+        error: scoreSheetError,
+    } = useCalibrationScoreSheetQuery(calibrationId as UUID);
     const { data: round, isLoading: isLoadingRound } = useCalibrationRoundQuery(calibrationId as UUID);
 
     const submissionId = scoreSheet?.sampleSubmissionId;
@@ -105,6 +111,30 @@ export const JudgeCalibrationScorePage = () => {
         return (
             <div className="flex justify-center py-20">
                 <CircularProgress />
+            </div>
+        );
+    }
+
+    if (isScoreSheetError || !scoreSheet) {
+        const responseStatus = isAxiosError(scoreSheetError)
+            ? scoreSheetError.response?.status
+            : undefined;
+        const message = responseStatus === 403
+            ? "This calibration task is not assigned to you."
+            : responseStatus === 404
+                ? "Calibration round not found."
+                : "Unable to load the calibration score sheet.";
+
+        return (
+            <div className="mx-auto max-w-3xl space-y-4 py-12">
+                <Alert severity="error">{message}</Alert>
+                <Button
+                    startIcon={<ArrowBackOutlinedIcon />}
+                    onClick={() => navigate("/judge/calibrations")}
+                    sx={{ textTransform: "none", fontWeight: 800 }}
+                >
+                    Back to Calibration Tasks
+                </Button>
             </div>
         );
     }
