@@ -19,7 +19,6 @@ import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RankingService;
-import jdk.jfr.Event;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
