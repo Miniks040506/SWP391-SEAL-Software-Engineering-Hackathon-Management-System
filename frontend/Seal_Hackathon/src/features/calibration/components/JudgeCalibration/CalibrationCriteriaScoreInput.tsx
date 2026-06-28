@@ -91,8 +91,14 @@ export const CalibrationCriteriaScoreInput = ({ criterion, disabled }: Calibrati
                         placeholder="Leave a comment..."
                         error={!!commentError}
                         disabled={disabled}
-                        {...register(commentFieldName)}
+                        {...register(commentFieldName, {
+                            maxLength: {
+                                value: 2000,
+                                message: "Comment must not exceed 2000 characters",
+                            },
+                        })}
                         sx={textFieldSx}
+                        slotProps={{ htmlInput: { maxLength: 2000 } }}
                     />
                     {commentError && (
                         <span className="text-xs font-bold text-rose-500">{commentError as string}</span>

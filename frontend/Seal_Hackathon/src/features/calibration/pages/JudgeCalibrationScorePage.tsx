@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { useForm, FormProvider } from "react-hook-form";
 import { formatDistanceToNow } from "date-fns";
 import { CircularProgress, Button, Chip } from "@mui/material";
@@ -57,13 +56,15 @@ export const JudgeCalibrationScorePage = () => {
     const isReadOnly = !(scoreSheet?.canSubmit ?? false);
 
     const defaultValues = useMemo(() => {
-        const initialScores: Record<string, any> = {};
+        const initialScores: ScoreFormValues["scores"] = {};
         if (scoreSheet?.criteria) {
-            scoreSheet.criteria.forEach((c: any) => {
-                const existing = scoreSheet.scores.find((score) => score.eventCriteriaId === c.id);
-                initialScores[c.id] = {
+            scoreSheet.criteria.forEach((criterion) => {
+                const existing = scoreSheet.scores.find(
+                    (score) => score.eventCriteriaId === criterion.id
+                );
+                initialScores[criterion.id] = {
                     score: existing ? existing.value : "",
-                    comment: (existing as any)?.comment || "",
+                    comment: existing?.comment ?? "",
                 };
             });
         }

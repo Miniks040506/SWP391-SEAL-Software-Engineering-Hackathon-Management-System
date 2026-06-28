@@ -24,6 +24,7 @@ export type UpdateCalibrationRoundRequest = {
 export type CalibrationScoreItemRequest = {
   eventCriteriaId: UUID;
   value: number;
+  comment?: string;
 };
 
 export type SubmitCalibrationScoreRequest = {
@@ -60,6 +61,7 @@ export type CalibrationScoreResponse = {
   eventCriteriaId: UUID;
   value: number;
   deviationFromBenchmark?: number | null;
+  comment?: string | null;
 };
 
 export type CalibrationScoreSheetResponse = {
