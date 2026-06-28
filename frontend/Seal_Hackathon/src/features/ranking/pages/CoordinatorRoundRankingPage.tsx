@@ -4,24 +4,28 @@ import { Alert, Button, CircularProgress } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 
 import { useRoundGradingProgressQuery } from "@/features/grading-progress/hooks/useGradingProgressQueries";
 import { useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 import { useRoundRankingsQuery } from "../hooks/useRankingQueries";
-import { useCalculateRoundRankingMutation } from "../hooks/useRankingMutations";
+import { useCalculateRoundRankingMutation, usePublishRoundResultsMutation } from "../hooks/useRankingMutations";
+import type { PublishResultsRequest } from "@/types/ranking.types";
 
 import { CalculateRankingPanel } from "../components/CalculateRankingPanel";
 import { RankingFilterBar } from "../components/RankingFilterBar";
 import { RankingPodium } from "../components/RankingPodium";
 import { RankingTable } from "../components/RankingTable";
 import { MobileRankingCard } from "../components/MobileRankingCard";
+import { PublishResultsDialog } from "../components/PublishResultsDialog";
+
+type SelectOption = { id: string; name: string };
 
 export const CoordinatorRoundRankingPage = () => {
     const { roundId } = useParams<{ roundId: string }>();
     const navigate = useNavigate();
 
     const [selectedTrackId, setSelectedTrackId] = useState<string>("all");
+    const [publishDialogOpen, setPublishDialogOpen] = useState(false);
 
     const { data: roundInfo, isLoading: isLoadingInfo } = useRoundGradingProgressQuery(roundId);
 
@@ -33,6 +37,7 @@ export const CoordinatorRoundRankingPage = () => {
     );
 
     const calculateMutation = useCalculateRoundRankingMutation();
+    const publishMutation = usePublishRoundResultsMutation();
 
     const handleCalculate = () => {
         if (!roundId) return;
@@ -40,6 +45,13 @@ export const CoordinatorRoundRankingPage = () => {
             roundId,
             params: { trackId: selectedTrackId !== "all" ? selectedTrackId : undefined }
         });
+    };
+
+    const handlePublishResults = async (payload: PublishResultsRequest) => {
+        if (!roundId) return;
+        await publishMutation.mutateAsync({ roundId, payload });
+        setPublishDialogOpen(false);
+        refetch();
     };
 
     if (isLoadingInfo) {
@@ -58,8 +70,8 @@ export const CoordinatorRoundRankingPage = () => {
         );
     }
 
-    const trackOptions = tracks.map(t => ({ id: t.id, name: t.name }));
-    const selectedTrackName = tracks.find(t => t.id === selectedTrackId)?.name;
+    const trackOptions = tracks.map((t: SelectOption) => ({ id: t.id, name: t.name }));
+    const selectedTrackName = tracks.find((t: SelectOption) => t.id === selectedTrackId)?.name;
     const lastCalculatedTime = rankings.length > 0 ? rankings[0].calculatedAt : null;
     const gradingLocked = roundInfo.gradingLocked;
 
@@ -108,6 +120,7 @@ export const CoordinatorRoundRankingPage = () => {
                         color="primary"
                         startIcon={<PublishOutlinedIcon />}
                         disabled={rankings.length === 0}
+                        onClick={() => setPublishDialogOpen(true)}
                         sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                     >
                         Publish Results
@@ -178,6 +191,16 @@ export const CoordinatorRoundRankingPage = () => {
                     </>
                 )}
             </section>
+            <PublishResultsDialog
+                open={publishDialogOpen}
+                scopeLabel={roundInfo.roundName}
+                rankingCount={rankings.length}
+                defaultTitle={`Results are published for ${roundInfo.roundName}`}
+                defaultContent="The round results are now available. Please open the leaderboard or your team score page for details."
+                isPending={publishMutation.isPending}
+                onClose={() => setPublishDialogOpen(false)}
+                onConfirm={handlePublishResults}
+            />
         </div>
     );
 };
