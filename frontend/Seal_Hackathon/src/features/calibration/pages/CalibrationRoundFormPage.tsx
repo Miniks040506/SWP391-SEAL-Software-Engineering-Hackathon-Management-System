@@ -172,6 +172,7 @@ export const CalibrationRoundFormPage = () => {
 
     const initialValues: Partial<CalibrationFormValues> = existingRound
         ? {
+            roundId: existingRound.sampleRoundId,
             description: existingRound.description || "",
             mandatory: existingRound.mandatory,
             sampleSubmissionId: existingRound.sampleSubmissionId,

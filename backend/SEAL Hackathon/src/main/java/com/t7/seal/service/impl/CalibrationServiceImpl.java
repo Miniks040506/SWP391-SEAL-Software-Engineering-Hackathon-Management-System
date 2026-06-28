@@ -834,6 +834,7 @@ public class CalibrationServiceImpl implements CalibrationService {
                 calibrationRound.getId(),
                 calibrationRound.getEvent().getId(),
                 calibrationRound.getSampleSubmission().getId(),
+                calibrationRound.getSampleSubmission().getRound().getId(),
                 calibrationRound.getBenchmarkScores(),
                 calibrationRound.getDescription(),
                 calibrationRound.getStartAt(),

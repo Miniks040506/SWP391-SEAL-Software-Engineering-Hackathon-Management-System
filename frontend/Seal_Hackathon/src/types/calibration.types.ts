@@ -48,6 +48,7 @@ export type CalibrationRoundDetailResponse = Omit<
   CalibrationRoundResponse,
   "assignedJudgeCount" | "submittedJudgeCount" | "pendingJudgeCount"
 > & {
+  sampleRoundId: UUID;
   benchmarkScores?: Record<string, number> | unknown;
 };
 
