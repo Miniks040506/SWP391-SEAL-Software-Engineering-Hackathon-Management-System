@@ -12,6 +12,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.*;
 import com.t7.seal.service.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationServiceImpl implements NotificationService {
 
     private static final int MAX_PAGE_SIZE = 100;
@@ -258,8 +260,12 @@ public class NotificationServiceImpl implements NotificationService {
                 outbox.setStatus(EmailDeliveryStatus.RETRYING);
                 emailOutboxRepository.save(outbox);
                 sendOutbox(outbox);
-            } catch (RuntimeException ignored) {
-                // Failure details are recorded by sendOutbox. The scheduler will retry later.
+            } catch (RuntimeException ex) {
+                log.warn(
+                        "Queued email dispatch failed. outboxId={}",
+                        outbox.getId(),
+                        ex
+                );
             }
         }
     }
