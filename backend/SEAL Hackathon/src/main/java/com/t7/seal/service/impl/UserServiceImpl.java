@@ -62,11 +62,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<AssignableUserResponse> getAssignableUsers(String role, String search) {
+        if (role == null || role.isBlank()) {
+            throw new BadRequestException("Invalid assignable role.");
+        }
+
         UserRole parsedRole;
 
         try {
-            parsedRole = UserRole.valueOf(role.toUpperCase());
-        } catch (Exception exception) {
+            parsedRole = UserRole.valueOf(role.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Invalid assignable role.");
         }
 

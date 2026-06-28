@@ -430,7 +430,7 @@ public class CriteriaServiceImpl implements CriteriaService {
 
         try {
             return CriteriaCategory.valueOf(category.trim().toUpperCase());
-        } catch (Exception e) {
+        } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Invalid criteria category " + category);
         }
     }

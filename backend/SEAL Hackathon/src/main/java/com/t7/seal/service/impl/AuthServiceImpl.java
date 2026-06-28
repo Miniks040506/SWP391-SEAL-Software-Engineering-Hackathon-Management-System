@@ -332,9 +332,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private StudentType parseStudentType(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new BadRequestException("Invalid student type. Supported values: FPT, EXTERNAL.");
+        }
         try {
             return StudentType.valueOf(raw.trim().toUpperCase());
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Invalid student type. Supported values: FPT, EXTERNAL.");
         }
     }
