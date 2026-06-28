@@ -2,6 +2,9 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { rankingApi } from "@/api/ranking.api";
 import type { UUID } from "@/types/common.types";
 import type { EventSummaryResponse } from "@/types/event.types";
+import { mockRankingService } from "../mocks/ranking.mock";
+
+const USE_MOCK = false;
 
 export const publicRankingKeys = {
   all: ["public-rankings"] as const,
@@ -23,7 +26,9 @@ export function usePublicEventRankingQuery(params?: {
 
   return useQuery({
     queryKey: publicRankingKeys.list(normalizedParams),
-    queryFn: () => rankingApi.getRankings(normalizedParams),
+    queryFn: () => USE_MOCK
+      ? mockRankingService.getRankings(normalizedParams)
+      : rankingApi.getRankings(normalizedParams),
     enabled: Boolean(params?.eventId),
   });
 }
@@ -34,7 +39,9 @@ export function usePublicCompletedEventRankingsQueries(
   return useQueries({
     queries: events.map((event) => ({
       queryKey: publicRankingKeys.list({ eventId: event.id }),
-      queryFn: () => rankingApi.getRankings({ eventId: event.id }),
+      queryFn: () => USE_MOCK
+        ? mockRankingService.getRankings({ eventId: event.id })
+        : rankingApi.getRankings({ eventId: event.id }),
       enabled: Boolean(event.id),
     })),
   });
