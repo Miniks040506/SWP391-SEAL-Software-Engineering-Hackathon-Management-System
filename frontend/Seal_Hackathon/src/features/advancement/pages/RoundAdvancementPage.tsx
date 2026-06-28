@@ -4,6 +4,7 @@ import { Button, Alert, Typography } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import { useQuery } from "@tanstack/react-query";
 import { roundApi } from "@/api/round.api";
+import { useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 import {
   usePreviewAdvanceRulesMutation,
   useConfirmAdvancementMutation,
@@ -37,6 +38,7 @@ export function RoundAdvancementPage() {
     queryFn: () => roundApi.getRoundById(validRoundId),
     enabled: !!validRoundId,
   });
+  const { data: tracks = [] } = useCoordinatorEventTracksQuery(roundDetail?.eventId);
 
   const previewMutation = usePreviewAdvanceRulesMutation();
   const confirmMutation = useConfirmAdvancementMutation();
@@ -321,6 +323,7 @@ export function RoundAdvancementPage() {
       {/* Section 2 - Advance rule panel */}
       <AdvanceRulePanel
         roundId={validRoundId}
+        tracks={tracks}
         isLocked={!!roundDetail?.gradingLockedAt || !!previewData?.advancementConfirmed}
       />
 

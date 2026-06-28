@@ -23,10 +23,12 @@ import {
   useUpdateAdvanceRuleMutation,
 } from "../hooks/useAdvancementMutations";
 import type { AdvanceRuleType } from "@/types/round.types";
+import type { TrackResponse } from "@/types/track.types";
 
 interface AdvanceRulePanelProps {
   roundId: string;
   isLocked?: boolean;
+  tracks: TrackResponse[];
 }
 
 const ruleSchema = z.object({
@@ -78,7 +80,11 @@ const ruleHelperText: Record<string, string> = {
   WILDCARD: "Coordinator manually selects extra teams.",
 };
 
-export function AdvanceRulePanel({ roundId, isLocked }: AdvanceRulePanelProps) {
+export function AdvanceRulePanel({
+  roundId,
+  isLocked,
+  tracks,
+}: AdvanceRulePanelProps) {
   const { data: rules, isLoading } = useAdvanceRulesQuery(roundId);
   const createMutation = useCreateAdvanceRuleMutation();
   const updateMutation = useUpdateAdvanceRuleMutation();
@@ -198,7 +204,10 @@ export function AdvanceRulePanel({ roundId, isLocked }: AdvanceRulePanelProps) {
                   </Typography>
                   {rule.trackId && (
                     <Chip
-                      label="Track Specific"
+                      label={
+                        tracks.find((track) => track.id === rule.trackId)?.name
+                          ?? "Track Specific"
+                      }
                       variant="outlined"
                       size="small"
                     />
@@ -308,11 +317,19 @@ export function AdvanceRulePanel({ roundId, isLocked }: AdvanceRulePanelProps) {
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      label="Track ID (Optional)"
+                      select
+                      label="Track Scope"
                       size="small"
                       error={!!errors.trackId}
                       helperText={errors.trackId?.message}
-                    />
+                    >
+                      <MenuItem value="">All tracks</MenuItem>
+                      {tracks.map((track) => (
+                        <MenuItem key={track.id} value={track.id}>
+                          {track.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
                   )}
                 />
                 <Controller
