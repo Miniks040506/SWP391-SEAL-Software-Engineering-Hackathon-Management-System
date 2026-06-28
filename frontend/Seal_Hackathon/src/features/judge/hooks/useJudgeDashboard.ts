@@ -6,7 +6,7 @@ import { userApi } from "@/api/user.api";
 import { eventApi } from "@/api/event.api";
 import { roundApi } from "@/api/round.api";
 import { notificationApi } from "@/api/notification.api";
-import { calibrationApi } from "@/api/calibration.api";
+import { useJudgeCalibrationRoundsQuery } from "@/features/calibration/hooks/useCalibrationQueries";
 
 import { judgeDashboardMock, type JudgeDashboardData } from "../mocks/judgeDashboard.mock";
 
@@ -38,11 +38,7 @@ export function useJudgeDashboard() {
   });
   const rounds = roundsQuery.data || [];
 
-  const calibrationsQuery = useQuery({
-    queryKey: ["judge-calibrations", activeEvent?.id],
-    queryFn: () => calibrationApi.getCalibrationRoundsByEvent(activeEvent!.id),
-    enabled: !USE_MOCK && Boolean(activeEvent?.id),
-  });
+  const calibrationsQuery = useJudgeCalibrationRoundsQuery();
 
   const assignmentsQueries = useQueries({
     queries: rounds.map((round) => ({
@@ -89,8 +85,10 @@ export function useJudgeDashboard() {
     const activeTask = myAssignments[0] || null;
 
     const calibrations = calibrationsQuery.data || [];
-    const hasCalibration = calibrations.length > 0;
-    const calibrationCompleted = false;
+    const requiredCalibrations = calibrations.filter((round) => round.mandatory);
+    const hasCalibration = requiredCalibrations.length > 0;
+    const calibrationCompleted = !hasCalibration
+      || requiredCalibrations.every((round) => round.submittedByCurrentJudge === true);
 
     const notifs = notifsQuery.data?.content || (notifsQuery.data as any)?.data?.content || [];
     const recentActivities = notifs.slice(0, 3).map((n: any, i: number) => ({
@@ -154,7 +152,7 @@ export function useJudgeDashboard() {
       calibration: {
         required: hasCalibration,
         completed: calibrationCompleted,
-        status: hasCalibration ? "Not Completed" : "Not Required",
+        status: calibrationCompleted ? "Completed" : "Not Completed",
       },
       pendingActions: pendingActions,
       recentActivities: recentActivities.length > 0 ? recentActivities : [

@@ -1,6 +1,4 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
     Button,
     CircularProgress,
@@ -8,7 +6,7 @@ import {
 } from "@mui/material";
 import { format } from "date-fns";
 
-import { useJudgeCalibrationRoundsQuery, useMyCalibrationScoresQuery } from "@/features/calibration/hooks/useCalibrationQueries";
+import { useJudgeCalibrationRoundsQuery } from "@/features/calibration/hooks/useCalibrationQueries";
 import type { CalibrationRoundResponse } from "@/types/calibration.types";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
@@ -46,9 +44,7 @@ const getCalibrationStatus = (
 const JudgeCalibrationListItem = ({ round }: { round: CalibrationRoundResponse }) => {
     const navigate = useNavigate();
 
-    // Fetch if judge has submitted this round
-    const { data: myScores = [], isLoading: isLoadingScores } = useMyCalibrationScoresQuery(round.id);
-    const hasSubmitted = myScores.length > 0;
+    const hasSubmitted = round.submittedByCurrentJudge === true;
 
     const { label, statusValue, color } = getCalibrationStatus(round, hasSubmitted);
 
@@ -86,15 +82,17 @@ const JudgeCalibrationListItem = ({ round }: { round: CalibrationRoundResponse }
                 >
                     View Scores
                 </Button>
-                <Button
-                    variant={statusValue === "DISTRIBUTION_PUBLISHED" ? "contained" : "outlined"}
-                    size="small"
-                    color="info"
-                    onClick={() => navigate(`/judge/calibrations/${round.id}/distribution`)}
-                    sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
-                >
-                    Distribution
-                </Button>
+                {statusValue === "DISTRIBUTION_PUBLISHED" && (
+                    <Button
+                        variant="contained"
+                        size="small"
+                        color="info"
+                        onClick={() => navigate(`/judge/calibrations/${round.id}/distribution`)}
+                        sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+                    >
+                        Distribution
+                    </Button>
+                )}
             </div>
         );
     }
@@ -121,11 +119,7 @@ const JudgeCalibrationListItem = ({ round }: { round: CalibrationRoundResponse }
                 {round.endAt ? format(new Date(round.endAt), "MMM dd, yyyy HH:mm") : "N/A"}
             </td>
             <td className="px-4 py-4 align-middle">
-                {isLoadingScores ? (
-                    <CircularProgress size={20} />
-                ) : (
-                    <Chip label={label} color={color} size="small" sx={{ fontWeight: 700, borderRadius: "6px" }} />
-                )}
+                <Chip label={label} color={color} size="small" sx={{ fontWeight: 700, borderRadius: "6px" }} />
             </td>
             <td className="px-4 py-4 align-middle text-right">
                 {actionButton}
