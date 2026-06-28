@@ -1,16 +1,12 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
-
 import { NotFoundPage } from "@/components/common/NotFoundPage";
-
 
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
 import { RootLayout } from "@/components/layout/RootLayout";
 
-
 import { AuditLogsPage } from "../features/auditLog";
-
 
 import {
   JudgeDashboardPage,
@@ -53,20 +49,15 @@ import {
   EventsPage,
 } from "@/features/events";
 
-
-<<<<<<< HEAD
-
 import {
   CoordinatorRankingPage,
   CoordinatorRoundRankingPage,
   PublicEventLeaderboardPage,
   StandingsPage
 } from "@/features/ranking";
-=======
-import { LeaderboardPage } from "@/features/ranking";
-import { TeamDetailedScorePage } from "@/features/results/pages/TeamDetailedScorePage";
->>>>>>> ac9c1c0be83e4880668118b1f821e8495df92b54
 
+import { TeamDetailedScorePage } from "@/features/results/pages/TeamDetailedScorePage";
+import { TeamPublishedScoresPage } from "@/features/results/pages/TeamPublishedScoresPage";
 
 import {
   CoordinatorCreateEventPage,
@@ -159,6 +150,10 @@ export const router = createBrowserRouter([
       {
         path: "teams/:teamId/advancement",
         element: <TeamAdvancementPage />,
+      },
+      {
+        path: "teams/:teamId/scores",
+        element: <TeamPublishedScoresPage />,
       },
       {
         path: "events/:eventId/competing",
