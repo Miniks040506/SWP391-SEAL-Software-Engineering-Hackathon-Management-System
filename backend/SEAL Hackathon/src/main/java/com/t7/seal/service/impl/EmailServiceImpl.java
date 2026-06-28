@@ -1,10 +1,12 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.exception.ExternalServiceException;
 import com.t7.seal.service.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -741,8 +743,8 @@ public class EmailServiceImpl implements EmailService {
             helper.setText(html, true);
 
             mailSender.send(message);
-        } catch (MessagingException ex) {
-            throw new IllegalStateException("Cannot build email message.", ex);
+        } catch (MessagingException | MailException ex) {
+            throw new ExternalServiceException("Email delivery service is unavailable.", ex);
         }
     }
 
