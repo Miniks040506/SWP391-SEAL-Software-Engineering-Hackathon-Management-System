@@ -1085,33 +1085,9 @@ public class TeamServiceImpl implements TeamService {
         }
     }
 
-    private void sendInvitationRejectedEmail(TeamInvitation invitation) {
-        Team team = invitation.getTeam();
-        User leader = team.getLeader();
-        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
-            return;
-        }
-
-        try {
-            emailService.sendTeamInvitationRejected(
-                    leader.getEmail(),
-                    team.getName(),
-                    invitation.getInviteEmail(),
-                    buildTeamUrl(team.getId())
-            );
-        } catch (RuntimeException ex) {
-            log.warn("Failed to send team invitation rejected email. invitationId={}, teamId={}", invitation.getId(), team.getId(), ex);
-        }
-    }
-
     private String buildInvitationUrl(String action, String token) {
         String base = frontendUrl == null || frontendUrl.isBlank() ? "http://localhost:5173" : frontendUrl;
         return stripTrailingSlash(base) + "/invitations/" + action + "?token=" + token;
-    }
-
-    private String buildTeamUrl(UUID teamId) {
-        String base = frontendUrl == null || frontendUrl.isBlank() ? "http://localhost:5173" : frontendUrl;
-        return stripTrailingSlash(base) + "/participant/teams/" + teamId;
     }
 
     private String stripTrailingSlash(String value) {
