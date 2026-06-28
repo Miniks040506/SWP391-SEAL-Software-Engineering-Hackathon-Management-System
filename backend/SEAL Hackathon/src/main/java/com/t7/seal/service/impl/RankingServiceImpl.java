@@ -223,12 +223,17 @@ public class RankingServiceImpl implements RankingService {
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
         if (event.getResultPublishedAt() != null) {
+            List<Ranking> publishedRankings =
+                    rankingRepository.findByEventRoundTrackWithDetails(event.getId(), null, null);
             return new PublishResultsResponse(
                     event.getId(),
                     null,
                     event.getResultPublishedAt(),
                     null,
-                    0
+                    0,
+                    false,
+                    false,
+                    publishedRankings.size()
             );
         }
 
@@ -261,7 +266,7 @@ public class RankingServiceImpl implements RankingService {
         eventRepository.save(event);
 
         UUID announcementId = createResultAnnouncement(event, null, actor, request, now);
-        int notifiedCount = sendResultNotifications(event, null, rankings, actor, request);
+        PublicationFanout fanout = sendResultNotifications(event, null, rankings, actor, request);
 
         auditLogService.record(
                 actor,
@@ -273,6 +278,8 @@ public class RankingServiceImpl implements RankingService {
                         "eventId", event.getId().toString(),
                         "publishedAt", now.toString(),
                         "rankingCount", rankings.size(),
+                        "notificationSent", fanout.notificationSent(),
+                        "emailQueued", fanout.emailQueued(),
                         "scope", "EVENT"
                 ),
                 null
@@ -283,7 +290,10 @@ public class RankingServiceImpl implements RankingService {
                 null,
                 now,
                 announcementId,
-                notifiedCount
+                fanout.notifiedCount(),
+                fanout.notificationSent(),
+                fanout.emailQueued(),
+                rankings.size()
         );
     }
 
@@ -298,12 +308,17 @@ public class RankingServiceImpl implements RankingService {
                 .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
 
         if (round.getResultPublishedAt() != null) {
+            List<Ranking> publishedRankings =
+                    rankingRepository.findByRoundIdAndTrackIdWithDetails(round.getId(), null);
             return new PublishResultsResponse(
                     round.getEvent().getId(),
                     round.getId(),
                     round.getResultPublishedAt(),
                     null,
-                    0
+                    0,
+                    false,
+                    false,
+                    publishedRankings.size()
             );
         }
 
@@ -321,7 +336,7 @@ public class RankingServiceImpl implements RankingService {
         roundRepository.save(round);
 
         UUID announcementId = createResultAnnouncement(round.getEvent(), round, actor, request, now);
-        int notifiedCount = sendResultNotifications(round.getEvent(), round, rankings, actor, request);
+        PublicationFanout fanout = sendResultNotifications(round.getEvent(), round, rankings, actor, request);
 
         auditLogService.record(
                 actor,
@@ -334,6 +349,8 @@ public class RankingServiceImpl implements RankingService {
                         "roundId", round.getId().toString(),
                         "publishedAt", now.toString(),
                         "rankingCount", rankings.size(),
+                        "notificationSent", fanout.notificationSent(),
+                        "emailQueued", fanout.emailQueued(),
                         "scope", "ROUND"
                 ),
                 null
@@ -344,7 +361,10 @@ public class RankingServiceImpl implements RankingService {
                 round.getId(),
                 now,
                 announcementId,
-                notifiedCount
+                fanout.notifiedCount(),
+                fanout.notificationSent(),
+                fanout.emailQueued(),
+                rankings.size()
         );
     }
 
@@ -433,12 +453,8 @@ public class RankingServiceImpl implements RankingService {
             return null;
         }
 
-        String title = request == null || isBlank(request.title())
-                ? defaultResultTitle(event, round)
-                : request.title().trim();
-        String content = request == null || isBlank(request.content())
-                ? defaultResultContent(event, round)
-                : request.content().trim();
+        String title = resolveAnnouncementTitle(event, round, request);
+        String content = resolveAnnouncementBody(event, round, request);
 
         EventAnnouncement announcement = EventAnnouncement.builder()
                 .event(event)
@@ -446,8 +462,8 @@ public class RankingServiceImpl implements RankingService {
                 .content(content)
                 .isPinned(true)
                 .isResultAnnouncement(true)
-                .sendEmail(false)
-                .sendInApp(true)
+                .sendEmail(resultSendEmail(request))
+                .sendInApp(resultSendInApp(request))
                 .targetScope(NotificationTargetScope.ALL_EVENT_USERS)
                 .createdBy(actor)
                 .build();
@@ -471,13 +487,14 @@ public class RankingServiceImpl implements RankingService {
         return saved.getId();
     }
 
-    private int sendResultNotifications(HackathonEvent event,
-                                        Round round,
-                                        List<Ranking> rankings,
-                                        User actor,
-                                        PublishResultsRequest request) {
-        if (request != null && Boolean.FALSE.equals(request.sendNotification())) {
-            return 0;
+    private PublicationFanout sendResultNotifications(HackathonEvent event,
+                                                      Round round,
+                                                      List<Ranking> rankings,
+                                                      User actor,
+                                                      PublishResultsRequest request) {
+        NotificationChannel channel = resolveResultNotificationChannel(request);
+        if (channel == null) {
+            return new PublicationFanout(0, false, false);
         }
 
         Map<UUID, Ranking> rankingByTeam = rankings.stream()
@@ -516,14 +533,81 @@ public class RankingServiceImpl implements RankingService {
                     NotificationTargetScope.TEAM,
                     team.getId(),
                     null,
-                    NotificationChannel.BOTH,
+                    channel,
                     null
             );
             count++;
         }
 
-        return count;
+        return new PublicationFanout(
+                count,
+                count > 0 && (channel == NotificationChannel.IN_APP || channel == NotificationChannel.BOTH),
+                count > 0 && (channel == NotificationChannel.EMAIL || channel == NotificationChannel.BOTH)
+        );
     }
+
+    private NotificationChannel resolveResultNotificationChannel(PublishResultsRequest request) {
+        if (request != null && Boolean.FALSE.equals(request.sendNotification())) {
+            return null;
+        }
+        boolean sendInApp = resultSendInApp(request);
+        boolean sendEmail = resultSendEmail(request);
+        if (!sendInApp && !sendEmail) {
+            return null;
+        }
+        if (sendInApp && sendEmail) {
+            return NotificationChannel.BOTH;
+        }
+        return sendEmail ? NotificationChannel.EMAIL : NotificationChannel.IN_APP;
+    }
+
+    private boolean resultSendEmail(PublishResultsRequest request) {
+        if (request != null && Boolean.FALSE.equals(request.sendNotification())) {
+            return false;
+        }
+        return request == null || request.sendEmail() == null || Boolean.TRUE.equals(request.sendEmail());
+    }
+
+    private boolean resultSendInApp(PublishResultsRequest request) {
+        if (request != null && Boolean.FALSE.equals(request.sendNotification())) {
+            return false;
+        }
+        return request == null || request.sendInApp() == null || Boolean.TRUE.equals(request.sendInApp());
+    }
+
+    private String resolveAnnouncementTitle(
+            HackathonEvent event,
+            Round round,
+            PublishResultsRequest request
+    ) {
+        if (request != null && !isBlank(request.announcementTitle())) {
+            return request.announcementTitle().trim();
+        }
+        if (request != null && !isBlank(request.title())) {
+            return request.title().trim();
+        }
+        return defaultResultTitle(event, round);
+    }
+
+    private String resolveAnnouncementBody(
+            HackathonEvent event,
+            Round round,
+            PublishResultsRequest request
+    ) {
+        if (request != null && !isBlank(request.announcementBody())) {
+            return request.announcementBody().trim();
+        }
+        if (request != null && !isBlank(request.content())) {
+            return request.content().trim();
+        }
+        return defaultResultContent(event, round);
+    }
+
+    private record PublicationFanout(
+            int notifiedCount,
+            boolean notificationSent,
+            boolean emailQueued
+    ) {}
 
     private Optional<RankingDraft> buildRankingDraft(
             Submission submission,

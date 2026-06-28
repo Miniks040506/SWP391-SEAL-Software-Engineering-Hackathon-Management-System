@@ -8,6 +8,9 @@ public record PublishResultsResponse(
         UUID roundId,
         LocalDateTime publishedAt,
         UUID announcementId,
-        int notifiedCount
+        int notifiedCount,
+        Boolean notificationSent,
+        Boolean emailQueued,
+        int publishedRankingCount
 ) {}
 
