@@ -20,6 +20,7 @@ import com.t7.seal.service.SubmissionFileStorageService;
 import com.t7.seal.service.SubmissionService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SubmissionServiceImpl implements SubmissionService {
 
     private static final int MAX_PAGE_SIZE = 100;
@@ -836,8 +838,14 @@ public class SubmissionServiceImpl implements SubmissionService {
                     NotificationChannel.IN_APP,
                     null
             );
-        } catch (RuntimeException ignored) {
-            // Submission persistence must not roll back because notification delivery failed.
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Failed to create submission notifications. submissionId={}, teamId={}, roundId={}",
+                    submission.getId(),
+                    team.getId(),
+                    round.getId(),
+                    ex
+            );
         }
     }
 
