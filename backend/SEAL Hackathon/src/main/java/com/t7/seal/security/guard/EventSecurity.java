@@ -1,5 +1,6 @@
 package com.t7.seal.security.guard;
 
+import com.t7.seal.repository.AdvanceRuleRepository;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.repository.TrackRepository;
@@ -16,6 +17,7 @@ public class EventSecurity {
     private final HackathonEventRepository hackathonEventRepository;
     private final TrackRepository trackRepository;
     private final RoundRepository roundRepository;
+    private final AdvanceRuleRepository advanceRuleRepository;
 
     public boolean canCreateEvent(Authentication authentication) {
         return CurrentUser.isCoordinator(authentication);
@@ -40,8 +42,25 @@ public class EventSecurity {
     }
 
     public boolean canManageRound(UUID roundId, Authentication authentication) {
+        if (CurrentUser.isAdmin(authentication)) {
+            return roundRepository.existsById(roundId);
+        }
         return CurrentUser.isCoordinator(authentication)
-                && roundRepository.existsById(roundId);
+                && roundRepository.existsByIdAndEventCreatedById(
+                roundId,
+                CurrentUser.id(authentication)
+        );
+    }
+
+    public boolean canManageAdvanceRule(UUID ruleId, Authentication authentication) {
+        if (CurrentUser.isAdmin(authentication)) {
+            return advanceRuleRepository.existsById(ruleId);
+        }
+        return CurrentUser.isCoordinator(authentication)
+                && advanceRuleRepository.existsByIdAndRoundEventCreatedById(
+                ruleId,
+                CurrentUser.id(authentication)
+        );
     }
 
     public boolean canManagePrize(Authentication authentication) {

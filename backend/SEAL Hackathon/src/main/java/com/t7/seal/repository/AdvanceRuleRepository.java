@@ -15,6 +15,8 @@ public interface AdvanceRuleRepository extends JpaRepository<AdvanceRule, UUID> 
 
     List<AdvanceRule> findByRoundIdOrderByPriorityAscRuleTypeAsc(UUID roundId);
 
+    boolean existsByIdAndRoundEventCreatedById(UUID ruleId, UUID coordinatorId);
+
     @Query("""
             SELECT COUNT(ar) > 0 FROM AdvanceRule ar
                 WHERE ar.round.id = :roundId 
