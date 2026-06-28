@@ -14,6 +14,7 @@ import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.MentorFeedbackService;
 import com.t7.seal.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MentorFeedbackServiceImpl implements MentorFeedbackService {
 
     private final MentorFeedbackRepository mentorFeedbackRepository;
@@ -305,8 +307,14 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
                     NotificationChannel.BOTH,
                     null
             );
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Failed to create mentor feedback notification. feedbackId={}, teamId={}, mentorId={}",
+                    feedback.getId(),
+                    team.getId(),
+                    feedback.getMentor().getId(),
+                    ex
+            );
         }
     }
 
