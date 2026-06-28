@@ -80,6 +80,15 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<ApiErrorResponse> handleExternalService(
+            ExternalServiceException ex,
+            HttpServletRequest request
+    ) {
+        log.error("External service failure for {}", request.getRequestURI(), ex);
+        return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFound(
             NotFoundException ex,
