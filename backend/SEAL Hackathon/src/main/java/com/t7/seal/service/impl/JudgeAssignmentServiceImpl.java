@@ -342,13 +342,6 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         return assignmentRepository.findByJudgeIdAndRoundIdWithRoundAndTrack(judge.getId(), roundId);
     }
 
-    private Specification<Submission> assignedSubmissionSpecForSlot(Round round, Track track, SubmissionStatus status) {
-        RoundJudgeAssignment slot = new RoundJudgeAssignment();
-        slot.setRound(round);
-        slot.setTrack(track);
-        return assignedSubmissionSpec(List.of(slot), status);
-    }
-
     private Specification<Submission> assignedSubmissionSpec(List<RoundJudgeAssignment> assignments, SubmissionStatus status) {
         return (root, query, cb) -> {
             if (query != null) {

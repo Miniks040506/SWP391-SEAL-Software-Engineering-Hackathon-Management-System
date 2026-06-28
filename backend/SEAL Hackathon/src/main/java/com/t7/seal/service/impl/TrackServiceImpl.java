@@ -22,7 +22,6 @@ import com.t7.seal.request.track.CreateTrackRequest;
 import com.t7.seal.request.track.RegisterTeamTrackRequest;
 import com.t7.seal.request.track.UpdateTrackRequest;
 import com.t7.seal.response.PageResponse;
-import com.t7.seal.response.team.TeamResponse;
 import com.t7.seal.response.track.*;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.TrackService;
@@ -354,21 +353,6 @@ public class TrackServiceImpl implements TrackService {
                 .map(Submission::getStatus)
                 .map(Enum::name)
                 .orElse(null);
-    }
-
-    private TeamResponse toTeamResponse(Team team) {
-        return new TeamResponse(
-                team.getId(),
-                team.getName(),
-                team.getProjectTitle(),
-                team.getLeader() == null ? null : team.getLeader().getId(),
-                team.getLeader() == null ? null : team.getLeader().getFullName(),
-                team.getTrack() == null ? null : team.getTrack().getId(),
-                team.getStatus().name(),
-                team.getMemberCount() == null ? 0 : team.getMemberCount(),
-                team.getJoinCode(),
-                team.getJoinCodeEnabled()
-        );
     }
 
 
