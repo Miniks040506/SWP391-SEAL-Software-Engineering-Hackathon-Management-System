@@ -501,7 +501,8 @@ public class RoundServiceImpl implements RoundService {
         List<Ranking> rankings = rankingRepository.findByRoundIdWithSubmissionTeamTrack(roundId);
         List<AdvanceRule> rules = advanceRuleRepository.findByRoundIdOrderByPriorityAscRuleTypeAsc(roundId);
         List<String> warnings = buildAvancementWarnings(round, rankings, rules);
-        List<Ranking> suggested = executeAdvanceRules(rankings, rules);
+        Map<UUID, AdvanceReason> suggestedReasonsByTeam = new LinkedHashMap<>();
+        List<Ranking> suggested = executeAdvanceRules(rankings, rules, suggestedReasonsByTeam);
         Set<UUID> suggestedTeamIds = suggested.stream()
                 .map(r -> r.getSubmission().getTeam().getId())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -515,7 +516,8 @@ public class RoundServiceImpl implements RoundService {
                                 r,
                                 suggestedTeamIds.contains(r.getSubmission().getTeam().getId()),
                                 suggestedTeamIds.contains(r.getSubmission().getTeam().getId()),
-                                null
+                                null,
+                                suggestedReasonsByTeam.get(r.getSubmission().getTeam().getId())
                         ))
                         .toList(),
                 warnings
@@ -575,8 +577,12 @@ public class RoundServiceImpl implements RoundService {
                 }
             }
             decisions.add(toTeamAdvancementDecisionResponse(
-                    ranking, suggestedAdvanced, finalAdvanced, overrideReasonForTeam)
-            );
+                    ranking,
+                    suggestedAdvanced,
+                    finalAdvanced,
+                    overrideReasonForTeam,
+                    ranking.getAdvanceReason()
+            ));
         }
 
         LocalDateTime confirmedAt = LocalDateTime.now();
@@ -769,7 +775,8 @@ public class RoundServiceImpl implements RoundService {
             Ranking ranking,
             boolean suggestedAdvanced,
             boolean finalAdvanced,
-            String overrideReason
+            String overrideReason,
+            AdvanceReason advanceReason
     ) {
         Team team = ranking.getSubmission().getTeam();
         Track track = ranking.getTrack();
@@ -784,7 +791,7 @@ public class RoundServiceImpl implements RoundService {
                 suggestedAdvanced,
                 finalAdvanced,
                 team.getStatus() == null ? null : team.getStatus().name(),
-                ranking.getAdvanceReason() == null ? null : ranking.getAdvanceReason().name(),
+                advanceReason == null ? null : advanceReason.name(),
                 overrideReason
         );
     }
