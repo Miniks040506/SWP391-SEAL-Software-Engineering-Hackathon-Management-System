@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -55,7 +56,7 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
 
         } catch (ExternalServiceException ex) {
             throw ex;
-        } catch (Exception ex) {
+        } catch (IOException | RuntimeException ex) {
             throw new ExternalServiceException("Avatar storage service is unavailable.", ex);
         }
     }
@@ -79,7 +80,7 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
             return secureUrl.toString();
         } catch (ExternalServiceException ex) {
             throw ex;
-        } catch (Exception ex) {
+        } catch (IOException | RuntimeException ex) {
             throw new ExternalServiceException("Banner storage service is unavailable.", ex);
         }
     }
