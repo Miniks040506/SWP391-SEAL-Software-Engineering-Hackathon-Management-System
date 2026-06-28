@@ -11,7 +11,7 @@ import com.t7.seal.entities.Track;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.repository.SubmissionRepository;
@@ -123,7 +123,7 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
     private void ensureCoordinator(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
         if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.COORDINATOR) {
-            throw new UnauthorizedException("Only coordinator or admin can access team management.");
+            throw new ForbiddenException("Only coordinator or admin can access team management.");
         }
     }
 

@@ -5,7 +5,7 @@ import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.team.CreateTeamRequest;
 import com.t7.seal.request.team.InviteMemberRequest;
@@ -29,7 +29,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -421,7 +420,7 @@ public class TeamServiceImpl implements TeamService {
         UUID currentUserId = CurrentUser.id(authentication);
 
         TeamMember member = teamMemberRepository.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("You are not an active member of this team."));
+                .orElseThrow(() -> new ForbiddenException("You are not an active member of this team."));
 
         ensureTeamEditable(team);
 
@@ -638,7 +637,7 @@ public class TeamServiceImpl implements TeamService {
         boolean activeMember = teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, currentUser.getId());
 
         if (!coordinatorOrAdmin && !activeMember) {
-            throw new UnauthorizedException("You can only view advancement status for your own active team.");
+            throw new ForbiddenException("You can only view advancement status for your own active team.");
         }
 
         if (team.getTrack() == null || team.getTrack().getEvent() == null) {
@@ -815,7 +814,7 @@ public class TeamServiceImpl implements TeamService {
         ensureActiveStudent(currentUser);
 
         if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
-            throw new UnauthorizedException("This invitation is not for your account.");
+            throw new ForbiddenException("This invitation is not for your account.");
         }
 
         if (!invitation.isPending()) {
@@ -860,7 +859,7 @@ public class TeamServiceImpl implements TeamService {
         User currentUser = currentUserService.getCurrentUser(authentication);
 
         if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
-            throw new UnauthorizedException("This invitation is not for your account.");
+            throw new ForbiddenException("This invitation is not for your account.");
         }
 
         declineInvitation(invitation, request, currentUser, currentUser);
@@ -1085,88 +1084,9 @@ public class TeamServiceImpl implements TeamService {
         }
     }
 
-    private void sendTeamMemberJoinedByCodeEmail(Team team, User joinedMember) {
-        User leader = team.getLeader();
-        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
-            return;
-        }
-
-        List<String> cc = activeMembers(team.getId()).stream()
-                .map(TeamMember::getUser)
-                .filter(user -> user != null && user.getEmail() != null && !user.getEmail().isBlank())
-                .filter(user -> !user.getId().equals(leader.getId()))
-                .map(User::getEmail)
-                .distinct()
-                .toList();
-
-        try {
-            emailService.sendTeamInvitationAccepted(
-                    leader.getEmail(),
-                    cc,
-                    team.getName(),
-                    joinedMember.getFullName(),
-                    buildTeamUrl(team.getId())
-            );
-        } catch (RuntimeException ex) {
-            log.warn("Failed to send team join-code accepted email. teamId={}, joinedUserId={}", team.getId(), joinedMember.getId(), ex);
-        }
-    }
-
-    private void sendInvitationAcceptedEmail(TeamInvitation invitation, User acceptedMember) {
-        Team team = invitation.getTeam();
-        User leader = team.getLeader();
-        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
-            return;
-        }
-
-        List<String> cc = activeMembers(team.getId()).stream()
-                .map(TeamMember::getUser)
-                .filter(user -> user != null && user.getEmail() != null && !user.getEmail().isBlank())
-                .filter(user -> !user.getId().equals(leader.getId()))
-                .map(User::getEmail)
-                .distinct()
-                .toList();
-
-        try {
-            emailService.sendTeamInvitationAccepted(
-                    leader.getEmail(),
-                    cc,
-                    team.getName(),
-                    acceptedMember.getFullName(),
-                    buildTeamUrl(team.getId())
-            );
-        } catch (RuntimeException ex) {
-            log.warn("Failed to send team invitation accepted email. invitationId={}, teamId={}", invitation.getId(), team.getId(), ex);
-        }
-    }
-
-    private void sendInvitationRejectedEmail(TeamInvitation invitation) {
-        Team team = invitation.getTeam();
-        User leader = team.getLeader();
-        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
-            return;
-        }
-
-        try {
-            emailService.sendTeamInvitationRejected(
-                    leader.getEmail(),
-                    team.getName(),
-                    invitation.getInviteEmail(),
-                    buildTeamUrl(team.getId())
-            );
-        } catch (RuntimeException ex) {
-            log.warn("Failed to send team invitation rejected email. invitationId={}, teamId={}", invitation.getId(), team.getId(), ex);
-        }
-    }
-
     private String buildInvitationUrl(String action, String token) {
         String base = frontendUrl == null || frontendUrl.isBlank() ? "http://localhost:5173" : frontendUrl;
         return stripTrailingSlash(base) + "/invitations/" + action + "?token=" + token;
-    }
-
-    private String buildTeamUrl(UUID teamId) {
-        String base = frontendUrl == null || frontendUrl.isBlank() ? "http://localhost:5173" : frontendUrl;
-        return stripTrailingSlash(base) + "/participant/teams/" + teamId;
     }
 
     private String stripTrailingSlash(String value) {
@@ -1265,7 +1185,7 @@ public class TeamServiceImpl implements TeamService {
         UUID currentUserId = CurrentUser.id(authentication);
 
         if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUserId)) {
-            throw new UnauthorizedException("You don not have permission to access this team.");
+            throw new ForbiddenException("You do not have permission to access this team.");
         }
     }
 
@@ -1291,7 +1211,7 @@ public class TeamServiceImpl implements TeamService {
         UUID userId = CurrentUser.id(authentication);
 
         if (team.getLeader() == null || !team.getLeader().getId().equals(userId)) {
-            throw new UnauthorizedException("You don not have permission to access this team.");
+            throw new ForbiddenException("You do not have permission to access this team.");
         }
     }
 
@@ -1301,32 +1221,4 @@ public class TeamServiceImpl implements TeamService {
         }
     }
 
-    private void sendTeamRegisterEmailSafely(
-            Team team, List<TeamMember> members, HackathonEvent event, Track track
-    ) {
-        try {
-            User leader = team.getLeader();
-
-            List<String> cc = members.stream()
-                    .map(TeamMember::getUser)
-                    .filter(user -> user != null && user.getEmail() != null)
-                    .filter(user -> leader == null || !user.getId().equals(leader.getId()))
-                    .map(User::getEmail)
-                    .distinct()
-                    .toList();
-            if (leader != null && leader.getEmail() != null) {
-                emailService.sendTeamRegisterEmail(
-                        leader.getEmail(),
-                        cc,
-                        leader.getFullName(),
-                        team.getName(),
-                        event.getName(),
-                        track.getName()
-                );
-            }
-        } catch (RuntimeException ex) {
-            //TODO
-            ex.printStackTrace();
-        }
-    }
 }

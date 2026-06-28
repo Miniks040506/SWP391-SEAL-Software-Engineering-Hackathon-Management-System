@@ -14,10 +14,8 @@ import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
-import org.flywaydb.core.api.callback.Warning;
-import org.springframework.boot.webmvc.autoconfigure.WebMvcProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RoundServiceImpl implements RoundService {
 
     private final HackathonEventRepository hackathonEventRepository;
@@ -656,9 +655,13 @@ public class RoundServiceImpl implements RoundService {
                         NotificationChannel.BOTH,
                         null
                 );
-            } catch (Exception e) {
-                //TODO
-                e.printStackTrace();
+            } catch (RuntimeException ex) {
+                log.warn(
+                        "Failed to create advancement notification. roundId={}, teamId={}",
+                        round.getId(),
+                        decision.teamId(),
+                        ex
+                );
             }
         }
     }
@@ -845,9 +848,12 @@ public class RoundServiceImpl implements RoundService {
     }
 
     private <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException(fieldName + " is required.");
+        }
         try {
             return Enum.valueOf(enumClass, value.trim().toUpperCase());
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException ex) {
             throw new BadRequestException(String.format("Invalid %s: %s", fieldName, value));
         }
     }
@@ -1084,9 +1090,13 @@ public class RoundServiceImpl implements RoundService {
             ));
 
             auditLogRepository.save(log);
-        } catch (Exception e) {
-            //TODO
-            e.printStackTrace();
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Failed to save round audit. roundId={}, actionType={}",
+                    round.getId(),
+                    actionType,
+                    ex
+            );
         }
     }
 
@@ -1286,9 +1296,13 @@ public class RoundServiceImpl implements RoundService {
                     NotificationChannel.BOTH,
                     null
             );
-        } catch (Exception e) {
-            //TODO
-            e.printStackTrace();
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Failed to create round notification. roundId={}, notificationType={}",
+                    round.getId(),
+                    type,
+                    ex
+            );
         }
     }
 

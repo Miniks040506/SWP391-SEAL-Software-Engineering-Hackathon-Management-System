@@ -410,7 +410,7 @@ public class CalibrationServiceImpl implements CalibrationService {
             ensureCoordinatorCanManageEvent(user, calibrationRound.getEvent());
         } else {
             if (!user.isJudge()) {
-                throw new UnauthorizedException("Only judges or coordinators can view calibration distribution.");
+                throw new ForbiddenException("Only judges or coordinators can view calibration distribution.");
             }
 
             Judge judge = currentJudge(authentication);
@@ -634,7 +634,7 @@ public class CalibrationServiceImpl implements CalibrationService {
             return;
         }
         if (!user.isJudge()) {
-            throw new UnauthorizedException("Only judges or coordinators can access calibration rounds.");
+            throw new ForbiddenException("Only judges or coordinators can access calibration rounds.");
         }
 
         Judge judge = judgeRepository.findByUserId(user.getId())
@@ -661,7 +661,7 @@ public class CalibrationServiceImpl implements CalibrationService {
     private Judge currentJudge(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
         if (!user.isJudge()) {
-            throw new UnauthorizedException("Only judges can use calibration scoring.");
+            throw new ForbiddenException("Only judges can use calibration scoring.");
         }
         if (!user.isActive()) {
             throw new UnauthorizedException("Judge account is not ACTIVE.");
@@ -686,7 +686,7 @@ public class CalibrationServiceImpl implements CalibrationService {
 
     private void ensureCoordinatorOrAdmin(User user) {
         if (!canCoordinate(user)) {
-            throw new UnauthorizedException("Only coordinator or admin can manage calibration rounds.");
+            throw new ForbiddenException("Only coordinator or admin can manage calibration rounds.");
         }
     }
 

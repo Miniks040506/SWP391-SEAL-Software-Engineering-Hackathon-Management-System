@@ -13,7 +13,9 @@ import com.t7.seal.repository.UserRepository;
 import com.t7.seal.request.auth.*;
 import com.t7.seal.response.auth.*;
 import com.t7.seal.service.*;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -25,6 +27,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -276,7 +279,8 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             tokenBlacklistService.blacklist(token, jwtService.extractExpirationMillis(token));
-        } catch (Exception ignored) {
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.debug("Could not read token expiration during logout; using default blacklist TTL.", ex);
             tokenBlacklistService.blacklist(token);
         }
     }
@@ -332,9 +336,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private StudentType parseStudentType(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new BadRequestException("Invalid student type. Supported values: FPT, EXTERNAL.");
+        }
         try {
             return StudentType.valueOf(raw.trim().toUpperCase());
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Invalid student type. Supported values: FPT, EXTERNAL.");
         }
     }

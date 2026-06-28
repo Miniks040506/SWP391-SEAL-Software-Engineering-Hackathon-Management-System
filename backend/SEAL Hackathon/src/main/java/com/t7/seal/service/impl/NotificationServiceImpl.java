@@ -4,7 +4,7 @@ import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.system.CreateNotificationRequest;
 import com.t7.seal.request.system.TestEmailRequest;
@@ -12,6 +12,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.*;
 import com.t7.seal.service.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationServiceImpl implements NotificationService {
 
     private static final int MAX_PAGE_SIZE = 100;
@@ -258,8 +260,12 @@ public class NotificationServiceImpl implements NotificationService {
                 outbox.setStatus(EmailDeliveryStatus.RETRYING);
                 emailOutboxRepository.save(outbox);
                 sendOutbox(outbox);
-            } catch (RuntimeException ignored) {
-                // Failure details are recorded by sendOutbox. The scheduler will retry later.
+            } catch (RuntimeException ex) {
+                log.warn(
+                        "Queued email dispatch failed. outboxId={}",
+                        outbox.getId(),
+                        ex
+                );
             }
         }
     }
@@ -859,7 +865,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private void ensureCanManage(User user) {
         if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.COORDINATOR) {
-            throw new UnauthorizedException("Only admin or coordinator can manage notifications.");
+            throw new ForbiddenException("Only admin or coordinator can manage notifications.");
         }
     }
 

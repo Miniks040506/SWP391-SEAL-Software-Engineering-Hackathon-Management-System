@@ -6,7 +6,7 @@ import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.*;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.mentor.*;
@@ -141,7 +141,7 @@ public class MentorTeamServiceImpl implements MentorTeamService {
                 || user.getRole() == UserRole.ADMIN) {
             return;
         }
-        throw new UnauthorizedException("Only assigned mentor or coordinator or admin can be accessed to this resource.");
+        throw new ForbiddenException("Only assigned mentor or coordinator or admin can be accessed to this resource.");
     }
 
     private MentorTrackResponse toMentorTrackResponse(MentorAssignment assignment) {
@@ -185,7 +185,7 @@ public class MentorTeamServiceImpl implements MentorTeamService {
         if (mentorAssignmentRepository.existsByTrackIdAndUserId(track.getId(), user.getId())) {
             return;
         }
-        throw new UnauthorizedException("You are not authorized to view this track.");
+        throw new ForbiddenException("You are not authorized to view this track.");
     }
 
     private TeamStatus parseTeamStatus(String status) {

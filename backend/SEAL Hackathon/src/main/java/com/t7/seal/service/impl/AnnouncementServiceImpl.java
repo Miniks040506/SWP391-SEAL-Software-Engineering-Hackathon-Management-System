@@ -12,7 +12,7 @@ import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.EventAnnouncementRepository;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.NotificationRepository;
@@ -387,7 +387,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
 
     private void ensureCoordinator(Authentication authentication) {
         if (!CurrentUser.isCoordinator(authentication)) {
-            throw new UnauthorizedException("Only coordinators can manage event announcements.");
+            throw new ForbiddenException("Only coordinators can manage event announcements.");
         }
     }
 

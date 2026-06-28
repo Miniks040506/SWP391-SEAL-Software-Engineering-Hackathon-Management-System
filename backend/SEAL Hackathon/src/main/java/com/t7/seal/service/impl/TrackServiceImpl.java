@@ -12,7 +12,7 @@ import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.MentorAssignmentRepository;
 import com.t7.seal.repository.SubmissionRepository;
@@ -22,7 +22,6 @@ import com.t7.seal.request.track.CreateTrackRequest;
 import com.t7.seal.request.track.RegisterTeamTrackRequest;
 import com.t7.seal.request.track.UpdateTrackRequest;
 import com.t7.seal.response.PageResponse;
-import com.t7.seal.response.team.TeamResponse;
 import com.t7.seal.response.track.*;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.TrackService;
@@ -287,9 +286,12 @@ public class TrackServiceImpl implements TrackService {
     }
 
     private <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException(fieldName + " is required.");
+        }
         try {
             return Enum.valueOf(enumClass, value.trim().toUpperCase());
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException ex) {
             throw new BadRequestException(String.format("Invalid %s: %s", fieldName, value));
         }
     }
@@ -313,7 +315,7 @@ public class TrackServiceImpl implements TrackService {
             return;
         }
 
-        throw new UnauthorizedException("You do not have access to this track's teams.");
+        throw new ForbiddenException("You do not have access to this track's teams.");
     }
 
     private TrackResponse toTrackResponse(Track track) {
@@ -354,21 +356,6 @@ public class TrackServiceImpl implements TrackService {
                 .map(Submission::getStatus)
                 .map(Enum::name)
                 .orElse(null);
-    }
-
-    private TeamResponse toTeamResponse(Team team) {
-        return new TeamResponse(
-                team.getId(),
-                team.getName(),
-                team.getProjectTitle(),
-                team.getLeader() == null ? null : team.getLeader().getId(),
-                team.getLeader() == null ? null : team.getLeader().getFullName(),
-                team.getTrack() == null ? null : team.getTrack().getId(),
-                team.getStatus().name(),
-                team.getMemberCount() == null ? 0 : team.getMemberCount(),
-                team.getJoinCode(),
-                team.getJoinCodeEnabled()
-        );
     }
 
 

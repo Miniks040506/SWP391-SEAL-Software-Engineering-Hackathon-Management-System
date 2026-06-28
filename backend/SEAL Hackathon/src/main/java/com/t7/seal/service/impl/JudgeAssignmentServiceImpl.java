@@ -342,13 +342,6 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         return assignmentRepository.findByJudgeIdAndRoundIdWithRoundAndTrack(judge.getId(), roundId);
     }
 
-    private Specification<Submission> assignedSubmissionSpecForSlot(Round round, Track track, SubmissionStatus status) {
-        RoundJudgeAssignment slot = new RoundJudgeAssignment();
-        slot.setRound(round);
-        slot.setTrack(track);
-        return assignedSubmissionSpec(List.of(slot), status);
-    }
-
     private Specification<Submission> assignedSubmissionSpec(List<RoundJudgeAssignment> assignments, SubmissionStatus status) {
         return (root, query, cb) -> {
             if (query != null) {
@@ -514,7 +507,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
     private Judge currentJudge(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
         if (!user.isJudge()) {
-            throw new UnauthorizedException("Only judges can access assigned submissions.");
+            throw new ForbiddenException("Only judges can access assigned submissions.");
         }
 
         if (!user.isActive()) {
@@ -578,9 +571,13 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                     NotificationChannel.BOTH,
                     null
             );
-        } catch (Exception e) {
-            //TODO
-            e.printStackTrace();
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Failed to create judge assignment notification. assignmentId={}, judgeId={}",
+                    assignment.getId(),
+                    assignment.getJudge().getId(),
+                    ex
+            );
         }
     }
 

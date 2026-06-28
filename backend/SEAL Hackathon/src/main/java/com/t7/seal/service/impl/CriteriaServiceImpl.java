@@ -27,7 +27,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.SortArgumentResolver;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -431,7 +430,7 @@ public class CriteriaServiceImpl implements CriteriaService {
 
         try {
             return CriteriaCategory.valueOf(category.trim().toUpperCase());
-        } catch (Exception e) {
+        } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Invalid criteria category " + category);
         }
     }

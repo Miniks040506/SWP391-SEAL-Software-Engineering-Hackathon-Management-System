@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Alert, Button, CircularProgress } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
@@ -7,21 +7,25 @@ import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 
 import { useCoordinatorEventDetailQuery, useCoordinatorEventRoundsQuery, useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 import { useRoundRankingsQuery, useEventRankingsQuery } from "../hooks/useRankingQueries";
-import { useCalculateRoundRankingMutation } from "../hooks/useRankingMutations";
+import { useCalculateRoundRankingMutation, usePublishEventResultsMutation } from "../hooks/useRankingMutations";
 import { useRoundGradingProgressQuery } from "@/features/grading-progress/hooks/useGradingProgressQueries";
+import type { PublishResultsRequest } from "@/types/ranking.types";
 
 import { CalculateRankingPanel } from "../components/CalculateRankingPanel";
 import { RankingFilterBar } from "../components/RankingFilterBar";
 import { RankingPodium } from "../components/RankingPodium";
 import { RankingTable } from "../components/RankingTable";
 import { MobileRankingCard } from "../components/MobileRankingCard";
+import { PublishResultsDialog } from "../components/PublishResultsDialog";
+
+type SelectOption = { id: string; name: string };
 
 export const CoordinatorRankingPage = () => {
     const { eventId } = useParams();
-    const navigate = useNavigate();
 
     const [selectedRoundId, setSelectedRoundId] = useState<string>("all");
     const [selectedTrackId, setSelectedTrackId] = useState<string>("all");
+    const [publishDialogOpen, setPublishDialogOpen] = useState(false);
 
     const { data: event } = useCoordinatorEventDetailQuery(eventId);
     const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
@@ -43,6 +47,7 @@ export const CoordinatorRankingPage = () => {
         : useRoundRankingsQuery(selectedRoundId, { trackId: selectedTrackId !== "all" ? selectedTrackId : undefined });
 
     const calculateMutation = useCalculateRoundRankingMutation();
+    const publishMutation = usePublishEventResultsMutation();
 
     const handleCalculate = () => {
         if (selectedRoundId === "all") return;
@@ -50,6 +55,13 @@ export const CoordinatorRankingPage = () => {
             roundId: selectedRoundId,
             params: { trackId: selectedTrackId !== "all" ? selectedTrackId : undefined }
         });
+    };
+
+    const handlePublishResults = async (payload: PublishResultsRequest) => {
+        if (!eventId) return;
+        await publishMutation.mutateAsync({ eventId, payload });
+        setPublishDialogOpen(false);
+        refetch();
     };
 
     if (!event) {
@@ -60,11 +72,11 @@ export const CoordinatorRankingPage = () => {
         );
     }
 
-    const roundOptions = rounds.map(r => ({ id: r.id, name: r.name }));
-    const trackOptions = tracks.map(t => ({ id: t.id, name: t.name }));
+    const roundOptions = rounds.map((r: SelectOption) => ({ id: r.id, name: r.name }));
+    const trackOptions = tracks.map((t: SelectOption) => ({ id: t.id, name: t.name }));
 
-    const selectedRoundName = rounds.find(r => r.id === selectedRoundId)?.name;
-    const selectedTrackName = tracks.find(t => t.id === selectedTrackId)?.name;
+    const selectedRoundName = rounds.find((r: SelectOption) => r.id === selectedRoundId)?.name;
+    const selectedTrackName = tracks.find((t: SelectOption) => t.id === selectedTrackId)?.name;
 
     const lastCalculatedTime = rankings.length > 0 ? rankings[0].calculatedAt : null;
 
@@ -112,6 +124,7 @@ export const CoordinatorRankingPage = () => {
                         color="primary"
                         startIcon={<PublishOutlinedIcon />}
                         disabled={rankings.length === 0}
+                        onClick={() => setPublishDialogOpen(true)}
                         sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                     >
                         Publish Results
@@ -186,6 +199,16 @@ export const CoordinatorRankingPage = () => {
                     </>
                 )}
             </section>
+            <PublishResultsDialog
+                open={publishDialogOpen}
+                scopeLabel={event.name}
+                rankingCount={rankings.length}
+                defaultTitle={`Results are published for ${event.name}`}
+                defaultContent="The results are now available. Please open the leaderboard or your team score page for details."
+                isPending={publishMutation.isPending}
+                onClose={() => setPublishDialogOpen(false)}
+                onConfirm={handlePublishResults}
+            />
         </div>
     );
 };

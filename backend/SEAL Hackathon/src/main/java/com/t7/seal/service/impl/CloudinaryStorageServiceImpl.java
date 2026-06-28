@@ -4,12 +4,13 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.t7.seal.config.CloudinaryProperties;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ExternalServiceException;
 import com.t7.seal.service.CloudinaryStorageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -48,16 +49,15 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
             Object secureUrl = uploadResult.get("secure_url");
 
             if (secureUrl == null) {
-                throw new BadRequestException("Cannot upload avatar to Cloudinary");
+                throw new ExternalServiceException("Avatar storage service did not return an upload URL.");
             }
 
             return secureUrl.toString();
 
-        } catch (BadRequestException e) {
-            throw e;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new BadRequestException("Cannot upload avatar to Cloudinary");
+        } catch (ExternalServiceException ex) {
+            throw ex;
+        } catch (IOException | RuntimeException ex) {
+            throw new ExternalServiceException("Avatar storage service is unavailable.", ex);
         }
     }
 
@@ -74,12 +74,14 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
                     )
             );
             Object secureUrl = uploadResult.get("secure_url");
-            if (secureUrl == null) throw new BadRequestException("Cloudinary upload failed.");
+            if (secureUrl == null) {
+                throw new ExternalServiceException("Banner storage service did not return an upload URL.");
+            }
             return secureUrl.toString();
-        } catch (BadRequestException exception) {
-            throw exception;
-        } catch (Exception exception) {
-            throw new BadRequestException("Cannot upload event banner to Cloudinary.");
+        } catch (ExternalServiceException ex) {
+            throw ex;
+        } catch (IOException | RuntimeException ex) {
+            throw new ExternalServiceException("Banner storage service is unavailable.", ex);
         }
     }
 

@@ -5,11 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t7.seal.domain.SubmissionLinkType;
 import com.t7.seal.dto.RepositoryMetadata;
 import com.t7.seal.dto.RepositoryRef;
+import com.t7.seal.exception.ExternalServiceException;
 import com.t7.seal.service.RepositoryMetadataService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -18,12 +21,14 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RepositoryMetadataServiceImpl implements RepositoryMetadataService {
 
     private final ObjectMapper objectMapper;
@@ -65,15 +70,28 @@ public class RepositoryMetadataServiceImpl implements RepositoryMetadataService 
                 case "GITLAB" -> fetchGitlab(ref.get());
                 default -> null;
             };
-        } catch (Exception e) {
-            return RepositoryMetadata.builder()
-                    .platform(detectPlatform(url))
-                    .repoName(url)
-                    .build();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            log.warn(
+                    "Repository metadata lookup was interrupted. platform={}",
+                    detectPlatform(url),
+                    ex
+            );
+        } catch (IOException | ExternalServiceException | IllegalArgumentException ex) {
+            log.warn(
+                    "Repository metadata lookup failed. platform={}",
+                    detectPlatform(url),
+                    ex
+            );
         }
+
+        return RepositoryMetadata.builder()
+                .platform(detectPlatform(url))
+                .repoName(url)
+                .build();
     }
 
-    private RepositoryMetadata fetchGithub(RepositoryRef ref) throws Exception {
+    private RepositoryMetadata fetchGithub(RepositoryRef ref) throws IOException, InterruptedException {
         String endpoint = trimRight(githubApiBaseUrl)
                 + "/repos/" + ref.ownerOrNamespace() + "/" + ref.repo();
         JsonNode node = requestJson(endpoint, githubToken, false);
@@ -90,7 +108,7 @@ public class RepositoryMetadataServiceImpl implements RepositoryMetadataService 
                 .build();
     }
 
-    private RepositoryMetadata fetchGitlab(RepositoryRef ref) throws Exception {
+    private RepositoryMetadata fetchGitlab(RepositoryRef ref) throws IOException, InterruptedException {
         String partUrl = ref.ownerOrNamespace() + "/" + ref.repo();
         String encodedPath = URLEncoder
                 .encode(partUrl, StandardCharsets.UTF_8)
@@ -113,7 +131,7 @@ public class RepositoryMetadataServiceImpl implements RepositoryMetadataService 
                 .build();
     }
 
-    private JsonNode requestJson(String endpoint, String token, boolean gitlab) throws Exception {
+    private JsonNode requestJson(String endpoint, String token, boolean gitlab) throws IOException, InterruptedException {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(endpoint))
                 .GET()
@@ -133,7 +151,7 @@ public class RepositoryMetadataServiceImpl implements RepositoryMetadataService 
         );
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IllegalStateException("Repository metadata API returned " + response.statusCode());
+            throw new ExternalServiceException("Repository metadata service returned status " + response.statusCode() + ".");
         }
 
         return objectMapper.readTree(response.body());
@@ -168,7 +186,7 @@ public class RepositoryMetadataServiceImpl implements RepositoryMetadataService 
             }
 
             return Optional.empty();
-        } catch (Exception e) {
+        } catch (IllegalArgumentException ex) {
             return Optional.empty();
         }
     }
@@ -188,7 +206,7 @@ public class RepositoryMetadataServiceImpl implements RepositoryMetadataService 
         if (isBlank(value)) return null;
         try {
             return OffsetDateTime.parse(value).toLocalDateTime();
-        } catch (Exception ex) {
+        } catch (DateTimeParseException ex) {
             return null;
         }
     }

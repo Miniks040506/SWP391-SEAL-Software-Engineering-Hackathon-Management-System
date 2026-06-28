@@ -78,6 +78,10 @@ export type PublishResultsRequest = {
   content?: string;
   sendNotification?: boolean;
   createAnnouncement?: boolean;
+  announcementTitle?: string;
+  announcementBody?: string;
+  sendEmail?: boolean;
+  sendInApp?: boolean;
 };
 
 export type PublishResultsResponse = {
@@ -86,6 +90,9 @@ export type PublishResultsResponse = {
   publishedAt: ISODateTime;
   announcementId?: UUID | null;
   notifiedCount: number;
+  notificationSent?: boolean;
+  emailQueued?: boolean;
+  publishedRankingCount?: number;
 };
 
 export type TeamScoreCriterionResponse = {

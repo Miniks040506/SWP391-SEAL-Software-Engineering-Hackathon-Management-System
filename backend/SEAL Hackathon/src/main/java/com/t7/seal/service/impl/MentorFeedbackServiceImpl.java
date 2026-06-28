@@ -5,7 +5,7 @@ import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.mentor.CreateMentorFeedbackRequest;
 import com.t7.seal.request.mentor.UpdateMentorFeedbackRequest;
@@ -14,6 +14,7 @@ import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.MentorFeedbackService;
 import com.t7.seal.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MentorFeedbackServiceImpl implements MentorFeedbackService {
 
     private final MentorFeedbackRepository mentorFeedbackRepository;
@@ -217,7 +219,7 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
         }
 
         if (!isMentorAssignedToTeam(team, CurrentUser.id(authentication))) {
-            throw new UnauthorizedException("Mentor is not assigned to this team's track.");
+            throw new ForbiddenException("Mentor is not assigned to this team's track.");
         }
     }
 
@@ -305,8 +307,14 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
                     NotificationChannel.BOTH,
                     null
             );
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Failed to create mentor feedback notification. feedbackId={}, teamId={}, mentorId={}",
+                    feedback.getId(),
+                    team.getId(),
+                    feedback.getMentor().getId(),
+                    ex
+            );
         }
     }
 
@@ -339,7 +347,7 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
         UUID currentUserId = CurrentUser.id(authentication);
 
         if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUserId)) {
-            throw new UnauthorizedException("You are not an active member of this team.");
+            throw new ForbiddenException("You are not an active member of this team.");
         }
     }
 
@@ -370,7 +378,7 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
             return;
         }
 
-        throw new UnauthorizedException("You are not authorized to view this feedback.");
+        throw new ForbiddenException("You are not authorized to view this feedback.");
     }
 
     private void ensureFeedbackOwnerOrCoordinator(MentorFeedback feedback, Authentication authentication) {
@@ -380,7 +388,7 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
 
         UUID currentUserId = CurrentUser.id(authentication);
         if (feedback.getMentor() == null || !feedback.getMentor().getId().equals(currentUserId)) {
-            throw new UnauthorizedException("You are not authorized to edit this feedback.");
+            throw new ForbiddenException("You are not authorized to edit this feedback.");
         }
     }
 }
