@@ -7,6 +7,7 @@ import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
@@ -68,6 +69,7 @@ public class CalibrationServiceImpl implements CalibrationService {
 
         HackathonEvent event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found."));
+        ensureCoordinatorCanManageEvent(actor, event);
         Submission sample = submissionRepository.findDetailById(request.sampleSubmissionId())
                 .orElseThrow(() -> new NotFoundException("Sample submission not found."));
         ensureSubmissionBelongsToEvent(sample, event.getId());
@@ -115,8 +117,9 @@ public class CalibrationServiceImpl implements CalibrationService {
             throw new BadRequestException("eventId is required.");
         }
 
-        eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found."));
-        ensureCanAccessEventCalibration(user, eventId);
+        HackathonEvent event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found."));
+        ensureCanAccessEventCalibration(user, event);
 
         return calibrationRoundRepository.findByEventIdOrderByStartAtAsc(eventId)
                 .stream()
@@ -168,7 +171,7 @@ public class CalibrationServiceImpl implements CalibrationService {
     ) {
         CalibrationRound calibrationRound = findRound(calibrationRoundId);
         User user = currentUserService.getCurrentUser(authentication);
-        ensureCanAccessEventCalibration(user, calibrationRound.getEvent().getId());
+        ensureCanAccessEventCalibration(user, calibrationRound.getEvent());
         return toRoundDetailResponse(calibrationRound);
     }
 
@@ -183,6 +186,7 @@ public class CalibrationServiceImpl implements CalibrationService {
         ensureCoordinatorOrAdmin(actor);
 
         CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        ensureCoordinatorCanManageEvent(actor, calibrationRound.getEvent());
         if (calibrationRound.isDistributionPublished()) {
             throw new ConflictException("Cannot update calibration round after distribution is published.");
         }
@@ -397,7 +401,9 @@ public class CalibrationServiceImpl implements CalibrationService {
 
         boolean coordinator = canCoordinate(user);
 
-        if (!coordinator) {
+        if (coordinator) {
+            ensureCoordinatorCanManageEvent(user, calibrationRound.getEvent());
+        } else {
             if (!user.isJudge()) {
                 throw new UnauthorizedException("Only judges or coordinators can view calibration distribution.");
             }
@@ -426,6 +432,7 @@ public class CalibrationServiceImpl implements CalibrationService {
         ensureCoordinatorOrAdmin(actor);
 
         CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        ensureCoordinatorCanManageEvent(actor, calibrationRound.getEvent());
         if (calibrationRound.isDistributionPublished()) {
             return toRoundResponse(calibrationRound);
         }
@@ -616,8 +623,9 @@ public class CalibrationServiceImpl implements CalibrationService {
         }
     }
 
-    private void ensureCanAccessEventCalibration(User user, UUID eventId) {
+    private void ensureCanAccessEventCalibration(User user, HackathonEvent event) {
         if (canCoordinate(user)) {
+            ensureCoordinatorCanManageEvent(user, event);
             return;
         }
         if (!user.isJudge()) {
@@ -626,7 +634,7 @@ public class CalibrationServiceImpl implements CalibrationService {
 
         Judge judge = judgeRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new UnauthorizedException("Judge profile was not found."));
-        ensureJudgeCanAccessEvent(judge, eventId);
+        ensureJudgeCanAccessEvent(judge, event.getId());
     }
 
     private void ensureJudgeCanAccessCalibration(Judge judge, CalibrationRound calibrationRound) {
@@ -674,6 +682,17 @@ public class CalibrationServiceImpl implements CalibrationService {
     private void ensureCoordinatorOrAdmin(User user) {
         if (!canCoordinate(user)) {
             throw new UnauthorizedException("Only coordinator or admin can manage calibration rounds.");
+        }
+    }
+
+    private void ensureCoordinatorCanManageEvent(User user, HackathonEvent event) {
+        ensureCoordinatorOrAdmin(user);
+        if (!user.isAdmin()
+                && (event.getCreatedBy() == null
+                || !event.getCreatedBy().getId().equals(user.getId()))) {
+            throw new ForbiddenException(
+                    "You do not have permission to manage calibration rounds for this event."
+            );
         }
     }
 
