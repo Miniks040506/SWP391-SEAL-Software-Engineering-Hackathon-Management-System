@@ -42,6 +42,7 @@ export type CalibrationRoundResponse = {
   submittedJudgeCount: number;
   pendingJudgeCount: number;
   distributionPublishedAt?: ISODateTime | null;
+  submittedByCurrentJudge?: boolean | null;
 };
 
 export type CalibrationRoundDetailResponse = Omit<

@@ -13,5 +13,6 @@ public record CalibrationRoundResponse(
         long assignedJudgeCount,
         long submittedJudgeCount,
         long pendingJudgeCount,
-        LocalDateTime distributionPublishedAt)
+        LocalDateTime distributionPublishedAt,
+        Boolean submittedByCurrentJudge)
 {}

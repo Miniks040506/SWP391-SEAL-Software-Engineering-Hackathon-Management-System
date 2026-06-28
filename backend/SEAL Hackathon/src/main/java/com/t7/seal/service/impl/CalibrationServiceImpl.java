@@ -141,7 +141,7 @@ public class CalibrationServiceImpl implements CalibrationService {
                 .flatMap(eventId -> calibrationRoundRepository
                         .findByEventIdOrderByStartAtAsc(eventId)
                         .stream())
-                .map(this::toRoundResponse)
+                .map(round -> toRoundResponse(round, judge.getId()))
                 .toList();
     }
 
@@ -805,6 +805,13 @@ public class CalibrationServiceImpl implements CalibrationService {
     }
 
     private CalibrationRoundResponse toRoundResponse(CalibrationRound calibrationRound) {
+        return toRoundResponse(calibrationRound, null);
+    }
+
+    private CalibrationRoundResponse toRoundResponse(
+            CalibrationRound calibrationRound,
+            UUID judgeId
+    ) {
         long assignedJudgeCount = assignmentRepository
                 .findActiveJudgeUsersByEventId(calibrationRound.getEvent().getId())
                 .size();
@@ -821,8 +828,22 @@ public class CalibrationServiceImpl implements CalibrationService {
                 assignedJudgeCount,
                 submittedJudgeCount,
                 Math.max(0, assignedJudgeCount - submittedJudgeCount),
-                calibrationRound.getDistributionPublishedAt()
+                calibrationRound.getDistributionPublishedAt(),
+                judgeId == null ? null : hasJudgeSubmitted(calibrationRound, judgeId)
         );
+    }
+
+    private boolean hasJudgeSubmitted(CalibrationRound calibrationRound, UUID judgeId) {
+        Set<UUID> requiredIds = activeCriteriaForCalibration(calibrationRound).stream()
+                .map(EventCriteria::getId)
+                .collect(Collectors.toSet());
+        Set<UUID> scoredIds = calibrationScoreRepository
+                .findByCalibrationRoundIdAndJudgeId(calibrationRound.getId(), judgeId)
+                .stream()
+                .map(score -> score.getEventCriteria().getId())
+                .collect(Collectors.toSet());
+
+        return !requiredIds.isEmpty() && scoredIds.containsAll(requiredIds);
     }
 
     private long countSubmittedJudges(CalibrationRound calibrationRound) {
