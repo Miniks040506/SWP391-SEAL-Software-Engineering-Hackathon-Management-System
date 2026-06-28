@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public record AdvancementPreviewResponse(
         UUID roundId,
+        Boolean advancementConfirmed,
         List<RankingResponse> suggestedAdvancedTeams,
         List<RankingResponse> allRankings,
         List<TeamAdvancementDecisionResponse> decisions,

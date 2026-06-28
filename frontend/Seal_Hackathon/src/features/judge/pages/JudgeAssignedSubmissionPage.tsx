@@ -1,31 +1,30 @@
 import { useState } from "react";
-import { useJudgeSubmissionsQuery } from "../hooks/useJudgeGradingQueries";
+import { useParams } from "react-router-dom";
+import {
+  useJudgeSubmissionsQuery,
+  useJudgeSubmissionSummaryQuery,
+} from "../hooks/useJudgeGradingQueries";
 import {
   JudgeAssignedSubmissionFilters,
   type FilterState,
 } from "../components/JudgeAssignedSubmissionFilters";
 import { JudgeSubmissionTable } from "../components/submission/JudgeSubmissionTable";
+import type { UUID } from "@/types/common.types";
 
 export const JudgeAssignedSubmissionPage = () => {
+  const { roundId } = useParams<{ roundId?: UUID }>();
   const [filters, setFilters] = useState<FilterState>({});
 
-  const { data, isLoading } = useJudgeSubmissionsQuery();
+  const { data, isLoading } = useJudgeSubmissionsQuery({ roundId });
+  const { data: summary } = useJudgeSubmissionSummaryQuery(roundId);
 
   const submissions = data?.content || [];
 
-  const totalAssigned = submissions.length;
-  const pendingCount = submissions.filter(
-    (s) => s.gradingStatus === "PENDING",
-  ).length;
-  const draftSavedCount = submissions.filter(
-    (s) => s.gradingStatus === "DRAFT_SAVED",
-  ).length;
-  const submittedCount = submissions.filter(
-    (s) => s.gradingStatus === "SUBMITTED",
-  ).length;
-  const lockedCount = submissions.filter(
-    (s) => s.gradingStatus === "LOCKED",
-  ).length;
+  const totalAssigned = summary?.totalAssigned ?? 0;
+  const pendingCount = summary?.pending ?? 0;
+  const draftSavedCount = summary?.draftSaved ?? 0;
+  const submittedCount = summary?.submitted ?? 0;
+  const lockedCount = summary?.locked ?? 0;
 
   const filteredSubmissions = submissions.filter((sub) => {
     if (filters.roundId && sub.roundId !== filters.roundId) return false;

@@ -7,6 +7,7 @@ import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
@@ -68,6 +69,7 @@ public class CalibrationServiceImpl implements CalibrationService {
 
         HackathonEvent event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found."));
+        ensureCoordinatorCanManageEvent(actor, event);
         Submission sample = submissionRepository.findDetailById(request.sampleSubmissionId())
                 .orElseThrow(() -> new NotFoundException("Sample submission not found."));
         ensureSubmissionBelongsToEvent(sample, event.getId());
@@ -115,11 +117,48 @@ public class CalibrationServiceImpl implements CalibrationService {
             throw new BadRequestException("eventId is required.");
         }
 
-        eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found."));
-        ensureCanAccessEventCalibration(user, eventId);
+        HackathonEvent event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found."));
+        ensureCanAccessEventCalibration(user, event);
 
         return calibrationRoundRepository.findByEventIdOrderByStartAtAsc(eventId)
                 .stream()
+                .map(this::toRoundResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CalibrationRoundResponse> getMyCalibrationRounds(Authentication authentication) {
+        Judge judge = currentJudge(authentication);
+        Set<UUID> assignedEventIds = assignmentRepository
+                .findByJudgeIdWithRoundAndTrack(judge.getId())
+                .stream()
+                .map(assignment -> assignment.getRound().getEvent().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        return assignedEventIds.stream()
+                .flatMap(eventId -> calibrationRoundRepository
+                        .findByEventIdOrderByStartAtAsc(eventId)
+                        .stream())
+                .map(round -> toRoundResponse(round, judge.getId()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CalibrationRoundResponse> getManagedCalibrationRounds(Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCoordinatorOrAdmin(actor);
+
+        List<HackathonEvent> events = actor.isAdmin()
+                ? eventRepository.findAll()
+                : eventRepository.findByCreatedByIdOrderByYearDescCreatedAtDesc(actor.getId());
+
+        return events.stream()
+                .flatMap(event -> calibrationRoundRepository
+                        .findByEventIdOrderByStartAtAsc(event.getId())
+                        .stream())
                 .map(this::toRoundResponse)
                 .toList();
     }
@@ -132,7 +171,7 @@ public class CalibrationServiceImpl implements CalibrationService {
     ) {
         CalibrationRound calibrationRound = findRound(calibrationRoundId);
         User user = currentUserService.getCurrentUser(authentication);
-        ensureCanAccessEventCalibration(user, calibrationRound.getEvent().getId());
+        ensureCanAccessEventCalibration(user, calibrationRound.getEvent());
         return toRoundDetailResponse(calibrationRound);
     }
 
@@ -147,6 +186,7 @@ public class CalibrationServiceImpl implements CalibrationService {
         ensureCoordinatorOrAdmin(actor);
 
         CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        ensureCoordinatorCanManageEvent(actor, calibrationRound.getEvent());
         if (calibrationRound.isDistributionPublished()) {
             throw new ConflictException("Cannot update calibration round after distribution is published.");
         }
@@ -258,6 +298,10 @@ public class CalibrationServiceImpl implements CalibrationService {
         }
 
         List<EventCriteria> activeCriteria = activeCriteriaForCalibration(calibrationRound);
+        if (activeCriteria.isEmpty()) {
+            throw new ConflictException("No active scoring criteria are available for this calibration round.");
+        }
+
         Map<UUID, EventCriteria> criteriaById = activeCriteria.stream()
                 .collect(Collectors.toMap(
                         EventCriteria::getId,
@@ -265,6 +309,21 @@ public class CalibrationServiceImpl implements CalibrationService {
                 ));
 
         ensureNoDuplicateCriteria(request.scores());
+
+        Set<UUID> requiredCriteriaIds = criteriaById.keySet();
+        Set<UUID> existingCriteriaIds = calibrationScoreRepository
+                .findByCalibrationRoundIdAndJudgeId(calibrationRound.getId(), judge.getId())
+                .stream()
+                .map(score -> score.getEventCriteria().getId())
+                .collect(Collectors.toSet());
+
+        if (existingCriteriaIds.containsAll(requiredCriteriaIds)) {
+            throw new ConflictException("Calibration scores have already been submitted.");
+        }
+
+        if (request.scores().size() != requiredCriteriaIds.size()) {
+            throw new BadRequestException("Every active criterion must be scored before calibration submission.");
+        }
 
         List<CalibrationScore> savedScores = new ArrayList<>();
         for (CalibrationScoreItemRequest item : request.scores()) {
@@ -289,6 +348,11 @@ public class CalibrationServiceImpl implements CalibrationService {
                             .build());
 
             score.setValue(value);
+            score.setComment(
+                    item.comment() == null || item.comment().isBlank()
+                            ? null
+                            : item.comment().strip()
+            );
             savedScores.add(calibrationScoreRepository.save(score));
         }
 
@@ -342,7 +406,9 @@ public class CalibrationServiceImpl implements CalibrationService {
 
         boolean coordinator = canCoordinate(user);
 
-        if (!coordinator) {
+        if (coordinator) {
+            ensureCoordinatorCanManageEvent(user, calibrationRound.getEvent());
+        } else {
             if (!user.isJudge()) {
                 throw new UnauthorizedException("Only judges or coordinators can view calibration distribution.");
             }
@@ -371,6 +437,7 @@ public class CalibrationServiceImpl implements CalibrationService {
         ensureCoordinatorOrAdmin(actor);
 
         CalibrationRound calibrationRound = findRound(calibrationRoundId);
+        ensureCoordinatorCanManageEvent(actor, calibrationRound.getEvent());
         if (calibrationRound.isDistributionPublished()) {
             return toRoundResponse(calibrationRound);
         }
@@ -473,14 +540,24 @@ public class CalibrationServiceImpl implements CalibrationService {
     }
 
     private void validateBenchmarkCriteria(UUID eventId, Submission sample, Map<String, Float> benchmarkScores) {
+        List<EventCriteria> activeCriteria = activeCriteriaForEventAndSampleRound(eventId, sample);
+        if (activeCriteria.isEmpty()) {
+            throw new BadRequestException("At least one active criterion is required for calibration.");
+        }
         if (benchmarkScores == null || benchmarkScores.isEmpty()) {
-            return;
+            throw new BadRequestException("Benchmark scores are required for all active criteria.");
         }
 
-        List<EventCriteria> activeCriteria = activeCriteriaForEventAndSampleRound(eventId, sample);
         Set<UUID> activeIds = activeCriteria.stream()
                 .map(EventCriteria::getId)
                 .collect(Collectors.toSet());
+        Set<UUID> benchmarkIds = benchmarkScores.keySet().stream()
+                .map(UUID::fromString)
+                .collect(Collectors.toSet());
+        if (!benchmarkIds.equals(activeIds)) {
+            throw new BadRequestException("Benchmark scores must include every active criterion exactly once.");
+        }
+
         Map<UUID, EventCriteria> byId = activeCriteria.stream()
                 .collect(Collectors.toMap(
                         EventCriteria::getId,
@@ -551,8 +628,9 @@ public class CalibrationServiceImpl implements CalibrationService {
         }
     }
 
-    private void ensureCanAccessEventCalibration(User user, UUID eventId) {
+    private void ensureCanAccessEventCalibration(User user, HackathonEvent event) {
         if (canCoordinate(user)) {
+            ensureCoordinatorCanManageEvent(user, event);
             return;
         }
         if (!user.isJudge()) {
@@ -561,7 +639,7 @@ public class CalibrationServiceImpl implements CalibrationService {
 
         Judge judge = judgeRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new UnauthorizedException("Judge profile was not found."));
-        ensureJudgeCanAccessEvent(judge, eventId);
+        ensureJudgeCanAccessEvent(judge, event.getId());
     }
 
     private void ensureJudgeCanAccessCalibration(Judge judge, CalibrationRound calibrationRound) {
@@ -576,7 +654,7 @@ public class CalibrationServiceImpl implements CalibrationService {
             throw new UnauthorizedException("Temporary judge account has expired.");
         }
         if (!assignmentRepository.existsByJudgeIdAndEventId(judge.getId(), eventId)) {
-            throw new UnauthorizedException("This calibration round is not assigned to you.");
+            throw new ForbiddenException("This calibration round is not assigned to you.");
         }
     }
 
@@ -609,6 +687,17 @@ public class CalibrationServiceImpl implements CalibrationService {
     private void ensureCoordinatorOrAdmin(User user) {
         if (!canCoordinate(user)) {
             throw new UnauthorizedException("Only coordinator or admin can manage calibration rounds.");
+        }
+    }
+
+    private void ensureCoordinatorCanManageEvent(User user, HackathonEvent event) {
+        ensureCoordinatorOrAdmin(user);
+        if (!user.isAdmin()
+                && (event.getCreatedBy() == null
+                || !event.getCreatedBy().getId().equals(user.getId()))) {
+            throw new ForbiddenException(
+                    "You do not have permission to manage calibration rounds for this event."
+            );
         }
     }
 
@@ -692,6 +781,9 @@ public class CalibrationServiceImpl implements CalibrationService {
 
         long criteriaCount = criteria.size();
         boolean submitted = criteriaCount > 0 && scores.size() >= criteriaCount;
+        boolean canSubmit = calibrationRound.isOpen(now)
+                && !calibrationRound.isDistributionPublished()
+                && !submitted;
 
         return new CalibrationScoreSheetResponse(
                 calibrationRound.getId(),
@@ -705,7 +797,7 @@ public class CalibrationServiceImpl implements CalibrationService {
                 calibrationRound.getIsMandatory(),
                 calibrationRound.isDistributionPublished(),
                 calibrationRound.getDistributionPublishedAt(),
-                calibrationRound.isOpen(now) && !calibrationRound.isDistributionPublished(),
+                canSubmit,
                 submitted,
                 now,
                 submissionLinkRepository.findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(sample.getId())
@@ -718,6 +810,18 @@ public class CalibrationServiceImpl implements CalibrationService {
     }
 
     private CalibrationRoundResponse toRoundResponse(CalibrationRound calibrationRound) {
+        return toRoundResponse(calibrationRound, null);
+    }
+
+    private CalibrationRoundResponse toRoundResponse(
+            CalibrationRound calibrationRound,
+            UUID judgeId
+    ) {
+        long assignedJudgeCount = assignmentRepository
+                .findActiveJudgeUsersByEventId(calibrationRound.getEvent().getId())
+                .size();
+        long submittedJudgeCount = countSubmittedJudges(calibrationRound);
+
         return new CalibrationRoundResponse(
                 calibrationRound.getId(),
                 calibrationRound.getEvent().getId(),
@@ -726,8 +830,46 @@ public class CalibrationServiceImpl implements CalibrationService {
                 calibrationRound.getStartAt(),
                 calibrationRound.getEndAt(),
                 calibrationRound.getIsMandatory(),
-                calibrationRound.getDistributionPublishedAt()
+                assignedJudgeCount,
+                submittedJudgeCount,
+                Math.max(0, assignedJudgeCount - submittedJudgeCount),
+                calibrationRound.getDistributionPublishedAt(),
+                judgeId == null ? null : hasJudgeSubmitted(calibrationRound, judgeId)
         );
+    }
+
+    private boolean hasJudgeSubmitted(CalibrationRound calibrationRound, UUID judgeId) {
+        Set<UUID> requiredIds = activeCriteriaForCalibration(calibrationRound).stream()
+                .map(EventCriteria::getId)
+                .collect(Collectors.toSet());
+        Set<UUID> scoredIds = calibrationScoreRepository
+                .findByCalibrationRoundIdAndJudgeId(calibrationRound.getId(), judgeId)
+                .stream()
+                .map(score -> score.getEventCriteria().getId())
+                .collect(Collectors.toSet());
+
+        return !requiredIds.isEmpty() && scoredIds.containsAll(requiredIds);
+    }
+
+    private long countSubmittedJudges(CalibrationRound calibrationRound) {
+        int requiredCriteriaCount = activeCriteriaForCalibration(calibrationRound).size();
+        if (requiredCriteriaCount == 0) {
+            return 0;
+        }
+
+        return calibrationScoreRepository.findByCalibrationRoundId(calibrationRound.getId())
+                .stream()
+                .collect(Collectors.groupingBy(
+                        score -> score.getJudge().getId(),
+                        Collectors.mapping(
+                                score -> score.getEventCriteria().getId(),
+                                Collectors.toSet()
+                        )
+                ))
+                .values()
+                .stream()
+                .filter(criteriaIds -> criteriaIds.size() >= requiredCriteriaCount)
+                .count();
     }
 
     private CalibrationRoundDetailResponse toRoundDetailResponse(
@@ -737,6 +879,7 @@ public class CalibrationServiceImpl implements CalibrationService {
                 calibrationRound.getId(),
                 calibrationRound.getEvent().getId(),
                 calibrationRound.getSampleSubmission().getId(),
+                calibrationRound.getSampleSubmission().getRound().getId(),
                 calibrationRound.getBenchmarkScores(),
                 calibrationRound.getDescription(),
                 calibrationRound.getStartAt(),
@@ -754,7 +897,8 @@ public class CalibrationServiceImpl implements CalibrationService {
                 score.getEventCriteria().getId(),
                 score.getValue() == null ? null : score.getValue().doubleValue(),
                 score.getDeviationFromBenchmark() == null
-                        ? null : score.getDeviationFromBenchmark().doubleValue()
+                        ? null : score.getDeviationFromBenchmark().doubleValue(),
+                score.getComment()
         );
     }
 

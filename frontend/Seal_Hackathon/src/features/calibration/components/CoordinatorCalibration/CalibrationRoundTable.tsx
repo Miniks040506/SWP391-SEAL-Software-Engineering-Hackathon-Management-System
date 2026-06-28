@@ -63,6 +63,14 @@ export const CalibrationRoundTable = ({
                             <div className="mt-3 flex items-center gap-6 text-xs font-semibold text-slate-500 dark:text-slate-400">
                                 <p>Start: {formatDate(round.startAt)}</p>
                                 <p>End: {formatDate(round.endAt)}</p>
+                                <p>
+                                    Judge scores: {round.submittedJudgeCount} / {round.assignedJudgeCount}
+                                </p>
+                                {round.pendingJudgeCount > 0 && (
+                                    <p className="text-amber-600 dark:text-amber-400">
+                                        {round.pendingJudgeCount} pending
+                                    </p>
+                                )}
                             </div>
                         </div>
 

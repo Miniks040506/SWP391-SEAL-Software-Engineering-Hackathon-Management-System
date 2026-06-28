@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useBlocker } from "react-router-dom";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import Card from "@mui/material/Card";
 import CircularProgress from "@mui/material/CircularProgress";
 
 import type { EventCriteriaResponse } from "@/types/criteria.types";
-import type { ScoreResponse } from "@/types/grading.types";
+import type { JudgeScoreFormValues, ScoreResponse } from "@/types/grading.types";
 import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
 
 import { useScoreSheet } from "../hooks/useScoreSheet";
@@ -34,10 +34,17 @@ export const JudgeScoreSheetPage = () => {
     watch,
     reset,
     formState: { isDirty },
-  } = useForm({
+  } = useForm<JudgeScoreFormValues>({
     defaultValues: { scores: {}, comments: {} },
     mode: "onChange",
   });
+  const canEdit = scoreSheet?.canEdit ?? false;
+  const navigationBlocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty &&
+      canEdit &&
+      currentLocation.pathname !== nextLocation.pathname,
+  );
 
   useEffect(() => {
     if (scoreSheet?.scores) {
@@ -52,6 +59,27 @@ export const JudgeScoreSheetPage = () => {
       reset({ scores: defaultScores, comments: defaultComments });
     }
   }, [scoreSheet, reset]);
+
+  useEffect(() => {
+    if (navigationBlocker.state !== "blocked") return;
+
+    if (window.confirm("You have unsaved score changes. Leave this page?")) {
+      navigationBlocker.proceed();
+    } else {
+      navigationBlocker.reset();
+    }
+  }, [navigationBlocker]);
+
+  useEffect(() => {
+    if (!isDirty || !canEdit) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty, canEdit]);
 
   if (isLoading) {
     return (
@@ -73,7 +101,7 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  if (isError || !submission) {
+  if (isError || !submission || !scoreSheet) {
     return (
       <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
         <Alert severity="error" sx={{ borderRadius: 2 }}>
@@ -83,12 +111,10 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  const isLocked = assignmentInfo?.gradingLocked ?? false;
-  const isFinalSubmitted = scoreSheet?.confirmed ?? false;
-
-  const isNotReady = assignmentInfo
-    ? assignmentInfo.submissionStatus !== "SUBMITTED" && assignmentInfo.submissionStatus !== "LOCKED"
-    : false;
+  const isGradingLocked = scoreSheet.gradingLocked;
+  const isFinalSubmitted = scoreSheet.confirmed;
+  const isCalibrationIncomplete = !scoreSheet.calibrationCompleted;
+  const isNotReady = !scoreSheet.submissionLocked;
 
   if (isNotReady) {
     return (
@@ -100,9 +126,9 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  const scores = watch("scores") as Record<string, number>;
+  const scores = watch("scores");
   const scoredCount = Object.values(scores || {}).filter(
-    (v) => v !== undefined && v !== null && v.toString() !== "",
+    (value) => typeof value === "number" && Number.isFinite(value),
   ).length;
   const allCriteriaScored = scoredCount === submission.criteria.length;
 
@@ -124,28 +150,20 @@ export const JudgeScoreSheetPage = () => {
     0,
   );
 
-  const preparePayload = (data: {
-    scores: Record<string, number>;
-    comments: Record<string, string>;
-  }) => {
-    const scoreItems = Object.keys(data.scores || {}).map((criteriaId) => ({
-      eventCriteriaId: criteriaId,
-      value: data.scores[criteriaId],
-      comment: data.comments?.[criteriaId] || undefined,
-    }));
+  const preparePayload = (data: JudgeScoreFormValues) => {
+    const scoreItems = Object.entries(data.scores || {})
+      .filter((entry): entry is [string, number] => Number.isFinite(entry[1]))
+      .map(([criteriaId, value]) => ({
+        eventCriteriaId: criteriaId,
+        value,
+        comment: data.comments?.[criteriaId] || undefined,
+      }));
     return { scores: scoreItems };
   };
 
   const onSaveDraft = handleSubmit(async (data) => {
     try {
-      await saveDraft(
-        preparePayload(
-          data as {
-            scores: Record<string, number>;
-            comments: Record<string, string>;
-          },
-        ),
-      );
+      await saveDraft(preparePayload(data));
     } catch (err) {
       console.error("Failed to save draft:", err);
     }
@@ -153,14 +171,7 @@ export const JudgeScoreSheetPage = () => {
 
   const onFinalSubmit = handleSubmit(async (data) => {
     try {
-      await finalSubmit(
-        preparePayload(
-          data as {
-            scores: Record<string, number>;
-            comments: Record<string, string>;
-          },
-        ),
-      );
+      await finalSubmit(preparePayload(data));
     } catch (err) {
       console.error("Failed to submit scores:", err);
     }
@@ -169,9 +180,15 @@ export const JudgeScoreSheetPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pb-20 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-        {isLocked && (
+        {isGradingLocked && (
           <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
             Grading is currently locked by the coordinator.
+          </Alert>
+        )}
+
+        {isCalibrationIncomplete && (
+          <Alert severity="warning" sx={{ mb: 4, borderRadius: 2 }}>
+            Complete all mandatory calibration rounds before grading this submission.
           </Alert>
         )}
 
@@ -183,7 +200,7 @@ export const JudgeScoreSheetPage = () => {
 
         <div className="flex flex-col items-start gap-8 lg:flex-row">
           <div className="flex w-full flex-col gap-6 lg:w-[65%]">
-            <ScoreSheetHeader submission={submission} isLocked={isLocked} assignmentInfo={assignmentInfo} />
+            <ScoreSheetHeader submission={submission} isLocked={isGradingLocked} assignmentInfo={assignmentInfo} />
             {submission.note && (
               <Typography
                 variant="body2"
@@ -206,7 +223,7 @@ export const JudgeScoreSheetPage = () => {
                   key={crit.id}
                   criterion={crit}
                   control={control}
-                  isLocked={isLocked}
+                  isLocked={!canEdit}
                   isFinalSubmitted={isFinalSubmitted}
                 />
               ))}
@@ -249,7 +266,7 @@ export const JudgeScoreSheetPage = () => {
                 <div className="mt-8">
                   <ScoreDraftBar
                     isDirty={isDirty}
-                    isLocked={isLocked}
+                    isLocked={!canEdit}
                     isFinalSubmitted={isFinalSubmitted}
                     isSaving={isSaving}
                     isSubmitting={isSubmitting}

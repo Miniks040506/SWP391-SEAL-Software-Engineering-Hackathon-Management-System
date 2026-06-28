@@ -1,5 +1,8 @@
 import { apiRequest } from "@/api/apiRequest";
-import type { JudgeSubmissionAssignmentResponse } from "@/types";
+import type {
+  JudgeSubmissionAssignmentResponse,
+  JudgeSubmissionQueueSummaryResponse,
+} from "@/types";
 import type { PageResponse, UUID } from "@/types/common.types";
 import type {
   GetJudgeSubmissionsParams,
@@ -29,6 +32,13 @@ export const judgeApi = {
       `/judge/rounds/${roundId}/submissions`,
       { params },
     );
+  },
+
+  getMySubmissionSummary(roundId?: UUID) {
+    const url = roundId
+      ? `/judge/rounds/${roundId}/submissions/summary`
+      : "/judge/submissions/summary";
+    return apiRequest.get<JudgeSubmissionQueueSummaryResponse>(url);
   },
 
   getMySubmissionDetail(submissionId: UUID) {

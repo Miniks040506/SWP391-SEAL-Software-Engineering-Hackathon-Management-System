@@ -4,6 +4,7 @@ import { Button, Alert, Typography } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import { useQuery } from "@tanstack/react-query";
 import { roundApi } from "@/api/round.api";
+import { useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 import {
   usePreviewAdvanceRulesMutation,
   useConfirmAdvancementMutation,
@@ -21,7 +22,6 @@ import type {
 type LocalRoundDetail = RoundDetailResponse & {
   eventName?: string;
   trackName?: string;
-  rankingCalculatedAt?: string;
 };
 
 export function RoundAdvancementPage() {
@@ -37,6 +37,7 @@ export function RoundAdvancementPage() {
     queryFn: () => roundApi.getRoundById(validRoundId),
     enabled: !!validRoundId,
   });
+  const { data: tracks = [] } = useCoordinatorEventTracksQuery(roundDetail?.eventId);
 
   const previewMutation = usePreviewAdvanceRulesMutation();
   const confirmMutation = useConfirmAdvancementMutation();
@@ -109,8 +110,30 @@ export function RoundAdvancementPage() {
       }
     : undefined;
 
+  const gradingLocked = previewData?.gradingLocked ?? !!roundDetail?.gradingLockedAt;
+  const rankingCalculated = previewData?.rankingCalculated;
+  const advancementConfirmed =
+    previewData?.advancementConfirmed ?? !!roundDetail?.advancementConfirmedAt;
+  const canConfirmAdvancement =
+    !!displayPreviewData &&
+    displayPreviewData.gradingLocked &&
+    displayPreviewData.rankingCalculated &&
+    !displayPreviewData.advancementConfirmed &&
+    !confirmMutation.isPending;
+
   const handleConfirm = async () => {
     if (!displayPreviewData) return;
+    if (
+      !displayPreviewData.gradingLocked ||
+      !displayPreviewData.rankingCalculated ||
+      displayPreviewData.advancementConfirmed
+    ) {
+      enqueueSnackbar(
+        "Cannot confirm advancement until grading is locked, ranking is calculated, and advancement is not already confirmed.",
+        { variant: "error" },
+      );
+      return;
+    }
 
     try {
       await confirmMutation.mutateAsync({
@@ -197,7 +220,7 @@ export function RoundAdvancementPage() {
           <Button
             variant="contained"
             color="primary"
-            disabled={!displayPreviewData || confirmMutation.isPending}
+            disabled={!canConfirmAdvancement}
             onClick={() => setConfirmDialogOpen(true)}
             sx={{
               textTransform: "none",
@@ -257,7 +280,7 @@ export function RoundAdvancementPage() {
                 Grading Locked:
               </span>{" "}
               <span className="text-slate-800 dark:text-slate-200">
-                {roundDetail.gradingLockedAt ? "Yes" : "No"}
+                {gradingLocked ? "Yes" : "No"}
               </span>
             </div>
             <div className="text-sm">
@@ -265,9 +288,11 @@ export function RoundAdvancementPage() {
                 Ranking Calculation:
               </span>{" "}
               <span className="text-slate-800 dark:text-slate-200">
-                {(roundDetail as LocalRoundDetail).rankingCalculatedAt
-                  ? "Calculated"
-                  : "Not Calculated"}
+                {rankingCalculated == null
+                  ? "Run Preview to check"
+                  : rankingCalculated
+                    ? "Calculated"
+                    : "Not Calculated"}
               </span>
             </div>
             <div className="text-sm">
@@ -275,7 +300,7 @@ export function RoundAdvancementPage() {
                 Advancement Confirmed:
               </span>{" "}
               <span className="text-slate-800 dark:text-slate-200">
-                {(roundDetail as any).advancementConfirmed ? "Yes" : "No"}
+                {advancementConfirmed ? "Yes" : "No"}
               </span>
             </div>
             <div className="text-sm">
@@ -299,18 +324,17 @@ export function RoundAdvancementPage() {
           <Typography color="error">Failed to load round context.</Typography>
         )}
 
-        {roundDetail && !roundDetail.gradingLockedAt && (
+        {roundDetail && !gradingLocked && (
           <Alert severity="warning" className="mb-2">
             Lock grading before confirming advancement.
           </Alert>
         )}
-        {roundDetail &&
-          !(roundDetail as LocalRoundDetail).rankingCalculatedAt && (
-            <Alert severity="warning" className="mb-2">
-              Calculate ranking before previewing advancement.
-            </Alert>
-          )}
-        {roundDetail && (roundDetail as any).advancementConfirmed && (
+        {previewData && !previewData.rankingCalculated && (
+          <Alert severity="warning" className="mb-2">
+            Calculate ranking before previewing advancement.
+          </Alert>
+        )}
+        {advancementConfirmed && (
           <Alert severity="info" className="mb-2">
             Advancement has already been confirmed. Manual changes require
             override flow.
@@ -321,7 +345,8 @@ export function RoundAdvancementPage() {
       {/* Section 2 - Advance rule panel */}
       <AdvanceRulePanel
         roundId={validRoundId}
-        isLocked={!!roundDetail?.gradingLockedAt || !!previewData?.advancementConfirmed}
+        tracks={tracks}
+        isLocked={gradingLocked || advancementConfirmed}
       />
 
       {/* Section 3 - Advancement preview table */}

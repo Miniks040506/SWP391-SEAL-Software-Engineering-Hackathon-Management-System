@@ -195,8 +195,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, API + "/events/*/results").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/results").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/results/publish").hasRole("COORDINATOR")
-                        .requestMatchers(HttpMethod.GET, API + "/rounds/*/advancement-preview").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rounds/*/advancement-preview").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rounds/*/advancement/suggestions").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/confirm-advancement").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rounds/*/advancement/confirm").hasRole("COORDINATOR")
 
                         // Tracks and mentor assignments
                         .requestMatchers(HttpMethod.POST, API + "/events/*/tracks").hasRole("COORDINATOR")

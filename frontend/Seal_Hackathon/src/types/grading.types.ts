@@ -48,6 +48,14 @@ export type JudgeSubmissionAssignmentResponse = {
   gradingStatus: JudgeGradingStatus;
 };
 
+export type JudgeSubmissionQueueSummaryResponse = {
+  totalAssigned: number;
+  pending: number;
+  draftSaved: number;
+  submitted: number;
+  locked: number;
+};
+
 export type GradingSubmissionDetailResponse = {
   submissionId: UUID;
   teamName: string;
@@ -67,6 +75,11 @@ export type SaveScoreSheetRequest = {
   scores: ScoreItemRequest[];
   generalComment?: string;
   draft?: boolean;
+};
+
+export type JudgeScoreFormValues = {
+  scores: Record<string, number | "">;
+  comments: Record<string, string>;
 };
 
 export type ConfirmScoreSheetRequest = {

@@ -8,6 +8,8 @@ const USE_MOCK = false;
 export const calibrationQueryKeys = {
     all: ["calibrations"] as const,
     lists: () => [...calibrationQueryKeys.all, "list"] as const,
+    myList: () => [...calibrationQueryKeys.lists(), "mine"] as const,
+    managedList: () => [...calibrationQueryKeys.lists(), "managed"] as const,
     listByEvent: (eventId: UUID) =>
         [...calibrationQueryKeys.lists(), { eventId }] as const,
     details: () => [...calibrationQueryKeys.all, "detail"] as const,
@@ -19,12 +21,17 @@ export const calibrationQueryKeys = {
     myScores: (id: UUID) => [...calibrationQueryKeys.all, "myScores", id] as const,
 };
 
-export const useAllCalibrationRoundsQuery = () => {
+export const useJudgeCalibrationRoundsQuery = () => {
     return useQuery({
-        queryKey: calibrationQueryKeys.lists(),
-        queryFn: () => USE_MOCK
-            ? mockCalibrationService.getAllCalibrationRounds()
-            : calibrationApi.getCalibrationRoundsByEvent("" as UUID),
+        queryKey: calibrationQueryKeys.myList(),
+        queryFn: () => calibrationApi.getMyCalibrationRounds(),
+    });
+};
+
+export const useManagedCalibrationRoundsQuery = () => {
+    return useQuery({
+        queryKey: calibrationQueryKeys.managedList(),
+        queryFn: () => calibrationApi.getManagedCalibrationRounds(),
     });
 };
 

@@ -23,17 +23,37 @@ import {
   useUpdateAdvanceRuleMutation,
 } from "../hooks/useAdvancementMutations";
 import type { AdvanceRuleType } from "@/types/round.types";
+import type { TrackResponse } from "@/types/track.types";
 
 interface AdvanceRulePanelProps {
   roundId: string;
   isLocked?: boolean;
+  tracks: TrackResponse[];
 }
 
 const ruleSchema = z.object({
   ruleType: z.string().min(1, "Rule type is required"),
-  value: z.coerce.number().min(0, "Value must be positive"),
+  value: z.coerce.number().positive("Value must be greater than 0"),
   trackId: z.string().optional(),
   description: z.string().optional(),
+}).superRefine((data, context) => {
+  if (
+    ["TOP_N", "WILDCARD"].includes(data.ruleType) &&
+    !Number.isInteger(data.value)
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["value"],
+      message: "Value must be a whole number",
+    });
+  }
+  if (data.ruleType === "TOP_PERCENT" && data.value > 100) {
+    context.addIssue({
+      code: "custom",
+      path: ["value"],
+      message: "Percentage must not exceed 100",
+    });
+  }
 });
 
 type RuleFormData = z.infer<typeof ruleSchema>;
@@ -60,7 +80,11 @@ const ruleHelperText: Record<string, string> = {
   WILDCARD: "Coordinator manually selects extra teams.",
 };
 
-export function AdvanceRulePanel({ roundId, isLocked }: AdvanceRulePanelProps) {
+export function AdvanceRulePanel({
+  roundId,
+  isLocked,
+  tracks,
+}: AdvanceRulePanelProps) {
   const { data: rules, isLoading } = useAdvanceRulesQuery(roundId);
   const createMutation = useCreateAdvanceRuleMutation();
   const updateMutation = useUpdateAdvanceRuleMutation();
@@ -93,7 +117,6 @@ export function AdvanceRulePanel({ roundId, isLocked }: AdvanceRulePanelProps) {
       wildCardSlots: data.ruleType === "WILDCARD" ? data.value : undefined,
       trackId: data.trackId || null,
       description: data.description || "",
-      priority: 1,
     };
 
     if (editingRuleId) {
@@ -181,7 +204,10 @@ export function AdvanceRulePanel({ roundId, isLocked }: AdvanceRulePanelProps) {
                   </Typography>
                   {rule.trackId && (
                     <Chip
-                      label="Track Specific"
+                      label={
+                        tracks.find((track) => track.id === rule.trackId)?.name
+                          ?? "Track Specific"
+                      }
                       variant="outlined"
                       size="small"
                     />
@@ -291,11 +317,19 @@ export function AdvanceRulePanel({ roundId, isLocked }: AdvanceRulePanelProps) {
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      label="Track ID (Optional)"
+                      select
+                      label="Track Scope"
                       size="small"
                       error={!!errors.trackId}
                       helperText={errors.trackId?.message}
-                    />
+                    >
+                      <MenuItem value="">All tracks</MenuItem>
+                      {tracks.map((track) => (
+                        <MenuItem key={track.id} value={track.id}>
+                          {track.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
                   )}
                 />
                 <Controller

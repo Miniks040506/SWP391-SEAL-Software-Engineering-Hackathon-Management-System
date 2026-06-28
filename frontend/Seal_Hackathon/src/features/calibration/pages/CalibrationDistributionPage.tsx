@@ -62,9 +62,26 @@ export const CalibrationDistributionPage = () => {
         );
     }
 
-    const criteriaData = distribution?.criteriaDistributions || [];
-    const judgeCount = distribution?.judgeCount || 0;
+    const criteriaData = distribution?.distributions ?? [];
+    const judgeCount = criteriaData.reduce(
+        (maximum, criterion) => Math.max(maximum, criterion.judgeCount),
+        0,
+    );
     const criteriaCount = criteriaData.length;
+    const distributionGroups = [
+        {
+            title: "Technical criteria",
+            data: criteriaData.filter((criterion) => criterion.technical === true),
+        },
+        {
+            title: "Soft-skill criteria",
+            data: criteriaData.filter((criterion) => criterion.technical === false),
+        },
+        {
+            title: "Other criteria",
+            data: criteriaData.filter((criterion) => criterion.technical == null),
+        },
+    ].filter((group) => group.data.length > 0);
 
     // Compute stats
     let highestVarianceCriterion = "N/A";
@@ -172,28 +189,41 @@ export const CalibrationDistributionPage = () => {
             </div>
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 gap-8 px-6 xl:px-0">
-                <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-                    <div className="lg:col-span-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <div className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Benchmark vs Judge Mean</h3>
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                Comparison of the benchmark scores with the average judge scores.
+            <div className="grid grid-cols-1 gap-12 px-6 xl:px-0">
+                {distributionGroups.map((group) => (
+                    <section key={group.title} className="grid grid-cols-1 gap-8">
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 dark:text-white">
+                                {group.title}
+                            </h2>
+                            <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
+                                Benchmark comparison and scoring variance for this criterion group.
                             </p>
                         </div>
-                        <CalibrationDistributionChart data={criteriaData} />
-                    </div>
-                    <div className="lg:col-span-4 lg:sticky lg:top-6">
-                        <CriterionVarianceCard data={criteriaData} />
-                    </div>
-                </div>
 
-                <div className="w-full">
-                    <div className="mb-4">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Distribution Details</h3>
-                    </div>
-                    <CalibrationDistributionTable data={criteriaData} />
-                </div>
+                        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 lg:col-span-8">
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Benchmark vs Judge Mean</h3>
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                        Comparison of the benchmark scores with the average judge scores.
+                                    </p>
+                                </div>
+                                <CalibrationDistributionChart data={group.data} />
+                            </div>
+                            <div className="lg:col-span-4">
+                                <CriterionVarianceCard data={group.data} />
+                            </div>
+                        </div>
+
+                        <div className="w-full">
+                            <div className="mb-4">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Distribution Details</h3>
+                            </div>
+                            <CalibrationDistributionTable data={group.data} />
+                        </div>
+                    </section>
+                ))}
             </div>
 
             <PublishDistributionDialog

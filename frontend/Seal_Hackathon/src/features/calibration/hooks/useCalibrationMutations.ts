@@ -66,7 +66,7 @@ export const usePublishCalibrationDistributionMutation = () => {
             USE_MOCK
                 ? mockCalibrationService.publishDistributionAlias(calibrationId)
                 : calibrationApi.publishDistributionAlias(calibrationId),
-        onSuccess: (data, calibrationId) => {
+        onSuccess: (_, calibrationId) => {
             queryClient.invalidateQueries({
                 queryKey: calibrationQueryKeys.detail(calibrationId),
             });
@@ -74,7 +74,7 @@ export const usePublishCalibrationDistributionMutation = () => {
                 queryKey: calibrationQueryKeys.distribution(calibrationId),
             });
             queryClient.invalidateQueries({
-                queryKey: calibrationQueryKeys.listByEvent(data.eventId),
+                queryKey: calibrationQueryKeys.lists(),
             });
             enqueueSnackbar("Distribution published successfully", { variant: "success" });
         },
@@ -99,7 +99,9 @@ export const useSubmitCalibrationScoresMutation = () => {
                 : calibrationApi.submitCalibrationScoreAlias(calibrationId, payload),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: calibrationQueryKeys.detail(variables.calibrationId) });
+            queryClient.invalidateQueries({ queryKey: calibrationQueryKeys.scoreSheet(variables.calibrationId) });
             queryClient.invalidateQueries({ queryKey: calibrationQueryKeys.myScores(variables.calibrationId) });
+            queryClient.invalidateQueries({ queryKey: calibrationQueryKeys.myList() });
             enqueueSnackbar("Scores submitted successfully", { variant: "success" });
         },
         onError: (error: any) => {

@@ -1,4 +1,3 @@
-import React from "react";
 import { useFormContext } from "react-hook-form";
 import { TextField } from "@mui/material";
 import type { EventCriteriaResponse } from "@/types/criteria.types";
@@ -53,9 +52,24 @@ export const CalibrationCriteriaScoreInput = ({ criterion, disabled }: Calibrati
                             placeholder="0"
                             error={!!scoreError}
                             disabled={disabled}
-                            {...register(scoreFieldName, { valueAsNumber: true })}
+                            {...register(scoreFieldName, {
+                                valueAsNumber: true,
+                                required: "Score is required",
+                                min: { value: 0, message: "Score must be at least 0" },
+                                max: {
+                                    value: criterion.effectiveMaxScore,
+                                    message: `Score must not exceed ${criterion.effectiveMaxScore}`,
+                                },
+                                validate: (value) => Number.isFinite(value) || "Score must be a number",
+                            })}
                             sx={{ width: 100, ...textFieldSx }}
-                            inputProps={{ min: 0, max: criterion.effectiveMaxScore, step: "0.1" }}
+                            slotProps={{
+                                htmlInput: {
+                                    min: 0,
+                                    max: criterion.effectiveMaxScore,
+                                    step: "0.1",
+                                },
+                            }}
                         />
                         <span className="font-bold text-slate-400 dark:text-slate-500">
                             / {criterion.effectiveMaxScore}
@@ -77,8 +91,14 @@ export const CalibrationCriteriaScoreInput = ({ criterion, disabled }: Calibrati
                         placeholder="Leave a comment..."
                         error={!!commentError}
                         disabled={disabled}
-                        {...register(commentFieldName)}
+                        {...register(commentFieldName, {
+                            maxLength: {
+                                value: 2000,
+                                message: "Comment must not exceed 2000 characters",
+                            },
+                        })}
                         sx={textFieldSx}
+                        slotProps={{ htmlInput: { maxLength: 2000 } }}
                     />
                     {commentError && (
                         <span className="text-xs font-bold text-rose-500">{commentError as string}</span>

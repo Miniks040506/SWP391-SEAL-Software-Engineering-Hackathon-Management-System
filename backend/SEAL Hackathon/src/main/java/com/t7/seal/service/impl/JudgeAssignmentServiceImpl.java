@@ -16,6 +16,7 @@ import com.t7.seal.entities.Track;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.EventCriteriaRepository;
@@ -33,6 +34,7 @@ import com.t7.seal.response.criteria.EventCriteriaResponse;
 import com.t7.seal.response.grading.AssignedSubmissionResponse;
 import com.t7.seal.response.grading.GradingSubmissionDetailResponse;
 import com.t7.seal.response.grading.JudgeSubmissionAssignmentResponse;
+import com.t7.seal.response.grading.JudgeSubmissionQueueSummaryResponse;
 import com.t7.seal.response.round.JudgeAssignmentResponse;
 import com.t7.seal.response.submission.SubmissionLinkResponse;
 import com.t7.seal.service.CurrentUserService;
@@ -217,6 +219,33 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
 
     @Override
     @Transactional(readOnly = true)
+    public JudgeSubmissionQueueSummaryResponse getMySubmissionQueueSummary(
+            UUID roundId,
+            Authentication authentication
+    ) {
+        Judge judge = currentJudge(authentication);
+        List<RoundJudgeAssignment> assignments = findMyAssignments(judge, roundId);
+        if (assignments.isEmpty()) {
+            return new JudgeSubmissionQueueSummaryResponse(0, 0, 0, 0, 0);
+        }
+
+        List<String> statuses = submissionRepository
+                .findAll(assignedSubmissionSpec(assignments, null))
+                .stream()
+                .map(submission -> toJudgeSubmissionResponse(submission, judge).gradingStatus())
+                .toList();
+
+        return new JudgeSubmissionQueueSummaryResponse(
+                statuses.size(),
+                statuses.stream().filter("PENDING"::equals).count(),
+                statuses.stream().filter("DRAFT_SAVED"::equals).count(),
+                statuses.stream().filter("SUBMITTED"::equals).count(),
+                statuses.stream().filter("LOCKED"::equals).count()
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PageResponse<AssignedSubmissionResponse> getMyAssignedSubmissionsForGrading(
             UUID roundId,
             String status,
@@ -298,7 +327,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                 .anyMatch(assignment -> assignment.canScore(roundId, trackId));
 
         if (!allowed) {
-            throw new UnauthorizedException("This submission is not assigned to you.");
+            throw new ForbiddenException("This submission is not assigned to you.");
         }
 
         if (!submission.isScorable()) {

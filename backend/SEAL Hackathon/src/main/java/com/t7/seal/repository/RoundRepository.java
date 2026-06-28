@@ -16,6 +16,8 @@ public interface RoundRepository extends JpaRepository<Round, UUID> {
 
     long countByEventId(UUID eventId);
 
+    boolean existsByIdAndEventCreatedById(UUID roundId, UUID coordinatorId);
+
     boolean existsByEventIdAndOrderIndex(UUID eventId, Integer orderIndex);
 
     boolean existsByEventIdAndNameIgnoreCase(UUID eventId, String name);

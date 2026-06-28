@@ -9,7 +9,7 @@ import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import type { UUID } from "@/types/common.types";
 import {
     useEventCalibrationRoundsQuery,
-    useAllCalibrationRoundsQuery,
+    useManagedCalibrationRoundsQuery,
 } from "@/features/calibration/hooks/useCalibrationQueries";
 import {
     usePublishCalibrationDistributionMutation,
@@ -22,7 +22,7 @@ export const CoordinatorCalibrationPage = () => {
     const { enqueueSnackbar } = useSnackbar();
 
     const eventQuery = useEventCalibrationRoundsQuery(eventId as UUID);
-    const allQuery = useAllCalibrationRoundsQuery();
+    const allQuery = useManagedCalibrationRoundsQuery();
 
     const {
         data: calibrationRounds,
@@ -58,7 +58,10 @@ export const CoordinatorCalibrationPage = () => {
     const totalRounds = calibrationRounds?.length || 0;
     const openRounds = calibrationRounds?.filter((r) => !r.distributionPublishedAt).length || 0;
     const publishedDistributions = calibrationRounds?.filter((r) => r.distributionPublishedAt).length || 0;
-    const pendingJudgeSubmissions = 0;
+    const pendingJudgeSubmissions = calibrationRounds?.reduce(
+        (total, round) => total + round.pendingJudgeCount,
+        0,
+    ) || 0;
 
     return (
         <div className="mx-auto max-w-6xl animate-in fade-in duration-500 space-y-7">

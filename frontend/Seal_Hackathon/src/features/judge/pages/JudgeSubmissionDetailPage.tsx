@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import CircularProgress from "@mui/material/CircularProgress";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -11,8 +11,6 @@ import { useJudgeSubmissionDetailQuery } from "../hooks/useJudge";
 export const JudgeSubmissionDetailPage = () => {
   const { submissionId } = useParams<{ submissionId: string }>();
   const navigate = useNavigate();
-  const { state } = useLocation();
-  const isLocked = (state as { roundSubmissionLocked?: boolean })?.roundSubmissionLocked ?? false;
   
   const { data: response, isLoading, isError } = useJudgeSubmissionDetailQuery(submissionId);
   const detail = response;
@@ -79,9 +77,8 @@ export const JudgeSubmissionDetailPage = () => {
               </p>
             </div>
             <button
-              onClick={() => navigate(`/judge/submissions/${detail.submissionId}/score`, { state })}
-              className="rounded-xl bg-blue-600 px-6 py-3 font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-              disabled={isLocked}
+              onClick={() => navigate(`/judge/submissions/${detail.submissionId}/score`)}
+              className="rounded-xl bg-blue-600 px-6 py-3 font-extrabold text-white shadow-sm hover:bg-blue-700"
             >
               Open Score Sheet
             </button>
