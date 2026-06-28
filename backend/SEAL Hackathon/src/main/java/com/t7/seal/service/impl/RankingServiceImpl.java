@@ -4,6 +4,7 @@ import com.t7.seal.domain.*;
 import com.t7.seal.dto.RankingDraft;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.UnauthorizedException;
 import com.t7.seal.repository.*;
@@ -441,7 +442,7 @@ public class RankingServiceImpl implements RankingService {
         if (viewer.isStudent() && teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, viewer.getId())) {
             return;
         }
-        throw new UnauthorizedException("You can only view your own team's published scores.");
+        throw new ForbiddenException("You can only view your own team's published scores.");
     }
 
     private UUID createResultAnnouncement(HackathonEvent event,

@@ -12,7 +12,7 @@ import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.MentorAssignmentRepository;
 import com.t7.seal.repository.SubmissionRepository;
@@ -313,7 +313,7 @@ public class TrackServiceImpl implements TrackService {
             return;
         }
 
-        throw new UnauthorizedException("You do not have access to this track's teams.");
+        throw new ForbiddenException("You do not have access to this track's teams.");
     }
 
     private TrackResponse toTrackResponse(Track track) {

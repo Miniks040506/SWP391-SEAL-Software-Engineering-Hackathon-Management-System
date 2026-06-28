@@ -5,7 +5,7 @@ import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.team.CreateTeamRequest;
 import com.t7.seal.request.team.InviteMemberRequest;
@@ -421,7 +421,7 @@ public class TeamServiceImpl implements TeamService {
         UUID currentUserId = CurrentUser.id(authentication);
 
         TeamMember member = teamMemberRepository.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("You are not an active member of this team."));
+                .orElseThrow(() -> new ForbiddenException("You are not an active member of this team."));
 
         ensureTeamEditable(team);
 
@@ -638,7 +638,7 @@ public class TeamServiceImpl implements TeamService {
         boolean activeMember = teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, currentUser.getId());
 
         if (!coordinatorOrAdmin && !activeMember) {
-            throw new UnauthorizedException("You can only view advancement status for your own active team.");
+            throw new ForbiddenException("You can only view advancement status for your own active team.");
         }
 
         if (team.getTrack() == null || team.getTrack().getEvent() == null) {
@@ -815,7 +815,7 @@ public class TeamServiceImpl implements TeamService {
         ensureActiveStudent(currentUser);
 
         if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
-            throw new UnauthorizedException("This invitation is not for your account.");
+            throw new ForbiddenException("This invitation is not for your account.");
         }
 
         if (!invitation.isPending()) {
@@ -860,7 +860,7 @@ public class TeamServiceImpl implements TeamService {
         User currentUser = currentUserService.getCurrentUser(authentication);
 
         if (!currentUser.getEmail().equalsIgnoreCase(invitation.getInviteEmail())) {
-            throw new UnauthorizedException("This invitation is not for your account.");
+            throw new ForbiddenException("This invitation is not for your account.");
         }
 
         declineInvitation(invitation, request, currentUser, currentUser);
@@ -1265,7 +1265,7 @@ public class TeamServiceImpl implements TeamService {
         UUID currentUserId = CurrentUser.id(authentication);
 
         if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), currentUserId)) {
-            throw new UnauthorizedException("You don not have permission to access this team.");
+            throw new ForbiddenException("You do not have permission to access this team.");
         }
     }
 
@@ -1291,7 +1291,7 @@ public class TeamServiceImpl implements TeamService {
         UUID userId = CurrentUser.id(authentication);
 
         if (team.getLeader() == null || !team.getLeader().getId().equals(userId)) {
-            throw new UnauthorizedException("You don not have permission to access this team.");
+            throw new ForbiddenException("You do not have permission to access this team.");
         }
     }
 

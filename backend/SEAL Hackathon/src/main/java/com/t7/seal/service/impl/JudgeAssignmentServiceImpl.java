@@ -514,7 +514,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
     private Judge currentJudge(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
         if (!user.isJudge()) {
-            throw new UnauthorizedException("Only judges can access assigned submissions.");
+            throw new ForbiddenException("Only judges can access assigned submissions.");
         }
 
         if (!user.isActive()) {

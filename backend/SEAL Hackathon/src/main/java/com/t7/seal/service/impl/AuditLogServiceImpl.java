@@ -5,7 +5,7 @@ import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.AuditLog;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.AuditLogRepository;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.AuditLogResponse;
@@ -140,7 +140,7 @@ public class AuditLogServiceImpl implements AuditLogService {
     private void ensureCanViewAudit(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
         if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.COORDINATOR) {
-            throw new UnauthorizedException("Only admin or coordinator can view audit logs.");
+            throw new ForbiddenException("Only admin or coordinator can view audit logs.");
         }
     }
 

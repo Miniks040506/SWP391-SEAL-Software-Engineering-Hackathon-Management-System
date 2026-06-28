@@ -4,7 +4,7 @@ import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.system.CreateNotificationRequest;
 import com.t7.seal.request.system.TestEmailRequest;
@@ -859,7 +859,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private void ensureCanManage(User user) {
         if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.COORDINATOR) {
-            throw new UnauthorizedException("Only admin or coordinator can manage notifications.");
+            throw new ForbiddenException("Only admin or coordinator can manage notifications.");
         }
     }
 

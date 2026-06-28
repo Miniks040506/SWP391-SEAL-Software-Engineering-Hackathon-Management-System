@@ -6,7 +6,7 @@ import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
@@ -561,7 +561,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private void ensureTeamLeader(Team team, Authentication authentication) {
         UUID userId = CurrentUser.id(authentication);
         if (team.getLeader() == null || !team.getLeader().getId().equals(userId)) {
-            throw new UnauthorizedException("Only the team leader can manage this submission.");
+            throw new ForbiddenException("Only the team leader can manage this submission.");
         }
     }
 
@@ -576,7 +576,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (isMentorAssignedToTeam(team, userId)) {
             return;
         }
-        throw new UnauthorizedException("You do not have access to this team's submissions.");
+        throw new ForbiddenException("You do not have access to this team's submissions.");
     }
 
     private void ensureCanViewSubmission(Submission submission, Authentication authentication) {
@@ -594,7 +594,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (isJudgeAssignedToSubmission(submission, userId)) {
             return;
         }
-        throw new UnauthorizedException("You do not have access to this submission.");
+        throw new ForbiddenException("You do not have access to this submission.");
     }
 
     private void ensureMentorAssignedToTeam(Team team, Authentication authentication) {
@@ -605,7 +605,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         if (!isMentorAssignedToTeam(team, currentUserId)) {
-            throw new UnauthorizedException("Mentor is not assigned to this team's track.");
+            throw new ForbiddenException("Mentor is not assigned to this team's track.");
         }
     }
 
@@ -639,7 +639,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private void ensureCoordinator(Authentication authentication) {
         if (!CurrentUser.isAdminOrCoordinator(authentication)) {
-            throw new UnauthorizedException("Only coordinator or admin can access submission management.");
+            throw new ForbiddenException("Only coordinator or admin can access submission management.");
         }
     }
 

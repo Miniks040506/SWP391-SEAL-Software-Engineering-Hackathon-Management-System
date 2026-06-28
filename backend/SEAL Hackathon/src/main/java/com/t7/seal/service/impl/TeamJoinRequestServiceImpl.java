@@ -13,7 +13,7 @@ import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.exception.UnauthorizedException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.AuditLogRepository;
 import com.t7.seal.repository.StudentProfileRepository;
 import com.t7.seal.repository.TeamInvitationRepository;
@@ -251,7 +251,7 @@ public class TeamJoinRequestServiceImpl implements TeamJoinRequestService {
     private void ensureLeader(Team team, Authentication authentication) {
         User currentUser = currentUserService.getCurrentUser(authentication);
         if (team.getLeader() == null || !team.getLeader().getId().equals(currentUser.getId())) {
-            throw new UnauthorizedException("Only the team leader can manage join requests.");
+            throw new ForbiddenException("Only the team leader can manage join requests.");
         }
     }
 
