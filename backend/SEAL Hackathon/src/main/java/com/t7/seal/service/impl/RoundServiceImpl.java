@@ -848,9 +848,12 @@ public class RoundServiceImpl implements RoundService {
     }
 
     private <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException(fieldName + " is required.");
+        }
         try {
             return Enum.valueOf(enumClass, value.trim().toUpperCase());
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException ex) {
             throw new BadRequestException(String.format("Invalid %s: %s", fieldName, value));
         }
     }
