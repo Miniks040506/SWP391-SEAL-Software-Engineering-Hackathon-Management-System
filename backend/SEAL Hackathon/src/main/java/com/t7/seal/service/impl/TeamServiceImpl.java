@@ -1222,32 +1222,4 @@ public class TeamServiceImpl implements TeamService {
         }
     }
 
-    private void sendTeamRegisterEmailSafely(
-            Team team, List<TeamMember> members, HackathonEvent event, Track track
-    ) {
-        try {
-            User leader = team.getLeader();
-
-            List<String> cc = members.stream()
-                    .map(TeamMember::getUser)
-                    .filter(user -> user != null && user.getEmail() != null)
-                    .filter(user -> leader == null || !user.getId().equals(leader.getId()))
-                    .map(User::getEmail)
-                    .distinct()
-                    .toList();
-            if (leader != null && leader.getEmail() != null) {
-                emailService.sendTeamRegisterEmail(
-                        leader.getEmail(),
-                        cc,
-                        leader.getFullName(),
-                        team.getName(),
-                        event.getName(),
-                        track.getName()
-                );
-            }
-        } catch (RuntimeException ex) {
-            //TODO
-            ex.printStackTrace();
-        }
-    }
 }
