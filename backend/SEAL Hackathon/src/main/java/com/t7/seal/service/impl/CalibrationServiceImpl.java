@@ -654,7 +654,7 @@ public class CalibrationServiceImpl implements CalibrationService {
             throw new UnauthorizedException("Temporary judge account has expired.");
         }
         if (!assignmentRepository.existsByJudgeIdAndEventId(judge.getId(), eventId)) {
-            throw new UnauthorizedException("This calibration round is not assigned to you.");
+            throw new ForbiddenException("This calibration round is not assigned to you.");
         }
     }
 
