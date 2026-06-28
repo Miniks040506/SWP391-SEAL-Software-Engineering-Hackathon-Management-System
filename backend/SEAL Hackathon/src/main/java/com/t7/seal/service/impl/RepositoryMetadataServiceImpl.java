@@ -7,6 +7,7 @@ import com.t7.seal.dto.RepositoryMetadata;
 import com.t7.seal.dto.RepositoryRef;
 import com.t7.seal.service.RepositoryMetadataService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RepositoryMetadataServiceImpl implements RepositoryMetadataService {
 
     private final ObjectMapper objectMapper;
@@ -65,12 +67,25 @@ public class RepositoryMetadataServiceImpl implements RepositoryMetadataService 
                 case "GITLAB" -> fetchGitlab(ref.get());
                 default -> null;
             };
-        } catch (Exception e) {
-            return RepositoryMetadata.builder()
-                    .platform(detectPlatform(url))
-                    .repoName(url)
-                    .build();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            log.warn(
+                    "Repository metadata lookup was interrupted. platform={}",
+                    detectPlatform(url),
+                    ex
+            );
+        } catch (Exception ex) {
+            log.warn(
+                    "Repository metadata lookup failed. platform={}",
+                    detectPlatform(url),
+                    ex
+            );
         }
+
+        return RepositoryMetadata.builder()
+                .platform(detectPlatform(url))
+                .repoName(url)
+                .build();
     }
 
     private RepositoryMetadata fetchGithub(RepositoryRef ref) throws Exception {
