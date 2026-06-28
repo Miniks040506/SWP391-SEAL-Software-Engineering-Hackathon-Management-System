@@ -348,6 +348,11 @@ public class CalibrationServiceImpl implements CalibrationService {
                             .build());
 
             score.setValue(value);
+            score.setComment(
+                    item.comment() == null || item.comment().isBlank()
+                            ? null
+                            : item.comment().strip()
+            );
             savedScores.add(calibrationScoreRepository.save(score));
         }
 
@@ -892,7 +897,8 @@ public class CalibrationServiceImpl implements CalibrationService {
                 score.getEventCriteria().getId(),
                 score.getValue() == null ? null : score.getValue().doubleValue(),
                 score.getDeviationFromBenchmark() == null
-                        ? null : score.getDeviationFromBenchmark().doubleValue()
+                        ? null : score.getDeviationFromBenchmark().doubleValue(),
+                score.getComment()
         );
     }
 

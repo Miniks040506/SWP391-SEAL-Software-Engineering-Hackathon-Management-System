@@ -63,6 +63,9 @@ public class CalibrationScore {
     @Column(name = "deviation_from_benchmark")
     private Float deviationFromBenchmark;
 
+    @Column(name = "judge_comment", columnDefinition = "TEXT")
+    private String comment;
+
     @CreationTimestamp
     @Column(name = "scored_at", nullable = false, updatable = false)
     private LocalDateTime scoredAt;
