@@ -1,7 +1,7 @@
 import { apiRequest } from './apiRequest';
-import { axiosClient } from './axiosClient';
 import type {
   AdvancementCandidateRow,
+  AdvancementConfirmResponse,
   AdvancementPreviewResponse,
   ConfirmAdvancementRequest,
   FinalAdvancementStatus,
@@ -12,6 +12,7 @@ import type {
   AdvancementPreviewResponse as BackendAdvancementPreviewResponse,
   ConfirmAdvancementRequest as BackendConfirmAdvancementRequest,
   ConfirmAdvancementResponse as BackendConfirmAdvancementResponse,
+  TeamAdvancementDecisionResponse as BackendTeamAdvancementDecisionResponse,
 } from '../types/round.types';
 import type {
   TeamAdvancementStatusResponse as BackendTeamAdvancementStatusResponse,
@@ -41,6 +42,16 @@ function toUiTeamAdvancementStatus(
   };
 }
 
+function toSuggestedStatus(
+  decision: BackendTeamAdvancementDecisionResponse,
+): SuggestedAdvancementStatus {
+  return decision.suggestedAdvanced
+    ? decision.advanceReason === 'WILDCARD'
+      ? 'WILDCARD'
+      : 'ADVANCED'
+    : 'ELIMINATED';
+}
+
 function toUiPreview(
   response: BackendAdvancementPreviewResponse,
 ): AdvancementPreviewResponse {
@@ -49,11 +60,7 @@ function toUiPreview(
     const ranking = response.allRankings.find(
       (item) => item.teamId === decision.teamId,
     );
-    const suggestedStatus: SuggestedAdvancementStatus = decision.suggestedAdvanced
-      ? decision.advanceReason === 'WILDCARD'
-        ? 'WILDCARD'
-        : 'ADVANCED'
-      : 'ELIMINATED';
+    const suggestedStatus = toSuggestedStatus(decision);
 
     return {
       teamId: decision.teamId,
@@ -93,6 +100,30 @@ function toUiPreview(
   };
 }
 
+function toUiConfirm(
+  response: BackendConfirmAdvancementResponse,
+): AdvancementConfirmResponse {
+  return {
+    roundId: response.roundId,
+    advancedCount: response.advancedCount,
+    eliminatedCount: response.eliminatedCount,
+    confirmedAt: response.confirmedAt,
+    decisions: response.decisions.map((decision) => ({
+      teamId: decision.teamId,
+      teamName: decision.teamName,
+      trackId: decision.trackId,
+      trackName: decision.trackName,
+      rankPosition: decision.rankPosition,
+      totalScore: decision.totalScore,
+      ruleType: decision.advanceReason,
+      suggestedStatus: toSuggestedStatus(decision),
+      finalStatus: decision.finalAdvanced ? 'ADVANCED' : 'ELIMINATED',
+      overrideReason: decision.overrideReason,
+    })),
+    warnings: response.warnings,
+  };
+}
+
 function toBackendConfirmRequest(
   payload: ConfirmAdvancementRequest,
 ): BackendConfirmAdvancementRequest {
@@ -123,11 +154,14 @@ export const advancementApi = {
     ),
   }),
 
-  confirmRoundAdvancement: (roundId: string, payload: ConfirmAdvancementRequest) =>
-    axiosClient.post<BackendConfirmAdvancementResponse>(
-      `/rounds/${roundId}/advancement/confirm`,
-      toBackendConfirmRequest(payload),
+  confirmRoundAdvancement: async (roundId: string, payload: ConfirmAdvancementRequest) => ({
+    data: toUiConfirm(
+      await apiRequest.post<BackendConfirmAdvancementResponse>(
+        `/rounds/${roundId}/advancement/confirm`,
+        toBackendConfirmRequest(payload),
+      ),
     ),
+  }),
 
   getTeamAdvancementStatus: async (teamId: string) => ({
     data: toUiTeamAdvancementStatus(

@@ -43,9 +43,26 @@ export interface ConfirmAdvancementRequest {
   confirmNote?: string;
 }
 
-export interface AdvancementConfirmResponse extends AdvancementPreviewResponse {
+export interface AdvancementConfirmDecisionRow {
+  teamId: string;
+  teamName: string;
+  trackId?: string | null;
+  trackName?: string | null;
+  rankPosition?: number | null;
+  totalScore?: number | null;
+  ruleType?: string | null;
+  suggestedStatus: SuggestedAdvancementStatus;
+  finalStatus: FinalAdvancementStatus;
+  overrideReason?: string | null;
+}
+
+export interface AdvancementConfirmResponse {
+  roundId: string;
+  advancedCount: number;
+  eliminatedCount: number;
   confirmedAt: string;
-  confirmedBy?: string | null;
+  decisions: AdvancementConfirmDecisionRow[];
+  warnings: string[];
 }
 
 export interface TeamAdvancementStatusResponse {
