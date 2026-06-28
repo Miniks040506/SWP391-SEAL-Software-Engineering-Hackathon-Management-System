@@ -276,7 +276,7 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             tokenBlacklistService.blacklist(token, jwtService.extractExpirationMillis(token));
-        } catch (Exception ignored) {
+        } catch (RuntimeException ignored) {
             tokenBlacklistService.blacklist(token);
         }
     }

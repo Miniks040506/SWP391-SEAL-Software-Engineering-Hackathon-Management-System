@@ -203,12 +203,12 @@ public class OAuth2ServiceImpl implements OAuth2Service {
                     user.getFullName(),
                     providerName
             );
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
             log.warn(
-                    "Cannot send OAuth login success email to {} via {}: {}",
+                    "Cannot send OAuth login success email to {} via {}.",
                     user.getEmail(),
                     providerName,
-                    ex.getMessage()
+                    ex
             );
         }
     }
