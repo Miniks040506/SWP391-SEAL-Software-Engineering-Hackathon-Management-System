@@ -1085,61 +1085,6 @@ public class TeamServiceImpl implements TeamService {
         }
     }
 
-    private void sendTeamMemberJoinedByCodeEmail(Team team, User joinedMember) {
-        User leader = team.getLeader();
-        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
-            return;
-        }
-
-        List<String> cc = activeMembers(team.getId()).stream()
-                .map(TeamMember::getUser)
-                .filter(user -> user != null && user.getEmail() != null && !user.getEmail().isBlank())
-                .filter(user -> !user.getId().equals(leader.getId()))
-                .map(User::getEmail)
-                .distinct()
-                .toList();
-
-        try {
-            emailService.sendTeamInvitationAccepted(
-                    leader.getEmail(),
-                    cc,
-                    team.getName(),
-                    joinedMember.getFullName(),
-                    buildTeamUrl(team.getId())
-            );
-        } catch (RuntimeException ex) {
-            log.warn("Failed to send team join-code accepted email. teamId={}, joinedUserId={}", team.getId(), joinedMember.getId(), ex);
-        }
-    }
-
-    private void sendInvitationAcceptedEmail(TeamInvitation invitation, User acceptedMember) {
-        Team team = invitation.getTeam();
-        User leader = team.getLeader();
-        if (leader == null || leader.getEmail() == null || leader.getEmail().isBlank()) {
-            return;
-        }
-
-        List<String> cc = activeMembers(team.getId()).stream()
-                .map(TeamMember::getUser)
-                .filter(user -> user != null && user.getEmail() != null && !user.getEmail().isBlank())
-                .filter(user -> !user.getId().equals(leader.getId()))
-                .map(User::getEmail)
-                .distinct()
-                .toList();
-
-        try {
-            emailService.sendTeamInvitationAccepted(
-                    leader.getEmail(),
-                    cc,
-                    team.getName(),
-                    acceptedMember.getFullName(),
-                    buildTeamUrl(team.getId())
-            );
-        } catch (RuntimeException ex) {
-            log.warn("Failed to send team invitation accepted email. invitationId={}, teamId={}", invitation.getId(), team.getId(), ex);
-        }
-    }
-
     private void sendInvitationRejectedEmail(TeamInvitation invitation) {
         Team team = invitation.getTeam();
         User leader = team.getLeader();
