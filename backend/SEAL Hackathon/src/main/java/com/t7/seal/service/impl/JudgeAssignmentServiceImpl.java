@@ -571,9 +571,13 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                     NotificationChannel.BOTH,
                     null
             );
-        } catch (Exception e) {
-            //TODO
-            e.printStackTrace();
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Failed to create judge assignment notification. assignmentId={}, judgeId={}",
+                    assignment.getId(),
+                    assignment.getJudge().getId(),
+                    ex
+            );
         }
     }
 
