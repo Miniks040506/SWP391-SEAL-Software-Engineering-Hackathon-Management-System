@@ -18,8 +18,7 @@ import { manualAwardSchema, type ManualAwardFormValues } from "../../schemas/pri
 type ManualAwardDialogProps = {
   open: boolean;
   prize: PrizeResponse | null;
-  teams: any[]; // Assuming you'll pass filtered teams, using any[] for now
-  isSubmitting: boolean;
+  teams: any[];
   onClose: () => void;
   onSubmit: (values: ManualAwardFormValues) => void;
 };
@@ -61,7 +60,7 @@ export const ManualAwardDialog = ({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ fontWeight: "bold" }}>Manual Award</DialogTitle>
-      
+
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent dividers>
@@ -122,7 +121,7 @@ export const ManualAwardDialog = ({
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
                   Notifications
                 </Typography>
-                
+
                 <Controller
                   name="sendNotification"
                   control={control}
@@ -133,7 +132,7 @@ export const ManualAwardDialog = ({
                     />
                   )}
                 />
-                
+
                 <div className="ml-6 flex flex-col gap-1 sm:flex-row sm:gap-4">
                   <Controller
                     name="sendInApp"
@@ -159,7 +158,7 @@ export const ManualAwardDialog = ({
               </div>
             </div>
           </DialogContent>
-          
+
           <DialogActions sx={{ px: 3, py: 2 }}>
             <Button onClick={onClose} disabled={isSubmitting} variant="outlined">
               Cancel

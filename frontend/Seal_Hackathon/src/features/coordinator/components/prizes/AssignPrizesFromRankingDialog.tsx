@@ -18,7 +18,7 @@ import { assignPrizesFromRankingSchema, type AssignPrizesFromRankingFormValues }
 type AssignPrizesFromRankingDialogProps = {
   open: boolean;
   tracks: TrackResponse[];
-  rounds: any[]; // Assuming rounds are available, using any[] for now if type isn't perfectly mapped
+  rounds: any[];
   isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (values: AssignPrizesFromRankingFormValues) => void;
@@ -63,12 +63,12 @@ export const AssignPrizesFromRankingDialog = ({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ fontWeight: "bold" }}>Auto-Assign Prizes from Ranking</DialogTitle>
-      
+
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent dividers>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Automatically assign configured prizes to teams based on their current ranking. 
+              Automatically assign configured prizes to teams based on their current ranking.
               You can filter by round or track.
             </Typography>
 
@@ -140,7 +140,7 @@ export const AssignPrizesFromRankingDialog = ({
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
                   Notifications
                 </Typography>
-                
+
                 <Controller
                   name="sendNotification"
                   control={control}
@@ -151,7 +151,7 @@ export const AssignPrizesFromRankingDialog = ({
                     />
                   )}
                 />
-                
+
                 <div className="ml-6 flex flex-col gap-1 sm:flex-row sm:gap-4">
                   <Controller
                     name="sendInApp"
@@ -177,7 +177,7 @@ export const AssignPrizesFromRankingDialog = ({
               </div>
             </div>
           </DialogContent>
-          
+
           <DialogActions sx={{ px: 3, py: 2 }}>
             <Button onClick={onClose} disabled={isSubmitting} variant="outlined">
               Cancel
