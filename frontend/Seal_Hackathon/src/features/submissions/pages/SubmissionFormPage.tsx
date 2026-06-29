@@ -1,10 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TextField, Button } from "@mui/material";
+import { submissionApi } from "@/api/submission.api";
 import {
   useParticipantSubmissionData,
   useSaveSubmissionDraftMutation,
-  useSubmitDeliverablesMutation,
   useSubmitExistingSubmissionMutation,
   useUpdateSubmissionMutation,
 } from "../hooks/useParticipantSubmissionQueries";
@@ -37,11 +37,9 @@ const ALLOWED_CONTENT_TYPES = [
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "video/mp4",
   "image/png",
-  "image/webp",
   "image/jpeg",
-  "text/plain"
+  "text/plain",
 ];
-
 
 function detectLinkType(url: string): SubmissionLinkType {
   const lower = url.toLowerCase();
@@ -50,7 +48,7 @@ function detectLinkType(url: string): SubmissionLinkType {
     return "REPOSITORY";
   }
 
-  if (lower.endsWith(".mp4") || lower.includes("drive.google.com")) {
+  if (lower.endsWith(".mp4")) {
     return "VIDEO";
   }
 
@@ -62,22 +60,37 @@ function detectLinkType(url: string): SubmissionLinkType {
     return "SLIDE";
   }
 
-  if (
-    lower.includes("docs.google.com/document") ||
-    lower.endsWith(".pdf") ||
-    lower.includes("report")
-  ) {
+  if (lower.endsWith(".pdf")) {
     return "REPORT";
   }
 
   if (
-    lower.includes("demo") ||
     lower.includes("vercel.app") ||
     lower.includes("netlify.app") ||
     lower.includes("render.com")
   ) {
     return "DEMO";
   }
+
+  return "OTHER";
+}
+
+function detectTypeFromFile(file: File): SubmissionLinkType {
+  const type = file.type.toLowerCase();
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+
+  if (type === "video/mp4" || ext === "mp4") return "VIDEO";
+
+  if (
+    type === "application/vnd.ms-powerpoint" ||
+    type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+    ext === "ppt" ||
+    ext === "pptx"
+  ) {
+    return "SLIDE";
+  }
+
+  if (type === "application/pdf" || ext === "pdf") return "REPORT";
 
   return "OTHER";
 }
@@ -126,18 +139,18 @@ export function SubmissionFormPage() {
     useParticipantSubmissionData(teamId, roundId);
   const saveDraftMutation = useSaveSubmissionDraftMutation(teamId, roundId);
   const updateSubmissionMutation = useUpdateSubmissionMutation();
-  const submitDeliverablesMutation = useSubmitDeliverablesMutation(
-    teamId,
-    roundId,
-  );
-  const submitExistingSubmissionMutation = useSubmitExistingSubmissionMutation();
+
+  const submitExistingSubmissionMutation =
+    useSubmitExistingSubmissionMutation();
 
   const [items, setItems] = useState<StorageItem[]>([]);
   const [currentPath, setCurrentPath] = useState("/");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"icon" | "list" | "tree">("icon");
 
-  const [linkUrl, setLinkUrl] = useState("");
+  const [links, setLinks] = useState<Array<{ url: string; label: string }>>([
+    { url: "", label: "Resource Link" },
+  ]);
   const [note, setNote] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -155,6 +168,7 @@ export function SubmissionFormPage() {
   const [tempAuthor, setTempAuthor] = useState("");
   const [tempLicense, setTempLicense] = useState("All rights reserved");
   const pickerFileInputRef = useRef<HTMLInputElement>(null);
+  const userHasEdited = useRef(false);
 
   const [editItem, setEditItem] = useState<StorageItem | null>(null);
   const [editName, setEditName] = useState("");
@@ -171,15 +185,32 @@ export function SubmissionFormPage() {
   );
 
   useEffect(() => {
+    if (userHasEdited.current) return;
     if (submission?.links && submission.links.length > 0) {
-      setLinkUrl(submission.links[0].url);
+      const urlLinks = submission.links.filter(
+        (l) => l.storageProvider !== "AWS_S3"
+      );
+      if (urlLinks.length > 0) {
+        setLinks(
+          urlLinks.map((l) => ({
+            url: l.url,
+            label: l.label || "Resource Link",
+          })),
+        );
+      } else {
+        setLinks([{ url: "", label: "Resource Link" }]);
+      }
+    } else {
+      setLinks([{ url: "", label: "Resource Link" }]);
     }
     if (submission?.note) setNote(submission.note);
   }, [submission]);
 
   const isLeader = teamInfo?.roleInTeam === "LEADER";
   const isRegistered =
-    teamInfo?.status === "REGISTERED" || teamInfo?.status === "COMPETING";
+    teamInfo?.status === "REGISTERED" ||
+    teamInfo?.status === "COMPETING" ||
+    teamInfo?.status === "ADVANCED";
   const lockTime =
     submission?.roundSubmissionLockedAt ?? round?.submissionLockedAt ?? null;
   const isRoundSubmissionLocked = Boolean(
@@ -191,7 +222,7 @@ export function SubmissionFormPage() {
   const blockedReason = !isLeader
     ? "Only the Team Leader can submit or edit deliverables."
     : !isRegistered
-      ? "Your team must be REGISTERED or COMPETING to submit."
+      ? "Your team must be REGISTERED, COMPETING, or ADVANCED to submit."
       : isRoundSubmissionLocked
         ? "Submissions are locked for this round."
         : round && !isRoundOpen
@@ -224,19 +255,17 @@ export function SubmissionFormPage() {
         return true;
       });
 
-      const newItems: StorageItem[] = validFiles.map(
-        (f) => ({
-          id: generateId(),
-          type: "file",
-          name: f.name,
-          file: f,
-          size: f.size,
-          lastModified: f.lastModified,
-          author: teamInfo?.name || "Participant",
-          license: "All rights reserved",
-          path: currentPath,
-        }),
-      );
+      const newItems: StorageItem[] = validFiles.map((f) => ({
+        id: generateId(),
+        type: "file",
+        name: f.name,
+        file: f,
+        size: f.size,
+        lastModified: f.lastModified,
+        author: teamInfo?.name || "Participant",
+        license: "All rights reserved",
+        path: currentPath,
+      }));
       setItems((prev) => [...prev, ...newItems]);
     }
   };
@@ -390,21 +419,25 @@ export function SubmissionFormPage() {
   };
 
   const autoFetchGithubLink = () => {
-    setLinkUrl(
-      `https://github.com/organization/${teamInfo?.name?.replace(/\s+/g, "-") || "project"}`,
-    );
+    const url = `https://github.com/organization/${teamInfo?.name?.replace(/\s+/g, "-") || "project"}`;
+    setLinks((prev) => {
+      if (prev.length === 1 && !prev[0].url) {
+        return [{ url, label: "GitHub Repo" }];
+      }
+      return [...prev, { url, label: "GitHub Repo" }];
+    });
   };
 
   const buildLinks = (): CreateSubmissionLinkRequest[] => {
-    if (!linkUrl.trim()) return [];
-    return [
-      {
-        linkType: detectLinkType(linkUrl),
-        label: "Resource Link",
-        url: linkUrl.trim(),
-        isPrimary: true,
-      },
-    ];
+    return links
+      .filter((l) => l.url.trim() !== "")
+      .map((l, idx) => ({
+        linkType: detectLinkType(l.url),
+        label: l.label.trim() || "Resource Link",
+        url: l.url.trim(),
+        isPrimary: idx === 0,
+        displayOrder: idx,
+      }));
   };
 
   const handleSaveDraft = async () => {
@@ -418,19 +451,46 @@ export function SubmissionFormPage() {
     setSuccessMsg(null);
     setErrorMsg(null);
     try {
-      const payload = { links: buildLinks(), note: note.trim() || undefined };
-      if (submission?.id) {
+      const existingFileLinks: CreateSubmissionLinkRequest[] = (submission?.links ?? [])
+        .filter((l) => l.storageProvider === "AWS_S3")
+        .map((l) => ({
+          linkType: l.linkType,
+          url: l.url,
+          label: l.label ?? undefined,
+          isPrimary: l.isPrimary ?? false,
+          displayOrder: l.displayOrder ?? 0,
+        }));
+      const allLinks = [...buildLinks(), ...existingFileLinks];
+      const payload = { links: allLinks, note: note.trim() || undefined };
+      let currentSubId = submission?.id;
+      if (currentSubId) {
         await updateSubmissionMutation.mutateAsync({
-          submissionId: submission.id,
+          submissionId: currentSubId,
           payload: {
             note: note.trim() || undefined,
-            links: payload.links,
+            links: allLinks,
           },
         });
       } else {
-        await saveDraftMutation.mutateAsync(payload);
+        const created = await saveDraftMutation.mutateAsync(payload);
+        currentSubId = created.id;
       }
+
+      const newFiles = items.filter((i) => i.type === "file" && i.file);
+      for (const item of newFiles) {
+        if (!item.file) continue;
+        const formData = new FormData();
+        formData.append("file", item.file);
+        formData.append("linkType", detectTypeFromFile(item.file));
+        formData.append("label", item.name);
+        formData.append("isPrimary", "false");
+
+        await submissionApi.uploadFileToSubmission(currentSubId, formData);
+      }
+
+      setItems((prev) => prev.filter((i) => !i.file));
       setSuccessMsg("Draft saved successfully.");
+      userHasEdited.current = false;
       refetch();
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message;
@@ -453,7 +513,11 @@ export function SubmissionFormPage() {
     }
 
     const actualFiles = items.filter((i) => i.type === "file");
-    if (!linkUrl.trim() && actualFiles.length === 0) {
+    const validLinks = links.filter((l) => l.url.trim() !== "");
+    const existingUploadedFiles = (submission?.links ?? []).filter(
+      (l) => l.storageProvider === "AWS_S3"
+    );
+    if (validLinks.length === 0 && actualFiles.length === 0 && existingUploadedFiles.length === 0) {
       setErrorMsg("Please provide at least a link or upload a file.");
       return;
     }
@@ -461,22 +525,48 @@ export function SubmissionFormPage() {
     setSuccessMsg(null);
     setErrorMsg(null);
     try {
-      const payload = { links: buildLinks(), note: note.trim() || undefined };
-      let submissionId = submission?.id;
-      if (submissionId) {
+      const existingFileLinks: CreateSubmissionLinkRequest[] = (submission?.links ?? [])
+        .filter((l) => l.storageProvider === "AWS_S3")
+        .map((l) => ({
+          linkType: l.linkType,
+          url: l.url,
+          label: l.label ?? undefined,
+          isPrimary: l.isPrimary ?? false,
+          displayOrder: l.displayOrder ?? 0,
+        }));
+      const allLinks = [...buildLinks(), ...existingFileLinks];
+      const payload = { links: allLinks, note: note.trim() || undefined };
+      let currentSubId = submission?.id;
+      if (currentSubId) {
         await updateSubmissionMutation.mutateAsync({
-          submissionId,
+          submissionId: currentSubId,
           payload: {
             note: note.trim() || undefined,
-            links: payload.links,
+            links: allLinks,
           },
         });
-        await submitExistingSubmissionMutation.mutateAsync(submissionId);
       } else {
-        const created = await submitDeliverablesMutation.mutateAsync(payload);
-        submissionId = created.id;
+        const created = await saveDraftMutation.mutateAsync(payload);
+        currentSubId = created.id;
       }
+
+      const newFiles = items.filter((i) => i.type === "file" && i.file);
+      for (const item of newFiles) {
+        if (!item.file) continue;
+        const formData = new FormData();
+        formData.append("file", item.file);
+        formData.append("linkType", detectTypeFromFile(item.file));
+        formData.append("label", item.name);
+        formData.append("isPrimary", "false");
+
+        await submissionApi.uploadFileToSubmission(currentSubId, formData);
+      }
+
+      setItems((prev) => prev.filter((i) => !i.file));
+      await submitExistingSubmissionMutation.mutateAsync(currentSubId);
+
       setSuccessMsg("Submission confirmed! Reviewers have been notified.");
+      userHasEdited.current = false;
       refetch();
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message;
@@ -485,8 +575,8 @@ export function SubmissionFormPage() {
           msg?.toLowerCase().includes("locked")
           ? "Submissions are locked for this round."
           : msg?.includes("deadline")
-          ? "Deadline exceeded. Submission is blocked."
-          : msg || "Failed to submit.",
+            ? "Deadline exceeded. Submission is blocked."
+            : msg || "Failed to submit.",
       );
     } finally {
       setSubmitting(false);
@@ -646,12 +736,16 @@ export function SubmissionFormPage() {
             {lockTime ? ` since ${formatDateTime(lockTime)}` : ""}.
           </div>
         )}
-        {isLeader && isRegistered && !isRoundSubmissionLocked && round && !isRoundOpen && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-            <strong>Round not open:</strong> Submissions are only allowed while
-            the round is OPEN. Current status: {round.status}.
-          </div>
-        )}
+        {isLeader &&
+          isRegistered &&
+          !isRoundSubmissionLocked &&
+          round &&
+          !isRoundOpen && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+              <strong>Round not open:</strong> Submissions are only allowed
+              while the round is OPEN. Current status: {round.status}.
+            </div>
+          )}
 
         <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6 gap-6">
           {(["form", "history"] as const).map((tab) => (
@@ -1027,52 +1121,121 @@ export function SubmissionFormPage() {
               </div>
 
               <div className="flex flex-col gap-3">
-                <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                  Resource Link
+                <div className="flex justify-between items-end">
+                  <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    Resource Links
+                  </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <TextField
-                    fullWidth
-                    size="small"
-                    disabled={!canEdit}
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    placeholder="https://github.com/... or any external link"
-                    sx={filterTextFieldSx}
-                  />
-                  <Button
-                    variant="contained"
-                    disabled={!canEdit}
-                    onClick={autoFetchGithubLink}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 700,
-                      borderRadius: "10px",
-                      boxShadow: "none",
-                      bgcolor: "#0f172a",
-                      color: "#ffffff",
-                      height: 40,
-                      whiteSpace: "nowrap",
-                      "&:hover": { bgcolor: "#1e293b" },
-                      ".dark &": {
-                        bgcolor: "#f8fafc",
-                        color: "#0f172a",
-                        "&:hover": { bgcolor: "#e2e8f0" },
-                      },
-                    }}
+                {links.map((link, idx) => (
+                  <div
+                    key={idx}
+                    className="flex flex-col sm:flex-row gap-3 items-start"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="currentColor"
-                      style={{ marginRight: 6 }}
+                    <TextField
+                      fullWidth
+                      size="small"
+                      disabled={!canEdit}
+                      value={link.url}
+                      onChange={(e) => {
+                        userHasEdited.current = true;
+                        const newLinks = [...links];
+                        newLinks[idx].url = e.target.value;
+                        setLinks(newLinks);
+                      }}
+                      placeholder="https://github.com/... or any external link"
+                      sx={filterTextFieldSx}
+                    />
+                    <TextField
+                      size="small"
+                      disabled={!canEdit}
+                      value={link.label}
+                      onChange={(e) => {
+                        const newLinks = [...links];
+                        newLinks[idx].label = e.target.value;
+                        setLinks(newLinks);
+                      }}
+                      placeholder="Label (e.g. GitHub Repo)"
+                      sx={{ ...filterTextFieldSx, minWidth: 200 }}
+                    />
+                    {links.length > 1 && canEdit && (
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => {
+                          setLinks(links.filter((_, i) => i !== idx));
+                        }}
+                        sx={{
+                          height: 40,
+                          minWidth: 40,
+                          padding: 0,
+                          borderRadius: "10px",
+                        }}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                        </svg>
+                      </Button>
+                    )}
+                  </div>
+                ))}
+
+                {canEdit && (
+                  <div className="flex gap-3 mt-1">
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        setLinks([
+                          ...links,
+                          { url: "", label: "Resource Link" },
+                        ]);
+                      }}
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 600,
+                        borderRadius: "10px",
+                        height: 40,
+                      }}
                     >
-                      <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                    </svg>
-                    Fetch
-                  </Button>
-                </div>
+                      + Add Link
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={autoFetchGithubLink}
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 700,
+                        borderRadius: "10px",
+                        boxShadow: "none",
+                        bgcolor: "#0f172a",
+                        color: "#ffffff",
+                        height: 40,
+                        whiteSpace: "nowrap",
+                        "&:hover": { bgcolor: "#1e293b" },
+                        ".dark &": {
+                          bgcolor: "#f8fafc",
+                          color: "#0f172a",
+                          "&:hover": { bgcolor: "#e2e8f0" },
+                        },
+                      }}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="currentColor"
+                        style={{ marginRight: 6 }}
+                      >
+                        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                      </svg>
+                      Fetch GitHub
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-3">
@@ -1085,7 +1248,10 @@ export function SubmissionFormPage() {
                   minRows={3}
                   size="small"
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onChange={(e) => {
+                    userHasEdited.current = true;
+                    setNote(e.target.value);
+                  }}
                   placeholder="Context or notes for reviewers..."
                   disabled={!canEdit}
                   sx={filterTextFieldSx}
@@ -1257,7 +1423,7 @@ export function SubmissionFormPage() {
                     </div>
                     <input
                       type="file"
-                      accept={ALLOWED_CONTENT_TYPES.join(",")}
+                      accept={[...ALLOWED_CONTENT_TYPES, ".pdf", ".zip", ".ppt", ".pptx", ".mp4", ".png", ".jpg", ".jpeg", ".txt"].join(",")}
                       className="hidden"
                       ref={pickerFileInputRef}
                       onChange={(e) => {
@@ -1268,7 +1434,9 @@ export function SubmissionFormPage() {
                             return;
                           }
                           if (file.size > 25 * 1024 * 1024) {
-                            setErrorMsg(`File exceeds max size 25MB: ${file.name}`);
+                            setErrorMsg(
+                              `File exceeds max size 25MB: ${file.name}`,
+                            );
                             return;
                           }
                           setTempFile(file);
