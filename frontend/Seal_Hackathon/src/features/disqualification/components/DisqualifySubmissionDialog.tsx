@@ -30,7 +30,7 @@ export interface DisqualifySubmissionDialogProps {
   onClose: () => void;
   submissionId: UUID;
   isPending: boolean;
-  onConfirm: (values: DisqualifyFormValues) => Promise<void>;
+  onConfirm: (values: DisqualifyFormValues) => Promise<any>;
 }
 
 export function DisqualifySubmissionDialog({
@@ -60,8 +60,8 @@ export function DisqualifySubmissionDialog({
 
   const onSubmit = async (values: DisqualifyFormValues) => {
     try {
-      await onConfirm(values);
-      enqueueSnackbar("Submission disqualified successfully.", {
+      const res = await onConfirm(values);
+      enqueueSnackbar(`Submission disqualified. Ranking recalculated: ${res?.rankingRecalculated ? "Yes" : "No"}.`, {
         variant: "success",
       });
       handleClose();

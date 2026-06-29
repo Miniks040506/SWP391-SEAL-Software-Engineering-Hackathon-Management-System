@@ -26,6 +26,14 @@ export const CoordinatorRoundRankingPage = () => {
 
     const [selectedTrackId, setSelectedTrackId] = useState<string>("all");
     const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+    const [showRecalculationBanner, setShowRecalculationBanner] = useState(
+        () => sessionStorage.getItem("rankingRecalculated") === "true"
+    );
+
+    const handleCloseBanner = () => {
+        setShowRecalculationBanner(false);
+        sessionStorage.removeItem("rankingRecalculated");
+    };
 
     const { data: roundInfo, isLoading: isLoadingInfo } = useRoundGradingProgressQuery(roundId);
 
@@ -136,6 +144,12 @@ export const CoordinatorRoundRankingPage = () => {
                     </Button>
                 </div>
             </header>
+
+            {showRecalculationBanner && (
+                <Alert severity="warning" onClose={handleCloseBanner} sx={{ mb: 4, borderRadius: "12px", fontWeight: 600 }}>
+                    Ranking was recalculated after disqualification. Please review advancement/prize decisions again.
+                </Alert>
+            )}
 
             <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <RankingFilterBar

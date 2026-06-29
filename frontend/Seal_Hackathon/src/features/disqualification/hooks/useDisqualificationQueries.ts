@@ -46,12 +46,18 @@ export const useDisqualifySubmissionMutation = () => {
       submissionId: UUID;
       payload: DisqualifySubmissionRequest;
     }) => disqualificationApi.disqualifySubmissionById(submissionId, payload),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      if (data?.rankingRecalculated) {
+        sessionStorage.setItem("rankingRecalculated", "true");
+      }
       queryClient.invalidateQueries({ queryKey: disqualificationQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: ["rankings"] });
-      queryClient.invalidateQueries({ queryKey: ["submissions"] });
-      queryClient.invalidateQueries({ queryKey: ["awards"] });
-      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      queryClient.invalidateQueries({ queryKey: ["participant-team-submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["participant-submission-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["public-events", "prizes"] });
+      queryClient.invalidateQueries({ queryKey: ["coordinator-events", "prizes"] });
+      queryClient.invalidateQueries({ queryKey: ["participant-my-teams"] });
+      queryClient.invalidateQueries({ queryKey: ["participant-team-detail"] });
     },
   });
 };
@@ -66,12 +72,18 @@ export const useOverturnDisqualificationMutation = () => {
       disqualificationId: UUID;
       payload: OverturnDisqualificationRequest;
     }) => disqualificationApi.overturnDisqualification(disqualificationId, payload),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      if (data?.rankingRecalculated) {
+        sessionStorage.setItem("rankingRecalculated", "true");
+      }
       queryClient.invalidateQueries({ queryKey: disqualificationQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: ["rankings"] });
-      queryClient.invalidateQueries({ queryKey: ["submissions"] });
-      queryClient.invalidateQueries({ queryKey: ["awards"] });
-      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      queryClient.invalidateQueries({ queryKey: ["participant-team-submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["participant-submission-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["public-events", "prizes"] });
+      queryClient.invalidateQueries({ queryKey: ["coordinator-events", "prizes"] });
+      queryClient.invalidateQueries({ queryKey: ["participant-my-teams"] });
+      queryClient.invalidateQueries({ queryKey: ["participant-team-detail"] });
     },
   });
 };

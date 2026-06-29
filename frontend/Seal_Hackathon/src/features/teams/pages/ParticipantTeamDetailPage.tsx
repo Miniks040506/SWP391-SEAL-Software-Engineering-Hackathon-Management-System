@@ -28,10 +28,10 @@ import type { TeamMemberResponse } from "@/types/team.types";
 
 import { useTeamAdvancementStatusQuery } from "@/features/advancement/hooks/useAdvancementQueries";
 import { TeamAdvancementStatusBanner } from "@/features/advancement/components/TeamAdvancementStatusBanner";
-
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
 import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
 import { TeamJoinRequestsPanel } from "../components/TeamJoinRequestsPanel";
+import { DisqualificationStatusBadge } from "@/features/disqualification/components/DisqualificationStatusBadge";
 
 import {
   inviteMemberSchema,
@@ -231,10 +231,14 @@ export const TeamDetailPage = () => {
               </p>
             </div>
 
-            <TeamStatusBadge
-              status={team.status}
-              memberCount={members.length}
-            />
+            {team.status === "DISQUALIFIED" ? (
+              <DisqualificationStatusBadge appealStatus={(team as any).appealStatus} />
+            ) : (
+              <TeamStatusBadge
+                status={team.status}
+                memberCount={members.length}
+              />
+            )}
           </div>
 
           <div className="mt-6 border-b border-gray-100 dark:border-slate-700">

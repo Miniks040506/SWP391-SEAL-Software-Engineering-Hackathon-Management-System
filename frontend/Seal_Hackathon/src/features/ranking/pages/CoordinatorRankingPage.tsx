@@ -26,6 +26,14 @@ export const CoordinatorRankingPage = () => {
     const [selectedRoundId, setSelectedRoundId] = useState<string>("all");
     const [selectedTrackId, setSelectedTrackId] = useState<string>("all");
     const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+    const [showRecalculationBanner, setShowRecalculationBanner] = useState(
+        () => sessionStorage.getItem("rankingRecalculated") === "true"
+    );
+
+    const handleCloseBanner = () => {
+        setShowRecalculationBanner(false);
+        sessionStorage.removeItem("rankingRecalculated");
+    };
 
     const { data: event } = useCoordinatorEventDetailQuery(eventId);
     const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
@@ -140,6 +148,12 @@ export const CoordinatorRankingPage = () => {
                     </Button>
                 </div>
             </header>
+
+            {showRecalculationBanner && (
+                <Alert severity="warning" onClose={handleCloseBanner} sx={{ mb: 4, borderRadius: "12px", fontWeight: 600 }}>
+                    Ranking was recalculated after disqualification. Please review advancement/prize decisions again.
+                </Alert>
+            )}
 
             {!isLoading && rankings.length > 0 && (
                 <div className="mb-8">

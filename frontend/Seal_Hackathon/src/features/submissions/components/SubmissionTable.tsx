@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { CoordinatorSubmissionSummary } from "../hooks/useCoordinatorSubmissionQueries";
 import { getSubmissionStatusColor } from "../schemas/submissions.schema";
+import { DisqualificationStatusBadge } from "../../disqualification/components/DisqualificationStatusBadge";
 
 type Props = {
   submissions: CoordinatorSubmissionSummary[];
@@ -100,11 +101,15 @@ export function SubmissionTable({
                 )}
               </td>
               <td className="px-6 py-5 whitespace-nowrap">
-                <span
-                  className={`px-3 py-1.5 inline-flex text-xs font-bold rounded-lg border ${getSubmissionStatusColor(sub.status)}`}
-                >
-                  {sub.status}
-                </span>
+                {sub.status === "DISQUALIFIED" ? (
+                  <DisqualificationStatusBadge appealStatus={(sub as any).appealStatus} />
+                ) : (
+                  <span
+                    className={`px-3 py-1.5 inline-flex text-xs font-bold rounded-lg border ${getSubmissionStatusColor(sub.status)}`}
+                  >
+                    {sub.status}
+                  </span>
+                )}
               </td>
               <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
                 {sub.submittedAt

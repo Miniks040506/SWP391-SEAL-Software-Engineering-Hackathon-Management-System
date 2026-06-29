@@ -1,43 +1,26 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
-  Button,
   CircularProgress,
-  TextField,
   Card,
   CardContent,
   Typography,
 } from "@mui/material";
-import { useSnackbar } from "notistack";
 import {
   useEventDisqualificationsQuery,
-  useUpdateAppealMutation,
 } from "../hooks/useDisqualificationQueries";
-import {
-  appealSchema,
-  type AppealFormValues,
-} from "../schemas/disqualification.schema";
 import { DisqualificationStatusBadge } from "../components/DisqualificationStatusBadge";
+import { DisqualificationAppealForm } from "../components/DisqualificationAppealForm";
 import { teamApi } from "@/api/team.api";
 import type { DisqualificationResponse } from "@/types/disqualification.types";
 import type { EventCompetitionSummaryResponse } from "@/types/team.types";
 import type { UUID } from "@/types/common.types";
 
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": { borderRadius: "10px" },
-  ".dark & .MuiInputBase-input": { color: "#cbd5e1" },
-  ".dark & .MuiInputLabel-root": { color: "#94a3b8" },
-  ".dark & .MuiOutlinedInput-notchedOutline": { borderColor: "#475569" },
-  ".dark &:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#64748b" },
-  ".dark & .MuiIconButton-root": { color: "#94a3b8" },
-};
+
 
 export function ParticipantDisqualificationPage() {
   const { teamId } = useParams<{ teamId: string }>();
-  const { enqueueSnackbar } = useSnackbar();
 
   const [teamComp, setTeamComp] = useState<EventCompetitionSummaryResponse | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(true);
@@ -69,38 +52,6 @@ export function ParticipantDisqualificationPage() {
   const disqualification = disqualifications.find(
     (d: DisqualificationResponse) => d.teamId === teamId,
   );
-
-  const appealMutation = useUpdateAppealMutation();
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<AppealFormValues>({
-    resolver: zodResolver(appealSchema),
-    defaultValues: {
-      appealNote: "",
-    },
-  });
-
-  const onSubmitAppeal = async (values: AppealFormValues) => {
-    if (!disqualification) return;
-    try {
-      await appealMutation.mutateAsync({
-        disqualificationId: disqualification.id,
-        payload: values,
-      });
-      enqueueSnackbar("Appeal submitted successfully.", { variant: "success" });
-      reset();
-      refetch();
-    } catch (error: any) {
-      enqueueSnackbar(
-        error?.response?.data?.message || "Failed to submit appeal.",
-        { variant: "error" },
-      );
-    }
-  };
 
   if (loadingTeam || (eventId && loadingDisqualifications)) {
     return (
@@ -199,41 +150,10 @@ export function ParticipantDisqualificationPage() {
             {/* Appeal Section */}
             <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
               {!disqualification.appealStatus ? (
-                <form onSubmit={handleSubmit(onSubmitAppeal)} className="space-y-4">
-                  <Typography
-                    variant="subtitle2"
-                    className="font-bold text-slate-800 dark:text-slate-200"
-                  >
-                    Submit an Appeal
-                  </Typography>
-                  <Alert severity="info" className="mb-4">
-                    If you believe this disqualification was made in error, you
-                    may submit one appeal. Please provide a clear explanation.
-                  </Alert>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={4}
-                    label="Appeal note *"
-                    {...register("appealNote")}
-                    error={Boolean(errors.appealNote)}
-                    helperText={errors.appealNote?.message as string}
-                    sx={textFieldSx}
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      color="primary"
-                      disabled={appealMutation.isPending}
-                      sx={{ textTransform: "none", fontWeight: 700 }}
-                    >
-                      {appealMutation.isPending
-                        ? "Submitting..."
-                        : "Submit Appeal"}
-                    </Button>
-                  </div>
-                </form>
+                <DisqualificationAppealForm 
+                  disqualificationId={disqualification.id}
+                  onSuccess={() => refetch()}
+                />
               ) : (
                 <div className="space-y-3">
                   <Typography

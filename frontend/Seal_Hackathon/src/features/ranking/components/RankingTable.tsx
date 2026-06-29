@@ -14,6 +14,11 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Link } from "react-router-dom";
 import type { RankingResponse } from "@/types/ranking.types";
 import { RankingStatusBadge } from "./RankingStatusBadge";
+import { DisqualificationStatusBadge } from "@/features/disqualification/components/DisqualificationStatusBadge";
+import { useState } from "react";
+import { DisqualifySubmissionDialog } from "@/features/disqualification/components/DisqualifySubmissionDialog";
+import { useDisqualifySubmissionMutation } from "@/features/disqualification/hooks/useDisqualificationQueries";
+import type { DisqualifyFormValues } from "@/features/disqualification/schemas/disqualification.schema";
 
 
 interface RankingTableProps {
@@ -22,6 +27,28 @@ interface RankingTableProps {
 
 
 export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
+    const disqualifyMutation = useDisqualifySubmissionMutation();
+    const [disqualifyDialogOpen, setDisqualifyDialogOpen] = useState(false);
+    const [selectedSubmissionIdToDisqualify, setSelectedSubmissionIdToDisqualify] = useState<string | null>(null);
+
+    const handleOpenDisqualify = (submissionId: string) => {
+        setSelectedSubmissionIdToDisqualify(submissionId);
+        setDisqualifyDialogOpen(true);
+    };
+
+    const handleCloseDisqualify = () => {
+        setDisqualifyDialogOpen(false);
+        setSelectedSubmissionIdToDisqualify(null);
+    };
+
+    const handleConfirmDisqualify = async (values: DisqualifyFormValues) => {
+        if (!selectedSubmissionIdToDisqualify) return;
+        await disqualifyMutation.mutateAsync({
+            submissionId: selectedSubmissionIdToDisqualify,
+            payload: values,
+        });
+    };
+
     return (
         <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: "16px" }}>
             <Table size="small">
@@ -41,7 +68,9 @@ export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
                 <TableBody>
                     {rankings.map((row) => {
                         let statusType: "ADVANCED" | "NOT_ADVANCED" | "DISQUALIFIED" = "NOT_ADVANCED";
-                        if (row.advanced) {
+                        if ((row as any).submissionStatus === "DISQUALIFIED" || (row as any).teamStatus === "DISQUALIFIED") {
+                            statusType = "DISQUALIFIED";
+                        } else if (row.advanced) {
                             statusType = "ADVANCED";
                         }
 
@@ -62,8 +91,12 @@ export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
                                     </div>
                                 </TableCell>
                                 <TableCell>{row.judgeCount || 0}</TableCell>
-                                <TableCell>
-                                    <RankingStatusBadge type={statusType} />
+                                <TableCell align="center">
+                                    {statusType === "DISQUALIFIED" ? (
+                                        <DisqualificationStatusBadge appealStatus={(row as any).appealStatus} />
+                                    ) : (
+                                        <RankingStatusBadge type={statusType} />
+                                    )}
                                     {row.published !== undefined && (
                                         <div className="mt-1">
                                             <RankingStatusBadge type={row.published ? "PUBLISHED" : "UNPUBLISHED"} />
@@ -82,6 +115,17 @@ export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
                                         >
                                             Submission
                                         </Button>
+                                        {statusType !== "DISQUALIFIED" && (
+                                            <Button
+                                                size="small"
+                                                variant="contained"
+                                                color="error"
+                                                sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+                                                onClick={() => handleOpenDisqualify(row.submissionId)}
+                                            >
+                                                Disqualify
+                                            </Button>
+                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -96,6 +140,15 @@ export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
                     )}
                 </TableBody>
             </Table>
+            {selectedSubmissionIdToDisqualify && (
+                <DisqualifySubmissionDialog
+                    open={disqualifyDialogOpen}
+                    onClose={handleCloseDisqualify}
+                    submissionId={selectedSubmissionIdToDisqualify}
+                    isPending={disqualifyMutation.isPending}
+                    onConfirm={handleConfirmDisqualify}
+                />
+            )}
         </TableContainer>
     );
 };

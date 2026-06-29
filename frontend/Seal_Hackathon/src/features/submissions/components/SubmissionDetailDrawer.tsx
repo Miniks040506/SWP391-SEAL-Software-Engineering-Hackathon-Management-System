@@ -10,6 +10,7 @@ import { Button } from "@mui/material";
 import { DisqualifySubmissionDialog } from "../../disqualification/components/DisqualifySubmissionDialog";
 import { useDisqualifySubmissionMutation } from "../../disqualification/hooks/useDisqualificationQueries";
 import type { DisqualifyFormValues } from "../../disqualification/schemas/disqualification.schema";
+import { DisqualificationStatusBadge } from "../../disqualification/components/DisqualificationStatusBadge";
 type Props = {
   submissionId: UUID;
   onClose: () => void;
@@ -198,13 +199,17 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
                             <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                               Current Submission
                             </span>
-                            <span
-                              className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
-                                detail.status,
-                              )}`}
-                            >
-                              {detail.status}
-                            </span>
+                            {detail.status === "DISQUALIFIED" ? (
+                              <DisqualificationStatusBadge appealStatus={(detail as any).appealStatus} />
+                            ) : (
+                              <span
+                                className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
+                                  detail.status,
+                                )}`}
+                              >
+                                {detail.status}
+                              </span>
+                            )}
                           </div>
                           <div className="grid grid-cols-2 gap-5">
                             <div>
@@ -259,13 +264,17 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
                       <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Overview
                       </h3>
-                      <span
-                        className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
-                          detail.status,
-                        )}`}
-                      >
-                        {detail.status}
-                      </span>
+                      {detail.status === "DISQUALIFIED" ? (
+                        <DisqualificationStatusBadge appealStatus={(detail as any).appealStatus} />
+                      ) : (
+                        <span
+                          className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
+                            detail.status,
+                          )}`}
+                        >
+                          {detail.status}
+                        </span>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-5">
                       <div>
@@ -353,11 +362,12 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
           submissionId={detail.id}
           isPending={disqualifyMutation.isPending}
           onConfirm={async (values: DisqualifyFormValues) => {
-            await disqualifyMutation.mutateAsync({
+            const res = await disqualifyMutation.mutateAsync({
               submissionId: detail.id,
               payload: values,
             });
             setDisqualifyOpen(false);
+            return res;
           }}
         />
       )}

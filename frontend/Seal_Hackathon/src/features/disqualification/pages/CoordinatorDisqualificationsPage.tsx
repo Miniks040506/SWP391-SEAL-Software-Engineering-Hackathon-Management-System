@@ -10,18 +10,20 @@ import {
   Alert,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
+import { DisqualificationStatusBadge } from "../components/DisqualificationStatusBadge";
+import { OverturnDisqualificationDialog } from "../components/OverturnDisqualificationDialog";
+import { DisqualifySubmissionDialog } from "../components/DisqualifySubmissionDialog";
 import {
   useEventDisqualificationsQuery,
   useOverturnDisqualificationMutation,
+  useDisqualifySubmissionMutation,
 } from "../hooks/useDisqualificationQueries";
+import type { DisqualifyFormValues, OverturnFormValues } from "../schemas/disqualification.schema";
+import type { DisqualificationResponse } from "@/types/disqualification.types";
 import {
   useCoordinatorEventRoundsQuery,
   useCoordinatorEventTracksQuery,
-} from "@/features/coordinator/hooks/useCoordinatorEventQueries";
-import { DisqualificationStatusBadge } from "../components/DisqualificationStatusBadge";
-import { OverturnDisqualificationDialog } from "../components/OverturnDisqualificationDialog";
-import type { OverturnFormValues } from "../schemas/disqualification.schema";
-import type { DisqualificationResponse } from "@/types/disqualification.types";
+} from "../../coordinator/hooks/useCoordinatorEventQueries";
 
 export function CoordinatorDisqualificationsPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -33,6 +35,11 @@ export function CoordinatorDisqualificationsPage() {
 
   const [overturnDialogOpen, setOverturnDialogOpen] = useState(false);
   const [selectedDisqualificationId, setSelectedDisqualificationId] = useState<
+    string | null
+  >(null);
+
+  const [disqualifyDialogOpen, setDisqualifyDialogOpen] = useState(false);
+  const [selectedSubmissionIdToDisqualify, setSelectedSubmissionIdToDisqualify] = useState<
     string | null
   >(null);
 
@@ -51,6 +58,7 @@ export function CoordinatorDisqualificationsPage() {
   });
 
   const overturnMutation = useOverturnDisqualificationMutation();
+  const disqualifyMutation = useDisqualifySubmissionMutation();
 
   const handleOpenOverturn = (id: string) => {
     setSelectedDisqualificationId(id);
@@ -77,6 +85,25 @@ export function CoordinatorDisqualificationsPage() {
       }.`,
       { variant: "success" },
     );
+    refetch();
+  };
+
+  const handleOpenDisqualify = (submissionId: string) => {
+    setSelectedSubmissionIdToDisqualify(submissionId);
+    setDisqualifyDialogOpen(true);
+  };
+
+  const handleCloseDisqualify = () => {
+    setDisqualifyDialogOpen(false);
+    setSelectedSubmissionIdToDisqualify(null);
+  };
+
+  const handleConfirmDisqualify = async (values: DisqualifyFormValues) => {
+    if (!selectedSubmissionIdToDisqualify) return;
+    await disqualifyMutation.mutateAsync({
+      submissionId: selectedSubmissionIdToDisqualify,
+      payload: values,
+    });
     refetch();
   };
 
@@ -160,10 +187,16 @@ export function CoordinatorDisqualificationsPage() {
           <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
             <tr>
               <th className="px-4 py-3 font-semibold">Team</th>
-              <th className="px-4 py-3 font-semibold">Round & Track</th>
+              <th className="px-4 py-3 font-semibold">Submission</th>
+              <th className="px-4 py-3 font-semibold">Round</th>
+              <th className="px-4 py-3 font-semibold">Track</th>
               <th className="px-4 py-3 font-semibold">Reason</th>
-              <th className="px-4 py-3 font-semibold">Appeal Status</th>
-              <th className="px-4 py-3 font-semibold">Issued At</th>
+              <th className="px-4 py-3 font-semibold">Evidence</th>
+              <th className="px-4 py-3 font-semibold">Appeal status</th>
+              <th className="px-4 py-3 font-semibold">Submission status</th>
+              <th className="px-4 py-3 font-semibold">Team status</th>
+              <th className="px-4 py-3 font-semibold">Issued by</th>
+              <th className="px-4 py-3 font-semibold">Issued at</th>
               <th className="px-4 py-3 font-semibold text-center">Actions</th>
             </tr>
           </thead>
@@ -178,35 +211,54 @@ export function CoordinatorDisqualificationsPage() {
                     <div className="font-medium text-slate-900 dark:text-slate-100">
                       {d.teamName}
                     </div>
-                    <div className="text-xs text-slate-500">
-                      Status: {d.teamStatus}
-                    </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div>{d.roundName}</div>
-                    <div className="text-xs text-slate-500">
-                      {d.trackName || "No track"}
+                    <div className="text-xs font-mono text-slate-500">
+                      {d.submissionId.substring(0, 8)}...
                     </div>
                   </td>
-                  <td className="px-4 py-3 max-w-[200px]">
+                  <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                    {d.roundName}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                    {d.trackName || "No track"}
+                  </td>
+                  <td className="px-4 py-3 max-w-[150px]">
                     <div className="truncate" title={d.reason}>
                       {d.reason}
                     </div>
-                    {d.evidenceUrl && (
+                  </td>
+                  <td className="px-4 py-3">
+                    {d.evidenceUrl ? (
                       <a
                         href={d.evidenceUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs text-blue-600 hover:underline block mt-1"
+                        className="text-xs text-blue-600 hover:underline"
                       >
-                        Evidence Link
+                        Link
                       </a>
+                    ) : (
+                      <span className="text-xs text-slate-400">N/A</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     <DisqualificationStatusBadge
                       appealStatus={d.appealStatus as "PENDING" | "UPHELD" | "OVERTURNED" | undefined}
                     />
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                      {d.submissionStatus}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                      {d.teamStatus}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
+                    {d.issuedByName || "System"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-500">
                     {new Date(d.issuedAt).toLocaleString()}
@@ -231,13 +283,24 @@ export function CoordinatorDisqualificationsPage() {
                     >
                       Overturn
                     </Button>
+                    {d.submissionStatus !== "DISQUALIFIED" && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="error"
+                        sx={{ textTransform: "none" }}
+                        onClick={() => handleOpenDisqualify(d.submissionId)}
+                      >
+                        Disqualify
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={12}
                   className="px-4 py-8 text-center text-slate-500"
                 >
                   No disqualifications found.
@@ -255,6 +318,16 @@ export function CoordinatorDisqualificationsPage() {
           disqualificationId={selectedDisqualificationId}
           isPending={overturnMutation.isPending}
           onConfirm={handleConfirmOverturn}
+        />
+      )}
+
+      {selectedSubmissionIdToDisqualify && (
+        <DisqualifySubmissionDialog
+          open={disqualifyDialogOpen}
+          onClose={handleCloseDisqualify}
+          submissionId={selectedSubmissionIdToDisqualify}
+          isPending={disqualifyMutation.isPending}
+          onConfirm={handleConfirmDisqualify}
         />
       )}
     </div>
