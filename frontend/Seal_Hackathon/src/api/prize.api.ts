@@ -1,9 +1,11 @@
 import { apiRequest } from "@/api/apiRequest";
 import type { UUID } from "@/types/common.types";
 import type {
+  AssignPrizesFromRankingRequest,
   AwardPrizeRequest,
   ClearPrizeAwardRequest,
   CreatePrizeRequest,
+  PrizeAssignmentResponse,
   PrizeResponse,
   UpdatePrizeRequest,
 } from "@/types/prize.types";
@@ -15,6 +17,10 @@ export const prizeApi = {
 
   getPrizesByEvent(eventId: UUID) {
     return apiRequest.get<PrizeResponse[]>(`/prizes/events/${eventId}`);
+  },
+
+  getPublishedAwards(eventId: UUID) {
+    return apiRequest.get<PrizeResponse[]>(`/events/${eventId}/awards`);
   },
 
   getPrizeById(prizeId: UUID) {
@@ -29,8 +35,19 @@ export const prizeApi = {
     return apiRequest.delete<void>(`/prizes/${prizeId}`);
   },
 
+  assignFromRanking(eventId: UUID, payload?: AssignPrizesFromRankingRequest) {
+    return apiRequest.post<PrizeAssignmentResponse>(
+      `/events/${eventId}/prizes/assign-from-ranking`,
+      payload ?? {},
+    );
+  },
+
   awardPrize(prizeId: UUID, payload: AwardPrizeRequest) {
     return apiRequest.post<PrizeResponse>(`/prizes/${prizeId}/award`, payload);
+  },
+
+  updatePrizeWinner(prizeId: UUID, payload: AwardPrizeRequest) {
+    return apiRequest.patch<PrizeResponse>(`/prizes/${prizeId}/winner`, payload);
   },
 
   clearAward(prizeId: UUID, payload: ClearPrizeAwardRequest) {
