@@ -757,7 +757,7 @@ public class TeamServiceImpl implements TeamService {
                 : submission.getSubmissionLinks().size();
 
         boolean advancementConfirmed = round.getAdvancementConfirmedAt() != null;
-        boolean advanced = advancementConfirmed
+        Boolean advanced = advancementConfirmed
                 ? (ranking != null && ranking.hasAdvanced()) : null;
         boolean eliminated = advancementConfirmed && !Boolean.TRUE.equals(advanced);
         boolean canAccessRound = !eliminated || submission != null;
