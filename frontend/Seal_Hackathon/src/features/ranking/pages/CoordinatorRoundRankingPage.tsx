@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Alert, Button, CircularProgress } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
@@ -115,6 +115,15 @@ export const CoordinatorRoundRankingPage = () => {
                     >
                         Event Rankings
                     </Button>
+                    <Link to={`/coordinator/events/${roundInfo.eventId}/disqualifications`} style={{ textDecoration: 'none' }}>
+                        <Button
+                            variant="outlined"
+                            color="error"
+                            sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
+                        >
+                            View disqualifications
+                        </Button>
+                    </Link>
                     <Button
                         variant="contained"
                         color="primary"
