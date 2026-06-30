@@ -69,8 +69,13 @@ export type GetAuditLogsParams = {
   actionType?: string;
   targetTable?: string;
   targetId?: UUID;
+  eventId?: UUID;
+  teamId?: UUID;
+  submissionId?: UUID;
   from?: string;
   to?: string;
+  fromDate?: string;
+  toDate?: string;
   page?: number;
   size?: number;
 };
