@@ -143,14 +143,29 @@ public class PrizeServiceImpl implements PrizeService {
     @Transactional
     @Override
     public void deletePrize(UUID prizeId, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         Prize prize = findPrize(prizeId, null, null);
         assertPrizeEditable(prize.getEvent());
         if (prize.getAwardedTeam() != null) {
             throw new ConflictException("Cannot delete prize after it has been awarded. Clear award first.");
         }
+
+        Map<String, Object> before = auditPrize(prize);
+        UUID eventId = prize.getEvent().getId();
+        UUID trackId = prize.getTrack() == null ? null : prize.getTrack().getId();
+
         prizeRepository.delete(prize);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.PRIZE_DELETED,
+                "prize",
+                prizeId,
+                before,
+                null,
+                auditContext(eventId, trackId, null, null)
+        );
     }
 
     @Transactional(readOnly = true)
