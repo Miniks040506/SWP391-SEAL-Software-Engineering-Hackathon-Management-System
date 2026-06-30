@@ -37,4 +37,14 @@ public class EventAwardController {
     ) {
         return null;
     }
+
+    @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
+    @PatchMapping("/prizes/{prizeId}/winner")
+    public ResponseEntity<PrizeResponse> updatePrizeWinner(
+            @PathVariable("prizeId") UUID prizeId,
+            @Valid @RequestBody AwardPrizeRequest request,
+            Authentication authentication
+    ) {
+        return null;
+    }
 }
