@@ -663,6 +663,19 @@ public class NotificationServiceImpl implements NotificationService {
             }
             return "/standings";
         }
+        if (notification.getType() == NotificationType.PRIZE_AWARDED) {
+            if (notification.getEvent() != null) {
+                return "/events/" + notification.getEvent().getId() + "/awards";
+            }
+            return "/standings";
+        }
+        if (notification.getType() == NotificationType.TEAM_DISQUALIFIED
+                || notification.getType() == NotificationType.DISQUALIFICATION_OVERTURNED) {
+            if (notification.getTargetScope() == NotificationTargetScope.TEAM && notification.getTargetId() != null) {
+                return "/participant/teams/" + notification.getTargetId() + "/disqualification";
+            }
+            return "/notifications";
+        }
         if (notification.getType() == NotificationType.SUBMISSION_SUBMITTED
                 || notification.getType() == NotificationType.SUBMISSION_UPDATED) {
             if ("MENTOR".equalsIgnoreCase(notification.getTargetRole())) {
@@ -824,6 +837,7 @@ public class NotificationServiceImpl implements NotificationService {
             case JUDGE_ASSIGNED -> "You have assigned submissions to review";
             case ANNOUNCEMENT_PUBLISHED -> "New SEAL announcement";
             case RESULT_PUBLISHED -> "SEAL results are published";
+            case PRIZE_AWARDED -> "SEAL prize awarded";
             case DEADLINE_REMINDER, SUBMISSION_REMINDER, JUDGING_REMINDER -> "SEAL deadline reminder";
             default -> "SEAL notification";
         };
