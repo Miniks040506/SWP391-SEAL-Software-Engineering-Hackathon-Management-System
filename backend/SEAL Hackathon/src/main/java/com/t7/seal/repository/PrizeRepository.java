@@ -87,4 +87,29 @@ public interface PrizeRepository extends JpaRepository<Prize, UUID> {
             @Param("prizeId") UUID prizeId,
             @Param("eventId") UUID eventId,
             @Param("trackId") UUID trackId);
+
+    @Query("""
+            SELECT p FROM Prize p 
+                LEFT JOIN FETCH p.track t 
+                LEFT JOIN FETCH p.awardedTeam at
+            WHERE p.event.id = :eventId
+            AND p.awardedTeam IS NOT NULL
+            ORDER BY CASE WHEN t IS NULL THEN 0 ELSE 1 END, 
+                t.name ASC, p.rankPosition ASC
+            """)
+    List<Prize> findAwardedByEventIdOrderByTrackNameAndRankPositionAsc(
+            @Param("eventId") UUID eventId
+    );
+
+    @Query("""
+            SELECT COUNT(p) FROM Prize p
+            WHERE p.event.id = :eventId 
+            AND p.awardedTeam.id = :teamId
+            AND p.id <> :exceptPrizeId
+            """)
+    Integer countAwardedByEventIdAndTeamIdExceptPrize(
+            @Param("eventId") UUID eventId,
+            @Param("teamId") UUID teamId,
+            @Param("exceptPrizeId") UUID exceptPrizeId
+    );
 }

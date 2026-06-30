@@ -109,6 +109,9 @@ import {
 import { RoundAdvancementPage } from "@/features/advancement/pages/RoundAdvancementPage";
 import { TeamAdvancementPage } from "@/features/advancement/pages/TeamAdvancementPage";
 
+import { CoordinatorDisqualificationsPage } from "@/features/disqualification/pages/CoordinatorDisqualificationsPage";
+import { ParticipantDisqualificationPage } from "@/features/disqualification/pages/ParticipantDisqualificationPage";
+
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -171,6 +174,10 @@ export const router = createBrowserRouter([
         path: "teams/:teamId/rounds/:roundId/scores",
         element: <TeamDetailedScorePage />,
       },
+      {
+        path: "teams/:teamId/disqualification",
+        element: <ParticipantDisqualificationPage />,
+      },
       { path: "invitations", element: <MyInvitationsPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
     ],
@@ -208,6 +215,10 @@ export const router = createBrowserRouter([
       {
         path: "events/:eventId/grading-progress",
         element: <CoordinatorEventGradingProgressPage />,
+      },
+      {
+        path: "events/:eventId/disqualifications",
+        element: <CoordinatorDisqualificationsPage />,
       },
       {
         path: "grading-progress",

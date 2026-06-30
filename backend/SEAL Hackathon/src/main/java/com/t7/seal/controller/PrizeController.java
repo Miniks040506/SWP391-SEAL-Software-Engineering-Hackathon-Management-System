@@ -69,20 +69,4 @@ public class PrizeController {
         prizeService.deletePrize(prizeId, authentication);
         return ResponseEntity.noContent().build();
     }
-
-    @PostMapping("/{prizeId}/award")
-    public ResponseEntity<PrizeResponse> awardPrize(
-            @PathVariable("prizeId") UUID prizeId,
-            @Valid @RequestBody AwardPrizeRequest request
-    ) {
-        return null;
-    }
-
-    @PostMapping("/{prizeId}/clear-award")
-    public ResponseEntity<PrizeResponse> clearAward(
-            @PathVariable("prizeId") UUID prizeId,
-            @Valid @RequestBody ClearPrizeAwardRequest request
-    ) {
-        return null;
-    }
 }
