@@ -59,7 +59,17 @@ export type CriteriaVarianceResponse = {
 
 export type VarianceDashboardResponse = {
   eventId: UUID;
-  roundId?: UUID;
+  eventName?: string | null;
+  roundId?: UUID | null;
+  trackId?: UUID | null;
+  criteriaType?: string | null;
+  judgeType?: string | null;
+  scoreCount: number;
+  judgeCount: number;
+  criteriaCount: number;
+  overallMean?: number | null;
+  overallVariance?: number | null;
+  overallStandardDeviation?: number | null;
   judgeVariances: JudgeVarianceResponse[];
   criteriaVariances: CriteriaVarianceResponse[];
 };

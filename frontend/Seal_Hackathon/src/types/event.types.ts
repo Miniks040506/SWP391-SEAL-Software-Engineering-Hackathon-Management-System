@@ -107,6 +107,7 @@ export type GetEventRankingParams = {
 
 export type GetVarianceDashboardParams = {
   roundId?: UUID;
+  trackId?: UUID;
   criteriaType?: string;
   judgeType?: string;
 };
