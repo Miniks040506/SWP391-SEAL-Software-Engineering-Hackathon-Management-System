@@ -19,5 +19,4 @@ public record PrizeResponse(
         UUID awardedTeamId,
         String awardedTeamName,
         LocalDateTime awardedAt
-) {
-}
+) {}
