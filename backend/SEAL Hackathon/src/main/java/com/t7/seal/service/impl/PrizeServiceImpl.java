@@ -257,14 +257,18 @@ public class PrizeServiceImpl implements PrizeService {
             Prize prize, Team team,
             AwardPrizeRequest request
     ) {
-
+        
     }
 
     private void markTeamAsWinner(Team team) {
+        if (team.getStatus() != TeamStatus.WINNER) {
+            team.setStatus(TeamStatus.WINNER);
+            teamRepository.save(team);
+        }
     }
 
     private void awardPrizeToTeam(Team team, Prize prize) {
-
+        prize.awardTo(team);
     }
 
     private void validateManualAwardTeam(Prize prize, Team team) {
