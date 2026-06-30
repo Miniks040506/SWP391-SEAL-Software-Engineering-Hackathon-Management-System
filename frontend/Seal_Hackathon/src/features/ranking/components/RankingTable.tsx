@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { RankingResponse } from "@/types/ranking.types";
 import { RankingStatusBadge } from "./RankingStatusBadge";
 import { DisqualificationStatusBadge } from "@/features/disqualification/components/DisqualificationStatusBadge";
@@ -28,6 +28,8 @@ interface RankingTableProps {
 
 export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
     const disqualifyMutation = useDisqualifySubmissionMutation();
+    const location = useLocation();
+    const showActions = location.pathname.startsWith("/coordinator");
     const [disqualifyDialogOpen, setDisqualifyDialogOpen] = useState(false);
     const [selectedSubmissionIdToDisqualify, setSelectedSubmissionIdToDisqualify] = useState<string | null>(null);
 
@@ -43,7 +45,7 @@ export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
 
     const handleConfirmDisqualify = async (values: DisqualifyFormValues) => {
         if (!selectedSubmissionIdToDisqualify) return;
-        await disqualifyMutation.mutateAsync({
+        return await disqualifyMutation.mutateAsync({
             submissionId: selectedSubmissionIdToDisqualify,
             payload: values,
         });
@@ -62,7 +64,7 @@ export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
                         <TableCell sx={{ fontWeight: 700 }}>Total Score</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>Judges</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }} align="right">Action</TableCell>
+                        {showActions && <TableCell sx={{ fontWeight: 700 }} align="right">Action</TableCell>}
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -103,37 +105,39 @@ export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
                                         </div>
                                     )}
                                 </TableCell>
-                                <TableCell align="right">
-                                    <div className="flex justify-end gap-2">
-                                        <Button
-                                            component={Link}
-                                            to={`/coordinator/submissions/${row.submissionId}`}
-                                            size="small"
-                                            variant="outlined"
-                                            startIcon={<VisibilityOutlinedIcon />}
-                                            sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
-                                        >
-                                            Submission
-                                        </Button>
-                                        {statusType !== "DISQUALIFIED" && (
+                                {showActions && (
+                                    <TableCell align="right">
+                                        <div className="flex justify-end gap-2">
                                             <Button
+                                                component={Link}
+                                                to={`/coordinator/submissions/${row.submissionId}`}
                                                 size="small"
-                                                variant="contained"
-                                                color="error"
+                                                variant="outlined"
+                                                startIcon={<VisibilityOutlinedIcon />}
                                                 sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
-                                                onClick={() => handleOpenDisqualify(row.submissionId)}
                                             >
-                                                Disqualify
+                                                Submission
                                             </Button>
-                                        )}
-                                    </div>
-                                </TableCell>
+                                            {statusType !== "DISQUALIFIED" && (
+                                                <Button
+                                                    size="small"
+                                                    variant="contained"
+                                                    color="error"
+                                                    sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+                                                    onClick={() => handleOpenDisqualify(row.submissionId)}
+                                                >
+                                                    Disqualify
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                )}
                             </TableRow>
                         );
                     })}
                     {rankings.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={9} align="center" sx={{ py: 6, color: "text.secondary" }}>
+                            <TableCell colSpan={showActions ? 9 : 8} align="center" sx={{ py: 6, color: "text.secondary" }}>
                                 No rankings available yet.
                             </TableCell>
                         </TableRow>

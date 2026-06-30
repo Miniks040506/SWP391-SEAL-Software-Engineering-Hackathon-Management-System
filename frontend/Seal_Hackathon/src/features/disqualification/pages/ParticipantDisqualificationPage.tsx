@@ -7,9 +7,7 @@ import {
   CardContent,
   Typography,
 } from "@mui/material";
-import {
-  useEventDisqualificationsQuery,
-} from "../hooks/useDisqualificationQueries";
+import { useEventDisqualificationsQuery } from "../hooks/useDisqualificationQueries";
 import { DisqualificationStatusBadge } from "../components/DisqualificationStatusBadge";
 import { DisqualificationAppealForm } from "../components/DisqualificationAppealForm";
 import { teamApi } from "@/api/team.api";
@@ -17,12 +15,11 @@ import type { DisqualificationResponse } from "@/types/disqualification.types";
 import type { EventCompetitionSummaryResponse } from "@/types/team.types";
 import type { UUID } from "@/types/common.types";
 
-
-
 export function ParticipantDisqualificationPage() {
   const { teamId } = useParams<{ teamId: string }>();
 
-  const [teamComp, setTeamComp] = useState<EventCompetitionSummaryResponse | null>(null);
+  const [teamComp, setTeamComp] =
+    useState<EventCompetitionSummaryResponse | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(true);
 
   useEffect(() => {
@@ -99,11 +96,18 @@ export function ParticipantDisqualificationPage() {
                   Submission Disqualified
                 </Typography>
                 <div className="text-xs text-slate-500 dark:text-slate-400">
-                  Issued at {new Date(disqualification.issuedAt).toLocaleString()}
+                  Issued at{" "}
+                  {new Date(disqualification.issuedAt).toLocaleString()}
                 </div>
               </div>
               <DisqualificationStatusBadge
-                appealStatus={disqualification.appealStatus as "PENDING" | "UPHELD" | "OVERTURNED" | undefined}
+                appealStatus={
+                  disqualification.appealStatus as
+                    | "PENDING"
+                    | "UPHELD"
+                    | "OVERTURNED"
+                    | undefined
+                }
               />
             </div>
 
@@ -150,7 +154,7 @@ export function ParticipantDisqualificationPage() {
             {/* Appeal Section */}
             <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
               {!disqualification.appealStatus ? (
-                <DisqualificationAppealForm 
+                <DisqualificationAppealForm
                   disqualificationId={disqualification.id}
                   onSuccess={() => refetch()}
                 />

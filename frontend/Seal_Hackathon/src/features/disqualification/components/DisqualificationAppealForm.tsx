@@ -68,8 +68,8 @@ export function DisqualificationAppealForm({
         Submit an Appeal
       </Typography>
       <Alert severity="info" className="mb-4">
-        If you believe this disqualification was made in error, you
-        may submit one appeal. Please provide a clear explanation.
+        If you believe this disqualification was made in error, you may submit
+        one appeal. Please provide a clear explanation.
       </Alert>
       <TextField
         fullWidth

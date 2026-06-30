@@ -9,7 +9,6 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { useSnackbar } from "notistack";
 import { DisqualificationStatusBadge } from "../components/DisqualificationStatusBadge";
 import { OverturnDisqualificationDialog } from "../components/OverturnDisqualificationDialog";
 import { DisqualifySubmissionDialog } from "../components/DisqualifySubmissionDialog";
@@ -18,7 +17,10 @@ import {
   useOverturnDisqualificationMutation,
   useDisqualifySubmissionMutation,
 } from "../hooks/useDisqualificationQueries";
-import type { DisqualifyFormValues, OverturnFormValues } from "../schemas/disqualification.schema";
+import type {
+  DisqualifyFormValues,
+  OverturnFormValues,
+} from "../schemas/disqualification.schema";
 import type { DisqualificationResponse } from "@/types/disqualification.types";
 import {
   useCoordinatorEventRoundsQuery,
@@ -27,7 +29,6 @@ import {
 
 export function CoordinatorDisqualificationsPage() {
   const { eventId } = useParams<{ eventId: string }>();
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   const [roundId, setRoundId] = useState<string>("all");
   const [trackId, setTrackId] = useState<string>("all");
@@ -39,9 +40,10 @@ export function CoordinatorDisqualificationsPage() {
   >(null);
 
   const [disqualifyDialogOpen, setDisqualifyDialogOpen] = useState(false);
-  const [selectedSubmissionIdToDisqualify, setSelectedSubmissionIdToDisqualify] = useState<
-    string | null
-  >(null);
+  const [
+    selectedSubmissionIdToDisqualify,
+    setSelectedSubmissionIdToDisqualify,
+  ] = useState<string | null>(null);
 
   const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
   const { data: tracks = [] } = useCoordinatorEventTracksQuery(eventId);
@@ -77,15 +79,8 @@ export function CoordinatorDisqualificationsPage() {
       payload: { reason: values.overturnReason },
     });
     
-    // Use notistack to close the default snackbar from the dialog and show this specific one
-    closeSnackbar();
-    enqueueSnackbar(
-      `Disqualification overturned. Ranking recalculated: ${
-        res.rankingRecalculated ? "Yes" : "No"
-      }.`,
-      { variant: "success" },
-    );
     refetch();
+    return res;
   };
 
   const handleOpenDisqualify = (submissionId: string) => {
@@ -100,11 +95,12 @@ export function CoordinatorDisqualificationsPage() {
 
   const handleConfirmDisqualify = async (values: DisqualifyFormValues) => {
     if (!selectedSubmissionIdToDisqualify) return;
-    await disqualifyMutation.mutateAsync({
+    const res = await disqualifyMutation.mutateAsync({
       submissionId: selectedSubmissionIdToDisqualify,
       payload: values,
     });
     refetch();
+    return res;
   };
 
   if (isLoading) {
@@ -244,7 +240,13 @@ export function CoordinatorDisqualificationsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <DisqualificationStatusBadge
-                      appealStatus={d.appealStatus as "PENDING" | "UPHELD" | "OVERTURNED" | undefined}
+                      appealStatus={
+                        d.appealStatus as
+                          | "PENDING"
+                          | "UPHELD"
+                          | "OVERTURNED"
+                          | undefined
+                      }
                     />
                   </td>
                   <td className="px-4 py-3">

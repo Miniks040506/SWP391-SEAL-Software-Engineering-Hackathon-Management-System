@@ -11,19 +11,25 @@ import type {
 
 export const disqualificationQueryKeys = {
   all: ["disqualifications"] as const,
-  eventDisqualifications: (eventId: UUID, params?: GetEventDisqualificationsParams) =>
-    [...disqualificationQueryKeys.all, "event", eventId, params] as const,
+  eventDisqualifications: (
+    eventId: UUID,
+    params?: GetEventDisqualificationsParams,
+  ) => [...disqualificationQueryKeys.all, "event", eventId, params] as const,
   byId: (disqualificationId: UUID) =>
     [...disqualificationQueryKeys.all, "detail", disqualificationId] as const,
 };
 
 export const useEventDisqualificationsQuery = (
   eventId?: UUID,
-  params?: GetEventDisqualificationsParams
+  params?: GetEventDisqualificationsParams,
 ) => {
   return useQuery<DisqualificationResponse[]>({
-    queryKey: disqualificationQueryKeys.eventDisqualifications(eventId!, params),
-    queryFn: () => disqualificationApi.getEventDisqualifications(eventId!, params),
+    queryKey: disqualificationQueryKeys.eventDisqualifications(
+      eventId!,
+      params,
+    ),
+    queryFn: () =>
+      disqualificationApi.getEventDisqualifications(eventId!, params),
     enabled: !!eventId,
   });
 };
@@ -31,7 +37,8 @@ export const useEventDisqualificationsQuery = (
 export const useDisqualificationByIdQuery = (disqualificationId?: UUID) => {
   return useQuery<DisqualificationResponse>({
     queryKey: disqualificationQueryKeys.byId(disqualificationId!),
-    queryFn: () => disqualificationApi.getDisqualificationById(disqualificationId!),
+    queryFn: () =>
+      disqualificationApi.getDisqualificationById(disqualificationId!),
     enabled: !!disqualificationId,
   });
 };
@@ -50,12 +57,20 @@ export const useDisqualifySubmissionMutation = () => {
       if (data?.rankingRecalculated) {
         sessionStorage.setItem("rankingRecalculated", "true");
       }
-      queryClient.invalidateQueries({ queryKey: disqualificationQueryKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: disqualificationQueryKeys.all,
+      });
       queryClient.invalidateQueries({ queryKey: ["rankings"] });
-      queryClient.invalidateQueries({ queryKey: ["participant-team-submissions"] });
-      queryClient.invalidateQueries({ queryKey: ["participant-submission-detail"] });
+      queryClient.invalidateQueries({
+        queryKey: ["participant-team-submissions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["participant-submission-detail"],
+      });
       queryClient.invalidateQueries({ queryKey: ["public-events", "prizes"] });
-      queryClient.invalidateQueries({ queryKey: ["coordinator-events", "prizes"] });
+      queryClient.invalidateQueries({
+        queryKey: ["coordinator-events", "prizes"],
+      });
       queryClient.invalidateQueries({ queryKey: ["participant-my-teams"] });
       queryClient.invalidateQueries({ queryKey: ["participant-team-detail"] });
     },
@@ -71,17 +86,26 @@ export const useOverturnDisqualificationMutation = () => {
     }: {
       disqualificationId: UUID;
       payload: OverturnDisqualificationRequest;
-    }) => disqualificationApi.overturnDisqualification(disqualificationId, payload),
+    }) =>
+      disqualificationApi.overturnDisqualification(disqualificationId, payload),
     onSuccess: (data: any) => {
       if (data?.rankingRecalculated) {
         sessionStorage.setItem("rankingRecalculated", "true");
       }
-      queryClient.invalidateQueries({ queryKey: disqualificationQueryKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: disqualificationQueryKeys.all,
+      });
       queryClient.invalidateQueries({ queryKey: ["rankings"] });
-      queryClient.invalidateQueries({ queryKey: ["participant-team-submissions"] });
-      queryClient.invalidateQueries({ queryKey: ["participant-submission-detail"] });
+      queryClient.invalidateQueries({
+        queryKey: ["participant-team-submissions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["participant-submission-detail"],
+      });
       queryClient.invalidateQueries({ queryKey: ["public-events", "prizes"] });
-      queryClient.invalidateQueries({ queryKey: ["coordinator-events", "prizes"] });
+      queryClient.invalidateQueries({
+        queryKey: ["coordinator-events", "prizes"],
+      });
       queryClient.invalidateQueries({ queryKey: ["participant-my-teams"] });
       queryClient.invalidateQueries({ queryKey: ["participant-team-detail"] });
     },
@@ -99,7 +123,9 @@ export const useUpdateAppealMutation = () => {
       payload: UpdateAppealRequest;
     }) => disqualificationApi.updateAppeal(disqualificationId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: disqualificationQueryKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: disqualificationQueryKeys.all,
+      });
     },
   });
 };

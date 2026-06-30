@@ -61,9 +61,12 @@ export function DisqualifySubmissionDialog({
   const onSubmit = async (values: DisqualifyFormValues) => {
     try {
       const res = await onConfirm(values);
-      enqueueSnackbar(`Submission disqualified. Ranking recalculated: ${res?.rankingRecalculated ? "Yes" : "No"}.`, {
-        variant: "success",
-      });
+      enqueueSnackbar(
+        `Submission disqualified. Ranking recalculated: ${res?.rankingRecalculated ? "Yes" : "No"}.`,
+        {
+          variant: "success",
+        },
+      );
       handleClose();
     } catch (error: any) {
       enqueueSnackbar(
@@ -89,7 +92,9 @@ export function DisqualifySubmissionDialog({
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent className="space-y-4">
           <Alert severity="warning">
-            This action will mark the submission as DISQUALIFIED, eliminate the team, clear awarded prizes for this team if any, and recalculate ranking if ranking already exists.
+            This action will mark the submission as DISQUALIFIED, eliminate the
+            team, clear awarded prizes for this team if any, and recalculate
+            ranking if ranking already exists.
           </Alert>
 
           <TextField

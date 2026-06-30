@@ -30,7 +30,7 @@ export interface OverturnDisqualificationDialogProps {
   onClose: () => void;
   disqualificationId: UUID;
   isPending: boolean;
-  onConfirm: (values: OverturnFormValues) => Promise<void>;
+  onConfirm: (values: OverturnFormValues) => Promise<any>;
 }
 
 export function OverturnDisqualificationDialog({
@@ -59,14 +59,18 @@ export function OverturnDisqualificationDialog({
 
   const onSubmit = async (values: OverturnFormValues) => {
     try {
-      await onConfirm(values);
-      enqueueSnackbar("Disqualification overturned.", {
-        variant: "success",
-      });
+      const res = await onConfirm(values);
+      enqueueSnackbar(
+        `Disqualification overturned. Ranking recalculated: ${res?.rankingRecalculated ? "Yes" : "No"}.`,
+        {
+          variant: "success",
+        }
+      );
       handleClose();
     } catch (error: unknown) {
       enqueueSnackbar(
-        (error as any)?.response?.data?.message || "Failed to overturn disqualification.",
+        (error as any)?.response?.data?.message ||
+          "Failed to overturn disqualification.",
         { variant: "error" },
       );
     }
@@ -88,7 +92,8 @@ export function OverturnDisqualificationDialog({
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent className="space-y-4">
           <Alert severity="warning">
-            Overturning this decision will restore the submission status and recalculate ranking if the round already has rankings.
+            Overturning this decision will restore the submission status and
+            recalculate ranking if the round already has rankings.
           </Alert>
 
           <TextField
