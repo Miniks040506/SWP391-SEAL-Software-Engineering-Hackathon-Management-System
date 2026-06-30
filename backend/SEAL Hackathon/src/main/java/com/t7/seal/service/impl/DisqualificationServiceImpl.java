@@ -24,8 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -160,5 +159,66 @@ public class DisqualificationServiceImpl implements DisqualificationService {
     @Override
     public DisqualificationResponse overturnDisqualification(UUID disqualificationId, OverturnDisqualificationRequest request, Authentication authentication) {
         return null;
+    }
+
+    //HELPER METHODS
+
+    private String requireText(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException(message);
+        }
+        return value.trim();
+    }
+
+    private String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private Team requireTeam(Submission submission) {
+        if (submission == null || submission.getTeam() == null) {
+            throw new ConflictException("Submission team is missing.");
+        }
+        return submission.getTeam();
+    }
+
+    private Round requireRound(Submission submission) {
+        if (submission == null || submission.getRound() == null) {
+            throw new ConflictException("Submission round is missing.");
+        }
+        return submission.getRound();
+    }
+
+    private HackathonEvent requireEvent(Round round) {
+        if (round == null || round.getEvent() == null) {
+            throw new ConflictException("Round event is missing.");
+        }
+        return round.getEvent();
+    }
+
+    private UUID submissionId(Disqualification disqualification) {
+        return disqualification.getSubmission().getId();
+    }
+
+    private UUID teamId(Disqualification disqualification) {
+        return requireTeam(disqualification.getSubmission()).getId();
+    }
+
+    private UUID roundId(Disqualification disqualification) {
+        return requireRound(disqualification.getSubmission()).getId();
+    }
+
+    private UUID eventId(Disqualification disqualification) {
+        return requireEvent(requireRound(disqualification.getSubmission())).getId();
+    }
+
+    private Map<String, Object> mapOf(Object... keyValues) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            Object value = keyValues[i + 1];
+            if (value != null) {
+                map.put(Objects.toString(keyValues[i]), value);
+            }
+        }
+        return map;
     }
 }
