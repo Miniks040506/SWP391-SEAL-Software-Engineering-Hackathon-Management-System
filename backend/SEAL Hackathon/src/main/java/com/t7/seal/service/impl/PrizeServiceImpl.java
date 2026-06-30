@@ -223,7 +223,9 @@ public class PrizeServiceImpl implements PrizeService {
         return new PrizeResponse(
                 prize.getId(),
                 prize.getEvent().getId(),
+                prize.getEvent().getName(),
                 prize.getTrack() == null ? null : prize.getTrack().getId(),
+                prize.getTrack() == null ? null : prize.getTrack().getName(),
                 prize.getRankPosition(),
                 prize.getTitle(),
                 prize.getDescription(),
@@ -231,6 +233,7 @@ public class PrizeServiceImpl implements PrizeService {
                 prize.getCurrency(),
                 prize.getSponsorName(),
                 prize.getAwardedTeam() == null ? null : prize.getAwardedTeam().getId(),
+                prize.getAwardedTeam() == null ? null : prize.getAwardedTeam().getName(),
                 prize.getAwardedAt()
         );
     }
@@ -258,7 +261,7 @@ public class PrizeServiceImpl implements PrizeService {
         context.put("trackId", trackId == null ? null : trackId.toString());
         context.put("roundId", roundId == null ? null : roundId.toString());
         context.put("reason", reason);
-        
+
         return context;
     }
 }
