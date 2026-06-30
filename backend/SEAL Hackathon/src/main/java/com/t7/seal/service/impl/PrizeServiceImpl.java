@@ -12,6 +12,8 @@ import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.PrizeRepository;
 import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.request.results.AwardPrizeRequest;
+import com.t7.seal.request.results.ClearPrizeAwardRequest;
 import com.t7.seal.request.results.CreatePrizeRequest;
 import com.t7.seal.request.results.UpdatePrizeRequest;
 import com.t7.seal.response.results.PrizeResponse;
@@ -182,6 +184,16 @@ public class PrizeServiceImpl implements PrizeService {
     public PrizeResponse getPrizeById(UUID prizeId) {
         Prize prize = findPrize(prizeId, null, null);
         return toPrizeResponse(prize);
+    }
+
+    @Override
+    public PrizeResponse awardPrize(UUID prizeId, AwardPrizeRequest request, Authentication authentication) {
+        return null;
+    }
+
+    @Override
+    public PrizeResponse clearPrize(UUID prizeId, ClearPrizeAwardRequest request, Authentication authentication) {
+        return null;
     }
 
     //HELPERS
