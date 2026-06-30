@@ -163,9 +163,25 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         return toDisqualificationResponse(disqualification, false, 0);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<DisqualificationResponse> getDisqualificationsByEvent(UUID eventId, UUID roundId, UUID trackId, String appealStatus, Authentication authentication) {
-        return List.of();
+    public List<DisqualificationResponse> getDisqualificationsByEvent(
+            UUID eventId,
+            UUID roundId,
+            UUID trackId,
+            String appealStatus,
+            Authentication authentication
+    ) {
+        currentUserService.getCurrentUser(authentication);
+        AppealStatus status = parseAppealStatus(appealStatus);
+        return disqualificationRepository.findByEventFilters(eventId, roundId, trackId, status)
+                .stream()
+                .map(disqualification -> toDisqualificationResponse(
+                        disqualification,
+                        false,
+                        0
+                ))
+                .toList();
     }
 
     @Override
@@ -289,6 +305,17 @@ public class DisqualificationServiceImpl implements DisqualificationService {
                 rankingRecalculated,
                 clearedAwardCount
         );
+    }
+
+    private AppealStatus parseAppealStatus(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return AppealStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid appeal status: " + value);
+        }
     }
 
     private String requireText(String value, String message) {
