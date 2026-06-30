@@ -63,7 +63,8 @@ public class DisqualificationServiceImpl implements DisqualificationService {
             Authentication authentication
     ) {
         User actor = currentUserService.getCurrentUser(authentication);
-        String reason = requireText(request == null ? null : request.reason(), "Disqualification reason is required.");
+        String reason = requireText(request == null
+                ? null : request.reason(), "Disqualification reason is required.");
         String evidenceUrl = trimToNull(request == null ? null : request.evidenceUrl());
 
         Submission submission = submissionRepository.findDetailById(submissionId)
@@ -421,7 +422,7 @@ public class DisqualificationServiceImpl implements DisqualificationService {
     private void sendOverturnNotification(
             User actor,
             HackathonEvent event,
-            Team team, 
+            Team team,
             Disqualification disqualification,
             String reason
     ) {
