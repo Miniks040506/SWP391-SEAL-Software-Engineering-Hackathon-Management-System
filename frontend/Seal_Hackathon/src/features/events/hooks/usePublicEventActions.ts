@@ -38,10 +38,15 @@ export function usePublicEventActions() {
     navigate(`/standings?eventId=${eventId}`);
   };
 
+  const viewAwards = (eventId: UUID) => {
+    navigate(`/events/${eventId}/awards`);
+  };
+
   return {
     isAuthenticated,
     joinEvent,
     viewPrizes,
+    viewAwards,
     viewResults,
   };
 }

@@ -15,6 +15,7 @@ import { EventMetaGrid } from "@/features/events/components/EventMetaGrid";
 import { EventPrizesCard } from "@/features/events/components/EventPrizesCard";
 import { EventTracksSection } from "@/features/events/components/EventTracksSection";
 import { PublicStatusBadge } from "@/features/events/components/PublicStatusBadge";
+import { PublicEventAwardsSection } from "@/features/events/components/PublicEventAwardsSection";
 import { usePublicEventActions } from "@/features/events/hooks/usePublicEventActions";
 import {
   usePublicEventAnnouncementsQuery,
@@ -65,7 +66,7 @@ export function EventDetailPage() {
     staleTime: 30_000,
   });
 
-  const { joinEvent, viewPrizes, viewResults } = usePublicEventActions();
+  const { joinEvent, viewPrizes, viewAwards, viewResults } = usePublicEventActions();
 
   const announcementViews = useMemo(
     () => toAnnouncementViews(announcementsQuery.data ?? []),
@@ -225,11 +226,11 @@ export function EventDetailPage() {
                 <>
                   <button
                     type="button"
-                    onClick={() => viewPrizes(event.id)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-600 active:scale-95"
+                    onClick={() => viewAwards(event.id)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-amber-100 transition-all hover:bg-amber-600 active:scale-95"
                   >
                     <CardGiftcardIcon style={{ fontSize: 16 }} />
-                    View Prizes
+                    View Awards
                   </button>
 
                   <button
@@ -257,6 +258,13 @@ export function EventDetailPage() {
           </section>
 
           <EventTracksSection event={event} />
+
+          {completed && (
+            <div className="mt-8 space-y-4">
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-300">Awards</h2>
+              <PublicEventAwardsSection eventId={event.id} />
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-8 lg:col-span-4">
