@@ -4,6 +4,7 @@ import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.results.CreateDisqualificationRequest;
@@ -29,6 +30,7 @@ public class DisqualificationServiceImpl implements DisqualificationService {
     private final TeamRepository teamRepository;
     private final PrizeRepository prizeRepository;
     private final RankingRepository rankingRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -148,9 +150,17 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         );
     }
 
+    @Transactional(readOnly = true)
     @Override
     public DisqualificationResponse getDisqualificationById(UUID disqualificationId, Authentication authentication) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        Disqualification disqualification = disqualificationRepository
+                .findByIdWithDetails(disqualificationId)
+                .orElseThrow(() ->
+                        new NotFoundException("Disqualification not found " + disqualificationId));
+
+        ensureCanView(disqualification, actor);
+        return toDisqualificationResponse(disqualification, false, 0);
     }
 
     @Override
@@ -213,6 +223,16 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         }
 
         return prizes.size();
+    }
+
+    private void ensureCanView(Disqualification disqualification, User actor) {
+        if (actor.getRole() == UserRole.ADMIN || actor.getRole() == UserRole.COORDINATOR) {
+            return;
+        }
+        UUID teamId = teamId(disqualification);
+        if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, actor.getId())) {
+            throw new ForbiddenException("You can only view your own team's disqualification.");
+        }
     }
 
     private void sendDisqualificationNotification(User actor, HackathonEvent event, Team team, Disqualification disqualification) {
