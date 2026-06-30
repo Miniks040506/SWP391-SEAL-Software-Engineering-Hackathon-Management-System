@@ -1,8 +1,6 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.domain.AuditActionType;
-import com.t7.seal.domain.SubmissionStatus;
-import com.t7.seal.domain.TeamStatus;
+import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
@@ -46,6 +44,7 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         if (request == null || request.submissionId() == null) {
             throw new BadRequestException("submissionId is required.");
         }
+
         return disqualifySubmission(
                 request.submissionId(),
                 new DisqualifySubmissionRequest(request.reason(), request.evidenceUrl()),
@@ -65,7 +64,9 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         String evidenceUrl = trimToNull(request == null ? null : request.evidenceUrl());
 
         Submission submission = submissionRepository.findDetailById(submissionId)
-                .orElseThrow(() -> new NotFoundException("Submission not found " + submissionId));
+                .orElseThrow(() ->
+                        new NotFoundException("Submission not found " + submissionId));
+
         if (submission.getStatus() == SubmissionStatus.DISQUALIFIED) {
             throw new ConflictException("Submission has already been disqualified.");
         }
@@ -93,6 +94,7 @@ public class DisqualificationServiceImpl implements DisqualificationService {
                 .evidenceUrl(evidenceUrl)
                 .build()
                 : existing;
+
         disqualification.setIssuedBy(actor);
         disqualification.setReason(reason);
         disqualification.setEvidenceUrl(evidenceUrl);
@@ -138,7 +140,12 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         );
 
         sendDisqualificationNotification(actor, event, team, saved);
-        return toDisqualificationResponse(saved, recalculation != null, clearedAwardCount);
+
+        return toDisqualificationResponse(
+                saved,
+                recalculation != null,
+                clearedAwardCount
+        );
     }
 
     @Override
@@ -167,22 +174,28 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         if (round.getGradingLockedAt() == null) {
             return null;
         }
-        boolean hasRankings = !rankingRepository.findByRoundIdAndTrackIdWithDetails(round.getId(), trackId).isEmpty();
+
+        boolean hasRankings = !rankingRepository.
+                findByRoundIdAndTrackIdWithDetails(round.getId(), trackId).isEmpty();
         if (!hasRankings) {
             return null;
         }
+
         return rankingService.calculateRoundRankings(round.getId(), trackId, authentication);
     }
 
     private int clearAwardsForTeam(UUID eventId, Team team, User actor, UUID disqualificationId) {
         List<Prize> prizes = prizeRepository.findAwardedByEventIdAndTeamId(eventId, team.getId());
+
         for (Prize prize : prizes) {
             Map<String, Object> before = mapOf(
                     "awardedTeamId", team.getId().toString(),
                     "awardedAt", prize.getAwardedAt() == null ? null : prize.getAwardedAt().toString()
             );
+
             prize.clearAward();
             prizeRepository.save(prize);
+
             auditLogService.record(
                     actor,
                     AuditActionType.PRIZE_AWARD_CLEARED,
@@ -198,7 +211,24 @@ public class DisqualificationServiceImpl implements DisqualificationService {
                     )
             );
         }
+
         return prizes.size();
+    }
+
+    private void sendDisqualificationNotification(User actor, HackathonEvent event, Team team, Disqualification disqualification) {
+        notificationService.createSystemNotification(
+                actor,
+                event,
+                NotificationType.TEAM_DISQUALIFIED,
+                "Team disqualified",
+                "Team " + team.getName() + " has been disqualified. Reason: "
+                        + disqualification.getReason(),
+                NotificationTargetScope.TEAM,
+                team.getId(),
+                null,
+                NotificationChannel.BOTH,
+                null
+        );
     }
 
     private DisqualificationResponse toDisqualificationResponse(
