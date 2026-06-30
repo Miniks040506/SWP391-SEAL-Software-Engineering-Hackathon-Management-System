@@ -295,6 +295,16 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         }
     }
 
+    private void ensureCanAppeal(Disqualification disqualification, User actor) {
+        if (actor.getRole() == UserRole.ADMIN || actor.getRole() == UserRole.COORDINATOR) {
+            return;
+        }
+        UUID teamId = teamId(disqualification);
+        if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, actor.getId())) {
+            throw new ForbiddenException("You can only appeal your own team's disqualification.");
+        }
+    }
+
     private void sendDisqualificationNotification(User actor, HackathonEvent event, Team team, Disqualification disqualification) {
         notificationService.createSystemNotification(
                 actor,
