@@ -3,18 +3,18 @@ import * as z from "zod";
 export const prizeFormSchema = z
   .object({
     trackId: z.string().optional(),
-    rankPosition: z
-      .number({ required_error: "Rank position is required" })
-      .min(1, "Rank position must be greater than 0"),
+    rankPosition: z.preprocess(
+      (val) => (val === "" || Number.isNaN(val) ? undefined : Number(val)),
+      z.number({ required_error: "Rank position is required" }).min(1, "Rank position must be greater than 0")
+    ),
     title: z
       .string({ required_error: "Prize title is required" })
       .min(1, "Prize title is required"),
     description: z.string().optional(),
-    value: z
-      .number()
-      .min(0, "Value must not be negative")
-      .optional()
-      .nullable(),
+    value: z.preprocess(
+      (val) => (val === "" || Number.isNaN(val) ? null : Number(val)),
+      z.number().min(0, "Value must not be negative").optional().nullable()
+    ),
     currency: z.string().optional().nullable(),
     sponsorName: z.string().optional(),
   })

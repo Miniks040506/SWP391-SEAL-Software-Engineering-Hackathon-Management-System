@@ -107,37 +107,10 @@ export function CoordinatorEditEventPage() {
               Edit event information, tracks, rounds, mentors, judges, and prizes.
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="contained"
-              startIcon={<FactCheckOutlinedIcon />}
-              onClick={() => navigate(`/coordinator/events/${eventId}/calibrations`)}
-              sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
-            >
-              Manage Calibration
-            </Button>
-            <Button
-              variant="contained"
-              color="secondary"
-              startIcon={<AssessmentOutlinedIcon />}
-              onClick={() => navigate(`/coordinator/events/${eventId}/grading-progress`)}
-              sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
-            >
-              Grading Progress
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
-              startIcon={<EmojiEventsIcon />}
-              onClick={() => navigate(`/coordinator/events/${eventId}/awards`)}
-              sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2, bgcolor: "white" }}
-            >
-              Awards
-            </Button>
-          </div>
         </div>
       </header>
 
+      {/* Tab bar */}
       <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -153,6 +126,34 @@ export function CoordinatorEditEventPage() {
             </button>
           );
         })}
+      </div>
+
+      {/* Action buttons row */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="contained"
+          startIcon={<FactCheckOutlinedIcon />}
+          onClick={() => navigate(`/coordinator/events/${eventId}/calibrations`)}
+          sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+        >
+          Manage Calibration
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<AssessmentOutlinedIcon />}
+          onClick={() => navigate(`/coordinator/events/${eventId}/grading-progress`)}
+          sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+        >
+          Grading Progress
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<EmojiEventsIcon />}
+          onClick={() => navigate(`/coordinator/events/${eventId}/awards`)}
+          sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+        >
+          Awards
+        </Button>
       </div>
 
       {activeTab === "INFO" && <InfoTab eventId={eventId} event={eventQuery.data!} onUpdated={invalidateEditData} canEdit={editRules.canEditInfo} readonlyReason={editRules.infoReason} />}

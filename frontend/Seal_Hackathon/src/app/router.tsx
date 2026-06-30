@@ -65,9 +65,8 @@ import {
   CoordinatorEditEventPage,
   CoordinatorEventsPage,
   CoordinatorAnnouncementPage,
-  CoordinatorPrizeSetupPage,
   CoordinatorAwardManagementPage,
-  CoordinatorPrizesRedirectPage,
+  CoordinatorAwardsRedirectPage,
 } from "@/features/coordinator";
 
 import {
@@ -188,7 +187,6 @@ export const router = createBrowserRouter([
       { path: "events", element: <CoordinatorEventsPage /> },
       { path: "events/create", element: <CoordinatorCreateEventPage /> },
       { path: "events/:eventId/edit", element: <CoordinatorEditEventPage /> },
-      { path: "events/:eventId/prizes", element: <CoordinatorPrizeSetupPage /> },
       { path: "events/:eventId/awards", element: <CoordinatorAwardManagementPage /> },
       {
         path: "events/:eventId/criteria",
@@ -217,10 +215,6 @@ export const router = createBrowserRouter([
       {
         path: "grading-progress",
         element: <GradingProgressRedirectPage />,
-      },
-      {
-        path: "prizes",
-        element: <CoordinatorPrizesRedirectPage />,
       },
       {
         path: "events/:eventId/rankings",
@@ -276,7 +270,7 @@ export const router = createBrowserRouter([
         element: <CoordinatorSubmissionsPage />,
       },
       { path: "judging", element: <NotFoundPage /> },
-      { path: "prizes", element: <CoordinatorPrizesRedirectPage /> },
+      { path: "awards", element: <CoordinatorAwardsRedirectPage /> },
       { path: "criteria", element: <ScoringCriteriaManagementPage /> },
       { path: "analytics", element: <NotFoundPage /> },
       { path: "announcement", element: <CoordinatorAnnouncementPage /> },

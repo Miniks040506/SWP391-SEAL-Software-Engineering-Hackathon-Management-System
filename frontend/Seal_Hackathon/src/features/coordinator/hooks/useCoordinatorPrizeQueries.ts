@@ -3,7 +3,7 @@ import { prizeApi } from "@/api/prize.api";
 import { mockCoordinatorService } from "../mocks/coordinatorService.mock";
 import type { UUID } from "@/types/common.types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const activePrizeApi = USE_MOCK ? (mockCoordinatorService as any).prizeApi : prizeApi;
 
 export const coordinatorPrizeKeys = {

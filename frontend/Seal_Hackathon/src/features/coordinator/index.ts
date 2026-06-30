@@ -6,3 +6,4 @@ export { CoordinatorAnnouncementPage } from "./pages/CoordinatorAnnouncementPage
 export { CoordinatorPrizeSetupPage } from "./pages/CoordinatorPrizeSetupPage";
 export { CoordinatorAwardManagementPage } from "./pages/CoordinatorAwardManagementPage";
 export { CoordinatorPrizesRedirectPage } from "./pages/CoordinatorPrizesRedirectPage";
+export { CoordinatorAwardsRedirectPage } from "./pages/CoordinatorAwardsRedirectPage";

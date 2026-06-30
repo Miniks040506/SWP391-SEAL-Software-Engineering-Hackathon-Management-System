@@ -116,7 +116,7 @@ export const mockCoordinatorService = {
   prizeApi: {
     getPrizesByEvent: async (id: UUID) => {
       await delay(300);
-      return prizesMock;
+      return [...prizesMock];
     },
     getPrizeById: async (id: UUID) => {
       await delay(300);

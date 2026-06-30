@@ -12,7 +12,7 @@ import type {
   UpdatePrizeRequest,
 } from "@/types/prize.types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const activePrizeApi = USE_MOCK ? (mockCoordinatorService as any).prizeApi : prizeApi;
 
 export function useCoordinatorPrizeMutations(eventId?: UUID) {

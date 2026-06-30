@@ -1,14 +1,6 @@
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import IconButton from "@mui/material/IconButton";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import Tooltip from "@mui/material/Tooltip";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import type { PrizeResponse } from "@/types/prize.types";
 import { PrizeScopeBadge } from "./PrizeScopeBadge";
 import { PrizeValueDisplay } from "./PrizeValueDisplay";
@@ -27,100 +19,96 @@ export const PrizeSetupTable = ({
     onEdit,
     onDelete,
 }: PrizeSetupTableProps) => {
-    if (!prizes || prizes.length === 0) {
-        return (
-            <div className="rounded-xl border border-dashed border-gray-300 p-12 text-center">
-                <p className="text-gray-500">No prizes have been configured yet.</p>
-            </div>
-        );
-    }
-
     return (
-        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
-            <Table sx={{ minWidth: 650 }} aria-label="prize setup table">
-                <TableHead sx={{ bgcolor: "grey.50" }}>
-                    <TableRow>
-                        <TableCell sx={{ fontWeight: "bold" }}>Rank</TableCell>
-                        <TableCell sx={{ fontWeight: "bold" }}>Scope</TableCell>
-                        <TableCell sx={{ fontWeight: "bold" }}>Prize Title</TableCell>
-                        <TableCell sx={{ fontWeight: "bold" }}>Value</TableCell>
-                        <TableCell sx={{ fontWeight: "bold" }}>Sponsor</TableCell>
-                        <TableCell sx={{ fontWeight: "bold" }}>Awarded Team</TableCell>
-                        <TableCell sx={{ fontWeight: "bold", width: 100 }} align="center">
-                            Actions
-                        </TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {prizes.map((prize) => {
-                        const isAwarded = Boolean(prize.awardedTeamId);
-
-                        return (
-                            <TableRow key={prize.id} hover>
-                                <TableCell>
-                                    <span className="font-bold text-gray-700">
-                                        {prize.rankPosition}
-                                    </span>
-                                </TableCell>
-                                <TableCell>
-                                    <PrizeScopeBadge trackName={prize.trackName} />
-                                </TableCell>
-                                <TableCell>
-                                    <span className="font-medium">{prize.title}</span>
-                                </TableCell>
-                                <TableCell>
-                                    <PrizeValueDisplay value={prize.value} currency={prize.currency} />
-                                </TableCell>
-                                <TableCell>
-                                    <span className="text-sm text-gray-600">
-                                        {prize.sponsorName || "-"}
-                                    </span>
-                                </TableCell>
-                                <TableCell>
-                                    <AwardedTeamChip teamName={prize.awardedTeamName} />
-                                </TableCell>
-                                <TableCell align="center">
-                                    <div className="flex justify-center gap-1">
-                                        <Tooltip title={isLocked ? "Event is locked" : "Edit prize"}>
-                                            <span>
-                                                <IconButton
-                                                    color="primary"
-                                                    size="small"
-                                                    onClick={() => onEdit(prize)}
-                                                    disabled={isLocked}
-                                                >
-                                                    <EditIcon fontSize="small" />
-                                                </IconButton>
-                                            </span>
-                                        </Tooltip>
-
-                                        <Tooltip
-                                            title={
-                                                isLocked
-                                                    ? "Event is locked"
-                                                    : isAwarded
-                                                        ? "Clear award before deleting this prize"
-                                                        : "Delete prize"
-                                            }
-                                        >
-                                            <span>
-                                                <IconButton
-                                                    color="error"
-                                                    size="small"
-                                                    onClick={() => onDelete(prize)}
-                                                    disabled={isLocked || isAwarded}
-                                                >
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </span>
-                                        </Tooltip>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })}
-                </TableBody>
-            </Table>
-        </TableContainer>
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+                <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                        <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Rank</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Scope</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Prize Title</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Value</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Sponsor</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Awarded Team</th>
+                        <th className="px-5 py-3.5 text-center text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {!prizes || prizes.length === 0 ? (
+                        <tr>
+                            <td colSpan={7} className="px-5 py-12 text-center text-sm font-medium text-slate-400">
+                                No prizes have been configured yet.
+                            </td>
+                        </tr>
+                    ) : (
+                        prizes.map((prize) => {
+                            const isAwarded = Boolean(prize.awardedTeamId);
+                            return (
+                                <tr key={prize.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                    <td className="px-5 py-4">
+                                        <span className="text-base font-black text-slate-700 dark:text-slate-200">
+                                            #{prize.rankPosition ?? "—"}
+                                        </span>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <PrizeScopeBadge trackName={prize.trackName} />
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <span className="font-bold text-slate-900 dark:text-white">{prize.title}</span>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <PrizeValueDisplay value={prize.value} currency={prize.currency} />
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                                            {prize.sponsorName || "—"}
+                                        </span>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <AwardedTeamChip teamName={prize.awardedTeamName} />
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Tooltip title={isLocked ? "Event is locked" : "Edit prize"}>
+                                                <span>
+                                                    <button
+                                                        title="Edit"
+                                                        onClick={() => onEdit(prize)}
+                                                        disabled={isLocked}
+                                                        className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition hover:bg-slate-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-blue-400"
+                                                    >
+                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                    </button>
+                                                </span>
+                                            </Tooltip>
+                                            <Tooltip
+                                                title={
+                                                    isLocked
+                                                        ? "Event is locked"
+                                                        : isAwarded
+                                                            ? "Clear award before deleting this prize"
+                                                            : "Delete prize"
+                                                }
+                                            >
+                                                <span>
+                                                    <button
+                                                        title="Delete"
+                                                        onClick={() => onDelete(prize)}
+                                                        disabled={isLocked || isAwarded}
+                                                        className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-rose-900/50 dark:hover:bg-rose-900/20 dark:hover:text-rose-400"
+                                                    >
+                                                        <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                                                    </button>
+                                                </span>
+                                            </Tooltip>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })
+                    )}
+                </tbody>
+            </table>
+        </div>
     );
 };

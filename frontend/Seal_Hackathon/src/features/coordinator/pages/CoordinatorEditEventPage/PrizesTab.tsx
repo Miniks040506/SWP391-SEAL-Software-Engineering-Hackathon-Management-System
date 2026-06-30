@@ -1,22 +1,26 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
-import {
-  Alert,
-  Button,
-  CircularProgress,
-  IconButton,
-  MenuItem,
-  TextField,
-} from "@mui/material";
-import { enqueueSnackbar } from "notistack";
-import { useMemo, useState } from "react";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { Alert, Button, CircularProgress, ToggleButtonGroup, ToggleButton } from "@mui/material";
+import { useState, useMemo } from "react";
 
-import { prizeApi } from "@/api/prize.api";
-import { prizeCurrencyOptions } from "@/features/coordinator/schemas/createEvent.schema";
+import { useCoordinatorPrizesQuery } from "../../hooks/useCoordinatorPrizeQueries";
+import { useCoordinatorPrizeMutations } from "../../hooks/useCoordinatorPrizeMutations";
+import { useCoordinatorMultipleTeamsQueries } from "../../hooks/useCoordinatorEventQueries";
+
+import { PrizeSetupTable } from "../../components/prizes/PrizeSetupTable";
+import { PrizeFormDialog } from "../../components/prizes/PrizeFormDialog";
+import { DeletePrizeConfirmDialog } from "../../components/prizes/DeletePrizeConfirmDialog";
+
+import { AwardManagementTable } from "../../components/prizes/AwardManagementTable";
+import { ManualAwardDialog } from "../../components/prizes/ManualAwardDialog";
+import { ClearAwardConfirmDialog } from "../../components/prizes/ClearAwardConfirmDialog";
+import { PrizeFilterBar, defaultPrizeFilters, applyPrizeFilters } from "../../components/prizes/PrizeFilterBar";
+import type { PrizeFilterState } from "../../components/prizes/PrizeFilterBar";
+
 import type { UUID } from "@/types/common.types";
 import type { PrizeResponse } from "@/types/prize.types";
 import type { TrackResponse } from "@/types/track.types";
+import type { PrizeFormValues, ManualAwardFormValues, ClearAwardFormValues } from "../../schemas/prize.schema";
 
 type PrizesTabProps = {
   eventId: UUID;
@@ -28,406 +32,229 @@ type PrizesTabProps = {
   readonlyReason?: string;
 };
 
-type PrizeForm = {
-  title: string;
-  trackId: string;
-  rankPosition: string;
-  value: string;
-  currency: string;
-  sponsorName: string;
-  description: string;
-};
-
-const emptyPrizeForm: PrizeForm = {
-  title: "",
-  trackId: "",
-  rankPosition: "",
-  value: "",
-  currency: "VND",
-  sponsorName: "",
-  description: "",
-};
-
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "12px",
-  },
-};
-
-function getId(value: unknown) {
-  return (value as { id: UUID }).id;
-}
-
-function getTrackName(track: TrackResponse) {
-  const raw = track as { name?: string; trackName?: string };
-  return raw.name ?? raw.trackName ?? "Untitled track";
-}
-
-function getPrizeTitle(prize: PrizeResponse) {
-  return (
-    (prize as { title?: string; name?: string }).title ??
-    (prize as { name?: string }).name ??
-    "Untitled prize"
-  );
-}
-
-function formatPrizeValue(prize: PrizeResponse) {
-  const value = (prize as { value?: number }).value;
-  const currency = (prize as { currency?: string }).currency ?? "";
-
-  if (value == null) return "—";
-
-  return `${Number(value).toLocaleString("vi-VN")} ${currency}`.trim();
-}
-
-function getPrizeTrackId(prize: PrizeResponse) {
-  return ((prize as { trackId?: UUID | null }).trackId ?? "") as UUID | "";
-}
-
-function groupPrizesByTrack(prizes: PrizeResponse[], tracks: TrackResponse[]) {
-  const eventPrizes = prizes.filter((prize) => !getPrizeTrackId(prize));
-  const trackGroups = tracks.map((track) => ({
-    track,
-    prizes: prizes.filter((prize) => getPrizeTrackId(prize) === getId(track)),
-  }));
-
-  return { eventPrizes, trackGroups };
-}
-
 export function PrizesTab({
   eventId,
   tracks,
-  prizes,
-  isLoading,
-  onChanged,
   canEdit,
   readonlyReason,
 }: PrizesTabProps) {
-  const [form, setForm] = useState<PrizeForm>(emptyPrizeForm);
+  // Use the mock-aware hook instead of prizeApi directly
+  const { data: prizes = [], isLoading } = useCoordinatorPrizesQuery(eventId);
+  const { createPrize, updatePrize, deletePrize, manualAward, clearAward } = useCoordinatorPrizeMutations(eventId);
 
-  const groupedPrizes = useMemo(
-    () => groupPrizesByTrack(prizes, tracks),
-    [prizes, tracks],
-  );
+  const teamsQuery = useCoordinatorMultipleTeamsQueries([eventId]);
+  const teams = teamsQuery[0]?.data?.content || [];
 
-  const handleCreate = async () => {
-    if (!canEdit) return;
+  const [viewMode, setViewMode] = useState<"SETUP" | "AWARD">("SETUP");
+  const [filters, setFilters] = useState<PrizeFilterState>(defaultPrizeFilters);
 
-    if (!form.title.trim()) {
-      enqueueSnackbar("Prize title is required.", { variant: "error" });
-      return;
-    }
+  const filteredPrizes = useMemo(() => applyPrizeFilters(prizes, filters), [prizes, filters]);
 
-    if (!form.rankPosition || Number(form.rankPosition) < 1) {
-      enqueueSnackbar("Rank position must be greater than 0.", {
-        variant: "error",
-      });
-      return;
-    }
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedPrize, setSelectedPrize] = useState<PrizeResponse | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [prizeToDelete, setPrizeToDelete] = useState<PrizeResponse | null>(null);
 
-    try {
-      await prizeApi.createPrize({
-        eventId,
-        title: form.title.trim(),
-        trackId: form.trackId || undefined,
-        rankPosition: Number(form.rankPosition),
-        value: form.value ? Number(form.value) : undefined,
-        currency: form.currency,
-        sponsorName: form.sponsorName.trim() || undefined,
-        description: form.description.trim() || undefined,
-      });
+  const [isManualAwardOpen, setIsManualAwardOpen] = useState(false);
+  const [selectedPrizeForAward, setSelectedPrizeForAward] = useState<PrizeResponse | null>(null);
+  const [isClearAwardOpen, setIsClearAwardOpen] = useState(false);
+  const [selectedPrizeForClear, setSelectedPrizeForClear] = useState<PrizeResponse | null>(null);
 
-      setForm(emptyPrizeForm);
-      enqueueSnackbar("Prize created.", { variant: "success" });
-      await onChanged();
-    } catch {
-      enqueueSnackbar("Failed to create prize.", { variant: "error" });
-    }
+  const isLocked = !canEdit;
+
+  const handleOpenCreate = () => {
+    setSelectedPrize(null);
+    setIsFormOpen(true);
   };
 
-  const handleDelete = async (prizeId: UUID) => {
-    if (!canEdit) return;
-
-    try {
-      await prizeApi.deletePrize(prizeId);
-      enqueueSnackbar("Prize deleted.", { variant: "success" });
-      await onChanged();
-    } catch {
-      enqueueSnackbar("Failed to delete prize.", { variant: "error" });
-    }
+  const handleOpenEdit = (prize: PrizeResponse) => {
+    setSelectedPrize(prize);
+    setIsFormOpen(true);
   };
 
-  const renderPrizeList = (items: PrizeResponse[]) => {
-    if (items.length === 0) {
-      return (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400 dark:border-slate-700 dark:bg-slate-800/40">
-          No prizes in this group.
-        </div>
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setSelectedPrize(null);
+  };
+
+  const handleFormSubmit = (values: PrizeFormValues) => {
+    if (selectedPrize) {
+      const { trackId, value, currency, ...rest } = values;
+      updatePrize.mutate(
+        {
+          prizeId: selectedPrize.id,
+          payload: { ...rest, value: value ?? undefined, currency: currency ?? undefined },
+        },
+        { onSuccess: handleCloseForm }
+      );
+    } else {
+      createPrize.mutate(
+        { ...values, eventId, trackId: values.trackId || undefined },
+        { onSuccess: handleCloseForm }
       );
     }
+  };
 
-    return (
-      <div className="space-y-2">
-        {items.map((prize) => (
-          <div
-            key={getId(prize)}
-            className="flex items-start justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50"
-          >
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-black text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                  #{(prize as { rankPosition?: number }).rankPosition ?? "—"}
-                </span>
-                <p className="font-black text-slate-950 dark:text-white">
-                  {getPrizeTitle(prize)}
-                </p>
-              </div>
+  const handleOpenDelete = (prize: PrizeResponse) => {
+    setPrizeToDelete(prize);
+    setIsDeleteOpen(true);
+  };
 
-              <p className="mt-1 text-sm font-semibold text-slate-500">
-                {formatPrizeValue(prize)}
-              </p>
+  const handleCloseDelete = () => {
+    setIsDeleteOpen(false);
+    setPrizeToDelete(null);
+  };
 
-              {(prize as { sponsorName?: string }).sponsorName && (
-                <p className="mt-1 text-xs font-semibold text-slate-400">
-                  Sponsor: {(prize as { sponsorName?: string }).sponsorName}
-                </p>
-              )}
+  const handleDeleteConfirm = (prizeId: string) => {
+    deletePrize.mutate(prizeId, { onSuccess: handleCloseDelete });
+  };
 
-              {(prize as { description?: string }).description && (
-                <p className="mt-1 line-clamp-2 text-sm text-slate-400">
-                  {(prize as { description?: string }).description}
-                </p>
-              )}
-            </div>
+  const handleManualAwardSubmit = (values: ManualAwardFormValues) => {
+    if (!selectedPrizeForAward) return;
+    manualAward.mutate(
+      { prizeId: selectedPrizeForAward.id, payload: values },
+      { onSuccess: () => setIsManualAwardOpen(false) }
+    );
+  };
 
-            {canEdit && (
-              <IconButton
-                color="error"
-                onClick={() => handleDelete(getId(prize))}
-              >
-                <DeleteOutlineOutlinedIcon />
-              </IconButton>
-            )}
-          </div>
-        ))}
-      </div>
+  const handleClearAwardSubmit = (values: ClearAwardFormValues) => {
+    if (!selectedPrizeForClear) return;
+    clearAward.mutate(
+      { prizeId: selectedPrizeForClear.id, payload: values },
+      { onSuccess: () => setIsClearAwardOpen(false) }
     );
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="border-b border-slate-100 px-7 py-5 dark:border-slate-700">
-        <h2 className="text-lg font-extrabold text-slate-950 dark:text-white">
-          Prizes
-        </h2>
+    <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-extrabold text-slate-950 dark:text-white">Prizes</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">
+            Configure prizes for the whole event or a specific track.
+          </p>
+        </div>
 
-        <p className="mt-2 text-sm font-medium text-slate-500">
-          Manage prizes for the whole event or a specific track. Saved prizes
-          are grouped below.
-        </p>
-      </div>
-
-      <div className="space-y-6 px-7 py-6">
-        {!canEdit && readonlyReason && (
-          <Alert severity="warning">{readonlyReason}</Alert>
-        )}
-
-        {canEdit && (
-          <div className="rounded-2xl border border-dashed border-slate-200 p-5 dark:border-slate-700">
-            <h3 className="mb-4 font-black text-slate-800 dark:text-white">
-              Add Prize
-            </h3>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <TextField
-                label="Prize title"
-                value={form.title}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    title: event.target.value,
-                  }))
-                }
-                size="small"
-                sx={textFieldSx}
-              />
-
-              <TextField
-                label="Track"
-                select
-                value={form.trackId}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    trackId: event.target.value,
-                  }))
-                }
-                size="small"
-                sx={textFieldSx}
-              >
-                <MenuItem value="">Whole event prize</MenuItem>
-                {tracks.map((track) => (
-                  <MenuItem key={getId(track)} value={getId(track)}>
-                    {getTrackName(track)}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                label="Rank position"
-                type="number"
-                value={form.rankPosition}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    rankPosition: event.target.value,
-                  }))
-                }
-                size="small"
-                sx={textFieldSx}
-                required
-              />
-
-              <TextField
-                label="Value"
-                type="number"
-                value={form.value}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    value: event.target.value,
-                  }))
-                }
-                size="small"
-                sx={textFieldSx}
-              />
-
-              <TextField
-                label="Currency"
-                select
-                value={form.currency}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    currency: event.target.value,
-                  }))
-                }
-                size="small"
-                sx={textFieldSx}
-              >
-                {prizeCurrencyOptions.map((currency) => (
-                  <MenuItem key={currency} value={currency}>
-                    {currency}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                label="Sponsor"
-                value={form.sponsorName}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    sponsorName: event.target.value,
-                  }))
-                }
-                size="small"
-                sx={textFieldSx}
-              />
-
-              <TextField
-                label="Description"
-                value={form.description}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    description: event.target.value,
-                  }))
-                }
-                multiline
-                minRows={3}
-                className="lg:col-span-2"
-                size="small"
-                sx={textFieldSx}
-              />
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <Button
-                variant="outlined"
-                startIcon={<AddOutlinedIcon />}
-                onClick={handleCreate}
-                sx={{
-                  borderRadius: "12px",
-                  textTransform: "none",
-                  fontWeight: 900,
-                }}
-              >
-                Add Prize
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="flex justify-center py-12">
-            <CircularProgress />
-          </div>
-        )}
-
-        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
-          <div className="bg-blue-500 px-6 py-4 text-sm font-extrabold uppercase tracking-wide text-white">
-            Prize groups
-          </div>
-
-          <div className="border-t border-slate-100 px-6 py-5 dark:border-slate-700">
-            <div className="mb-4 flex items-center gap-2">
-              <EmojiEventsOutlinedIcon
-                fontSize="small"
-                className="text-blue-500"
-              />
-              <div>
-                <p className="font-extrabold text-slate-900 dark:text-white">
-                  Whole Event
-                </p>
-                <p className="text-sm text-slate-500">Event-level prizes.</p>
-              </div>
-            </div>
-
-            {renderPrizeList(groupedPrizes.eventPrizes)}
-          </div>
-
-          {groupedPrizes.trackGroups.map(({ track, prizes: trackPrizes }) => (
-            <div
-              key={getId(track)}
-              className="border-t border-slate-100 px-6 py-5 dark:border-slate-700"
+        <div className="flex flex-col sm:flex-row gap-3 items-center">
+          {viewMode === "SETUP" && (
+            <Button
+              variant="contained"
+              startIcon={isLocked ? <LockOutlinedIcon /> : <AddOutlinedIcon />}
+              onClick={handleOpenCreate}
+              disabled={isLocked}
+              sx={{
+                bgcolor: "#2563eb",
+                borderRadius: "12px",
+                px: 2.5,
+                py: 1,
+                textTransform: "none",
+                fontWeight: 900,
+                flexShrink: 0,
+                "&:hover": { bgcolor: "#1d4ed8" },
+                "&:disabled": { bgcolor: "#e2e8f0" },
+              }}
             >
-              <div className="mb-4">
-                <p className="font-extrabold text-slate-900 dark:text-white">
-                  {getTrackName(track)}
-                </p>
-                <p className="mt-1 line-clamp-2 text-sm text-slate-500">
-                  {(track as { description?: string }).description ||
-                    "No description"}
-                </p>
-                <p className="mt-2 text-xs font-semibold text-slate-400">
-                  {trackPrizes.length} prize(s)
-                </p>
-              </div>
-
-              {renderPrizeList(trackPrizes)}
-            </div>
-          ))}
-
-          {!isLoading && prizes.length === 0 && tracks.length === 0 && (
-            <div className="border-t border-slate-100 px-6 py-8 text-center dark:border-slate-700">
-              <p className="text-sm font-semibold text-slate-500">
-                No prizes yet.
-              </p>
-            </div>
+              {isLocked ? "Locked" : "Create Prize"}
+            </Button>
           )}
+
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, val) => val && setViewMode(val)}
+            size="small"
+            sx={{ bgcolor: "white" }}
+          >
+            <ToggleButton value="SETUP" sx={{ textTransform: "none", fontWeight: 600, px: 3 }}>
+              Setup
+            </ToggleButton>
+            <ToggleButton value="AWARD" sx={{ textTransform: "none", fontWeight: 600, px: 3 }}>
+              Awards
+            </ToggleButton>
+          </ToggleButtonGroup>
         </div>
       </div>
+
+      {/* Alerts */}
+      {!canEdit && readonlyReason && (
+        <Alert severity="warning" sx={{ borderRadius: "12px" }}>{readonlyReason}</Alert>
+      )}
+
+      {canEdit && prizes.length === 0 && !isLoading && (
+        <Alert severity="warning" sx={{ borderRadius: "12px", fontWeight: 600 }}>
+          No prizes configured yet. Add prizes before publishing results.
+        </Alert>
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <div className="flex justify-center py-12">
+          <CircularProgress />
+        </div>
+      )}
+
+      {/* Prize table */}
+      {!isLoading && (
+        <div className="rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700">
+          <PrizeFilterBar filters={filters} onChange={setFilters} tracks={tracks} />
+          {viewMode === "SETUP" ? (
+            <PrizeSetupTable
+              prizes={filteredPrizes}
+              isLocked={isLocked}
+              onEdit={handleOpenEdit}
+              onDelete={handleOpenDelete}
+            />
+          ) : (
+            <AwardManagementTable
+              prizes={filteredPrizes}
+              onManualAward={(prize) => {
+                setSelectedPrizeForAward(prize);
+                setIsManualAwardOpen(true);
+              }}
+              onClearAward={(prize) => {
+                setSelectedPrizeForClear(prize);
+                setIsClearAwardOpen(true);
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Dialogs */}
+      <PrizeFormDialog
+        open={isFormOpen}
+        tracks={tracks}
+        initialPrize={selectedPrize}
+        isSubmitting={createPrize.isPending || updatePrize.isPending}
+        onClose={handleCloseForm}
+        onSubmit={handleFormSubmit}
+      />
+
+      <DeletePrizeConfirmDialog
+        open={isDeleteOpen}
+        prize={prizeToDelete}
+        isDeleting={deletePrize.isPending}
+        onClose={handleCloseDelete}
+        onConfirm={handleDeleteConfirm}
+      />
+
+      <ManualAwardDialog
+        open={isManualAwardOpen}
+        prize={selectedPrizeForAward}
+        teams={teams}
+        isSubmitting={manualAward.isPending}
+        onClose={() => setIsManualAwardOpen(false)}
+        onSubmit={handleManualAwardSubmit}
+      />
+
+      <ClearAwardConfirmDialog
+        open={isClearAwardOpen}
+        prize={selectedPrizeForClear}
+        isSubmitting={clearAward.isPending}
+        onClose={() => setIsClearAwardOpen(false)}
+        onSubmit={handleClearAwardSubmit}
+      />
     </section>
   );
 }
