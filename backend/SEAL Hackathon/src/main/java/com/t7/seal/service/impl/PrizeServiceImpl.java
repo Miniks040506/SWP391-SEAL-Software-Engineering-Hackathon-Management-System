@@ -186,16 +186,20 @@ public class PrizeServiceImpl implements PrizeService {
         return toPrizeResponse(prize);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public PrizeResponse awardPrize(UUID prizeId, AwardPrizeRequest request, Authentication authentication) {
+
         return null;
     }
 
+    @Transactional(readOnly = true)
     @Override
     public PrizeResponse clearPrize(UUID prizeId, ClearPrizeAwardRequest request, Authentication authentication) {
         return null;
     }
 
+    @Transactional
     @Override
     public List<PrizeAssignmentResponse> assignPrizesFromRanking(UUID eventId, AssignPrizesFromRankingRequest request, Authentication authentication) {
         return List.of();
