@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
-import AddIcon from "@mui/icons-material/Add";
+import { Button, CircularProgress, Alert } from "@mui/material";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 import { useCoordinatorEventDetailQuery, useCoordinatorEventTracksQuery } from "../hooks/useCoordinatorEventQueries";
 import { useCoordinatorPrizesQuery } from "../hooks/useCoordinatorPrizeQueries";
@@ -54,13 +52,13 @@ export const CoordinatorPrizeSetupPage = () => {
     if (selectedPrize) {
       const { trackId, value, currency, ...rest } = values;
       updatePrize.mutate(
-        { 
-          prizeId: selectedPrize.id, 
-          payload: { 
+        {
+          prizeId: selectedPrize.id,
+          payload: {
             ...rest,
             value: value ?? undefined,
             currency: currency ?? undefined,
-          } 
+          }
         },
         { onSuccess: handleCloseForm }
       );
@@ -90,47 +88,58 @@ export const CoordinatorPrizeSetupPage = () => {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
   if (!event) {
     return (
-      <Alert severity="error">Event not found.</Alert>
+      <Alert severity="error" sx={{ borderRadius: "12px" }}>Event not found.</Alert>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Prize Setup</h1>
-          <p className="text-sm text-gray-500">
-            {event.name} • {event.status}
+          <h1 className="text-3xl font-black text-slate-950 dark:text-white">
+            Prize Setup
+          </h1>
+          <p className="mt-2 text-base font-medium text-slate-500 dark:text-slate-400">
+            Configure prizes for <span className="font-bold text-slate-700 dark:text-slate-200">{event.name}</span>
           </p>
         </div>
 
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={isLocked ? <LockOutlinedIcon /> : <AddOutlinedIcon />}
           onClick={handleOpenCreateForm}
           disabled={isLocked}
-          sx={{ fontWeight: "bold" }}
+          sx={{
+            bgcolor: "#2563eb",
+            borderRadius: "12px",
+            px: 3,
+            py: 1.2,
+            textTransform: "none",
+            fontWeight: 900,
+            "&:hover": { bgcolor: "#1d4ed8" },
+            "&:disabled": { bgcolor: "#e2e8f0" },
+          }}
         >
-          Create Prize
+          {isLocked ? "Locked" : "Create Prize"}
         </Button>
-      </div>
+      </header>
 
       {prizes.length === 0 && !isLocked && (
-        <Alert severity="warning">
-          No prizes have been configured for this event. You should configure prizes before result publication.
+        <Alert severity="warning" sx={{ borderRadius: "12px", fontWeight: 600 }}>
+          No prizes have been configured for this event. Configure prizes before publishing results.
         </Alert>
       )}
 
       {isLocked && (
-        <Alert severity="info">
+        <Alert severity="info" sx={{ borderRadius: "12px", fontWeight: 600 }}>
           Prize setup is locked because the event results have been published.
         </Alert>
       )}

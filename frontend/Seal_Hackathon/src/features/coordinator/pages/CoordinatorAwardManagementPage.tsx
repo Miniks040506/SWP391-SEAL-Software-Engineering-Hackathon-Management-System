@@ -1,26 +1,11 @@
 import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import CircularProgress from "@mui/material/CircularProgress";
-import Alert from "@mui/material/Alert";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-
-import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import ClearIcon from "@mui/icons-material/Clear";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button, CircularProgress, Alert } from "@mui/material";
+import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
+import AutoFixHighOutlinedIcon from "@mui/icons-material/AutoFixHighOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 
 import {
   useCoordinatorEventDetailQuery,
@@ -41,8 +26,24 @@ import { AwardedTeamChip } from "../components/prizes/AwardedTeamChip";
 import type { PrizeResponse } from "@/types/prize.types";
 import type { AssignPrizesFromRankingFormValues, ManualAwardFormValues, ClearAwardFormValues } from "../schemas/prize.schema";
 
+type StatCardProps = {
+  label: string;
+  value: string | number;
+  colorClass: string;
+};
+
+function StatCard({ label, value, colorClass }: StatCardProps) {
+  return (
+    <div className={`rounded-2xl border p-5 ${colorClass}`}>
+      <p className="text-sm font-bold uppercase tracking-widest opacity-70">{label}</p>
+      <p className="mt-2 text-4xl font-black">{value}</p>
+    </div>
+  );
+}
+
 export const CoordinatorAwardManagementPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
+  const navigate = useNavigate();
 
   const { data: event, isLoading: isLoadingEvent } = useCoordinatorEventDetailQuery(eventId);
   const { data: prizes = [], isLoading: isLoadingPrizes, refetch: refetchPrizes, isRefetching } = useCoordinatorPrizesQuery(eventId);
@@ -61,14 +62,12 @@ export const CoordinatorAwardManagementPage = () => {
   const lastAssignedAt = useMemo(() => {
     const awarded = prizes.filter(p => p.awardedAt).map(p => new Date(p.awardedAt!).getTime());
     if (awarded.length === 0) return null;
-    return new Date(Math.max(...awarded)).toLocaleString();
+    return new Date(Math.max(...awarded)).toLocaleDateString();
   }, [prizes]);
 
   const [isAutoAssignOpen, setIsAutoAssignOpen] = useState(false);
-
   const [isManualAwardOpen, setIsManualAwardOpen] = useState(false);
   const [selectedPrizeForAward, setSelectedPrizeForAward] = useState<PrizeResponse | null>(null);
-
   const [isClearAwardOpen, setIsClearAwardOpen] = useState(false);
   const [selectedPrizeForClear, setSelectedPrizeForClear] = useState<PrizeResponse | null>(null);
 
@@ -98,181 +97,172 @@ export const CoordinatorAwardManagementPage = () => {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
   if (!event) {
-    return <Alert severity="error">Event not found.</Alert>;
+    return <Alert severity="error" sx={{ borderRadius: "12px" }}>Event not found.</Alert>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Award Management</h1>
-          <p className="text-sm text-gray-500">
-            {event.name} • {event.status}
+          <Button
+            startIcon={<ArrowBackOutlinedIcon />}
+            onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
+            sx={{ mb: 1, textTransform: "none", fontWeight: 800 }}
+          >
+            Back to Event
+          </Button>
+          <h1 className="text-3xl font-black text-slate-950 dark:text-white">
+            Award Management
+          </h1>
+          <p className="mt-2 text-base font-medium text-slate-500 dark:text-slate-400">
+            Assign and manage prize winners for <span className="font-bold text-slate-700 dark:text-slate-200">{event.name}</span>
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
           <Button
             variant="outlined"
-            startIcon={<RefreshIcon />}
+            color="inherit"
+            startIcon={<RefreshOutlinedIcon />}
             onClick={() => refetchPrizes()}
             disabled={isRefetching}
-            sx={{ fontWeight: "bold", bgcolor: "white" }}
+            sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
           >
             {isRefetching ? "Refreshing..." : "Refresh"}
           </Button>
-
           <Button
             variant="contained"
-            color="primary"
-            startIcon={<AutoFixHighIcon />}
+            startIcon={<AutoFixHighOutlinedIcon />}
             onClick={() => setIsAutoAssignOpen(true)}
-            sx={{ fontWeight: "bold" }}
+            sx={{
+              bgcolor: "#2563eb",
+              borderRadius: "10px",
+              fontWeight: 700,
+              textTransform: "none",
+              "&:hover": { bgcolor: "#1d4ed8" },
+            }}
           >
             Auto Assign
           </Button>
         </div>
+      </header>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Total Prizes"
+          value={totalPrizes}
+          colorClass="border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        />
+        <StatCard
+          label="Awarded"
+          value={awardedPrizes}
+          colorClass="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+        />
+        <StatCard
+          label="Unawarded"
+          value={unawardedPrizes}
+          colorClass="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+        />
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Last Awarded</p>
+          <p className="mt-2 text-lg font-black text-slate-800 dark:text-white">{lastAssignedAt ?? "—"}</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: "primary.50", border: "1px solid", borderColor: "primary.100" }}>
-          <CardContent sx={{ pb: "16px !important" }}>
-            <Typography color="primary.main" variant="subtitle2" fontWeight="bold">
-              Total Prizes
-            </Typography>
-            <Typography variant="h4" fontWeight="bold" sx={{ mt: 1, color: "primary.dark" }}>
-              {totalPrizes}
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: "success.50", border: "1px solid", borderColor: "success.100" }}>
-          <CardContent sx={{ pb: "16px !important" }}>
-            <Typography color="success.main" variant="subtitle2" fontWeight="bold">
-              Awarded
-            </Typography>
-            <Typography variant="h4" fontWeight="bold" sx={{ mt: 1, color: "success.dark" }}>
-              {awardedPrizes}
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: "warning.50", border: "1px solid", borderColor: "warning.100" }}>
-          <CardContent sx={{ pb: "16px !important" }}>
-            <Typography color="warning.main" variant="subtitle2" fontWeight="bold">
-              Unawarded
-            </Typography>
-            <Typography variant="h4" fontWeight="bold" sx={{ mt: 1, color: "warning.dark" }}>
-              {unawardedPrizes}
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: "grey.50", border: "1px solid", borderColor: "grey.200" }}>
-          <CardContent sx={{ pb: "16px !important" }}>
-            <Typography color="text.secondary" variant="subtitle2" fontWeight="bold">
-              Last Assigned At
-            </Typography>
-            <Typography variant="h6" fontWeight="bold" sx={{ mt: 1, color: "text.primary" }}>
-              {lastAssignedAt || "-"}
-            </Typography>
-          </CardContent>
-        </Card>
-      </div>
-
-      <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
-        <Table sx={{ minWidth: 650 }} aria-label="awards table">
-          <TableHead sx={{ bgcolor: "grey.50" }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: "bold" }}>Rank</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Scope</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Prize Title</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Value</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Winner Team</TableCell>
-              <TableCell sx={{ fontWeight: "bold", width: 140 }} align="center">
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {prizes.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                  No prizes configured.
-                </TableCell>
-              </TableRow>
-            ) : (
-              prizes.map((prize) => {
-                const isAwarded = Boolean(prize.awardedTeamId);
-                return (
-                  <TableRow key={prize.id} hover>
-                    <TableCell>
-                      <span className="font-bold text-gray-700">{prize.rankPosition}</span>
-                    </TableCell>
-                    <TableCell>
-                      <PrizeScopeBadge trackName={prize.trackName} />
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-medium">{prize.title}</span>
-                    </TableCell>
-                    <TableCell>
-                      <PrizeValueDisplay value={prize.value} currency={prize.currency} />
-                    </TableCell>
-                    <TableCell>
-                      <AwardedTeamChip teamName={prize.awardedTeamName} />
-                      {prize.awardedAt && (
-                        <div className="text-[11px] text-gray-400 mt-1">
-                          {new Date(prize.awardedAt).toLocaleDateString()}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell align="center">
-                      <div className="flex justify-center gap-1">
-                        <Tooltip title="Manual Award">
-                          <IconButton
-                            color="primary"
-                            size="small"
+      {/* Awards Table */}
+      <section>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Rank</th>
+                <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Scope</th>
+                <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Prize Title</th>
+                <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Value</th>
+                <th className="px-5 py-3.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Winner</th>
+                <th className="px-5 py-3.5 text-center text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+              {prizes.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-sm font-medium text-slate-400">
+                    No prizes configured for this event.
+                  </td>
+                </tr>
+              ) : (
+                prizes.map((prize) => {
+                  const isAwarded = Boolean(prize.awardedTeamId);
+                  return (
+                    <tr key={prize.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                      <td className="px-5 py-4">
+                        <span className="text-base font-black text-slate-700 dark:text-slate-200">
+                          #{prize.rankPosition ?? "—"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <PrizeScopeBadge trackName={prize.trackName} />
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="font-bold text-slate-900 dark:text-white">{prize.title}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <PrizeValueDisplay value={prize.value} currency={prize.currency} />
+                      </td>
+                      <td className="px-5 py-4">
+                        <AwardedTeamChip teamName={prize.awardedTeamName} />
+                        {prize.awardedAt && (
+                          <p className="mt-0.5 text-[11px] text-slate-400">
+                            {new Date(prize.awardedAt).toLocaleDateString()}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            title="Manual Award"
                             onClick={() => {
                               setSelectedPrizeForAward(prize);
                               setIsManualAwardOpen(true);
                             }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-600 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                           >
-                            <EmojiEventsIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                            <EmojiEventsOutlinedIcon sx={{ fontSize: 14 }} />
+                            Award
+                          </button>
+                          <button
+                            title="Clear Award"
+                            disabled={!isAwarded}
+                            onClick={() => {
+                              setSelectedPrizeForClear(prize);
+                              setIsClearAwardOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-30 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300"
+                          >
+                            <ClearOutlinedIcon sx={{ fontSize: 14 }} />
+                            Clear
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-                        <Tooltip title={isAwarded ? "Clear Award" : "No award to clear"}>
-                          <span>
-                            <IconButton
-                              color="error"
-                              size="small"
-                              disabled={!isAwarded}
-                              onClick={() => {
-                                setSelectedPrizeForClear(prize);
-                                setIsClearAwardOpen(true);
-                              }}
-                            >
-                              <ClearIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
+      {/* Dialogs */}
       <AssignPrizesFromRankingDialog
         open={isAutoAssignOpen}
         tracks={tracks}

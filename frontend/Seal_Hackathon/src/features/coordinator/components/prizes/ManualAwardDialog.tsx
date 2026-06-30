@@ -43,7 +43,8 @@ export const ManualAwardDialog = ({
     mode: "onSubmit",
   });
 
-  const { handleSubmit, control, reset, formState: { errors } } = methods;
+  const { handleSubmit, control, reset, watch, formState: { errors } } = methods;
+  const sendNotification = watch("sendNotification");
 
   useEffect(() => {
     if (open) {
@@ -133,28 +134,30 @@ export const ManualAwardDialog = ({
                   )}
                 />
 
-                <div className="ml-6 flex flex-col gap-1 sm:flex-row sm:gap-4">
-                  <Controller
-                    name="sendInApp"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControlLabel
-                        control={<Checkbox size="small" checked={field.value} onChange={field.onChange} />}
-                        label={<span className="text-sm">In-app</span>}
-                      />
-                    )}
-                  />
-                  <Controller
-                    name="sendEmail"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControlLabel
-                        control={<Checkbox size="small" checked={field.value} onChange={field.onChange} />}
-                        label={<span className="text-sm">Email</span>}
-                      />
-                    )}
-                  />
-                </div>
+                {sendNotification && (
+                  <div className="ml-6 flex flex-col gap-1 sm:flex-row sm:gap-4">
+                    <Controller
+                      name="sendInApp"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={<Checkbox size="small" checked={field.value} onChange={field.onChange} />}
+                          label={<span className="text-sm">In-app</span>}
+                        />
+                      )}
+                    />
+                    <Controller
+                      name="sendEmail"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={<Checkbox size="small" checked={field.value} onChange={field.onChange} />}
+                          label={<span className="text-sm">Email</span>}
+                        />
+                      )}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </DialogContent>

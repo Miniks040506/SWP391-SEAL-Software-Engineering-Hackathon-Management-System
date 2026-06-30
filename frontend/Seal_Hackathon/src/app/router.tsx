@@ -67,6 +67,7 @@ import {
   CoordinatorAnnouncementPage,
   CoordinatorPrizeSetupPage,
   CoordinatorAwardManagementPage,
+  CoordinatorPrizesRedirectPage,
 } from "@/features/coordinator";
 
 import {
@@ -218,6 +219,10 @@ export const router = createBrowserRouter([
         element: <GradingProgressRedirectPage />,
       },
       {
+        path: "prizes",
+        element: <CoordinatorPrizesRedirectPage />,
+      },
+      {
         path: "events/:eventId/rankings",
         element: <CoordinatorRankingPage />,
       },
@@ -271,7 +276,7 @@ export const router = createBrowserRouter([
         element: <CoordinatorSubmissionsPage />,
       },
       { path: "judging", element: <NotFoundPage /> },
-      { path: "prizes", element: <NotFoundPage /> },
+      { path: "prizes", element: <CoordinatorPrizesRedirectPage /> },
       { path: "criteria", element: <ScoringCriteriaManagementPage /> },
       { path: "analytics", element: <NotFoundPage /> },
       { path: "announcement", element: <CoordinatorAnnouncementPage /> },

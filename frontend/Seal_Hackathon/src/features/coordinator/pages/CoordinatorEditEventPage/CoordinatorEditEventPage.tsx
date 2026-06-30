@@ -2,6 +2,7 @@ import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import MilitaryTechOutlinedIcon from "@mui/icons-material/MilitaryTechOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import RouteOutlinedIcon from "@mui/icons-material/RouteOutlined";
 import SchemaOutlinedIcon from "@mui/icons-material/SchemaOutlined";
@@ -123,6 +124,15 @@ export function CoordinatorEditEventPage() {
               sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
             >
               Grading Progress
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<EmojiEventsIcon />}
+              onClick={() => navigate(`/coordinator/events/${eventId}/awards`)}
+              sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2, bgcolor: "white" }}
+            >
+              Awards
             </Button>
           </div>
         </div>

@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { prizeApi } from "@/api/prize.api";
+import { mockCoordinatorService } from "../mocks/coordinatorService.mock";
 import type { UUID } from "@/types/common.types";
+
+const USE_MOCK = true;
+const activePrizeApi = USE_MOCK ? (mockCoordinatorService as any).prizeApi : prizeApi;
 
 export const coordinatorPrizeKeys = {
   all: ["coordinator-prizes"] as const,
@@ -15,7 +19,7 @@ export const coordinatorPrizeKeys = {
 export function useCoordinatorPrizesQuery(eventId?: UUID) {
   return useQuery({
     queryKey: coordinatorPrizeKeys.list(eventId!),
-    queryFn: () => prizeApi.getPrizesByEvent(eventId!),
+    queryFn: () => activePrizeApi.getPrizesByEvent(eventId!),
     enabled: Boolean(eventId),
   });
 }
@@ -23,7 +27,7 @@ export function useCoordinatorPrizesQuery(eventId?: UUID) {
 export function useCoordinatorPrizeDetailQuery(prizeId?: UUID) {
   return useQuery({
     queryKey: coordinatorPrizeKeys.detail(prizeId!),
-    queryFn: () => prizeApi.getPrizeById(prizeId!),
+    queryFn: () => activePrizeApi.getPrizeById(prizeId!),
     enabled: Boolean(prizeId),
   });
 }
@@ -31,7 +35,7 @@ export function useCoordinatorPrizeDetailQuery(prizeId?: UUID) {
 export function useCoordinatorPublishedAwardsQuery(eventId?: UUID) {
   return useQuery({
     queryKey: coordinatorPrizeKeys.awardList(eventId!),
-    queryFn: () => prizeApi.getPublishedAwards(eventId!),
+    queryFn: () => activePrizeApi.getPublishedAwards(eventId!),
     enabled: Boolean(eventId),
   });
 }
