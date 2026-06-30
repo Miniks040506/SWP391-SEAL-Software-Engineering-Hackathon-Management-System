@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.request.results.CreateDisqualificationRequest;
 import com.t7.seal.request.results.DisqualifySubmissionRequest;
 import com.t7.seal.request.results.OverturnDisqualificationRequest;
@@ -9,6 +10,7 @@ import com.t7.seal.service.DisqualificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,8 +20,19 @@ import java.util.UUID;
 public class DisqualificationServiceImpl implements DisqualificationService {
 
     @Override
-    public DisqualificationResponse createDisqualificationSubmission(CreateDisqualificationRequest request, Authentication authentication) {
-        return null;
+    @Transactional
+    public DisqualificationResponse createDisqualificationSubmission(
+            CreateDisqualificationRequest request,
+            Authentication authentication
+    ) {
+        if (request == null || request.submissionId() == null) {
+            throw new BadRequestException("submissionId is required.");
+        }
+        return disqualifySubmission(
+                request.submissionId(),
+                new DisqualifySubmissionRequest(request.reason(), request.evidenceUrl()),
+                authentication
+        );
     }
 
     @Override
