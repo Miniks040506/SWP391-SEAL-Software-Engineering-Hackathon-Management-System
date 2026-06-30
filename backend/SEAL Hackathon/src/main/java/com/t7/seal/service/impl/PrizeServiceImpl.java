@@ -1,9 +1,11 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Prize;
 import com.t7.seal.entities.Track;
+import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
@@ -13,6 +15,7 @@ import com.t7.seal.repository.TrackRepository;
 import com.t7.seal.request.results.CreatePrizeRequest;
 import com.t7.seal.request.results.UpdatePrizeRequest;
 import com.t7.seal.response.results.PrizeResponse;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.PrizeService;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -31,12 +36,14 @@ public class PrizeServiceImpl implements PrizeService {
     private final PrizeRepository prizeRepository;
     private final HackathonEventRepository eventRepository;
     private final TrackRepository trackRepository;
+
     private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
 
     @Transactional
     @Override
     public PrizeResponse createPrize(CreatePrizeRequest request, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         validateCreatePrizeRequest(request);
 
@@ -60,7 +67,18 @@ public class PrizeServiceImpl implements PrizeService {
                 : request.currency().trim().toUpperCase());
         prize.setSponsorName(trimToNull(request.sponsorName()));
 
-        return toPrizeResponse(prizeRepository.save(prize));
+        Prize saved = prizeRepository.save(prize);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.PRIZE_CREATED,
+                "prizes",
+                saved.getId(),
+                null,
+
+        );
+
+        return toPrizeResponse(saved);
     }
 
     @Transactional
@@ -215,5 +233,32 @@ public class PrizeServiceImpl implements PrizeService {
                 prize.getAwardedTeam() == null ? null : prize.getAwardedTeam().getId(),
                 prize.getAwardedAt()
         );
+    }
+
+    private Map<String, Object> auditPrize(Prize prize) {
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("id", prize.getId() == null ? null : prize.getId().toString());
+        state.put("eventId", prize.getEvent() == null ? null : prize.getEvent().getId().toString());
+        state.put("trackId", prize.getTrack() == null ? null : prize.getTrack().getId().toString());
+        state.put("rankPosition", prize.getRankPosition());
+        state.put("title", prize.getTitle());
+        state.put("value", prize.getValue());
+        state.put("currency", prize.getCurrency());
+        state.put("awardedTeamId", prize.getAwardedTeam() == null
+                ? null : prize.getAwardedTeam().getId().toString());
+        state.put("awardedAt", prize.getAwardedAt() == null
+                ? null : prize.getAwardedAt().toString());
+
+        return state;
+    }
+
+    private Map<String, Object> auditContext(UUID eventId, UUID trackId, UUID roundId, String reason) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("eventId", eventId == null ? null : eventId.toString());
+        context.put("trackId", trackId == null ? null : trackId.toString());
+        context.put("roundId", roundId == null ? null : roundId.toString());
+        context.put("reason", reason);
+        
+        return context;
     }
 }
