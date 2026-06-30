@@ -299,6 +299,7 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         if (actor.getRole() == UserRole.ADMIN || actor.getRole() == UserRole.COORDINATOR) {
             return;
         }
+
         UUID teamId = teamId(disqualification);
         if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, actor.getId())) {
             throw new ForbiddenException("You can only appeal your own team's disqualification.");
@@ -358,6 +359,20 @@ public class DisqualificationServiceImpl implements DisqualificationService {
                 disqualification.getIssuedAt(),
                 rankingRecalculated,
                 clearedAwardCount
+        );
+    }
+
+    private Map<String, Object> auditDisqualification(Disqualification disqualification) {
+        return mapOf(
+                "id", disqualification.getId() == null
+                        ? null : disqualification.getId().toString(),
+                "submissionId", submissionId(disqualification).toString(),
+                "teamId", teamId(disqualification).toString(),
+                "reason", disqualification.getReason(),
+                "evidenceUrl", disqualification.getEvidenceUrl(),
+                "appealNote", disqualification.getAppealNote(),
+                "appealStatus", disqualification.getAppealStatus() == null
+                        ? null : disqualification.getAppealStatus().name()
         );
     }
 
