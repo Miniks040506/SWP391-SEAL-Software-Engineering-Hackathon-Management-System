@@ -5,44 +5,78 @@ import com.t7.seal.request.results.CreateDisqualificationRequest;
 import com.t7.seal.request.results.OverturnDisqualificationRequest;
 import com.t7.seal.request.results.UpdateAppealRequest;
 import com.t7.seal.response.results.DisqualificationResponse;
+import com.t7.seal.service.DisqualificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(ApiPaths.API_V1 + "/disqualifications")
+@RequestMapping(ApiPaths.API_V1)
 public class DisqualificationController {
-    @PostMapping
-    public ResponseEntity<DisqualificationResponse> disqualifySubmission(
-            @Valid @RequestBody CreateDisqualificationRequest request
+
+    private final DisqualificationService disqualificationService;
+
+    @PreAuthorize("hasRole('COORDINATOR')")
+    @PostMapping("/disqualifications")
+    public ResponseEntity<DisqualificationResponse> createDisqualificationSubmission(
+            @Valid @RequestBody CreateDisqualificationRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(disqualificationService
+                        .createDisqualificationSubmission(request, authentication));
     }
 
-    @GetMapping("/{disqualificationId}")
+    @PreAuthorize("hasAnyRole('COORDINATOR','ADMIN','STUDENT')")
+    @GetMapping("/disqualifications/{disqualificationId}")
     public ResponseEntity<DisqualificationResponse> getDisqualificationById(
-            @PathVariable("disqualificationId") UUID disqualificationId
+            @PathVariable UUID disqualificationId,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(disqualificationService
+                .getDisqualificationById(disqualificationId, authentication));
     }
 
-    @PatchMapping("/{disqualificationId}/appeal")
+    @PreAuthorize("hasAnyRole('STUDENT', 'COORDINATOR')")
+    @PatchMapping("/disqualifications/{disqualificationId}/appeal")
     public ResponseEntity<DisqualificationResponse> updateAppeal(
-            @PathVariable("disqualificationId") UUID disqualificationId,
-            @Valid @RequestBody UpdateAppealRequest request
+            @PathVariable UUID disqualificationId,
+            @Valid @RequestBody UpdateAppealRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(disqualificationService
+                .updateAppeal(disqualificationId, request, authentication));
     }
 
-    @PostMapping("/{disqualificationId}/overturn")
+    @PreAuthorize("hasRole('COORDINATOR')")
+    @PostMapping("/disqualifications/{disqualificationId}/overturn")
     public ResponseEntity<DisqualificationResponse> overturnDisqualification(
-            @PathVariable("disqualificationId") UUID disqualificationId,
-            @Valid @RequestBody OverturnDisqualificationRequest request
+            @PathVariable UUID disqualificationId,
+            @Valid @RequestBody OverturnDisqualificationRequest request,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(disqualificationService
+                .overturnDisqualification(disqualificationId, request, authentication));
+    }
+
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'ADMIN')")
+    @GetMapping("/events/{eventId}/disqualifications")
+    public ResponseEntity<List<DisqualificationResponse>> getEventDisqualifications(
+            @PathVariable UUID eventId,
+            @RequestParam(required = false) UUID roundId,
+            @RequestParam(required = false) UUID trackId,
+            @RequestParam(required = false) String appealStatus,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(disqualificationService.getDisqualificationsByEvent(
+                eventId, roundId, trackId, appealStatus, authentication));
     }
 }

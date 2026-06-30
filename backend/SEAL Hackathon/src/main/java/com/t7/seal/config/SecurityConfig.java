@@ -94,6 +94,7 @@ public class SecurityConfig {
                                 API + "/events/*/announcements",
                                 API + "/events/*/rankings",
                                 API + "/events/*/prizes",
+                                API + "/events/*/awards",
                                 API + "/rounds/*",
                                 API + "/rounds/*/rankings",
                                 API + "/tracks/*",
@@ -161,6 +162,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, API + "/events/*").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/events/*/publish-results").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/events/*/results/publish").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/events/*/prizes/assign-from-ranking").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/events/*/variance-dashboard").hasRole("COORDINATOR")
 
                         // Announcements
@@ -229,7 +231,9 @@ public class SecurityConfig {
 
                         // Disqualification
                         .requestMatchers(HttpMethod.POST, API + "/disqualifications").hasRole("COORDINATOR")
-                        .requestMatchers(HttpMethod.GET, API + "/disqualifications/*").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/events/*/disqualifications").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, API + "/submissions/*/disqualify").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/disqualifications/*").hasAnyRole("COORDINATOR", "ADMIN", "STUDENT")
                         .requestMatchers(HttpMethod.PATCH, API + "/disqualifications/*/appeal").hasAnyRole("STUDENT", "COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/disqualifications/*/overturn").hasRole("COORDINATOR")
 
@@ -238,6 +242,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, API + "/prizes/*").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.DELETE, API + "/prizes/*").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/prizes/*/award").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.PATCH, API + "/prizes/*/winner").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/prizes/*/clear-award").hasRole("COORDINATOR")
 
                         // Judge grading

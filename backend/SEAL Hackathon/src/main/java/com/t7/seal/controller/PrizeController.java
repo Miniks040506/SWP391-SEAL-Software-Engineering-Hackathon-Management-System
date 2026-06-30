@@ -31,6 +31,7 @@ public class PrizeController {
             @Valid @RequestBody CreatePrizeRequest request,
             Authentication authentication
     ) {
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(prizeService.createPrize(request, authentication));
     }
