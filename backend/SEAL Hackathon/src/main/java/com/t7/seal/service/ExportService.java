@@ -36,7 +36,9 @@ public interface ExportService {
 
     ExportJobResponse getExportJobById(UUID exportId, Authentication authentication);
 
-    ExportDownloadResponse downloadExportFile(UUID exportId, Authentication authentication);
+    ExportDownloadResponse downloadExport(UUID exportId, Authentication authentication);
+
+    ResponseEntity<Resource> downloadExportFile(UUID exportId, Authentication authentication);
 
     ExportJobResponse retryExport(UUID exportId, Authentication authentication);
 
