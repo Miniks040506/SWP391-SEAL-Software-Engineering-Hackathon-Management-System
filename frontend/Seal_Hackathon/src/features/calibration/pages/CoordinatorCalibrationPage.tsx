@@ -67,15 +67,13 @@ export const CoordinatorCalibrationPage = () => {
         <div className="mx-auto max-w-6xl animate-in fade-in duration-500 space-y-7">
             <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                    {eventId && (
-                        <Button
-                            startIcon={<ArrowBackOutlinedIcon />}
-                            onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
-                            sx={{ mb: 1, textTransform: "none", fontWeight: 800 }}
-                        >
-                            Back to Event
-                        </Button>
-                    )}
+                    <Button
+                        startIcon={<ArrowBackOutlinedIcon />}
+                        onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
+                        sx={{ mb: 1, textTransform: "none", fontWeight: 800 }}
+                    >
+                        Back to Event
+                    </Button>
                     <h1 className="flex items-center gap-3 text-3xl font-black text-slate-950 dark:text-white">
                         Calibration Rounds
                     </h1>

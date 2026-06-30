@@ -194,7 +194,7 @@ export const editEventMock: EditEventData = {
   description: 'Annual Spring Hackathon organized by SEAL, open to all students across tracks.',
   startDate: '2026-05-25',
   endDate: '2026-05-30',
-  status: 'ONGOING',
+  status: 'PUBLISHED',
   tracks: [
     {
       id: 'track-1',

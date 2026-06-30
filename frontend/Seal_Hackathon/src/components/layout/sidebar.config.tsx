@@ -154,8 +154,8 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <AssessmentOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Results",
-            path: "/coordinator/results",
+            label: "Awards",
+            path: "/coordinator/awards",
             icon: <EmojiEventsOutlinedIcon fontSize="small" />,
           },
           {

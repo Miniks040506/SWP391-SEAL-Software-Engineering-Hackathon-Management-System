@@ -8,8 +8,11 @@ import {
     usePublicEventDetailQuery,
     usePublicEventRoundsQuery,
     usePublicEventTracksQuery,
+    usePublicEventAwardsQuery,
 } from "../../events/hooks/usePublicEventQueries";
 import { usePublicEventLeaderboardQuery, usePublicTrackLeaderboardQuery } from "../hooks/useRankingQueries";
+import { useMemo } from "react";
+import type { PrizeResponse } from "@/types/prize.types";
 
 import { LeaderboardHeader } from "../components/LeaderboardHeader";
 import { LeaderboardEmptyState } from "../components/LeaderboardEmptyState";
@@ -41,6 +44,19 @@ export const PublicEventLeaderboardPage = () => {
     const { data: rankings = [], isLoading: isLoadingRankings } = selectedTrackId === "all"
         ? usePublicEventLeaderboardQuery(eventId, { roundId: selectedRoundId !== "all" ? selectedRoundId : undefined })
         : usePublicTrackLeaderboardQuery(eventId, selectedTrackId, { roundId: selectedRoundId !== "all" ? selectedRoundId : undefined });
+
+    const { data: awards = [] } = usePublicEventAwardsQuery(eventId);
+    const awardsByTeamId = useMemo(() => {
+        const map = new Map<string, PrizeResponse[]>();
+        for (const award of awards) {
+            if (award.awardedTeamId) {
+                const teamAwards = map.get(award.awardedTeamId) || [];
+                teamAwards.push(award);
+                map.set(award.awardedTeamId, teamAwards);
+            }
+        }
+        return map;
+    }, [awards]);
 
     if (isLoadingEvent) {
         return (
@@ -114,11 +130,11 @@ export const PublicEventLeaderboardPage = () => {
                 ) : (
                     <>
                         <div className="hidden md:block">
-                            <RankingTable rankings={rankings} />
+                            <RankingTable rankings={rankings} awardsByTeamId={awardsByTeamId} />
                         </div>
                         <div className="flex flex-col gap-4 md:hidden">
                             {rankings.map(ranking => (
-                                <MobileRankingCard key={ranking.id} ranking={ranking} />
+                                <MobileRankingCard key={ranking.id} ranking={ranking} awardsByTeamId={awardsByTeamId} />
                             ))}
                         </div>
                     </>

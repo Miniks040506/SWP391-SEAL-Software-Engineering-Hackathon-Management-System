@@ -21,12 +21,16 @@ import { useDisqualifySubmissionMutation } from "@/features/disqualification/hoo
 import type { DisqualifyFormValues } from "@/features/disqualification/schemas/disqualification.schema";
 
 
+import type { PrizeResponse } from "@/types/prize.types";
+import { WinnerPrizeBadge } from "@/features/events/components/WinnerPrizeBadge";
+
 interface RankingTableProps {
     rankings: RankingResponse[];
+    awardsByTeamId?: Map<string, PrizeResponse[]>;
 }
 
 
-export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
+export const RankingTable = ({ rankings = [], awardsByTeamId }: RankingTableProps) => {
     const disqualifyMutation = useDisqualifySubmissionMutation();
     const location = useLocation();
     const showActions = location.pathname.startsWith("/coordinator");
@@ -80,7 +84,14 @@ export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
                         return (
                             <TableRow key={row.id} hover>
                                 <TableCell sx={{ fontWeight: 800 }}>#{row.rankPosition}</TableCell>
-                                <TableCell sx={{ fontWeight: 600 }}>{row.teamName}</TableCell>
+                                <TableCell sx={{ fontWeight: 600 }}>
+                                    <div className="flex items-center gap-2">
+                                        {row.teamName}
+                                        {awardsByTeamId?.get(row.teamId)?.map(prize => (
+                                            <WinnerPrizeBadge key={prize.id} prizeTitle={prize.title || ""} />
+                                        ))}
+                                    </div>
+                                </TableCell>
                                 <TableCell>{row.projectTitle || "-"}</TableCell>
                                 <TableCell>{row.trackName || "-"}</TableCell>
                                 <TableCell>{row.roundName}</TableCell>
