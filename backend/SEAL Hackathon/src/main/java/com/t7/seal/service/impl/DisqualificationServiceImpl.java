@@ -233,9 +233,69 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         );
     }
 
+    @Transactional
     @Override
-    public DisqualificationResponse overturnDisqualification(UUID disqualificationId, OverturnDisqualificationRequest request, Authentication authentication) {
-        return null;
+    public DisqualificationResponse overturnDisqualification(
+            UUID disqualificationId,
+            OverturnDisqualificationRequest request,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        String reason = requireText(request == null
+                ? null : request.reason(), "Overturn reason is required.");
+
+        Disqualification disqualification = disqualificationRepository
+                .findByIdWithDetails(disqualificationId)
+                .orElseThrow(() ->
+                        new NotFoundException("Disqualification not found " + disqualificationId));
+        
+        if (disqualification.isAppealOverturned()) {
+            throw new ConflictException("This disqualification has already been overturned.");
+        }
+
+        Submission submission = disqualification.getSubmission();
+        Team team = requireTeam(submission);
+        Round round = requireRound(submission);
+        HackathonEvent event = requireEvent(round);
+        UUID trackId = team.getTrack() == null ? null : team.getTrack().getId();
+
+        Map<String, Object> before = auditDisqualification(disqualification);
+        SubmissionStatus beforeSubmissionStatus = submission.getStatus();
+        TeamStatus beforeTeamStatus = team.getStatus();
+
+        disqualification.overturnAppeal();
+        restoreSubmissionStatus(submission);
+        restoreTeamStatus(team, round);
+
+        Disqualification saved = disqualificationRepository.save(disqualification);
+        submissionRepository.save(submission);
+        teamRepository.save(team);
+        RankingRecalculationResponse recalculation = recalculateIfPossible(round, trackId, authentication);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.DISQUALIFICATION_OVERTURNED,
+                "disqualifications",
+                saved.getId(),
+                before,
+                auditDisqualification(saved),
+                mapOf(
+                        "eventId", event.getId().toString(),
+                        "roundId", round.getId().toString(),
+                        "trackId", trackId == null ? null : trackId.toString(),
+                        "teamId", team.getId().toString(),
+                        "submissionId", submission.getId().toString(),
+                        "beforeSubmissionStatus", beforeSubmissionStatus == null ? null : beforeSubmissionStatus.name(),
+                        "afterSubmissionStatus", submission.getStatus() == null ? null : submission.getStatus().name(),
+                        "beforeTeamStatus", beforeTeamStatus == null ? null : beforeTeamStatus.name(),
+                        "afterTeamStatus", team.getStatus() == null ? null : team.getStatus().name(),
+                        "reason", reason,
+                        "rankingRecalculated", recalculation != null
+                )
+        );
+
+        sendOverturnNotification(actor, event, team, saved, reason);
+        return toResponse(saved, recalculation != null, 0);
     }
 
     //HELPER METHODS
