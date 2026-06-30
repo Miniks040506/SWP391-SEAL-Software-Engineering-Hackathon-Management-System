@@ -926,9 +926,7 @@ public class NotificationServiceImpl implements NotificationService {
         return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
     }
 
-    private record EmailEnvelope(String to, List<String> cc) {
-    }
+    private record EmailEnvelope(String to, List<String> cc) {}
 
-    private record EmailDispatchResult(int successCount, List<String> failures) {
-    }
+    private record EmailDispatchResult(int successCount, List<String> failures) {}
 }
