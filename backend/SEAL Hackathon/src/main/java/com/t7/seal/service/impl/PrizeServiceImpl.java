@@ -1,9 +1,6 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.domain.AuditActionType;
-import com.t7.seal.domain.RegistrationStatus;
-import com.t7.seal.domain.SubmissionStatus;
-import com.t7.seal.domain.TeamStatus;
+import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
@@ -14,6 +11,7 @@ import com.t7.seal.response.results.PrizeAssignmentResponse;
 import com.t7.seal.response.results.PrizeResponse;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
+import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.PrizeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -39,6 +37,7 @@ public class PrizeServiceImpl implements PrizeService {
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @Transactional
     @Override
@@ -254,10 +253,80 @@ public class PrizeServiceImpl implements PrizeService {
     private void mayBeNotifyPrizeWinner(
             User actor,
             HackathonEvent event,
-            Prize prize, Team team,
+            Prize prize,
+            Team team,
             AwardPrizeRequest request
     ) {
-        
+        if (request != null && Boolean.FALSE.equals(request.sendNotification())) {
+            return;
+        }
+        notifyPrizeWinner(actor, event, prize, team, resolveChannel(request));
+    }
+
+    private void mayBeNotifyPrizeWinner(
+            User actor,
+            HackathonEvent event,
+            Prize prize,
+            Team team,
+            AssignPrizesFromRankingRequest request
+    ) {
+        if (request != null && Boolean.FALSE.equals(request.sendNotification())) {
+            return;
+        }
+        notifyPrizeWinner(actor, event, prize, team, resolveChannel(request));
+    }
+
+    private void notifyPrizeWinner(
+            User actor,
+            HackathonEvent event,
+            Prize prize,
+            Team team,
+            NotificationChannel channel
+    ) {
+        if (channel == null) {
+            return;
+        }
+        String title = "Prize Awarded: " + prize.getTitle();
+        String body = "%s received %s for %s%s".formatted(
+                team.getName(),
+                prize.getTitle(),
+                event.getName(),
+                prize.getTrack() == null ? "" : " / " + prize.getTrack().getName()
+        );
+        notificationService.createSystemNotification(
+                actor,
+                event,
+                NotificationType.PRIZE_AWARDED,
+                title,
+                body,
+                NotificationTargetScope.TEAM,
+                team.getId(),
+                null,
+                channel,
+                null
+        );
+    }
+
+    private NotificationChannel resolveChannel(AssignPrizesFromRankingRequest request) {
+        boolean inApp = (request == null) || (request.sendInApp() == null) || (Boolean.TRUE.equals(request.sendInApp()));
+        boolean email = (request == null) || (request.sendEmail() == null) || (Boolean.TRUE.equals(request.sendEmail()));
+
+        if (!inApp && !email) {
+            return null;
+        }
+
+        return inApp && email ? NotificationChannel.BOTH : inApp ? NotificationChannel.IN_APP : NotificationChannel.EMAIL;
+    }
+
+    private NotificationChannel resolveChannel(AwardPrizeRequest request) {
+        boolean inApp = (request == null) || (request.sendInApp() == null) || (Boolean.TRUE.equals(request.sendInApp()));
+        boolean email = (request == null) || (request.sendEmail() == null) || (Boolean.TRUE.equals(request.sendEmail()));
+
+        if (!inApp && !email) {
+            return null;
+        }
+
+        return inApp && email ? NotificationChannel.BOTH : inApp ? NotificationChannel.IN_APP : NotificationChannel.EMAIL;
     }
 
     private void markTeamAsWinner(Team team) {
