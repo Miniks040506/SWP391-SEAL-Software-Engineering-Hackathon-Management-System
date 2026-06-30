@@ -1,9 +1,7 @@
 package com.t7.seal.service;
 
-import com.t7.seal.request.results.AwardPrizeRequest;
-import com.t7.seal.request.results.ClearPrizeAwardRequest;
-import com.t7.seal.request.results.CreatePrizeRequest;
-import com.t7.seal.request.results.UpdatePrizeRequest;
+import com.t7.seal.request.results.*;
+import com.t7.seal.response.results.PrizeAssignmentResponse;
 import com.t7.seal.response.results.PrizeResponse;
 import org.springframework.security.core.Authentication;
 
@@ -28,4 +26,10 @@ public interface PrizeService {
     PrizeResponse clearPrize(UUID prizeId,
                              ClearPrizeAwardRequest request,
                              Authentication authentication);
+
+    List<PrizeAssignmentResponse> assignPrizesFromRanking(UUID eventId,
+                                                          AssignPrizesFromRankingRequest request,
+                                                          Authentication authentication);
+
+    List<PrizeResponse> getPublishedAwards(UUID eventId);
 }
