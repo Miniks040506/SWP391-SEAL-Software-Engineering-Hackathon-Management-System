@@ -292,6 +292,37 @@ public class PrizeServiceImpl implements PrizeService {
 
         int awarded = 0;
         int skipped = 0;
+        for (Prize prize : prizes) {
+            if (prize.isAwarded() && !override) {
+                skipped++;
+                continue;
+            }
+
+            Optional<Ranking> winnerRanking = findRankingForPrize(prize, rankings);
+            if (winnerRanking.isEmpty()) {
+                skipped++;
+                continue;
+            }
+
+            Team winnerTeam = winnerRanking.get().getSubmission().getTeam();
+            Map<String, Object> before = auditPrize(prize);
+            awardPrizeToTeam(winnerTeam, prize);
+            Prize saved = prizeRepository.save(prize);
+            markTeamAsWinner(winnerTeam);
+
+            auditLogService.record(
+                    actor,
+                    AuditActionType.PRIZE_AWARDED,
+                    "prizes",
+                    saved.getId(),
+                    before,
+                    auditPrize(prize),
+                    auditContext(eventId, awardRound.getId(), prizeTrackId(saved),
+                            "AUTO_ASSIGN_FROM_RANKING")
+            );
+            mayBeNotifyPrizeWinner(actor, event, saved, winnerTeam, request);
+            awarded++;
+        }
 
         List<PrizeResponse> prizeResponses = prizeRepository.findByEventIdOrderByTrackNameAndRankPositionAsc(event.getId())
                 .stream()
@@ -331,6 +362,25 @@ public class PrizeServiceImpl implements PrizeService {
     }
 
     //HELPERS
+
+    private Optional<Ranking> findRankingForPrize(Prize prize, List<Ranking> rankings) {
+        if (prize.getTrack() != null) {
+            return rankings.stream()
+                    .filter(r -> r.getTrack().getId().equals(prize.getTrack().getId()))
+                    .filter(r -> Objects.equals(r.getRankPosition(), prize.getRankPosition()))
+                    .findFirst();
+        }
+
+        return rankings.stream()
+                .sorted(Comparator
+                        .comparing(Ranking::getTotalScore, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Ranking::getJudgeCount, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(r -> r.getSubmission().getTeam().getName(), String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(r -> r.getSubmission().getTeam().getId())
+                )
+                .skip((long) prize.getRankPosition() - 1L)
+                .findFirst();
+    }
 
     private boolean shouldSendInApp(AssignPrizesFromRankingRequest request) {
         boolean shouldNotify = (request == null)
