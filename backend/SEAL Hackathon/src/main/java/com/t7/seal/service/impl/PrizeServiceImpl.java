@@ -11,11 +11,10 @@ import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.PrizeRepository;
+import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.repository.TrackRepository;
-import com.t7.seal.request.results.AwardPrizeRequest;
-import com.t7.seal.request.results.ClearPrizeAwardRequest;
-import com.t7.seal.request.results.CreatePrizeRequest;
-import com.t7.seal.request.results.UpdatePrizeRequest;
+import com.t7.seal.request.results.*;
+import com.t7.seal.response.results.PrizeAssignmentResponse;
 import com.t7.seal.response.results.PrizeResponse;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
@@ -38,6 +37,7 @@ public class PrizeServiceImpl implements PrizeService {
     private final PrizeRepository prizeRepository;
     private final HackathonEventRepository eventRepository;
     private final TrackRepository trackRepository;
+    private final RoundRepository roundRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -196,7 +196,33 @@ public class PrizeServiceImpl implements PrizeService {
         return null;
     }
 
+    @Override
+    public List<PrizeAssignmentResponse> assignPrizesFromRanking(UUID eventId, AssignPrizesFromRankingRequest request, Authentication authentication) {
+        return List.of();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<PrizeResponse> getPublishedAwards(UUID eventId) {
+        HackathonEvent event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found."));
+
+        if (!hasPublishedResults(event)) {
+            return List.of();
+        }
+
+        return prizeRepository.findAwardedByEventIdOrderByTrackNameAndRankPositionAsc(eventId)
+                .stream()
+                .map(this::toPrizeResponse)
+                .toList();
+    }
+
     //HELPERS
+
+    private boolean hasPublishedResults(HackathonEvent event) {
+        return event.getResultPublishedAt() != null
+                || roundRepository.existsByEventIdAndResultPublishedAtIsNotNull(event.getId());
+    }
 
     private void assertPrizeEditable(HackathonEvent event) {
         RegistrationStatus status = event.getStatus();
