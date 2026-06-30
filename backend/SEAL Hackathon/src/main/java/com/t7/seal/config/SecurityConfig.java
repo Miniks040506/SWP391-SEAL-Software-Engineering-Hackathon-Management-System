@@ -148,6 +148,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, API + "/criteria/*").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/submissions").hasAnyRole("ADMIN", "COORDINATOR")
                         .requestMatchers(API + "/exports/**").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(API + "/export-jobs/**").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers(API + "/events/*/exports/**").hasAnyRole("ADMIN", "COORDINATOR")
 
                         // Coordinator account review
                         .requestMatchers(HttpMethod.GET, API + "/users/pending-approval").hasAnyRole("ADMIN", "COORDINATOR")

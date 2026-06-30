@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import MarkEmailReadOutlinedIcon from "@mui/icons-material/MarkEmailReadOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import type { NotificationResponse } from "@/types/notification.types";
 
 type Props = {
@@ -53,10 +54,16 @@ export function NotificationList({ notifications, onOpen, onMarkRead, compact }:
                 "mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
                 item.read
                   ? "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                  : "bg-blue-500 text-white",
+                  : item.type === "PRIZE_AWARDED"
+                    ? "bg-amber-500 text-white"
+                    : "bg-blue-500 text-white",
               ].join(" ")}
             >
-              <NotificationsNoneOutlinedIcon fontSize="small" />
+              {item.type === "PRIZE_AWARDED" ? (
+                <EmojiEventsOutlinedIcon fontSize="small" />
+              ) : (
+                <NotificationsNoneOutlinedIcon fontSize="small" />
+              )}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-3">
