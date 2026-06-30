@@ -85,10 +85,12 @@ public class PrizeServiceImpl implements PrizeService {
     @Transactional
     @Override
     public PrizeResponse updatePrize(UUID prizeId, UpdatePrizeRequest request, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         Prize prize = findPrize(prizeId, null, null);
         assertPrizeEditable(prize.getEvent());
+
+        Map<String, Object> before = auditPrize(prize);
 
         UUID trackId = prize.getTrack() == null ? null : prize.getTrack().getId();
         Integer newRank = request.rankPosition() == null ? prize.getRankPosition() : request.rankPosition();
@@ -123,7 +125,19 @@ public class PrizeServiceImpl implements PrizeService {
             prize.setSponsorName(trimToNull(request.sponsorName()));
         }
 
-        return toPrizeResponse(prizeRepository.save(prize));
+        Prize saved = prizeRepository.save(prize);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.PRIZE_UPDATED,
+                "prize",
+                saved.getId(),
+                before,
+                auditPrize(prize),
+                auditContext(prize.getEvent().getId(), trackId, null, null)
+        );
+
+        return toPrizeResponse(saved);
     }
 
     @Transactional
