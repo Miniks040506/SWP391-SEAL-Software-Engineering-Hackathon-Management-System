@@ -9,4 +9,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
 public class EventExportController {
+    
 }
