@@ -19,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -248,7 +249,7 @@ public class DisqualificationServiceImpl implements DisqualificationService {
                 .findByIdWithDetails(disqualificationId)
                 .orElseThrow(() ->
                         new NotFoundException("Disqualification not found " + disqualificationId));
-        
+
         if (disqualification.isAppealOverturned()) {
             throw new ConflictException("This disqualification has already been overturned.");
         }
@@ -295,7 +296,12 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         );
 
         sendOverturnNotification(actor, event, team, saved, reason);
-        return toResponse(saved, recalculation != null, 0);
+
+        return toDisqualificationResponse(
+                saved,
+                recalculation != null,
+                0
+        );
     }
 
     //HELPER METHODS
@@ -343,6 +349,31 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         }
 
         return prizes.size();
+    }
+
+    private void restoreSubmissionStatus(Submission submission) {
+        Round round = requireRound(submission);
+        LocalDateTime submittedAt = submission.getSubmittedAt();
+        LocalDateTime deadline = round.getSubmissionDeadline();
+        if (submittedAt != null && deadline != null && submittedAt.isAfter(deadline)) {
+            submission.setStatus(SubmissionStatus.LATE);
+        } else {
+            submission.setStatus(SubmissionStatus.SUBMITTED);
+        }
+    }
+
+    private void restoreTeamStatus(Team team, Round round) {
+        Ranking ranking = rankingRepository.findByRoundIdAndTeamIdWithDetails(round.getId(), team.getId())
+                .orElse(null);
+        if (ranking != null && Boolean.TRUE.equals(ranking.getIsAdvanced())) {
+            team.setStatus(TeamStatus.ADVANCED);
+            return;
+        }
+        if (round.isFinalRound() && round.isResultPublished()) {
+            team.setStatus(TeamStatus.REGISTERED);
+            return;
+        }
+        team.setStatus(TeamStatus.COMPETING);
     }
 
     private void ensureCanView(Disqualification disqualification, User actor) {
