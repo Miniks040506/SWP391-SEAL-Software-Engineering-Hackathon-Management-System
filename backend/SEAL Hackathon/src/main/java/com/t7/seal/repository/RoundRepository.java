@@ -22,6 +22,8 @@ public interface RoundRepository extends JpaRepository<Round, UUID> {
 
     boolean existsByEventIdAndNameIgnoreCase(UUID eventId, String name);
 
+    boolean existsByEventIdAndResultPublishedAtIsNotNull(UUID eventId);
+
     @Query("""
             SELECT r FROM Round r
                 JOIN r.event e 

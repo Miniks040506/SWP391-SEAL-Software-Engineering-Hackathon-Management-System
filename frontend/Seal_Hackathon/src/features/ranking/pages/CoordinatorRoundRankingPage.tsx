@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Alert, Button, CircularProgress } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
@@ -26,6 +26,14 @@ export const CoordinatorRoundRankingPage = () => {
 
     const [selectedTrackId, setSelectedTrackId] = useState<string>("all");
     const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+    const [showRecalculationBanner, setShowRecalculationBanner] = useState(
+        () => sessionStorage.getItem("rankingRecalculated") === "true"
+    );
+
+    const handleCloseBanner = () => {
+        setShowRecalculationBanner(false);
+        sessionStorage.removeItem("rankingRecalculated");
+    };
 
     const { data: roundInfo, isLoading: isLoadingInfo } = useRoundGradingProgressQuery(roundId);
 
@@ -115,6 +123,15 @@ export const CoordinatorRoundRankingPage = () => {
                     >
                         Event Rankings
                     </Button>
+                    <Link to={`/coordinator/events/${roundInfo.eventId}/disqualifications`} style={{ textDecoration: 'none' }}>
+                        <Button
+                            variant="outlined"
+                            color="error"
+                            sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
+                        >
+                            View disqualifications
+                        </Button>
+                    </Link>
                     <Button
                         variant="contained"
                         color="primary"
@@ -127,6 +144,12 @@ export const CoordinatorRoundRankingPage = () => {
                     </Button>
                 </div>
             </header>
+
+            {showRecalculationBanner && (
+                <Alert severity="warning" onClose={handleCloseBanner} sx={{ mb: 4, borderRadius: "12px", fontWeight: 600 }}>
+                    Ranking was recalculated after disqualification. Please review advancement/prize decisions again.
+                </Alert>
+            )}
 
             <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <RankingFilterBar

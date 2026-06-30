@@ -6,18 +6,26 @@ import { getTeamStatusColor } from "@/features/teams/schemas/teams.schema";
 import { teamApi } from "@/api/team.api";
 import type { UUID } from "@/types/common.types";
 import type { TeamDetailResponse } from "@/types/team.types";
-
+import { Button } from "@mui/material";
+import { DisqualifySubmissionDialog } from "../../disqualification/components/DisqualifySubmissionDialog";
+import { useDisqualifySubmissionMutation } from "../../disqualification/hooks/useDisqualificationQueries";
+import type { DisqualifyFormValues } from "../../disqualification/schemas/disqualification.schema";
+import { DisqualificationStatusBadge } from "../../disqualification/components/DisqualificationStatusBadge";
 type Props = {
   submissionId: UUID;
   onClose: () => void;
+  onRefresh?: () => void;
 };
 
-export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
-  const { detail, loading } = useSubmissionAdminDetailQuery(submissionId);
+export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh }: Props) {
+  const { detail, loading, refetch } = useSubmissionAdminDetailQuery(submissionId);
 
   const [isViewingTeam, setIsViewingTeam] = useState(false);
   const [teamDetail, setTeamDetail] = useState<TeamDetailResponse | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(false);
+
+  const disqualifyMutation = useDisqualifySubmissionMutation();
+  const [disqualifyOpen, setDisqualifyOpen] = useState(false);
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -192,13 +200,17 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
                             <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                               Current Submission
                             </span>
-                            <span
-                              className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
-                                detail.status,
-                              )}`}
-                            >
-                              {detail.status}
-                            </span>
+                            {detail.status === "DISQUALIFIED" ? (
+                              <DisqualificationStatusBadge appealStatus={(detail as any).appealStatus} />
+                            ) : (
+                              <span
+                                className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
+                                  detail.status,
+                                )}`}
+                              >
+                                {detail.status}
+                              </span>
+                            )}
                           </div>
                           <div className="grid grid-cols-2 gap-5">
                             <div>
@@ -253,13 +265,17 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
                       <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Overview
                       </h3>
-                      <span
-                        className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
-                          detail.status,
-                        )}`}
-                      >
-                        {detail.status}
-                      </span>
+                      {detail.status === "DISQUALIFIED" ? (
+                        <DisqualificationStatusBadge appealStatus={(detail as any).appealStatus} />
+                      ) : (
+                        <span
+                          className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
+                            detail.status,
+                          )}`}
+                        >
+                          {detail.status}
+                        </span>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-5">
                       <div>
@@ -290,13 +306,25 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
                       </div>
                     </div>
 
-                    <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
+                    <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700 space-y-3">
                       <button
                         onClick={handleViewTeamDetails}
                         className="w-full py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-600 font-semibold rounded-lg transition-colors text-sm"
                       >
                         View Team Details →
                       </button>
+
+                      {detail.status !== "DISQUALIFIED" && (
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          color="error"
+                          onClick={() => setDisqualifyOpen(true)}
+                          sx={{ textTransform: "none", fontWeight: 600, py: 1 }}
+                        >
+                          Disqualify submission
+                        </Button>
+                      )}
                     </div>
                   </section>
 
@@ -327,6 +355,25 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
           )}
         </div>
       </div>
+
+      {disqualifyOpen && detail && (
+        <DisqualifySubmissionDialog
+          open={disqualifyOpen}
+          onClose={() => setDisqualifyOpen(false)}
+          submissionId={detail.id}
+          isPending={disqualifyMutation.isPending}
+          onConfirm={async (values: DisqualifyFormValues) => {
+            const res = await disqualifyMutation.mutateAsync({
+              submissionId: detail.id,
+              payload: values,
+            });
+            setDisqualifyOpen(false);
+            refetch();
+            if (onRefresh) onRefresh();
+            return res;
+          }}
+        />
+      )}
     </>
   );
 }

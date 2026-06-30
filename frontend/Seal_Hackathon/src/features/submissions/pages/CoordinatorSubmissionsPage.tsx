@@ -77,7 +77,7 @@ export function CoordinatorSubmissionsPage() {
     fetchFilterOptions();
   }, []);
 
-  const { data, loading } = useCoordinatorSubmissionsQuery(filters);
+  const { data, loading, refetch } = useCoordinatorSubmissionsQuery(filters);
 
   const [projectTitles, setProjectTitles] = useState<Record<UUID, string>>({});
 
@@ -197,6 +197,7 @@ export function CoordinatorSubmissionsPage() {
         <SubmissionDetailDrawer
           submissionId={submissionId}
           onClose={handleCloseDrawer}
+          onRefresh={() => refetch()}
         />
       )}
     </div>

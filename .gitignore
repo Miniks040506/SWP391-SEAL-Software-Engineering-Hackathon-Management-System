@@ -24,3 +24,7 @@ target/
 
 # Logs
 *.log
+
+# Scratch files
+diff_output.txt
+/*.txt
