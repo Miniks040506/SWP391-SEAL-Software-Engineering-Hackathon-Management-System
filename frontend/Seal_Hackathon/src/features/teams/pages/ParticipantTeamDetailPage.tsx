@@ -31,7 +31,6 @@ import { TeamAdvancementStatusBanner } from "@/features/advancement/components/T
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
 import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
 import { TeamJoinRequestsPanel } from "../components/TeamJoinRequestsPanel";
-import { DisqualificationStatusBadge } from "@/features/disqualification/components/DisqualificationStatusBadge";
 
 import {
   inviteMemberSchema,
@@ -231,14 +230,10 @@ export const TeamDetailPage = () => {
               </p>
             </div>
 
-            {team.status === "DISQUALIFIED" ? (
-              <DisqualificationStatusBadge appealStatus={(team as any).appealStatus} />
-            ) : (
-              <TeamStatusBadge
-                status={team.status}
-                memberCount={members.length}
-              />
-            )}
+            <TeamStatusBadge
+              status={team.status}
+              memberCount={members.length}
+            />
           </div>
 
           <div className="mt-6 border-b border-gray-100 dark:border-slate-700">
