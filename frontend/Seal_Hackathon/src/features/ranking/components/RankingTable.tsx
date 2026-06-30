@@ -94,7 +94,7 @@ export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
                                 </TableCell>
                                 <TableCell>{row.judgeCount || 0}</TableCell>
                                 <TableCell align="center">
-                                    {statusType === "DISQUALIFIED" ? (
+                                    {statusType === "DISQUALIFIED" && (row as any).appealStatus ? (
                                         <DisqualificationStatusBadge appealStatus={(row as any).appealStatus} />
                                     ) : (
                                         <RankingStatusBadge type={statusType} />

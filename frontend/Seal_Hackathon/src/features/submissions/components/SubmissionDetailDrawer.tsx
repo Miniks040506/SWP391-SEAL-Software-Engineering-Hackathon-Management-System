@@ -14,10 +14,11 @@ import { DisqualificationStatusBadge } from "../../disqualification/components/D
 type Props = {
   submissionId: UUID;
   onClose: () => void;
+  onRefresh?: () => void;
 };
 
-export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
-  const { detail, loading } = useSubmissionAdminDetailQuery(submissionId);
+export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh }: Props) {
+  const { detail, loading, refetch } = useSubmissionAdminDetailQuery(submissionId);
 
   const [isViewingTeam, setIsViewingTeam] = useState(false);
   const [teamDetail, setTeamDetail] = useState<TeamDetailResponse | null>(null);
@@ -367,6 +368,8 @@ export function SubmissionDetailDrawer({ submissionId, onClose }: Props) {
               payload: values,
             });
             setDisqualifyOpen(false);
+            refetch();
+            if (onRefresh) onRefresh();
             return res;
           }}
         />

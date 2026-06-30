@@ -14,51 +14,50 @@ export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionList
   const [data, setData] = useState<PageResponse<CoordinatorSubmissionSummary> | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchSubmissions = async () => {
-      setLoading(true);
-      try {
-        const apiPage = Math.max((params.page ?? 1) - 1, 0);
-        const res = await submissionApi.getEventSubmissions({
-          ...params,
-          page: apiPage,
-        });
-        setData({ ...res, page: res.page + 1 });
-      } catch (error) {
-        console.error("Failed to fetch submissions:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchSubmissions = async () => {
+    setLoading(true);
+    try {
+      const apiPage = Math.max((params.page ?? 1) - 1, 0);
+      const res = await submissionApi.getEventSubmissions({
+        ...params,
+        page: apiPage,
+      });
+      setData({ ...res, page: res.page + 1 });
+    } catch (error) {
+      console.error("Failed to fetch submissions:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchSubmissions();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.eventId, params.roundId, params.trackId, params.status, params.search, params.page, params.size]);
 
-  return { data, loading };
+  return { data, loading, refetch: fetchSubmissions };
 };
 
 export const useSubmissionAdminDetailQuery = (submissionId?: UUID) => {
   const [detail, setDetail] = useState<SubmissionDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const fetchDetail = async () => {
     if (!submissionId) return;
+    setLoading(true);
+    try {
+      const res = await submissionApi.getSubmissionAdminView(submissionId);
+      setDetail(res);
+    } catch (error) {
+      console.error("Failed to fetch submission detail:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const fetchDetail = async () => {
-      setLoading(true);
-      try {
-        const res = await submissionApi.getSubmissionAdminView(submissionId);
-        setDetail(res);
-      } catch (error) {
-        console.error("Failed to fetch submission detail:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchDetail();
   }, [submissionId]);
 
-  return { detail, loading };
+  return { detail, loading, refetch: fetchDetail };
 };
