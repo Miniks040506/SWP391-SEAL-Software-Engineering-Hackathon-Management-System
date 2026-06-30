@@ -5,6 +5,36 @@ import type { UUID } from "@/types/common.types";
 let mentorAssignmentsMock: any[] = [];
 let judgeAssignmentsMock: any[] = [];
 
+let prizesMock: any[] = [
+  {
+    id: "prize-1",
+    eventId: "seal-spring-2026",
+    eventName: "Mock Event",
+    rankPosition: 1,
+    title: "Champion",
+    description: "Overall champion of the hackathon",
+    value: 5000,
+    currency: "USD",
+    awardedTeamId: "team-1",
+    awardedTeamName: "Alpha Team",
+    awardedAt: new Date().toISOString(),
+  },
+  {
+    id: "prize-2",
+    eventId: "seal-spring-2026",
+    eventName: "Mock Event",
+    trackId: "track-1",
+    trackName: "AI Track",
+    rankPosition: 1,
+    title: "Best AI Project",
+    value: 2000,
+    currency: "USD",
+    awardedTeamId: "team-2",
+    awardedTeamName: "Neural Ninjas",
+    awardedAt: new Date().toISOString(),
+  }
+];
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const mockCoordinatorService = {
@@ -87,10 +117,82 @@ export const mockCoordinatorService = {
   },
 
   prizeApi: {
-    getPrizesByEvent: async (id: UUID) => { await delay(300); return []; },
-    createPrize: async (p: any) => { await delay(300); return p; },
-    updatePrize: async (id: UUID, p: any) => { await delay(300); return p; },
-    deletePrize: async (id: UUID) => { await delay(300); },
+    getPrizesByEvent: async (id: UUID) => {
+      await delay(300);
+      return [...prizesMock];
+    },
+    getPrizeById: async (id: UUID) => {
+      await delay(300);
+      return prizesMock.find(p => p.id === id);
+    },
+    getPublishedAwards: async (id: UUID) => {
+      await delay(300);
+      return prizesMock.filter(p => p.awardedTeamId);
+    },
+    createPrize: async (p: any) => {
+      await delay(300);
+      const newPrize = {
+        id: crypto.randomUUID(),
+        ...p
+      };
+      prizesMock.push(newPrize);
+      return newPrize;
+    },
+    updatePrize: async (id: UUID, p: any) => {
+      await delay(300);
+      const index = prizesMock.findIndex(prize => prize.id === id);
+      if (index !== -1) {
+        prizesMock[index] = { ...prizesMock[index], ...p };
+        return prizesMock[index];
+      }
+      throw new Error("Prize not found");
+    },
+    deletePrize: async (id: UUID) => {
+      await delay(300);
+      prizesMock = prizesMock.filter(p => p.id !== id);
+    },
+    assignFromRanking: async (eventId: UUID, payload: any) => {
+      await delay(500);
+      return {
+        eventId,
+        prizeCount: prizesMock.length,
+        awardedCount: 1,
+        skippedCount: 0,
+        notificationSent: payload.sendNotification,
+        emailQueued: payload.sendEmail,
+        assignedAt: new Date().toISOString(),
+        prizes: prizesMock
+      };
+    },
+    awardPrize: async (prizeId: UUID, payload: any) => {
+      await delay(300);
+      const index = prizesMock.findIndex(prize => prize.id === prizeId);
+      if (index !== -1) {
+        prizesMock[index].awardedTeamId = payload.teamId;
+        prizesMock[index].awardedTeamName = "Mock Team Awarded";
+        prizesMock[index].awardedAt = new Date().toISOString();
+        return prizesMock[index];
+      }
+      throw new Error("Prize not found");
+    },
+    updatePrizeWinner: async (prizeId: UUID, payload: any) => {
+      await delay(300);
+      const index = prizesMock.findIndex(prize => prize.id === prizeId);
+      if (index !== -1) {
+        prizesMock[index].awardedTeamId = payload.teamId;
+        return prizesMock[index];
+      }
+      throw new Error("Prize not found");
+    },
+    clearAward: async (prizeId: UUID, payload: any) => {
+      await delay(300);
+      const index = prizesMock.findIndex(prize => prize.id === prizeId);
+      if (index !== -1) {
+        prizesMock[index].awardedTeamId = undefined;
+        prizesMock[index].awardedTeamName = undefined;
+        prizesMock[index].awardedAt = undefined;
+      }
+    }
   },
 
   assignableUserApi: {
@@ -98,8 +200,8 @@ export const mockCoordinatorService = {
       await delay(300);
       let users = role === "MENTOR" ? availableMentors : availableJudges;
       if (search) {
-        users = users.filter(u => 
-          u.name.toLowerCase().includes(search.toLowerCase()) || 
+        users = users.filter(u =>
+          u.name.toLowerCase().includes(search.toLowerCase()) ||
           u.email.toLowerCase().includes(search.toLowerCase())
         );
       }
@@ -112,6 +214,50 @@ export const mockCoordinatorService = {
         guest: false,
         temporary: false
       }));
+    }
+  },
+
+  rankingApi: {
+    getPublicEventLeaderboard: async (eventId: UUID, params?: any) => {
+      await delay(300);
+      return [
+        {
+          id: crypto.randomUUID(),
+          eventId: eventId,
+          submissionId: "sub-1",
+          teamId: "team-1",
+          teamName: "Alpha Team",
+          roundId: "round-1",
+          roundName: "Final Round",
+          trackId: "t1",
+          trackName: "Web3 Track",
+          totalScore: 92.5,
+          rankPosition: 1,
+          advanced: true,
+          judgeCount: 3,
+          published: true,
+        },
+        {
+          id: crypto.randomUUID(),
+          eventId: eventId,
+          submissionId: "sub-2",
+          teamId: "team-2",
+          teamName: "Neural Ninjas",
+          roundId: "round-1",
+          roundName: "Final Round",
+          trackId: "t1",
+          trackName: "Web3 Track",
+          totalScore: 88.0,
+          rankPosition: 2,
+          advanced: false,
+          judgeCount: 3,
+          published: true,
+        }
+      ];
+    },
+    getPublicTrackLeaderboard: async (eventId: UUID, trackId: UUID, params?: any) => {
+      await delay(300);
+      return []; // Return empty for other tracks for simplicity
     }
   }
 };

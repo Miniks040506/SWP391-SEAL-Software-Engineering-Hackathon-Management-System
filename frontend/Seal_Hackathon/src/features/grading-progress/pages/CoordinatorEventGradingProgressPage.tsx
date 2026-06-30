@@ -40,6 +40,13 @@ export const CoordinatorEventGradingProgressPage = () => {
         <div className="mx-auto max-w-7xl animate-in fade-in duration-500 space-y-8">
             <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
+                    <Button
+                        startIcon={<ArrowBackOutlinedIcon />}
+                        onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
+                        sx={{ mb: 1, textTransform: "none", fontWeight: 800 }}
+                    >
+                        Back to Event
+                    </Button>
                     <h1 className="text-3xl font-black text-slate-950 dark:text-white">
                         Grading Progress
                     </h1>
@@ -60,14 +67,6 @@ export const CoordinatorEventGradingProgressPage = () => {
                         sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                     >
                         Refresh
-                    </Button>
-                    <Button
-                        variant="contained"
-                        startIcon={<ArrowBackOutlinedIcon />}
-                        onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
-                        sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
-                    >
-                        Back to Event
                     </Button>
                 </div>
             </header>

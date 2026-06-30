@@ -1,10 +1,14 @@
 import type { RankingResponse } from "@/types/ranking.types";
 
+import type { PrizeResponse } from "@/types/prize.types";
+import { WinnerPrizeBadge } from "@/features/events/components/WinnerPrizeBadge";
+
 interface MobileRankingCardProps {
   ranking: RankingResponse;
+  awardsByTeamId?: Map<string, PrizeResponse[]>;
 }
 
-export const MobileRankingCard = ({ ranking }: MobileRankingCardProps) => {
+export const MobileRankingCard = ({ ranking, awardsByTeamId }: MobileRankingCardProps) => {
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center justify-between">
@@ -15,6 +19,9 @@ export const MobileRankingCard = ({ ranking }: MobileRankingCardProps) => {
           <span className="font-bold text-slate-900 dark:text-white">
             {ranking.teamName}
           </span>
+          {awardsByTeamId?.get(ranking.teamId)?.map(prize => (
+            <WinnerPrizeBadge key={prize.id} prizeTitle={prize.title || ""} className="h-6 w-6" />
+          ))}
         </div>
         <div className="font-black text-blue-600 dark:text-blue-400">
           {Number(ranking.totalScore).toFixed(2)} pts
