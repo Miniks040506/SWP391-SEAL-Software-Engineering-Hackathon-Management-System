@@ -2,6 +2,7 @@ package com.t7.seal.domain;
 
 public enum ExportType {
     RANKING,
+    SCORE_REPORT,
     SCORE_DATASET_ANONYMIZED,
     TEAM_LIST,
     CALIBRATION_REPORT,
