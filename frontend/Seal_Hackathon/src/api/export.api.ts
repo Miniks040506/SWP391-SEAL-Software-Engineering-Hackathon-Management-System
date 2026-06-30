@@ -3,6 +3,7 @@ import type { PageResponse, UUID } from "@/types/common.types";
 import type {
   CreateExportJobRequest,
   EventExportRequest,
+  ExportRblDatasetRequest,
   ExportDownloadResponse,
   ExportJobResponse,
   GetExportJobsParams,
@@ -31,6 +32,13 @@ export const exportApi = {
     return apiRequest.post<ExportJobResponse>(
       `/events/${eventId}/exports/team-list`,
       payload ?? {},
+    );
+  },
+
+  exportRblDataset(eventId: UUID, payload?: ExportRblDatasetRequest) {
+    return apiRequest.post<ExportJobResponse>(
+      `/events/${eventId}/exports/rbl-dataset`,
+      payload ?? { format: "csv" },
     );
   },
 
