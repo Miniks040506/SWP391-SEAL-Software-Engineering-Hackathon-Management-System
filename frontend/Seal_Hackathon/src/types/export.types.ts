@@ -64,3 +64,9 @@ export type GetExportJobsParams = {
   page?: number;
   size?: number;
 };
+
+export type ExportRblDatasetRequest = {
+  roundId?: UUID;
+  trackId?: UUID;
+  format?: "csv" | string;
+};
