@@ -12,8 +12,8 @@ import java.util.UUID;
 
 public interface DisqualificationService {
 
-    DisqualificationResponse disqualifySubmission(CreateDisqualificationRequest request,
-                                                  Authentication authentication);
+    DisqualificationResponse createDisqualificationSubmission(CreateDisqualificationRequest request,
+                                                              Authentication authentication);
 
     DisqualificationResponse disqualifySubmission(UUID submissionId,
                                                   DisqualifySubmissionRequest request,

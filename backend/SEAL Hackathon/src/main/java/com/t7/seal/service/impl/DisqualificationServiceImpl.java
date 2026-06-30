@@ -18,7 +18,7 @@ import java.util.UUID;
 public class DisqualificationServiceImpl implements DisqualificationService {
 
     @Override
-    public DisqualificationResponse disqualifySubmission(CreateDisqualificationRequest request, Authentication authentication) {
+    public DisqualificationResponse createDisqualificationSubmission(CreateDisqualificationRequest request, Authentication authentication) {
         return null;
     }
 

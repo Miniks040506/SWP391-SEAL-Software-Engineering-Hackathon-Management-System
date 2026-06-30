@@ -4,8 +4,11 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
+import com.t7.seal.request.results.DisqualifySubmissionRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
+import com.t7.seal.response.results.DisqualificationResponse;
+import com.t7.seal.service.DisqualificationService;
 import com.t7.seal.service.RankingService;
 import com.t7.seal.service.SubmissionService;
 import jakarta.validation.Valid;
@@ -27,6 +30,7 @@ public class SubmissionController {
 
     private final SubmissionService submissionService;
     private final RankingService rankingService;
+    private final DisqualificationService disqualificationService;
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping({
@@ -183,6 +187,18 @@ public class SubmissionController {
     ) {
         submissionService.deleteSubmissionLink(linkId, authentication);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('COORDINATOR')")
+    @PostMapping("/submissions/{submissionId}/disqualify")
+    public ResponseEntity<DisqualificationResponse> disqualifySubmission(
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody DisqualifySubmissionRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(disqualificationService
+                        .disqualifySubmission(submissionId, request, authentication));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
