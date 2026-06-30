@@ -7,18 +7,14 @@ import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.repository.DisqualificationRepository;
-import com.t7.seal.repository.SubmissionRepository;
-import com.t7.seal.repository.TeamRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.results.CreateDisqualificationRequest;
 import com.t7.seal.request.results.DisqualifySubmissionRequest;
 import com.t7.seal.request.results.OverturnDisqualificationRequest;
 import com.t7.seal.request.results.UpdateAppealRequest;
 import com.t7.seal.response.results.DisqualificationResponse;
 import com.t7.seal.response.results.RankingRecalculationResponse;
-import com.t7.seal.service.AuditLogService;
-import com.t7.seal.service.CurrentUserService;
-import com.t7.seal.service.DisqualificationService;
+import com.t7.seal.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -33,9 +29,13 @@ public class DisqualificationServiceImpl implements DisqualificationService {
     private final DisqualificationRepository disqualificationRepository;
     private final SubmissionRepository submissionRepository;
     private final TeamRepository teamRepository;
+    private final PrizeRepository prizeRepository;
+    private final RankingRepository rankingRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
+    private final RankingService rankingService;
 
     @Override
     @Transactional
@@ -163,6 +163,44 @@ public class DisqualificationServiceImpl implements DisqualificationService {
 
     //HELPER METHODS
 
+    private RankingRecalculationResponse recalculateIfPossible(Round round, UUID trackId, Authentication authentication) {
+        if (round.getGradingLockedAt() == null) {
+            return null;
+        }
+        boolean hasRankings = !rankingRepository.findByRoundIdAndTrackIdWithDetails(round.getId(), trackId).isEmpty();
+        if (!hasRankings) {
+            return null;
+        }
+        return rankingService.calculateRoundRankings(round.getId(), trackId, authentication);
+    }
+
+    private int clearAwardsForTeam(UUID eventId, Team team, User actor, UUID disqualificationId) {
+        List<Prize> prizes = prizeRepository.findAwardedByEventIdAndTeamId(eventId, team.getId());
+        for (Prize prize : prizes) {
+            Map<String, Object> before = mapOf(
+                    "awardedTeamId", team.getId().toString(),
+                    "awardedAt", prize.getAwardedAt() == null ? null : prize.getAwardedAt().toString()
+            );
+            prize.clearAward();
+            prizeRepository.save(prize);
+            auditLogService.record(
+                    actor,
+                    AuditActionType.PRIZE_AWARD_CLEARED,
+                    "prizes",
+                    prize.getId(),
+                    before,
+                    mapOf("awardedTeamId", null, "awardedAt", null),
+                    mapOf(
+                            "eventId", eventId.toString(),
+                            "teamId", team.getId().toString(),
+                            "reason", "Cleared because team was disqualified.",
+                            "disqualificationId", disqualificationId.toString()
+                    )
+            );
+        }
+        return prizes.size();
+    }
+
     private DisqualificationResponse toDisqualificationResponse(
             Disqualification disqualification,
             boolean rankingRecalculated,
@@ -260,7 +298,7 @@ public class DisqualificationServiceImpl implements DisqualificationService {
                 map.put(Objects.toString(keyValues[i]), value);
             }
         }
-        
+
         return map;
     }
 }
