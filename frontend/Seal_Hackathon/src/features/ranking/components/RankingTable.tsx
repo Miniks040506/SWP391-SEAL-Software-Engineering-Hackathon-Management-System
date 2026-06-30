@@ -30,7 +30,7 @@ interface RankingTableProps {
 }
 
 
-export const RankingTable = ({ rankings = [] }: RankingTableProps) => {
+export const RankingTable = ({ rankings = [], awardsByTeamId }: RankingTableProps) => {
     const disqualifyMutation = useDisqualifySubmissionMutation();
     const location = useLocation();
     const showActions = location.pathname.startsWith("/coordinator");

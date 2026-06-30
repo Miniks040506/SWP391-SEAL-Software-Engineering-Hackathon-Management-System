@@ -8,7 +8,7 @@ import type { UUID } from "@/types/common.types";
 import type { GetEventsParams } from "@/types/event.types";
 import { mockCoordinatorService } from "@/features/coordinator/mocks/coordinatorService.mock";
 
-const USE_MOCK = false;
+const USE_MOCK = true;
 
 export const publicEventKeys = {
   all: ["public-events"] as const,
@@ -30,7 +30,7 @@ export const publicEventKeys = {
 
   prizes: (eventId?: UUID) =>
     [...publicEventKeys.all, "prizes", eventId] as const,
-    
+
   publishedAwards: (eventId?: UUID) =>
     [...publicEventKeys.all, "published-awards", eventId] as const,
 };
@@ -77,7 +77,7 @@ export function usePublicEventAnnouncementsQuery(eventId?: UUID) {
 export function usePublicEventPrizesQuery(eventId?: UUID) {
   return useQuery({
     queryKey: publicEventKeys.prizes(eventId),
-    queryFn: () => prizeApi.getPrizesByEvent(eventId!),
+    queryFn: () => USE_MOCK ? mockCoordinatorService.prizeApi.getPrizesByEvent(eventId!) as any : prizeApi.getPrizesByEvent(eventId!),
     enabled: Boolean(eventId),
   });
 }

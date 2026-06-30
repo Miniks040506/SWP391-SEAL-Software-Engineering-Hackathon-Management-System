@@ -8,7 +8,7 @@ let judgeAssignmentsMock: any[] = [];
 let prizesMock: any[] = [
   {
     id: "prize-1",
-    eventId: "e1",
+    eventId: "seal-spring-2026",
     eventName: "Mock Event",
     rankPosition: 1,
     title: "Champion",
@@ -21,14 +21,17 @@ let prizesMock: any[] = [
   },
   {
     id: "prize-2",
-    eventId: "e1",
+    eventId: "seal-spring-2026",
     eventName: "Mock Event",
-    trackId: "t1",
-    trackName: "Web3 Track",
+    trackId: "track-1",
+    trackName: "AI Track",
     rankPosition: 1,
-    title: "Best Web3 Project",
+    title: "Best AI Project",
     value: 2000,
     currency: "USD",
+    awardedTeamId: "team-2",
+    awardedTeamName: "Neural Ninjas",
+    awardedAt: new Date().toISOString(),
   }
 ];
 
@@ -197,8 +200,8 @@ export const mockCoordinatorService = {
       await delay(300);
       let users = role === "MENTOR" ? availableMentors : availableJudges;
       if (search) {
-        users = users.filter(u => 
-          u.name.toLowerCase().includes(search.toLowerCase()) || 
+        users = users.filter(u =>
+          u.name.toLowerCase().includes(search.toLowerCase()) ||
           u.email.toLowerCase().includes(search.toLowerCase())
         );
       }
@@ -211,6 +214,50 @@ export const mockCoordinatorService = {
         guest: false,
         temporary: false
       }));
+    }
+  },
+
+  rankingApi: {
+    getPublicEventLeaderboard: async (eventId: UUID, params?: any) => {
+      await delay(300);
+      return [
+        {
+          id: crypto.randomUUID(),
+          eventId: eventId,
+          submissionId: "sub-1",
+          teamId: "team-1",
+          teamName: "Alpha Team",
+          roundId: "round-1",
+          roundName: "Final Round",
+          trackId: "t1",
+          trackName: "Web3 Track",
+          totalScore: 92.5,
+          rankPosition: 1,
+          advanced: true,
+          judgeCount: 3,
+          published: true,
+        },
+        {
+          id: crypto.randomUUID(),
+          eventId: eventId,
+          submissionId: "sub-2",
+          teamId: "team-2",
+          teamName: "Neural Ninjas",
+          roundId: "round-1",
+          roundName: "Final Round",
+          trackId: "t1",
+          trackName: "Web3 Track",
+          totalScore: 88.0,
+          rankPosition: 2,
+          advanced: false,
+          judgeCount: 3,
+          published: true,
+        }
+      ];
+    },
+    getPublicTrackLeaderboard: async (eventId: UUID, trackId: UUID, params?: any) => {
+      await delay(300);
+      return []; // Return empty for other tracks for simplicity
     }
   }
 };

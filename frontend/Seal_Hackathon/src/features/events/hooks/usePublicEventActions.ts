@@ -30,23 +30,13 @@ export function usePublicEventActions() {
     navigate(`/participant/teams/create`);
   };
 
-  const viewPrizes = (eventId: UUID) => {
-    navigate(`/events/${eventId}/prizes`);
-  };
-
   const viewResults = (eventId: UUID) => {
     navigate(`/standings?eventId=${eventId}`);
-  };
-
-  const viewAwards = (eventId: UUID) => {
-    navigate(`/events/${eventId}/awards`);
   };
 
   return {
     isAuthenticated,
     joinEvent,
-    viewPrizes,
-    viewAwards,
     viewResults,
   };
 }

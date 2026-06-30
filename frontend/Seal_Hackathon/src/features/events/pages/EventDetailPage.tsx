@@ -66,7 +66,7 @@ export function EventDetailPage() {
     staleTime: 30_000,
   });
 
-  const { joinEvent, viewPrizes, viewAwards, viewResults } = usePublicEventActions();
+  const { joinEvent, viewResults } = usePublicEventActions();
 
   const announcementViews = useMemo(
     () => toAnnouncementViews(announcementsQuery.data ?? []),
@@ -226,15 +226,6 @@ export function EventDetailPage() {
                 <>
                   <button
                     type="button"
-                    onClick={() => viewAwards(event.id)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-amber-100 transition-all hover:bg-amber-600 active:scale-95"
-                  >
-                    <CardGiftcardIcon style={{ fontSize: 16 }} />
-                    View Awards
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={() => viewResults(event.id)}
                     className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-6 py-2.5 text-sm font-bold text-gray-600 shadow-sm transition-all hover:border-blue-400 hover:text-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                   >
@@ -271,7 +262,6 @@ export function EventDetailPage() {
           <EventPrizesCard
             prizes={prizesQuery.data ?? []}
             tracks={event.tracks ?? []}
-            onViewAllPage={() => viewPrizes(event.id)}
           />
 
           <EventAnnouncementsCard
