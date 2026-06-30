@@ -18,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.AccessFlag;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -220,10 +221,41 @@ public class PrizeServiceImpl implements PrizeService {
         return toPrizeResponse(saved);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Override
     public PrizeResponse clearPrize(UUID prizeId, ClearPrizeAwardRequest request, Authentication authentication) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        Prize prize = findPrize(prizeId, null, null);
+        Map<String, Object> before = auditPrize(prize);
+
+        Team oldWinner = prize.getAwardedTeam();
+        if (oldWinner == null) {
+            return toPrizeResponse(prize);
+        }
+
+        prize.clearAward();
+        Prize saved = prizeRepository.save(prize);
+
+        if (oldWinner.getStatus() == TeamStatus.WINNER
+                && prizeRepository.countAwardedByEventIdAndTeamIdExceptPrize(
+                saved.getEvent().getId(), oldWinner.getId(), saved.getId()) == 0
+        ) {
+            oldWinner.setStatus(TeamStatus.ADVANCED);
+            teamRepository.save(oldWinner);
+        }
+
+        auditLogService.record(
+                actor,
+                AuditActionType.PRIZE_AWARD_CLEARED,
+                "prizes",
+                saved.getId(),
+                before,
+                auditPrize(saved),
+                auditContext(saved.getEvent().getId(), prizeTrackId(prize), null,
+                        request == null ? null : trimToNull(request.reason()))
+        );
+
+        return toPrizeResponse(saved);
     }
 
     @Transactional
