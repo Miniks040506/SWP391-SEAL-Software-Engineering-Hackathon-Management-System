@@ -27,9 +27,9 @@ public interface PrizeService {
                              ClearPrizeAwardRequest request,
                              Authentication authentication);
 
-    List<PrizeAssignmentResponse> assignPrizesFromRanking(UUID eventId,
-                                                          AssignPrizesFromRankingRequest request,
-                                                          Authentication authentication);
+    PrizeAssignmentResponse assignPrizesFromRanking(UUID eventId,
+                                                    AssignPrizesFromRankingRequest request,
+                                                    Authentication authentication);
 
     List<PrizeResponse> getPublishedAwards(UUID eventId);
 }

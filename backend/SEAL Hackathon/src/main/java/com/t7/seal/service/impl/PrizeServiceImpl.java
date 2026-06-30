@@ -20,10 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.AccessFlag;
 import java.math.BigDecimal;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -251,7 +249,7 @@ public class PrizeServiceImpl implements PrizeService {
                 saved.getId(),
                 before,
                 auditPrize(saved),
-                auditContext(saved.getEvent().getId(), prizeTrackId(prize), null,
+                auditContext(saved.getEvent().getId(), prizeTrackId(saved), null,
                         request == null ? null : trimToNull(request.reason()))
         );
 
@@ -260,8 +258,60 @@ public class PrizeServiceImpl implements PrizeService {
 
     @Transactional
     @Override
-    public List<PrizeAssignmentResponse> assignPrizesFromRanking(UUID eventId, AssignPrizesFromRankingRequest request, Authentication authentication) {
-        return List.of();
+    public PrizeAssignmentResponse assignPrizesFromRanking(UUID eventId, AssignPrizesFromRankingRequest request, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        HackathonEvent event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found."));
+
+        ensureResultPublishedForAwards(event);
+
+        UUID requestedTrackId = (request == null) ? null : request.trackId();
+        Track requestedTrack = resolveTrack(eventId, requestedTrackId);
+        Round awardRound = resolveAwardRound(event, request == null ? null : request.roundId());
+        Boolean override = request != null && Boolean.TRUE.equals(request.overwriteExistingAwards());
+
+        List<Prize> prizes = prizeRepository.findByEventIdOrderByTrackNameAndRankPositionAsc(eventId)
+                .stream()
+                .filter(p -> requestedTrack == null
+                        || (p.getTrack() != null && p.getTrack().getId().equals(requestedTrack.getId())))
+                .toList();
+        if (prizes.isEmpty()) {
+            throw new ConflictException("No prizes are configured for this event's track.");
+        }
+
+        List<Ranking> rankings = rankingRepository.findByEventRoundTrackWithDetails(
+                        event.getId(),
+                        awardRound.getId(),
+                        requestedTrack == null ? null : requestedTrack.getId())
+                .stream()
+                .filter(this::isAwardableRanking)
+                .toList();
+        if (rankings.isEmpty()) {
+            throw new ConflictException("No eligible rankings were found for this prize assignment.");
+        }
+
+        int awarded = 0;
+        int skipped = 0;
+
+        List<PrizeResponse> prizeResponses = prizeRepository.findByEventIdOrderByTrackNameAndRankPositionAsc(event.getId())
+                .stream()
+                .filter(p -> requestedTrack == null
+                        || (p.getTrack() != null && p.getTrack().getId().equals(requestedTrack.getId())))
+                .map(this::toPrizeResponse)
+                .toList();
+
+        return new PrizeAssignmentResponse(
+                event.getId(),
+                awardRound.getId(),
+                requestedTrack == null ? null : requestedTrack.getId(),
+                prizes.size(),
+                awarded,
+                skipped,
+                awarded > 0 && shouldSendInApp(request),
+                awarded > 0 && shouldSendEmail(request),
+                LocalDateTime.now(),
+                prizeResponses
+        );
     }
 
     @Transactional(readOnly = true)
@@ -281,6 +331,48 @@ public class PrizeServiceImpl implements PrizeService {
     }
 
     //HELPERS
+
+    private boolean shouldSendInApp(AssignPrizesFromRankingRequest request) {
+        boolean shouldNotify = (request == null)
+                || (request.sendNotification() == null)
+                || (Boolean.TRUE.equals(request.sendNotification()));
+        boolean shouldUseInApp = (request == null)
+                || (request.sendInApp() == null)
+                || (Boolean.TRUE.equals(request.sendInApp()));
+        return shouldNotify && shouldUseInApp;
+    }
+
+    private boolean shouldSendEmail(AssignPrizesFromRankingRequest request) {
+        boolean shouldNotify = (request == null)
+                || (request.sendNotification() == null)
+                || (Boolean.TRUE.equals(request.sendNotification()));
+        boolean shouldUseEmail = (request == null)
+                || (request.sendEmail() == null)
+                || (Boolean.TRUE.equals(request.sendEmail()));
+        return shouldNotify && shouldUseEmail;
+    }
+
+    private Round resolveAwardRound(HackathonEvent event, UUID roundId) {
+        if (roundId != null) {
+            Round round = roundRepository.findById(roundId)
+                    .orElseThrow(() -> new NotFoundException("Round not found."));
+            if (!round.getEvent().getId().equals(event.getId())) {
+                throw new BadRequestException("Round does not belong to this event.");
+            }
+            if (round.getResultPublishedAt() == null && event.getResultPublishedAt() == null) {
+                throw new ConflictException("Round result must be published before assigning prizes.");
+            }
+            return round;
+        }
+        List<Round> rounds = roundRepository.findByEventIdOrderByOrderIndexAsc(event.getId());
+        if (rounds.isEmpty()) {
+            throw new ConflictException("Cannot assign prizes without configure rounds.");
+        }
+        return rounds.stream().filter(r -> r.getResultPublishedAt() != null
+                        || event.getResultPublishedAt() != null)
+                .max(Comparator.comparing(Round::getOrderIndex))
+                .orElseThrow(() -> new ConflictException("No publish round result for round assignment."));
+    }
 
     private void mayBeNotifyPrizeWinner(
             User actor,

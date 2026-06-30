@@ -54,7 +54,7 @@ public class EventAwardController {
 
     @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
     @PostMapping("/events/{eventId}/prizes/assign-from-ranking")
-    public ResponseEntity<List<PrizeAssignmentResponse>> assignPrizesFromRanking(
+    public ResponseEntity<PrizeAssignmentResponse> assignPrizesFromRanking(
             @PathVariable("eventId") UUID eventId,
             @Valid @RequestBody(required = false) AssignPrizesFromRankingRequest request,
             Authentication authentication
