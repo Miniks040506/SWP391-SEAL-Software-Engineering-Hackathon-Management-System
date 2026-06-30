@@ -75,7 +75,8 @@ public class PrizeServiceImpl implements PrizeService {
                 "prizes",
                 saved.getId(),
                 null,
-
+                auditPrize(prize),
+                auditContext(event.getId(), null, null, null)
         );
 
         return toPrizeResponse(saved);
