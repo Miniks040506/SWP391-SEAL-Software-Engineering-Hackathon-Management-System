@@ -397,7 +397,12 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         }
     }
 
-    private void sendDisqualificationNotification(User actor, HackathonEvent event, Team team, Disqualification disqualification) {
+    private void sendDisqualificationNotification(
+            User actor,
+            HackathonEvent event,
+            Team team,
+            Disqualification disqualification
+    ) {
         notificationService.createSystemNotification(
                 actor,
                 event,
@@ -412,6 +417,29 @@ public class DisqualificationServiceImpl implements DisqualificationService {
                 null
         );
     }
+
+    private void sendOverturnNotification(
+            User actor,
+            HackathonEvent event,
+            Team team, 
+            Disqualification disqualification,
+            String reason
+    ) {
+        notificationService.createSystemNotification(
+                actor,
+                event,
+                NotificationType.DISQUALIFICATION_OVERTURNED,
+                "Disqualification overturned",
+                "The disqualification for team " + team.getName()
+                        + " has been overturned. Reason: " + reason,
+                NotificationTargetScope.TEAM,
+                team.getId(),
+                null,
+                NotificationChannel.BOTH,
+                null
+        );
+    }
+
 
     private DisqualificationResponse toDisqualificationResponse(
             Disqualification disqualification,
