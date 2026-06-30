@@ -1,5 +1,7 @@
 package com.t7.seal.service;
 
+import com.t7.seal.request.results.AwardPrizeRequest;
+import com.t7.seal.request.results.ClearPrizeAwardRequest;
 import com.t7.seal.request.results.CreatePrizeRequest;
 import com.t7.seal.request.results.UpdatePrizeRequest;
 import com.t7.seal.response.results.PrizeResponse;
@@ -18,4 +20,12 @@ public interface PrizeService {
     List<PrizeResponse> getPrizesByEvent(UUID eventId);
 
     PrizeResponse getPrizeById(UUID prizeId);
+
+    PrizeResponse awardPrize(UUID prizeId,
+                             AwardPrizeRequest request,
+                             Authentication authentication);
+
+    PrizeResponse clearPrize(UUID prizeId,
+                             ClearPrizeAwardRequest request,
+                             Authentication authentication);
 }
