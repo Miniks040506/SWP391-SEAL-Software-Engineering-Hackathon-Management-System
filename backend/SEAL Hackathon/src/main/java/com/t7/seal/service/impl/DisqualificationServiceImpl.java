@@ -174,6 +174,7 @@ public class DisqualificationServiceImpl implements DisqualificationService {
     ) {
         currentUserService.getCurrentUser(authentication);
         AppealStatus status = parseAppealStatus(appealStatus);
+
         return disqualificationRepository.findByEventFilters(eventId, roundId, trackId, status)
                 .stream()
                 .map(disqualification -> toDisqualificationResponse(
@@ -184,9 +185,52 @@ public class DisqualificationServiceImpl implements DisqualificationService {
                 .toList();
     }
 
+    @Transactional
     @Override
-    public DisqualificationResponse updateAppeal(UUID disqualificationId, UpdateAppealRequest request, Authentication authentication) {
-        return null;
+    public DisqualificationResponse updateAppeal(
+            UUID disqualificationId,
+            UpdateAppealRequest request,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        String appealNote = requireText(request == null
+                ? null : request.appealNote(), "Appeal note is required.");
+
+        Disqualification disqualification = disqualificationRepository
+                .findByIdWithDetails(disqualificationId)
+                .orElseThrow(() ->
+                        new NotFoundException("Disqualification not found " + disqualificationId));
+
+        ensureCanAppeal(disqualification, actor);
+        if (disqualification.isAppealOverturned()) {
+            throw new ConflictException("This disqualification has already been overturned.");
+        }
+
+        Map<String, Object> before = auditDisqualification(disqualification);
+        disqualification.submitAppeal(appealNote);
+        Disqualification saved = disqualificationRepository.save(disqualification);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.TEAM_DISQUALIFIED,
+                "disqualifications",
+                saved.getId(),
+                before,
+                auditDisqualification(saved),
+                mapOf(
+                        "eventId", eventId(saved).toString(),
+                        "roundId", roundId(saved).toString(),
+                        "teamId", teamId(saved).toString(),
+                        "submissionId", submissionId(saved).toString(),
+                        "action", "APPEAL_SUBMITTED"
+                )
+        );
+
+        return toDisqualificationResponse(
+                saved,
+                false,
+                0
+        );
     }
 
     @Override
