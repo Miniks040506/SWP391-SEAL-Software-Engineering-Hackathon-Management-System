@@ -65,6 +65,8 @@ import {
   CoordinatorEditEventPage,
   CoordinatorEventsPage,
   CoordinatorAnnouncementPage,
+  CoordinatorPrizeSetupPage,
+  CoordinatorAwardManagementPage,
 } from "@/features/coordinator";
 
 import {
@@ -185,6 +187,8 @@ export const router = createBrowserRouter([
       { path: "events", element: <CoordinatorEventsPage /> },
       { path: "events/create", element: <CoordinatorCreateEventPage /> },
       { path: "events/:eventId/edit", element: <CoordinatorEditEventPage /> },
+      { path: "events/:eventId/prizes", element: <CoordinatorPrizeSetupPage /> },
+      { path: "events/:eventId/awards", element: <CoordinatorAwardManagementPage /> },
       {
         path: "events/:eventId/criteria",
         element: <EventCriteriaManagementPage />,

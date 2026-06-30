@@ -16,7 +16,7 @@ export function useCoordinatorUsersQuery(params: AdminUserListParams) {
     queryFn: () =>
       userApi.getUsers({
         ...rest,
-        page: page - 1, // Spring is 0-based
+        page: page - 1,
         size: pageSize,
       }),
     placeholderData: (prev) => prev,

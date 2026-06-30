@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Alert, Button, CircularProgress } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 import { useCoordinatorEventDetailQuery, useCoordinatorEventRoundsQuery, useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 import { useRoundRankingsQuery, useEventRankingsQuery } from "../hooks/useRankingQueries";
@@ -22,6 +23,7 @@ type SelectOption = { id: string; name: string };
 
 export const CoordinatorRankingPage = () => {
     const { eventId } = useParams();
+    const navigate = useNavigate();
 
     const [selectedRoundId, setSelectedRoundId] = useState<string>("all");
     const [selectedTrackId, setSelectedTrackId] = useState<string>("all");
@@ -128,6 +130,15 @@ export const CoordinatorRankingPage = () => {
                         sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                     >
                         Publish Results
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        color="secondary"
+                        endIcon={<EmojiEventsIcon />}
+                        onClick={() => navigate(`/coordinator/events/${eventId}/awards`)}
+                        sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
+                    >
+                        Go to Awards
                     </Button>
                 </div>
             </header>

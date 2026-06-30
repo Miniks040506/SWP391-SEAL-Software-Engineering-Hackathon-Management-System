@@ -66,7 +66,7 @@ export function useCoordinatorPrizeMutations(eventId?: UUID) {
       return prizeApi.assignFromRanking(eventId, payload);
     },
     onSuccess: (data) => {
-      enqueueSnackbar(`Assigned ${data.assignedCount} prizes successfully.`, { variant: "success" });
+      enqueueSnackbar(`Assigned ${data.awardedCount} prizes successfully.`, { variant: "success" });
       if (data.skippedCount > 0) {
         enqueueSnackbar(`Skipped ${data.skippedCount} prizes.`, { variant: "info" });
       }
