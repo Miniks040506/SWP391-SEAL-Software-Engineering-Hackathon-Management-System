@@ -12,6 +12,7 @@ import com.t7.seal.response.system.AuditLogResponse;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,11 +24,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -100,7 +97,8 @@ public class AuditLogServiceImpl implements AuditLogService {
                 predicates.add(cb.equal(root.get("actionType"), action));
             }
             if (normalizedTargetTable != null) {
-                predicates.add(cb.equal(cb.lower(root.get("targetTable")), normalizedTargetTable.toLowerCase()));
+                predicates.add(cb.equal(cb.lower(root.get("targetTable")),
+                        normalizedTargetTable.toLowerCase()));
             }
             if (targetId != null) {
                 predicates.add(cb.equal(root.get("targetId"), targetId));
@@ -115,18 +113,31 @@ public class AuditLogServiceImpl implements AuditLogService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        Page<AuditLog> result = auditLogRepository.findAll(
-                spec,
-                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"))
-        );
+        List<AuditLog> filtered = auditLogRepository.findAll(
+                        spec,
+                        Sort.by(Sort.Direction.DESC, "createdAt")
+                ).stream()
+                .filter(log -> matchesEntityFilters(log, eventId, teamId, submissionId))
+                .toList();
+
+        int total = filtered.size();
+        int fromIndex = Math.min(safePage * safeSize, total);
+        int toIndex = Math.min(fromIndex + safeSize, total);
+
+        List<AuditLogResponse> content = filtered.subList(fromIndex, toIndex)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+
+        int totalPages = (total == 0) ? 0 : (int) Math.ceil((double) total / safeSize);
 
         return new PageResponse<>(
-                result.getContent().stream().map(this::toResponse).toList(),
-                result.getNumber(),
-                result.getSize(),
-                result.getTotalElements(),
-                result.getTotalPages(),
-                result.isLast()
+                content,
+                safePage,
+                safeSize,
+                total,
+                totalPages,
+                safePage >= Math.max(totalPages - 1, 0)
         );
     }
 
@@ -138,6 +149,95 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .map(Enum::name)
                 .sorted()
                 .toList();
+    }
+
+    //HELPERS
+    private boolean matchesEntityFilters(
+            AuditLog log,
+            UUID eventId,
+            UUID teamId,
+            UUID submissionId
+    ) {
+        if (eventId != null && !matchesEvent(log, eventId)) {
+            return false;
+        }
+        if (teamId != null && !matchesTeam(log, teamId)) {
+            return false;
+        }
+        if (submissionId != null && !matchesSubmission(log, submissionId)) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean matchesEvent(AuditLog log, UUID eventId) {
+        return matchesTarget(log, eventId, "hackathon_events", "events")
+                || containsId(log, "eventId", eventId);
+    }
+
+    private boolean matchesTeam(AuditLog log, UUID teamId) {
+        return matchesTarget(log, teamId, "teams", "team")
+                || containsId(log, "teamId", teamId);
+    }
+
+    private boolean matchesSubmission(AuditLog log, UUID submissionId) {
+        return matchesTarget(log, submissionId, "submissions", "submission")
+                || containsId(log, "submissionId", submissionId);
+    }
+
+    private boolean containsId(AuditLog log, String key, UUID id) {
+        return containsId(log.getBeforeState(), key, id)
+                || containsId(log.getAfterState(), key, id)
+                || containsId(log.getContext(), key, id);
+    }
+
+    private boolean containsId(Map<String, Object> state, String key, UUID id) {
+        if (state == null || state.isEmpty()) {
+            return false;
+        }
+        Object direct = state.get(key);
+        if (matchesValue(direct, id)) {
+            return true;
+        }
+
+        for (Object value : state.values()) {
+            if (value instanceof Map<?, ?> nested) {
+                Object nestedValue = nested.get(key);
+                if (matchesValue(nestedValue, id)) {
+                    return true;
+                }
+            }
+            if (value instanceof Iterable<?> values) {
+                for (Object objItem : values) {
+                    if (matchesValue(objItem, id)) {
+                        return true;
+                    }
+                    if (objItem instanceof Map<?, ?> nestedItem
+                            && matchesValue(nestedItem.get(key), id)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean matchesValue(Object raw, UUID id) {
+        return raw != null && id != null && id.toString().equals(raw.toString());
+    }
+
+    private boolean matchesTarget(AuditLog log, UUID id, String... targetTables) {
+        if (log == null || id == null || log.getTargetTable() == null || log.getTargetId() == null) {
+            return false;
+        }
+
+        for (String targetTable : targetTables) {
+            if (log.getTargetTable().equalsIgnoreCase(targetTable)
+                    && log.getTargetId().equals(id)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void ensureCanViewAudit(Authentication authentication) {
