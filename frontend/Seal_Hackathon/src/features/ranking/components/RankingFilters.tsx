@@ -19,7 +19,10 @@ export function RankingFilters({
   return (
     <div className={filterStyles.wrapper}>
       <div className={filterStyles.searchWrap}>
-        <SearchIcon style={{ fontSize: 14 }} className={filterStyles.searchIcon} />
+        <SearchIcon
+          style={{ fontSize: 14 }}
+          className={filterStyles.searchIcon}
+        />
 
         <input
           type="text"

@@ -68,12 +68,18 @@ export function PublishResultsDialog({
   };
 
   return (
-    <Dialog open={open} onClose={isPending ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={isPending ? undefined : onClose}
+      maxWidth="sm"
+      fullWidth
+    >
       <DialogTitle sx={{ fontWeight: 900 }}>Publish results?</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2}>
           <Typography>
-            This will make {scopeLabel} results visible to participants and public result pages.
+            This will make {scopeLabel} results visible to participants and
+            public result pages.
           </Typography>
           <Alert severity="info">
             Ranking rows to publish: <strong>{rankingCount}</strong>
@@ -98,7 +104,9 @@ export function PublishResultsDialog({
             control={
               <Checkbox
                 checked={createAnnouncement}
-                onChange={(event) => setCreateAnnouncement(event.target.checked)}
+                onChange={(event) =>
+                  setCreateAnnouncement(event.target.checked)
+                }
                 disabled={isPending}
               />
             }
@@ -144,7 +152,9 @@ export function PublishResultsDialog({
           onClick={handleConfirm}
           disabled={!understood || isPending}
           variant="contained"
-          startIcon={isPending ? <CircularProgress size={18} color="inherit" /> : null}
+          startIcon={
+            isPending ? <CircularProgress size={18} color="inherit" /> : null
+          }
         >
           Publish Results
         </Button>

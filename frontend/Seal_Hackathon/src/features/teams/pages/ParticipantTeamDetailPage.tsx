@@ -28,7 +28,6 @@ import type { TeamMemberResponse } from "@/types/team.types";
 
 import { useTeamAdvancementStatusQuery } from "@/features/advancement/hooks/useAdvancementQueries";
 import { TeamAdvancementStatusBanner } from "@/features/advancement/components/TeamAdvancementStatusBanner";
-
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
 import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
 import { TeamJoinRequestsPanel } from "../components/TeamJoinRequestsPanel";
