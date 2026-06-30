@@ -138,7 +138,7 @@ public class DisqualificationServiceImpl implements DisqualificationService {
         );
 
         sendDisqualificationNotification(actor, event, team, saved);
-        return toResponse(saved, recalculation != null, clearedAwardCount);
+        return toDisqualificationResponse(saved, recalculation != null, clearedAwardCount);
     }
 
     @Override
@@ -162,6 +162,46 @@ public class DisqualificationServiceImpl implements DisqualificationService {
     }
 
     //HELPER METHODS
+
+    private DisqualificationResponse toDisqualificationResponse(
+            Disqualification disqualification,
+            boolean rankingRecalculated,
+            int clearedAwardCount
+    ) {
+        Submission submission = disqualification.getSubmission();
+        Team team = requireTeam(submission);
+        Round round = requireRound(submission);
+        HackathonEvent event = requireEvent(round);
+
+        return new DisqualificationResponse(
+                disqualification.getId(),
+                submission.getId(),
+                disqualification.getIssuedBy() == null
+                        ? null : disqualification.getIssuedBy().getId(),
+                disqualification.getIssuedBy() == null
+                        ? null : disqualification.getIssuedBy().getFullName(),
+                team.getId(),
+                team.getName(),
+                event.getId(),
+                event.getName(),
+                round.getId(),
+                round.getName(),
+                team.getTrack() == null ? null : team.getTrack().getId(),
+                team.getTrack() == null ? null : team.getTrack().getName(),
+                disqualification.getReason(),
+                disqualification.getEvidenceUrl(),
+                disqualification.getAppealNote(),
+                disqualification.getAppealStatus() == null
+                        ? null : disqualification.getAppealStatus().name(),
+                submission.getStatus() == null
+                        ? null : submission.getStatus().name(),
+                team.getStatus() == null
+                        ? null : team.getStatus().name(),
+                disqualification.getIssuedAt(),
+                rankingRecalculated,
+                clearedAwardCount
+        );
+    }
 
     private String requireText(String value, String message) {
         if (value == null || value.isBlank()) {
@@ -213,12 +253,14 @@ public class DisqualificationServiceImpl implements DisqualificationService {
 
     private Map<String, Object> mapOf(Object... keyValues) {
         Map<String, Object> map = new LinkedHashMap<>();
+
         for (int i = 0; i + 1 < keyValues.length; i += 2) {
             Object value = keyValues[i + 1];
             if (value != null) {
                 map.put(Objects.toString(keyValues[i]), value);
             }
         }
+        
         return map;
     }
 }
