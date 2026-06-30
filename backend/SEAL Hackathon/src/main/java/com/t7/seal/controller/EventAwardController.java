@@ -7,6 +7,7 @@ import com.t7.seal.request.results.ClearPrizeAwardRequest;
 import com.t7.seal.response.grading.AssignedSubmissionResponse;
 import com.t7.seal.response.results.PrizeAssignmentResponse;
 import com.t7.seal.response.results.PrizeResponse;
+import com.t7.seal.service.PrizeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,8 @@ import java.util.UUID;
 @RequestMapping(ApiPaths.API_V1)
 public class EventAwardController {
 
+    private final PrizeService prizeService;
+
     @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
     @PostMapping("/prizes/{prizeId}/award")
     public ResponseEntity<PrizeResponse> awardPrize(
@@ -29,7 +32,7 @@ public class EventAwardController {
             @Valid @RequestBody AwardPrizeRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(prizeService.awardPrize(prizeId, request, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
@@ -39,7 +42,7 @@ public class EventAwardController {
             @Valid @RequestBody ClearPrizeAwardRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(prizeService.clearPrize(prizeId, request, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
@@ -49,7 +52,7 @@ public class EventAwardController {
             @Valid @RequestBody AwardPrizeRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(prizeService.awardPrize(prizeId, request, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
@@ -59,13 +62,13 @@ public class EventAwardController {
             @Valid @RequestBody(required = false) AssignPrizesFromRankingRequest request,
             Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(prizeService.assignPrizesFromRanking(eventId, request, authentication));
     }
 
     @GetMapping("events/{eventId}/awards")
     public ResponseEntity<List<PrizeResponse>> getPublishedAwards(
             @PathVariable("eventId") UUID eventId
     ) {
-        return null;
+        return ResponseEntity.ok(prizeService.getPublishedAwards(eventId));
     }
 }
