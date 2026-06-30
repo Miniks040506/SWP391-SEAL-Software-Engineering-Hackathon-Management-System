@@ -3,6 +3,8 @@ import type { UUID } from "@/types/common.types";
 import type {
   CreateDisqualificationRequest,
   DisqualificationResponse,
+  DisqualifySubmissionRequest,
+  GetEventDisqualificationsParams,
   OverturnDisqualificationRequest,
   UpdateAppealRequest,
 } from "@/types/disqualification.types";
@@ -12,6 +14,26 @@ export const disqualificationApi = {
     return apiRequest.post<DisqualificationResponse>(
       "/disqualifications",
       payload,
+    );
+  },
+
+  disqualifySubmissionById(
+    submissionId: UUID,
+    payload: DisqualifySubmissionRequest,
+  ) {
+    return apiRequest.post<DisqualificationResponse>(
+      `/submissions/${submissionId}/disqualify`,
+      payload,
+    );
+  },
+
+  getEventDisqualifications(
+    eventId: UUID,
+    params?: GetEventDisqualificationsParams,
+  ) {
+    return apiRequest.get<DisqualificationResponse[]>(
+      `/events/${eventId}/disqualifications`,
+      { params },
     );
   },
 
