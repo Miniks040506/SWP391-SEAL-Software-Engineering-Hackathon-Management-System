@@ -2,17 +2,13 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.domain.RegistrationStatus;
-import com.t7.seal.entities.HackathonEvent;
-import com.t7.seal.entities.Prize;
-import com.t7.seal.entities.Track;
-import com.t7.seal.entities.User;
+import com.t7.seal.domain.SubmissionStatus;
+import com.t7.seal.domain.TeamStatus;
+import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
-import com.t7.seal.repository.HackathonEventRepository;
-import com.t7.seal.repository.PrizeRepository;
-import com.t7.seal.repository.RoundRepository;
-import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.results.*;
 import com.t7.seal.response.results.PrizeAssignmentResponse;
 import com.t7.seal.response.results.PrizeResponse;
@@ -38,6 +34,8 @@ public class PrizeServiceImpl implements PrizeService {
     private final HackathonEventRepository eventRepository;
     private final TrackRepository trackRepository;
     private final RoundRepository roundRepository;
+    private final TeamRepository teamRepository;
+    private final RankingRepository rankingRepository;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -186,11 +184,41 @@ public class PrizeServiceImpl implements PrizeService {
         return toPrizeResponse(prize);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Override
     public PrizeResponse awardPrize(UUID prizeId, AwardPrizeRequest request, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
 
-        return null;
+        if (request == null || request.teamId() == null) {
+            throw new BadRequestException("Team id is required.");
+        }
+
+        Prize prize = findPrize(prizeId, null, null);
+        ensureResultPublishedForAwards(prize.getEvent());
+
+        Team team = teamRepository.findCoordinatorDetailById(request.teamId())
+                .orElseThrow(() -> new NotFoundException("Team not found."));
+
+        validateManualAwardTeam(prize, team);
+
+        Map<String, Object> before = auditPrize(prize);
+        awardPrizeToTeam(team, prize);
+        Prize saved = prizeRepository.save(prize);
+        markTeamAsWinner(team);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.PRIZE_AWARDED,
+                "prizes",
+                prizeId,
+                before,
+                auditPrize(saved),
+                auditContext(saved.getEvent().getId(), prizeTrackId(prize), null,
+                        trimToNull(request.reason()) == null ? "MANUAL_AWARD" : request.reason().trim())
+        );
+        mayBeNotifyPrizeWinner(actor, saved.getEvent(), saved, team, request);
+
+        return toPrizeResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -222,6 +250,65 @@ public class PrizeServiceImpl implements PrizeService {
     }
 
     //HELPERS
+
+    private void mayBeNotifyPrizeWinner(
+            User actor,
+            HackathonEvent event,
+            Prize prize, Team team,
+            AwardPrizeRequest request
+    ) {
+
+    }
+
+    private void markTeamAsWinner(Team team) {
+    }
+
+    private void awardPrizeToTeam(Team team, Prize prize) {
+
+    }
+
+    private void validateManualAwardTeam(Prize prize, Team team) {
+        if (team.getTrack() == null || team.getTrack().getEvent() == null) {
+            throw new BadRequestException("Team is not registered to an event's track.");
+        }
+        if (!team.getTrack().getEvent().getId().equals(prize.getEvent().getId())) {
+            throw new BadRequestException("Team does not belong to this prize event.");
+        }
+        if (prize.getTrack() != null && !prize.getTrack().getId().equals(team.getTrack().getId())) {
+            throw new BadRequestException("Track specific prize can only be awarded to a team in the same track.");
+        }
+        if (team.getStatus() == TeamStatus.ELIMINATED) {
+            throw new ConflictException("Eliminated or disqualified teams cannot be awarded prizes.");
+        }
+
+        boolean hasEligibleRanking = rankingRepository.findByEventRoundTrackWithDetails(
+                        prize.getEvent().getId(), null, prizeTrackId(prize)
+                ).stream()
+                .anyMatch(r -> isAwardableRanking(r)
+                        && r.getSubmission().getTeam().getId().equals(team.getId()));
+
+        if (!hasEligibleRanking) {
+            throw new ConflictException("Team does not have an eligible publish ranking for this prize.");
+        }
+    }
+
+    private boolean isAwardableRanking(Ranking ranking) {
+        return ranking != null
+                && ranking.getSubmission() != null
+                && ranking.getSubmission().getTeam() != null
+                && ranking.getSubmission().getStatus() != SubmissionStatus.DISQUALIFIED
+                && ranking.getSubmission().getTeam().getStatus() != TeamStatus.ELIMINATED;
+    }
+
+    private UUID prizeTrackId(Prize prize) {
+        return prize.getTrack() == null ? null : prize.getTrack().getId();
+    }
+
+    private void ensureResultPublishedForAwards(HackathonEvent event) {
+        if (!hasPublishedResults(event)) {
+            throw new ConflictException("Result must be published before awarding prizes.");
+        }
+    }
 
     private boolean hasPublishedResults(HackathonEvent event) {
         return event.getResultPublishedAt() != null
