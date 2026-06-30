@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { announcementApi } from "@/api/announcement.api";
 import { eventApi } from "@/api/event.api";
 import { prizeApi } from "@/api/prize.api";
+import { roundApi } from "@/api/round.api";
+import { trackApi } from "@/api/track.api";
 import type { UUID } from "@/types/common.types";
 import type { GetEventsParams } from "@/types/event.types";
 import { mockCoordinatorService } from "@/features/coordinator/mocks/coordinatorService.mock";
@@ -28,6 +30,9 @@ export const publicEventKeys = {
 
   prizes: (eventId?: UUID) =>
     [...publicEventKeys.all, "prizes", eventId] as const,
+    
+  publishedAwards: (eventId?: UUID) =>
+    [...publicEventKeys.all, "published-awards", eventId] as const,
 };
 
 export function usePublicEventsQuery(params?: GetEventsParams) {
@@ -73,6 +78,14 @@ export function usePublicEventPrizesQuery(eventId?: UUID) {
   return useQuery({
     queryKey: publicEventKeys.prizes(eventId),
     queryFn: () => prizeApi.getPrizesByEvent(eventId!),
+    enabled: Boolean(eventId),
+  });
+}
+
+export function usePublicEventAwardsQuery(eventId?: UUID) {
+  return useQuery({
+    queryKey: publicEventKeys.publishedAwards(eventId),
+    queryFn: () => USE_MOCK ? mockCoordinatorService.prizeApi.getPublishedAwards(eventId!) as any : prizeApi.getPublishedAwards(eventId!),
     enabled: Boolean(eventId),
   });
 }
