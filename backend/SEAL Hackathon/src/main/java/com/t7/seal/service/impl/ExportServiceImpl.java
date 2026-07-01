@@ -297,7 +297,16 @@ public class ExportServiceImpl implements ExportService {
 
         Path file = exportJob.getFileName() == null ? null
                 : exportDirectory().resolve(exportJob.getFileName()).normalize();
-        
+
+        exportJobRepository.delete(exportJob);
+
+        if (file != null) {
+            try {
+                Files.deleteIfExists(file);
+            } catch (IOException ex) {
+                throw new ExternalServiceException("Failed to delete export file", ex);
+            }
+        }
     }
 
     //HELPERS
