@@ -397,7 +397,35 @@ public class ExportServiceImpl implements ExportService {
             UUID exportId,
             Authentication authentication
     ) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        ExportJob existing = getVisibleJob(exportId, actor);
+        if (existing.getStatus().equals(ExportJobStatus.PROCESSING)) {
+            throw new ConflictException("Export job is already being processed");
+        }
+
+        Map<String, Object> params = existing.getParams();
+        UUID eventId = parseUUID(params.get("eventId"), "eventId");
+
+        EventExportRequest request = new EventExportRequest(
+                parseOptionalUUID(params.get("roundId"), "roundId"),
+                parseOptionalUUID(params.get("trackId"), "trackId"),
+                normalizeFormat(params.get("format")),
+                parseBoolean(params.get("includeDraftScores"), false),
+                parseBoolean(params.get("includeDisqualified"), false),
+                parseBoolean(params.get("anonymize"), false)
+        );
+
+        //create a fresh job instead of mutating the old completed/failed one.
+        //this keep audit history append only
+        return switch (existing.getExportType()) {
+            case RANKING -> exportEventRanking(eventId, request, authentication);
+            case SCORE_REPORT -> exportEventScores(eventId, request, authentication);
+            case TEAM_LIST -> exportEventTeamList(eventId, request, authentication);
+            default -> throw new BadRequestException("Unsupported report type " +
+                    "for generic export endpoint: " + existing.getExportType());
+        };
     }
 
     @Transactional
