@@ -3,12 +3,13 @@ package com.t7.seal.service.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t7.seal.domain.ExportType;
+import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.dto.ExportSpec;
-import com.t7.seal.entities.HackathonEvent;
-import com.t7.seal.entities.User;
+import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.HackathonEventRepository;
+import com.t7.seal.repository.RankingRepository;
 import com.t7.seal.request.system.CreateExportJobRequest;
 import com.t7.seal.request.system.EventExportRequest;
 import com.t7.seal.response.PageResponse;
@@ -23,10 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +34,7 @@ public class ExportServiceImpl implements ExportService {
     private final ObjectMapper objectMapper;
 
     private final HackathonEventRepository hackathonEventRepository;
+    private final RankingRepository rankingRepository;
 
     @Transactional
     @Override
@@ -84,6 +83,50 @@ public class ExportServiceImpl implements ExportService {
 
         HackathonEvent event = getEvent(eventId);
         ExportSpec spec = exportSpec(event, ExportType.RANKING, request);
+
+        List<Ranking> rankings = rankingRepository.findByEventRoundTrackWithDetails(
+                eventId,
+                spec.roundId(),
+                spec.trackId()
+        );
+
+        List<List<String>> rows = new ArrayList<>();
+        rows.add(List.of(
+                "Event ID", "Event", "Round ID", "Round", "Track ID", "Track",
+                "Rank", "Team ID", "Team", "Project Title", "Submission ID",
+                "Total Score", "Judge Count", "Advanced", "Published", "Calculated At"
+        ));
+
+        for (Ranking ranking : rankings) {
+            if (!spec.includeDisqualified()
+                    && ranking.getSubmission().getStatus() == SubmissionStatus.DISQUALIFIED) {
+                continue;
+            }
+
+            Team team = ranking.getSubmission().getTeam();
+            Round round = ranking.getRound();
+            Track track = ranking.getTrack();
+
+            rows.add(List.of(
+                    text(event.getId()),
+                    text(event.getName()),
+                    text(round.getId()),
+                    text(round.getName()),
+                    text(track.getId()),
+                    text(track.getName()),
+                    text(ranking.getRankPosition()),
+                    text(team.getId()),
+                    text(team.getName()),
+                    text(team.getProjectTitle()),
+                    text(ranking.getSubmission().getId()),
+                    text(ranking.getTotalScore()),
+                    text(ranking.getJudgeCount()),
+                    text(Boolean.TRUE.equals(ranking.getIsAdvanced())),
+                    text(ranking.getRound().getResultPublishedAt() != null
+                            || event.getResultPublishedAt() != null),
+                    text(ranking.getCalculatedAt())
+            ));
+        }
 
         return null;
     }
@@ -137,6 +180,9 @@ public class ExportServiceImpl implements ExportService {
     }
 
     //HELPERS
+    private String text(Object value) {
+        return value == null ? "" : value.toString();
+    }
 
     private ExportSpec exportSpec(HackathonEvent event, ExportType type, EventExportRequest request) {
         String format = normalizeFormat(request == null ? null : request.format());
