@@ -427,11 +427,54 @@ public class ExportServiceImpl implements ExportService {
                     : writeCsv(rows).getBytes(StandardCharsets.UTF_8);
             Files.write(file, data);
 
+
+            job.markDone(
+                    "/api/v1/exports/" + job.getId() + "/download-file",
+                    fileName,
+                    Files.size(file),
+                    Math.max(rows.size() - 1, 0),
+                    LocalDateTime.now().plusDays(EXPORT_EXPIRY_DAYS)
+            );
+            ExportJob saved = exportJobRepository.save(job);
+
+            auditLogService.record(
+                    actor,
+                    AuditActionType.EXPORT_COMPLETED,
+                    "export_jobs",
+                    saved.getId(),
+                    null,
+                    Map.of(
+                            "exportType", spec.type().name(),
+                            "rowCount", String.valueOf(saved.getRowCount()),
+                            "fileName", saved.getFileName(),
+                            "eventId", spec.event().getId().toString()
+                    ),
+                    null
+            );
+
+            return toResponse(saved);
         } catch (IOException ex) {
             throw new ExternalServiceException("Failed to create export file", ex);
         }
+    }
 
-        return null;
+    private ExportJobResponse toResponse(ExportJob job) {
+        User requestedBy = job.getRequestedBy();
+
+        return new ExportJobResponse(
+                job.getId(),
+                requestedBy == null ? null : requestedBy.getId(),
+                job.getExportType() == null ? null : job.getExportType().name(),
+                job.getParams(),
+                job.getStatus() == null ? null : job.getStatus().name(),
+                job.getFileName(),
+                job.getFileSizeBytes(),
+                job.getRowCount(),
+                job.getErrorMessage(),
+                job.getRequestedAt(),
+                job.getCompletedAt(),
+                job.getExpiresAt()
+        );
     }
 
     private byte[] writeXlsx(List<List<String>> rows) throws IOException {
