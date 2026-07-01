@@ -34,7 +34,10 @@ public class ExportServiceImpl implements ExportService {
 
     @Transactional
     @Override
-    public ExportJobResponse createExportJob(CreateExportJobRequest request, Authentication authentication) {
+    public ExportJobResponse createExportJob(
+            CreateExportJobRequest request,
+            Authentication authentication
+    ) {
         User actor = currentUserService.getCurrentUser(authentication);
         ensureCanExport(actor);
 
@@ -44,9 +47,24 @@ public class ExportServiceImpl implements ExportService {
         UUID eventId = parseUUID(params.get("eventId"), "eventId");
         UUID trackId = parseOptionalUUID(params.get("trackId"), "trackId");
         UUID roundId = parseOptionalUUID(params.get("roundId"), "roundId");
+        String format = normalizeFormat(params.get("format"));
 
-        
-        return null;
+        EventExportRequest eventRequest = new EventExportRequest(
+                trackId,
+                roundId,
+                format,
+                parseBoolean(params.get("includeDraftScores"), false),
+                parseBoolean(params.get("includeDisqualified"), false),
+                parseBoolean(params.get("anonymize"), false)
+        );
+
+        return switch (exportType) {
+            case RANKING -> exportEventRanking(eventId, eventRequest, authentication);
+            case SCORE_REPORT -> exportEventScores(eventId, eventRequest, authentication);
+            case TEAM_LIST -> exportEventTeamList(eventId, eventRequest, authentication);
+            default -> throw new BadRequestException("Unsupported report type " +
+                    "for generic export endpoint: " + exportType);
+        };
     }
 
     @Transactional
@@ -105,6 +123,16 @@ public class ExportServiceImpl implements ExportService {
 
     //HELPERS
 
+    private boolean parseBoolean(Object value, boolean defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        return Boolean.parseBoolean(value.toString());
+    }
+
     private UUID parseUUID(Object value, String fieldName) {
         UUID parse = parseOptionalUUID(value, fieldName);
         if (parse == null) {
@@ -147,6 +175,17 @@ public class ExportServiceImpl implements ExportService {
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Invalid export type: " + value);
         }
+    }
+
+    private String normalizeFormat(Object value) {
+        if (value == null || value.toString().isBlank()) {
+            return "CSV";
+        }
+        String format = value.toString().trim().toUpperCase();
+        if (!format.equals("CSV") && !format.equals("XLSX")) {
+            throw new BadRequestException("Invalid export format: " + value);
+        }
+        return format;
     }
 
     private Map<String, Object> normalizeParams(Object param) {
