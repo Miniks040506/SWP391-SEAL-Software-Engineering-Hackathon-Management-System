@@ -42,34 +42,43 @@ export type AuditLogResponse = {
 
 export type JudgeVarianceResponse = {
   judgeId: UUID;
+  hashedJudgeId: string;
   judgeType?: string;
   meanScore: number;
   variance: number;
+  standardDeviation: number;
+  minScore: number;
+  maxScore: number;
   scoreCount: number;
+  highVariance: boolean;
 };
 
 export type CriteriaVarianceResponse = {
   eventCriteriaId: UUID;
   criteriaName: string;
+  category?: string | null;
   technical: boolean;
   meanScore: number;
   variance: number;
+  standardDeviation: number;
+  minScore: number;
+  maxScore: number;
   scoreCount: number;
+  judgeCount: number;
+  highVariance: boolean;
 };
 
 export type VarianceDashboardResponse = {
   eventId: UUID;
-  eventName?: string | null;
   roundId?: UUID | null;
   trackId?: UUID | null;
   criteriaType?: string | null;
   judgeType?: string | null;
-  scoreCount: number;
-  judgeCount: number;
-  criteriaCount: number;
-  overallMean?: number | null;
-  overallVariance?: number | null;
-  overallStandardDeviation?: number | null;
+  totalScoreCount: number;
+  totalJudgeCount: number;
+  totalCriteriaCount: number;
+  averageCriterionVariance: number;
+  averageJudgeVariance: number;
   judgeVariances: JudgeVarianceResponse[];
   criteriaVariances: CriteriaVarianceResponse[];
 };
@@ -79,8 +88,13 @@ export type GetAuditLogsParams = {
   actionType?: string;
   targetTable?: string;
   targetId?: UUID;
+  eventId?: UUID;
+  teamId?: UUID;
+  submissionId?: UUID;
   from?: string;
   to?: string;
+  fromDate?: string;
+  toDate?: string;
   page?: number;
   size?: number;
 };

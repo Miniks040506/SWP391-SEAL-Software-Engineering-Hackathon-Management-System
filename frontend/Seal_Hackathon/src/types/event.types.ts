@@ -1,4 +1,4 @@
-export type EventStatus = 'Upcoming' | 'Ongoing' | 'Ended';
+export type EventStatus = "Upcoming" | "Ongoing" | "Ended";
 
 export interface Track {
   name: string;
@@ -108,6 +108,6 @@ export type GetEventRankingParams = {
 export type GetVarianceDashboardParams = {
   roundId?: UUID;
   trackId?: UUID;
-  criteriaType?: string;
-  judgeType?: string;
+  criteriaType?: "TECHNICAL" | "SOFT" | string;
+  judgeType?: "INTERNAL" | "GUEST" | string;
 };

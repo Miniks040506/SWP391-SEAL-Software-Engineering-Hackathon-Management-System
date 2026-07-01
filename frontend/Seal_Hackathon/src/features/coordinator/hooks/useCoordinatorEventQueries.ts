@@ -15,7 +15,7 @@ import type { AssignableUserRole } from "@/types/user.types";
 
 const USE_MOCK = false;
 
-const activeEventApi = USE_MOCK
+export const activeEventApi = USE_MOCK
   ? (mockCoordinatorService.eventApi as any)
   : eventApi;
 const activeTrackApi = USE_MOCK

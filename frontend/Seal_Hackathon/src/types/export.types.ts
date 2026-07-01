@@ -1,16 +1,47 @@
 import type { ISODateTime, UUID } from "@/types/common.types";
 
+export type ExportType =
+  | "RANKING"
+  | "SCORE_REPORT"
+  | "TEAM_LIST"
+  | "SCORE_DATASET_ANONYMIZED"
+  | "CALIBRATION_REPORT"
+  | "FULL_EVENT_REPORT"
+  | "ADMIN_ANNUAL_REPORT";
+
+export type ExportJobStatus = "QUEUED" | "PROCESSING" | "DONE" | "FAILED";
+
+export type ExportFormat = "CSV" | "XLSX";
+
 export type CreateExportJobRequest = {
-  exportType: string;
-  params: unknown;
+  exportType: ExportType | string;
+  params: {
+    eventId: UUID;
+    roundId?: UUID;
+    trackId?: UUID;
+    format?: ExportFormat;
+    includeDraftScores?: boolean;
+    includeDisqualified?: boolean;
+    anonymize?: boolean;
+    [key: string]: unknown;
+  };
+};
+
+export type EventExportRequest = {
+  roundId?: UUID;
+  trackId?: UUID;
+  format?: ExportFormat;
+  includeDraftScores?: boolean;
+  includeDisqualified?: boolean;
+  anonymize?: boolean;
 };
 
 export type ExportJobResponse = {
   id: UUID;
   requestedBy: UUID;
-  exportType: string;
-  params: unknown;
-  status: string;
+  exportType: ExportType | string;
+  params: Record<string, unknown>;
+  status: ExportJobStatus | string;
   fileName?: string;
   fileSizeBytes?: number;
   rowCount?: number;
@@ -28,8 +59,14 @@ export type ExportDownloadResponse = {
 };
 
 export type GetExportJobsParams = {
-  status?: string;
-  exportType?: string;
+  status?: ExportJobStatus | string;
+  exportType?: ExportType | string;
   page?: number;
   size?: number;
+};
+
+export type ExportRblDatasetRequest = {
+  roundId?: UUID;
+  trackId?: UUID;
+  format?: "csv" | string;
 };
