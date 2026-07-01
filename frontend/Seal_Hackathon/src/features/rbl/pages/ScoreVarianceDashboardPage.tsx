@@ -26,11 +26,8 @@ export function ScoreVarianceDashboardPage() {
   const [selectedCriteriaType, setSelectedCriteriaType] = useState("All");
   const [selectedJudgeType, setSelectedJudgeType] = useState("All");
 
-  const { data: roundsRes } = useCoordinatorEventRoundsQuery(eventId);
-  const { data: tracksRes } = useCoordinatorEventTracksQuery(eventId);
-
-  const rounds = roundsRes?.data ?? [];
-  const tracks = tracksRes?.data ?? [];
+  const { data: rounds = [], isLoading: roundsLoading, isError: roundsError } = useCoordinatorEventRoundsQuery(eventId);
+  const { data: tracks = [], isLoading: tracksLoading, isError: tracksError } = useCoordinatorEventTracksQuery(eventId);
 
   const queryParams: GetVarianceDashboardParams = {};
   if (selectedRoundId !== "All") queryParams.roundId = selectedRoundId;
@@ -65,7 +62,7 @@ export function ScoreVarianceDashboardPage() {
         Review judge disagreement by criterion and judge type.
       </Typography>
       <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 3 }}>
-        Round: {rounds.find((r) => r.id === selectedRoundId)?.name ?? "All"} | Track: {tracks.find((t) => t.id === selectedTrackId)?.name ?? "All"}
+        Round: {roundsError ? "Error" : roundsLoading ? "Loading..." : (rounds.find((r) => r.id === selectedRoundId)?.name ?? "All")} | Track: {tracksError ? "Error" : tracksLoading ? "Loading..." : (tracks.find((t) => t.id === selectedTrackId)?.name ?? "All")}
       </Typography>
 
       <VarianceFilterBar
@@ -81,6 +78,10 @@ export function ScoreVarianceDashboardPage() {
         onJudgeTypeChange={handleJudgeTypeChange}
         onRefresh={() => refetch()}
         isLoading={isLoading}
+        roundsLoading={roundsLoading}
+        roundsError={roundsError}
+        tracksLoading={tracksLoading}
+        tracksError={tracksError}
       />
 
       {isLoading && (

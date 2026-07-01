@@ -22,6 +22,10 @@ type VarianceFilterBarProps = {
   onJudgeTypeChange: (e: SelectChangeEvent) => void;
   onRefresh: () => void;
   isLoading?: boolean;
+  roundsLoading?: boolean;
+  roundsError?: boolean;
+  tracksLoading?: boolean;
+  tracksError?: boolean;
 };
 
 const CRITERIA_TYPES = [
@@ -49,6 +53,10 @@ export function VarianceFilterBar({
   onJudgeTypeChange,
   onRefresh,
   isLoading,
+  roundsLoading,
+  roundsError,
+  tracksLoading,
+  tracksError,
 }: VarianceFilterBarProps) {
   return (
     <Box
@@ -64,14 +72,15 @@ export function VarianceFilterBar({
         boxShadow: 1,
       }}
     >
-      <FormControl size="small" sx={{ minWidth: 150 }}>
-        <InputLabel>Round</InputLabel>
+      <FormControl size="small" sx={{ minWidth: 150 }} error={roundsError}>
+        <InputLabel>{roundsError ? "Error loading" : "Round"}</InputLabel>
         <Select
           value={selectedRoundId}
-          label="Round"
+          label={roundsError ? "Error loading" : "Round"}
           onChange={onRoundChange}
+          disabled={roundsLoading || roundsError}
         >
-          <MenuItem value="All">All</MenuItem>
+          <MenuItem value="All">{roundsLoading ? "Loading..." : "All"}</MenuItem>
           {rounds.map((r) => (
             <MenuItem key={r.id} value={r.id}>
               {r.name}
@@ -80,14 +89,15 @@ export function VarianceFilterBar({
         </Select>
       </FormControl>
 
-      <FormControl size="small" sx={{ minWidth: 150 }}>
-        <InputLabel>Track</InputLabel>
+      <FormControl size="small" sx={{ minWidth: 150 }} error={tracksError}>
+        <InputLabel>{tracksError ? "Error loading" : "Track"}</InputLabel>
         <Select
           value={selectedTrackId}
-          label="Track"
+          label={tracksError ? "Error loading" : "Track"}
           onChange={onTrackChange}
+          disabled={tracksLoading || tracksError}
         >
-          <MenuItem value="All">All</MenuItem>
+          <MenuItem value="All">{tracksLoading ? "Loading..." : "All"}</MenuItem>
           {tracks.map((t) => (
             <MenuItem key={t.id} value={t.id}>
               {t.name}
