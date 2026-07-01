@@ -14,6 +14,22 @@ type JudgeVarianceChartProps = {
   data: JudgeVarianceResponse[];
 };
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <Box sx={{ bgcolor: "background.paper", p: 1.5, border: "1px solid #ccc", borderRadius: 1 }}>
+        <Typography variant="subtitle2">{label}</Typography>
+        <Typography variant="body2">Std Dev: {data.stdDev.toFixed(2)}</Typography>
+        <Typography variant="body2">Mean Score: {data.meanScore.toFixed(2)}</Typography>
+        <Typography variant="body2">Variance: {data.variance.toFixed(2)}</Typography>
+        <Typography variant="body2">Score Count: {data.scoreCount}</Typography>
+      </Box>
+    );
+  }
+  return null;
+};
+
 export function JudgeVarianceChart({ data }: JudgeVarianceChartProps) {
   const chartData = data.map((item) => ({
     ...item,
@@ -36,15 +52,7 @@ export function JudgeVarianceChart({ data }: JudgeVarianceChartProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
               <YAxis />
-              <Tooltip
-                formatter={(value: number, name: string) => {
-                  if (name === "stdDev") return [value.toFixed(2), "Std Dev"];
-                  if (name === "meanScore") return [value.toFixed(2), "Mean Score"];
-                  if (name === "variance") return [value.toFixed(2), "Variance"];
-                  if (name === "scoreCount") return [value, "Score Count"];
-                  return [value, name];
-                }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="stdDev" fill="#f50057" />
             </BarChart>
           </ResponsiveContainer>
