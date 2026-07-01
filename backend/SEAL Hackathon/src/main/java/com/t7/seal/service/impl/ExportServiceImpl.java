@@ -128,7 +128,7 @@ public class ExportServiceImpl implements ExportService {
             ));
         }
 
-        return null;
+        return createAndProcessJob(actor, spec, rows, "ranking_report");
     }
 
     @Transactional
@@ -180,6 +180,16 @@ public class ExportServiceImpl implements ExportService {
     }
 
     //HELPERS
+
+    private ExportJobResponse createAndProcessJob(
+            User actor,
+            ExportSpec spec,
+            List<List<String>> rows,
+            String filePrefix
+    ) {
+        return null;
+    }
+
     private String text(Object value) {
         return value == null ? "" : value.toString();
     }
