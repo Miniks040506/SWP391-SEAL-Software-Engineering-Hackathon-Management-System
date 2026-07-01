@@ -42,7 +42,25 @@ public class RblResearchServiceImpl implements RblResearchService {
     private final ExportJobRepository exportJobRepository;
 
     @Override
-    public VarianceDashboardResponse getVarianceDashboard(UUID eventId, UUID roundId, UUID trackId, String criteriaType, String judgeType, Authentication authentication) {
+    public VarianceDashboardResponse getVarianceDashboard(
+            UUID eventId,
+            UUID roundId,
+            UUID trackId,
+            String criteriaType,
+            String judgeType,
+            Authentication authentication
+    ) {
+        ensureCoordinatorOrAdmin(authentication);
+        HackathonEvent event = requireEvent(eventId);
+        validateRoundBelongsToEvent(roundId, eventId);
+        validateTrackBelongsToEvent(trackId, eventId);
+
+        Boolean technicalFilter = parseCriteriaType(criteriaType);
+        JudgeType judgeTypeFilter = parseJudgeType(judgeType);
+
+        List<Score> scores = loadFilteredScores(event.getId(),
+                roundId, trackId, technicalFilter, judgeTypeFilter);
+
         return null;
     }
 
@@ -63,7 +81,8 @@ public class RblResearchServiceImpl implements RblResearchService {
         validateTrackBelongsToEvent(trackId, eventId);
         String normalizedFormat = normalizeFormat(format);
 
-        List<Score> scores = loadFilteredScores(eventId, roundId, trackId, null, null);
+        List<Score> scores = loadFilteredScores(eventId,
+                roundId, trackId, null, null);
 
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("eventId", eventId.toString());
@@ -206,7 +225,29 @@ public class RblResearchServiceImpl implements RblResearchService {
                 .toList();
     }
 
+    private Boolean parseCriteriaType(String criteriaType) {
+        String normalized = normalizeNullable(criteriaType);
+        if (normalized == null) {
+            return null;
+        }
+        return switch (normalized.toUpperCase(Locale.ROOT)) {
+            case "TECHNICAL", "TECH", "TRUE" -> true;
+            case "SOFT", "NON_TECHNICAL", "SUBJECTIVE", "FALSE" -> false;
+            default -> throw new BadRequestException("Invalid criteriaType. Use TECHNICAL or SOFT.");
+        };
+    }
 
+    private JudgeType parseJudgeType(String judgeType) {
+        String normalized = normalizeNullable(judgeType);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return JudgeType.valueOf(normalized.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid judgeType. Use INTERNAL or GUEST.");
+        }
+    }
 
     private String normalizeFormat(String format) {
         String normalized = normalizeNullable(format);
