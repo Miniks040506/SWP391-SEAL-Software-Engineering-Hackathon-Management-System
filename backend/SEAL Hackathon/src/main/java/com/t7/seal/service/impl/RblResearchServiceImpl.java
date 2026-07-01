@@ -119,6 +119,8 @@ public class RblResearchServiceImpl implements RblResearchService {
                 .toList();
     }
 
+    
+
     private String normalizeFormat(String format) {
         String normalized = normalizeNullable(format);
         if (normalized == null) {
