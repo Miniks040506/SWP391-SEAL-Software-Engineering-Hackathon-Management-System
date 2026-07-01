@@ -20,8 +20,13 @@ import com.t7.seal.response.system.ExportJobResponse;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.ExportService;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -272,7 +277,7 @@ public class ExportServiceImpl implements ExportService {
         return createAndProcessJob(actor, spec, rows, "team_list_report");
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public PageResponse<ExportJobResponse> getMyExportJobs(
             String status,
@@ -284,11 +289,44 @@ public class ExportServiceImpl implements ExportService {
         User actor = currentUserService.getCurrentUser(authentication);
         ensureCanExport(actor);
 
+        ExportJobStatus parsedStatus = parseExportJobStatus(status);
+        ExportType parsedType = parseOptionalExportType(exportType);
 
-        return null;
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+
+        Specification<ExportJob> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (!actor.isAdmin()) {
+                predicates.add(cb.equal(root.get("requestedBy").get("id"), actor.getId()));
+            }
+            if (parsedStatus != null) {
+                predicates.add(cb.equal(root.get("status"), parsedStatus));
+            }
+            if (parsedType != null) {
+                predicates.add(cb.equal(root.get("exportType"), parsedType));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<ExportJob> result = exportJobRepository.findAll(
+                spec,
+                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "requestedAt"))
+        );
+
+        return new PageResponse<>(
+                result.getContent().stream()
+                        .map(this::toResponse)
+                        .toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public ExportJobResponse getExportJobById(
             UUID exportId,
@@ -746,6 +784,26 @@ public class ExportServiceImpl implements ExportService {
             throw new BadRequestException("Invalid export type: " + value);
         }
     }
+
+    private ExportType parseOptionalExportType(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return parseExportType(value);
+    }
+
+    private ExportJobStatus parseExportJobStatus(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        try {
+            return ExportJobStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid export job status: " + value);
+        }
+    }
+
 
     private String normalizeFormat(Object value) {
         if (value == null || value.toString().isBlank()) {
