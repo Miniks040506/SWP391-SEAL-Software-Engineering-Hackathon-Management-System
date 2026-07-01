@@ -2,6 +2,8 @@ package com.t7.seal.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.t7.seal.domain.AuditActionType;
+import com.t7.seal.domain.ExportJobStatus;
 import com.t7.seal.domain.ExportType;
 import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.dto.ExportSpec;
@@ -15,6 +17,7 @@ import com.t7.seal.request.system.EventExportRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.ExportDownloadResponse;
 import com.t7.seal.response.system.ExportJobResponse;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.ExportService;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +30,21 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class ExportServiceImpl implements ExportService {
 
+    private static final DateTimeFormatter FILE_TIMESTAMP = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final int EXPORT_EXPIRY_DAYS = 7;
+
     private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
 
     private final HackathonEventRepository hackathonEventRepository;
@@ -259,31 +270,53 @@ public class ExportServiceImpl implements ExportService {
 
     @Transactional
     @Override
-    public PageResponse<ExportJobResponse> getMyExportJobs(String status, String exportType, int page, int size, Authentication authentication) {
+    public PageResponse<ExportJobResponse> getMyExportJobs(
+            String status,
+            String exportType,
+            int page,
+            int size,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+
         return null;
     }
 
     @Transactional
     @Override
-    public ExportJobResponse getExportJobById(UUID exportId, Authentication authentication) {
+    public ExportJobResponse getExportJobById(
+            UUID exportId,
+            Authentication authentication
+    ) {
         return null;
     }
 
     @Transactional
     @Override
-    public ExportDownloadResponse downloadExport(UUID exportId, Authentication authentication) {
+    public ExportDownloadResponse downloadExport(
+            UUID exportId,
+            Authentication authentication
+    ) {
         return null;
     }
 
     @Transactional
     @Override
-    public ResponseEntity<Resource> downloadExportFile(UUID exportId, Authentication authentication) {
+    public ResponseEntity<Resource> downloadExportFile(
+            UUID exportId,
+            Authentication authentication
+    ) {
         return null;
     }
 
     @Transactional
     @Override
-    public ExportJobResponse retryExport(UUID exportId, Authentication authentication) {
+    public ExportJobResponse retryExport(
+            UUID exportId,
+            Authentication authentication
+    ) {
         return null;
     }
 
@@ -338,7 +371,84 @@ public class ExportServiceImpl implements ExportService {
             List<List<String>> rows,
             String filePrefix
     ) {
+        Map<String, Object> param = new LinkedHashMap<>();
+
+        param.put("eventId", spec.event().getId().toString());
+        if (spec.roundId() != null) {
+            param.put("roundId", spec.roundId().toString());
+        }
+        if (spec.trackId() != null) {
+            param.put("trackId", spec.trackId().toString());
+        }
+        param.put("format", spec.format());
+        param.put("includeDraftScores", spec.includeDraftScores());
+        param.put("includeDisqualified", spec.includeDisqualified());
+        param.put("anonymize", spec.anonymize());
+
+        ExportJob job = ExportJob.builder()
+                .requestedBy(actor)
+                .exportType(spec.type())
+                .params(param)
+                .status(ExportJobStatus.QUEUED)
+                .build();
+
+        job = exportJobRepository.saveAndFlush(job);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.EXPORT_REQUESTED,
+                "export_jobs",
+                job.getId(),
+                null,
+                Map.of(
+                        "exportType", spec.type().name(),
+                        "eventId", spec.event().getId().toString(),
+                        "roundId", spec.roundId() == null ? " " : spec.roundId().toString(),
+                        "trackId", spec.trackId() == null ? " " : spec.trackId().toString(),
+                        "format", spec.format()
+                ),
+                null
+        );
+
+        try {
+            job.markProcessing();
+            exportJobRepository.saveAndFlush(job);
+
+            String extension = spec.format().equals("XLSX") ? "xlsx" : "csv";
+            String fileName = buildFileName(filePrefix, spec.event(), job.getId(), extension);
+            Path file = exportDirectory().resolve(fileName);
+            
+        } catch (IOException ex) {
+            throw new ExternalServiceException("Failed to create export file", ex);
+        }
+
         return null;
+    }
+
+    private String buildFileName(
+            String prefix,
+            HackathonEvent event,
+            UUID jobId,
+            String extension
+    ) {
+        return "%s_%s_%s_%s.%s".formatted(
+                prefix,
+                slug(event.getName()),
+                LocalDateTime.now().format(FILE_TIMESTAMP),
+                jobId.toString().substring(0, 8),
+                extension
+        );
+    }
+
+    private String slug(String value) {
+        String normalized = Normalizer
+                .normalize(value == null ? "event" : value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+
+        return normalized.isBlank() ? "event" : normalized;
     }
 
     private String text(Object value) {
