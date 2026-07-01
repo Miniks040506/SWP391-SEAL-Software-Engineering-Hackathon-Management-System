@@ -7,9 +7,9 @@ type Props = {
   title: string;
   description: string;
   icon: ReactNode;
-  iconBgColor: string;
-  iconColor: string;
-  children: ReactNode;
+  iconBgClass: string;
+  iconColorClass: string;
+  controls?: ReactNode;
   onExport: () => void;
   isExporting?: boolean;
   exportText?: string;
@@ -20,51 +20,50 @@ export const ExportReportCard = ({
   title,
   description,
   icon,
-  iconBgColor,
-  iconColor,
-  children,
+  iconBgClass,
+  iconColorClass,
+  controls,
   onExport,
   isExporting,
   exportText = "Export",
   disabled = false,
 }: Props) => {
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-      <div className="p-6">
-        <div className="mb-4 flex items-center gap-4">
-          <div
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconBgColor} ${iconColor}`}
-          >
-            {icon}
-          </div>
-          <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white">{title}</h3>
-          </div>
+    <div className="flex items-center rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      {/* Left: identity */}
+      <div className="flex items-center gap-4 px-6 py-4 w-[380px] shrink-0">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconBgClass} ${iconColorClass}`}>
+          {icon}
         </div>
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 min-h-[40px]">
-          {description}
-        </p>
-      </div>
-
-      <div className="flex-1 border-t border-slate-100 bg-slate-50/50 p-6 dark:border-slate-800/50 dark:bg-slate-950/50">
-        <div className="flex flex-col gap-4">
-          {children}
+        <div>
+          <p className="text-sm font-black text-slate-900 dark:text-white">{title}</p>
+          <p className="mt-0.5 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+            {description}
+          </p>
         </div>
       </div>
 
-      <div className="border-t border-slate-100 p-4 dark:border-slate-800">
+      {/* Middle: controls */}
+      <div className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4">
+        {controls}
+      </div>
+
+      {/* Right: action */}
+      <div className="px-6 py-4 shrink-0">
         <Button
-          fullWidth
           variant="contained"
           disableElevation
           disabled={isExporting || disabled}
           onClick={onExport}
-          startIcon={isExporting ? <CircularProgress size={16} /> : <FileDownloadOutlinedIcon />}
+          startIcon={isExporting ? <CircularProgress size={14} color="inherit" /> : <FileDownloadOutlinedIcon />}
           sx={{
-            py: 1.5,
             textTransform: "none",
             fontWeight: 700,
             borderRadius: "10px",
+            boxShadow: "none",
+            whiteSpace: "nowrap",
+            minWidth: 130,
+            height: 38,
           }}
         >
           {isExporting ? "Queuing..." : exportText}

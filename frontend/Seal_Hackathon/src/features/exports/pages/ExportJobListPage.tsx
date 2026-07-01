@@ -1,17 +1,15 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
+import { useParams } from "react-router-dom";
+import Button from "@mui/material/Button";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import Button from "@mui/material/Button";
+import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import Pagination from "@mui/material/Pagination";
 
 import { ExportReportCard } from "../components/ExportReportCard";
@@ -30,10 +28,9 @@ import type { UUID } from "@/types/common.types";
 
 export const ExportJobListPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
-  const navigate = useNavigate();
   const [page, setPage] = useState(0);
 
-  const { data: jobsData, isLoading } = useExportJobsQuery({ page, size: 10 });
+  const { data: jobsData, isLoading, refetch } = useExportJobsQuery({ page, size: 10 });
   const { mutate: createRanking, isPending: isRankingPending } = useCreateRankingExport();
   const { mutate: createScore, isPending: isScorePending } = useCreateScoresExport();
   const { mutate: createTeam, isPending: isTeamPending } = useCreateTeamListExport();
@@ -55,181 +52,205 @@ export const ExportJobListPage = () => {
 
   const handleCreateRanking = () => {
     if (!activeEventId) return;
-    const payload: EventExportRequest = {
-      format: rankingFormat,
-      includeDisqualified: rankingDisqualified,
-    };
+    const payload: EventExportRequest = { format: rankingFormat, includeDisqualified: rankingDisqualified };
     createRanking({ eventId: activeEventId as UUID, payload });
   };
 
   const handleCreateScore = () => {
     if (!activeEventId) return;
-    const payload: EventExportRequest = {
-      format: scoreFormat,
-      includeDraftScores: scoreDrafts,
-      anonymize: scoreAnonymize,
-    };
+    const payload: EventExportRequest = { format: scoreFormat, includeDraftScores: scoreDrafts, anonymize: scoreAnonymize };
     createScore({ eventId: activeEventId as UUID, payload });
   };
 
   const handleCreateTeam = () => {
     if (!activeEventId) return;
-    const payload: EventExportRequest = {
-      format: teamFormat,
-    };
+    const payload: EventExportRequest = { format: teamFormat };
     createTeam({ eventId: activeEventId as UUID, payload });
   };
 
-  return (
-    <div className="mx-auto max-w-7xl p-6">
-      <div className="mb-8">
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-          sx={{ mb: 2, textTransform: "none", color: "text.secondary" }}
-        >
-          Back
-        </Button>
-        <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-          Export Reports
-        </h1>
-        <p className="mt-2 text-slate-500 dark:text-slate-400">
-          Generate CSV/XLSX reports for rankings, scores/submissions, and team lists.
-        </p>
-      </div>
+  const jobs = jobsData?.data?.content || [];
+  const totalPages = jobsData?.data?.totalPages || 0;
 
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500 p-4">
+
+      {/* ── Header ─────────────────────────────────────── */}
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-black text-slate-950 dark:text-white">
+            Export Reports
+          </h1>
+          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
+            Generate CSV/XLSX reports for rankings, scores/submissions, and team lists.
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={<RefreshOutlinedIcon />}
+            onClick={() => refetch()}
+            sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
+          >
+            Refresh Jobs
+          </Button>
+        </div>
+      </header>
+
+      {/* ── Admin: manual event ID ──────────────────────── */}
       {!eventId && (
-        <div className="mb-8 rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-900/50 dark:bg-blue-950/20">
-          <h2 className="mb-2 text-sm font-bold text-blue-900 dark:text-blue-100">Global Admin Mode</h2>
-          <p className="mb-4 text-xs text-blue-700 dark:text-blue-300">
-            You are viewing all export jobs across the system. To create a new export, you must provide an Event ID.
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
+          <p className="mb-1 text-sm font-bold text-blue-900 dark:text-blue-100">
+            Global Admin Mode
+          </p>
+          <p className="mb-4 text-xs font-medium text-blue-700 dark:text-blue-300">
+            You are viewing export jobs across all events. To create a new export, enter an Event ID below.
           </p>
           <TextField
             size="small"
             label="Target Event ID"
             value={manualEventId}
             onChange={(e) => setManualEventId(e.target.value)}
-            sx={{ width: 300, bgcolor: "background.paper" }}
+            sx={{ width: 320, bgcolor: "background.paper", borderRadius: 2 }}
           />
         </div>
       )}
 
-      <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-3">
-        <ExportReportCard
-          title="Ranking Report"
-          description="Export final or preview ranking rows with score, rank, advancement status and publish state."
-          icon={<WorkspacePremiumOutlinedIcon fontSize="medium" />}
-          iconBgColor="bg-amber-100 dark:bg-amber-900/40"
-          iconColor="text-amber-600 dark:text-amber-400"
-          onExport={handleCreateRanking}
-          isExporting={isRankingPending}
-          disabled={!activeEventId}
-        >
-          <FormControl size="small" fullWidth>
-            <InputLabel>Format</InputLabel>
-            <Select
-              value={rankingFormat}
-              label="Format"
-              onChange={(e) => setRankingFormat(e.target.value as ExportFormat)}
-            >
-              <MenuItem value="CSV">CSV</MenuItem>
-              <MenuItem value="XLSX">Excel (XLSX)</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={rankingDisqualified}
-                onChange={(e) => setRankingDisqualified(e.target.checked)}
-              />
+      {/* ── Export cards ───────────────────────────────── */}
+      <section>
+        <h2 className="mb-4 text-base font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          Create New Export
+        </h2>
+        <div className="flex flex-col gap-3">
+
+          {/* Ranking card */}
+          <ExportReportCard
+            title="Ranking Report"
+            description="Export final ranking rows with score, rank, advancement & publish state."
+            icon={<WorkspacePremiumOutlinedIcon fontSize="small" />}
+            iconBgClass="bg-amber-100 dark:bg-amber-900/40"
+            iconColorClass="text-amber-600 dark:text-amber-400"
+            onExport={handleCreateRanking}
+            isExporting={isRankingPending}
+            disabled={!activeEventId}
+            controls={
+              <>
+                <ToggleButtonGroup
+                  value={rankingFormat}
+                  exclusive
+                  size="small"
+                  onChange={(_, v) => v && setRankingFormat(v)}
+                  sx={{ height: 34 }}
+                >
+                  <ToggleButton value="CSV" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>CSV</ToggleButton>
+                  <ToggleButton value="XLSX" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>Excel</ToggleButton>
+                </ToggleButtonGroup>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={rankingDisqualified}
+                      onChange={(e) => setRankingDisqualified(e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Include Disqualified</span>}
+                />
+              </>
             }
-            label={<span className="text-sm text-slate-600 dark:text-slate-300">Include Disqualified</span>}
           />
-        </ExportReportCard>
 
-        <ExportReportCard
-          title="Score Report"
-          description="Export score rows per judge, submission and criterion for internal review and calibration."
-          icon={<AssessmentOutlinedIcon fontSize="medium" />}
-          iconBgColor="bg-blue-100 dark:bg-blue-900/40"
-          iconColor="text-blue-600 dark:text-blue-400"
-          onExport={handleCreateScore}
-          isExporting={isScorePending}
-          disabled={!activeEventId}
-        >
-          <FormControl size="small" fullWidth>
-            <InputLabel>Format</InputLabel>
-            <Select
-              value={scoreFormat}
-              label="Format"
-              onChange={(e) => setScoreFormat(e.target.value as ExportFormat)}
-            >
-              <MenuItem value="CSV">CSV</MenuItem>
-              <MenuItem value="XLSX">Excel (XLSX)</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControlLabel
-            control={<Switch checked={scoreDrafts} onChange={(e) => setScoreDrafts(e.target.checked)} />}
-            label={<span className="text-sm text-slate-600 dark:text-slate-300">Include Drafts</span>}
-          />
-          <FormControlLabel
-            control={<Switch checked={scoreAnonymize} onChange={(e) => setScoreAnonymize(e.target.checked)} />}
-            label={<span className="text-sm text-slate-600 dark:text-slate-300">Anonymize Judges</span>}
-          />
-        </ExportReportCard>
-
-        <ExportReportCard
-          title="Team List Report"
-          description="Export teams, tracks, leaders, member counts and registration status."
-          icon={<GroupsOutlinedIcon fontSize="medium" />}
-          iconBgColor="bg-emerald-100 dark:bg-emerald-900/40"
-          iconColor="text-emerald-600 dark:text-emerald-400"
-          onExport={handleCreateTeam}
-          isExporting={isTeamPending}
-          disabled={!activeEventId}
-        >
-          <FormControl size="small" fullWidth>
-            <InputLabel>Format</InputLabel>
-            <Select
-              value={teamFormat}
-              label="Format"
-              onChange={(e) => setTeamFormat(e.target.value as ExportFormat)}
-            >
-              <MenuItem value="CSV">CSV</MenuItem>
-              <MenuItem value="XLSX">Excel (XLSX)</MenuItem>
-            </Select>
-          </FormControl>
-        </ExportReportCard>
-      </div>
-
-      <div>
-        <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">Recent Export Jobs</h2>
-        {isLoading ? (
-          <div className="flex h-40 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-            <span className="text-sm text-slate-500">Loading jobs...</span>
-          </div>
-        ) : (
-          <>
-            <ExportJobTable
-              jobs={jobsData?.data?.content || []}
-              onDownload={(id) => downloadExport(id as UUID)}
-              onRetry={(id) => retryExport(id as UUID)}
-              onDelete={(id) => deleteExport(id as UUID)}
-              isDownloading={isDownloading}
-            />
-            {jobsData?.data?.totalPages && jobsData.data.totalPages > 1 && (
-              <div className="mt-6 flex justify-center">
-                <Pagination
-                  count={jobsData.data.totalPages}
-                  page={page + 1}
-                  onChange={(_, p) => setPage(p - 1)}
-                  color="primary"
+          {/* Score card */}
+          <ExportReportCard
+            title="Score Report"
+            description="Export score rows per judge, submission and criterion for internal review."
+            icon={<AssessmentOutlinedIcon fontSize="small" />}
+            iconBgClass="bg-blue-100 dark:bg-blue-900/40"
+            iconColorClass="text-blue-600 dark:text-blue-400"
+            onExport={handleCreateScore}
+            isExporting={isScorePending}
+            disabled={!activeEventId}
+            controls={
+              <>
+                <ToggleButtonGroup
+                  value={scoreFormat}
+                  exclusive
+                  size="small"
+                  onChange={(_, v) => v && setScoreFormat(v)}
+                  sx={{ height: 34 }}
+                >
+                  <ToggleButton value="CSV" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>CSV</ToggleButton>
+                  <ToggleButton value="XLSX" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>Excel</ToggleButton>
+                </ToggleButtonGroup>
+              <div className="flex flex-col gap-1">
+                <FormControlLabel
+                  control={<Switch checked={scoreDrafts} onChange={(e) => setScoreDrafts(e.target.checked)} size="small" />}
+                  label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Include Draft Scores</span>}
+                />
+                <FormControlLabel
+                  control={<Switch checked={scoreAnonymize} onChange={(e) => setScoreAnonymize(e.target.checked)} size="small" />}
+                  label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Anonymize Judges</span>}
                 />
               </div>
-            )}
-          </>
+              </>
+            }
+          />
+
+          {/* Team list card */}
+          <ExportReportCard
+            title="Team List Report"
+            description="Export teams, tracks, leaders, member counts and registration status."
+            icon={<GroupsOutlinedIcon fontSize="small" />}
+            iconBgClass="bg-emerald-100 dark:bg-emerald-900/40"
+            iconColorClass="text-emerald-600 dark:text-emerald-400"
+            onExport={handleCreateTeam}
+            isExporting={isTeamPending}
+            disabled={!activeEventId}
+            controls={
+              <ToggleButtonGroup
+                value={teamFormat}
+                exclusive
+                size="small"
+                onChange={(_, v) => v && setTeamFormat(v)}
+                sx={{ height: 34 }}
+              >
+                <ToggleButton value="CSV" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>CSV</ToggleButton>
+                <ToggleButton value="XLSX" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>Excel</ToggleButton>
+              </ToggleButtonGroup>
+            }
+          />
+
+        </div>
+
+      </section>
+
+      {/* ── Job history table ──────────────────────────── */}
+      <section>
+        <h2 className="mb-4 text-base font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          Recent Export Jobs
+        </h2>
+        <ExportJobTable
+          jobs={jobs}
+          isLoading={isLoading}
+          onDownload={(id) => downloadExport(id as UUID)}
+          onRetry={(id) => retryExport(id as UUID)}
+          onDelete={(id) => deleteExport(id as UUID)}
+          isDownloading={isDownloading}
+        />
+        {totalPages > 1 && (
+          <div className="mt-4 flex justify-center">
+            <Pagination
+              count={totalPages}
+              page={page + 1}
+              onChange={(_, p) => setPage(p - 1)}
+              size="small"
+              shape="rounded"
+              variant="outlined"
+              color="primary"
+            />
+          </div>
         )}
-      </div>
+      </section>
+
     </div>
   );
 };

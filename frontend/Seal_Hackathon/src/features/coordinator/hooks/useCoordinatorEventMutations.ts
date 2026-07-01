@@ -28,7 +28,7 @@ import type {
   UpdateTrackRequest,
 } from "@/types/track.types";
 
-const USE_MOCK = false;
+const USE_MOCK = true;
 
 const activeEventApi = USE_MOCK ? mockCoordinatorService.eventApi : eventApi;
 const activeTrackApi = USE_MOCK ? mockCoordinatorService.trackApi : trackApi;
