@@ -3,9 +3,12 @@ package com.t7.seal.service.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t7.seal.domain.ExportType;
+import com.t7.seal.dto.ExportSpec;
+import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
+import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.request.system.CreateExportJobRequest;
 import com.t7.seal.request.system.EventExportRequest;
 import com.t7.seal.response.PageResponse;
@@ -31,6 +34,8 @@ public class ExportServiceImpl implements ExportService {
 
     private final CurrentUserService currentUserService;
     private final ObjectMapper objectMapper;
+
+    private final HackathonEventRepository hackathonEventRepository;
 
     @Transactional
     @Override
@@ -69,7 +74,17 @@ public class ExportServiceImpl implements ExportService {
 
     @Transactional
     @Override
-    public ExportJobResponse exportEventRanking(UUID eventId, EventExportRequest request, Authentication authentication) {
+    public ExportJobResponse exportEventRanking(
+            UUID eventId,
+            EventExportRequest request,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        HackathonEvent event = getEvent(eventId);
+        ExportSpec spec = exportSpec(event, ExportType.RANKING, request);
+
         return null;
     }
 
@@ -122,6 +137,29 @@ public class ExportServiceImpl implements ExportService {
     }
 
     //HELPERS
+
+    private ExportSpec exportSpec(HackathonEvent event, ExportType type, EventExportRequest request) {
+        String format = normalizeFormat(request == null ? null : request.format());
+        return new ExportSpec(
+                event,
+                type,
+                request == null ? null : request.roundId(),
+                request == null ? null : request.trackId(),
+                format,
+                Boolean.TRUE.equals(request == null ? null : request.includeDraftScores()),
+                Boolean.TRUE.equals(request == null ? null : request.includeDisqualified()),
+                Boolean.TRUE.equals(request == null ? null : request.anonymize())
+        );
+    }
+
+    private HackathonEvent getEvent(UUID eventId) {
+        if (eventId == null) {
+            throw new BadRequestException("Event id is required");
+        }
+
+        return hackathonEventRepository.findById(eventId)
+                .orElseThrow(() -> new BadRequestException("Event not found"));
+    }
 
     private boolean parseBoolean(Object value, boolean defaultValue) {
         if (value == null) {
