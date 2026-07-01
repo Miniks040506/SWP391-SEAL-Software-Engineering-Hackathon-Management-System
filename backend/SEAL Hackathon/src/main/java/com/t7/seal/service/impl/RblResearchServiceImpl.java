@@ -1,12 +1,15 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.*;
+import com.t7.seal.dto.Stats;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.system.ExportRblDatasetRequest;
+import com.t7.seal.response.system.CriteriaVarianceResponse;
 import com.t7.seal.response.system.ExportJobResponse;
+import com.t7.seal.response.system.JudgeVarianceResponse;
 import com.t7.seal.response.system.VarianceDashboardResponse;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
@@ -269,6 +272,76 @@ public class RblResearchServiceImpl implements RblResearchService {
                 .filter(score -> judgeTypeFilter == null
                         || judgeTypeFilter == score.getJudge().getJudgeType())
                 .toList();
+    }
+
+    private CriteriaVarianceResponse toCriteriaVariance(List<Score> scores) {
+        EventCriteria criteria = scores.get(0).getEventCriteria();
+        Stats stats = calculateStats(scores.stream().map(score -> score.getValue().doubleValue()).toList());
+        Set<UUID> judgeIds = scores.stream().map(score -> score.getJudge().getId()).collect(Collectors.toSet());
+        String category = criteria.getCriteria() == null || criteria.getCriteria().getCategory() == null
+                ? null
+                : criteria.getCriteria().getCategory().name();
+
+        return new CriteriaVarianceResponse(
+                criteria.getId(),
+                criteria.getEffectiveName(),
+                category,
+                Boolean.TRUE.equals(criteria.getEffectiveIsTechnical()),
+                stats.mean(),
+                stats.variance(),
+                stats.standardDeviation(),
+                stats.min(),
+                stats.max(),
+                scores.size(),
+                judgeIds.size(),
+                stats.standardDeviation() >= HIGH_VARIANCE_THRESHOLD
+        );
+    }
+
+    private JudgeVarianceResponse toJudgeVariance(List<Score> scores) {
+        Judge judge = scores.get(0).getJudge();
+        Stats stats = calculateStats(scores.stream().map(score -> score.getValue().doubleValue()).toList());
+        return new JudgeVarianceResponse(
+                judge.getId(),
+                hashId(judge.getId()),
+                judge.getJudgeType() == null ? null : judge.getJudgeType().name(),
+                stats.mean(),
+                stats.variance(),
+                stats.standardDeviation(),
+                stats.min(),
+                stats.max(),
+                scores.size(),
+                stats.standardDeviation() >= HIGH_VARIANCE_THRESHOLD
+        );
+    }
+
+    private Stats calculateStats(List<Double> values) {
+        if (values == null || values.isEmpty()) {
+            return new Stats(0d, 0d, 0d, 0d, 0d);
+        }
+        double mean = values.stream().mapToDouble(Double::doubleValue).average().orElse(0d);
+        double variance = values.stream()
+                .mapToDouble(value -> Math.pow(value - mean, 2))
+                .average()
+                .orElse(0d);
+        double min = values.stream().mapToDouble(Double::doubleValue).min().orElse(0d);
+        double max = values.stream().mapToDouble(Double::doubleValue).max().orElse(0d);
+        return new Stats(round(mean), round(variance), round(Math.sqrt(variance)), round(min), round(max));
+    }
+
+    private double average(List<Double> values) {
+        if (values == null || values.isEmpty()) {
+            return 0d;
+        }
+        return values.stream()
+                .filter(value -> value != null)
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0d);
+    }
+
+    private double round(double value) {
+        return Math.round(value * 10000d) / 10000d;
     }
 
     private Boolean parseCriteriaType(String criteriaType) {
