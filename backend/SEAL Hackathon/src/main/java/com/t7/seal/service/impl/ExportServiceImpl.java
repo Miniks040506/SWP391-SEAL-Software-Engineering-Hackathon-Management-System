@@ -7,11 +7,9 @@ import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.dto.ExportSpec;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ExternalServiceException;
 import com.t7.seal.exception.ForbiddenException;
-import com.t7.seal.repository.HackathonEventRepository;
-import com.t7.seal.repository.RankingRepository;
-import com.t7.seal.repository.ScoreRepository;
-import com.t7.seal.repository.TeamRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.system.CreateExportJobRequest;
 import com.t7.seal.request.system.EventExportRequest;
 import com.t7.seal.response.PageResponse;
@@ -26,6 +24,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 @Service
@@ -39,6 +40,7 @@ public class ExportServiceImpl implements ExportService {
     private final RankingRepository rankingRepository;
     private final ScoreRepository scoreRepository;
     private final TeamRepository teamRepository;
+    private final ExportJobRepository exportJobRepository;
 
     @Transactional
     @Override
@@ -288,10 +290,38 @@ public class ExportServiceImpl implements ExportService {
     @Transactional
     @Override
     public void deleteExport(UUID exportId, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        ExportJob exportJob = getVisibleJob(exportId, actor);
+
+        Path file = exportJob.getFileName() == null ? null
+                : exportDirectory().resolve(exportJob.getFileName()).normalize();
         
     }
 
     //HELPERS
+
+    private Path exportDirectory() {
+        Path dir = Path.of(System.getProperty("java.io.tmpdir"), "seal-exports");
+        try {
+            Files.createDirectories(dir);
+        } catch (IOException ex) {
+            throw new ExternalServiceException("Failed to create export directory", ex);
+        }
+        return dir;
+    }
+
+    private ExportJob getVisibleJob(UUID exportId, User actor) {
+        ExportJob exportJob = exportJobRepository.findById(exportId)
+                .orElseThrow(() -> new BadRequestException("Export job not found: " + exportId));
+
+        if (!actor.isAdmin() && !Objects.equals(exportJob.getRequestedBy().getId(), actor.getId())) {
+            throw new ForbiddenException("You are not allowed to access this export job.");
+        }
+
+        return exportJob;
+    }
 
     private ExportJobResponse createAndProcessJob(
             User actor,
