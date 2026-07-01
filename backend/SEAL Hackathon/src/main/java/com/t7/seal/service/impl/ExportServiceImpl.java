@@ -9,6 +9,7 @@ import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.dto.ExportSpec;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.ExternalServiceException;
 import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.*;
@@ -334,7 +335,7 @@ public class ExportServiceImpl implements ExportService {
     ) {
         User actor = currentUserService.getCurrentUser(authentication);
         ensureCanExport(actor);
-        
+
         ExportJob job = getVisibleJob(exportId, actor);
 
         return toResponse(job);
@@ -346,7 +347,18 @@ public class ExportServiceImpl implements ExportService {
             UUID exportId,
             Authentication authentication
     ) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        ExportJob job = getVisibleJob(exportId, actor);
+        ensureDownloadable(job);
+
+        return new ExportDownloadResponse(
+                job.getId(),
+                job.getFileName(),
+                job.getFileUrl(),
+                job.getExpiresAt()
+        );
     }
 
     @Transactional
@@ -768,6 +780,18 @@ public class ExportServiceImpl implements ExportService {
     private void ensureCanExport(User user) {
         if (user == null || (!user.isAdmin() && !user.isCoordinator())) {
             throw new ForbiddenException("Only admin or coordinator can exports.");
+        }
+    }
+
+    private void ensureDownloadable(ExportJob job) {
+        if (job.getStatus() != ExportJobStatus.DONE) {
+            throw new ConflictException("Export job is not ready for download.");
+        }
+        if (job.isExpired(LocalDateTime.now())) {
+            throw new ConflictException("Export file has expired.");
+        }
+        if (job.getFileName() == null || job.getFileName().isBlank()) {
+            throw new ConflictException("Export file metadata is missing.");
         }
     }
 

@@ -5,6 +5,8 @@ import java.util.UUID;
 
 public record ExportDownloadResponse(
         UUID exportId,
-        String fileName, String downloadUrl,
+        String fileName,
+        String downloadUrl,
         LocalDateTime expiresAt
-) {}
+) {
+}
