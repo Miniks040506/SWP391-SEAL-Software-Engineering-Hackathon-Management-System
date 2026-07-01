@@ -1,4 +1,4 @@
-export type EventStatus = 'Upcoming' | 'Ongoing' | 'Ended';
+export type EventStatus = "Upcoming" | "Ongoing" | "Ended";
 
 export interface Track {
   name: string;
