@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -38,8 +39,13 @@ public class ExportServiceImpl implements ExportService {
         ensureCanExport(actor);
 
         ExportType exportType = parseExportType(request.exportType());
+        Map<String, Object> params = normalizeParams(request.params());
 
-        Map<String, Object> params = new
+        UUID eventId = parseUUID(params.get("eventId"), "eventId");
+        UUID trackId = parseOptionalUUID(params.get("trackId"), "trackId");
+        UUID roundId = parseOptionalUUID(params.get("roundId"), "roundId");
+
+        
         return null;
     }
 
@@ -98,6 +104,26 @@ public class ExportServiceImpl implements ExportService {
     }
 
     //HELPERS
+
+    private UUID parseUUID(Object value, String fieldName) {
+        UUID parse = parseOptionalUUID(value, fieldName);
+        if (parse == null) {
+            throw new BadRequestException(String.format("Invalid %s: %s", fieldName, value));
+        }
+        return parse;
+    }
+
+    private UUID parseOptionalUUID(Object value, String fieldName) {
+        if (value == null || value.toString().isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.toString());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException(String.format("Invalid %s: %s", fieldName, value));
+        }
+    }
+
     private void ensureCanExport(User user) {
         if (user == null || (!user.isAdmin() && !user.isCoordinator())) {
             throw new ForbiddenException("Only admin or coordinator can exports.");
@@ -129,7 +155,8 @@ public class ExportServiceImpl implements ExportService {
         }
 
         Map<String, Object> map = objectMapper
-                .convertValue(param, new TypeReference<Map<String, Object>>() {});
+                .convertValue(param, new TypeReference<Map<String, Object>>() {
+                });
 
         if (map == null || map.isEmpty()) {
             throw new BadRequestException("Export params are required");
