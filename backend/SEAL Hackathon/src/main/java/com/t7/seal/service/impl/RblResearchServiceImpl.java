@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,8 +91,38 @@ public class RblResearchServiceImpl implements RblResearchService {
                 compactMap("eventId", eventId, "roundId", roundId, "trackId", trackId, "format", normalizedFormat)
         );
 
+        try {
+            job.markProcessing();
+            exportJobRepository.saveAndFlush(job);
 
-        return null;
+            String csv = buildRblCsv(scores);
+            String fileName = buildFileName(event, job.getId(), normalizedFormat);
+            Path exportPath = writeExportFile(fileName, csv);
+            String downloadUrl = "/api/v1/exports/" + job.getId() + "/download-file";
+
+            job.markDone(
+                    downloadUrl,
+                    fileName,
+                    Files.size(exportPath),
+                    scores.size(),
+                    LocalDateTime.now().plusDays(7)
+            );
+            ExportJob saved = exportJobRepository.save(job);
+
+            auditLogService.record(
+                    actor,
+                    AuditActionType.EXPORT_COMPLETED,
+                    "export_jobs",
+                    saved.getId(),
+                    null,
+                    compactMap("status", saved.getStatus().name(), "rowCount", saved.getRowCount()),
+                    compactMap("eventId", eventId, "roundId", roundId, "trackId", trackId, "fileName", fileName)
+            );
+
+            return toExportJobResponse(saved);
+        } catch (IOException | RuntimeException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     //HELPERS

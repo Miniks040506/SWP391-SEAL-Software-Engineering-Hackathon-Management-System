@@ -77,52 +77,56 @@ public interface ScoreRepository extends JpaRepository<Score, UUID> {
             """)
     List<Score> findConfirmedBySubmissionIdWithCriteria(@Param("submissionId") UUID submissionId);
 
+
     @Query("""
-                    SELECT s FROM Score s 
-                    JOIN FETCH s.submission su 
-                    JOIN FETCH su.team te
-                    LEFT JOIN FETCH te.track t
-                    JOIN FETCH su.round r 
-                    JOIN FETCH r.event eve 
-                    JOIN FETCH s.judge ju 
-                    JOIN FETCH ju.user u 
-                    JOIN FETCH eve.eventCriteria ec
-                    LEFT JOIN FETCH ec.criteria cr 
-                    WHERE eve.id = :eventId 
-                        AND (:roundId IS NULL OR r.id = :roundId)
-                        AND (:trackId IS NULL OR t.id = :trackId)
-                        AND (:includeDraftScores = TRUE OR s.isDraft = FALSE)
-                        AND (:includeDisqualified = TRUE OR CAST(su.status AS STRING) <> 'DISQUALIFIED')
-                    ORDER BY r.orderIndex ASC, t.name ASC, te.name ASC, u.fullName ASC, ec.displayOrder ASC 
+            SELECT s
+            FROM Score s
+            JOIN FETCH s.submission sub
+            JOIN FETCH sub.team t
+            LEFT JOIN FETCH t.track tr
+            JOIN FETCH sub.round r
+            JOIN FETCH r.event e
+            JOIN FETCH s.judge j
+            JOIN FETCH j.user ju
+            JOIN FETCH s.eventCriteria ec
+            LEFT JOIN FETCH ec.criteria c
+            WHERE e.id = :eventId
+              AND (:roundId IS NULL OR r.id = :roundId)
+              AND (:trackId IS NULL OR tr.id = :trackId)
+              AND (:includeDraftScores = true OR s.isDraft = false)
+              AND (:includeDisqualified = true OR CAST(sub.status AS STRING) <> 'DISQUALIFIED')
+            ORDER BY r.orderIndex ASC, tr.name ASC, t.name ASC, ju.fullName ASC, ec.displayOrder ASC
             """)
     List<Score> findForScoreExport(
             @Param("eventId") UUID eventId,
-            @Param("trackId") UUID trackId,
             @Param("roundId") UUID roundId,
+            @Param("trackId") UUID trackId,
             @Param("includeDraftScores") boolean includeDraftScores,
             @Param("includeDisqualified") boolean includeDisqualified
     );
 
     @Query("""
-            SELECT s FROM Score s 
-            JOIN FETCH s.submission su 
-            JOIN FETCH su.team te
-            LEFT JOIN FETCH te.track t
-            JOIN FETCH su.round r 
-            JOIN FETCH r.event eve 
-            JOIN FETCH s.judge ju  
-            JOIN FETCH eve.eventCriteria ec
-            LEFT JOIN FETCH ec.criteria cr 
-            WHERE eve.id = :eventId 
-                AND (:roundId IS NULL OR r.id = :roundId)
-                AND (:trackId IS NULL OR t.id = :trackId)
-                AND s.isDraft == FALSE
-                AND CAST(su.status AS STRING) <> 'DISQUALIFIED'
-            ORDER BY r.orderIndex ASC, t.name ASC, ec.displayOrder ASC, ju.id ASC
+            SELECT s
+            FROM Score s
+            JOIN FETCH s.submission sub
+            JOIN FETCH sub.team t
+            LEFT JOIN FETCH t.track tr
+            JOIN FETCH sub.round r
+            JOIN FETCH r.event e
+            JOIN FETCH s.judge j
+            JOIN FETCH s.eventCriteria ec
+            LEFT JOIN FETCH ec.criteria c
+            WHERE e.id = :eventId
+              AND (:roundId IS NULL OR r.id = :roundId)
+              AND (:trackId IS NULL OR tr.id = :trackId)
+              AND s.isDraft = false
+              AND CAST(sub.status AS STRING) <> 'DISQUALIFIED'
+            ORDER BY r.orderIndex ASC, tr.name ASC, ec.displayOrder ASC, j.id ASC
             """)
     List<Score> findConfirmedScoresForRblDashboard(
             @Param("eventId") UUID eventId,
-            @Param("trackId") UUID trackId,
-            @Param("roundId") UUID roundId
+            @Param("roundId") UUID roundId,
+            @Param("trackId") UUID trackId
     );
+
 }
