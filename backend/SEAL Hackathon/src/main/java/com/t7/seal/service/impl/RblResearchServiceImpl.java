@@ -297,4 +297,21 @@ public class RblResearchServiceImpl implements RblResearchService {
         }
         return result;
     }
+
+    private ExportJobResponse toExportJobResponse(ExportJob job) {
+        return new ExportJobResponse(
+                job.getId(),
+                job.getRequestedBy() == null ? null : job.getRequestedBy().getId(),
+                job.getExportType() == null ? null : job.getExportType().name(),
+                job.getParams(),
+                job.getStatus() == null ? null : job.getStatus().name(),
+                job.getFileName(),
+                job.getFileSizeBytes(),
+                job.getRowCount(),
+                job.getErrorMessage(),
+                job.getRequestedAt(),
+                job.getCompletedAt(),
+                job.getExpiresAt()
+        );
+    }
 }
