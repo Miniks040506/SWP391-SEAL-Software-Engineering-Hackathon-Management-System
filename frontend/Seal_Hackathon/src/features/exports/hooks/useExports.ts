@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { exportApi } from "@/api/export.api";
 import { mockExportApi } from "../mocks/export.mock";
-import { useNotification } from "@/features/notification/hooks/useNotification";
+import { useSnackbar } from "notistack";
 import type { UUID } from "@/types/common.types";
 import type {
   EventExportRequest,
@@ -40,57 +40,57 @@ export function useExportJobQuery(jobId: UUID) {
 
 export function useCreateRankingExport() {
   const queryClient = useQueryClient();
-  const { showNotification } = useNotification();
+  const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
     mutationFn: ({ eventId, payload }: { eventId: UUID; payload?: EventExportRequest }) =>
       activeApi.exportEventRanking(eventId, payload),
     onSuccess: () => {
-      showNotification("Ranking export job created successfully.", "success");
+      enqueueSnackbar("Ranking export job created successfully.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (err: any) => {
-      showNotification(err?.message || "Failed to create ranking export", "error");
+      enqueueSnackbar(err?.message || "Failed to create ranking export", { variant: "error" });
     },
   });
 }
 
 export function useCreateScoresExport() {
   const queryClient = useQueryClient();
-  const { showNotification } = useNotification();
+  const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
     mutationFn: ({ eventId, payload }: { eventId: UUID; payload?: EventExportRequest }) =>
       activeApi.exportEventScores(eventId, payload),
     onSuccess: () => {
-      showNotification("Score export job created successfully.", "success");
+      enqueueSnackbar("Score export job created successfully.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (err: any) => {
-      showNotification(err?.message || "Failed to create score export", "error");
+      enqueueSnackbar(err?.message || "Failed to create score export", { variant: "error" });
     },
   });
 }
 
 export function useCreateTeamListExport() {
   const queryClient = useQueryClient();
-  const { showNotification } = useNotification();
+  const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
     mutationFn: ({ eventId, payload }: { eventId: UUID; payload?: EventExportRequest }) =>
       activeApi.exportEventTeamList(eventId, payload),
     onSuccess: () => {
-      showNotification("Team list export job created successfully.", "success");
+      enqueueSnackbar("Team list export job created successfully.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (err: any) => {
-      showNotification(err?.message || "Failed to create team list export", "error");
+      enqueueSnackbar(err?.message || "Failed to create team list export", { variant: "error" });
     },
   });
 }
 
 export function useDownloadExport() {
-  const { showNotification } = useNotification();
+  const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
     mutationFn: async (exportId: UUID) => {
@@ -99,46 +99,46 @@ export function useDownloadExport() {
     },
     onSuccess: (data) => {
       if (USE_MOCK) {
-        showNotification(`Downloading mock file: ${data.fileName}`, "info");
+        enqueueSnackbar(`Downloading mock file: ${data.fileName}`, { variant: "info" });
       } else {
         // Open download url in new tab
         window.open(data.downloadUrl, "_blank");
       }
     },
     onError: (err: any) => {
-      showNotification(err?.message || "Failed to download export", "error");
+      enqueueSnackbar(err?.message || "Failed to download export", { variant: "error" });
     },
   });
 }
 
 export function useRetryExport() {
   const queryClient = useQueryClient();
-  const { showNotification } = useNotification();
+  const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
     mutationFn: (exportId: UUID) => activeApi.retryExport(exportId),
     onSuccess: () => {
-      showNotification("Export job queued for retry.", "info");
+      enqueueSnackbar("Export job queued for retry.", { variant: "info" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (err: any) => {
-      showNotification(err?.message || "Failed to retry export", "error");
+      enqueueSnackbar(err?.message || "Failed to retry export", { variant: "error" });
     },
   });
 }
 
 export function useDeleteExport() {
   const queryClient = useQueryClient();
-  const { showNotification } = useNotification();
+  const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
     mutationFn: (exportId: UUID) => activeApi.deleteExport(exportId),
     onSuccess: () => {
-      showNotification("Export job deleted successfully.", "success");
+      enqueueSnackbar("Export job deleted successfully.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (err: any) => {
-      showNotification(err?.message || "Failed to delete export", "error");
+      enqueueSnackbar(err?.message || "Failed to delete export", { variant: "error" });
     },
   });
 }

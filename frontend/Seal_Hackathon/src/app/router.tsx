@@ -7,6 +7,7 @@ import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
 import { RootLayout } from "@/components/layout/RootLayout";
 
 import { AuditLogsPage } from "../features/auditLog";
+import { ExportJobListPage } from "../features/exports";
 
 import {
   JudgeDashboardPage,
@@ -285,7 +286,8 @@ export const router = createBrowserRouter([
       { path: "announcement", element: <CoordinatorAnnouncementPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
       { path: "schedule", element: <NotFoundPage /> },
-      { path: "reports", element: <NotFoundPage /> },
+      { path: "exports", element: <ExportJobListPage /> },
+      { path: "events/:eventId/exports", element: <ExportJobListPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
       { path: "audit-logs", element: <AuditLogsPage /> },
@@ -312,7 +314,7 @@ export const router = createBrowserRouter([
       { path: "health", element: <NotFoundPage /> },
       { path: "criteria", element: <ScoringCriteriaManagementPage /> },
       { path: "criteria/:id/edit", element: <ScoringCriteriaManagementPage /> },
-      { path: "exports", element: <NotFoundPage /> },
+      { path: "exports", element: <ExportJobListPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
     ],
