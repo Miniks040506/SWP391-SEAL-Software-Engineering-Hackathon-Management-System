@@ -73,15 +73,17 @@ export const AuditLogFilterBar = ({ filters, onChange, availableActions }: Props
           >
             More Filters
           </Button>
-          <Button
-            variant="text"
-            color="inherit"
-            onClick={handleClear}
-            startIcon={<ClearOutlinedIcon />}
-            sx={{ textTransform: "none", fontWeight: 600, height: "40px" }}
-          >
-            Clear
-          </Button>
+          {expanded && (
+            <Button
+              variant="text"
+              color="inherit"
+              onClick={handleClear}
+              startIcon={<ClearOutlinedIcon />}
+              sx={{ textTransform: "none", fontWeight: 600, height: "40px" }}
+            >
+              Clear
+            </Button>
+          )}
         </div>
       </div>
 
