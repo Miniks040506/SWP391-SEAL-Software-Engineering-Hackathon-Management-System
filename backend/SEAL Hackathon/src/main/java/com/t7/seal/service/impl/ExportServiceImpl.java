@@ -332,7 +332,12 @@ public class ExportServiceImpl implements ExportService {
             UUID exportId,
             Authentication authentication
     ) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+        
+        ExportJob job = getVisibleJob(exportId, actor);
+
+        return toResponse(job);
     }
 
     @Transactional
