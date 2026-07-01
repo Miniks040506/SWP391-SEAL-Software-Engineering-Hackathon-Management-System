@@ -10,6 +10,7 @@ import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RankingRepository;
+import com.t7.seal.repository.ScoreRepository;
 import com.t7.seal.request.system.CreateExportJobRequest;
 import com.t7.seal.request.system.EventExportRequest;
 import com.t7.seal.response.PageResponse;
@@ -35,6 +36,7 @@ public class ExportServiceImpl implements ExportService {
 
     private final HackathonEventRepository hackathonEventRepository;
     private final RankingRepository rankingRepository;
+    private final ScoreRepository scoreRepository;
 
     @Transactional
     @Override
@@ -133,8 +135,73 @@ public class ExportServiceImpl implements ExportService {
 
     @Transactional
     @Override
-    public ExportJobResponse exportEventScores(UUID eventId, EventExportRequest request, Authentication authentication) {
-        return null;
+    public ExportJobResponse exportEventScores(
+            UUID eventId,
+            EventExportRequest request,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        HackathonEvent event = getEvent(eventId);
+        ExportSpec spec = exportSpec(event, ExportType.RANKING, request);
+
+        List<Score> scores = scoreRepository.findForScoreExport(
+                eventId,
+                spec.trackId(),
+                spec.roundId(),
+                spec.includeDraftScores(),
+                spec.includeDisqualified()
+        );
+
+        List<List<String>> rows = new ArrayList<>();
+        rows.add(List.of(
+                "Event ID", "Event", "Round ID", "Round", "Track ID", "Track",
+                "Submission ID", "Submission Status", "Team ID", "Team",
+                "Judge ID", "Judge Name", "Judge Type", "Criterion ID", "Criterion",
+                "Category", "Technical", "Weight", "Max Score", "Score", "Draft", "Comment", "Scored At", "Updated At"
+        ));
+
+        for (Score score : scores) {
+            Submission submission = score.getSubmission();
+            Team team = submission.getTeam();
+            Track track = team.getTrack();
+            Round round = submission.getRound();
+            Judge judge = score.getJudge();
+            User judgeUser = judge.getUser();
+            EventCriteria criterion = score.getEventCriteria();
+            ScoringCriteria template = criterion.getCriteria();
+            boolean anonymize = spec.anonymize();
+
+            rows.add(List.of(
+                    text(event.getId()),
+                    text(event.getName()),
+                    text(round.getId()),
+                    text(round.getName()),
+                    text(track == null ? null : track.getId()),
+                    text(track == null ? null : track.getName()),
+                    text(submission.getId()),
+                    text(submission.getStatus()),
+                    text(team.getId()),
+                    text(team.getName()),
+                    anonymize ? hashId(judge.getId()) : text(judge.getId()),
+                    anonymize ? "Judge " + shortHash(judge.getId()) : text(judgeUser == null ? null : judgeUser.getFullName()),
+                    text(judge.getJudgeType()),
+                    text(criterion.getId()),
+                    text(criterion.getEffectiveName()),
+                    text(template == null ? null : template.getCategory()),
+                    text(criterion.getEffectiveIsTechnical()),
+                    text(criterion.getEffectiveWeight()),
+                    text(criterion.getEffectiveMaxScore()),
+                    text(score.getValue()),
+                    text(Boolean.TRUE.equals(score.getIsDraft())),
+                    text(score.getComment()),
+                    text(score.getScoredAt()),
+                    text(score.getUpdatedAt())
+            ));
+        }
+
+        return createAndProcessJob(actor, spec, rows, "score_report");
     }
 
     @Transactional
@@ -192,6 +259,15 @@ public class ExportServiceImpl implements ExportService {
 
     private String text(Object value) {
         return value == null ? "" : value.toString();
+    }
+
+    private String hashId(UUID id) {
+        return id == null ? "" : Integer.toHexString(id.toString().hashCode());
+    }
+
+    private String shortHash(UUID id) {
+        String hash = hashId(id);
+        return hash.length() <= 6 ? hash : hash.substring(0, 6);
     }
 
     private ExportSpec exportSpec(HackathonEvent event, ExportType type, EventExportRequest request) {
