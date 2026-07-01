@@ -91,8 +91,10 @@ public class RblResearchServiceImpl implements RblResearchService {
                 "export_jobs",
                 job.getId(),
                 null,
-                compactMap("status", job.getStatus().name(), "exportType", job.getExportType().name()),
-                compactMap("eventId", eventId, "roundId", roundId, "trackId", trackId, "format", normalizedFormat)
+                compactMap("status", job.getStatus().name(),
+                        "exportType", job.getExportType().name()),
+                compactMap("eventId", eventId, "roundId", roundId,
+                        "trackId", trackId, "format", normalizedFormat)
         );
 
         try {
@@ -124,8 +126,23 @@ public class RblResearchServiceImpl implements RblResearchService {
             );
 
             return toExportJobResponse(saved);
-        } catch (IOException | RuntimeException e) {
-            throw new RuntimeException(e);
+        } catch (IOException | RuntimeException ex) {
+            job.markFailed(ex.getMessage());
+            ExportJob failed = exportJobRepository.save(job);
+
+            auditLogService.record(
+                    actor,
+                    AuditActionType.EXPORT_FAILED,
+                    "export_jobs",
+                    failed.getId(),
+                    null,
+                    compactMap("status", failed.getStatus().name(),
+                            "error", failed.getErrorMessage()),
+                    compactMap("eventId", eventId,
+                            "roundId", roundId, "trackId", trackId)
+            );
+
+            return toExportJobResponse(failed);
         }
     }
 
