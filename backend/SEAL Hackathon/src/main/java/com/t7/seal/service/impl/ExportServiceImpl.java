@@ -454,7 +454,23 @@ public class ExportServiceImpl implements ExportService {
 
             return toResponse(saved);
         } catch (IOException ex) {
-            throw new ExternalServiceException("Failed to create export file", ex);
+            job.markFailed(ex.getMessage());
+            ExportJob failed = exportJobRepository.save(job);
+
+            auditLogService.record(
+                    actor,
+                    AuditActionType.EXPORT_FAILED,
+                    "export_jobs",
+                    failed.getId(),
+                    null,
+                    Map.of(
+                            "error", ex.getMessage(),
+                            "eventId", spec.event().getId().toString()
+                    ),
+                    null
+            );
+
+            return toResponse(failed);
         }
     }
 
