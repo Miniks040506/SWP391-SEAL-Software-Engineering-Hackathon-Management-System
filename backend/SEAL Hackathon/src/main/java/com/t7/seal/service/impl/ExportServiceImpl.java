@@ -11,6 +11,7 @@ import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RankingRepository;
 import com.t7.seal.repository.ScoreRepository;
+import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.request.system.CreateExportJobRequest;
 import com.t7.seal.request.system.EventExportRequest;
 import com.t7.seal.response.PageResponse;
@@ -37,6 +38,7 @@ public class ExportServiceImpl implements ExportService {
     private final HackathonEventRepository hackathonEventRepository;
     private final RankingRepository rankingRepository;
     private final ScoreRepository scoreRepository;
+    private final TeamRepository teamRepository;
 
     @Transactional
     @Override
@@ -206,8 +208,51 @@ public class ExportServiceImpl implements ExportService {
 
     @Transactional
     @Override
-    public ExportJobResponse exportEventTeamList(UUID eventId, EventExportRequest request, Authentication authentication) {
-        return null;
+    public ExportJobResponse exportEventTeamList(
+            UUID eventId,
+            EventExportRequest request,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        HackathonEvent event = getEvent(eventId);
+        ExportSpec spec = exportSpec(event, ExportType.RANKING, request);
+
+        List<Team> teams = teamRepository.findForTeamListReport(
+                eventId,
+                spec.trackId(),
+                null
+        );
+
+        List<List<String>> rows = new ArrayList<>();
+        rows.add(List.of(
+                "Event ID", "Event", "Track ID", "Track", "Team ID", "Team",
+                "Project Title", "Status", "Member Count", "Leader ID", "Leader Name", "Leader Email", "Registered At", "Created At"
+        ));
+
+        for (Team team : teams) {
+            Track track = team.getTrack();
+            User leader = team.getLeader();
+            rows.add(List.of(
+                    text(event.getId()),
+                    text(event.getName()),
+                    text(track == null ? null : track.getId()),
+                    text(track == null ? null : track.getName()),
+                    text(team.getId()),
+                    text(team.getName()),
+                    text(team.getProjectTitle()),
+                    text(team.getStatus()),
+                    text(team.getMemberCount()),
+                    text(leader == null ? null : leader.getId()),
+                    text(leader == null ? null : leader.getFullName()),
+                    text(leader == null ? null : leader.getEmail()),
+                    text(team.getRegisteredAt()),
+                    text(team.getCreatedAt())
+            ));
+        }
+
+        return createAndProcessJob(actor, spec, rows, "team_list_report");
     }
 
     @Transactional
@@ -243,7 +288,7 @@ public class ExportServiceImpl implements ExportService {
     @Transactional
     @Override
     public void deleteExport(UUID exportId, Authentication authentication) {
-
+        
     }
 
     //HELPERS

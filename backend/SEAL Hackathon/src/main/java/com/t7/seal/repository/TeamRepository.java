@@ -145,4 +145,20 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
             Pageable pageable
     );
 
+    @Query("""
+                    SELECT DISTINCT t 
+                    FROM Team t
+                    LEFT JOIN FETCH t.track tr 
+                    LEFT JOIN FETCH tr.event e 
+                    LEFT JOIN FETCH t.leader le 
+                    WHERE e.id = :eventId
+                        AND (:status IS NULL OR t.status = :status)
+                        AND (:trackId IS NULL OR t.id = :trackId)
+                    ORDER BY tr.name ASC, t.name ASC
+            """)
+    List<Team> findForTeamListReport(
+            @Param("eventId") UUID eventId,
+            @Param("trackId") UUID trackId,
+            @Param("status") TeamStatus status
+    );
 }
