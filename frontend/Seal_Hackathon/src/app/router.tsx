@@ -68,6 +68,7 @@ import {
   CoordinatorAwardManagementPage,
   CoordinatorAwardsRedirectPage,
 } from "@/features/coordinator";
+import { CoordinatorExportsRedirectPage } from "@/features/exports/pages/CoordinatorExportsRedirectPage";
 
 import {
   CoordinatorEventGradingProgressPage,
@@ -286,7 +287,7 @@ export const router = createBrowserRouter([
       { path: "announcement", element: <CoordinatorAnnouncementPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
       { path: "schedule", element: <NotFoundPage /> },
-      { path: "exports", element: <ExportJobListPage /> },
+      { path: "exports", element: <CoordinatorExportsRedirectPage /> },
       { path: "events/:eventId/exports", element: <ExportJobListPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },

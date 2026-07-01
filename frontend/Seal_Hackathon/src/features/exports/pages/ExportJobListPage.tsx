@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
@@ -27,6 +28,7 @@ import type { EventExportRequest, ExportFormat } from "@/types/export.types";
 import type { UUID } from "@/types/common.types";
 
 export const ExportJobListPage = () => {
+  const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: string }>();
   const [page, setPage] = useState(0);
 
@@ -74,9 +76,17 @@ export const ExportJobListPage = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-500 p-4">
 
-      {/* ── Header ─────────────────────────────────────── */}
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
+          {eventId && (
+            <Button
+              startIcon={<ArrowBackOutlinedIcon />}
+              onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
+              sx={{ mb: 2, textTransform: "none", fontWeight: 800, color: "text.secondary" }}
+            >
+              Back to Event Edit
+            </Button>
+          )}
           <h1 className="text-3xl font-black text-slate-950 dark:text-white">
             Export Reports
           </h1>
@@ -97,7 +107,6 @@ export const ExportJobListPage = () => {
         </div>
       </header>
 
-      {/* ── Admin: manual event ID ──────────────────────── */}
       {!eventId && (
         <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
           <p className="mb-1 text-sm font-bold text-blue-900 dark:text-blue-100">
@@ -116,14 +125,12 @@ export const ExportJobListPage = () => {
         </div>
       )}
 
-      {/* ── Export cards ───────────────────────────────── */}
       <section>
         <h2 className="mb-4 text-base font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
           Create New Export
         </h2>
         <div className="flex flex-col gap-3">
 
-          {/* Ranking card */}
           <ExportReportCard
             title="Ranking Report"
             description="Export final ranking rows with score, rank, advancement & publish state."
@@ -159,7 +166,6 @@ export const ExportJobListPage = () => {
             }
           />
 
-          {/* Score card */}
           <ExportReportCard
             title="Score Report"
             description="Export score rows per judge, submission and criterion for internal review."
@@ -181,21 +187,20 @@ export const ExportJobListPage = () => {
                   <ToggleButton value="CSV" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>CSV</ToggleButton>
                   <ToggleButton value="XLSX" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>Excel</ToggleButton>
                 </ToggleButtonGroup>
-              <div className="flex flex-col gap-1">
-                <FormControlLabel
-                  control={<Switch checked={scoreDrafts} onChange={(e) => setScoreDrafts(e.target.checked)} size="small" />}
-                  label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Include Draft Scores</span>}
-                />
-                <FormControlLabel
-                  control={<Switch checked={scoreAnonymize} onChange={(e) => setScoreAnonymize(e.target.checked)} size="small" />}
-                  label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Anonymize Judges</span>}
-                />
-              </div>
+                <div className="flex flex-col gap-1">
+                  <FormControlLabel
+                    control={<Switch checked={scoreDrafts} onChange={(e) => setScoreDrafts(e.target.checked)} size="small" />}
+                    label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Include Draft Scores</span>}
+                  />
+                  <FormControlLabel
+                    control={<Switch checked={scoreAnonymize} onChange={(e) => setScoreAnonymize(e.target.checked)} size="small" />}
+                    label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Anonymize Judges</span>}
+                  />
+                </div>
               </>
             }
           />
 
-          {/* Team list card */}
           <ExportReportCard
             title="Team List Report"
             description="Export teams, tracks, leaders, member counts and registration status."
@@ -223,7 +228,6 @@ export const ExportJobListPage = () => {
 
       </section>
 
-      {/* ── Job history table ──────────────────────────── */}
       <section>
         <h2 className="mb-4 text-base font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
           Recent Export Jobs

@@ -7,6 +7,7 @@ import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import RouteOutlinedIcon from "@mui/icons-material/RouteOutlined";
 import SchemaOutlinedIcon from "@mui/icons-material/SchemaOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import { Button, CircularProgress } from "@mui/material";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -153,6 +154,14 @@ export function CoordinatorEditEventPage() {
           sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
         >
           Awards
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<FileDownloadOutlinedIcon />}
+          onClick={() => navigate(`/coordinator/events/${eventId}/exports`)}
+          sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+        >
+          Export
         </Button>
       </div>
 
