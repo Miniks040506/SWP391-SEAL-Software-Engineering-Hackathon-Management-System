@@ -17,7 +17,7 @@ type CriteriaVarianceChartProps = {
 export function CriteriaVarianceChart({ data }: CriteriaVarianceChartProps) {
   const chartData = data.map((item) => ({
     ...item,
-    stdDev: Math.sqrt(item.variance),
+    stdDev: item.standardDeviation,
   }));
 
   return (

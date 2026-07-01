@@ -20,8 +20,8 @@ export function HighDisagreementCriteriaTable({
   data,
 }: HighDisagreementCriteriaTableProps) {
   const sortedData = [...data].sort((a, b) => {
-    const stdDevA = Math.sqrt(a.variance);
-    const stdDevB = Math.sqrt(b.variance);
+    const stdDevA = a.standardDeviation;
+    const stdDevB = b.standardDeviation;
     return stdDevB - stdDevA;
   });
 
@@ -40,13 +40,13 @@ export function HighDisagreementCriteriaTable({
                 <TableCell align="right">Mean</TableCell>
                 <TableCell align="right">Std Dev</TableCell>
                 <TableCell align="right">Variance</TableCell>
-                <TableCell align="right">Score Count</TableCell>
+                <TableCell align="right">Judge Count</TableCell>
                 <TableCell align="center">Risk</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {sortedData.map((row) => {
-                const stdDev = Math.sqrt(row.variance);
+                const stdDev = row.standardDeviation;
                 return (
                   <TableRow key={row.eventCriteriaId}>
                     <TableCell>{row.criteriaName}</TableCell>
@@ -56,8 +56,7 @@ export function HighDisagreementCriteriaTable({
                     <TableCell align="right">{row.meanScore.toFixed(2)}</TableCell>
                     <TableCell align="right">{stdDev.toFixed(2)}</TableCell>
                     <TableCell align="right">{row.variance.toFixed(2)}</TableCell>
-                    {/* Note: Judge count is missing from CriteriaVarianceResponse. Using scoreCount instead as requested. */}
-                    <TableCell align="right">{row.scoreCount}</TableCell>
+                    <TableCell align="right">{row.judgeCount}</TableCell>
                     <TableCell align="center">
                       <VarianceRiskBadge standardDeviation={stdDev} />
                     </TableCell>

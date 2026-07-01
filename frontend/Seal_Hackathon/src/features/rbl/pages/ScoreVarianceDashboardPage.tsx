@@ -65,7 +65,7 @@ export function ScoreVarianceDashboardPage() {
         Review judge disagreement by criterion and judge type.
       </Typography>
       <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 3 }}>
-        Event: {dashboardData?.eventName ?? "..."} | Round: {rounds.find((r) => r.id === selectedRoundId)?.name ?? "All"} | Track: {tracks.find((t) => t.id === selectedTrackId)?.name ?? "All"}
+        Round: {rounds.find((r) => r.id === selectedRoundId)?.name ?? "All"} | Track: {tracks.find((t) => t.id === selectedTrackId)?.name ?? "All"}
       </Typography>
 
       <VarianceFilterBar
@@ -95,18 +95,18 @@ export function ScoreVarianceDashboardPage() {
         </Alert>
       )}
 
-      {dashboardData && dashboardData.scoreCount === 0 && !isLoading && !isError && (
+      {dashboardData && dashboardData.totalScoreCount === 0 && !isLoading && !isError && (
         <VarianceEmptyState />
       )}
 
-      {dashboardData && dashboardData.scoreCount > 0 && !isLoading && !isError && (
+      {dashboardData && dashboardData.totalScoreCount > 0 && !isLoading && !isError && (
         <Box>
           <VarianceSummaryCards
-            scoreCount={dashboardData.scoreCount}
-            judgeCount={dashboardData.judgeCount}
-            criteriaCount={dashboardData.criteriaCount}
-            overallMean={dashboardData.overallMean}
-            overallStandardDeviation={dashboardData.overallStandardDeviation}
+            scoreCount={dashboardData.totalScoreCount}
+            judgeCount={dashboardData.totalJudgeCount}
+            criteriaCount={dashboardData.totalCriteriaCount}
+            averageCriterionVariance={dashboardData.averageCriterionVariance}
+            averageJudgeVariance={dashboardData.averageJudgeVariance}
           />
           <CriteriaVarianceChart data={dashboardData.criteriaVariances} />
           <JudgeVarianceChart data={dashboardData.judgeVariances} />
