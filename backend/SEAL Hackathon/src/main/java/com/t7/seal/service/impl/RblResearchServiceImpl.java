@@ -1,43 +1,136 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.domain.JudgeType;
-import com.t7.seal.domain.UserRole;
+import com.t7.seal.domain.*;
+import com.t7.seal.dto.Stats;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
-import com.t7.seal.repository.HackathonEventRepository;
-import com.t7.seal.repository.RoundRepository;
-import com.t7.seal.repository.ScoreRepository;
-import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.system.ExportRblDatasetRequest;
+import com.t7.seal.response.system.CriteriaVarianceResponse;
 import com.t7.seal.response.system.ExportJobResponse;
+import com.t7.seal.response.system.JudgeVarianceResponse;
 import com.t7.seal.response.system.VarianceDashboardResponse;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RblResearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class RblResearchServiceImpl implements RblResearchService {
 
+    private static final double HIGH_VARIANCE_THRESHOLD = 2.0d;
+    private static final String HASH_PREFIX = "SEAL-RBL-v1:";
+
     private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
 
     private final HackathonEventRepository hackathonEventRepository;
     private final RoundRepository roundRepository;
     private final TrackRepository trackRepository;
     private final ScoreRepository scoreRepository;
+    private final ExportJobRepository exportJobRepository;
 
     @Override
-    public VarianceDashboardResponse getVarianceDashboard(UUID eventId, UUID roundId, UUID trackId, String criteriaType, String judgeType, Authentication authentication) {
-        return null;
+    @Transactional(readOnly = true)
+    public VarianceDashboardResponse getVarianceDashboard(
+            UUID eventId,
+            UUID roundId,
+            UUID trackId,
+            String criteriaType,
+            String judgeType,
+            Authentication authentication
+    ) {
+        ensureCoordinatorOrAdmin(authentication);
+        HackathonEvent event = requireEvent(eventId);
+        validateRoundBelongsToEvent(roundId, eventId);
+        validateTrackBelongsToEvent(trackId, eventId);
+
+        Boolean technicalFilter = parseCriteriaType(criteriaType);
+        JudgeType judgeTypeFilter = parseJudgeType(judgeType);
+
+        List<Score> scores = loadFilteredScores(event.getId(),
+                roundId, trackId, technicalFilter, judgeTypeFilter);
+
+        Map<UUID, List<Score>> scoresByCriteria = scores.stream()
+                .collect(Collectors.groupingBy(
+                        score -> score.getEventCriteria().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<CriteriaVarianceResponse> criteriaVariances = scoresByCriteria.values().stream()
+                .map(this::toCriteriaVariance)
+                .sorted(Comparator
+                        .comparing((CriteriaVarianceResponse r)
+                                -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
+                        .thenComparing(
+                                CriteriaVarianceResponse::standardDeviation,
+                                Comparator.nullsLast(Comparator.reverseOrder())
+                        )
+                        .thenComparing(
+                                CriteriaVarianceResponse::criteriaName,
+                                Comparator.nullsLast(String::compareToIgnoreCase)
+                        )
+                )
+                .toList();
+
+        Map<UUID, List<Score>> scoresByJudge = scores.stream()
+                .collect(Collectors.groupingBy(
+                        score -> score.getJudge().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<JudgeVarianceResponse> judgeVariances = scoresByJudge.values().stream()
+                .map(this::toJudgeVariance)
+                .sorted(Comparator
+                        .comparing((JudgeVarianceResponse r)
+                                -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
+                        .thenComparing(
+                                JudgeVarianceResponse::standardDeviation,
+                                Comparator.nullsLast(Comparator.reverseOrder())
+                        )
+                )
+                .toList();
+
+        return new VarianceDashboardResponse(
+                event.getId(),
+                roundId,
+                trackId,
+                normalizeNullable(criteriaType),
+                normalizeNullable(judgeType),
+                scores.size(),
+                scoresByJudge.size(),
+                scoresByCriteria.size(),
+                round(average(criteriaVariances.stream()
+                        .map(CriteriaVarianceResponse::variance)
+                        .toList())),
+                round(average(judgeVariances.stream()
+                        .map(JudgeVarianceResponse::variance)
+                        .toList())),
+                judgeVariances,
+                criteriaVariances
+        );
     }
 
     @Override
+    @Transactional
     public ExportJobResponse exportAnonymizedDataset(
             UUID eventId,
             ExportRblDatasetRequest request,
@@ -54,9 +147,90 @@ public class RblResearchServiceImpl implements RblResearchService {
         validateTrackBelongsToEvent(trackId, eventId);
         String normalizedFormat = normalizeFormat(format);
 
-        List<Score> scores = loadFilteredScores(eventId, roundId, trackId, null, null);
+        List<Score> scores = loadFilteredScores(eventId,
+                roundId, trackId, null, null);
 
-        return null;
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("eventId", eventId.toString());
+        if (roundId != null) {
+            params.put("roundId", roundId.toString());
+        }
+        if (trackId != null) {
+            params.put("trackId", trackId.toString());
+        }
+        params.put("format", normalizedFormat);
+        params.put("anonymize", true);
+        params.put("dataset", "RBL_SCORE_DATASET");
+
+        ExportJob job = ExportJob.builder()
+                .requestedBy(actor)
+                .exportType(ExportType.SCORE_DATASET_ANONYMIZED)
+                .params(params)
+                .status(ExportJobStatus.QUEUED)
+                .build();
+        job = exportJobRepository.saveAndFlush(job);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.EXPORT_REQUESTED,
+                "export_jobs",
+                job.getId(),
+                null,
+                compactMap("status", job.getStatus().name(),
+                        "exportType", job.getExportType().name()),
+                compactMap("eventId", eventId, "roundId", roundId,
+                        "trackId", trackId, "format", normalizedFormat)
+        );
+
+        try {
+            job.markProcessing();
+            exportJobRepository.saveAndFlush(job);
+
+            String csv = buildRblCsv(scores);
+            String fileName = buildFileName(event, job.getId(), normalizedFormat);
+            Path exportPath = writeExportFile(fileName, csv);
+            String downloadUrl = "/api/v1/exports/" + job.getId() + "/download-file";
+
+            job.markDone(
+                    downloadUrl,
+                    fileName,
+                    Files.size(exportPath),
+                    scores.size(),
+                    LocalDateTime.now().plusDays(7)
+            );
+            ExportJob saved = exportJobRepository.save(job);
+
+            auditLogService.record(
+                    actor,
+                    AuditActionType.EXPORT_COMPLETED,
+                    "export_jobs",
+                    saved.getId(),
+                    null,
+                    compactMap("status",
+                            saved.getStatus().name(), "rowCount", saved.getRowCount()),
+                    compactMap("eventId", eventId,
+                            "roundId", roundId, "trackId", trackId, "fileName", fileName)
+            );
+
+            return toExportJobResponse(saved);
+        } catch (IOException | RuntimeException ex) {
+            job.markFailed(ex.getMessage());
+            ExportJob failed = exportJobRepository.save(job);
+
+            auditLogService.record(
+                    actor,
+                    AuditActionType.EXPORT_FAILED,
+                    "export_jobs",
+                    failed.getId(),
+                    null,
+                    compactMap("status", failed.getStatus().name(),
+                            "error", failed.getErrorMessage()),
+                    compactMap("eventId", eventId,
+                            "roundId", roundId, "trackId", trackId)
+            );
+
+            return toExportJobResponse(failed);
+        }
     }
 
     //HELPERS
@@ -103,6 +277,147 @@ public class RblResearchServiceImpl implements RblResearchService {
         }
     }
 
+    private List<Score> loadFilteredScores(
+            UUID eventId,
+            UUID roundId,
+            UUID trackId,
+            Boolean technicalFilter,
+            JudgeType judgeTypeFilter
+    ) {
+        return scoreRepository.findConfirmedScoresForRblDashboard(eventId, roundId, trackId)
+                .stream()
+                .filter(score -> score == null || technicalFilter
+                        .equals(Boolean.TRUE.equals(score.getEventCriteria().getEffectiveIsTechnical())))
+                .filter(score -> judgeTypeFilter == null
+                        || judgeTypeFilter == score.getJudge().getJudgeType())
+                .toList();
+    }
+
+    private CriteriaVarianceResponse toCriteriaVariance(List<Score> scores) {
+        EventCriteria criteria = scores.get(0).getEventCriteria();
+        Stats stats = calculateStats(
+                scores.stream()
+                .map(score -> score.getValue().doubleValue())
+                .toList()
+        );
+
+        Set<UUID> judgeIds = scores.stream()
+                .map(score -> score.getJudge().getId())
+                .collect(Collectors.toSet());
+        String category = criteria.getCriteria() == null
+                || criteria.getCriteria().getCategory() == null
+                ? null
+                : criteria.getCriteria().getCategory().name();
+
+        return new CriteriaVarianceResponse(
+                criteria.getId(),
+                criteria.getEffectiveName(),
+                category,
+                Boolean.TRUE.equals(criteria.getEffectiveIsTechnical()),
+                stats.mean(),
+                stats.variance(),
+                stats.standardDeviation(),
+                stats.min(),
+                stats.max(),
+                scores.size(),
+                judgeIds.size(),
+                stats.standardDeviation() >= HIGH_VARIANCE_THRESHOLD
+        );
+    }
+
+    private JudgeVarianceResponse toJudgeVariance(List<Score> scores) {
+        Judge judge = scores.get(0).getJudge();
+        Stats stats = calculateStats(scores.stream()
+                .map(score -> score.getValue().doubleValue())
+                .toList());
+
+        return new JudgeVarianceResponse(
+                judge.getId(),
+                hashId(judge.getId()),
+                judge.getJudgeType() == null ? null : judge.getJudgeType().name(),
+                stats.mean(),
+                stats.variance(),
+                stats.standardDeviation(),
+                stats.min(),
+                stats.max(),
+                scores.size(),
+                stats.standardDeviation() >= HIGH_VARIANCE_THRESHOLD
+        );
+    }
+
+    private Stats calculateStats(List<Double> values) {
+        if (values == null || values.isEmpty()) {
+            return new Stats(0d, 0d, 0d, 0d, 0d);
+        }
+
+        double mean = values.stream()
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0d);
+        double variance = values.stream()
+                .mapToDouble(value -> Math.pow(value - mean, 2))
+                .average()
+                .orElse(0d);
+        double min = values.stream()
+                .mapToDouble(Double::doubleValue)
+                .min()
+                .orElse(0d);
+        double max = values.stream()
+                .mapToDouble(Double::doubleValue)
+                .max()
+                .orElse(0d);
+
+        return new Stats(
+                round(mean),
+                round(variance),
+                round(Math.sqrt(variance)),
+                round(min),
+                round(max)
+        );
+    }
+
+    private double average(List<Double> values) {
+        if (values == null || values.isEmpty()) {
+            return 0d;
+        }
+
+        return values.stream()
+                .filter(value -> value != null)
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0d);
+    }
+
+    private double round(double value) {
+        return Math.round(value * 10000d) / 10000d;
+    }
+
+    private Boolean parseCriteriaType(String criteriaType) {
+        String normalized = normalizeNullable(criteriaType);
+        if (normalized == null) {
+            return null;
+        }
+
+        return switch (normalized.toUpperCase(Locale.ROOT)) {
+            case "TECHNICAL", "TECH", "TRUE" -> true;
+            case "SOFT", "NON_TECHNICAL", "SUBJECTIVE", "FALSE" -> false;
+            default -> throw new BadRequestException("Invalid criteriaType. Use TECHNICAL or SOFT.");
+        };
+    }
+
+    private JudgeType parseJudgeType(String judgeType) {
+        String normalized = normalizeNullable(judgeType);
+        if (normalized == null) {
+            return null;
+        }
+
+        try {
+            return JudgeType.valueOf(normalized.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid judgeType. Use INTERNAL or GUEST.");
+        }
+    }
+
     private String normalizeFormat(String format) {
         String normalized = normalizeNullable(format);
         if (normalized == null) {
@@ -118,19 +433,131 @@ public class RblResearchServiceImpl implements RblResearchService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private List<Score> loadFilteredScores(
-            UUID eventId,
-            UUID roundId,
-            UUID trackId,
-            Boolean technicalFilter,
-            JudgeType judgeTypeFilter
-    ) {
-        return scoreRepository.findConfirmedScoresForRblDashboard(eventId, roundId, trackId)
-                .stream()
-                .filter(score -> score == null || technicalFilter
-                        .equals(Boolean.TRUE.equals(score.getEventCriteria().getEffectiveIsTechnical())))
-                .filter(score -> judgeTypeFilter == null
-                        || judgeTypeFilter == score.getJudge().getJudgeType())
-                .toList();
+    private String buildRblCsv(List<Score> scores) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("hashedJudgeId,judgeType,hashedTrackId,hashedRoundId," +
+                "eventCriteriaId,criteriaName,criterionCategory,criterionType," +
+                "hashedSubmissionId,rawScore,scoreDateBucket\n");
+
+        for (Score score : scores) {
+            EventCriteria criteria = score.getEventCriteria();
+            Submission submission = score.getSubmission();
+            Team team = submission.getTeam();
+            Track track = team == null ? null : team.getTrack();
+            Round round = submission.getRound();
+
+            String category = criteria.getCriteria() == null
+                    || criteria.getCriteria().getCategory() == null
+                    ? ""
+                    : criteria.getCriteria().getCategory().name();
+
+            String criterionType = Boolean.TRUE.equals(criteria.getEffectiveIsTechnical())
+                    ? "TECHNICAL" : "SOFT";
+            String scoreDateBucket = score.getScoredAt() == null
+                    ? ""
+                    : score.getScoredAt().toLocalDate()
+                    .format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+            sb.append(csv(hashId(score.getJudge().getId()))).append(',')
+                    .append(csv(score.getJudge().getJudgeType() == null
+                            ? null : score.getJudge().getJudgeType().name())).append(',')
+                    .append(csv(track == null ? null : hashId(track.getId()))).append(',')
+                    .append(csv(round == null ? null : hashId(round.getId()))).append(',')
+                    .append(csv(criteria.getId() == null
+                            ? null : criteria.getId().toString())).append(',')
+                    .append(csv(criteria.getEffectiveName())).append(',')
+                    .append(csv(category)).append(',')
+                    .append(csv(criterionType)).append(',')
+                    .append(csv(submission.getId() == null
+                            ? null : hashId(submission.getId()))).append(',')
+                    .append(score.getValue()).append(',')
+                    .append(csv(scoreDateBucket))
+                    .append('\n');
+        }
+
+        return sb.toString();
+    }
+
+    private String buildFileName(HackathonEvent event, UUID exportId, String format) {
+        String safeName = event.getSlug() == null || event.getSlug().isBlank()
+                ? event.getName()
+                .replaceAll("[^A-Za-z0-9]+", "-")
+                .toLowerCase(Locale.ROOT)
+                : event.getSlug();
+
+        return "seal-rbl-" + safeName + "-" + exportId + "." + format;
+    }
+
+    private Path writeExportFile(String fileName, String content) throws IOException {
+        Path dir = Path.of(System.getProperty("java.io.tmpdir"), "seal-exports");
+        Files.createDirectories(dir);
+        Path path = dir.resolve(fileName);
+        Files.writeString(path, content, StandardCharsets.UTF_8);
+        return path;
+    }
+
+    private String csv(String value) {
+        if (value == null) {
+            return "";
+        }
+        String escaped = value.replace("\"", "\"\"");
+        if (escaped.contains(",") || escaped.contains("\n") || escaped.contains("\r") || escaped.contains("\"")) {
+            return "\"" + escaped + "\"";
+        }
+        return escaped;
+    }
+
+    private String hashId(UUID id) {
+        if (id == null) {
+            return "";
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((HASH_PREFIX + id)
+                    .getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+
+            return sb.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 is not available.", ex);
+        }
+    }
+
+    private Map<String, Object> compactMap(Object... keyValues) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (keyValues == null) {
+            return result;
+        }
+
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            Object key = keyValues[i];
+            Object value = keyValues[i + 1];
+            if (key != null && value != null) {
+                result.put(String.valueOf(key), value);
+            }
+        }
+
+        return result;
+    }
+
+    private ExportJobResponse toExportJobResponse(ExportJob job) {
+        return new ExportJobResponse(
+                job.getId(),
+                job.getRequestedBy() == null ? null : job.getRequestedBy().getId(),
+                job.getExportType() == null ? null : job.getExportType().name(),
+                job.getParams(),
+                job.getStatus() == null ? null : job.getStatus().name(),
+                job.getFileName(),
+                job.getFileSizeBytes(),
+                job.getRowCount(),
+                job.getErrorMessage(),
+                job.getRequestedAt(),
+                job.getCompletedAt(),
+                job.getExpiresAt()
+        );
     }
 }
