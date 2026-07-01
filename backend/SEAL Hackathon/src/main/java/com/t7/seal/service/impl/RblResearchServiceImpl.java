@@ -103,21 +103,6 @@ public class RblResearchServiceImpl implements RblResearchService {
         }
     }
 
-    private String normalizeFormat(String format) {
-        String normalized = normalizeNullable(format);
-        if (normalized == null) {
-            return "csv";
-        }
-        if (!"csv".equalsIgnoreCase(normalized)) {
-            throw new BadRequestException("RBL dataset export currently supports csv only.");
-        }
-        return "csv";
-    }
-
-    private String normalizeNullable(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
-
     private List<Score> loadFilteredScores(
             UUID eventId,
             UUID roundId,
@@ -132,5 +117,20 @@ public class RblResearchServiceImpl implements RblResearchService {
                 .filter(score -> judgeTypeFilter == null
                         || judgeTypeFilter == score.getJudge().getJudgeType())
                 .toList();
+    }
+
+    private String normalizeFormat(String format) {
+        String normalized = normalizeNullable(format);
+        if (normalized == null) {
+            return "csv";
+        }
+        if (!"csv".equalsIgnoreCase(normalized)) {
+            throw new BadRequestException("RBL dataset export currently supports csv only.");
+        }
+        return "csv";
+    }
+
+    private String normalizeNullable(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }
