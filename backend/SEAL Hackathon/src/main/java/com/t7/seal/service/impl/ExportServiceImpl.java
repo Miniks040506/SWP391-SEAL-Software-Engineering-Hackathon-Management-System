@@ -1,5 +1,7 @@
 package com.t7.seal.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t7.seal.domain.ExportType;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
@@ -18,6 +20,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -25,6 +29,7 @@ import java.util.UUID;
 public class ExportServiceImpl implements ExportService {
 
     private final CurrentUserService currentUserService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     @Override
@@ -32,8 +37,9 @@ public class ExportServiceImpl implements ExportService {
         User actor = currentUserService.getCurrentUser(authentication);
         ensureCanExport(actor);
 
-        ExportType exportType = ExportType.valueOf(request.exportType());
+        ExportType exportType = parseExportType(request.exportType());
 
+        Map<String, Object> params = new
         return null;
     }
 
@@ -115,5 +121,20 @@ public class ExportServiceImpl implements ExportService {
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Invalid export type: " + value);
         }
+    }
+
+    private Map<String, Object> normalizeParams(Object param) {
+        if (param == null) {
+            throw new BadRequestException("Export params are required");
+        }
+
+        Map<String, Object> map = objectMapper
+                .convertValue(param, new TypeReference<Map<String, Object>>() {});
+
+        if (map == null || map.isEmpty()) {
+            throw new BadRequestException("Export params are required");
+        }
+
+        return new LinkedHashMap<>(map);
     }
 }
