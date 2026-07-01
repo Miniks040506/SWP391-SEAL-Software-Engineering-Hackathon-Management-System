@@ -165,7 +165,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, API + "/events/*/publish-results").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/events/*/results/publish").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/events/*/prizes/assign-from-ranking").hasRole("COORDINATOR")
-                        .requestMatchers(HttpMethod.GET, API + "/events/*/variance-dashboard").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.GET, API + "/events/*/variance-dashboard").hasAnyRole("ADMIN", "COORDINATOR")
 
                         // Announcements
                         .requestMatchers(HttpMethod.POST, API + "/events/*/announcements").hasRole("COORDINATOR")

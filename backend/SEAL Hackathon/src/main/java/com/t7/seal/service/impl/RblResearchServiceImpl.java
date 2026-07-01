@@ -540,7 +540,7 @@ public class RblResearchServiceImpl implements RblResearchService {
                 result.put(String.valueOf(key), value);
             }
         }
-        
+
         return result;
     }
 
