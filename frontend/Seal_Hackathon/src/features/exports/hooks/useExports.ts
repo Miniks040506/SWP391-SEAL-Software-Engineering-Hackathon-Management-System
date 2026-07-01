@@ -8,7 +8,7 @@ import type {
   GetExportJobsParams,
 } from "@/types/export.types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const activeApi = USE_MOCK ? mockExportApi : exportApi;
 
 export const exportKeys = {

@@ -4,7 +4,11 @@ import Button from "@mui/material/Button";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
-import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import CircularProgress from "@mui/material/CircularProgress";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
@@ -26,11 +30,25 @@ import {
 } from "../hooks/useExports";
 import type { EventExportRequest, ExportFormat } from "@/types/export.types";
 import type { UUID } from "@/types/common.types";
+import {
+  useCoordinatorEventDetailQuery,
+  useCoordinatorEventsQuery,
+  useCoordinatorEventTracksQuery,
+  useCoordinatorEventRoundsQuery
+} from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 
 export const ExportJobListPage = () => {
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: string }>();
   const [page, setPage] = useState(0);
+
+  const eventQuery = useCoordinatorEventDetailQuery(eventId as UUID | undefined);
+  const eventData = eventQuery.data as any;
+  const eventName = eventData?.name ?? eventData?.eventName ?? eventData?.title;
+
+  const { data: eventsData, isLoading: isLoadingEvents } = useCoordinatorEventsQuery({ page: 0, size: 100 });
+  const events = eventsData?.content || eventsData || [];
+  const eventList = Array.isArray(events) ? events : [];
 
   const { data: jobsData, isLoading, refetch } = useExportJobsQuery({ page, size: 10 });
   const { mutate: createRanking, isPending: isRankingPending } = useCreateRankingExport();
@@ -40,33 +58,59 @@ export const ExportJobListPage = () => {
   const { mutate: retryExport } = useRetryExport();
   const { mutate: deleteExport } = useDeleteExport();
 
+  const [manualEventId, setManualEventId] = useState<string>("");
+  const activeEventId = eventId || manualEventId;
+
+  const tracksQuery = useCoordinatorEventTracksQuery(activeEventId as UUID | undefined);
+  const roundsQuery = useCoordinatorEventRoundsQuery(activeEventId as UUID | undefined);
+  const tracks = tracksQuery.data || [];
+  const rounds = roundsQuery.data || [];
+
   const [rankingFormat, setRankingFormat] = useState<ExportFormat>("CSV");
   const [rankingDisqualified, setRankingDisqualified] = useState(false);
+  const [rankingTrackId, setRankingTrackId] = useState<string>("");
+  const [rankingRoundId, setRankingRoundId] = useState<string>("");
 
   const [scoreFormat, setScoreFormat] = useState<ExportFormat>("CSV");
   const [scoreDrafts, setScoreDrafts] = useState(false);
   const [scoreAnonymize, setScoreAnonymize] = useState(true);
+  const [scoreDisqualified, setScoreDisqualified] = useState(false);
+  const [scoreTrackId, setScoreTrackId] = useState<string>("");
+  const [scoreRoundId, setScoreRoundId] = useState<string>("");
 
   const [teamFormat, setTeamFormat] = useState<ExportFormat>("CSV");
-
-  const [manualEventId, setManualEventId] = useState<string>("");
-  const activeEventId = eventId || manualEventId;
+  const [teamTrackId, setTeamTrackId] = useState<string>("");
 
   const handleCreateRanking = () => {
     if (!activeEventId) return;
-    const payload: EventExportRequest = { format: rankingFormat, includeDisqualified: rankingDisqualified };
+    const payload: EventExportRequest = {
+      format: rankingFormat,
+      includeDisqualified: rankingDisqualified,
+      ...(rankingTrackId && { trackId: rankingTrackId as UUID }),
+      ...(rankingRoundId && { roundId: rankingRoundId as UUID }),
+    };
     createRanking({ eventId: activeEventId as UUID, payload });
   };
 
   const handleCreateScore = () => {
     if (!activeEventId) return;
-    const payload: EventExportRequest = { format: scoreFormat, includeDraftScores: scoreDrafts, anonymize: scoreAnonymize };
+    const payload: EventExportRequest = {
+      format: scoreFormat,
+      includeDraftScores: scoreDrafts,
+      anonymize: scoreAnonymize,
+      includeDisqualified: scoreDisqualified,
+      ...(scoreTrackId && { trackId: scoreTrackId as UUID }),
+      ...(scoreRoundId && { roundId: scoreRoundId as UUID }),
+    };
     createScore({ eventId: activeEventId as UUID, payload });
   };
 
   const handleCreateTeam = () => {
     if (!activeEventId) return;
-    const payload: EventExportRequest = { format: teamFormat };
+    const payload: EventExportRequest = {
+      format: teamFormat,
+      ...(teamTrackId && { trackId: teamTrackId as UUID }),
+    };
     createTeam({ eventId: activeEventId as UUID, payload });
   };
 
@@ -87,8 +131,16 @@ export const ExportJobListPage = () => {
               Back to Event Edit
             </Button>
           )}
-          <h1 className="text-3xl font-black text-slate-950 dark:text-white">
+          <h1 className="text-3xl font-black text-slate-950 dark:text-white flex items-center gap-3">
             Export Reports
+            {eventName && (
+              <>
+                <span className="text-slate-300 dark:text-slate-600 font-light">|</span>
+                <span className="text-blue-600 dark:text-blue-400 text-xl font-bold bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-lg">
+                  {eventName}
+                </span>
+              </>
+            )}
           </h1>
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
             Generate CSV/XLSX reports for rankings, scores/submissions, and team lists.
@@ -113,15 +165,31 @@ export const ExportJobListPage = () => {
             Global Admin Mode
           </p>
           <p className="mb-4 text-xs font-medium text-blue-700 dark:text-blue-300">
-            You are viewing export jobs across all events. To create a new export, enter an Event ID below.
+            You are viewing export jobs across all events. To create a new export, select an Event below.
           </p>
-          <TextField
-            size="small"
-            label="Target Event ID"
-            value={manualEventId}
-            onChange={(e) => setManualEventId(e.target.value)}
-            sx={{ width: 320, bgcolor: "background.paper", borderRadius: 2 }}
-          />
+          <FormControl size="small" sx={{ width: 320, bgcolor: "background.paper", borderRadius: 2 }}>
+            <InputLabel>Target Event</InputLabel>
+            <Select
+              label="Target Event"
+              value={manualEventId}
+              onChange={(e) => setManualEventId(e.target.value)}
+              disabled={isLoadingEvents}
+            >
+              {isLoadingEvents && (
+                <MenuItem value="" disabled>
+                  <CircularProgress size={16} sx={{ mr: 2 }} /> Loading events...
+                </MenuItem>
+              )}
+              {!isLoadingEvents && eventList.length === 0 && (
+                <MenuItem value="" disabled>No events found</MenuItem>
+              )}
+              {eventList.map((e: any) => (
+                <MenuItem key={e.id} value={e.id}>
+                  {e.name || e.eventName || e.title || e.id}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </div>
       )}
 
@@ -141,28 +209,38 @@ export const ExportJobListPage = () => {
             isExporting={isRankingPending}
             disabled={!activeEventId}
             controls={
-              <>
-                <ToggleButtonGroup
-                  value={rankingFormat}
-                  exclusive
-                  size="small"
-                  onChange={(_, v) => v && setRankingFormat(v)}
-                  sx={{ height: 34 }}
-                >
-                  <ToggleButton value="CSV" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>CSV</ToggleButton>
-                  <ToggleButton value="XLSX" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>Excel</ToggleButton>
-                </ToggleButtonGroup>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={rankingDisqualified}
-                      onChange={(e) => setRankingDisqualified(e.target.checked)}
-                      size="small"
-                    />
-                  }
-                  label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Include Disqualified</span>}
-                />
-              </>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-4">
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Track</InputLabel>
+                    <Select label="Track" value={rankingTrackId} onChange={(e) => setRankingTrackId(e.target.value)}>
+                      <MenuItem value="">All Tracks</MenuItem>
+                      {tracks.map((t: any) => <MenuItem key={t.id} value={t.id}>{t.name || t.trackName || t.id}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Round</InputLabel>
+                    <Select label="Round" value={rankingRoundId} onChange={(e) => setRankingRoundId(e.target.value)}>
+                      <MenuItem value="">All Rounds</MenuItem>
+                      {rounds.map((r: any) => <MenuItem key={r.id} value={r.id}>{r.name || r.roundName || r.id}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                </div>
+                <div className="flex items-center gap-4">
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Format</InputLabel>
+                    <Select label="Format" value={rankingFormat} onChange={(e) => setRankingFormat(e.target.value as ExportFormat)}>
+                      <MenuItem value="CSV">CSV</MenuItem>
+                      <MenuItem value="XLSX">Excel</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <FormControlLabel
+                    control={<Switch checked={rankingDisqualified} onChange={(e) => setRankingDisqualified(e.target.checked)} size="small" />}
+                    label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Disqualified</span>}
+                    sx={{ m: 0 }}
+                  />
+                </div>
+              </div>
             }
           />
 
@@ -176,28 +254,50 @@ export const ExportJobListPage = () => {
             isExporting={isScorePending}
             disabled={!activeEventId}
             controls={
-              <>
-                <ToggleButtonGroup
-                  value={scoreFormat}
-                  exclusive
-                  size="small"
-                  onChange={(_, v) => v && setScoreFormat(v)}
-                  sx={{ height: 34 }}
-                >
-                  <ToggleButton value="CSV" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>CSV</ToggleButton>
-                  <ToggleButton value="XLSX" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>Excel</ToggleButton>
-                </ToggleButtonGroup>
-                <div className="flex flex-col gap-1">
-                  <FormControlLabel
-                    control={<Switch checked={scoreDrafts} onChange={(e) => setScoreDrafts(e.target.checked)} size="small" />}
-                    label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Include Draft Scores</span>}
-                  />
-                  <FormControlLabel
-                    control={<Switch checked={scoreAnonymize} onChange={(e) => setScoreAnonymize(e.target.checked)} size="small" />}
-                    label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Anonymize Judges</span>}
-                  />
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-4">
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Track</InputLabel>
+                    <Select label="Track" value={scoreTrackId} onChange={(e) => setScoreTrackId(e.target.value)}>
+                      <MenuItem value="">All Tracks</MenuItem>
+                      {tracks.map((t: any) => <MenuItem key={t.id} value={t.id}>{t.name || t.trackName || t.id}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Round</InputLabel>
+                    <Select label="Round" value={scoreRoundId} onChange={(e) => setScoreRoundId(e.target.value)}>
+                      <MenuItem value="">All Rounds</MenuItem>
+                      {rounds.map((r: any) => <MenuItem key={r.id} value={r.id}>{r.name || r.roundName || r.id}</MenuItem>)}
+                    </Select>
+                  </FormControl>
                 </div>
-              </>
+                <div className="flex items-center gap-4">
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Format</InputLabel>
+                    <Select label="Format" value={scoreFormat} onChange={(e) => setScoreFormat(e.target.value as ExportFormat)}>
+                      <MenuItem value="CSV">CSV</MenuItem>
+                      <MenuItem value="XLSX">Excel</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <div className="flex flex-col gap-1">
+                    <FormControlLabel
+                      control={<Switch checked={scoreDrafts} onChange={(e) => setScoreDrafts(e.target.checked)} size="small" />}
+                      label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Draft Scores</span>}
+                      sx={{ m: 0 }}
+                    />
+                    <FormControlLabel
+                      control={<Switch checked={scoreDisqualified} onChange={(e) => setScoreDisqualified(e.target.checked)} size="small" />}
+                      label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Disqualified</span>}
+                      sx={{ m: 0 }}
+                    />
+                    <FormControlLabel
+                      control={<Switch checked={scoreAnonymize} onChange={(e) => setScoreAnonymize(e.target.checked)} size="small" />}
+                      label={<span className="text-sm font-medium text-slate-600 dark:text-slate-300">Anonymize</span>}
+                      sx={{ m: 0 }}
+                    />
+                  </div>
+                </div>
+              </div>
             }
           />
 
@@ -211,16 +311,26 @@ export const ExportJobListPage = () => {
             isExporting={isTeamPending}
             disabled={!activeEventId}
             controls={
-              <ToggleButtonGroup
-                value={teamFormat}
-                exclusive
-                size="small"
-                onChange={(_, v) => v && setTeamFormat(v)}
-                sx={{ height: 34 }}
-              >
-                <ToggleButton value="CSV" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>CSV</ToggleButton>
-                <ToggleButton value="XLSX" sx={{ textTransform: "none", fontWeight: 700, px: 2 }}>Excel</ToggleButton>
-              </ToggleButtonGroup>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-4">
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Track</InputLabel>
+                    <Select label="Track" value={teamTrackId} onChange={(e) => setTeamTrackId(e.target.value)}>
+                      <MenuItem value="">All Tracks</MenuItem>
+                      {tracks.map((t: any) => <MenuItem key={t.id} value={t.id}>{t.name || t.trackName || t.id}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                </div>
+                <div className="flex items-center gap-4">
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Format</InputLabel>
+                    <Select label="Format" value={teamFormat} onChange={(e) => setTeamFormat(e.target.value as ExportFormat)}>
+                      <MenuItem value="CSV">CSV</MenuItem>
+                      <MenuItem value="XLSX">Excel</MenuItem>
+                    </Select>
+                  </FormControl>
+                </div>
+              </div>
             }
           />
 

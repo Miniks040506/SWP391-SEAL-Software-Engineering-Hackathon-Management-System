@@ -10,7 +10,7 @@ import {
   type EventTrack,
 } from "../mocks/coordinatorEditEvent.mock";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const emptyEvent: EditEventData = {
   id: "",
