@@ -8,10 +8,7 @@ import com.t7.seal.domain.ExportType;
 import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.dto.ExportSpec;
 import com.t7.seal.entities.*;
-import com.t7.seal.exception.BadRequestException;
-import com.t7.seal.exception.ConflictException;
-import com.t7.seal.exception.ExternalServiceException;
-import com.t7.seal.exception.ForbiddenException;
+import com.t7.seal.exception.*;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.system.CreateExportJobRequest;
 import com.t7.seal.request.system.EventExportRequest;
@@ -23,11 +20,15 @@ import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.ExportService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -367,7 +368,27 @@ public class ExportServiceImpl implements ExportService {
             UUID exportId,
             Authentication authentication
     ) {
-        return null;
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        ExportJob job = getVisibleJob(exportId, actor);
+        ensureDownloadable(job);
+
+        Path file = exportDirectory().resolve(job.getFileName()).normalize();
+        if (!Files.exists(file) || !Files.isRegularFile(file)) {
+            throw new NotFoundException("Export file was not found on the server: " + exportId);
+        }
+
+        Resource resource = new FileSystemResource(file.toFile());
+        String contentType = job.getFileName().endsWith(".xlsx")
+                ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                : "text/csv";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(job.getFileName()).build().toString())
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(resource);
     }
 
     @Transactional
