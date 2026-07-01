@@ -4,16 +4,19 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.event.UpdateEventRequest;
 import com.t7.seal.request.results.PublishResultsRequest;
 import com.t7.seal.request.event.CreateEventRequest;
+import com.t7.seal.request.system.ExportRblDatasetRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.UploadFileResponse;
 import com.t7.seal.response.event.EventDetailResponse;
 import com.t7.seal.response.event.EventSummaryResponse;
 import com.t7.seal.response.results.PublishResultsResponse;
 import com.t7.seal.response.results.RankingResponse;
+import com.t7.seal.response.system.ExportJobResponse;
 import com.t7.seal.response.system.VarianceDashboardResponse;
 import com.t7.seal.service.CloudinaryStorageService;
 import com.t7.seal.service.EventService;
 import com.t7.seal.service.RankingService;
+import com.t7.seal.service.RblResearchService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,6 +38,7 @@ public class EventController {
     private final EventService eventService;
     private final RankingService rankingService;
     private final CloudinaryStorageService cloudinaryStorageService;
+    private final RblResearchService rblResearchService;
 
     @PreAuthorize("@eventSecurity.canCreateEvent(authentication)")
     @PostMapping(
@@ -146,13 +150,33 @@ public class EventController {
         return ResponseEntity.ok(rankingService.publishEventResults(eventId, request, authentication));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @GetMapping("/{eventId}/variance-dashboard")
     public ResponseEntity<VarianceDashboardResponse> getVarianceDashboard(
             @PathVariable UUID eventId,
             @RequestParam(required = false) UUID roundId,
+            @RequestParam(required = false) UUID trackId,
             @RequestParam(required = false) String criteriaType,
-            @RequestParam(required = false) String judgeType
+            @RequestParam(required = false) String judgeType,
+            Authentication authentication
     ) {
-        return null;
+        return ResponseEntity.ok(rblResearchService.getVarianceDashboard(
+                eventId,
+                roundId,
+                trackId,
+                criteriaType,
+                judgeType,
+                authentication
+        ));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @PostMapping("/{eventId}/exports/rbl-dataset")
+    public ResponseEntity<ExportJobResponse> exportRblDataset(
+            @PathVariable UUID eventId,
+            @RequestBody(required = false) ExportRblDatasetRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(rblResearchService.exportAnonymizedDataset(eventId, request, authentication));
     }
 }
