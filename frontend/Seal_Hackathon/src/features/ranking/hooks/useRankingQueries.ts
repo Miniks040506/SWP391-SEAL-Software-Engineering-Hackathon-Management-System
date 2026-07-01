@@ -8,7 +8,7 @@ import type {
 } from "@/types/ranking.types";
 import { mockCoordinatorService } from "@/features/coordinator/mocks/coordinatorService.mock";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export const rankingQueryKeys = {
   all: ["rankings"] as const,

@@ -1,26 +1,32 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import CircularProgress from "@mui/material/CircularProgress";
 
 import {
-  useAuditLogsQuery,
+  useCoordinatorAuditLogsQuery,
+  useAdminAuditLogsQuery,
   useAuditLogActionsQuery,
 } from "../hooks/useAuditLogs";
 import { AuditLogFilterBar } from "../components/AuditLogFilterBar";
 import { AuditLogTable } from "../components/AuditLogTable";
-import { AuditLogDetailModal } from "../components/AuditLogDetailModal";
-import type {
-  GetAuditLogsParams,
-  AuditLogResponse,
-} from "@/types/system.types";
+import { AuditLogDetailDrawer } from "../components/AuditLogDetailDrawer";
+import type { GetAuditLogsParams, AuditLogResponse } from "@/types/system.types";
 
 export const AuditLogsPage = () => {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith("/admin");
+  const role = isAdmin ? "admin" : "coordinator";
+
   const [filters, setFilters] = useState<GetAuditLogsParams>({
     page: 0,
     size: 20,
   });
   const [selectedLog, setSelectedLog] = useState<AuditLogResponse | null>(null);
 
-  const { data: logsRes, isLoading: logsLoading } = useAuditLogsQuery(filters);
+  const coordinatorQuery = useCoordinatorAuditLogsQuery(role === "coordinator" ? filters : undefined);
+  const adminQuery = useAdminAuditLogsQuery(role === "admin" ? filters : undefined);
+  
+  const { data: logsRes, isLoading: logsLoading } = role === "admin" ? adminQuery : coordinatorQuery;
   const { data: actionsRes } = useAuditLogActionsQuery();
 
   const logs = logsRes?.data?.content || (logsRes as any)?.content || [];
@@ -31,10 +37,10 @@ export const AuditLogsPage = () => {
       <header className="flex items-center gap-3">
         <div>
           <h1 className="text-3xl font-black text-slate-950 dark:text-white">
-            System Audit Logs
+            Audit Logs
           </h1>
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
-            Monitor and trace system activities, user actions, and data changes.
+            Track important system actions across scoring, ranking, disqualification and exports.
           </p>
         </div>
       </header>
@@ -53,7 +59,7 @@ export const AuditLogsPage = () => {
         <AuditLogTable logs={logs} onViewDetail={setSelectedLog} />
       )}
 
-      <AuditLogDetailModal
+      <AuditLogDetailDrawer
         log={selectedLog}
         onClose={() => setSelectedLog(null)}
       />

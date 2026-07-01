@@ -20,6 +20,7 @@ import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
 import StickyNote2OutlinedIcon from "@mui/icons-material/StickyNote2Outlined";
 import ModelTrainingOutlinedIcon from "@mui/icons-material/ModelTrainingOutlined";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 
 export type SidebarItem = {
   label: string;
@@ -189,9 +190,9 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <CalendarMonthOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Reports",
-            path: "/coordinator/reports",
-            icon: <AssessmentOutlinedIcon fontSize="small" />,
+            label: "Exports",
+            path: "/coordinator/exports",
+            icon: <FileDownloadOutlinedIcon fontSize="small" />,
           },
           {
             label: "Audit Logs",

@@ -8,7 +8,7 @@ import type { UUID } from "@/types/common.types";
 import type { GetEventsParams } from "@/types/event.types";
 import { mockCoordinatorService } from "@/features/coordinator/mocks/coordinatorService.mock";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export const publicEventKeys = {
   all: ["public-events"] as const,
