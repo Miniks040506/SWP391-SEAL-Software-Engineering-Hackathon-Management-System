@@ -14,6 +14,7 @@ import com.t7.seal.service.RblResearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +44,7 @@ public class RblResearchServiceImpl implements RblResearchService {
     private final ExportJobRepository exportJobRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public VarianceDashboardResponse getVarianceDashboard(
             UUID eventId,
             UUID roundId,
@@ -61,10 +64,53 @@ public class RblResearchServiceImpl implements RblResearchService {
         List<Score> scores = loadFilteredScores(event.getId(),
                 roundId, trackId, technicalFilter, judgeTypeFilter);
 
-        return null;
+        Map<UUID, List<Score>> scoresByCriteria = scores.stream()
+                .collect(Collectors.groupingBy(
+                        score -> score.getEventCriteria().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<CriteriaVarianceResponse> criteriaVariances = scoresByCriteria.values().stream()
+                .map(this::toCriteriaVariance)
+                .sorted(Comparator
+                        .comparing((CriteriaVarianceResponse r) -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
+                        .thenComparing(CriteriaVarianceResponse::standardDeviation, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(CriteriaVarianceResponse::criteriaName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+
+        Map<UUID, List<Score>> scoresByJudge = scores.stream()
+                .collect(Collectors.groupingBy(
+                        score -> score.getJudge().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<JudgeVarianceResponse> judgeVariances = scoresByJudge.values().stream()
+                .map(this::toJudgeVariance)
+                .sorted(Comparator
+                        .comparing((JudgeVarianceResponse r) -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
+                        .thenComparing(JudgeVarianceResponse::standardDeviation, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+
+        return new VarianceDashboardResponse(
+                event.getId(),
+                roundId,
+                trackId,
+                normalizeNullable(criteriaType),
+                normalizeNullable(judgeType),
+                scores.size(),
+                scoresByJudge.size(),
+                scoresByCriteria.size(),
+                round(average(criteriaVariances.stream().map(CriteriaVarianceResponse::variance).toList())),
+                round(average(judgeVariances.stream().map(JudgeVarianceResponse::variance).toList())),
+                judgeVariances,
+                criteriaVariances
+        );
     }
 
     @Override
+    @Transactional
     public ExportJobResponse exportAnonymizedDataset(
             UUID eventId,
             ExportRblDatasetRequest request,
