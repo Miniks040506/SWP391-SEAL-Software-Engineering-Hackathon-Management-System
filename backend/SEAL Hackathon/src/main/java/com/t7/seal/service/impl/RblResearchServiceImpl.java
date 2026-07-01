@@ -1,24 +1,23 @@
 package com.t7.seal.service.impl;
 
-import com.t7.seal.domain.JudgeType;
-import com.t7.seal.domain.UserRole;
+import com.t7.seal.domain.*;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
-import com.t7.seal.repository.HackathonEventRepository;
-import com.t7.seal.repository.RoundRepository;
-import com.t7.seal.repository.ScoreRepository;
-import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.repository.*;
 import com.t7.seal.request.system.ExportRblDatasetRequest;
 import com.t7.seal.response.system.ExportJobResponse;
 import com.t7.seal.response.system.VarianceDashboardResponse;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RblResearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -31,6 +30,9 @@ public class RblResearchServiceImpl implements RblResearchService {
     private final RoundRepository roundRepository;
     private final TrackRepository trackRepository;
     private final ScoreRepository scoreRepository;
+    private final ExportJobRepository exportJobRepository;
+
+    private final AuditLogService auditLogService;
 
     @Override
     public VarianceDashboardResponse getVarianceDashboard(UUID eventId, UUID roundId, UUID trackId, String criteriaType, String judgeType, Authentication authentication) {
@@ -55,6 +57,37 @@ public class RblResearchServiceImpl implements RblResearchService {
         String normalizedFormat = normalizeFormat(format);
 
         List<Score> scores = loadFilteredScores(eventId, roundId, trackId, null, null);
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("eventId", eventId.toString());
+        if (roundId != null) {
+            params.put("roundId", roundId.toString());
+        }
+        if (trackId != null) {
+            params.put("trackId", trackId.toString());
+        }
+        params.put("format", normalizedFormat);
+        params.put("anonymize", true);
+        params.put("dataset", "RBL_SCORE_DATASET");
+
+        ExportJob job = ExportJob.builder()
+                .requestedBy(actor)
+                .exportType(ExportType.SCORE_DATASET_ANONYMIZED)
+                .params(params)
+                .status(ExportJobStatus.QUEUED)
+                .build();
+        job = exportJobRepository.saveAndFlush(job);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.EXPORT_REQUESTED,
+                "export_jobs",
+                job.getId(),
+                null,
+                compactMap("status", job.getStatus().name(), "exportType", job.getExportType().name()),
+                compactMap("eventId", eventId, "roundId", roundId, "trackId", trackId, "format", normalizedFormat)
+        );
+
 
         return null;
     }
@@ -119,7 +152,7 @@ public class RblResearchServiceImpl implements RblResearchService {
                 .toList();
     }
 
-    
+
 
     private String normalizeFormat(String format) {
         String normalized = normalizeNullable(format);
@@ -134,5 +167,20 @@ public class RblResearchServiceImpl implements RblResearchService {
 
     private String normalizeNullable(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private Map<String, Object> compactMap(Object... keyValues) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (keyValues == null) {
+            return result;
+        }
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            Object key = keyValues[i];
+            Object value = keyValues[i + 1];
+            if (key != null && value != null) {
+                result.put(String.valueOf(key), value);
+            }
+        }
+        return result;
     }
 }
