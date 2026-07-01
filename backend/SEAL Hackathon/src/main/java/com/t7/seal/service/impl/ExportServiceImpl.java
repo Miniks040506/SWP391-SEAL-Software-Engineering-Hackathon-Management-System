@@ -27,13 +27,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -417,12 +421,59 @@ public class ExportServiceImpl implements ExportService {
             String extension = spec.format().equals("XLSX") ? "xlsx" : "csv";
             String fileName = buildFileName(filePrefix, spec.event(), job.getId(), extension);
             Path file = exportDirectory().resolve(fileName);
-            
+
+            byte[] data = spec.format().equals("XLSX")
+                    ? writeXlsx(rows)
+                    : writeCsv(rows).getBytes(StandardCharsets.UTF_8);
+            Files.write(file, data);
+
         } catch (IOException ex) {
             throw new ExternalServiceException("Failed to create export file", ex);
         }
 
         return null;
+    }
+
+    private byte[] writeXlsx(List<List<String>> rows) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        try (ZipOutputStream zip = new ZipOutputStream(output, StandardCharsets.UTF_8)) {
+            put(zip, "[Content_Types].xml", null);
+            put(zip, "_rels/.rels", null);
+            put(zip, "xl/workbook.xml", null);
+            put(zip, "xl/_rels/workbook.xml.rels", null);
+            put(zip, "xl/worksheets/sheet1.xml", null);
+            put(zip, "xl/styles.xml", null);
+        }
+        return output.toByteArray();
+    }
+
+    private String writeCsv(List<List<String>> rows) {
+        StringBuilder builder = new StringBuilder();
+        for (List<String> row : rows) {
+            for (int i = 0; i < row.size(); i++) {
+                if (i > 0) {
+                    builder.append(',');
+                }
+                builder.append(csvEscape(row.get(i)));
+            }
+            builder.append('\n');
+        }
+        return builder.toString();
+    }
+
+    private String csvEscape(String value) {
+        String safe = (value == null) ? "" : value;
+        if (safe.contains(",") || safe.contains("\n") || safe.contains("\r") || safe.contains("\"")) {
+            return "\"" + safe.replace("\"", "\"\"") + "\"";
+        }
+        return safe;
+    }
+
+    private void put(ZipOutputStream zip, String name, String content) throws IOException {
+        zip.putNextEntry(new ZipEntry(name));
+        zip.write(content.stripLeading().getBytes(StandardCharsets.UTF_8));
+        zip.closeEntry();
     }
 
     private String buildFileName(
