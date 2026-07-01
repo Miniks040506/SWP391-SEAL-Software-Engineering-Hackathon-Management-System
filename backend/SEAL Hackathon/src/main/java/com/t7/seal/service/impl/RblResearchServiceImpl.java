@@ -77,9 +77,17 @@ public class RblResearchServiceImpl implements RblResearchService {
         List<CriteriaVarianceResponse> criteriaVariances = scoresByCriteria.values().stream()
                 .map(this::toCriteriaVariance)
                 .sorted(Comparator
-                        .comparing((CriteriaVarianceResponse r) -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
-                        .thenComparing(CriteriaVarianceResponse::standardDeviation, Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(CriteriaVarianceResponse::criteriaName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                        .comparing((CriteriaVarianceResponse r)
+                                -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
+                        .thenComparing(
+                                CriteriaVarianceResponse::standardDeviation,
+                                Comparator.nullsLast(Comparator.reverseOrder())
+                        )
+                        .thenComparing(
+                                CriteriaVarianceResponse::criteriaName,
+                                Comparator.nullsLast(String::compareToIgnoreCase)
+                        )
+                )
                 .toList();
 
         Map<UUID, List<Score>> scoresByJudge = scores.stream()
@@ -92,8 +100,13 @@ public class RblResearchServiceImpl implements RblResearchService {
         List<JudgeVarianceResponse> judgeVariances = scoresByJudge.values().stream()
                 .map(this::toJudgeVariance)
                 .sorted(Comparator
-                        .comparing((JudgeVarianceResponse r) -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
-                        .thenComparing(JudgeVarianceResponse::standardDeviation, Comparator.nullsLast(Comparator.reverseOrder())))
+                        .comparing((JudgeVarianceResponse r)
+                                -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
+                        .thenComparing(
+                                JudgeVarianceResponse::standardDeviation,
+                                Comparator.nullsLast(Comparator.reverseOrder())
+                        )
+                )
                 .toList();
 
         return new VarianceDashboardResponse(
@@ -105,8 +118,12 @@ public class RblResearchServiceImpl implements RblResearchService {
                 scores.size(),
                 scoresByJudge.size(),
                 scoresByCriteria.size(),
-                round(average(criteriaVariances.stream().map(CriteriaVarianceResponse::variance).toList())),
-                round(average(judgeVariances.stream().map(JudgeVarianceResponse::variance).toList())),
+                round(average(criteriaVariances.stream()
+                        .map(CriteriaVarianceResponse::variance)
+                        .toList())),
+                round(average(judgeVariances.stream()
+                        .map(JudgeVarianceResponse::variance)
+                        .toList())),
                 judgeVariances,
                 criteriaVariances
         );
@@ -189,8 +206,10 @@ public class RblResearchServiceImpl implements RblResearchService {
                     "export_jobs",
                     saved.getId(),
                     null,
-                    compactMap("status", saved.getStatus().name(), "rowCount", saved.getRowCount()),
-                    compactMap("eventId", eventId, "roundId", roundId, "trackId", trackId, "fileName", fileName)
+                    compactMap("status",
+                            saved.getStatus().name(), "rowCount", saved.getRowCount()),
+                    compactMap("eventId", eventId,
+                            "roundId", roundId, "trackId", trackId, "fileName", fileName)
             );
 
             return toExportJobResponse(saved);
@@ -276,9 +295,17 @@ public class RblResearchServiceImpl implements RblResearchService {
 
     private CriteriaVarianceResponse toCriteriaVariance(List<Score> scores) {
         EventCriteria criteria = scores.get(0).getEventCriteria();
-        Stats stats = calculateStats(scores.stream().map(score -> score.getValue().doubleValue()).toList());
-        Set<UUID> judgeIds = scores.stream().map(score -> score.getJudge().getId()).collect(Collectors.toSet());
-        String category = criteria.getCriteria() == null || criteria.getCriteria().getCategory() == null
+        Stats stats = calculateStats(
+                scores.stream()
+                .map(score -> score.getValue().doubleValue())
+                .toList()
+        );
+
+        Set<UUID> judgeIds = scores.stream()
+                .map(score -> score.getJudge().getId())
+                .collect(Collectors.toSet());
+        String category = criteria.getCriteria() == null
+                || criteria.getCriteria().getCategory() == null
                 ? null
                 : criteria.getCriteria().getCategory().name();
 
@@ -300,7 +327,10 @@ public class RblResearchServiceImpl implements RblResearchService {
 
     private JudgeVarianceResponse toJudgeVariance(List<Score> scores) {
         Judge judge = scores.get(0).getJudge();
-        Stats stats = calculateStats(scores.stream().map(score -> score.getValue().doubleValue()).toList());
+        Stats stats = calculateStats(scores.stream()
+                .map(score -> score.getValue().doubleValue())
+                .toList());
+
         return new JudgeVarianceResponse(
                 judge.getId(),
                 hashId(judge.getId()),
@@ -319,20 +349,38 @@ public class RblResearchServiceImpl implements RblResearchService {
         if (values == null || values.isEmpty()) {
             return new Stats(0d, 0d, 0d, 0d, 0d);
         }
-        double mean = values.stream().mapToDouble(Double::doubleValue).average().orElse(0d);
+
+        double mean = values.stream()
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0d);
         double variance = values.stream()
                 .mapToDouble(value -> Math.pow(value - mean, 2))
                 .average()
                 .orElse(0d);
-        double min = values.stream().mapToDouble(Double::doubleValue).min().orElse(0d);
-        double max = values.stream().mapToDouble(Double::doubleValue).max().orElse(0d);
-        return new Stats(round(mean), round(variance), round(Math.sqrt(variance)), round(min), round(max));
+        double min = values.stream()
+                .mapToDouble(Double::doubleValue)
+                .min()
+                .orElse(0d);
+        double max = values.stream()
+                .mapToDouble(Double::doubleValue)
+                .max()
+                .orElse(0d);
+
+        return new Stats(
+                round(mean),
+                round(variance),
+                round(Math.sqrt(variance)),
+                round(min),
+                round(max)
+        );
     }
 
     private double average(List<Double> values) {
         if (values == null || values.isEmpty()) {
             return 0d;
         }
+
         return values.stream()
                 .filter(value -> value != null)
                 .mapToDouble(Double::doubleValue)
@@ -349,6 +397,7 @@ public class RblResearchServiceImpl implements RblResearchService {
         if (normalized == null) {
             return null;
         }
+
         return switch (normalized.toUpperCase(Locale.ROOT)) {
             case "TECHNICAL", "TECH", "TRUE" -> true;
             case "SOFT", "NON_TECHNICAL", "SUBJECTIVE", "FALSE" -> false;
@@ -361,6 +410,7 @@ public class RblResearchServiceImpl implements RblResearchService {
         if (normalized == null) {
             return null;
         }
+
         try {
             return JudgeType.valueOf(normalized.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
@@ -385,7 +435,9 @@ public class RblResearchServiceImpl implements RblResearchService {
 
     private String buildRblCsv(List<Score> scores) {
         StringBuilder sb = new StringBuilder();
-        sb.append("hashedJudgeId,judgeType,hashedTrackId,hashedRoundId,eventCriteriaId,criteriaName,criterionCategory,criterionType,hashedSubmissionId,rawScore,scoreDateBucket\n");
+        sb.append("hashedJudgeId,judgeType,hashedTrackId,hashedRoundId," +
+                "eventCriteriaId,criteriaName,criterionCategory,criterionType," +
+                "hashedSubmissionId,rawScore,scoreDateBucket\n");
 
         for (Score score : scores) {
             EventCriteria criteria = score.getEventCriteria();
@@ -393,34 +445,46 @@ public class RblResearchServiceImpl implements RblResearchService {
             Team team = submission.getTeam();
             Track track = team == null ? null : team.getTrack();
             Round round = submission.getRound();
-            String category = criteria.getCriteria() == null || criteria.getCriteria().getCategory() == null
+
+            String category = criteria.getCriteria() == null
+                    || criteria.getCriteria().getCategory() == null
                     ? ""
                     : criteria.getCriteria().getCategory().name();
-            String criterionType = Boolean.TRUE.equals(criteria.getEffectiveIsTechnical()) ? "TECHNICAL" : "SOFT";
+
+            String criterionType = Boolean.TRUE.equals(criteria.getEffectiveIsTechnical())
+                    ? "TECHNICAL" : "SOFT";
             String scoreDateBucket = score.getScoredAt() == null
                     ? ""
-                    : score.getScoredAt().toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE);
+                    : score.getScoredAt().toLocalDate()
+                    .format(DateTimeFormatter.ISO_LOCAL_DATE);
 
             sb.append(csv(hashId(score.getJudge().getId()))).append(',')
-                    .append(csv(score.getJudge().getJudgeType() == null ? null : score.getJudge().getJudgeType().name())).append(',')
+                    .append(csv(score.getJudge().getJudgeType() == null
+                            ? null : score.getJudge().getJudgeType().name())).append(',')
                     .append(csv(track == null ? null : hashId(track.getId()))).append(',')
                     .append(csv(round == null ? null : hashId(round.getId()))).append(',')
-                    .append(csv(criteria.getId() == null ? null : criteria.getId().toString())).append(',')
+                    .append(csv(criteria.getId() == null
+                            ? null : criteria.getId().toString())).append(',')
                     .append(csv(criteria.getEffectiveName())).append(',')
                     .append(csv(category)).append(',')
                     .append(csv(criterionType)).append(',')
-                    .append(csv(submission.getId() == null ? null : hashId(submission.getId()))).append(',')
+                    .append(csv(submission.getId() == null
+                            ? null : hashId(submission.getId()))).append(',')
                     .append(score.getValue()).append(',')
                     .append(csv(scoreDateBucket))
                     .append('\n');
         }
+
         return sb.toString();
     }
 
     private String buildFileName(HackathonEvent event, UUID exportId, String format) {
         String safeName = event.getSlug() == null || event.getSlug().isBlank()
-                ? event.getName().replaceAll("[^A-Za-z0-9]+", "-").toLowerCase(Locale.ROOT)
+                ? event.getName()
+                .replaceAll("[^A-Za-z0-9]+", "-")
+                .toLowerCase(Locale.ROOT)
                 : event.getSlug();
+
         return "seal-rbl-" + safeName + "-" + exportId + "." + format;
     }
 
@@ -449,11 +513,14 @@ public class RblResearchServiceImpl implements RblResearchService {
         }
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((HASH_PREFIX + id).getBytes(StandardCharsets.UTF_8));
+            byte[] hash = digest.digest((HASH_PREFIX + id)
+                    .getBytes(StandardCharsets.UTF_8));
+
             StringBuilder sb = new StringBuilder();
             for (byte b : hash) {
                 sb.append(String.format("%02x", b));
             }
+
             return sb.toString();
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 is not available.", ex);
@@ -465,6 +532,7 @@ public class RblResearchServiceImpl implements RblResearchService {
         if (keyValues == null) {
             return result;
         }
+
         for (int i = 0; i + 1 < keyValues.length; i += 2) {
             Object key = keyValues[i];
             Object value = keyValues[i + 1];
@@ -472,6 +540,7 @@ public class RblResearchServiceImpl implements RblResearchService {
                 result.put(String.valueOf(key), value);
             }
         }
+        
         return result;
     }
 
