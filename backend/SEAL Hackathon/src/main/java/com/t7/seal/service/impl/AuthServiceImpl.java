@@ -40,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenBlacklistService tokenBlacklistService;
     private final TokenGenerator tokenGenerator;
     private final EmailService emailService;
+    private final PasswordHistoryService passwordHistoryService;
 
     @Value("${app.email-verification-expiration-minutes:1440}")
     private int emailVerificationExpirationMinutes;
@@ -317,11 +318,15 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Invalid or expired reset code.");
         }
 
+        passwordHistoryService.validateNotReused(user, request.newPassword());
+        String previousPasswordHash = user.getPasswordHash();
+
         user.updatePasswordHash(passwordEncoder.encode(request.newPassword()));
         user.setFailedLoginCount(0);
         user.setLockedUntil(null);
 
         userRepository.save(user);
+        passwordHistoryService.recordPassword(user, previousPasswordHash);
 
         return new AuthMessageResponse("Password has been reset successfully.");
     }

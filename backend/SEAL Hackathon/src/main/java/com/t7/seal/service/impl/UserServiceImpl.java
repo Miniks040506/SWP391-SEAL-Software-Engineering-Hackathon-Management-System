@@ -18,6 +18,7 @@ import com.t7.seal.response.user.*;
 import com.t7.seal.service.CloudinaryStorageService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EmailService;
+import com.t7.seal.service.PasswordHistoryService;
 import com.t7.seal.service.TokenGenerator;
 import com.t7.seal.service.TokenBlacklistService;
 import com.t7.seal.service.UserService;
@@ -56,6 +57,7 @@ public class UserServiceImpl implements UserService {
     private final CloudinaryStorageService cloudinaryStorageService;
     private final TokenGenerator tokenGenerator;
     private final EmailService emailService;
+    private final PasswordHistoryService passwordHistoryService;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -156,12 +158,12 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Current password is incorrect.");
         }
 
-        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
-            throw new BadRequestException("New password must be different from the current password.");
-        }
+        passwordHistoryService.validateNotReused(user, request.newPassword());
 
+        String previousPasswordHash = user.getPasswordHash();
         user.updatePasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+        passwordHistoryService.recordPassword(user, previousPasswordHash);
 
         blacklistCurrentToken(authorizationHeader);
     }
