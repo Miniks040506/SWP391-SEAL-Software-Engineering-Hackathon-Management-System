@@ -82,8 +82,8 @@ public class ExportServiceImpl implements ExportService {
         String format = normalizeFormat(params.get("format"));
 
         EventExportRequest eventRequest = new EventExportRequest(
-                trackId,
                 roundId,
+                trackId,
                 format,
                 parseBoolean(params.get("includeDraftScores"), false),
                 parseBoolean(params.get("includeDisqualified"), false),
@@ -121,17 +121,20 @@ public class ExportServiceImpl implements ExportService {
         List<List<String>> rows = new ArrayList<>();
         rows.add(List.of(
                 "Event ID", "Event", "Round ID", "Round", "Track ID", "Track",
-                "Rank", "Team ID", "Team", "Project Title", "Submission ID",
-                "Total Score", "Judge Count", "Advanced", "Published", "Calculated At"
+                "Rank", "Team ID", "Team", "Leader Name", "Project Title", "Submission ID",
+                "Submission Status", "Total Score", "Judge Count", "Advance Reason",
+                "Advanced", "Published", "Calculated At"
         ));
 
         for (Ranking ranking : rankings) {
+            Submission submission = ranking.getSubmission();
             if (!spec.includeDisqualified()
-                    && ranking.getSubmission().getStatus() == SubmissionStatus.DISQUALIFIED) {
+                    && submission.getStatus() == SubmissionStatus.DISQUALIFIED) {
                 continue;
             }
 
-            Team team = ranking.getSubmission().getTeam();
+            Team team = submission.getTeam();
+            User leader = team.getLeader();
             Round round = ranking.getRound();
             Track track = ranking.getTrack();
 
@@ -145,10 +148,13 @@ public class ExportServiceImpl implements ExportService {
                     text(ranking.getRankPosition()),
                     text(team.getId()),
                     text(team.getName()),
+                    text(leader == null ? null : leader.getFullName()),
                     text(team.getProjectTitle()),
-                    text(ranking.getSubmission().getId()),
+                    text(submission.getId()),
+                    text(submission.getStatus()),
                     text(ranking.getTotalScore()),
                     text(ranking.getJudgeCount()),
+                    text(ranking.getAdvanceReason()),
                     text(Boolean.TRUE.equals(ranking.getIsAdvanced())),
                     text(ranking.getRound().getResultPublishedAt() != null
                             || event.getResultPublishedAt() != null),
@@ -170,12 +176,12 @@ public class ExportServiceImpl implements ExportService {
         ensureCanExport(actor);
 
         HackathonEvent event = getEvent(eventId);
-        ExportSpec spec = exportSpec(event, ExportType.RANKING, request);
+        ExportSpec spec = exportSpec(event, ExportType.SCORE_REPORT, request);
 
         List<Score> scores = scoreRepository.findForScoreExport(
                 eventId,
-                spec.trackId(),
                 spec.roundId(),
+                spec.trackId(),
                 spec.includeDraftScores(),
                 spec.includeDisqualified()
         );
@@ -241,7 +247,7 @@ public class ExportServiceImpl implements ExportService {
         ensureCanExport(actor);
 
         HackathonEvent event = getEvent(eventId);
-        ExportSpec spec = exportSpec(event, ExportType.RANKING, request);
+        ExportSpec spec = exportSpec(event, ExportType.TEAM_LIST, request);
 
         List<Team> teams = teamRepository.findForTeamListReport(
                 eventId,

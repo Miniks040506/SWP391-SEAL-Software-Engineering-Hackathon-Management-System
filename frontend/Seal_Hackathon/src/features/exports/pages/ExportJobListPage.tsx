@@ -9,8 +9,6 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import CircularProgress from "@mui/material/CircularProgress";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
@@ -114,8 +112,8 @@ export const ExportJobListPage = () => {
     createTeam({ eventId: activeEventId as UUID, payload });
   };
 
-  const jobs = jobsData?.data?.content || [];
-  const totalPages = jobsData?.data?.totalPages || 0;
+  const jobs = jobsData?.content || [];
+  const totalPages = jobsData?.totalPages || 0;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 p-4">
