@@ -1,4 +1,3 @@
-import React from "react";
 import {
     Dialog,
     DialogTitle,
@@ -26,7 +25,7 @@ export const PublishDistributionDialog = ({
         <Dialog
             open={open}
             onClose={isPublishing ? undefined : onClose}
-            PaperProps={{ sx: { borderRadius: "16px" } }}
+            slotProps={{ paper: { sx: { borderRadius: "16px" } } }}
         >
             <DialogTitle sx={{ fontWeight: 900, color: "slate.900" }}>
                 Publish calibration distribution?
