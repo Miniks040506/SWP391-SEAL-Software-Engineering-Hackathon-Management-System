@@ -8,7 +8,12 @@ interface RankingPodiumProps {
 export const RankingPodium = ({ rankings }: RankingPodiumProps) => {
   if (!rankings || rankings.length === 0) return null;
 
-  const top3 = rankings.slice(0, 3);
+  const top3 = rankings
+    .filter((ranking) =>
+      ranking.advanceReason !== "DISQUALIFIED" &&
+      ranking.submissionStatus !== "DISQUALIFIED",
+    )
+    .slice(0, 3);
   const first = top3[0];
   const second = top3[1];
   const third = top3[2];

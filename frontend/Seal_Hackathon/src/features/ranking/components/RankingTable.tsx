@@ -74,7 +74,10 @@ export const RankingTable = ({ rankings = [], awardsByTeamId }: RankingTableProp
                 <TableBody>
                     {rankings.map((row) => {
                         let statusType: "ADVANCED" | "NOT_ADVANCED" | "DISQUALIFIED" = "NOT_ADVANCED";
-                        if ((row as any).submissionStatus === "DISQUALIFIED" || (row as any).teamStatus === "DISQUALIFIED") {
+                        if (
+                            row.advanceReason === "DISQUALIFIED" ||
+                            row.submissionStatus === "DISQUALIFIED"
+                        ) {
                             statusType = "DISQUALIFIED";
                         } else if (row.advanced) {
                             statusType = "ADVANCED";

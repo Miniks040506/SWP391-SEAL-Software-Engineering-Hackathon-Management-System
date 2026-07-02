@@ -94,11 +94,9 @@ public class RankingServiceImpl implements RankingService {
                 .map(EventCriteria::getId)
                 .collect(Collectors.toSet());
 
-        Map<UUID, Submission> scorableSubmissions = submissionRepository
-                .findSubmittedOrLateByRoundAndTrackNullable(roundId, trackId)
+        Map<UUID, Submission> rankableSubmissions = submissionRepository
+                .findRankableByRoundAndTrackNullable(roundId, trackId)
                 .stream()
-                .filter(submission ->
-                        submission.getStatus() != SubmissionStatus.DISQUALIFIED)
                 .filter(submission -> submission.getTeam() != null
                         && submission.getTeam().getTrack() != null)
                 .collect(Collectors.toMap(
@@ -110,7 +108,7 @@ public class RankingServiceImpl implements RankingService {
 
         List<Score> confirmedScores = scoreRepository.findConfirmedByRoundId(roundId)
                 .stream()
-                .filter(score -> scorableSubmissions
+                .filter(score -> rankableSubmissions
                         .containsKey(score.getSubmission().getId()))
                 .filter(score -> score.getEventCriteria() != null
                         && activeCriteriaIds.contains(score.getEventCriteria().getId()))
@@ -124,15 +122,13 @@ public class RankingServiceImpl implements RankingService {
                 );
 
         List<RankingDraft> rankingDrafts = new ArrayList<>();
-        for (Submission submission : scorableSubmissions.values()) {
+        for (Submission submission : rankableSubmissions.values()) {
             List<Score> submissionScores = scoresBySubmission
                     .getOrDefault(submission.getId(), List.of());
 
-            Optional<RankingDraft> draft = buildRankingDraft(
-                    submission,
-                    submissionScores,
-                    activeCriteriaIds
-            );
+            Optional<RankingDraft> draft = isDisqualifiedSubmission(submission)
+                    ? Optional.of(buildDisqualifiedRankingDraft(submission, submissionScores, activeCriteriaIds))
+                    : buildRankingDraft(submission, submissionScores, activeCriteriaIds);
 
             draft.ifPresent(rankingDrafts::add);
         }
@@ -151,20 +147,7 @@ public class RankingServiceImpl implements RankingService {
                 );
 
         for (List<RankingDraft> trackDrafts : draftsByTrack.values()) {
-            List<RankingDraft> sorted = trackDrafts.stream()
-                    .sorted(Comparator
-                            .comparing(
-                                    RankingDraft::totalScore,
-                                    Comparator.reverseOrder()
-                            )
-                            .thenComparing(
-                                    draft -> draft.submission().getSubmittedAt(),
-                                    Comparator.nullsLast(Comparator.naturalOrder())
-                            )
-                            .thenComparing(draft ->
-                                    safeString(draft.submission().getTeam().getName()))
-                    )
-                    .toList();
+            List<RankingDraft> sorted = sortRankingDraftsWithDisqualifiedLast(trackDrafts);
 
             int rank = 1;
             for (RankingDraft draft : sorted) {
@@ -180,6 +163,9 @@ public class RankingServiceImpl implements RankingService {
                         .calculatedAt(calculatedAt)
                         .calculatedBy(actor)
                         .build();
+                if (isDisqualifiedSubmission(draft.submission())) {
+                    ranking.markDisqualified();
+                }
                 rankings.add(ranking);
             }
         }
@@ -609,6 +595,53 @@ public class RankingServiceImpl implements RankingService {
             boolean emailQueued
     ) {}
 
+    private List<RankingDraft> sortRankingDraftsWithDisqualifiedLast(List<RankingDraft> trackDrafts) {
+        Comparator<RankingDraft> scoredOrder = Comparator
+                .comparing(RankingDraft::totalScore, Comparator.reverseOrder())
+                .thenComparing(
+                        draft -> draft.submission().getSubmittedAt(),
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                )
+                .thenComparing(draft -> safeString(draft.submission().getTeam().getName()));
+
+        Comparator<RankingDraft> disqualifiedOrder = Comparator
+                .comparing(
+                        (RankingDraft draft) -> draft.submission().getSubmittedAt(),
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                )
+                .thenComparing(draft -> safeString(draft.submission().getTeam().getName()));
+
+        List<RankingDraft> sorted = new ArrayList<>();
+        sorted.addAll(trackDrafts.stream()
+                .filter(draft -> !isDisqualifiedSubmission(draft.submission()))
+                .sorted(scoredOrder)
+                .toList());
+        sorted.addAll(trackDrafts.stream()
+                .filter(draft -> isDisqualifiedSubmission(draft.submission()))
+                .sorted(disqualifiedOrder)
+                .toList());
+        return sorted;
+    }
+
+    private RankingDraft buildDisqualifiedRankingDraft(
+            Submission submission,
+            List<Score> scores,
+            Set<UUID> activeCriteriaIds
+    ) {
+        return buildRankingDraft(submission, scores, activeCriteriaIds)
+                .orElseGet(() -> new RankingDraft(
+                        submission,
+                        submission.getTeam().getTrack(),
+                        0.0,
+                        0,
+                        new LinkedHashMap<>()
+                ));
+    }
+
+    private boolean isDisqualifiedSubmission(Submission submission) {
+        return submission != null && submission.getStatus() == SubmissionStatus.DISQUALIFIED;
+    }
+
     private Optional<RankingDraft> buildRankingDraft(
             Submission submission,
             List<Score> scores,
@@ -810,7 +843,10 @@ public class RankingServiceImpl implements RankingService {
                 ranking.getJudgeCount(),
                 includeScoreBreakdown ? ranking.getScoreBreakdown() : null,
                 ranking.getCalculatedAt(),
-                isRankingPublished(ranking)
+                isRankingPublished(ranking),
+                ranking.getAdvanceReason() == null ? null : ranking.getAdvanceReason().name(),
+                submission.getStatus() == null ? null : submission.getStatus().name(),
+                team.getStatus() == null ? null : team.getStatus().name()
         );
     }
 

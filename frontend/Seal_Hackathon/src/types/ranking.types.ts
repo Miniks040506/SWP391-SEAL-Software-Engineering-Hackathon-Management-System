@@ -30,6 +30,9 @@ export type RankingResponse = {
   scoreBreakdown?: ScoreBreakdown | null;
   calculatedAt?: ISODateTime | null;
   published?: boolean | null;
+  advanceReason?: string | null;
+  submissionStatus?: string | null;
+  teamStatus?: string | null;
 };
 
 export type RecalculateRankingRequest = {

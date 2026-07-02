@@ -2,6 +2,7 @@ import type { RankingResponse } from "@/types/ranking.types";
 
 import type { PrizeResponse } from "@/types/prize.types";
 import { WinnerPrizeBadge } from "@/features/events/components/WinnerPrizeBadge";
+import { RankingStatusBadge } from "./RankingStatusBadge";
 
 interface MobileRankingCardProps {
   ranking: RankingResponse;
@@ -9,6 +10,10 @@ interface MobileRankingCardProps {
 }
 
 export const MobileRankingCard = ({ ranking, awardsByTeamId }: MobileRankingCardProps) => {
+  const disqualified =
+    ranking.advanceReason === "DISQUALIFIED" ||
+    ranking.submissionStatus === "DISQUALIFIED";
+
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center justify-between">
@@ -40,7 +45,11 @@ export const MobileRankingCard = ({ ranking, awardsByTeamId }: MobileRankingCard
         </div>
       </div>
 
-      {ranking.advanced && (
+      {disqualified ? (
+        <div className="mt-2">
+          <RankingStatusBadge type="DISQUALIFIED" />
+        </div>
+      ) : ranking.advanced && (
         <div className="mt-2 text-xs font-bold text-emerald-600">
           ✓ Advanced to next round
         </div>

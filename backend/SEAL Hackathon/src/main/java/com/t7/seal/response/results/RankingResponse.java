@@ -22,5 +22,8 @@ public record RankingResponse(
         Integer judgeCount,
         Map<String, Map<String, Float>> scoreBreakdown,
         LocalDateTime calculatedAt,
-        Boolean published
+        Boolean published,
+        String advanceReason,
+        String submissionStatus,
+        String teamStatus
 ) {}

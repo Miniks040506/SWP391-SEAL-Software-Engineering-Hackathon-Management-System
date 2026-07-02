@@ -1164,6 +1164,9 @@ public class RoundServiceImpl implements RoundService {
         }
 
         List<Ranking> sorted = rankings.stream()
+                .filter(ranking -> ranking.getAdvanceReason() != AdvanceReason.DISQUALIFIED)
+                .filter(ranking -> ranking.getSubmission() == null
+                        || ranking.getSubmission().getStatus() != SubmissionStatus.DISQUALIFIED)
                 .sorted(Comparator
                         .comparing((Ranking r) -> r.getTrack().getId().toString())
                         .thenComparing(Ranking::getRankPosition)
@@ -1267,7 +1270,10 @@ public class RoundServiceImpl implements RoundService {
                 ranking.getJudgeCount(),
                 ranking.getScoreBreakdown(),
                 ranking.getCalculatedAt(),
-                event.getResultPublishedAt() != null
+                event.getResultPublishedAt() != null,
+                ranking.getAdvanceReason() == null ? null : ranking.getAdvanceReason().name(),
+                submission.getStatus() == null ? null : submission.getStatus().name(),
+                team.getStatus() == null ? null : team.getStatus().name()
         );
     }
 
