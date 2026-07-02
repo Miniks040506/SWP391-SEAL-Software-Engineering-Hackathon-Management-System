@@ -77,6 +77,29 @@ export const registerSchema = z
       .transform((value) => (value ? Number(value) : undefined)),
   })
   .superRefine((values, ctx) => {
+    if (!values.studentCode) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["studentCode"],
+        message:
+          values.studentType === "FPT"
+            ? "Student code is required for FPT students."
+            : "Student code is required for external students.",
+      });
+    }
+
+    if (
+      values.studentType === "FPT" &&
+      values.studentCode &&
+      !/^SE\d{6}$/.test(values.studentCode)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["studentCode"],
+        message: "FPT student code must use format SE123456.",
+      });
+    }
+
     if (values.studentType === "EXTERNAL" && !values.universityName) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

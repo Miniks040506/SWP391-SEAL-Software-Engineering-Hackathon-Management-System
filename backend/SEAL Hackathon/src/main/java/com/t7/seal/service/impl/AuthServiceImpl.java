@@ -24,11 +24,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthServiceImpl implements AuthService {
+
+    private static final Pattern FPT_STUDENT_CODE_PATTERN = Pattern.compile("^SE\\d{6}$");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -60,12 +63,10 @@ public class AuthServiceImpl implements AuthService {
         }
 
         StudentType studentType = parseStudentType(request.studentType());
+        String studentCode = trimToNull(request.studentCode());
+        String universityName = trimToNull(request.universityName());
 
-        if (studentType == StudentType.EXTERNAL && isBlank(request.universityName())) {
-            throw new BadRequestException(
-                    "University name is required for external students."
-            );
-        }
+        validateStudentIdentity(studentType, studentCode, universityName);
 
         String verificationCode = tokenGenerator.generateSixDigitCode();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(emailVerificationExpirationMinutes);
@@ -84,9 +85,9 @@ public class AuthServiceImpl implements AuthService {
 
         StudentProfile profile = StudentProfile.builder()
                 .studentType(studentType)
-                .studentCode(trimToNull(request.studentCode()))
+                .studentCode(studentCode)
                 .universityName(studentType == StudentType.EXTERNAL
-                        ? trimToNull(request.universityName()) : null)
+                        ? universityName : null)
                 .major(trimToNull(request.major()))
                 .graduationYear(request.graduationYear())
                 .user(user)
@@ -354,8 +355,26 @@ public class AuthServiceImpl implements AuthService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
+    private void validateStudentIdentity(StudentType studentType, String studentCode, String universityName) {
+        if (studentType == StudentType.FPT) {
+            if (studentCode == null) {
+                throw new BadRequestException("Student code is required for FPT students.");
+            }
+
+            if (!FPT_STUDENT_CODE_PATTERN.matcher(studentCode).matches()) {
+                throw new BadRequestException("FPT student code must use format SE123456.");
+            }
+
+            return;
+        }
+
+        if (studentCode == null) {
+            throw new BadRequestException("Student code is required for external students.");
+        }
+
+        if (universityName == null) {
+            throw new BadRequestException("University name is required for external students.");
+        }
     }
 }
 

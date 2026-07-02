@@ -309,7 +309,7 @@ export function RegisterPage() {
             fullWidth
             size="small"
             label="Student Code"
-            placeholder="SE203334"
+            placeholder={studentType === "FPT" ? "SE123456" : "Your student ID"}
             {...register("studentCode")}
             error={Boolean(errors.studentCode)}
             helperText={errors.studentCode?.message}
