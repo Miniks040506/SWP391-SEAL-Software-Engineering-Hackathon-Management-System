@@ -63,8 +63,16 @@ export const CoordinatorPrizeSetupPage = () => {
         { onSuccess: handleCloseForm }
       );
     } else {
+      if (!eventId) return;
+      const { trackId, value, currency, ...rest } = values;
       createPrize.mutate(
-        { ...values, eventId, trackId: values.trackId || undefined },
+        {
+          ...rest,
+          eventId,
+          trackId: trackId || undefined,
+          value: value ?? undefined,
+          currency: currency ?? undefined,
+        },
         { onSuccess: handleCloseForm }
       );
     }

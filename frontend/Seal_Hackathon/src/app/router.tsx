@@ -45,6 +45,7 @@ import {
 
 
 import {
+  EventAwardsPage,
   EventDetailPage,
   EventsPage,
 } from "@/features/events";
@@ -67,6 +68,8 @@ import {
   CoordinatorAnnouncementPage,
   CoordinatorAwardManagementPage,
   CoordinatorAwardsRedirectPage,
+  CoordinatorPrizeSetupPage,
+  CoordinatorPrizesRedirectPage,
 } from "@/features/coordinator";
 import { CoordinatorExportsRedirectPage } from "@/features/exports/pages/CoordinatorExportsRedirectPage";
 
@@ -125,6 +128,7 @@ export const router = createBrowserRouter([
       { path: "/events", element: <EventsPage /> },
       { path: "/explore", element: <EventsPage /> },
       { path: "/events/:eventId/competing", element: <EventCompetitionPage /> },
+      { path: "/events/:eventId/awards", element: <EventAwardsPage /> },
       { path: "/events/:eventId", element: <EventDetailPage /> },
       { path: "/standings", element: <StandingsPage /> },
       { path: "/events/:eventId/leaderboard", element: <PublicEventLeaderboardPage /> },
@@ -196,6 +200,7 @@ export const router = createBrowserRouter([
       { path: "events", element: <CoordinatorEventsPage /> },
       { path: "events/create", element: <CoordinatorCreateEventPage /> },
       { path: "events/:eventId/edit", element: <CoordinatorEditEventPage /> },
+      { path: "events/:eventId/prizes", element: <CoordinatorPrizeSetupPage /> },
       { path: "events/:eventId/awards", element: <CoordinatorAwardManagementPage /> },
       {
         path: "events/:eventId/criteria",
@@ -287,6 +292,7 @@ export const router = createBrowserRouter([
         element: <CoordinatorSubmissionsPage />,
       },
       { path: "judging", element: <NotFoundPage /> },
+      { path: "prizes", element: <CoordinatorPrizesRedirectPage /> },
       { path: "awards", element: <CoordinatorAwardsRedirectPage /> },
       { path: "criteria", element: <ScoringCriteriaManagementPage /> },
       { path: "analytics", element: <NotFoundPage /> },

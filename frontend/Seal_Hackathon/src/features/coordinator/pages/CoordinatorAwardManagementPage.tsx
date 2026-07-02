@@ -3,8 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button, CircularProgress, Alert } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import AutoFixHighOutlinedIcon from "@mui/icons-material/AutoFixHighOutlined";
-import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
-import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 
 import {
@@ -24,6 +22,7 @@ import { PrizeFilterBar, defaultPrizeFilters, applyPrizeFilters } from "../compo
 import type { PrizeFilterState } from "../components/prizes/PrizeFilterBar";
 
 import type { PrizeResponse } from "@/types/prize.types";
+import type { CoordinatorTeamSummaryResponse } from "@/types/team.types";
 import type { AssignPrizesFromRankingFormValues, ManualAwardFormValues, ClearAwardFormValues } from "../schemas/prize.schema";
 
 type StatCardProps = {
@@ -46,12 +45,19 @@ export const CoordinatorAwardManagementPage = () => {
   const navigate = useNavigate();
 
   const { data: event, isLoading: isLoadingEvent } = useCoordinatorEventDetailQuery(eventId);
-  const { data: prizes = [], isLoading: isLoadingPrizes, refetch: refetchPrizes, isRefetching } = useCoordinatorPrizesQuery(eventId);
+  const {
+    data: prizeData,
+    isLoading: isLoadingPrizes,
+    refetch: refetchPrizes,
+    isRefetching,
+  } = useCoordinatorPrizesQuery(eventId);
+  const prizes = (prizeData ?? []) as PrizeResponse[];
   const { data: tracks = [] } = useCoordinatorEventTracksQuery(eventId);
   const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
 
   const teamsQuery = useCoordinatorMultipleTeamsQueries(eventId ? [eventId] : []);
-  const teams = teamsQuery[0]?.data?.content || [];
+  const teams: CoordinatorTeamSummaryResponse[] =
+    teamsQuery[0]?.data?.content ?? [];
 
   const { assignFromRanking, manualAward, clearAward } = useCoordinatorPrizeMutations(eventId);
 
@@ -73,6 +79,13 @@ export const CoordinatorAwardManagementPage = () => {
 
   const [filters, setFilters] = useState<PrizeFilterState>(defaultPrizeFilters);
   const filteredPrizes = useMemo(() => applyPrizeFilters(prizes, filters), [prizes, filters]);
+  const manualAwardTeams = useMemo(
+    () =>
+      selectedPrizeForAward?.trackId
+        ? teams.filter((team) => team.trackId === selectedPrizeForAward.trackId)
+        : teams,
+    [selectedPrizeForAward, teams],
+  );
 
   const isLoading = isLoadingEvent || isLoadingPrizes;
 
@@ -210,7 +223,7 @@ export const CoordinatorAwardManagementPage = () => {
       <ManualAwardDialog
         open={isManualAwardOpen}
         prize={selectedPrizeForAward}
-        teams={teams}
+        teams={manualAwardTeams}
         isSubmitting={manualAward.isPending}
         onClose={() => setIsManualAwardOpen(false)}
         onSubmit={handleManualAwardSubmit}

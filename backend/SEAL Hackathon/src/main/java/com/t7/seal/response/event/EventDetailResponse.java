@@ -17,6 +17,7 @@ public record EventDetailResponse(
         String bannerUrl,
         LocalDateTime registrationStartAt,
         LocalDateTime registrationEndAt,
+        LocalDateTime resultPublishedAt,
         List<TrackResponse> tracks,
         List<RoundResponse> rounds
 ) {}

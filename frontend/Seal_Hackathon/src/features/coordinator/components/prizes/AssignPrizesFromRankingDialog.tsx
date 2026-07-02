@@ -13,7 +13,11 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Typography from "@mui/material/Typography";
 
 import type { TrackResponse } from "@/types/track.types";
-import { assignPrizesFromRankingSchema, type AssignPrizesFromRankingFormValues } from "../../schemas/prize.schema";
+import {
+  assignPrizesFromRankingSchema,
+  type AssignPrizesFromRankingFormInput,
+  type AssignPrizesFromRankingFormValues,
+} from "../../schemas/prize.schema";
 
 type AssignPrizesFromRankingDialogProps = {
   open: boolean;
@@ -32,7 +36,11 @@ export const AssignPrizesFromRankingDialog = ({
   onClose,
   onSubmit,
 }: AssignPrizesFromRankingDialogProps) => {
-  const methods = useForm<AssignPrizesFromRankingFormValues>({
+  const methods = useForm<
+    AssignPrizesFromRankingFormInput,
+    unknown,
+    AssignPrizesFromRankingFormValues
+  >({
     resolver: zodResolver(assignPrizesFromRankingSchema),
     defaultValues: {
       roundId: "",
@@ -45,7 +53,7 @@ export const AssignPrizesFromRankingDialog = ({
     mode: "onSubmit",
   });
 
-  const { handleSubmit, control, reset, watch, formState: { errors } } = methods;
+  const { handleSubmit, control, reset, watch } = methods;
   const sendNotification = watch("sendNotification");
 
   useEffect(() => {

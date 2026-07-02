@@ -5,10 +5,12 @@ export const prizeFormSchema = z
     trackId: z.string().optional(),
     rankPosition: z.preprocess(
       (val) => (val === "" || Number.isNaN(val) ? undefined : Number(val)),
-      z.number({ required_error: "Rank position is required" }).min(1, "Rank position must be greater than 0")
+      z
+        .number({ error: "Rank position is required" })
+        .min(1, "Rank position must be greater than 0")
     ),
     title: z
-      .string({ required_error: "Prize title is required" })
+      .string({ error: "Prize title is required" })
       .min(1, "Prize title is required"),
     description: z.string().optional(),
     value: z.preprocess(
@@ -32,7 +34,8 @@ export const prizeFormSchema = z
     }
   );
 
-export type PrizeFormValues = z.infer<typeof prizeFormSchema>;
+export type PrizeFormInput = z.input<typeof prizeFormSchema>;
+export type PrizeFormValues = z.output<typeof prizeFormSchema>;
 
 export const assignPrizesFromRankingSchema = z.object({
   roundId: z.string().optional(),
@@ -43,17 +46,23 @@ export const assignPrizesFromRankingSchema = z.object({
   sendEmail: z.boolean().default(true),
 });
 
-export type AssignPrizesFromRankingFormValues = z.infer<typeof assignPrizesFromRankingSchema>;
+export type AssignPrizesFromRankingFormInput = z.input<
+  typeof assignPrizesFromRankingSchema
+>;
+export type AssignPrizesFromRankingFormValues = z.output<
+  typeof assignPrizesFromRankingSchema
+>;
 
 export const manualAwardSchema = z.object({
-  teamId: z.string({ required_error: "Team is required" }).min(1, "Team is required"),
+  teamId: z.string({ error: "Team is required" }).min(1, "Team is required"),
   reason: z.string().optional(),
   sendNotification: z.boolean().default(true),
   sendInApp: z.boolean().default(true),
   sendEmail: z.boolean().default(true),
 });
 
-export type ManualAwardFormValues = z.infer<typeof manualAwardSchema>;
+export type ManualAwardFormInput = z.input<typeof manualAwardSchema>;
+export type ManualAwardFormValues = z.output<typeof manualAwardSchema>;
 
 export const clearAwardSchema = z.object({
   reason: z.string().optional(),

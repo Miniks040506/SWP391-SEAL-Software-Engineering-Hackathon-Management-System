@@ -19,9 +19,10 @@ export const PublicEventAwardsSection = ({ eventId }: { eventId: string }) => {
     );
   }
 
-  const isPublished = event?.status === "PUBLISHED" || event?.status === "COMPLETED";
+  const isPublished =
+    Boolean(event?.resultPublishedAt) || event?.status === "COMPLETED";
 
-  if (!isPublished) {
+  if (!isPublished && awards.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 py-16 text-center dark:border-slate-800 dark:bg-slate-900/50">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">

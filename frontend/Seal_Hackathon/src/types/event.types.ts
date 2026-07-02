@@ -88,6 +88,7 @@ export type EventDetailResponse = {
   bannerUrl?: string | null;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
+  resultPublishedAt?: ISODateTime | null;
   tracks: TrackResponse[];
   rounds: RoundResponse[];
 };

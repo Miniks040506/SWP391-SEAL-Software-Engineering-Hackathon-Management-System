@@ -59,6 +59,13 @@ export function PrizesTab({
   const [selectedPrizeForAward, setSelectedPrizeForAward] = useState<PrizeResponse | null>(null);
   const [isClearAwardOpen, setIsClearAwardOpen] = useState(false);
   const [selectedPrizeForClear, setSelectedPrizeForClear] = useState<PrizeResponse | null>(null);
+  const manualAwardTeams = useMemo(
+    () =>
+      selectedPrizeForAward?.trackId
+        ? teams.filter((team) => team.trackId === selectedPrizeForAward.trackId)
+        : teams,
+    [selectedPrizeForAward, teams],
+  );
 
   const isLocked = !canEdit;
 
@@ -88,8 +95,15 @@ export function PrizesTab({
         { onSuccess: handleCloseForm }
       );
     } else {
+      const { trackId, value, currency, ...rest } = values;
       createPrize.mutate(
-        { ...values, eventId, trackId: values.trackId || undefined },
+        {
+          ...rest,
+          eventId,
+          trackId: trackId || undefined,
+          value: value ?? undefined,
+          currency: currency ?? undefined,
+        },
         { onSuccess: handleCloseForm }
       );
     }
@@ -242,7 +256,7 @@ export function PrizesTab({
       <ManualAwardDialog
         open={isManualAwardOpen}
         prize={selectedPrizeForAward}
-        teams={teams}
+        teams={manualAwardTeams}
         isSubmitting={manualAward.isPending}
         onClose={() => setIsManualAwardOpen(false)}
         onSubmit={handleManualAwardSubmit}

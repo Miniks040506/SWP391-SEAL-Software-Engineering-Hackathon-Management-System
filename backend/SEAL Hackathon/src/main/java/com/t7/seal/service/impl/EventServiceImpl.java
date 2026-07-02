@@ -381,6 +381,7 @@ public class EventServiceImpl implements EventService {
                 event.getBannerUrl(),
                 event.getRegistrationOpen(),
                 event.getRegistrationClose(),
+                event.getResultPublishedAt(),
                 tracks,
                 rounds
         );
