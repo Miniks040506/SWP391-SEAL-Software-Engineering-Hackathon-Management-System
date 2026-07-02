@@ -37,6 +37,12 @@ export const disqualificationApi = {
     );
   },
 
+  getActiveTeamDisqualifications(teamId: UUID) {
+    return apiRequest.get<DisqualificationResponse[]>(
+      `/teams/${teamId}/disqualifications/active`,
+    );
+  },
+
   getDisqualificationById(disqualificationId: UUID) {
     return apiRequest.get<DisqualificationResponse>(
       `/disqualifications/${disqualificationId}`,

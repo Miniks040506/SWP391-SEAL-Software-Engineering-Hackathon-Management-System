@@ -187,6 +187,24 @@ public class DisqualificationServiceImpl implements DisqualificationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public List<DisqualificationResponse> getActiveDisqualificationsByTeam(
+            UUID teamId,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        if (teamId == null) {
+            throw new BadRequestException("teamId is required.");
+        }
+        ensureCanViewTeamDisqualifications(teamId, actor);
+
+        return disqualificationRepository.findActiveByTeamIdWithDetails(teamId)
+                .stream()
+                .map(disqualification -> toDisqualificationResponse(disqualification, false, 0))
+                .toList();
+    }
+
     @Transactional
     @Override
     public DisqualificationResponse updateAppeal(
@@ -382,6 +400,15 @@ public class DisqualificationServiceImpl implements DisqualificationService {
             return;
         }
         UUID teamId = teamId(disqualification);
+        if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, actor.getId())) {
+            throw new ForbiddenException("You can only view your own team's disqualification.");
+        }
+    }
+
+    private void ensureCanViewTeamDisqualifications(UUID teamId, User actor) {
+        if (actor.getRole() == UserRole.ADMIN || actor.getRole() == UserRole.COORDINATOR) {
+            return;
+        }
         if (!teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, actor.getId())) {
             throw new ForbiddenException("You can only view your own team's disqualification.");
         }

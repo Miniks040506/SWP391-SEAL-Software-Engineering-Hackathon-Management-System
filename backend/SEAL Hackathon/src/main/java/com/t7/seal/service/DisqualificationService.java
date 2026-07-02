@@ -28,6 +28,9 @@ public interface DisqualificationService {
                                                                String appealStatus,
                                                                Authentication authentication);
 
+    List<DisqualificationResponse> getActiveDisqualificationsByTeam(UUID teamId,
+                                                                    Authentication authentication);
+
     DisqualificationResponse updateAppeal(UUID disqualificationId,
                                           UpdateAppealRequest request,
                                           Authentication authentication);

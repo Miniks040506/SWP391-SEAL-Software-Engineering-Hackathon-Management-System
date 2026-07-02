@@ -234,6 +234,7 @@ public class SecurityConfig {
                         // Disqualification
                         .requestMatchers(HttpMethod.POST, API + "/disqualifications").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/events/*/disqualifications").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, API + "/teams/*/disqualifications/active").hasAnyRole("COORDINATOR", "ADMIN", "STUDENT")
                         .requestMatchers(HttpMethod.POST, API + "/submissions/*/disqualify").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/disqualifications/*").hasAnyRole("COORDINATOR", "ADMIN", "STUDENT")
                         .requestMatchers(HttpMethod.PATCH, API + "/disqualifications/*/appeal").hasAnyRole("STUDENT", "COORDINATOR")
