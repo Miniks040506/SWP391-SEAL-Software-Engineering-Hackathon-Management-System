@@ -109,6 +109,12 @@ export type GetEventRankingParams = {
 export type GetVarianceDashboardParams = {
   roundId?: UUID;
   trackId?: UUID;
-  criteriaType?: "TECHNICAL" | "SOFT" | string;
-  judgeType?: "INTERNAL" | "GUEST" | string;
+  criteriaType?:
+    | "TECHNICAL"
+    | "SOFT"
+    | "PRESENTATION"
+    | "INNOVATION"
+    | "BUSINESS"
+    | "PROCESS";
+  judgeType?: "INTERNAL" | "GUEST";
 };

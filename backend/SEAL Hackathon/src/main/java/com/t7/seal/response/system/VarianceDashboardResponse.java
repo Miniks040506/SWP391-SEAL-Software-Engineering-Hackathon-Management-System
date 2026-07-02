@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record VarianceDashboardResponse(
         UUID eventId,
+        String eventName,
         UUID roundId,
         UUID trackId,
         String criteriaType,
@@ -12,6 +13,9 @@ public record VarianceDashboardResponse(
         Integer totalScoreCount,
         Integer totalJudgeCount,
         Integer totalCriteriaCount,
+        Double overallMean,
+        Double overallVariance,
+        Double overallStandardDeviation,
         Double averageCriterionVariance,
         Double averageJudgeVariance,
         List<JudgeVarianceResponse> judgeVariances,

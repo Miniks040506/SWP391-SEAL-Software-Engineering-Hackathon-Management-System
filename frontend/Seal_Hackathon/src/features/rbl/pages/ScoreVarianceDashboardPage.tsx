@@ -17,23 +17,32 @@ import { HighDisagreementCriteriaTable } from "../components/HighDisagreementCri
 import { VarianceEmptyState } from "../components/VarianceEmptyState";
 
 import type { GetVarianceDashboardParams } from "@/types/event.types";
+import type { RoundResponse } from "@/types/round.types";
+import type { TrackResponse } from "@/types/track.types";
+
+type CriteriaFilter = NonNullable<GetVarianceDashboardParams["criteriaType"]> | "ALL";
+type JudgeFilter = NonNullable<GetVarianceDashboardParams["judgeType"]> | "ALL";
 
 export function ScoreVarianceDashboardPage() {
   const { eventId } = useParams<{ eventId: string }>();
 
-  const [selectedRoundId, setSelectedRoundId] = useState("All");
-  const [selectedTrackId, setSelectedTrackId] = useState("All");
-  const [selectedCriteriaType, setSelectedCriteriaType] = useState("All");
-  const [selectedJudgeType, setSelectedJudgeType] = useState("All");
+  const [selectedRoundId, setSelectedRoundId] = useState("ALL");
+  const [selectedTrackId, setSelectedTrackId] = useState("ALL");
+  const [selectedCriteriaType, setSelectedCriteriaType] = useState<CriteriaFilter>("ALL");
+  const [selectedJudgeType, setSelectedJudgeType] = useState<JudgeFilter>("ALL");
 
-  const { data: rounds = [], isLoading: roundsLoading, isError: roundsError } = useCoordinatorEventRoundsQuery(eventId);
-  const { data: tracks = [], isLoading: tracksLoading, isError: tracksError } = useCoordinatorEventTracksQuery(eventId);
+  const roundsQuery = useCoordinatorEventRoundsQuery(eventId);
+  const tracksQuery = useCoordinatorEventTracksQuery(eventId);
+  const rounds = (roundsQuery.data ?? []) as RoundResponse[];
+  const tracks = (tracksQuery.data ?? []) as TrackResponse[];
+  const { isLoading: roundsLoading, isError: roundsError } = roundsQuery;
+  const { isLoading: tracksLoading, isError: tracksError } = tracksQuery;
 
   const queryParams: GetVarianceDashboardParams = {};
-  if (selectedRoundId !== "All") queryParams.roundId = selectedRoundId;
-  if (selectedTrackId !== "All") queryParams.trackId = selectedTrackId;
-  if (selectedCriteriaType !== "All") queryParams.criteriaType = selectedCriteriaType.toUpperCase();
-  if (selectedJudgeType !== "All") queryParams.judgeType = selectedJudgeType.toUpperCase();
+  if (selectedRoundId !== "ALL") queryParams.roundId = selectedRoundId;
+  if (selectedTrackId !== "ALL") queryParams.trackId = selectedTrackId;
+  if (selectedCriteriaType !== "ALL") queryParams.criteriaType = selectedCriteriaType;
+  if (selectedJudgeType !== "ALL") queryParams.judgeType = selectedJudgeType;
 
   const {
     data: varianceRes,
@@ -46,8 +55,10 @@ export function ScoreVarianceDashboardPage() {
 
   const handleRoundChange = (e: SelectChangeEvent) => setSelectedRoundId(e.target.value);
   const handleTrackChange = (e: SelectChangeEvent) => setSelectedTrackId(e.target.value);
-  const handleCriteriaTypeChange = (e: SelectChangeEvent) => setSelectedCriteriaType(e.target.value);
-  const handleJudgeTypeChange = (e: SelectChangeEvent) => setSelectedJudgeType(e.target.value);
+  const handleCriteriaTypeChange = (e: SelectChangeEvent) =>
+    setSelectedCriteriaType(e.target.value as CriteriaFilter);
+  const handleJudgeTypeChange = (e: SelectChangeEvent) =>
+    setSelectedJudgeType(e.target.value as JudgeFilter);
 
   if (!eventId) {
     return <Alert severity="error">Event ID is missing in URL.</Alert>;
@@ -61,6 +72,11 @@ export function ScoreVarianceDashboardPage() {
       <Typography color="text.secondary" sx={{ mb: 2 }}>
         Review judge disagreement by criterion and judge type.
       </Typography>
+      {dashboardData?.eventName && (
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          {dashboardData.eventName}
+        </Typography>
+      )}
       <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 3 }}>
         Round: {roundsError ? "Error" : roundsLoading ? "Loading..." : (rounds.find((r) => r.id === selectedRoundId)?.name ?? "All")} | Track: {tracksError ? "Error" : tracksLoading ? "Loading..." : (tracks.find((t) => t.id === selectedTrackId)?.name ?? "All")}
       </Typography>
@@ -106,8 +122,8 @@ export function ScoreVarianceDashboardPage() {
             scoreCount={dashboardData.totalScoreCount}
             judgeCount={dashboardData.totalJudgeCount}
             criteriaCount={dashboardData.totalCriteriaCount}
-            averageCriterionVariance={dashboardData.averageCriterionVariance}
-            averageJudgeVariance={dashboardData.averageJudgeVariance}
+            overallMean={dashboardData.overallMean}
+            overallStandardDeviation={dashboardData.overallStandardDeviation}
           />
           <CriteriaVarianceChart data={dashboardData.criteriaVariances} />
           <JudgeVarianceChart data={dashboardData.judgeVariances} />

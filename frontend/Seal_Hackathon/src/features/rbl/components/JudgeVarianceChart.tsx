@@ -33,7 +33,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function JudgeVarianceChart({ data }: JudgeVarianceChartProps) {
   const chartData = data.map((item) => ({
     ...item,
-    name: item.judgeType ? `${item.judgeId.substring(0, 8)} (${item.judgeType})` : item.judgeId.substring(0, 8),
+    name: item.judgeType
+      ? `${item.hashedJudgeId.substring(0, 8)} (${item.judgeType})`
+      : item.hashedJudgeId.substring(0, 8),
     stdDev: item.standardDeviation,
   }));
 

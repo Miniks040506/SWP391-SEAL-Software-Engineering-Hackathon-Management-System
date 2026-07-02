@@ -4,8 +4,8 @@ type VarianceSummaryCardsProps = {
   scoreCount: number;
   judgeCount: number;
   criteriaCount: number;
-  averageCriterionVariance: number;
-  averageJudgeVariance: number;
+  overallMean: number;
+  overallStandardDeviation: number;
 };
 
 function SummaryCard({ title, value }: { title: string; value: string | number }) {
@@ -27,16 +27,16 @@ export function VarianceSummaryCards({
   scoreCount,
   judgeCount,
   criteriaCount,
-  averageCriterionVariance,
-  averageJudgeVariance,
+  overallMean,
+  overallStandardDeviation,
 }: VarianceSummaryCardsProps) {
   return (
     <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", mb: 4 }}>
       <SummaryCard title="Confirmed Scores" value={scoreCount} />
       <SummaryCard title="Judges" value={judgeCount} />
       <SummaryCard title="Criteria" value={criteriaCount} />
-      <SummaryCard title="Avg Criterion Variance" value={averageCriterionVariance.toFixed(2)} />
-      <SummaryCard title="Avg Judge Variance" value={averageJudgeVariance.toFixed(2)} />
+      <SummaryCard title="Overall Mean" value={overallMean.toFixed(2)} />
+      <SummaryCard title="Overall Std Dev" value={overallStandardDeviation.toFixed(2)} />
     </Box>
   );
 }

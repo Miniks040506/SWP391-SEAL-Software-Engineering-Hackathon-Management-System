@@ -29,16 +29,20 @@ type VarianceFilterBarProps = {
 };
 
 const CRITERIA_TYPES = [
-  "All",
-  "Technical",
-  "Soft",
-  "Presentation",
-  "Innovation",
-  "Business",
-  "Process",
+  { value: "ALL", label: "All" },
+  { value: "TECHNICAL", label: "Technical" },
+  { value: "SOFT", label: "Soft" },
+  { value: "PRESENTATION", label: "Presentation" },
+  { value: "INNOVATION", label: "Innovation" },
+  { value: "BUSINESS", label: "Business" },
+  { value: "PROCESS", label: "Process" },
 ];
 
-const JUDGE_TYPES = ["All", "Internal", "External", "Guest"];
+const JUDGE_TYPES = [
+  { value: "ALL", label: "All" },
+  { value: "INTERNAL", label: "Internal" },
+  { value: "GUEST", label: "Guest" },
+];
 
 export function VarianceFilterBar({
   rounds,
@@ -80,7 +84,7 @@ export function VarianceFilterBar({
           onChange={onRoundChange}
           disabled={roundsLoading || roundsError}
         >
-          <MenuItem value="All">{roundsLoading ? "Loading..." : "All"}</MenuItem>
+          <MenuItem value="ALL">{roundsLoading ? "Loading..." : "All"}</MenuItem>
           {rounds.map((r) => (
             <MenuItem key={r.id} value={r.id}>
               {r.name}
@@ -97,7 +101,7 @@ export function VarianceFilterBar({
           onChange={onTrackChange}
           disabled={tracksLoading || tracksError}
         >
-          <MenuItem value="All">{tracksLoading ? "Loading..." : "All"}</MenuItem>
+          <MenuItem value="ALL">{tracksLoading ? "Loading..." : "All"}</MenuItem>
           {tracks.map((t) => (
             <MenuItem key={t.id} value={t.id}>
               {t.name}
@@ -114,8 +118,8 @@ export function VarianceFilterBar({
           onChange={onCriteriaTypeChange}
         >
           {CRITERIA_TYPES.map((type) => (
-            <MenuItem key={type} value={type}>
-              {type}
+            <MenuItem key={type.value} value={type.value}>
+              {type.label}
             </MenuItem>
           ))}
         </Select>
@@ -129,8 +133,8 @@ export function VarianceFilterBar({
           onChange={onJudgeTypeChange}
         >
           {JUDGE_TYPES.map((type) => (
-            <MenuItem key={type} value={type}>
-              {type}
+            <MenuItem key={type.value} value={type.value}>
+              {type.label}
             </MenuItem>
           ))}
         </Select>

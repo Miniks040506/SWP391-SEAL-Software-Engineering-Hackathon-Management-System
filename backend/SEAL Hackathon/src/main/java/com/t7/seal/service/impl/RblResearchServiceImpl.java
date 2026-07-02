@@ -64,11 +64,15 @@ public class RblResearchServiceImpl implements RblResearchService {
         validateRoundBelongsToEvent(roundId, eventId);
         validateTrackBelongsToEvent(trackId, eventId);
 
-        Boolean technicalFilter = parseCriteriaType(criteriaType);
+        String normalizedCriteriaType = normalizeCriteriaType(criteriaType);
         JudgeType judgeTypeFilter = parseJudgeType(judgeType);
 
         List<Score> scores = loadFilteredScores(event.getId(),
-                roundId, trackId, technicalFilter, judgeTypeFilter);
+                roundId, trackId, normalizedCriteriaType, judgeTypeFilter);
+
+        Stats overallStats = calculateStats(scores.stream()
+                .map(score -> score.getValue().doubleValue())
+                .toList());
 
         Map<UUID, List<Score>> scoresByCriteria = scores.stream()
                 .collect(Collectors.groupingBy(
@@ -114,13 +118,17 @@ public class RblResearchServiceImpl implements RblResearchService {
 
         return new VarianceDashboardResponse(
                 event.getId(),
+                event.getName(),
                 roundId,
                 trackId,
-                normalizeNullable(criteriaType),
+                normalizedCriteriaType,
                 normalizeNullable(judgeType),
                 scores.size(),
                 scoresByJudge.size(),
                 scoresByCriteria.size(),
+                overallStats.mean(),
+                overallStats.variance(),
+                overallStats.standardDeviation(),
                 round(average(criteriaVariances.stream()
                         .map(CriteriaVarianceResponse::variance)
                         .toList())),
@@ -284,13 +292,12 @@ public class RblResearchServiceImpl implements RblResearchService {
             UUID eventId,
             UUID roundId,
             UUID trackId,
-            Boolean technicalFilter,
+            String criteriaTypeFilter,
             JudgeType judgeTypeFilter
     ) {
         return scoreRepository.findConfirmedScoresForRblDashboard(eventId, roundId, trackId)
                 .stream()
-                .filter(score -> technicalFilter == null || technicalFilter
-                        .equals(Boolean.TRUE.equals(score.getEventCriteria().getEffectiveIsTechnical())))
+                .filter(score -> matchesCriteriaType(score.getEventCriteria(), criteriaTypeFilter))
                 .filter(score -> judgeTypeFilter == null
                         || judgeTypeFilter == score.getJudge().getJudgeType())
                 .toList();
@@ -395,17 +402,36 @@ public class RblResearchServiceImpl implements RblResearchService {
         return Math.round(value * 10000d) / 10000d;
     }
 
-    private Boolean parseCriteriaType(String criteriaType) {
+    private String normalizeCriteriaType(String criteriaType) {
         String normalized = normalizeNullable(criteriaType);
         if (normalized == null) {
             return null;
         }
 
-        return switch (normalized.toUpperCase(Locale.ROOT)) {
-            case "TECHNICAL", "TECH", "TRUE" -> true;
-            case "SOFT", "NON_TECHNICAL", "SUBJECTIVE", "FALSE" -> false;
-            default -> throw new BadRequestException("Invalid criteriaType. Use TECHNICAL or SOFT.");
-        };
+        String value = normalized.toUpperCase(Locale.ROOT);
+        if (!Set.of("TECHNICAL", "SOFT", "PRESENTATION", "INNOVATION", "BUSINESS", "PROCESS")
+                .contains(value)) {
+            throw new BadRequestException(
+                    "Invalid criteriaType. Use TECHNICAL, SOFT, PRESENTATION, INNOVATION, BUSINESS, or PROCESS."
+            );
+        }
+        return value;
+    }
+
+    private boolean matchesCriteriaType(EventCriteria criteria, String criteriaTypeFilter) {
+        if (criteriaTypeFilter == null) {
+            return true;
+        }
+        if ("TECHNICAL".equals(criteriaTypeFilter)) {
+            return Boolean.TRUE.equals(criteria.getEffectiveIsTechnical());
+        }
+        if ("SOFT".equals(criteriaTypeFilter)) {
+            return !Boolean.TRUE.equals(criteria.getEffectiveIsTechnical());
+        }
+
+        return criteria.getCriteria() != null
+                && criteria.getCriteria().getCategory() != null
+                && criteriaTypeFilter.equals(criteria.getCriteria().getCategory().name());
     }
 
     private JudgeType parseJudgeType(String judgeType) {

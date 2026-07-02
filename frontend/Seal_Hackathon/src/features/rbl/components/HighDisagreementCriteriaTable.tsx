@@ -37,6 +37,7 @@ export function HighDisagreementCriteriaTable({
               <TableRow>
                 <TableCell>Criterion</TableCell>
                 <TableCell>Category</TableCell>
+                <TableCell>Classification</TableCell>
                 <TableCell align="right">Mean</TableCell>
                 <TableCell align="right">Std Dev</TableCell>
                 <TableCell align="right">Variance</TableCell>
@@ -50,6 +51,7 @@ export function HighDisagreementCriteriaTable({
                 return (
                   <TableRow key={row.eventCriteriaId}>
                     <TableCell>{row.criteriaName}</TableCell>
+                    <TableCell>{row.category ?? "Uncategorized"}</TableCell>
                     <TableCell>
                       {row.technical ? "Technical" : "Soft"}
                     </TableCell>
@@ -65,7 +67,7 @@ export function HighDisagreementCriteriaTable({
               })}
               {sortedData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={8} align="center">
                     No criteria data available.
                   </TableCell>
                 </TableRow>
