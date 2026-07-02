@@ -12,6 +12,7 @@ import com.t7.seal.exception.*;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.system.CreateExportJobRequest;
 import com.t7.seal.request.system.EventExportRequest;
+import com.t7.seal.request.system.ExportRblDatasetRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.ExportDownloadResponse;
 import com.t7.seal.response.system.ExportJobResponse;
@@ -39,6 +40,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -51,6 +54,7 @@ import java.util.zip.ZipOutputStream;
 public class ExportServiceImpl implements ExportService {
 
     private static final DateTimeFormatter FILE_TIMESTAMP = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final String RBL_HASH_PREFIX = "SEAL-RBL-v1:";
     private static final int MAX_PAGE_SIZE = 100;
     private static final int EXPORT_EXPIRY_DAYS = 7;
 
@@ -62,6 +66,8 @@ public class ExportServiceImpl implements ExportService {
     private final RankingRepository rankingRepository;
     private final ScoreRepository scoreRepository;
     private final TeamRepository teamRepository;
+    private final RoundRepository roundRepository;
+    private final TrackRepository trackRepository;
     private final ExportJobRepository exportJobRepository;
 
     @Transactional
@@ -94,6 +100,11 @@ public class ExportServiceImpl implements ExportService {
             case RANKING -> exportEventRanking(eventId, eventRequest, authentication);
             case SCORE_REPORT -> exportEventScores(eventId, eventRequest, authentication);
             case TEAM_LIST -> exportEventTeamList(eventId, eventRequest, authentication);
+            case SCORE_DATASET_ANONYMIZED -> exportEventRblDataset(
+                    eventId,
+                    new ExportRblDatasetRequest(roundId, trackId, format),
+                    authentication
+            );
             default -> throw new BadRequestException("Unsupported report type " +
                     "for generic export endpoint: " + exportType);
         };
@@ -285,6 +296,49 @@ public class ExportServiceImpl implements ExportService {
         return createAndProcessJob(actor, spec, rows, "team_list_report");
     }
 
+    @Transactional
+    @Override
+    public ExportJobResponse exportEventRblDataset(
+            UUID eventId,
+            ExportRblDatasetRequest request,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        HackathonEvent event = getEvent(eventId);
+        UUID roundId = request == null ? null : request.roundId();
+        UUID trackId = request == null ? null : request.trackId();
+        String format = normalizeFormat(request == null ? null : request.format());
+
+        validateRoundBelongsToEvent(roundId, eventId);
+        validateTrackBelongsToEvent(trackId, eventId);
+
+        ExportSpec spec = new ExportSpec(
+                event,
+                ExportType.SCORE_DATASET_ANONYMIZED,
+                roundId,
+                trackId,
+                format,
+                false,
+                false,
+                true
+        );
+
+        List<Score> scores = scoreRepository.findConfirmedScoresForRblDashboard(
+                eventId,
+                roundId,
+                trackId
+        );
+
+        return createAndProcessJob(
+                actor,
+                spec,
+                buildRblDatasetRows(scores),
+                "rbl_dataset"
+        );
+    }
+
     @Transactional(readOnly = true)
     @Override
     public PageResponse<ExportJobResponse> getMyExportJobs(
@@ -429,6 +483,15 @@ public class ExportServiceImpl implements ExportService {
             case RANKING -> exportEventRanking(eventId, request, authentication);
             case SCORE_REPORT -> exportEventScores(eventId, request, authentication);
             case TEAM_LIST -> exportEventTeamList(eventId, request, authentication);
+            case SCORE_DATASET_ANONYMIZED -> exportEventRblDataset(
+                    eventId,
+                    new ExportRblDatasetRequest(
+                            request.roundId(),
+                            request.trackId(),
+                            request.format()
+                    ),
+                    authentication
+            );
             default -> throw new BadRequestException("Unsupported report type " +
                     "for generic export endpoint: " + existing.getExportType());
         };
@@ -801,6 +864,93 @@ public class ExportServiceImpl implements ExportService {
 
         return hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new BadRequestException("Event not found"));
+    }
+
+    private void validateRoundBelongsToEvent(UUID roundId, UUID eventId) {
+        if (roundId == null) {
+            return;
+        }
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new BadRequestException("Round not found"));
+        if (round.getEvent() == null || !eventId.equals(round.getEvent().getId())) {
+            throw new BadRequestException("Round does not belong to the requested event.");
+        }
+    }
+
+    private void validateTrackBelongsToEvent(UUID trackId, UUID eventId) {
+        if (trackId == null) {
+            return;
+        }
+        Track track = trackRepository.findById(trackId)
+                .orElseThrow(() -> new BadRequestException("Track not found"));
+        if (track.getEvent() == null || !eventId.equals(track.getEvent().getId())) {
+            throw new BadRequestException("Track does not belong to the requested event.");
+        }
+    }
+
+    private List<List<String>> buildRblDatasetRows(List<Score> scores) {
+        List<List<String>> rows = new ArrayList<>();
+        rows.add(List.of(
+                "hashedJudgeId",
+                "judgeType",
+                "hashedTrackId",
+                "hashedRoundId",
+                "criterionId",
+                "criterionType",
+                "technical",
+                "hashedSubmissionId",
+                "rawScore",
+                "maxScore",
+                "weight",
+                "createdAtBucket"
+        ));
+
+        for (Score score : scores) {
+            EventCriteria criterion = score.getEventCriteria();
+            Submission submission = score.getSubmission();
+            Team team = submission.getTeam();
+            Track track = team == null ? null : team.getTrack();
+            Round round = submission.getRound();
+
+            String criterionType = criterion.getCriteria() == null
+                    || criterion.getCriteria().getCategory() == null
+                    ? ""
+                    : criterion.getCriteria().getCategory().name();
+            String createdAtBucket = score.getScoredAt() == null
+                    ? ""
+                    : score.getScoredAt().toLocalDate().toString();
+
+            rows.add(List.of(
+                    rblHashId(score.getJudge().getId()),
+                    text(score.getJudge().getJudgeType()),
+                    rblHashId(track == null ? null : track.getId()),
+                    rblHashId(round == null ? null : round.getId()),
+                    text(criterion.getId()),
+                    criterionType,
+                    text(Boolean.TRUE.equals(criterion.getEffectiveIsTechnical())),
+                    rblHashId(submission.getId()),
+                    text(score.getValue()),
+                    text(criterion.getEffectiveMaxScore()),
+                    text(criterion.getEffectiveWeight()),
+                    createdAtBucket
+            ));
+        }
+
+        return rows;
+    }
+
+    private String rblHashId(UUID id) {
+        if (id == null) {
+            return "";
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((RBL_HASH_PREFIX + id)
+                    .getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 is not available.", ex);
+        }
     }
 
     private boolean parseBoolean(Object value, boolean defaultValue) {
