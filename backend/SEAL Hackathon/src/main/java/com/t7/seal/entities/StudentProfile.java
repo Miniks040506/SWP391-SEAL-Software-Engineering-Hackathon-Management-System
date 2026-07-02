@@ -61,6 +61,14 @@ public class StudentProfile {
         verifiedAt = now;
     }
 
+    public void anonymize() {
+        studentCode = null;
+        universityName = null;
+        major = null;
+        graduationYear = null;
+        verifiedAt = null;
+    }
+
     // 1 - 1 to User
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)

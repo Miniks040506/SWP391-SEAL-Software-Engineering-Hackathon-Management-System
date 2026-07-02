@@ -61,6 +61,9 @@ public class HackathonEvent {
     @Column(name = "result_published_at")
     private LocalDateTime resultPublishedAt;
 
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -135,6 +138,7 @@ public class HackathonEvent {
         }
 
         status = RegistrationStatus.COMPLETED;
+        completedAt = LocalDateTime.now();
     }
 
     // Publishes results once the event is judging or completed.

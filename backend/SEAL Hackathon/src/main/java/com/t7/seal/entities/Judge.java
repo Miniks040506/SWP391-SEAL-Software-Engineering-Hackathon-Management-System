@@ -62,6 +62,11 @@ public class Judge {
         expiresAt = null;
     }
 
+    // Immediately expires temporary access, typically after the related event has been completed for 24 hours.
+    public void expireTemporaryAccess(LocalDateTime now) {
+        expiresAt = now == null ? LocalDateTime.now() : now;
+    }
+
     // 1 - 1 to User
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
