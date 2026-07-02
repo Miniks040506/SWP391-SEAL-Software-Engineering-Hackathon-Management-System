@@ -4,6 +4,7 @@ import type {
   EventExportRequest,
   ExportDownloadResponse,
   ExportJobResponse,
+  ExportRblDatasetRequest,
   GetExportJobsParams,
 } from "@/types/export.types";
 
@@ -77,6 +78,20 @@ export const mockExportApi = {
 
   async exportEventTeamList(eventId: UUID, payload?: EventExportRequest) {
     return this.createExportJob({ exportType: "TEAM_LIST", params: { eventId, ...payload } });
+  },
+
+  async exportRblDataset(eventId: UUID, payload?: ExportRblDatasetRequest) {
+    return this.createExportJob({
+      exportType: "SCORE_DATASET_ANONYMIZED",
+      params: {
+        eventId,
+        format: "CSV",
+        anonymize: true,
+        includeDraftScores: false,
+        includeDisqualified: false,
+        ...payload,
+      },
+    });
   },
 
   async getMyExportJobs(params?: GetExportJobsParams) {

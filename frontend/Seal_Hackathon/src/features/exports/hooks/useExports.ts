@@ -7,6 +7,7 @@ import type {
   EventExportRequest,
   ExportDownloadResponse,
   ExportJobResponse,
+  ExportRblDatasetRequest,
   GetExportJobsParams,
 } from "@/types/export.types";
 
@@ -108,6 +109,31 @@ export function useCreateTeamListExport() {
     },
     onError: (err: any) => {
       enqueueSnackbar(err?.message || "Failed to create team list export", { variant: "error" });
+    },
+  });
+}
+
+export function useCreateRblDatasetExport() {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async ({ eventId, payload }: { eventId: UUID; payload?: ExportRblDatasetRequest }) =>
+      unwrapApiPayload<ExportJobResponse>(
+        await activeApi.exportRblDataset(eventId, payload),
+      ),
+    onSuccess: (job) => {
+      enqueueSnackbar("Anonymized RBL dataset export created.", { variant: "success" });
+      queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
+      queryClient.setQueryData(exportKeys.detail(job.id), job);
+    },
+    onError: (err: any) => {
+      enqueueSnackbar(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to create anonymized RBL dataset export",
+        { variant: "error" },
+      );
     },
   });
 }

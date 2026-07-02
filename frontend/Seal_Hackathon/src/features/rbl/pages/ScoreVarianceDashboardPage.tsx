@@ -15,6 +15,7 @@ import { CriteriaVarianceChart } from "../components/CriteriaVarianceChart";
 import { JudgeVarianceChart } from "../components/JudgeVarianceChart";
 import { HighDisagreementCriteriaTable } from "../components/HighDisagreementCriteriaTable";
 import { VarianceEmptyState } from "../components/VarianceEmptyState";
+import { RblExportPanel } from "../components/RblExportPanel";
 
 import type { GetVarianceDashboardParams } from "@/types/event.types";
 import type { RoundResponse } from "@/types/round.types";
@@ -43,6 +44,13 @@ export function ScoreVarianceDashboardPage() {
   if (selectedTrackId !== "ALL") queryParams.trackId = selectedTrackId;
   if (selectedCriteriaType !== "ALL") queryParams.criteriaType = selectedCriteriaType;
   if (selectedJudgeType !== "ALL") queryParams.judgeType = selectedJudgeType;
+
+  const effectiveRoundId = selectedRoundId !== "ALL" ? selectedRoundId : undefined;
+  const effectiveTrackId = selectedTrackId !== "ALL" ? selectedTrackId : undefined;
+  const selectedRoundLabel =
+    rounds.find((r) => r.id === selectedRoundId)?.name ?? "All rounds";
+  const selectedTrackLabel =
+    tracks.find((t) => t.id === selectedTrackId)?.name ?? "All tracks";
 
   const {
     data: varianceRes,
@@ -98,6 +106,14 @@ export function ScoreVarianceDashboardPage() {
         roundsError={roundsError}
         tracksLoading={tracksLoading}
         tracksError={tracksError}
+      />
+
+      <RblExportPanel
+        eventId={eventId}
+        roundId={effectiveRoundId}
+        trackId={effectiveTrackId}
+        roundLabel={selectedRoundLabel}
+        trackLabel={selectedTrackLabel}
       />
 
       {isLoading && (
