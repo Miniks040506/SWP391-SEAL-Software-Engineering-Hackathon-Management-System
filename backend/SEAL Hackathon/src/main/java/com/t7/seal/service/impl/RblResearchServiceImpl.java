@@ -15,7 +15,6 @@ import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RblResearchService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,9 +35,7 @@ import java.util.stream.Collectors;
 public class RblResearchServiceImpl implements RblResearchService {
 
     private static final String HASH_PREFIX = "SEAL-RBL-v1:";
-
-    @Value("${app.rbl.variance-threshold-points:3.0}")
-    private double highVarianceThreshold;
+    private static final double DEFAULT_VARIANCE_THRESHOLD = 3.0;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -73,6 +70,9 @@ public class RblResearchServiceImpl implements RblResearchService {
         Stats overallStats = calculateStats(scores.stream()
                 .map(score -> score.getValue().doubleValue())
                 .toList());
+        double varianceThreshold = event.getVarianceThresholdPoints() == null
+                ? DEFAULT_VARIANCE_THRESHOLD
+                : event.getVarianceThresholdPoints().doubleValue();
 
         Map<UUID, List<Score>> scoresByCriteria = scores.stream()
                 .collect(Collectors.groupingBy(
@@ -82,7 +82,7 @@ public class RblResearchServiceImpl implements RblResearchService {
                 ));
 
         List<CriteriaVarianceResponse> criteriaVariances = scoresByCriteria.values().stream()
-                .map(this::toCriteriaVariance)
+                .map(criteriaScores -> toCriteriaVariance(criteriaScores, varianceThreshold))
                 .sorted(Comparator
                         .comparing((CriteriaVarianceResponse r)
                                 -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
@@ -105,7 +105,7 @@ public class RblResearchServiceImpl implements RblResearchService {
                 ));
 
         List<JudgeVarianceResponse> judgeVariances = scoresByJudge.values().stream()
-                .map(this::toJudgeVariance)
+                .map(judgeScores -> toJudgeVariance(judgeScores, varianceThreshold))
                 .sorted(Comparator
                         .comparing((JudgeVarianceResponse r)
                                 -> Boolean.TRUE.equals(r.highVariance()) ? 0 : 1)
@@ -129,6 +129,7 @@ public class RblResearchServiceImpl implements RblResearchService {
                 overallStats.mean(),
                 overallStats.variance(),
                 overallStats.standardDeviation(),
+                varianceThreshold,
                 round(average(criteriaVariances.stream()
                         .map(CriteriaVarianceResponse::variance)
                         .toList())),
@@ -303,7 +304,10 @@ public class RblResearchServiceImpl implements RblResearchService {
                 .toList();
     }
 
-    private CriteriaVarianceResponse toCriteriaVariance(List<Score> scores) {
+    private CriteriaVarianceResponse toCriteriaVariance(
+            List<Score> scores,
+            double varianceThreshold
+    ) {
         EventCriteria criteria = scores.get(0).getEventCriteria();
         Stats stats = calculateStats(
                 scores.stream()
@@ -331,11 +335,14 @@ public class RblResearchServiceImpl implements RblResearchService {
                 stats.max(),
                 scores.size(),
                 judgeIds.size(),
-                stats.standardDeviation() >= highVarianceThreshold
+                stats.standardDeviation() >= varianceThreshold
         );
     }
 
-    private JudgeVarianceResponse toJudgeVariance(List<Score> scores) {
+    private JudgeVarianceResponse toJudgeVariance(
+            List<Score> scores,
+            double varianceThreshold
+    ) {
         Judge judge = scores.get(0).getJudge();
         Stats stats = calculateStats(scores.stream()
                 .map(score -> score.getValue().doubleValue())
@@ -351,7 +358,7 @@ public class RblResearchServiceImpl implements RblResearchService {
                 stats.min(),
                 stats.max(),
                 scores.size(),
-                stats.standardDeviation() >= highVarianceThreshold
+                stats.standardDeviation() >= varianceThreshold
         );
     }
 

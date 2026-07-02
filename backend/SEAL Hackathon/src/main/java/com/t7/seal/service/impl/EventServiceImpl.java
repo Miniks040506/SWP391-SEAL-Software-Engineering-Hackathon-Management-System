@@ -146,6 +146,9 @@ public class EventServiceImpl implements EventService {
         newEvent.setYear(event.year());
         newEvent.setRegistrationOpen(event.registrationStartAt());
         newEvent.setRegistrationClose(event.registrationEndAt());
+        if (event.varianceThresholdPoints() != null) {
+            newEvent.setVarianceThresholdPoints(event.varianceThresholdPoints());
+        }
         newEvent.setBannerUrl(trimToNull(event.bannerUrl()));
 
         if (event.status() != null
@@ -200,6 +203,10 @@ public class EventServiceImpl implements EventService {
         }
 
         validateRegistrationTime(event.getRegistrationOpen(), event.getRegistrationClose());
+
+        if (request.varianceThresholdPoints() != null) {
+            event.setVarianceThresholdPoints(request.varianceThresholdPoints());
+        }
 
         if (request.bannerUrl() != null) {
             event.setBannerUrl(trimToNull(request.bannerUrl()));
@@ -382,6 +389,7 @@ public class EventServiceImpl implements EventService {
                 event.getRegistrationOpen(),
                 event.getRegistrationClose(),
                 event.getResultPublishedAt(),
+                event.getVarianceThresholdPoints(),
                 tracks,
                 rounds
         );

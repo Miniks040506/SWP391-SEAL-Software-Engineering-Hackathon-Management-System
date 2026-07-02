@@ -16,6 +16,7 @@ public record VarianceDashboardResponse(
         Double overallMean,
         Double overallVariance,
         Double overallStandardDeviation,
+        Double varianceThreshold,
         Double averageCriterionVariance,
         Double averageJudgeVariance,
         List<JudgeVarianceResponse> judgeVariances,

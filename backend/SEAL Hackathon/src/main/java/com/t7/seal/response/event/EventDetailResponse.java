@@ -3,6 +3,7 @@ package com.t7.seal.response.event;
 import com.t7.seal.response.round.RoundResponse;
 import com.t7.seal.response.track.TrackResponse;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +19,7 @@ public record EventDetailResponse(
         LocalDateTime registrationStartAt,
         LocalDateTime registrationEndAt,
         LocalDateTime resultPublishedAt,
+        BigDecimal varianceThresholdPoints,
         List<TrackResponse> tracks,
         List<RoundResponse> rounds
 ) {}
