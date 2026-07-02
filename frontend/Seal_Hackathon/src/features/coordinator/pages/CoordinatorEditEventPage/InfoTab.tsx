@@ -217,6 +217,7 @@ export function InfoTab({
       registrationEndAt: toDateTimeLocal(
         readString(event, "registrationEndAt", "registrationCloseAt"),
       ),
+      varianceThresholdPoints: event.varianceThresholdPoints ?? 3,
       description: readString(event, "description"),
       bannerUrl: readString(event, "bannerUrl"),
     }),
@@ -255,6 +256,23 @@ export function InfoTab({
       return;
     }
 
+    if (
+      !Number.isFinite(form.varianceThresholdPoints) ||
+      form.varianceThresholdPoints <= 0
+    ) {
+      enqueueSnackbar("Variance threshold must be greater than 0.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (Math.abs(form.varianceThresholdPoints * 100 - Math.round(form.varianceThresholdPoints * 100)) > 1e-8) {
+      enqueueSnackbar("Variance threshold supports at most two decimal places.", {
+        variant: "error",
+      });
+      return;
+    }
+
     try {
       setIsSaving(true);
 
@@ -276,6 +294,7 @@ export function InfoTab({
         registrationEndAt: form.registrationEndAt
           ? `${form.registrationEndAt}:00`
           : undefined,
+        varianceThresholdPoints: form.varianceThresholdPoints,
         bannerUrl: nextBannerUrl,
       });
 
@@ -428,6 +447,21 @@ export function InfoTab({
           size="small"
           sx={dateTimeFieldSx}
           slotProps={{ inputLabel: { shrink: true } }}
+          disabled={!canEdit}
+        />
+
+        <TextField
+          label="Variance review threshold"
+          type="number"
+          value={form.varianceThresholdPoints}
+          onChange={(event) =>
+            updateField("varianceThresholdPoints", Number(event.target.value))
+          }
+          fullWidth
+          size="small"
+          sx={textFieldSx}
+          slotProps={{ htmlInput: { min: 0.01, step: 0.1 } }}
+          helperText="Standard deviation threshold used for coordinator review flags."
           disabled={!canEdit}
         />
 

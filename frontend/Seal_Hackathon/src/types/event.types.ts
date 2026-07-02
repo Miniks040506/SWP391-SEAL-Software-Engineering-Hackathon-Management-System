@@ -54,6 +54,7 @@ export type CreateEventRequest = {
   year: number;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
+  varianceThresholdPoints?: number;
   bannerUrl?: string | null;
   status?: string | null;
 };
@@ -65,6 +66,7 @@ export type UpdateEventRequest = {
   year?: number;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
+  varianceThresholdPoints?: number;
   bannerUrl?: string | null;
   status?: string | null;
 };
@@ -89,6 +91,7 @@ export type EventDetailResponse = {
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
   resultPublishedAt?: ISODateTime | null;
+  varianceThresholdPoints?: number;
   tracks: TrackResponse[];
   rounds: RoundResponse[];
 };

@@ -95,6 +95,11 @@ export const createEventDetailsSchema = z
       .trim()
       .min(1, "Registration end time is required."),
 
+    varianceThresholdPoints: z
+      .number()
+      .positive("Variance threshold must be greater than 0.")
+      .multipleOf(0.01, "Use no more than two decimal places."),
+
     description: optionalTrimmedString,
 
     bannerFile: z.custom<File | null>().nullable().optional(),
@@ -309,7 +314,8 @@ export const createEventSchema = createEventDetailsSchema.extend({
   criteria: z.array(createEventCriteriaSchema).default([]),
 });
 
-export type CreateEventFormValues = z.infer<typeof createEventSchema>;
+export type CreateEventFormInput = z.input<typeof createEventSchema>;
+export type CreateEventFormValues = z.output<typeof createEventSchema>;
 export type CreateEventPayload = CreateEventFormValues;
 
 export type TrackFormValues = z.infer<typeof createTrackSchema>;
@@ -404,6 +410,7 @@ export const initialCreateEventFormValues: CreateEventFormValues = {
 
   registrationStartAt: "",
   registrationEndAt: "",
+  varianceThresholdPoints: 3,
   description: "",
   bannerFile: null,
   bannerUrl: "",

@@ -81,6 +81,7 @@ export type VarianceDashboardResponse = {
   overallMean: number;
   overallVariance: number;
   overallStandardDeviation: number;
+  varianceThreshold: number;
   averageCriterionVariance: number;
   averageJudgeVariance: number;
   judgeVariances: JudgeVarianceResponse[];

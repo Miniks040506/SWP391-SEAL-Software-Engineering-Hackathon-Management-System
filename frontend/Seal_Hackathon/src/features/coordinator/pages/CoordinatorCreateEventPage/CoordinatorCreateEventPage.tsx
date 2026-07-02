@@ -12,6 +12,7 @@ import { useCreateEventFlowMutation } from "@/features/coordinator/hooks/useCrea
 import {
   createEventSchema,
   initialCreateEventFormValues,
+  type CreateEventFormInput,
   type CreateEventFormValues,
 } from "@/features/coordinator/schemas/createEvent.schema";
 
@@ -90,15 +91,17 @@ export const CoordinatorCreateEventPage = () => {
 
   const [activeStep, setActiveStep] = useState(1);
 
-  const methods = useForm<CreateEventFormValues>({
+  const methods = useForm<CreateEventFormInput, unknown, CreateEventFormValues>({
     resolver: zodResolver(createEventSchema),
     defaultValues: initialCreateEventFormValues,
     mode: "onTouched",
     reValidateMode: "onChange",
   });
 
-  const tracks = useWatch({ control: methods.control, name: "tracks" }) ?? [];
-  const rounds = useWatch({ control: methods.control, name: "rounds" }) ?? [];
+  const tracks = (useWatch({ control: methods.control, name: "tracks" }) ??
+    []) as CreateEventFormValues["tracks"];
+  const rounds = (useWatch({ control: methods.control, name: "rounds" }) ??
+    []) as CreateEventFormValues["rounds"];
 
   const handlePreviousStep = () => {
     setActiveStep((step) => Math.max(1, step - 1));
@@ -113,6 +116,7 @@ export const CoordinatorCreateEventPage = () => {
           "year",
           "registrationStartAt",
           "registrationEndAt",
+          "varianceThresholdPoints",
           "description",
           "bannerFile",
         ],

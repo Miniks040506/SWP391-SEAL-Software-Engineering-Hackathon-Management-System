@@ -99,7 +99,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             required
             fullWidth
             size="small"
-            inputProps={{ maxLength: 4 }}
+            slotProps={{ htmlInput: { maxLength: 4 } }}
             sx={textFieldSx}
             {...register("year")}
           />
@@ -122,7 +122,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             fullWidth
             size="small"
             sx={dateTimeFieldSx}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
             {...register("registrationStartAt")}
           />
 
@@ -135,8 +135,24 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             fullWidth
             size="small"
             sx={dateTimeFieldSx}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
             {...register("registrationEndAt")}
+          />
+
+          <TextField
+            label="Variance review threshold"
+            type="number"
+            error={Boolean(errors.varianceThresholdPoints)}
+            helperText={
+              errors.varianceThresholdPoints?.message ??
+              "Criteria at or above this standard deviation are flagged. Default: 3.0."
+            }
+            required
+            fullWidth
+            size="small"
+            sx={textFieldSx}
+            slotProps={{ htmlInput: { min: 0.01, step: 0.1 } }}
+            {...register("varianceThresholdPoints", { valueAsNumber: true })}
           />
         </div>
 

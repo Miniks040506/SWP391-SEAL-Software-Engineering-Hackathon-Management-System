@@ -125,6 +125,9 @@ export function ScoreVarianceDashboardPage() {
             overallMean={dashboardData.overallMean}
             overallStandardDeviation={dashboardData.overallStandardDeviation}
           />
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Review threshold: σ ≥ {dashboardData.varianceThreshold.toFixed(2)} points
+          </Typography>
           <CriteriaVarianceChart data={dashboardData.criteriaVariances} />
           <JudgeVarianceChart data={dashboardData.judgeVariances} />
           <HighDisagreementCriteriaTable data={dashboardData.criteriaVariances} />
