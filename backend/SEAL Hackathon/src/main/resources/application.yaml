@@ -96,6 +96,10 @@ app:
   password-reset-expiration-minutes: 15
   password-history:
     limit: 5
+  guest-judge:
+    deactivation-delay-hours: 24
+    deactivation-initial-delay-ms: 60000
+    deactivation-delay-ms: 3600000
   unverified-account:
     retention-days: 7
     anonymization-initial-delay-ms: 60000
