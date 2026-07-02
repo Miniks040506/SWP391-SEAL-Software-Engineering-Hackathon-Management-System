@@ -116,7 +116,7 @@ INSERT INTO team_invitations (id, team_id, invited_by, invite_email, invitee_use
 ('e02025b3-2a4b-584b-a5ec-cdcc0e4b74af', 'a5133b30-7943-5acc-82fb-85c1f52c6098', 'a9d87494-eb4e-5369-bfbd-9bfdc4c8d515', 'external.member@example.com', NULL, 'token-declined-gamma', 'DECLINED', 'INVITATION', NULL, TIMESTAMP '2026-06-09 23:59:00', TIMESTAMP '2026-06-07 08:00:00', TIMESTAMP '2026-06-07 13:00:00', 'Declined by invitee'),
 ('25bdeb1c-67cf-5c9b-a337-0b71ef6aa6e1', '55705f79-5844-5a94-a74c-53f75aa37dee', 'ceca3872-33f4-56a9-90d0-2373d56e92b6', 'late.member@example.com', NULL, 'token-expired-mobile', 'EXPIRED', 'INVITATION', NULL, TIMESTAMP '2026-06-05 23:59:00', TIMESTAMP '2026-06-01 08:00:00', TIMESTAMP '2026-06-06 00:01:00', 'Expired before response'),
 ('c508094a-e33e-5801-833b-e33c9004320a', '0ec99158-0ea1-5160-a533-5ecf065b47b8', '90feb779-4bca-5d88-982b-b2325804cbb1', 'cancelled@example.com', NULL, 'token-cancelled-delta', 'CANCELLED', 'INVITATION', NULL, TIMESTAMP '2026-06-11 23:59:00', TIMESTAMP '2026-06-09 08:00:00', TIMESTAMP '2026-06-09 10:00:00', 'Cancelled by leader'),
--- v18/v19: join-request flow is stored in team_invitations using type = JOIN_REQUEST, not a new table.
+
 ('c4bb2a1f-4df7-5e68-997b-e6aa8b90e65d', '08162ff2-bae7-58c5-ac7d-549a21277b29', '193f759b-f3d2-5dd4-8a19-06ba016e7e20', 'student18@seal.test', '193f759b-f3d2-5dd4-8a19-06ba016e7e20', 'token-join-request-spring-starters', 'PENDING', 'JOIN_REQUEST', 'Hi leader, I would like to join your Spring Starters team.', TIMESTAMP '2026-06-20 23:59:00', TIMESTAMP '2026-06-10 09:30:00', NULL, NULL);
 
 -- ---- mentor_assignment ----

@@ -14,7 +14,11 @@ INSERT INTO submissions (id, team_id, round_id, note, submitted_at, updated_at, 
 ('c28dc162-a53e-5608-9b49-03f1771979f9', '116fd0f3-5388-5a49-8439-3464b4bc8d3d', 'd92484b1-2090-5067-87d2-ec03f227fc96', 'Submitted on time. Need judge scoring.', TIMESTAMP '2026-06-09 21:10:00', TIMESTAMP '2026-06-09 21:10:00', 'SUBMITTED', 1),
 ('9f14482a-2c3e-5b43-950d-24c582a5d096', 'a5133b30-7943-5acc-82fb-85c1f52c6098', 'd92484b1-2090-5067-87d2-ec03f227fc96', 'AI report submitted via Google Drive.', TIMESTAMP '2026-06-09 22:00:00', TIMESTAMP '2026-06-09 22:00:00', 'SUBMITTED', 1),
 ('091ed901-4b6a-5355-8a56-c71c1a144569', '0ec99158-0ea1-5160-a533-5ecf065b47b8', 'd92484b1-2090-5067-87d2-ec03f227fc96', 'Late submission due to deployment issue.', TIMESTAMP '2026-06-19 00:30:00', TIMESTAMP '2026-06-19 00:30:00', 'LATE', 1),
-('916e1ba5-2434-5f50-b2a5-b5ef3916b792', '55705f79-5844-5a94-a74c-53f75aa37dee', 'd92484b1-2090-5067-87d2-ec03f227fc96', 'Draft submission only;
+('916e1ba5-2434-5f50-b2a5-b5ef3916b792', '55705f79-5844-5a94-a74c-53f75aa37dee', 'd92484b1-2090-5067-87d2-ec03f227fc96', 'Draft submission only; used to test draft state.', TIMESTAMP '2026-06-10 09:00:00', TIMESTAMP '2026-06-10 09:00:00', 'DRAFT', 1),
+('a7ae9277-658d-583d-92b2-c354934dbcbe', 'c3942d11-0e5f-5007-b4e6-418fe6bac396', '0a07562f-7cb6-54f8-bd66-9d8332cb2781', 'Final submission for winner.', TIMESTAMP '2025-04-15 22:00:00', TIMESTAMP '2025-04-15 22:00:00', 'SUBMITTED', 2),
+('4bce68f0-4093-5071-a6de-e09e4076abeb', 'c381d1b1-c595-5810-9f7c-671e690e9eae', '0a07562f-7cb6-54f8-bd66-9d8332cb2781', 'Final submission for runner-up.', TIMESTAMP '2025-04-15 22:30:00', TIMESTAMP '2025-04-15 22:30:00', 'SUBMITTED', 2),
+('23e3e861-09ba-56df-a51c-96ddf5614070', 'cfddde8d-ccef-534f-ad54-2571ebe147dd', '0a07562f-7cb6-54f8-bd66-9d8332cb2781', 'Final submission for AI winner.', TIMESTAMP '2025-04-15 21:40:00', TIMESTAMP '2025-04-15 21:40:00', 'SUBMITTED', 2),
+('ef64a5ec-d680-52d4-a4f7-e5b3231e0676', '44d64c0a-7a15-5cd1-95f2-369b96c1f949', '0a07562f-7cb6-54f8-bd66-9d8332cb2781', 'Disqualified sample submission with appeal.', TIMESTAMP '2025-04-15 23:50:00', TIMESTAMP '2025-04-15 23:50:00', 'DISQUALIFIED', 1);
 
 -- from seed v20
 INSERT INTO submissions (id, team_id, round_id, note, submitted_at, updated_at, status, submission_number) VALUES

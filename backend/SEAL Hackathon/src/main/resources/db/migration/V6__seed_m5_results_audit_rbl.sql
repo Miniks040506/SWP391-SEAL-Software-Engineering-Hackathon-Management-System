@@ -42,7 +42,7 @@ INSERT INTO disqualifications (id, submission_id, issued_by, reason, evidence_ur
 
 -- from seed v21
 INSERT INTO disqualifications (id, submission_id, issued_by, reason, evidence_url, appeal_note, appeal_status, issued_at) VALUES
-('4a000000-0000-4000-8000-000000000301', '4a000000-0000-4000-8000-000000000102', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'Commit history shows large unattributed code drop close to the deadline;
+('4a000000-0000-4000-8000-000000000301', '4a000000-0000-4000-8000-000000000102', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'Commit history shows large unattributed code drop close to the deadline; possible external authorship.', 'https://drive.google.com/file/d/summer-gamma-disq-evidence/view', 'Team disputes the finding and requests a review of the commit timeline.', 'PENDING', TIMESTAMP '2026-06-28 10:00:00');
 
 -- ---- export_jobs ----
 -- from seed v19
@@ -52,67 +52,67 @@ INSERT INTO export_jobs (id, requested_by, export_type, params, status, file_url
 
 -- from seed v21
 INSERT INTO export_jobs (id, requested_by, export_type, params, status, file_url, file_name, file_size_bytes, row_count, error_message, requested_at, started_at, completed_at, expires_at) VALUES
--- RANKING — DONE (downloadable, not expired)
+
 ('4a000000-0000-4000-8000-0000000000a1', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'RANKING',
  '{"eventId": "9d1822f7-ec66-52fe-8569-4faeb6b0a85b", "roundId": "d92484b1-2090-5067-87d2-ec03f227fc96", "format": "CSV"}'::jsonb,
  'DONE', 'https://example.com/exports/summer-qual-ranking.csv', 'summer-qual-ranking.csv', 4096, 4, NULL,
  TIMESTAMP '2026-06-11 09:00:00', TIMESTAMP '2026-06-11 09:00:05', TIMESTAMP '2026-06-11 09:00:30', TIMESTAMP '2026-07-11 09:00:30'),
 
--- SCORE_REPORT — DONE
+
 ('4a000000-0000-4000-8000-0000000000a2', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'SCORE_REPORT',
  '{"eventId": "9d1822f7-ec66-52fe-8569-4faeb6b0a85b", "roundId": "d92484b1-2090-5067-87d2-ec03f227fc96", "includeDraft": false}'::jsonb,
  'DONE', 'https://example.com/exports/summer-scores.xlsx', 'summer-scores.xlsx', 20480, 20, NULL,
  TIMESTAMP '2026-06-11 09:05:00', TIMESTAMP '2026-06-11 09:05:05', TIMESTAMP '2026-06-11 09:05:40', TIMESTAMP '2026-07-11 09:05:40'),
 
--- SCORE_DATASET_ANONYMIZED (RBL) — DONE, anonymize = true (judge_id hashed server-side)
+
 ('4a000000-0000-4000-8000-0000000000a3', '99701e51-ee61-5105-8b22-4b546557a27c', 'SCORE_DATASET_ANONYMIZED',
  '{"eventId": "9d1822f7-ec66-52fe-8569-4faeb6b0a85b", "anonymize": true, "includeCriteria": true}'::jsonb,
  'DONE', 'https://example.com/exports/rbl-dataset-anon.csv', 'rbl-dataset-anon.csv', 65536, 80, NULL,
  TIMESTAMP '2026-06-11 09:10:00', TIMESTAMP '2026-06-11 09:10:10', TIMESTAMP '2026-06-11 09:11:00', TIMESTAMP '2026-07-11 09:11:00'),
 
--- SCORE_DATASET_ANONYMIZED (RBL) — QUEUED (fresh request, nothing generated yet)
+
 ('4a000000-0000-4000-8000-0000000000a4', '99701e51-ee61-5105-8b22-4b546557a27c', 'SCORE_DATASET_ANONYMIZED',
  '{"eventId": "6953e3ce-f471-540d-a19d-b9224bf9870e", "anonymize": true}'::jsonb,
  'QUEUED', NULL, NULL, NULL, NULL, NULL,
  TIMESTAMP '2026-06-12 08:00:00', NULL, NULL, NULL),
 
--- TEAM_LIST — PROCESSING (in-flight, poll GET /export-jobs/{id})
+
 ('4a000000-0000-4000-8000-0000000000a5', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'TEAM_LIST',
  '{"eventId": "9d1822f7-ec66-52fe-8569-4faeb6b0a85b"}'::jsonb,
  'PROCESSING', NULL, NULL, NULL, NULL, NULL,
  TIMESTAMP '2026-06-12 08:30:00', TIMESTAMP '2026-06-12 08:30:05', NULL, NULL),
 
--- CALIBRATION_REPORT — DONE
+
 ('4a000000-0000-4000-8000-0000000000a6', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'CALIBRATION_REPORT',
  '{"eventId": "9d1822f7-ec66-52fe-8569-4faeb6b0a85b", "calibrationRoundId": "6438c4af-3c8a-58ad-9f88-379b84e51e74"}'::jsonb,
  'DONE', 'https://example.com/exports/summer-calibration.pdf', 'summer-calibration.pdf', 30720, 4, NULL,
  TIMESTAMP '2026-06-12 09:00:00', TIMESTAMP '2026-06-12 09:00:05', TIMESTAMP '2026-06-12 09:00:25', TIMESTAMP '2026-07-12 09:00:25'),
 
--- FULL_EVENT_REPORT — QUEUED
+
 ('4a000000-0000-4000-8000-0000000000a7', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'FULL_EVENT_REPORT',
  '{"eventId": "9d1822f7-ec66-52fe-8569-4faeb6b0a85b", "sections": ["teams", "submissions", "rankings"]}'::jsonb,
  'QUEUED', NULL, NULL, NULL, NULL, NULL,
  TIMESTAMP '2026-06-12 09:30:00', NULL, NULL, NULL),
 
--- ADMIN_ANNUAL_REPORT — DONE (admin, cross-event yearly report)
+
 ('4a000000-0000-4000-8000-0000000000a8', '99701e51-ee61-5105-8b22-4b546557a27c', 'ADMIN_ANNUAL_REPORT',
  '{"year": 2025, "includeIrrMetrics": true}'::jsonb,
  'DONE', 'https://example.com/exports/admin-annual-2025.pdf', 'admin-annual-2025.pdf', 102400, 200, NULL,
  TIMESTAMP '2026-06-12 10:00:00', TIMESTAMP '2026-06-12 10:00:10', TIMESTAMP '2026-06-12 10:01:00', TIMESTAMP '2026-07-12 10:01:00'),
 
--- RANKING — FAILED (error_message required by entity when FAILED)
+
 ('4a000000-0000-4000-8000-0000000000a9', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'RANKING',
  '{"eventId": "9d1822f7-ec66-52fe-8569-4faeb6b0a85b", "roundId": "d7104abc-8192-5a20-bcd8-4b99748297bb"}'::jsonb,
  'FAILED', NULL, NULL, NULL, NULL, 'No confirmed scores found for the requested round.',
  TIMESTAMP '2026-06-12 10:30:00', TIMESTAMP '2026-06-12 10:30:05', TIMESTAMP '2026-06-12 10:30:15', NULL),
 
--- TEAM_LIST — DONE but EXPIRED (expires_at in the past -> tests retry / expired download)
+
 ('4a000000-0000-4000-8000-0000000000aa', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'TEAM_LIST',
  '{"eventId": "6953e3ce-f471-540d-a19d-b9224bf9870e"}'::jsonb,
  'DONE', 'https://example.com/exports/spring2025-team-list.csv', 'spring2025-team-list.csv', 1024, 6, NULL,
  TIMESTAMP '2026-05-01 09:00:00', TIMESTAMP '2026-05-01 09:00:05', TIMESTAMP '2026-05-01 09:00:20', TIMESTAMP '2026-05-03 09:00:20'),
 
--- SCORE_REPORT — PROCESSING (Spring 2025 completed event)
+
 ('4a000000-0000-4000-8000-0000000000ab', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'SCORE_REPORT',
  '{"eventId": "6953e3ce-f471-540d-a19d-b9224bf9870e", "roundId": "0a07562f-7cb6-54f8-bd66-9d8332cb2781"}'::jsonb,
  'PROCESSING', NULL, NULL, NULL, NULL, NULL,

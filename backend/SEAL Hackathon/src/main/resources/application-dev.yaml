@@ -7,7 +7,7 @@ spring:
     show-sql: true
 
   flyway:
-    enabled: false
+    enabled: true
 
 logging:
   level:
