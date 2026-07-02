@@ -15,6 +15,7 @@ import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.RblResearchService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,8 +35,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RblResearchServiceImpl implements RblResearchService {
 
-    private static final double HIGH_VARIANCE_THRESHOLD = 2.0d;
     private static final String HASH_PREFIX = "SEAL-RBL-v1:";
+
+    @Value("${app.rbl.variance-threshold-points:3.0}")
+    private double highVarianceThreshold;
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -286,7 +289,7 @@ public class RblResearchServiceImpl implements RblResearchService {
     ) {
         return scoreRepository.findConfirmedScoresForRblDashboard(eventId, roundId, trackId)
                 .stream()
-                .filter(score -> score == null || technicalFilter
+                .filter(score -> technicalFilter == null || technicalFilter
                         .equals(Boolean.TRUE.equals(score.getEventCriteria().getEffectiveIsTechnical())))
                 .filter(score -> judgeTypeFilter == null
                         || judgeTypeFilter == score.getJudge().getJudgeType())
@@ -321,7 +324,7 @@ public class RblResearchServiceImpl implements RblResearchService {
                 stats.max(),
                 scores.size(),
                 judgeIds.size(),
-                stats.standardDeviation() >= HIGH_VARIANCE_THRESHOLD
+                stats.standardDeviation() >= highVarianceThreshold
         );
     }
 
@@ -341,7 +344,7 @@ public class RblResearchServiceImpl implements RblResearchService {
                 stats.min(),
                 stats.max(),
                 scores.size(),
-                stats.standardDeviation() >= HIGH_VARIANCE_THRESHOLD
+                stats.standardDeviation() >= highVarianceThreshold
         );
     }
 

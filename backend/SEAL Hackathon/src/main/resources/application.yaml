@@ -100,6 +100,8 @@ app:
     deactivation-delay-hours: 24
     deactivation-initial-delay-ms: 60000
     deactivation-delay-ms: 3600000
+  rbl:
+    variance-threshold-points: 3.0
   unverified-account:
     retention-days: 7
     anonymization-initial-delay-ms: 60000
