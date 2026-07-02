@@ -94,6 +94,10 @@ app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
   email-verification-expiration-minutes: 1440
   password-reset-expiration-minutes: 15
+  unverified-account:
+    retention-days: 7
+    anonymization-initial-delay-ms: 60000
+    anonymization-delay-ms: 3600000
   login:
     max-failed-attempts: 5
     lock-duration-minutes: 15

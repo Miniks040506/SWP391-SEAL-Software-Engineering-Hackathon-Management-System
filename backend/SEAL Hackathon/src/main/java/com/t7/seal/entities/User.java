@@ -49,7 +49,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "email", nullable = false, unique = true, length = 255, updatable = false)
+    @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
     // BCrypt password hash.
@@ -302,6 +302,41 @@ public class User {
 
     public void deactivate() {
         this.status = UserStatus.DEACTIVATED;
+    }
+
+    public void anonymizeUnverifiedAccount(String anonymizedEmail, String anonymizedPasswordHash) {
+        if (!isUnverified()) {
+            throw new IllegalStateException("Only unverified accounts can be anonymized.");
+        }
+
+        if (anonymizedEmail == null || anonymizedEmail.isBlank()) {
+            throw new IllegalArgumentException("Anonymized email is required.");
+        }
+
+        if (anonymizedPasswordHash == null || anonymizedPasswordHash.isBlank()) {
+            throw new IllegalArgumentException("Anonymized password hash is required.");
+        }
+
+        this.email = anonymizedEmail;
+        this.passwordHash = anonymizedPasswordHash;
+        this.fullName = "Anonymized User";
+        this.phone = null;
+        this.emailVerifiedAt = null;
+        this.emailVerificationToken = null;
+        this.emailVerificationExpiresAt = null;
+        this.oauthProvider = null;
+        this.oauthProviderId = null;
+        this.passwordResetToken = null;
+        this.passwordResetExpiresAt = null;
+        this.avatarUrl = null;
+        this.lastLoginAt = null;
+        this.failedLoginCount = 0;
+        this.lockedUntil = null;
+        this.status = UserStatus.DEACTIVATED;
+
+        if (this.studentProfile != null) {
+            this.studentProfile.anonymize();
+        }
     }
 
     /**
