@@ -92,7 +92,7 @@ jwt:
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
-  email-verification-expiration-minutes: 30
+  email-verification-expiration-minutes: 1440
   password-reset-expiration-minutes: 15
   login:
     max-failed-attempts: 5

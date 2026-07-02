@@ -38,7 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenGenerator tokenGenerator;
     private final EmailService emailService;
 
-    @Value("${app.email-verification-expiration-minutes:30}")
+    @Value("${app.email-verification-expiration-minutes:1440}")
     private int emailVerificationExpirationMinutes;
 
     @Value("${app.password-reset-expiration-minutes:15}")
