@@ -1,6 +1,7 @@
 package com.t7.seal.response.round;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record RoundOperationStatusResponse(
@@ -17,6 +18,12 @@ public record RoundOperationStatusResponse(
         boolean canOpen,
         boolean canClose,
         boolean canLockSubmissions,
+        boolean deadlineConfigured,
+        boolean criteriaConfigured,
+        boolean judgeAssignmentsConfigured,
+        long criteriaCount,
+        long trackCount,
+        List<String> openBlockers,
         long submittedOrLateSubmissionCount,
         long draftSubmissionCount,
         long judgeAssignmentCount

@@ -1386,7 +1386,7 @@ public class RoundServiceImpl implements RoundService {
                 .countSubmittedOrLateByRoundAndTrackNullable(round.getId(), null);
 
         long drafts = submissionRepository.findDraftsByRoundId(round.getId()).size();
-        long assignmentCount = roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(round.getId()).size();
+        RoundOpenReadiness readiness = buildRoundOpenReadiness(round);
 
         return new RoundOperationStatusResponse(
                 round.getId(),
@@ -1405,9 +1405,75 @@ public class RoundServiceImpl implements RoundService {
                 round.getStatus() == RoundStatus.OPEN,
                 (round.getStatus() == RoundStatus.OPEN || round.getStatus() == RoundStatus.CLOSED)
                         && round.getSubmissionLockedAt() == null,
+                readiness.deadlineConfigured(),
+                readiness.criteriaConfigured(),
+                readiness.judgeAssignmentsConfigured(),
+                readiness.criteriaCount(),
+                readiness.trackCount(),
+                readiness.openBlockers(),
                 submittedOrLate,
                 drafts,
-                assignmentCount
+                readiness.judgeAssignmentCount()
         );
+    }
+
+    private RoundOpenReadiness buildRoundOpenReadiness(Round round) {
+        boolean deadlineConfigured = round.getStartAt() != null
+                && round.getEndAt() != null
+                && round.getSubmissionDeadline() != null
+                && round.getJudgingDeadline() != null;
+
+        long criteriaCount = countCriteriaForRound(round);
+        boolean criteriaConfigured = criteriaCount > 0;
+
+        List<Track> tracks = trackRepository.findByEventIdOrderByNameAsc(round.getEvent().getId());
+        List<RoundJudgeAssignment> assignments =
+                roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(round.getId());
+
+        boolean hasGlobalAssignment = assignments.stream()
+                .anyMatch(RoundJudgeAssignment::isAssignedToAllTracks);
+        Set<UUID> assignedTrackIds = assignments.stream()
+                .map(RoundJudgeAssignment::getTrack)
+                .filter(Objects::nonNull)
+                .map(Track::getId)
+                .collect(Collectors.toSet());
+        boolean judgeAssignmentsConfigured = !tracks.isEmpty()
+                && (hasGlobalAssignment || tracks.stream()
+                .map(Track::getId)
+                .allMatch(assignedTrackIds::contains));
+
+        List<String> openBlockers = new ArrayList<>();
+        if (!deadlineConfigured) {
+            openBlockers.add("Configure round start, end, submission, and judging deadlines.");
+        }
+        if (!criteriaConfigured) {
+            openBlockers.add("Configure at least one active scoring criterion for this round.");
+        }
+        if (tracks.isEmpty()) {
+            openBlockers.add("Create at least one event track.");
+        } else if (!judgeAssignmentsConfigured) {
+            openBlockers.add("Assign at least one judge to every event track for this round.");
+        }
+
+        return new RoundOpenReadiness(
+                deadlineConfigured,
+                criteriaConfigured,
+                judgeAssignmentsConfigured,
+                criteriaCount,
+                tracks.size(),
+                assignments.size(),
+                List.copyOf(openBlockers)
+        );
+    }
+
+    private record RoundOpenReadiness(
+            boolean deadlineConfigured,
+            boolean criteriaConfigured,
+            boolean judgeAssignmentsConfigured,
+            long criteriaCount,
+            long trackCount,
+            long judgeAssignmentCount,
+            List<String> openBlockers
+    ) {
     }
 }
