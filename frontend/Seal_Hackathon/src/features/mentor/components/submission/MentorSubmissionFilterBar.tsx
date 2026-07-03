@@ -83,12 +83,14 @@ export const MentorSubmissionFilterBar = ({ filters, onChange, rounds = [] }: Pr
             value={localSearch}
             onChange={handleTextChange}
             sx={filterInputSx}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" className="text-gray-400" />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" className="text-gray-400" />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
         </div>

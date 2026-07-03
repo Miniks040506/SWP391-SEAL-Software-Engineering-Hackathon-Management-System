@@ -10,7 +10,6 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 
-import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import FolderOffOutlinedIcon from "@mui/icons-material/FolderOffOutlined";
 
 import type { SubmissionSummaryResponse } from "@/types/submission.types";
