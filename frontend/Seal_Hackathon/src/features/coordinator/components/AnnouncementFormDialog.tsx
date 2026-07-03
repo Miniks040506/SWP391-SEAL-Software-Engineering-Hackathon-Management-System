@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
+import { Controller, FormProvider, useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import Button from "@mui/material/Button";
@@ -58,7 +58,7 @@ export const AnnouncementFormDialog = ({
   const isEditMode = Boolean(initialAnnouncement);
 
   const methods = useForm<AnnouncementFormValues>({
-    resolver: zodResolver(announcementFormSchema),
+    resolver: zodResolver(announcementFormSchema) as Resolver<AnnouncementFormValues>,
     defaultValues: {
       ...initialAnnouncementFormValues,
       eventId: selectedEventId,

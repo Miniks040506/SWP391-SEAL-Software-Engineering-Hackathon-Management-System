@@ -39,27 +39,27 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const mockCoordinatorService = {
   eventApi: {
-    getAllEvents: async (params?: any) => {
+    getAllEvents: async (_params?: any) => {
       await delay(300);
       return { content: coordinatorEventsMock, page: 0, size: 10, totalElements: coordinatorEventsMock.length, totalPages: 1 };
     },
-    getEventById: async (id: UUID) => {
+    getEventById: async (_id: UUID) => {
       await delay(300);
       return editEventMock;
     },
     createEvent: async (p: any) => { await delay(300); return p; },
-    updateEvent: async (id: UUID, p: any) => { await delay(300); return p; },
-    deleteEvent: async (id: UUID) => { await delay(300); },
+    updateEvent: async (_id: UUID, p: any) => { await delay(300); return p; },
+    deleteEvent: async (_id: UUID) => { await delay(300); },
   },
 
   trackApi: {
-    getTracksByEvent: async (id: UUID) => {
+    getTracksByEvent: async (_id: UUID) => {
       await delay(300);
       return editEventMock.tracks;
     },
-    createTrack: async (id: UUID, p: any) => { await delay(300); return p; },
-    updateTrack: async (id: UUID, p: any) => { await delay(300); return p; },
-    deleteTrack: async (id: UUID) => { await delay(300); },
+    createTrack: async (_id: UUID, p: any) => { await delay(300); return p; },
+    updateTrack: async (_id: UUID, p: any) => { await delay(300); return p; },
+    deleteTrack: async (_id: UUID) => { await delay(300); },
     getMentorAssignments: async (trackId: UUID) => {
       await delay(300);
       return mentorAssignmentsMock.filter(m => m.trackId === trackId);
@@ -77,20 +77,20 @@ export const mockCoordinatorService = {
       mentorAssignmentsMock.push(newAssign);
       return newAssign;
     },
-    removeMentorAssignment: async (trackId: UUID, assignId: UUID) => {
+    removeMentorAssignment: async (_trackId: UUID, assignId: UUID) => {
       await delay(400);
       mentorAssignmentsMock = mentorAssignmentsMock.filter(m => m.id !== assignId);
     }
   },
 
   roundApi: {
-    getRoundsByEvent: async (id: UUID) => {
+    getRoundsByEvent: async (_id: UUID) => {
       await delay(300);
       return editEventMock.tracks.flatMap(t => t.rounds);
     },
-    createRound: async (id: UUID, p: any) => { await delay(300); return p; },
-    updateRound: async (id: UUID, p: any) => { await delay(300); return p; },
-    deleteRound: async (id: UUID) => { await delay(300); },
+    createRound: async (_id: UUID, p: any) => { await delay(300); return p; },
+    updateRound: async (_id: UUID, p: any) => { await delay(300); return p; },
+    deleteRound: async (_id: UUID) => { await delay(300); },
     getJudgeAssignments: async (roundId: UUID) => {
       await delay(300);
       return judgeAssignmentsMock.filter(j => j.roundId === roundId);
@@ -110,14 +110,14 @@ export const mockCoordinatorService = {
       judgeAssignmentsMock.push(newAssign);
       return newAssign;
     },
-    removeJudgeAssignment: async (roundId: UUID, assignId: UUID) => {
+    removeJudgeAssignment: async (_roundId: UUID, assignId: UUID) => {
       await delay(400);
       judgeAssignmentsMock = judgeAssignmentsMock.filter(j => j.id !== assignId);
     }
   },
 
   prizeApi: {
-    getPrizesByEvent: async (id: UUID) => {
+    getPrizesByEvent: async (_id: UUID) => {
       await delay(300);
       return [...prizesMock];
     },
@@ -125,7 +125,7 @@ export const mockCoordinatorService = {
       await delay(300);
       return prizesMock.find(p => p.id === id);
     },
-    getPublishedAwards: async (id: UUID) => {
+    getPublishedAwards: async (_id: UUID) => {
       await delay(300);
       return prizesMock.filter(p => p.awardedTeamId);
     },
@@ -184,7 +184,7 @@ export const mockCoordinatorService = {
       }
       throw new Error("Prize not found");
     },
-    clearAward: async (prizeId: UUID, payload: any) => {
+    clearAward: async (prizeId: UUID, _payload: any) => {
       await delay(300);
       const index = prizesMock.findIndex(prize => prize.id === prizeId);
       if (index !== -1) {
@@ -218,7 +218,7 @@ export const mockCoordinatorService = {
   },
 
   rankingApi: {
-    getPublicEventLeaderboard: async (eventId: UUID, params?: any) => {
+    getPublicEventLeaderboard: async (eventId: UUID, _params?: any) => {
       await delay(300);
       return [
         {
@@ -255,7 +255,7 @@ export const mockCoordinatorService = {
         }
       ];
     },
-    getPublicTrackLeaderboard: async (eventId: UUID, trackId: UUID, params?: any) => {
+    getPublicTrackLeaderboard: async (_eventId: UUID, _trackId: UUID, _params?: any) => {
       await delay(300);
       return []; // Return empty for other tracks for simplicity
     }
