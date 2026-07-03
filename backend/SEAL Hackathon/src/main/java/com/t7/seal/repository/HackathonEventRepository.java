@@ -18,14 +18,14 @@ public interface HackathonEventRepository extends JpaRepository<HackathonEvent, 
     @Query("""
             SELECT e FROM HackathonEvent e 
                 WHERE e.id = :eventId 
-                    AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED')
+                    AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED', 'ARCHIVED')
             """)
     Optional<HackathonEvent> findPublicEventById(
             @Param("eventId") UUID eventId);
 
     @Query("""
                 SELECT e FROM HackathonEvent e
-                        WHERE CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED')
+                        WHERE CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED', 'ARCHIVED')
                                 AND( :season IS NULL OR CAST(e.season AS STRING) = :season)
                                         AND (:status IS NULL OR CAST(e.status AS STRING) = :status)
                                                 AND (:year IS NULL OR e.year = :year)

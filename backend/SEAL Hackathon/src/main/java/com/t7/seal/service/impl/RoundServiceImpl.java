@@ -925,7 +925,8 @@ public class RoundServiceImpl implements RoundService {
         RegistrationStatus status = round.getEvent().getStatus();
 
         if (status == RegistrationStatus.COMPLETED
-                || status == RegistrationStatus.CANCELLED) {
+                || status == RegistrationStatus.CANCELLED
+                || status == RegistrationStatus.ARCHIVED) {
             throw new ConflictException("Advance rules cannot be edited in this status " + status + ".");
         }
 

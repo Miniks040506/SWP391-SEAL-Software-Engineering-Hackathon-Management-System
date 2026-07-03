@@ -28,6 +28,15 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
     Page<Team> findByTrackIdOrderByRegisteredAtDescCreatedAtDesc(UUID trackId, Pageable pageable);
 
     @Query("""
+            SELECT COUNT(t) > 0
+            FROM Team t
+            JOIN t.track tr
+            JOIN tr.event e
+            WHERE e.id = :eventId
+            """)
+    boolean existsByEventId(@Param("eventId") UUID eventId);
+
+    @Query("""
             SELECT COUNT(t) FROM Team t 
                         WHERE t.track.id = :trackId
                                     AND CAST(t.status AS string) NOT IN ('FORMING')

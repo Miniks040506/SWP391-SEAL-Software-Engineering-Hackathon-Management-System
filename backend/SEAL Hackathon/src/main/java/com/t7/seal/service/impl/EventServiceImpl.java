@@ -12,6 +12,7 @@ import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
+import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.repository.TrackRepository;
 import com.t7.seal.request.event.CreateEventRequest;
 import com.t7.seal.request.event.UpdateEventRequest;
@@ -41,6 +42,7 @@ public class EventServiceImpl implements EventService {
     private final HackathonEventRepository hackathonEventRepository;
     private final TrackRepository trackRepository;
     private final RoundRepository roundRepository;
+    private final TeamRepository teamRepository;
     private final CurrentUserService currentUserService;
 
     private static final int MAX_PAGE_SIZE = 50;
@@ -231,7 +233,7 @@ public class EventServiceImpl implements EventService {
             case REGISTRATION -> RegistrationStatus.ONGOING;
             case ONGOING -> RegistrationStatus.JUDGING;
             case JUDGING -> RegistrationStatus.COMPLETED;
-            case COMPLETED, CANCELLED -> throw new ConflictException("Event has no next status.");
+            case COMPLETED, CANCELLED, ARCHIVED -> throw new ConflictException("Event has no next status.");
         };
 
         changeEventStatus(event, nextStatus);
@@ -250,7 +252,11 @@ public class EventServiceImpl implements EventService {
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
-        changeEventStatus(event, RegistrationStatus.CANCELLED);
+        RegistrationStatus deletedStatus = teamRepository.existsByEventId(eventId)
+                ? RegistrationStatus.ARCHIVED
+                : RegistrationStatus.CANCELLED;
+
+        changeEventStatus(event, deletedStatus);
         event.setUpdatedAt(LocalDateTime.now());
 
         HackathonEvent saved = hackathonEventRepository.save(event);
@@ -401,13 +407,19 @@ public class EventServiceImpl implements EventService {
 
         if (status == RegistrationStatus.JUDGING
                 || status == RegistrationStatus.COMPLETED
-                || status == RegistrationStatus.CANCELLED) {
+                || status == RegistrationStatus.CANCELLED
+                || status == RegistrationStatus.ARCHIVED) {
             throw new ConflictException("Event information is locked in status " + status + ".");
         }
     }
 
     private void changeEventStatus(HackathonEvent event, RegistrationStatus requestedStatus) {
         if (requestedStatus == event.getStatus()) {
+            return;
+        }
+
+        if (requestedStatus == RegistrationStatus.ARCHIVED) {
+            event.setStatus(RegistrationStatus.ARCHIVED);
             return;
         }
 
@@ -426,6 +438,7 @@ public class EventServiceImpl implements EventService {
             case COMPLETED -> event.complete();
             case DRAFT -> throw new BadRequestException("Event status cannot move back to DRAFT.");
             case CANCELLED -> throw new BadRequestException("Invalid status transition.");
+            case ARCHIVED -> throw new BadRequestException("Invalid status transition.");
         }
     }
 

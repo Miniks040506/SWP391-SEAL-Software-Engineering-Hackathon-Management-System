@@ -28,7 +28,7 @@ public interface RoundRepository extends JpaRepository<Round, UUID> {
             SELECT r FROM Round r
                 JOIN r.event e 
                     WHERE e.id = :eventId
-                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
+                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED', 'ARCHIVED')
                             ORDER BY r.orderIndex
             """)
     List<Round> findPublicByEventIdOrderByOrderIndexAsc(
@@ -38,7 +38,7 @@ public interface RoundRepository extends JpaRepository<Round, UUID> {
             SELECT r FROM Round r
                 JOIN r.event e 
                     WHERE r.id = :roundId
-                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
+                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED', 'ARCHIVED')
                             ORDER BY r.orderIndex
             """)
     Optional<Round> findPublicById(
