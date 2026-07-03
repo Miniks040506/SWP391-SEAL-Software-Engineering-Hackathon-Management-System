@@ -146,6 +146,26 @@ public class Team {
         registrationRejectionReason = reason;
     }
 
+    // Marks a non-admitted team as incomplete and prevents further team intake.
+    public void markIncomplete(User reviewer, String reason, LocalDateTime now) {
+        if (status != TeamStatus.FORMING && status != TeamStatus.COMPLETE) {
+            throw new IllegalStateException("Only non-admitted teams can be marked incomplete.");
+        }
+
+        status = TeamStatus.INCOMPLETE;
+        joinCodeEnabled = false;
+        updatedAt = now;
+
+        if (registrationStatus == TeamRegistrationStatus.PENDING_APPROVAL) {
+            registrationStatus = TeamRegistrationStatus.REJECTED;
+            registrationReviewedAt = now;
+            registrationReviewedBy = reviewer;
+            registrationRejectionReason = reason;
+        } else if (registrationRejectionReason == null || registrationRejectionReason.isBlank()) {
+            registrationRejectionReason = reason;
+        }
+    }
+
     // Advances a registered or competing team.
     public void advance() {
         if (status != TeamStatus.REGISTERED && status != TeamStatus.COMPETING) {

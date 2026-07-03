@@ -165,6 +165,17 @@ public class TeamController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @DeleteMapping("/{teamId}")
+    public ResponseEntity<Void> deleteTeam(
+            @PathVariable UUID teamId,
+            @RequestBody(required = false) ReasonRequest request,
+            Authentication authentication
+    ) {
+        teamService.deleteTeam(teamId, request, authentication);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{teamId}/members/{memberId}")
     public ResponseEntity<Void> removeMember(
             @PathVariable UUID teamId,
