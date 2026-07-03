@@ -23,6 +23,7 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
         const res = await teamApi.getCoordinatorEventTeams(params.eventId, {
           trackId: params.trackId,
           status: params.status,
+          registrationStatus: params.registrationStatus,
           search: params.search,
           page: params.page ? params.page - 1 : 0,
           size: params.size,
@@ -46,6 +47,7 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
     params.eventId,
     params.trackId,
     params.status,
+    params.registrationStatus,
     params.search,
     params.page,
     params.size,

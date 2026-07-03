@@ -12,6 +12,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import type { CoordinatorTeamListParams } from "@/types/team.types";
 import {
+  formatTeamStatusLabel,
   filterTextFieldSx,
   filterSelectSx,
   menuPropsAll,
@@ -24,6 +25,7 @@ const TEAM_STATUSES = [
   "ELIMINATED",
   "WINNER",
 ];
+const REGISTRATION_STATUSES = ["PENDING_APPROVAL", "APPROVED", "REJECTED"];
 
 type Props = {
   filters: CoordinatorTeamListParams;
@@ -61,6 +63,14 @@ export function TeamFilterBar({
     onChange({ ...filters, status: e.target.value || undefined, page: 1 });
   };
 
+  const handleRegistrationStatusChange = (e: SelectChangeEvent<string>) => {
+    onChange({
+      ...filters,
+      registrationStatus: e.target.value || undefined,
+      page: 1,
+    });
+  };
+
   const handleEventChange = (e: SelectChangeEvent<string>) => {
     onChange({
       ...filters,
@@ -85,6 +95,7 @@ export function TeamFilterBar({
       size: filters.size,
       search: undefined,
       status: undefined,
+      registrationStatus: undefined,
       eventId: undefined,
       trackId: undefined,
     });
@@ -93,7 +104,11 @@ export function TeamFilterBar({
   const filteredTracks = tracks.filter((t) => t.eventId === filters.eventId);
 
   const hasActiveFilters = Boolean(
-    filters.search || filters.status || filters.eventId || filters.trackId
+    filters.search ||
+      filters.status ||
+      filters.registrationStatus ||
+      filters.eventId ||
+      filters.trackId
   );
 
   const isTrackDisabled = !filters.eventId || filteredTracks.length === 0;
@@ -153,6 +168,36 @@ export function TeamFilterBar({
                 {TEAM_STATUSES.map((status) => (
                   <MenuItem key={status} value={status}>
                     {status}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </div>
+
+          <div className="w-full sm:w-56 md:w-64 shrink-0">
+            <FormControl size="small" fullWidth>
+              <Select
+                displayEmpty
+                name="registrationStatus"
+                value={filters.registrationStatus || ""}
+                onChange={handleRegistrationStatusChange}
+                sx={filterSelectSx}
+                MenuProps={menuPropsAll}
+                renderValue={(selected) => {
+                  if (!selected) {
+                    return (
+                      <span className="text-slate-500 dark:text-slate-400">
+                        All Registration Statuses
+                      </span>
+                    );
+                  }
+                  return formatTeamStatusLabel(selected as string);
+                }}
+              >
+                <MenuItem value="">All Registration Statuses</MenuItem>
+                {REGISTRATION_STATUSES.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {formatTeamStatusLabel(status)}
                   </MenuItem>
                 ))}
               </Select>
