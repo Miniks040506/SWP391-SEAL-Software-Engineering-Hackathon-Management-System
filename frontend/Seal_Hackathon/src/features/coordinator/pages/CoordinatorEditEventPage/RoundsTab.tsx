@@ -165,8 +165,13 @@ function validateRoundTiming(
     return false;
   }
 
-  if (!values.startAt || !values.endAt || !values.submissionDeadline) {
-    enqueueSnackbar("Round start, end, and submission deadline are required.", {
+  if (
+    !values.startAt ||
+    !values.endAt ||
+    !values.submissionDeadline ||
+    !values.judgingDeadline
+  ) {
+    enqueueSnackbar("Round start, end, submission, and judging deadlines are required.", {
       variant: "error",
     });
     return false;
@@ -205,17 +210,14 @@ function validateRoundTiming(
     return false;
   }
 
-  if (
-    values.judgingDeadline &&
-    values.submissionDeadline >= values.judgingDeadline
-  ) {
+  if (values.submissionDeadline >= values.judgingDeadline) {
     enqueueSnackbar("Judging deadline must be after submission deadline.", {
       variant: "error",
     });
     return false;
   }
 
-  if (values.judgingDeadline && values.judgingDeadline > values.endAt) {
+  if (values.judgingDeadline > values.endAt) {
     enqueueSnackbar("Judging deadline must be within the round period.", {
       variant: "error",
     });
@@ -670,7 +672,7 @@ function RoundOperationPanel({
   return (
     <div className="col-span-1 md:col-span-2 mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-black text-slate-900 dark:text-white">
             Operation status: {status.roundStatus}
           </p>
@@ -683,6 +685,46 @@ function RoundOperationPanel({
             {status.draftSubmissionCount} / Judge assignments:{" "}
             {status.judgeAssignmentCount}
           </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+            <span
+              className={`rounded-full px-2.5 py-1 ${
+                status.deadlineConfigured
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+              }`}
+            >
+              Deadlines: {status.deadlineConfigured ? "Ready" : "Missing"}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-1 ${
+                status.criteriaConfigured
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+              }`}
+            >
+              Criteria: {status.criteriaCount}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-1 ${
+                status.judgeAssignmentsConfigured
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+              }`}
+            >
+              Judge coverage: {status.judgeAssignmentsConfigured ? "Ready" : "Missing"} ({status.trackCount}{" "}
+              tracks)
+            </span>
+          </div>
+          {status.openBlockers.length > 0 && (
+            <Alert severity="warning" sx={{ mt: 1.5 }}>
+              <p className="text-xs font-bold">Complete before opening:</p>
+              <ul className="mt-1 list-disc pl-5 text-xs">
+                {status.openBlockers.map((blocker) => (
+                  <li key={blocker}>{blocker}</li>
+                ))}
+              </ul>
+            </Alert>
+          )}
           {status.submissionLockedAt && (
             <p className="mt-1 text-xs font-semibold text-rose-600">
               Locked at {formatRoundTime(status.submissionLockedAt)}
@@ -1019,6 +1061,7 @@ export function RoundsTab({
                 <TextField
                   label="Judging deadline"
                   type="datetime-local"
+                  required
                   value={newRound.judgingDeadline}
                   onChange={(event) =>
                     setNewRound((current) => ({
@@ -1185,6 +1228,7 @@ export function RoundsTab({
                   <TextField
                     label="Judging deadline"
                     type="datetime-local"
+                    required
                     value={values.judgingDeadline}
                     onChange={(event) =>
                       setEditing((current) => ({

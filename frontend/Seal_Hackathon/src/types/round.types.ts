@@ -127,6 +127,12 @@ export type RoundOperationStatusResponse = {
   canOpen: boolean;
   canClose: boolean;
   canLockSubmissions: boolean;
+  deadlineConfigured: boolean;
+  criteriaConfigured: boolean;
+  judgeAssignmentsConfigured: boolean;
+  criteriaCount: number;
+  trackCount: number;
+  openBlockers: string[];
   submittedOrLateSubmissionCount: number;
   draftSubmissionCount: number;
   judgeAssignmentCount: number;

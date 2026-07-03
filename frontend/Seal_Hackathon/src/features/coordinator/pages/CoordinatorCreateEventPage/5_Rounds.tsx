@@ -492,6 +492,7 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                   <TextField
                     label="Judging deadline"
                     type="datetime-local"
+                    required
                     fullWidth
                     sx={dateTimeFieldSx}
                     error={Boolean(roundErrors?.judgingDeadline)}

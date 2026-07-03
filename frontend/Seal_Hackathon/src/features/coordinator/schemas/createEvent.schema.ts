@@ -225,7 +225,7 @@ export const createRoundSchema = z
 
     submissionDeadline: requiredDateTimeString("Submission deadline"),
 
-    judgingDeadline: optionalTrimmedString,
+    judgingDeadline: requiredDateTimeString("Judging deadline"),
 
     advanceRules: z.array(z.custom<CreateAdvanceRuleRequest>()).default([]),
   })
