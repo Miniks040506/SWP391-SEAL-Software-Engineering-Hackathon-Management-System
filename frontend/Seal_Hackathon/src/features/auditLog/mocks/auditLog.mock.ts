@@ -22,6 +22,8 @@ const mockLogs: AuditLogResponse[] = [
     beforeState: { topScore: 90, lastCalculated: "2026-06-30" },
     afterState: { topScore: 95, lastCalculated: "2026-07-01" },
     context: { eventId: "seal-spring-2026", roundId: "final-round" },
+    ipAddress: "203.0.113.10",
+    userAgent: "Mozilla/5.0 Coordinator Browser",
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
   {
@@ -34,6 +36,8 @@ const mockLogs: AuditLogResponse[] = [
     beforeState: { status: "ACTIVE" },
     afterState: { status: "DISQUALIFIED", reason: "Plagiarism detected" },
     context: { teamId: "team-456", eventId: "seal-spring-2026" },
+    ipAddress: "198.51.100.24",
+    userAgent: "Mozilla/5.0 Admin Browser",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
   },
   {
@@ -45,6 +49,8 @@ const mockLogs: AuditLogResponse[] = [
     beforeState: null,
     afterState: { prizeId: "gold-cup", teamId: "team-123", amount: 1000 },
     context: { teamId: "team-123", eventId: "seal-spring-2026" },
+    ipAddress: null,
+    userAgent: null,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
   }
 ];

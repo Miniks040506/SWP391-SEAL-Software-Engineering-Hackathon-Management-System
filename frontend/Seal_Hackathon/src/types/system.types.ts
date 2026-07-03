@@ -37,6 +37,8 @@ export type AuditLogResponse = {
   beforeState?: unknown;
   afterState?: unknown;
   context?: unknown;
+  ipAddress?: string | null;
+  userAgent?: string | null;
   createdAt: ISODateTime;
 };
 

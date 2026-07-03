@@ -12,16 +12,19 @@ import com.t7.seal.response.system.AuditLogResponse;
 import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.validation.constraints.Max;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -31,6 +34,14 @@ import java.util.*;
 public class AuditLogServiceImpl implements AuditLogService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_IP_ADDRESS_LENGTH = 50;
+    private static final int MAX_USER_AGENT_LENGTH = 500;
+    private static final List<String> CLIENT_IP_HEADERS = List.of(
+            "X-Forwarded-For",
+            "X-Real-IP",
+            "CF-Connecting-IP",
+            "Forwarded"
+    );
 
     private final AuditLogRepository auditLogRepository;
     private final CurrentUserService currentUserService;
@@ -59,6 +70,8 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .beforeState(beforeState)
                 .afterState(afterState)
                 .context(context)
+                .ipAddress(resolveClientIpAddress())
+                .userAgent(resolveUserAgent())
                 .build();
 
         auditLogRepository.save(log);
@@ -274,7 +287,102 @@ public class AuditLogServiceImpl implements AuditLogService {
                 log.getBeforeState(),
                 log.getAfterState(),
                 log.getContext(),
+                log.getIpAddress(),
+                log.getUserAgent(),
                 log.getCreatedAt()
         );
+    }
+
+    private String resolveClientIpAddress() {
+        HttpServletRequest request = currentRequest();
+        if (request == null) {
+            return null;
+        }
+
+        for (String header : CLIENT_IP_HEADERS) {
+            String candidate = "Forwarded".equalsIgnoreCase(header)
+                    ? firstIpFromForwardedHeader(request.getHeader(header))
+                    : firstIpFromCommaSeparatedHeader(request.getHeader(header));
+            if (candidate != null) {
+                return candidate;
+            }
+        }
+
+        return normalizeNetworkValue(request.getRemoteAddr(), MAX_IP_ADDRESS_LENGTH);
+    }
+
+    private String resolveUserAgent() {
+        HttpServletRequest request = currentRequest();
+        if (request == null) {
+            return null;
+        }
+        return normalizeNetworkValue(request.getHeader("User-Agent"), MAX_USER_AGENT_LENGTH);
+    }
+
+    private HttpServletRequest currentRequest() {
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        if (attributes instanceof ServletRequestAttributes servletRequestAttributes) {
+            return servletRequestAttributes.getRequest();
+        }
+        return null;
+    }
+
+    private String firstIpFromCommaSeparatedHeader(String rawHeader) {
+        if (!StringUtils.hasText(rawHeader)) {
+            return null;
+        }
+
+        for (String part : rawHeader.split(",")) {
+            String candidate = normalizeNetworkValue(part, MAX_IP_ADDRESS_LENGTH);
+            if (candidate != null) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private String firstIpFromForwardedHeader(String rawHeader) {
+        if (!StringUtils.hasText(rawHeader)) {
+            return null;
+        }
+
+        for (String forwardedEntry : rawHeader.split(",")) {
+            for (String token : forwardedEntry.split(";")) {
+                String trimmed = token.trim();
+                if (!trimmed.regionMatches(true, 0, "for=", 0, 4)) {
+                    continue;
+                }
+                String candidate = normalizeNetworkValue(trimmed.substring(4), MAX_IP_ADDRESS_LENGTH);
+                if (candidate != null) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }
+
+    private String normalizeNetworkValue(String rawValue, int maxLength) {
+        if (!StringUtils.hasText(rawValue)) {
+            return null;
+        }
+
+        String value = rawValue.trim();
+        if ("unknown".equalsIgnoreCase(value)) {
+            return null;
+        }
+
+        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+            value = value.substring(1, value.length() - 1).trim();
+        }
+
+        if (value.startsWith("[") && value.contains("]")) {
+            value = value.substring(1, value.indexOf(']'));
+        }
+
+        if (!StringUtils.hasText(value) || "unknown".equalsIgnoreCase(value)) {
+            return null;
+        }
+
+        return value.length() <= maxLength ? value : value.substring(0, maxLength);
     }
 }
