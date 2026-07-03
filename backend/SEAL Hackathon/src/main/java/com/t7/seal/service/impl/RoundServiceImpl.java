@@ -427,6 +427,7 @@ public class RoundServiceImpl implements RoundService {
         }
 
         if (round.getStatus() != RoundStatus.OPEN
+                && round.getStatus() != RoundStatus.PENDING_LOCK
                 && round.getStatus() != RoundStatus.CLOSED) {
             throw new ConflictException("Round cannot be locked in this status " + round.getStatus() + ".");
         }
@@ -1410,7 +1411,9 @@ public class RoundServiceImpl implements RoundService {
                         && round.getSubmissionLockedAt() == null
                         && readiness.openBlockers().isEmpty(),
                 round.getStatus() == RoundStatus.OPEN,
-                (round.getStatus() == RoundStatus.OPEN || round.getStatus() == RoundStatus.CLOSED)
+                (round.getStatus() == RoundStatus.OPEN
+                        || round.getStatus() == RoundStatus.PENDING_LOCK
+                        || round.getStatus() == RoundStatus.CLOSED)
                         && round.getSubmissionLockedAt() == null,
                 readiness.deadlineConfigured(),
                 readiness.criteriaConfigured(),
