@@ -10,6 +10,8 @@ public record EventCompetitionRoundResponse(
         String description,
         String status,
         Boolean isFinal,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
         LocalDateTime submissionDeadline,
         LocalDateTime judgingDeadline,
         LocalDateTime submissionLockedAt,

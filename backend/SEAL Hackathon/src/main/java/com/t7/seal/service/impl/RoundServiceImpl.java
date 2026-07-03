@@ -53,6 +53,14 @@ public class RoundServiceImpl implements RoundService {
         assertTrackRoundEditable(event);
 
         validateCreateRoundRequest(request);
+        validateRoundSchedule(
+                event,
+                null,
+                request.startAt(),
+                request.endAt(),
+                request.submissionDeadline(),
+                request.judgingDeadline()
+        );
 
         if (roundRepository.existsByEventIdAndOrderIndex(eventId, request.orderIndex())) {
             throw new ConflictException("Round orderIndex already exists in this event");
@@ -69,6 +77,8 @@ public class RoundServiceImpl implements RoundService {
         round.setOrderIndex(request.orderIndex());
         round.setStatus(RoundStatus.UPCOMING);
         round.setIsFinal(Boolean.TRUE.equals(request.isFinal()));
+        round.setStartAt(request.startAt());
+        round.setEndAt(request.endAt());
         round.setSubmissionDeadline(request.submissionDeadline());
         round.setJudgingDeadline(request.judgingDeadline());
 
@@ -119,6 +129,8 @@ public class RoundServiceImpl implements RoundService {
                 round.getOrderIndex(),
                 round.getIsFinal(),
                 round.getStatus().name(),
+                round.getStartAt(),
+                round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline(),
                 round.getSubmissionLockedAt(),
@@ -174,6 +186,14 @@ public class RoundServiceImpl implements RoundService {
             }
         }
 
+        if (request.startAt() != null) {
+            round.setStartAt(request.startAt());
+        }
+
+        if (request.endAt() != null) {
+            round.setEndAt(request.endAt());
+        }
+
         if (request.judgingDeadline() != null) {
             boolean changesJudgingDeadline = !request.judgingDeadline().equals(round.getJudgingDeadline());
             if (changesJudgingDeadline && round.getGradingLockedAt() != null) {
@@ -185,7 +205,14 @@ public class RoundServiceImpl implements RoundService {
             }
         }
 
-        validateDeadlines(round.getSubmissionDeadline(), round.getJudgingDeadline());
+        validateRoundSchedule(
+                round.getEvent(),
+                round.getId(),
+                round.getStartAt(),
+                round.getEndAt(),
+                round.getSubmissionDeadline(),
+                round.getJudgingDeadline()
+        );
 
         if (request.isFinal() != null) {
             round.setIsFinal(request.isFinal());
@@ -836,14 +863,52 @@ public class RoundServiceImpl implements RoundService {
         if (request.orderIndex() == null || request.orderIndex() < 0) {
             throw new BadRequestException("Round orderIndex must not be negative");
         }
-
-        validateDeadlines(request.submissionDeadline(), request.judgingDeadline());
     }
 
-    private void validateDeadlines(LocalDateTime submissionDeadline, LocalDateTime judgingDeadline) {
-        if (judgingDeadline != null && submissionDeadline != null &&
-                judgingDeadline.isBefore(submissionDeadline)) {
+    private void validateRoundSchedule(
+            HackathonEvent event,
+            UUID excludedRoundId,
+            LocalDateTime startAt,
+            LocalDateTime endAt,
+            LocalDateTime submissionDeadline,
+            LocalDateTime judgingDeadline
+    ) {
+        requireTime(startAt, "Round start time");
+        requireTime(endAt, "Round end time");
+        requireTime(submissionDeadline, "Submission deadline");
+
+        if (!startAt.isBefore(endAt)) {
+            throw new BadRequestException("Round start time must be before round end time");
+        }
+
+        if (event.getCompetitionStartAt() != null && startAt.isBefore(event.getCompetitionStartAt())) {
+            throw new BadRequestException("Round start time must be within the event competition period");
+        }
+
+        if (event.getCompetitionEndAt() != null && endAt.isAfter(event.getCompetitionEndAt())) {
+            throw new BadRequestException("Round end time must be within the event competition period");
+        }
+
+        if (submissionDeadline.isBefore(startAt) || submissionDeadline.isAfter(endAt)) {
+            throw new BadRequestException("Submission deadline must be within the round period");
+        }
+
+        if (judgingDeadline != null && judgingDeadline.isBefore(submissionDeadline)) {
             throw new BadRequestException("judgingDeadline cannot be before submissionDeadline");
+        }
+
+        if (judgingDeadline != null && judgingDeadline.isAfter(endAt)) {
+            throw new BadRequestException("Judging deadline must be within the round period");
+        }
+
+        if (roundRepository.existsOverlappingRoundPeriod(event.getId(), excludedRoundId, startAt, endAt)) {
+            throw new ConflictException("Round period overlaps with another round in this event.");
+        }
+    }
+
+    private void requireTime(LocalDateTime value, String fieldName) {
+        if (value == null) {
+            throw new BadRequestException(fieldName + " is required");
         }
     }
 
@@ -874,6 +939,8 @@ public class RoundServiceImpl implements RoundService {
                 round.getOrderIndex(),
                 round.getIsFinal(),
                 round.getStatus().name(),
+                round.getStartAt(),
+                round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline()
         );
@@ -1326,6 +1393,8 @@ public class RoundServiceImpl implements RoundService {
                 round.getEvent().getId(),
                 round.getEvent().getStatus().name(),
                 round.getStatus().name(),
+                round.getStartAt(),
+                round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline(),
                 round.getSubmissionLockedAt(),

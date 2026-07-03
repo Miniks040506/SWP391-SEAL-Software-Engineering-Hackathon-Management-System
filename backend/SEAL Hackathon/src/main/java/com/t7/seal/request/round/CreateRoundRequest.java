@@ -11,6 +11,8 @@ public record CreateRoundRequest(
         @Size(max = 10000) String description,
         @NotNull Integer orderIndex,
         Boolean isFinal,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
         LocalDateTime submissionDeadline,
         LocalDateTime judgingDeadline
 ) {}

@@ -8,6 +8,8 @@ public record RoundOperationStatusResponse(
         UUID eventId,
         String eventStatus,
         String roundStatus,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
         LocalDateTime submissionDeadline,
         LocalDateTime judgingDeadline,
         LocalDateTime submissionLockedAt,

@@ -769,6 +769,8 @@ public class TeamServiceImpl implements TeamService {
                 round.getDescription(),
                 round.getStatus().name(),
                 round.getIsFinal(),
+                round.getStartAt(),
+                round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline(),
                 round.getSubmissionLockedAt(),
