@@ -29,6 +29,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RoundServiceImpl implements RoundService {
 
+    private static final double WEIGHT_SUM_TOLERANCE = 0.0001d;
+    private static final double RATIO_WEIGHT_TOTAL = 1.0d;
+    private static final double PERCENT_WEIGHT_TOTAL = 100.0d;
+
     private final HackathonEventRepository hackathonEventRepository;
     private final RoundRepository roundRepository;
     private final AdvanceRuleRepository advanceRuleRepository;
@@ -1224,13 +1228,7 @@ public class RoundServiceImpl implements RoundService {
     }
 
     private long countCriteriaForRound(Round round) {
-        if (round == null || round.getEvent() == null) {
-            return 0;
-        }
-        return round.getEvent().getEventCriteria().stream()
-                .filter(EventCriteria::isActiveCriteria)
-                .filter(criteria -> criteria.appliesToRound(round.getId()))
-                .count();
+        return getActiveCriteriaForRound(round).size();
     }
 
     private List<Ranking> executeAdvanceRules(List<Ranking> rankings, List<AdvanceRule> rules) {
@@ -1441,8 +1439,10 @@ public class RoundServiceImpl implements RoundService {
                 && round.getSubmissionDeadline() != null
                 && round.getJudgingDeadline() != null;
 
-        long criteriaCount = countCriteriaForRound(round);
+        List<EventCriteria> criteriaForRound = getActiveCriteriaForRound(round);
+        long criteriaCount = criteriaForRound.size();
         boolean criteriaConfigured = criteriaCount > 0;
+        List<String> criteriaWeightBlockers = validateCriteriaWeightsForRound(criteriaForRound);
 
         List<Track> tracks = trackRepository.findByEventIdOrderByNameAsc(round.getEvent().getId());
         List<RoundJudgeAssignment> assignments =
@@ -1466,6 +1466,8 @@ public class RoundServiceImpl implements RoundService {
         }
         if (!criteriaConfigured) {
             openBlockers.add("Configure at least one active scoring criterion for this round.");
+        } else {
+            openBlockers.addAll(criteriaWeightBlockers);
         }
         if (tracks.isEmpty()) {
             openBlockers.add("Create at least one event track.");
@@ -1482,6 +1484,82 @@ public class RoundServiceImpl implements RoundService {
                 assignments.size(),
                 List.copyOf(openBlockers)
         );
+    }
+
+    private List<EventCriteria> getActiveCriteriaForRound(Round round) {
+        if (round == null || round.getEvent() == null || round.getEvent().getEventCriteria() == null) {
+            return List.of();
+        }
+
+        return round.getEvent().getEventCriteria().stream()
+                .filter(EventCriteria::isActiveCriteria)
+                .filter(criteria -> criteria.appliesToRound(round.getId()))
+                .toList();
+    }
+
+    private List<String> validateCriteriaWeightsForRound(List<EventCriteria> criteriaForRound) {
+        if (criteriaForRound == null || criteriaForRound.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> nonPositiveCriteria = criteriaForRound.stream()
+                .filter(criteria -> effectiveWeight(criteria) <= 0)
+                .map(this::criteriaDisplayName)
+                .toList();
+        if (!nonPositiveCriteria.isEmpty()) {
+            return List.of("Each active criterion weight must be greater than 0. Invalid criteria: "
+                    + String.join(", ", nonPositiveCriteria) + ".");
+        }
+
+        double totalWeight = criteriaForRound.stream()
+                .mapToDouble(this::effectiveWeight)
+                .sum();
+        Double fullWeight = resolveFullWeightValue(totalWeight);
+        if (fullWeight == null) {
+            return List.of("Round criteria weights must total exactly 100% or 1.0. Current total is "
+                    + formatWeight(totalWeight) + ".");
+        }
+
+        List<String> fullWeightCriteria = criteriaForRound.stream()
+                .filter(criteria -> effectiveWeight(criteria) >= fullWeight)
+                .map(this::criteriaDisplayName)
+                .toList();
+        if (!fullWeightCriteria.isEmpty()) {
+            return List.of("Each active criterion weight must be less than 100%. Invalid criteria: "
+                    + String.join(", ", fullWeightCriteria) + ".");
+        }
+
+        return List.of();
+    }
+
+    private double effectiveWeight(EventCriteria criteria) {
+        Float weight = criteria == null ? null : criteria.getEffectiveWeight();
+        return weight == null ? 0.0d : weight.doubleValue();
+    }
+
+    private Double resolveFullWeightValue(double totalWeight) {
+        if (approximatelyEquals(totalWeight, RATIO_WEIGHT_TOTAL)) {
+            return RATIO_WEIGHT_TOTAL;
+        }
+        if (approximatelyEquals(totalWeight, PERCENT_WEIGHT_TOTAL)) {
+            return PERCENT_WEIGHT_TOTAL;
+        }
+        return null;
+    }
+
+    private boolean approximatelyEquals(double left, double right) {
+        return Math.abs(left - right) <= WEIGHT_SUM_TOLERANCE;
+    }
+
+    private String criteriaDisplayName(EventCriteria criteria) {
+        if (criteria == null || criteria.getEffectiveName() == null || criteria.getEffectiveName().isBlank()) {
+            return "Unnamed criterion";
+        }
+        return criteria.getEffectiveName();
+    }
+
+    private String formatWeight(double value) {
+        return String.format(Locale.US, "%.4f", value);
     }
 
     private record RoundOpenReadiness(
