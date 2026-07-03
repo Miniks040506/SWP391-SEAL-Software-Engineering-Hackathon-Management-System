@@ -15,6 +15,7 @@ import type {
   JoinTeamByCodeRequest,
   LeaveTeamRequest,
   RejectInvitationRequest,
+  RejectTeamRegistrationRequest,
   RemoveMemberRequest,
   MentorTeamDetailResponse,
   TeamDetailResponse,
@@ -141,6 +142,18 @@ export const teamApi = {
     );
   },
 
+  approveTeamRegistration(teamId: UUID) {
+    return apiRequest.post<CoordinatorTeamDetailResponse>(
+      `/teams/${teamId}/registration/approve`,
+    );
+  },
+
+  rejectTeamRegistration(teamId: UUID, payload: RejectTeamRegistrationRequest) {
+    return apiRequest.post<CoordinatorTeamDetailResponse>(
+      `/teams/${teamId}/registration/reject`,
+      payload,
+    );
+  },
   updateTeam(teamId: UUID, payload: UpdateTeamRequest) {
     return apiRequest.patch<TeamResponse>(`/teams/${teamId}`, payload);
   },
