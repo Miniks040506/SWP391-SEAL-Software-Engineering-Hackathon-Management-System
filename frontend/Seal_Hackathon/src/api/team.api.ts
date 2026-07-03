@@ -6,6 +6,7 @@ import type {
   CoordinatorTeamListParams,
   CoordinatorTeamSummaryResponse,
   CreateTeamRequest,
+  DeleteTeamRequest,
   CreateTeamJoinRequest,
   EventCompetitionResponse,
   EventCompetitionSummaryResponse,
@@ -156,6 +157,12 @@ export const teamApi = {
   },
   updateTeam(teamId: UUID, payload: UpdateTeamRequest) {
     return apiRequest.patch<TeamResponse>(`/teams/${teamId}`, payload);
+  },
+
+  deleteTeam(teamId: UUID, payload?: DeleteTeamRequest) {
+    return apiRequest.delete<void>(`/teams/${teamId}`, {
+      data: payload ?? {},
+    });
   },
 
   inviteMember(teamId: UUID, payload: InviteMemberRequest) {

@@ -2,6 +2,8 @@ import type { ISODateTime, UUID } from "@/types/common.types";
 
 export type TeamStatus =
   | "FORMING"
+  | "COMPLETE"
+  | "INCOMPLETE"
   | "REGISTERED"
   | "COMPETING"
   | "ADVANCED"
@@ -59,6 +61,10 @@ export type TransferLeaderRequest = {
 };
 
 export type LeaveTeamRequest = {
+  reason?: string;
+};
+
+export type DeleteTeamRequest = {
   reason?: string;
 };
 

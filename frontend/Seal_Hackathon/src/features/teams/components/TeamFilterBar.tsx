@@ -19,6 +19,8 @@ import {
 } from "../schemas/teams.schema";
 
 const TEAM_STATUSES = [
+  "COMPLETE",
+  "INCOMPLETE",
   "REGISTERED",
   "COMPETING",
   "ADVANCED",
@@ -161,13 +163,13 @@ export function TeamFilterBar({
                       </span>
                     );
                   }
-                  return selected as string;
+                  return formatTeamStatusLabel(selected as string);
                 }}
               >
                 <MenuItem value="">All Team Statuses</MenuItem>
                 {TEAM_STATUSES.map((status) => (
                   <MenuItem key={status} value={status}>
-                    {status}
+                    {formatTeamStatusLabel(status)}
                   </MenuItem>
                 ))}
               </Select>

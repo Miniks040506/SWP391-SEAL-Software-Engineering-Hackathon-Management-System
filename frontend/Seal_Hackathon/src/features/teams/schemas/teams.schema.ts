@@ -186,7 +186,13 @@ export const paginationSx = {
 
 export const getTeamStatusColor = (status: string) => {
   const s = status.toUpperCase();
-  if (s === "REGISTERED" || s === "COMPETING" || s === "ADVANCED" || s === "WINNER")
+  if (
+    s === "COMPLETE" ||
+    s === "REGISTERED" ||
+    s === "COMPETING" ||
+    s === "ADVANCED" ||
+    s === "WINNER"
+  )
     return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20";
   if (s === "ELIMINATED" || s === "DISQUALIFIED")
     return "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20";

@@ -17,6 +17,8 @@ function getStatusLabel(status?: string) {
 
   const labelMap: Record<string, string> = {
     FORMING: "Forming",
+    COMPLETE: "Complete",
+    INCOMPLETE: "Incomplete",
     REGISTERED: "Registered",
     COMPETING: "Competing",
     ADVANCED: "Advanced",
@@ -41,6 +43,8 @@ export const TeamStatusBadge = ({
 
   const colorMap = {
     FORMING: "warning",
+    COMPLETE: "success",
+    INCOMPLETE: "warning",
     REGISTERED: "info",
     COMPETING: "primary",
     ADVANCED: "success",
