@@ -2,10 +2,17 @@ import { create } from "zustand";
 
 export type AppTheme = "light" | "dark";
 
+type ThemeTransitionState = {
+  id: number;
+  nextTheme: AppTheme;
+};
+
 type ThemeStore = {
   theme: AppTheme;
+  transition: ThemeTransitionState | null;
   initializeTheme: () => void;
   toggleTheme: () => void;
+  clearTransition: () => void;
 };
 
 type ViewTransition = {
@@ -37,6 +44,7 @@ function applyTheme(theme: AppTheme) {
 
 export const useThemeStore = create<ThemeStore>((set, get) => ({
   theme: "light",
+  transition: null,
 
   initializeTheme: () => {
     const theme = getInitialTheme();
@@ -48,6 +56,11 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   toggleTheme: () => {
     const currentTheme = get().theme;
     const nextTheme: AppTheme = currentTheme === "dark" ? "light" : "dark";
+    const transitionState = { id: Date.now(), nextTheme };
+    const clearTransitionState = () =>
+      set((state) => state.transition?.id === transitionState.id ? { transition: null } : {});
+
+    set({ transition: transitionState });
 
     const root = document.documentElement;
     const documentWithTransition = document as DocumentWithViewTransition;
@@ -60,6 +73,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
 
     if (!documentWithTransition.startViewTransition) {
       changeTheme();
+      window.setTimeout(clearTransitionState, 1100);
       return;
     }
 
@@ -73,6 +87,9 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     transition.finished.finally(() => {
       root.classList.remove("theme-wave-transitioning");
       root.classList.remove(`theme-wave-to-${nextTheme}`);
+      clearTransitionState();
     });
   },
+
+  clearTransition: () => set({ transition: null }),
 }));

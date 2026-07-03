@@ -93,16 +93,18 @@ export const NotificationDropdown = ({
         onClose={onClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
-        PaperProps={{
-          sx: { 
-            width: 320, 
-            maxHeight: 480, 
-            borderRadius: "16px", 
-            mt: 1.5,
-            boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden" 
+        slotProps={{
+          paper: {
+            sx: {
+              width: 320,
+              maxHeight: 480,
+              borderRadius: "16px",
+              mt: 1.5,
+              boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            },
           }
         }}
       >
@@ -208,7 +210,7 @@ export const NotificationDropdown = ({
         onClose={() => setViewingNotif(null)}
         fullWidth
         maxWidth="sm"
-        PaperProps={{ sx: { borderRadius: "16px" } }}
+        slotProps={{ paper: { sx: { borderRadius: "16px" } } }}
       >
         <DialogTitle sx={{ m: 0, p: 2.5, pb: 1, display: "flex", alignItems: "flex-start", gap: 2, justifyContent: "space-between" }}>
           <div className="flex items-center gap-2">

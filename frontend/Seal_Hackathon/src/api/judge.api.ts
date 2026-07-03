@@ -2,7 +2,7 @@ import { apiRequest } from "@/api/apiRequest";
 import type {
   JudgeSubmissionAssignmentResponse,
   JudgeSubmissionQueueSummaryResponse,
-} from "@/types";
+} from "@/types/grading.types";
 import type { PageResponse, UUID } from "@/types/common.types";
 import type {
   GetJudgeSubmissionsParams,

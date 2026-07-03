@@ -1,4 +1,3 @@
-import React from 'react';
 import type { EventStatus } from '@/types/event.types';
 
 const STATUS_STYLES: Record<EventStatus, string> = {

@@ -1,4 +1,3 @@
-import React from 'react';
 import PublicIcon from '@mui/icons-material/Public';
 import MailIcon from '@mui/icons-material/Mail';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
