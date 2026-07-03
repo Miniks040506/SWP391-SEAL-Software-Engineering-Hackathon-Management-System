@@ -3,6 +3,7 @@ package com.t7.seal.service.impl;
 import com.t7.seal.domain.RoundStatus;
 import com.t7.seal.entities.Round;
 import com.t7.seal.repository.RoundRepository;
+import com.t7.seal.service.RoundDeadlineReminderService;
 import com.t7.seal.service.RoundDeadlineTransitionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.List;
 public class RoundDeadlineTransitionServiceImpl implements RoundDeadlineTransitionService {
 
     private final RoundRepository roundRepository;
+    private final RoundDeadlineReminderService roundDeadlineReminderService;
 
     @Override
     @Transactional
@@ -26,7 +28,10 @@ public class RoundDeadlineTransitionServiceImpl implements RoundDeadlineTransiti
                         LocalDateTime.now()
                 );
 
-        expiredRounds.forEach(round -> round.setStatus(RoundStatus.PENDING_LOCK));
+        expiredRounds.forEach(round -> {
+            round.setStatus(RoundStatus.PENDING_LOCK);
+            roundDeadlineReminderService.cancelSubmissionDeadlineReminders(round);
+        });
         roundRepository.saveAll(expiredRounds);
 
         return expiredRounds.size();

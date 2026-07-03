@@ -4,6 +4,8 @@ import com.t7.seal.domain.NotificationChannel;
 import com.t7.seal.domain.NotificationStatus;
 import com.t7.seal.domain.NotificationTargetScope;
 import com.t7.seal.domain.NotificationType;
+import com.t7.seal.domain.RegistrationStatus;
+import com.t7.seal.domain.RoundStatus;
 import com.t7.seal.entities.Notification;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.User;
@@ -37,6 +39,9 @@ public class RoundDeadlineReminderServiceImpl implements RoundDeadlineReminderSe
     public int synchronizeSubmissionDeadlineReminders(Round round, User actor) {
         if (round == null || round.getId() == null || round.getSubmissionDeadline() == null) {
             return 0;
+        }
+        if (!isReminderEligible(round)) {
+            return cancelSubmissionDeadlineReminders(round);
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -90,6 +95,20 @@ public class RoundDeadlineReminderServiceImpl implements RoundDeadlineReminderSe
             expected.put(deadline.minusHours(offsetHours), offsetHours);
         }
         return expected;
+    }
+
+    private boolean isReminderEligible(Round round) {
+        if (round.getSubmissionLockedAt() != null
+                || (round.getStatus() != RoundStatus.UPCOMING && round.getStatus() != RoundStatus.OPEN)
+                || round.getEvent() == null
+                || round.getEvent().getStatus() == null) {
+            return false;
+        }
+
+        RegistrationStatus eventStatus = round.getEvent().getStatus();
+        return eventStatus == RegistrationStatus.DRAFT
+                || eventStatus == RegistrationStatus.REGISTRATION
+                || eventStatus == RegistrationStatus.ONGOING;
     }
 
     private List<Notification> findScheduledReminders(Round round) {

@@ -12,6 +12,7 @@ import com.t7.seal.response.round.*;
 import com.t7.seal.response.team.TeamAdvancementDecisionResponse;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
+import com.t7.seal.service.RoundDeadlineReminderService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,13 +40,14 @@ public class RoundServiceImpl implements RoundService {
     private final ScoreRepository scoreRepository;
     private final RankingRepository rankingRepository;
     private final TeamRepository teamRepository;
+    private final RoundDeadlineReminderService roundDeadlineReminderService;
 
     private final CurrentUserService currentUserService;
 
     @Transactional
     @Override
     public RoundResponse createRound(UUID eventId, CreateRoundRequest request, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
@@ -83,6 +85,7 @@ public class RoundServiceImpl implements RoundService {
         round.setJudgingDeadline(request.judgingDeadline());
 
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.synchronizeSubmissionDeadlineReminders(saved, actor);
 
         return toRoundResponse(saved);
     }
@@ -142,7 +145,7 @@ public class RoundServiceImpl implements RoundService {
     @Transactional
     @Override
     public RoundResponse updateRound(UUID roundId, UpdateRoundRequest request, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         Round round = getRound(roundId);
 
@@ -224,6 +227,7 @@ public class RoundServiceImpl implements RoundService {
         }
 
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.synchronizeSubmissionDeadlineReminders(saved, actor);
 
         return toRoundResponse(saved);
     }
@@ -243,6 +247,7 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException("Cannot delete a round that has been locked or had advancement confirmed");
         }
 
+        roundDeadlineReminderService.cancelSubmissionDeadlineReminders(round);
         roundRepository.delete(round);
     }
 
@@ -391,6 +396,7 @@ public class RoundServiceImpl implements RoundService {
         RoundStatus before = round.getStatus();
         round.setStatus(RoundStatus.OPEN);
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.synchronizeSubmissionDeadlineReminders(saved, actor);
         saveRoundAudit(actor, round, AuditActionType.ROUND_OPEN, before.name(), saved.getStatus().name());
 
         saveRoundNotification(actor, round, NotificationType.ROUND_OPENED, "Round open", "Round " + saved.getName());
@@ -410,6 +416,7 @@ public class RoundServiceImpl implements RoundService {
         RoundStatus before = round.getStatus();
         round.setStatus(RoundStatus.CLOSED);
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.cancelSubmissionDeadlineReminders(saved);
         saveRoundAudit(actor, round, AuditActionType.ROUND_CLOSED, before.name(), saved.getStatus().name());
 
         saveRoundNotification(actor, round, NotificationType.ROUND_CLOSED, "Round closed", "Round " + saved.getName());
@@ -437,6 +444,7 @@ public class RoundServiceImpl implements RoundService {
         round.setSubmissionLockedAt(now);
         round.setStatus(RoundStatus.CLOSED);
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.cancelSubmissionDeadlineReminders(saved);
 
         List<Submission> drafts = submissionRepository.findDraftsByRoundId(saved.getId());
         drafts.forEach(draft -> draft.setStatus(SubmissionStatus.LATE));
