@@ -116,6 +116,8 @@ export const CoordinatorCreateEventPage = () => {
           "year",
           "registrationStartAt",
           "registrationEndAt",
+          "competitionStartAt",
+          "competitionEndAt",
           "varianceThresholdPoints",
           "description",
           "bannerFile",

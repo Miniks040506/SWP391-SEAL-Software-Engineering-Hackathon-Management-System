@@ -88,6 +88,10 @@ export function isCancelledEvent(status?: string | null) {
   return normalizeStatus(status) === "CANCELLED";
 }
 
+export function isArchivedEvent(status?: string | null) {
+  return normalizeStatus(status) === "ARCHIVED";
+}
+
 export function isCompletedEvent(status?: string | null) {
   const value = normalizeStatus(status);
 
@@ -109,6 +113,7 @@ export function getDisplayStatus(status?: string | null) {
   if (isJudgingEvent(value)) return "Judging";
   if (isCompletedEvent(value)) return "Completed";
   if (isCancelledEvent(value)) return "Cancelled";
+  if (isArchivedEvent(value)) return "Archived";
 
   return status || "Unknown";
 }
@@ -136,6 +141,10 @@ export function getStatusBadgeClass(status?: string | null) {
 
   if (isCancelledEvent(status)) {
     return "border-rose-100 bg-rose-50 text-rose-600";
+  }
+
+  if (isArchivedEvent(status)) {
+    return "border-slate-200 bg-slate-50 text-slate-500";
   }
 
   return "border-slate-200 bg-slate-50 text-slate-500";

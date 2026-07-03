@@ -47,6 +47,8 @@ async function createEventFlow(values: CreateEventFormValues) {
     year: Number(values.year),
     registrationStartAt: toLocalDateTime(values.registrationStartAt),
     registrationEndAt: toLocalDateTime(values.registrationEndAt),
+    competitionStartAt: toLocalDateTime(values.competitionStartAt),
+    competitionEndAt: toLocalDateTime(values.competitionEndAt),
     varianceThresholdPoints: values.varianceThresholdPoints,
     bannerUrl,
     status: "DRAFT",

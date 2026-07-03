@@ -11,6 +11,7 @@ export const EVENT_STATUSES = [
   "JUDGING",
   "COMPLETED",
   "CANCELLED",
+  "ARCHIVED",
 ] as const;
 
 export const REQUIRED_LINK_TYPES = [
@@ -95,6 +96,16 @@ export const createEventDetailsSchema = z
       .trim()
       .min(1, "Registration end time is required."),
 
+    competitionStartAt: z
+      .string()
+      .trim()
+      .min(1, "Competition start time is required."),
+
+    competitionEndAt: z
+      .string()
+      .trim()
+      .min(1, "Competition end time is required."),
+
     varianceThresholdPoints: z
       .number()
       .positive("Variance threshold must be greater than 0.")
@@ -116,6 +127,30 @@ export const createEventDetailsSchema = z
         code: z.ZodIssueCode.custom,
         path: ["registrationEndAt"],
         message: "Registration end time must be after start time.",
+      });
+    }
+
+    if (
+      values.competitionStartAt &&
+      values.competitionEndAt &&
+      values.competitionStartAt >= values.competitionEndAt
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["competitionEndAt"],
+        message: "Competition end time must be after start time.",
+      });
+    }
+
+    if (
+      values.registrationEndAt &&
+      values.competitionStartAt &&
+      values.registrationEndAt > values.competitionStartAt
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["competitionStartAt"],
+        message: "Competition must start after registration closes.",
       });
     }
   });
@@ -410,6 +445,8 @@ export const initialCreateEventFormValues: CreateEventFormValues = {
 
   registrationStartAt: "",
   registrationEndAt: "",
+  competitionStartAt: "",
+  competitionEndAt: "",
   varianceThresholdPoints: 3,
   description: "",
   bannerFile: null,

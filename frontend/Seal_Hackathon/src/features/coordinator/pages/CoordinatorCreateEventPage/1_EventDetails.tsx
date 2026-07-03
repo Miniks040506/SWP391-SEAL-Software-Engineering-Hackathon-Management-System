@@ -49,7 +49,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
         </h2>
 
         <p className="mt-2 text-sm font-medium text-gray-500 dark:text-slate-400">
-          Setup event information and registration period.
+          Setup event information, registration period, and official competition period.
         </p>
       </div>
 
@@ -137,6 +137,32 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             sx={dateTimeFieldSx}
             slotProps={{ inputLabel: { shrink: true } }}
             {...register("registrationEndAt")}
+          />
+
+          <TextField
+            label="Competition Start At"
+            type="datetime-local"
+            error={Boolean(errors.competitionStartAt)}
+            helperText={errors.competitionStartAt?.message}
+            required
+            fullWidth
+            size="small"
+            sx={dateTimeFieldSx}
+            slotProps={{ inputLabel: { shrink: true } }}
+            {...register("competitionStartAt")}
+          />
+
+          <TextField
+            label="Competition End At"
+            type="datetime-local"
+            error={Boolean(errors.competitionEndAt)}
+            helperText={errors.competitionEndAt?.message}
+            required
+            fullWidth
+            size="small"
+            sx={dateTimeFieldSx}
+            slotProps={{ inputLabel: { shrink: true } }}
+            {...register("competitionEndAt")}
           />
 
           <TextField

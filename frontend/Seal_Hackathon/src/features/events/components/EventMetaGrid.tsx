@@ -24,6 +24,13 @@ export function EventMetaGrid({ event }: EventMetaGridProps) {
       Icon: LocationOnIcon,
     },
     {
+      label: "Competition",
+      val: `${formatDateTime(event.competitionStartAt)} â†’ ${formatDateTime(
+        event.competitionEndAt,
+      )}`,
+      Icon: WorkspacePremiumIcon,
+    },
+    {
       label: "Tracks",
       val: String(event.tracks?.length ?? 0),
       Icon: GroupIcon,
@@ -36,7 +43,7 @@ export function EventMetaGrid({ event }: EventMetaGridProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 pt-6 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 pt-6 md:grid-cols-5">
       {items.map(({ label, val, Icon }) => (
         <div
           key={label}

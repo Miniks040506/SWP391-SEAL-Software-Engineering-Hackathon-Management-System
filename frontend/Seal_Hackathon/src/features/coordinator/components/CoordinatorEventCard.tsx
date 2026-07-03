@@ -1,4 +1,5 @@
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
@@ -39,6 +40,10 @@ const STATUS_STYLES: Record<string, { classes: string; label: string }> = {
   CANCELLED: {
     classes: "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
     label: "CANCELLED",
+  },
+  ARCHIVED: {
+    classes: "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300",
+    label: "ARCHIVED",
   },
 };
 
@@ -84,6 +89,24 @@ function Stat({ icon, value, label }: { icon: React.ReactNode; value: CountValue
   );
 }
 
+function formatDate(value?: string | null) {
+  if (!value) return "â€”";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "â€”";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatCompetitionPeriod(event: EventSummaryResponse) {
+  const start = formatDate(event.competitionStartAt);
+  const end = formatDate(event.competitionEndAt);
+  if (start === "â€”" && end === "â€”") return "â€”";
+  return `${start} - ${end}`;
+}
+
 export function CoordinatorEventCard({ event, trackCount, registeredTeams, onEdit, onView }: CoordinatorEventCardProps) {
   const status = normalizeStatus(event.status);
   const isHighlighted = status === "ONGOING" || status === "REGISTRATION";
@@ -101,6 +124,8 @@ export function CoordinatorEventCard({ event, trackCount, registeredTeams, onEdi
       <h2 className="mt-5 line-clamp-2 text-base font-bold text-gray-900 dark:text-white">{event.name}</h2>
 
       <div className="mt-5 space-y-3 border-y border-gray-100 py-5 dark:border-slate-700">
+        <Stat icon={<EventAvailableOutlinedIcon sx={{ fontSize: 16 }} />} value={formatCompetitionPeriod(event)} label="Competition" />
+
         <Stat icon={<LayersOutlinedIcon sx={{ fontSize: 16 }} />} value={trackCount ?? "—"} label="Tracks" />
 
         <Stat icon={<GroupsOutlinedIcon sx={{ fontSize: 16 }} />} value={registeredTeams ?? "—"} label="Registered Teams" />

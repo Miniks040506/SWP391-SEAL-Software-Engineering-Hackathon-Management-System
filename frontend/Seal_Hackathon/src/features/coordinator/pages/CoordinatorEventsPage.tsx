@@ -1,5 +1,6 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import StackedLineChartOutlinedIcon from "@mui/icons-material/StackedLineChartOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
@@ -23,7 +24,8 @@ type EventStatusFilter =
   | "DRAFT"
   | "COMPLETED"
   | "ENDED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "ARCHIVED";
 
 type EventCard = EventSummaryResponse & {
   id: UUID;
@@ -51,6 +53,7 @@ const statusTabs: Array<{ label: string; value: EventStatusFilter }> = [
   { label: "Completed", value: "COMPLETED" },
   { label: "Ended", value: "ENDED" },
   { label: "Cancelled", value: "CANCELLED" },
+  { label: "Archived", value: "ARCHIVED" },
 ];
 
 function getEventId(event: EventSummaryResponse): UUID {
@@ -130,6 +133,8 @@ function StatusBadge({ status }: { status: string }) {
             ? "border-indigo-200 bg-indigo-50 text-indigo-600"
             : status === "CANCELLED"
               ? "border-rose-200 bg-rose-50 text-rose-600"
+              : status === "ARCHIVED"
+                ? "border-slate-200 bg-slate-50 text-slate-500"
               : "border-slate-200 bg-slate-50 text-slate-500";
 
   return (
@@ -142,6 +147,24 @@ function StatusBadge({ status }: { status: string }) {
       {status}
     </span>
   );
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "â€”";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "â€”";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatCompetitionPeriod(event: EventSummaryResponse) {
+  const start = formatDate(event.competitionStartAt);
+  const end = formatDate(event.competitionEndAt);
+  if (start === "â€”" && end === "â€”") return "â€”";
+  return `${start} - ${end}`;
 }
 
 function EventManagementCard({
@@ -194,6 +217,20 @@ function EventManagementCard({
         <div className="my-5 h-px bg-slate-100 dark:bg-slate-800" />
 
         <div className="space-y-3 text-slate-600 dark:text-slate-300">
+          <div className="flex items-center gap-3">
+            <EventAvailableOutlinedIcon
+              fontSize="small"
+              className="text-slate-400"
+            />
+
+            <span>
+              <b className="text-slate-950 dark:text-white">
+                {formatCompetitionPeriod(event)}
+              </b>{" "}
+              Competition
+            </span>
+          </div>
+
           <div className="flex items-center gap-3">
             <StackedLineChartOutlinedIcon
               fontSize="small"
