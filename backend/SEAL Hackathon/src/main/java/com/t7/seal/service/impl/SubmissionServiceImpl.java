@@ -30,6 +30,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -332,13 +334,14 @@ public class SubmissionServiceImpl implements SubmissionService {
         ensureRoundCanAcceptSubmission(submission.getRound());
 
         SubmissionLinkType parsedType = parseLinkType(request.linkType());
+        String normalizedUrl = normalizeHttpUrl(request.url());
         link.setLinkType(parsedType);
-        link.setUrl(request.url().trim());
+        link.setUrl(normalizedUrl);
         link.setLabel(blankToNull(request.label()));
         link.setIsPrimary(Boolean.TRUE.equals(request.isPrimary()));
         link.setDisplayOrder(request.displayOrder() == null ? 0 : request.displayOrder());
-        link.setStorageProvider(detectStorageProvider(parsedType, request.url()));
-        link.setRepoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, request.url()));
+        link.setStorageProvider(detectStorageProvider(parsedType, normalizedUrl));
+        link.setRepoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, normalizedUrl));
 
         if (link.getStorageProvider() != SubmissionStorageProvider.AWS_S3) {
             link.setObjectKey(null);
@@ -705,14 +708,14 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private SubmissionLink toLinkEntity(Submission submission, SubmissionLinkRequest request) {
         SubmissionLinkType parsedType = parseLinkType(request.linkType());
-        String trimmedUrl = request.url().trim();
+        String normalizedUrl = normalizeHttpUrl(request.url());
         return SubmissionLink.builder()
                 .submission(submission)
                 .linkType(parsedType)
-                .url(trimmedUrl)
+                .url(normalizedUrl)
                 .label(blankToNull(request.label()))
-                .storageProvider(detectStorageProvider(parsedType, trimmedUrl))
-                .repoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, trimmedUrl))
+                .storageProvider(detectStorageProvider(parsedType, normalizedUrl))
+                .repoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, normalizedUrl))
                 .isPrimary(Boolean.TRUE.equals(request.isPrimary()))
                 .displayOrder(request.displayOrder() == null ? 0 : request.displayOrder())
                 .build();
@@ -767,6 +770,30 @@ public class SubmissionServiceImpl implements SubmissionService {
             return SubmissionStorageProvider.GITLAB;
         }
         return SubmissionStorageProvider.EXTERNAL_URL;
+    }
+
+    private String normalizeHttpUrl(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            throw new BadRequestException("Submission link URL is required.");
+        }
+
+        String trimmedUrl = rawUrl.trim();
+        URI uri;
+        try {
+            uri = new URI(trimmedUrl);
+        } catch (URISyntaxException ex) {
+            throw new BadRequestException("Submission link URL must be a valid HTTP or HTTPS URL.");
+        }
+
+        String scheme = uri.getScheme();
+        if (scheme == null
+                || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
+                || uri.getHost() == null
+                || uri.getHost().isBlank()) {
+            throw new BadRequestException("Submission link URL must start with http:// or https://.");
+        }
+
+        return trimmedUrl;
     }
 
     private SubmissionLinkType parseLinkType(String value) {
