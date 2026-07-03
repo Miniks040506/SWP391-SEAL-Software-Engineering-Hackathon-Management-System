@@ -1,5 +1,6 @@
 package com.t7.seal.repository;
 
+import com.t7.seal.domain.RoundStatus;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.Track;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,6 +25,11 @@ public interface RoundRepository extends JpaRepository<Round, UUID> {
     boolean existsByEventIdAndNameIgnoreCase(UUID eventId, String name);
 
     boolean existsByEventIdAndResultPublishedAtIsNotNull(UUID eventId);
+
+    List<Round> findByStatusAndSubmissionLockedAtIsNullAndSubmissionDeadlineLessThanEqualOrderBySubmissionDeadlineAsc(
+            RoundStatus status,
+            LocalDateTime submissionDeadline
+    );
 
     @Query("""
             SELECT COUNT(r) > 0
