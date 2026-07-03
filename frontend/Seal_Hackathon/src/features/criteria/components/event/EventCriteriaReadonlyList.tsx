@@ -1,5 +1,5 @@
-import type { EventCriteriaResponse } from "@/api";
-import type { UUID } from "@/types";
+import type { UUID } from "@/types/common.types";
+import type { EventCriteriaResponse } from "@/types/criteria.types";
 import { Chip } from "@mui/material";
 import { roundScopeText } from "../../utils/criteriaView";
 

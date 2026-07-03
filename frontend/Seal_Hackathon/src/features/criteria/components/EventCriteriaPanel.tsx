@@ -1,4 +1,6 @@
-import type { EventDetailResponse, RoundResponse, UUID } from "@/types";
+import type { UUID } from "@/types/common.types";
+import type { EventDetailResponse } from "@/types/event.types";
+import type { RoundResponse } from "@/types/round.types";
 import { useEventCriteriaPanel } from "../hooks/useEventCriteriaPanel";
 import { EventCriteriaPanelHeader } from "./event/EventCriteriaPanelHeader";
 import { Alert } from "@mui/material";

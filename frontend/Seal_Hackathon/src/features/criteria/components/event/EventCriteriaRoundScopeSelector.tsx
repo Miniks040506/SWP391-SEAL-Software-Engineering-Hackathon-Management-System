@@ -1,4 +1,5 @@
-import type { RoundResponse, UUID } from "@/types";
+import type { UUID } from "@/types/common.types";
+import type { RoundResponse } from "@/types/round.types";
 import { Alert, Checkbox, FormControlLabel } from "@mui/material";
 
 type EventCriteriaRoundScopeSelectorProps = {

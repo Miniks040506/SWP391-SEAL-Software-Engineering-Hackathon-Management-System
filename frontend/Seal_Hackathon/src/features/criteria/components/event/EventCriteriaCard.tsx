@@ -1,6 +1,5 @@
-import type { EventCriteriaResponse } from "@/types";
-import type { UUID } from "@/types";
-import type { EventCriteriaDialogState } from "@/features/criteria/components/event/EventCriteriaDialog";
+import type { UUID } from "@/types/common.types";
+import type { EventCriteriaDialogState, EventCriteriaResponse } from "@/types/criteria.types";
 import { Chip, IconButton, Tooltip } from "@mui/material";
 import { roundScopeText } from "../../utils/criteriaView";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";

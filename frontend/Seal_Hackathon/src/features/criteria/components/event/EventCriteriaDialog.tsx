@@ -1,4 +1,6 @@
-import type { EventCriteriaDialogState, RoundResponse, ScoringCriteriaResponse, UUID } from "@/types";
+import type { UUID } from "@/types/common.types";
+import type { EventCriteriaDialogState, ScoringCriteriaResponse } from "@/types/criteria.types";
+import type { RoundResponse } from "@/types/round.types";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { useEventCriteriaDialog } from "../../hooks/useEventCriteriaDialog";
 import { EventCriteriaDialogFields } from "./EventCriteriaDialogFields";

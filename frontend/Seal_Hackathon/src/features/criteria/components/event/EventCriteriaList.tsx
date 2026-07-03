@@ -1,4 +1,5 @@
-import type { EventCriteriaDialogState, EventCriteriaResponse, UUID } from "@/types";
+import type { UUID } from "@/types/common.types";
+import type { EventCriteriaDialogState, EventCriteriaResponse } from "@/types/criteria.types";
 import { Alert, Button, CircularProgress } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { EventCriteriaCard } from "./EventCriteriaCard";
