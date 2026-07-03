@@ -1,5 +1,6 @@
 package com.t7.seal.repository;
 
+import com.t7.seal.domain.HackathonSeason;
 import com.t7.seal.entities.HackathonEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +55,25 @@ public interface HackathonEventRepository extends JpaRepository<HackathonEvent, 
 
     boolean existsByNameIgnoreCaseAndYear(
             String name, Integer year);
+
+    @Query("""
+            SELECT COUNT(e) > 0
+            FROM HackathonEvent e
+            WHERE e.season = :season
+              AND (:excludedEventId IS NULL OR e.id <> :excludedEventId)
+              AND e.status NOT IN (
+                    com.t7.seal.domain.RegistrationStatus.CANCELLED,
+                    com.t7.seal.domain.RegistrationStatus.ARCHIVED
+              )
+              AND e.competitionStartAt < :competitionEndAt
+              AND e.competitionEndAt > :competitionStartAt
+            """)
+    boolean existsOverlappingCompetitionPeriod(
+            @Param("season") HackathonSeason season,
+            @Param("excludedEventId") UUID excludedEventId,
+            @Param("competitionStartAt") LocalDateTime competitionStartAt,
+            @Param("competitionEndAt") LocalDateTime competitionEndAt
+    );
 
     List<HackathonEvent> findByCreatedByIdOrderByYearDescCreatedAtDesc(UUID userId);
 

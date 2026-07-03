@@ -1,9 +1,12 @@
 package com.t7.seal.response.event;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record EventSummaryResponse(
         UUID id, String name,
         String season, Integer year,
-        String status, String bannerUrl
+        String status, String bannerUrl,
+        LocalDateTime competitionStartAt,
+        LocalDateTime competitionEndAt
 ) {}

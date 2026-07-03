@@ -148,6 +148,8 @@ public class EventServiceImpl implements EventService {
         newEvent.setYear(event.year());
         newEvent.setRegistrationOpen(event.registrationStartAt());
         newEvent.setRegistrationClose(event.registrationEndAt());
+        newEvent.setCompetitionStartAt(event.competitionStartAt());
+        newEvent.setCompetitionEndAt(event.competitionEndAt());
         if (event.varianceThresholdPoints() != null) {
             newEvent.setVarianceThresholdPoints(event.varianceThresholdPoints());
         }
@@ -204,7 +206,16 @@ public class EventServiceImpl implements EventService {
             event.setRegistrationClose(request.registrationEndAt());
         }
 
-        validateRegistrationTime(event.getRegistrationOpen(), event.getRegistrationClose());
+        applyIfNotNull(request.competitionStartAt(), event::setCompetitionStartAt);
+        applyIfNotNull(request.competitionEndAt(), event::setCompetitionEndAt);
+
+        validateEventTimeline(
+                event.getRegistrationOpen(),
+                event.getRegistrationClose(),
+                event.getCompetitionStartAt(),
+                event.getCompetitionEndAt()
+        );
+        validateNoCompetitionOverlap(event.getId(), event.getSeason(), event.getCompetitionStartAt(), event.getCompetitionEndAt());
 
         if (request.varianceThresholdPoints() != null) {
             event.setVarianceThresholdPoints(request.varianceThresholdPoints());
@@ -322,7 +333,9 @@ public class EventServiceImpl implements EventService {
                 e.getSeason().name(),
                 e.getYear(),
                 e.getStatus().name(),
-                e.getBannerUrl()
+                e.getBannerUrl(),
+                e.getCompetitionStartAt(),
+                e.getCompetitionEndAt()
         );
     }
 
@@ -339,13 +352,64 @@ public class EventServiceImpl implements EventService {
             throw new BadRequestException("Event year is required");
         }
 
-        validateRegistrationTime(request.registrationStartAt(), request.registrationEndAt());
+        validateEventTimeline(
+                request.registrationStartAt(),
+                request.registrationEndAt(),
+                request.competitionStartAt(),
+                request.competitionEndAt()
+        );
+        validateNoCompetitionOverlap(
+                null,
+                parseEnum(HackathonSeason.class, request.season(), "season"),
+                request.competitionStartAt(),
+                request.competitionEndAt()
+        );
 
     }
 
-    private void validateRegistrationTime(LocalDateTime start, LocalDateTime end) {
-        if (start != null && end != null && start.isAfter(end)) {
+    private void validateEventTimeline(
+            LocalDateTime registrationStartAt,
+            LocalDateTime registrationEndAt,
+            LocalDateTime competitionStartAt,
+            LocalDateTime competitionEndAt) {
+
+        requireTime(registrationStartAt, "Registration start time");
+        requireTime(registrationEndAt, "Registration end time");
+        requireTime(competitionStartAt, "Competition start time");
+        requireTime(competitionEndAt, "Competition end time");
+
+        if (!registrationStartAt.isBefore(registrationEndAt)) {
             throw new BadRequestException("Registration start time must be before registration end time");
+        }
+
+        if (!competitionStartAt.isBefore(competitionEndAt)) {
+            throw new BadRequestException("Competition start time must be before competition end time");
+        }
+
+        if (registrationEndAt.isAfter(competitionStartAt)) {
+            throw new BadRequestException("Registration end time must be before or equal to competition start time");
+        }
+    }
+
+    private void requireTime(LocalDateTime value, String fieldName) {
+        if (value == null) {
+            throw new BadRequestException(fieldName + " is required");
+        }
+    }
+
+    private void validateNoCompetitionOverlap(
+            UUID excludedEventId,
+            HackathonSeason season,
+            LocalDateTime competitionStartAt,
+            LocalDateTime competitionEndAt) {
+
+        if (hackathonEventRepository.existsOverlappingCompetitionPeriod(
+                season,
+                excludedEventId,
+                competitionStartAt,
+                competitionEndAt
+        )) {
+            throw new ConflictException("Competition period overlaps with another event in the same season.");
         }
     }
 
@@ -394,6 +458,8 @@ public class EventServiceImpl implements EventService {
                 event.getBannerUrl(),
                 event.getRegistrationOpen(),
                 event.getRegistrationClose(),
+                event.getCompetitionStartAt(),
+                event.getCompetitionEndAt(),
                 event.getResultPublishedAt(),
                 event.getVarianceThresholdPoints(),
                 tracks,

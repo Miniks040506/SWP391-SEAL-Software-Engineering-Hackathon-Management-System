@@ -18,6 +18,8 @@ public record EventDetailResponse(
         String bannerUrl,
         LocalDateTime registrationStartAt,
         LocalDateTime registrationEndAt,
+        LocalDateTime competitionStartAt,
+        LocalDateTime competitionEndAt,
         LocalDateTime resultPublishedAt,
         BigDecimal varianceThresholdPoints,
         List<TrackResponse> tracks,

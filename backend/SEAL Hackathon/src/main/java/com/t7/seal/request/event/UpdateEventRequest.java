@@ -14,6 +14,8 @@ public record UpdateEventRequest(
         Integer year,
         LocalDateTime registrationStartAt,
         LocalDateTime registrationEndAt,
+        LocalDateTime competitionStartAt,
+        LocalDateTime competitionEndAt,
         @DecimalMin(value = "0.0", inclusive = false)
         @Digits(integer = 6, fraction = 2)
         BigDecimal varianceThresholdPoints,

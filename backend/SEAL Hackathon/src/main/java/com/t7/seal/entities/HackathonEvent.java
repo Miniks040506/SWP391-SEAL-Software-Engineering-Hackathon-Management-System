@@ -54,6 +54,12 @@ public class HackathonEvent {
     @Column(name = "registration_close", nullable = false)
     private LocalDateTime registrationClose;
 
+    @Column(name = "competition_start_at", nullable = false)
+    private LocalDateTime competitionStartAt;
+
+    @Column(name = "competition_end_at", nullable = false)
+    private LocalDateTime competitionEndAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     @Builder.Default
