@@ -1,5 +1,5 @@
 import type { UUID } from "@/types/common.types";
-import type { RankingCalculationParams, LeaderboardParams, RoundRankingParams } from "@/types/ranking.types";
+import type { LeaderboardParams, RoundRankingParams } from "@/types/ranking.types";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -8,8 +8,6 @@ const TEAMS = [
     "Eco Builders", "Fintech Bros", "Grid Runners", "Hackers XYZ",
     "Innovators", "Java Junkies"
 ];
-
-const TRACKS = ["AI Track", "Web3 Track", "Data Track", "Open Track"];
 
 import { editEventMock } from "@/features/coordinator/mocks/coordinatorEditEvent.mock";
 
@@ -72,7 +70,7 @@ export const mockRankingService = {
         return generateRankings(params?.eventId || "mock-event", params?.roundId, params?.trackId, 10);
     },
 
-    calculateRoundRankings: async (roundId: UUID, params?: RankingCalculationParams) => {
+    calculateRoundRankings: async (roundId: UUID) => {
         await delay(800);
         return { success: true, roundId, message: "Rankings calculated successfully" };
     },

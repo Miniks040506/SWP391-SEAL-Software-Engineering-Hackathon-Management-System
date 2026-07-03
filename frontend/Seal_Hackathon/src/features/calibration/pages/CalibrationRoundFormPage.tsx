@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { useQuery } from "@tanstack/react-query";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import { Button, CircularProgress, MenuItem, TextField } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 
 import {
     CalibrationRoundForm,
@@ -36,14 +36,12 @@ export const CalibrationRoundFormPage = () => {
     const isCreateMode = !calibrationId;
 
     const { data: existingRound, isLoading: isLoadingRound } = useCalibrationRoundQuery(calibrationId as UUID);
-    const { data: eventsData, isLoading: isLoadingEvents } = useCoordinatorEventsQuery();
+    const { data: eventsData } = useCoordinatorEventsQuery();
     const events = eventsData?.items || [];
-
-    const [selectedEventId, setSelectedEventId] = useState<string>("");
 
     // Auto select event logic
     const autoSelectedEventId = events.length > 0 ? events[0].id : undefined;
-    const effectiveEventId = eventId || existingRound?.eventId || selectedEventId || autoSelectedEventId;
+    const effectiveEventId = eventId || existingRound?.eventId || autoSelectedEventId;
 
     const createMutation = useCreateCalibrationRoundMutation();
     const updateMutation = useUpdateCalibrationRoundMutation();
@@ -63,7 +61,7 @@ export const CalibrationRoundFormPage = () => {
         enabled: !!effectiveEventId,
     });
 
-    const { data: submissions = [], isLoading: isLoadingSubmissions } = useQuery({
+    const { data: submissions = [] } = useQuery({
         queryKey: ["round", selectedRoundId, "submissions"],
         queryFn: () => submissionApi.getRoundSubmissions(selectedRoundId as UUID),
         enabled: !!selectedRoundId,

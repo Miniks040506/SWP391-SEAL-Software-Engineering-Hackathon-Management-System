@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import AssessmentIcon from "@mui/icons-material/Assessment";
@@ -90,7 +90,11 @@ export const CalibrationSubmitBar = ({
                 {content}
             </div>
 
-            <Dialog open={open} onClose={() => setOpen(false)} PaperProps={{ sx: { borderRadius: "16px" } }}>
+            <Dialog
+                open={open}
+                onClose={() => setOpen(false)}
+                slotProps={{ paper: { sx: { borderRadius: "16px" } } }}
+            >
                 <DialogTitle sx={{ fontWeight: 900, color: "slate.900" }}>Submit calibration scores?</DialogTitle>
                 <DialogContent>
                     <DialogContentText sx={{ fontWeight: 500, color: "slate.600" }}>

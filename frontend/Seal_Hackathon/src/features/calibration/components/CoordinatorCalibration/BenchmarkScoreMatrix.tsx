@@ -1,4 +1,3 @@
-import React from "react";
 import { useFormContext } from "react-hook-form";
 import { TextField } from "@mui/material";
 import type { EventCriteriaResponse } from "@/types/criteria.types";

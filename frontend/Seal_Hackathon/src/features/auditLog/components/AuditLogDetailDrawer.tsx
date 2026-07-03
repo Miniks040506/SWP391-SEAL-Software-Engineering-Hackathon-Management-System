@@ -48,8 +48,10 @@ export const AuditLogDetailDrawer = ({ log, onClose }: Props) => {
       anchor="right"
       open={Boolean(log)}
       onClose={onClose}
-      PaperProps={{
-        sx: { width: { xs: "100%", sm: "600px", md: "800px" }, borderTopLeftRadius: 16, borderBottomLeftRadius: 16 }
+      slotProps={{
+        paper: {
+          sx: { width: { xs: "100%", sm: "600px", md: "800px" }, borderTopLeftRadius: 16, borderBottomLeftRadius: 16 }
+        }
       }}
     >
       {log && (
