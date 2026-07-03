@@ -6,5 +6,6 @@ public record TeamSummaryResponse(
         UUID id, String name,
         String projectTitle,
         String status,
+        String registrationStatus,
         String roleInTeam
 ) {}

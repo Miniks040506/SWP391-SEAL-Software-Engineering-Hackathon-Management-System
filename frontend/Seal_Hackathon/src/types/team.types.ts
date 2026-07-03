@@ -101,6 +101,7 @@ export type TeamSummaryResponse = {
   name: string;
   projectTitle?: string | null;
   status: TeamStatus;
+  registrationStatus?: TeamRegistrationStatus | null;
   roleInTeam: TeamMemberRole;
 };
 
@@ -122,6 +123,7 @@ export type TeamDetailResponse = {
   leaderName: string;
   trackId?: UUID | null;
   status: TeamStatus;
+  registrationStatus?: TeamRegistrationStatus | null;
   joinCode?: string | null;
   joinCodeEnabled?: boolean | null;
   members: TeamMemberResponse[];

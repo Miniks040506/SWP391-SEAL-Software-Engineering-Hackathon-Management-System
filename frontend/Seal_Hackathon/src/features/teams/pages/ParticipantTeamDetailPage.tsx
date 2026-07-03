@@ -230,10 +230,15 @@ export const TeamDetailPage = () => {
               </p>
             </div>
 
-            <TeamStatusBadge
-              status={team.status}
-              memberCount={members.length}
-            />
+            <div className="flex flex-wrap gap-2 md:justify-end">
+              <TeamStatusBadge
+                status={team.status}
+                memberCount={members.length}
+              />
+              {team.registrationStatus && (
+                <TeamStatusBadge status={team.registrationStatus} />
+              )}
+            </div>
           </div>
 
           <div className="mt-6 border-b border-gray-100 dark:border-slate-700">
@@ -406,6 +411,10 @@ export const TeamDetailPage = () => {
               <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <InfoItem label="Leader" value={team.leaderName} />
                 <InfoItem label="Team Status" value={team.status} />
+                <InfoItem
+                  label="Registration Status"
+                  value={team.registrationStatus ?? "N/A"}
+                />
 
                 <InfoItem
                   label="Track"

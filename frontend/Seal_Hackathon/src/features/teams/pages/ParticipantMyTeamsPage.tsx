@@ -39,6 +39,7 @@ type TeamSummaryView = {
   name: string;
   projectTitle?: string;
   status: string;
+  registrationStatus?: string | null;
   roleInTeam: string;
   memberCount?: number;
 };
@@ -346,14 +347,24 @@ export const MyTeamsPage = () => {
                       </div>
                     </div>
 
-                    <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                       <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
                         <p className="text-sm font-semibold text-gray-500">Role</p>
                         <div className="mt-2"><TeamStatusBadge status={team.roleInTeam} /></div>
                       </div>
                       <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
-                        <p className="text-sm font-semibold text-gray-500">Status</p>
+                        <p className="text-sm font-semibold text-gray-500">Team Status</p>
                         <div className="mt-2"><TeamStatusBadge status={team.status} /></div>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
+                        <p className="text-sm font-semibold text-gray-500">Registration</p>
+                        <div className="mt-2">
+                          {team.registrationStatus ? (
+                            <TeamStatusBadge status={team.registrationStatus} />
+                          ) : (
+                            <span className="text-xs font-bold text-gray-400">N/A</span>
+                          )}
+                        </div>
                       </div>
                       <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
                         <p className="text-sm font-semibold text-gray-500">Members</p>

@@ -127,6 +127,7 @@ public class TeamServiceImpl implements TeamService {
                 team.getLeader() == null ? null : team.getLeader().getFullName(),
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
+                team.getRegistrationStatus() == null ? null : team.getRegistrationStatus().name(),
                 team.getJoinCode(),
                 team.getJoinCodeEnabled(),
                 members.stream().map(this::toTeamMemberResponse).toList()
@@ -1154,6 +1155,7 @@ public class TeamServiceImpl implements TeamService {
                 team.getName(),
                 team.getProjectTitle(),
                 team.getStatus().name(),
+                team.getRegistrationStatus() == null ? null : team.getRegistrationStatus().name(),
                 role
         );
     }

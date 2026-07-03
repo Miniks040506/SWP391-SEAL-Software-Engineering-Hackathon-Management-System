@@ -22,11 +22,10 @@ function getStatusLabel(status?: string) {
     ADVANCED: "Advanced",
     ELIMINATED: "Eliminated",
     WINNER: "Winner",
-    // legacy fallbacks
-    APPROVED: "Registered",
-    PENDING: "Forming",
-    PENDING_APPROVAL: "Forming",
-    REJECTED: "Eliminated",
+    APPROVED: "Approved",
+    PENDING: "Pending",
+    PENDING_APPROVAL: "Pending Approval",
+    REJECTED: "Rejected",
     ACTIVE: "Competing",
   };
 
