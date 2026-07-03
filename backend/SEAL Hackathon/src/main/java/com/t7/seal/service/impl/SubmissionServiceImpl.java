@@ -544,6 +544,10 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     private void ensureTeamCanSubmit(Team team) {
+        if (team.getRegistrationStatus() != TeamRegistrationStatus.APPROVED) {
+            throw new ConflictException("Only teams with APPROVED registration may submit deliverables.");
+        }
+
         if (team.getStatus() != TeamStatus.REGISTERED
                 && team.getStatus() != TeamStatus.COMPETING
                 && team.getStatus() != TeamStatus.ADVANCED) {

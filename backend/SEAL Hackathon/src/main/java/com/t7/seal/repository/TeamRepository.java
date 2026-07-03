@@ -1,5 +1,6 @@
 package com.t7.seal.repository;
 
+import com.t7.seal.domain.TeamRegistrationStatus;
 import com.t7.seal.domain.TeamStatus;
 import com.t7.seal.entities.Team;
 import jakarta.persistence.LockModeType;
@@ -63,6 +64,7 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
             WHERE e.id = :eventId
               AND (:trackId IS NULL OR tr.id = :trackId)
               AND (:status IS NULL OR t.status = :status)
+              AND (:registrationStatus IS NULL OR t.registrationStatus = :registrationStatus)
               AND (
                     :search IS NULL OR :search = ''
                     OR LOWER(t.name) LIKE LOWER(CONCAT('%', :search, '%'))
@@ -75,6 +77,7 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
             @Param("eventId") UUID eventId,
             @Param("trackId") UUID trackId,
             @Param("status") TeamStatus status,
+            @Param("registrationStatus") TeamRegistrationStatus registrationStatus,
             @Param("search") String search,
             Pageable pageable
     );

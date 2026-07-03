@@ -8,6 +8,7 @@ public record CoordinatorTeamSummaryResponse(
         String teamName,
         String projectTitle,
         String status,
+        String registrationStatus,
         UUID eventId,
         String eventName,
         UUID trackId,
