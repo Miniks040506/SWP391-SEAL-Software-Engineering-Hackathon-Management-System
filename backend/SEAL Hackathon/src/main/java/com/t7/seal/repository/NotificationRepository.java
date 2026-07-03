@@ -21,4 +21,10 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             UUID targetId,
             NotificationStatus status
     );
+
+    List<Notification> findByTypeAndTargetScopeAndStatusOrderByScheduledAtAsc(
+            NotificationType type,
+            NotificationTargetScope targetScope,
+            NotificationStatus status
+    );
 }

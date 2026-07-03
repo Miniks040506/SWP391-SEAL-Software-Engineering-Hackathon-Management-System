@@ -6,10 +6,12 @@ import com.t7.seal.domain.NotificationTargetScope;
 import com.t7.seal.domain.NotificationType;
 import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.RoundStatus;
+import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Notification;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.User;
 import com.t7.seal.repository.NotificationRepository;
+import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RoundDeadlineReminderService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +35,7 @@ public class RoundDeadlineReminderServiceImpl implements RoundDeadlineReminderSe
     private static final DateTimeFormatter DEADLINE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final NotificationRepository notificationRepository;
+    private final RoundRepository roundRepository;
     private final NotificationService notificationService;
 
     @Override
@@ -87,6 +91,70 @@ public class RoundDeadlineReminderServiceImpl implements RoundDeadlineReminderSe
             notificationRepository.flush();
         }
         return scheduled.size();
+    }
+
+    @Override
+    @Transactional
+    public int synchronizeEventSubmissionDeadlineReminders(HackathonEvent event, User actor) {
+        if (event == null || event.getId() == null) {
+            return 0;
+        }
+
+        return roundRepository.findByEventIdOrderByOrderIndexAsc(event.getId()).stream()
+                .mapToInt(round -> synchronizeSubmissionDeadlineReminders(round, actor))
+                .sum();
+    }
+
+    @Override
+    @Transactional
+    public int cancelEventSubmissionDeadlineReminders(UUID eventId) {
+        if (eventId == null) {
+            return 0;
+        }
+
+        return roundRepository.findByEventIdOrderByOrderIndexAsc(eventId).stream()
+                .mapToInt(this::cancelSubmissionDeadlineReminders)
+                .sum();
+    }
+
+    @Override
+    @Transactional
+    public int reconcileSubmissionDeadlineReminders() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Round> candidates = roundRepository
+                .findByStatusInAndSubmissionLockedAtIsNullAndSubmissionDeadlineAfterOrderBySubmissionDeadlineAsc(
+                        List.of(RoundStatus.UPCOMING, RoundStatus.OPEN),
+                        now
+                );
+
+        int affectedCount = candidates.stream()
+                .mapToInt(round -> synchronizeSubmissionDeadlineReminders(
+                        round,
+                        round.getEvent().getCreatedBy()
+                ))
+                .sum();
+
+        Set<UUID> candidateIds = candidates.stream()
+                .map(Round::getId)
+                .collect(Collectors.toSet());
+        List<Notification> orphanedOrExpired = notificationRepository
+                .findByTypeAndTargetScopeAndStatusOrderByScheduledAtAsc(
+                        NotificationType.DEADLINE_REMINDER,
+                        NotificationTargetScope.EVENT_PARTICIPANTS,
+                        NotificationStatus.SCHEDULED
+                )
+                .stream()
+                .filter(notification -> notification.getTargetId() == null
+                        || !candidateIds.contains(notification.getTargetId()))
+                .toList();
+
+        if (!orphanedOrExpired.isEmpty()) {
+            notificationRepository.deleteAll(orphanedOrExpired);
+            notificationRepository.flush();
+            affectedCount += orphanedOrExpired.size();
+        }
+
+        return affectedCount;
     }
 
     private Map<LocalDateTime, Integer> buildExpectedSchedules(LocalDateTime deadline) {

@@ -23,6 +23,7 @@ import com.t7.seal.response.round.RoundResponse;
 import com.t7.seal.response.track.TrackResponse;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EventService;
+import com.t7.seal.service.RoundDeadlineReminderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,6 +45,7 @@ public class EventServiceImpl implements EventService {
     private final RoundRepository roundRepository;
     private final TeamRepository teamRepository;
     private final CurrentUserService currentUserService;
+    private final RoundDeadlineReminderService roundDeadlineReminderService;
 
     private static final int MAX_PAGE_SIZE = 50;
 
@@ -234,7 +236,7 @@ public class EventServiceImpl implements EventService {
     @Transactional
     @Override
     public EventDetailResponse advanceEventStatus(UUID eventId, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
@@ -251,6 +253,7 @@ public class EventServiceImpl implements EventService {
         event.setUpdatedAt(LocalDateTime.now());
 
         HackathonEvent saved = hackathonEventRepository.save(event);
+        roundDeadlineReminderService.synchronizeEventSubmissionDeadlineReminders(saved, actor);
         return buildEventDetailResponse(saved, true);
     }
 
@@ -271,6 +274,7 @@ public class EventServiceImpl implements EventService {
         event.setUpdatedAt(LocalDateTime.now());
 
         HackathonEvent saved = hackathonEventRepository.save(event);
+        roundDeadlineReminderService.cancelEventSubmissionDeadlineReminders(saved.getId());
         return buildEventDetailResponse(saved, true);
     }
 
@@ -289,7 +293,8 @@ public class EventServiceImpl implements EventService {
         changeEventStatus(event, RegistrationStatus.CANCELLED);
         event.setUpdatedAt(LocalDateTime.now());
 
-        hackathonEventRepository.save(event);
+        HackathonEvent saved = hackathonEventRepository.save(event);
+        roundDeadlineReminderService.cancelEventSubmissionDeadlineReminders(saved.getId());
     }
 
     //HELPERS

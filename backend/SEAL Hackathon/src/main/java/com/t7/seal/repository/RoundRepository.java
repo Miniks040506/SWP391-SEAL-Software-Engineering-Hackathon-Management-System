@@ -31,6 +31,11 @@ public interface RoundRepository extends JpaRepository<Round, UUID> {
             LocalDateTime submissionDeadline
     );
 
+    List<Round> findByStatusInAndSubmissionLockedAtIsNullAndSubmissionDeadlineAfterOrderBySubmissionDeadlineAsc(
+            List<RoundStatus> statuses,
+            LocalDateTime submissionDeadline
+    );
+
     @Query("""
             SELECT COUNT(r) > 0
             FROM Round r
