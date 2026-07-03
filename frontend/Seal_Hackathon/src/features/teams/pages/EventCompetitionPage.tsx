@@ -226,6 +226,9 @@ export function EventCompetitionPage() {
                   <p className="mt-1 text-xs font-semibold text-gray-500 dark:text-slate-400">
                     {roundStateLabel(round)}
                   </p>
+                  <p className="mt-1 text-xs font-semibold text-gray-500 dark:text-slate-400">
+                    {formatDateTime(round.startAt)} â†’ {formatDateTime(round.endAt)}
+                  </p>
                 </div>
                 <span
                   className={[
@@ -262,6 +265,9 @@ export function EventCompetitionPage() {
                   <h2 className="mt-1 text-2xl font-black text-gray-900 dark:text-white">
                     {selectedRound.roundName}
                   </h2>
+                  <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
+                    Round period: {formatDateTime(selectedRound.startAt)} â†’ {formatDateTime(selectedRound.endAt)}
+                  </p>
                   <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
                     Submission deadline: {formatDateTime(selectedRound.submissionDeadline)}
                   </p>

@@ -101,6 +101,8 @@ async function createEventFlow(values: CreateEventFormValues) {
         description: nullIfBlank(round.description) ?? undefined,
         orderIndex: index + 1,
         isFinal: (index + 1) === maxOrderIndex,
+        startAt: toLocalDateTime(round.startAt),
+        endAt: toLocalDateTime(round.endAt),
         submissionDeadline: toLocalDateTime(round.submissionDeadline),
         judgingDeadline: toLocalDateTime(round.judgingDeadline),
       }),

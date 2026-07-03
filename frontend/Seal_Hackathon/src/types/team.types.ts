@@ -146,6 +146,8 @@ export type EventCompetitionRoundResponse = {
   description?: string | null;
   status: string;
   isFinal: boolean;
+  startAt?: ISODateTime | null;
+  endAt?: ISODateTime | null;
   submissionDeadline?: ISODateTime | null;
   judgingDeadline?: ISODateTime | null;
   submissionLockedAt?: ISODateTime | null;

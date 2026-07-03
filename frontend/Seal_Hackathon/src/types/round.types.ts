@@ -6,6 +6,8 @@ export type CreateRoundRequest = {
   description?: string;
   orderIndex: number;
   isFinal?: boolean;
+  startAt?: ISODateTime;
+  endAt?: ISODateTime;
   submissionDeadline?: ISODateTime;
   judgingDeadline?: ISODateTime;
 };
@@ -15,6 +17,8 @@ export type UpdateRoundRequest = {
   description?: string;
   orderIndex?: number;
   isFinal?: boolean;
+  startAt?: ISODateTime;
+  endAt?: ISODateTime;
   submissionDeadline?: ISODateTime;
   judgingDeadline?: ISODateTime;
   status?: string;
@@ -79,6 +83,8 @@ export type RoundResponse = {
   orderIndex: number;
   isFinal: boolean;
   status: string;
+  startAt?: ISODateTime;
+  endAt?: ISODateTime;
   submissionDeadline?: ISODateTime;
   judgingDeadline?: ISODateTime;
 };
@@ -91,6 +97,8 @@ export type RoundDetailResponse = {
   orderIndex: number;
   isFinal: boolean;
   status: string;
+  startAt?: ISODateTime;
+  endAt?: ISODateTime;
   submissionDeadline?: ISODateTime;
   judgingDeadline?: ISODateTime;
   submissionLockedAt?: ISODateTime;
@@ -110,6 +118,8 @@ export type RoundOperationStatusResponse = {
   eventId: UUID;
   eventStatus: string;
   roundStatus: string;
+  startAt?: ISODateTime | null;
+  endAt?: ISODateTime | null;
   submissionDeadline?: ISODateTime | null;
   judgingDeadline?: ISODateTime | null;
   submissionLockedAt?: ISODateTime | null;
