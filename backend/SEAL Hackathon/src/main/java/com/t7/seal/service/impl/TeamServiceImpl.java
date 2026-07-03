@@ -512,7 +512,7 @@ public class TeamServiceImpl implements TeamService {
         }
 
         team.setTrack(track);
-        team.register(LocalDateTime.now());
+        team.submitRegistration(LocalDateTime.now());
         team.setUpdatedAt(LocalDateTime.now());
 
         Team teamSaved = teamRepository.save(team);
@@ -525,7 +525,8 @@ public class TeamServiceImpl implements TeamService {
                 .afterState(Map.of(
                         "eventId", event.getId().toString(),
                         "trackId", track.getId().toString(),
-                        "status", teamSaved.getStatus().name(),
+                        "teamStatus", teamSaved.getStatus().name(),
+                        "registrationStatus", teamSaved.getRegistrationStatus().name(),
                         "memberCount", memberCount
                 ))
                 .build()
@@ -535,8 +536,8 @@ public class TeamServiceImpl implements TeamService {
                 leader,
                 event,
                 NotificationType.TEAM_REGISTERED,
-                "Team registered to track",
-                "Team " + team.getName() + " has been registered for track " + track.getName() + ".",
+                "Team registration submitted",
+                "Team " + team.getName() + " is pending approval for track " + track.getName() + ".",
                 NotificationTargetScope.TEAM,
                 teamSaved.getId(),
                 null,
@@ -1107,6 +1108,7 @@ public class TeamServiceImpl implements TeamService {
                 team.getLeader().getFullName(),
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
+                team.getRegistrationStatus() == null ? null : team.getRegistrationStatus().name(),
                 team.getMemberCount() == null ? 0 : team.getMemberCount(),
                 team.getJoinCode(),
                 team.getJoinCodeEnabled()

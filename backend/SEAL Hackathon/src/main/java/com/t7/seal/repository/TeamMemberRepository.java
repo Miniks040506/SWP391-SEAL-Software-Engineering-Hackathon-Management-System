@@ -44,7 +44,10 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
                         AND tm.user.id = :userId
                         AND otherTeam.id <> :currentTeamId
                         AND t.event.id = :eventId
-                        AND CAST(otherTeam.status AS STRING) NOT IN ('FORMING')
+                        AND otherTeam.registrationStatus IN (
+                            com.t7.seal.domain.TeamRegistrationStatus.PENDING_APPROVAL,
+                            com.t7.seal.domain.TeamRegistrationStatus.APPROVED
+                        )
             """)
     boolean existsActiveRegisteredMembershipInEvent(
             @Param("userId") UUID userId,

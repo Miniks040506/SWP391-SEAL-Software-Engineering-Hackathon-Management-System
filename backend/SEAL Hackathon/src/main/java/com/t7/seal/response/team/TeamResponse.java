@@ -10,6 +10,7 @@ public record TeamResponse(
         String leaderName,
         UUID trackId,
         String status,
+        String registrationStatus,
         int memberCount,
         String joinCode,
         Boolean joinCodeEnabled
