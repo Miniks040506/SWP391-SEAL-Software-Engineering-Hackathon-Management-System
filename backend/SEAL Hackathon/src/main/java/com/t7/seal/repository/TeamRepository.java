@@ -153,7 +153,7 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
                     LEFT JOIN FETCH t.leader le 
                     WHERE e.id = :eventId
                         AND (:status IS NULL OR t.status = :status)
-                        AND (:trackId IS NULL OR t.id = :trackId)
+                        AND (:trackId IS NULL OR tr.id = :trackId)
                     ORDER BY tr.name ASC, t.name ASC
             """)
     List<Team> findForTeamListReport(

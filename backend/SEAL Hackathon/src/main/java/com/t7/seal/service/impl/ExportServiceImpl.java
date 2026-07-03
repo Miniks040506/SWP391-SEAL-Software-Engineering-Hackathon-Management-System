@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.domain.ExportJobStatus;
 import com.t7.seal.domain.ExportType;
+import com.t7.seal.domain.HackathonSeason;
 import com.t7.seal.domain.SubmissionStatus;
+import com.t7.seal.domain.UserStatus;
 import com.t7.seal.dto.ExportSpec;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.*;
@@ -69,6 +71,9 @@ public class ExportServiceImpl implements ExportService {
     private final RoundRepository roundRepository;
     private final TrackRepository trackRepository;
     private final ExportJobRepository exportJobRepository;
+    private final CalibrationRoundRepository calibrationRoundRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     @Override
@@ -82,10 +87,20 @@ public class ExportServiceImpl implements ExportService {
         ExportType exportType = parseExportType(request.exportType());
         Map<String, Object> params = normalizeParams(request.params());
 
+        String format = normalizeFormat(params.get("format"));
+
+        if (exportType == ExportType.ADMIN_ANNUAL_REPORT) {
+            return exportAdminAnnualReport(
+                    parseOptionalInteger(params.get("year"), "year"),
+                    parseOptionalSeason(params.get("season")),
+                    format,
+                    authentication
+            );
+        }
+
         UUID eventId = parseUUID(params.get("eventId"), "eventId");
         UUID trackId = parseOptionalUUID(params.get("trackId"), "trackId");
         UUID roundId = parseOptionalUUID(params.get("roundId"), "roundId");
-        String format = normalizeFormat(params.get("format"));
 
         EventExportRequest eventRequest = new EventExportRequest(
                 roundId,
@@ -100,6 +115,8 @@ public class ExportServiceImpl implements ExportService {
             case RANKING -> exportEventRanking(eventId, eventRequest, authentication);
             case SCORE_REPORT -> exportEventScores(eventId, eventRequest, authentication);
             case TEAM_LIST -> exportEventTeamList(eventId, eventRequest, authentication);
+            case CALIBRATION_REPORT -> exportCalibrationReport(eventId, eventRequest, authentication);
+            case FULL_EVENT_REPORT -> exportFullEventReport(eventId, eventRequest, authentication);
             case SCORE_DATASET_ANONYMIZED -> exportEventRblDataset(
                     eventId,
                     new ExportRblDatasetRequest(roundId, trackId, format),
@@ -339,6 +356,92 @@ public class ExportServiceImpl implements ExportService {
         );
     }
 
+    private ExportJobResponse exportCalibrationReport(
+            UUID eventId,
+            EventExportRequest request,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        HackathonEvent event = getEvent(eventId);
+        ExportSpec spec = exportSpec(event, ExportType.CALIBRATION_REPORT, request);
+
+        return createAndProcessJob(
+                actor,
+                spec,
+                buildCalibrationReportRows(event),
+                "calibration_report"
+        );
+    }
+
+    private ExportJobResponse exportFullEventReport(
+            UUID eventId,
+            EventExportRequest request,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanExport(actor);
+
+        HackathonEvent event = getEvent(eventId);
+        ExportSpec spec = exportSpec(event, ExportType.FULL_EVENT_REPORT, request);
+
+        return createAndProcessJob(
+                actor,
+                spec,
+                buildFullEventReportRows(event, spec),
+                "full_event_report"
+        );
+    }
+
+    private ExportJobResponse exportAdminAnnualReport(
+            Integer year,
+            HackathonSeason season,
+            String format,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureAdminCanExportSystemReports(actor);
+
+        List<HackathonEvent> scopedEvents = hackathonEventRepository.findAll()
+                .stream()
+                .filter(event -> year == null || Objects.equals(event.getYear(), year))
+                .filter(event -> season == null || event.getSeason() == season)
+                .sorted(Comparator
+                        .comparing(HackathonEvent::getYear, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(HackathonEvent::getSeason, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(HackathonEvent::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+
+        ExportSpec spec = new ExportSpec(
+                null,
+                ExportType.ADMIN_ANNUAL_REPORT,
+                null,
+                null,
+                format,
+                false,
+                true,
+                false
+        );
+
+        Map<String, Object> extraParams = new LinkedHashMap<>();
+        if (year != null) {
+            extraParams.put("year", year);
+        }
+        if (season != null) {
+            extraParams.put("season", season.name());
+        }
+        extraParams.put("scope", "SYSTEM");
+
+        return createAndProcessJob(
+                actor,
+                spec,
+                buildAdminAnnualReportRows(year, season, scopedEvents),
+                "admin_annual_report",
+                extraParams
+        );
+    }
+
     @Transactional(readOnly = true)
     @Override
     public PageResponse<ExportJobResponse> getMyExportJobs(
@@ -466,16 +569,17 @@ public class ExportServiceImpl implements ExportService {
         }
 
         Map<String, Object> params = existing.getParams();
-        UUID eventId = parseUUID(params.get("eventId"), "eventId");
+        if (existing.getExportType() == ExportType.ADMIN_ANNUAL_REPORT) {
+            return exportAdminAnnualReport(
+                    parseOptionalInteger(params.get("year"), "year"),
+                    parseOptionalSeason(params.get("season")),
+                    normalizeFormat(params.get("format")),
+                    authentication
+            );
+        }
 
-        EventExportRequest request = new EventExportRequest(
-                parseOptionalUUID(params.get("roundId"), "roundId"),
-                parseOptionalUUID(params.get("trackId"), "trackId"),
-                normalizeFormat(params.get("format")),
-                parseBoolean(params.get("includeDraftScores"), false),
-                parseBoolean(params.get("includeDisqualified"), false),
-                parseBoolean(params.get("anonymize"), false)
-        );
+        UUID eventId = parseUUID(params.get("eventId"), "eventId");
+        EventExportRequest request = eventExportRequestFromParams(params);
 
         //create a fresh job instead of mutating the old completed/failed one.
         //this keep audit history append only
@@ -483,6 +587,8 @@ public class ExportServiceImpl implements ExportService {
             case RANKING -> exportEventRanking(eventId, request, authentication);
             case SCORE_REPORT -> exportEventScores(eventId, request, authentication);
             case TEAM_LIST -> exportEventTeamList(eventId, request, authentication);
+            case CALIBRATION_REPORT -> exportCalibrationReport(eventId, request, authentication);
+            case FULL_EVENT_REPORT -> exportFullEventReport(eventId, request, authentication);
             case SCORE_DATASET_ANONYMIZED -> exportEventRblDataset(
                     eventId,
                     new ExportRblDatasetRequest(
@@ -542,15 +648,273 @@ public class ExportServiceImpl implements ExportService {
         return exportJob;
     }
 
+    private List<List<String>> buildFullEventReportRows(HackathonEvent event, ExportSpec spec) {
+        List<Round> rounds = roundRepository.findByEventIdOrderByOrderIndexAsc(event.getId());
+        List<Track> tracks = trackRepository.findByEventIdOrderByNameAsc(event.getId());
+        List<Team> teams = teamRepository.findForTeamListReport(event.getId(), spec.trackId(), null);
+        List<Ranking> rankings = rankingRepository.findByEventRoundTrackWithDetails(
+                event.getId(),
+                spec.roundId(),
+                spec.trackId()
+        );
+        List<Score> scores = scoreRepository.findForScoreExport(
+                event.getId(),
+                spec.roundId(),
+                spec.trackId(),
+                true,
+                true
+        );
+        List<CalibrationRound> calibrationRounds = calibrationRoundRepository
+                .findByEventIdOrderByStartAtAsc(event.getId());
+
+        long confirmedScores = scores.stream().filter(Score::isConfirmed).count();
+        long draftScores = scores.size() - confirmedScores;
+        List<Score> reliabilityScores = scoreRepository.findConfirmedScoresForRblDashboard(
+                event.getId(),
+                spec.roundId(),
+                spec.trackId()
+        );
+
+        List<List<String>> rows = new ArrayList<>();
+        rows.add(row("Section", "Metric", "Value", "Details"));
+        rows.add(row("Event", "Event ID", event.getId(), ""));
+        rows.add(row("Event", "Name", event.getName(), ""));
+        rows.add(row("Event", "Season", event.getSeason(), "Year: " + text(event.getYear())));
+        rows.add(row("Event", "Status", event.getStatus(), ""));
+        rows.add(row("Event", "Registration Window",
+                text(event.getRegistrationOpen()) + " to " + text(event.getRegistrationClose()), ""));
+        rows.add(row("Scope", "Round Filter", spec.roundId(), "Blank means all rounds"));
+        rows.add(row("Scope", "Track Filter", spec.trackId(), "Blank means all tracks"));
+        rows.add(row("Summary", "Track Count", tracks.size(), ""));
+        rows.add(row("Summary", "Round Count", rounds.size(), ""));
+        rows.add(row("Summary", "Team Count", teams.size(), ""));
+        rows.add(row("Summary", "Ranking Rows", rankings.size(), ""));
+        rows.add(row("Summary", "Confirmed Scores", confirmedScores, ""));
+        rows.add(row("Summary", "Draft Scores", draftScores, ""));
+        rows.add(row("Summary", "Calibration Rounds", calibrationRounds.size(), ""));
+        rows.add(row("Reliability", "ICC One-Way Estimate",
+                formatNullable(calculateIccOneWay(reliabilityScores)),
+                "Confirmed non-disqualified official scores"));
+        rows.add(row("", "", "", ""));
+
+        rows.add(row("Round", "Name", "Status", "Deadline / Publish State"));
+        for (Round round : rounds) {
+            rows.add(row(
+                    "Round",
+                    round.getName(),
+                    round.getStatus(),
+                    "submission=" + text(round.getSubmissionDeadline())
+                            + "; judging=" + text(round.getJudgingDeadline())
+                            + "; resultPublishedAt=" + text(round.getResultPublishedAt())
+            ));
+        }
+        rows.add(row("", "", "", ""));
+
+        rows.add(row("Track", "Name", "Team Limits", "Required Links"));
+        for (Track track : tracks) {
+            rows.add(row(
+                    "Track",
+                    track.getName(),
+                    text(track.getMinMembers()) + "-" + text(track.getMaxMembers())
+                            + "; maxTeams=" + text(track.getMaxTeams()),
+                    track.getRequiredLinkTypes()
+            ));
+        }
+        rows.add(row("", "", "", ""));
+
+        rows.add(row("Team", "Name", "Status", "Leader / Members"));
+        for (Team team : teams) {
+            rows.add(row(
+                    "Team",
+                    team.getName(),
+                    team.getStatus(),
+                    "leader=" + text(team.getLeader() == null ? null : team.getLeader().getFullName())
+                            + "; members=" + text(team.getMemberCount())
+                            + "; track=" + text(team.getTrack() == null ? null : team.getTrack().getName())
+            ));
+        }
+        rows.add(row("", "", "", ""));
+
+        rows.add(row("Ranking", "Round / Track / Rank", "Team", "Score / Advanced"));
+        for (Ranking ranking : rankings) {
+            Team team = ranking.getSubmission().getTeam();
+            rows.add(row(
+                    "Ranking",
+                    text(ranking.getRound().getName()) + " / "
+                            + text(ranking.getTrack().getName()) + " / #"
+                            + text(ranking.getRankPosition()),
+                    team == null ? null : team.getName(),
+                    "score=" + text(ranking.getTotalScore())
+                            + "; advanced=" + text(ranking.getIsAdvanced())
+                            + "; reason=" + text(ranking.getAdvanceReason())
+            ));
+        }
+
+        return rows;
+    }
+
+    private List<List<String>> buildCalibrationReportRows(HackathonEvent event) {
+        List<CalibrationRound> calibrationRounds = calibrationRoundRepository
+                .findByEventIdOrderByStartAtAsc(event.getId());
+
+        List<List<String>> rows = new ArrayList<>();
+        rows.add(row(
+                "Calibration ID",
+                "Event",
+                "Description",
+                "Start",
+                "End",
+                "Mandatory",
+                "Distribution Published At",
+                "Sample Submission ID",
+                "Benchmark Criteria Count",
+                "Score Count",
+                "Judge Count",
+                "Average Absolute Benchmark Deviation"
+        ));
+
+        for (CalibrationRound calibrationRound : calibrationRounds) {
+            List<CalibrationScore> scores = calibrationRound.getCalibrationScores() == null
+                    ? List.of()
+                    : calibrationRound.getCalibrationScores();
+            long judgeCount = scores.stream()
+                    .map(score -> score.getJudge().getId())
+                    .distinct()
+                    .count();
+            Double averageDeviation = average(scores.stream()
+                    .map(CalibrationScore::getAbsoluteDeviation)
+                    .filter(Objects::nonNull)
+                    .map(Float::doubleValue)
+                    .toList());
+
+            rows.add(row(
+                    calibrationRound.getId(),
+                    event.getName(),
+                    calibrationRound.getDescription(),
+                    calibrationRound.getStartAt(),
+                    calibrationRound.getEndAt(),
+                    calibrationRound.getIsMandatory(),
+                    calibrationRound.getDistributionPublishedAt(),
+                    calibrationRound.getSampleSubmission() == null
+                            ? null
+                            : calibrationRound.getSampleSubmission().getId(),
+                    calibrationRound.getBenchmarkScores() == null
+                            ? 0
+                            : calibrationRound.getBenchmarkScores().size(),
+                    scores.size(),
+                    judgeCount,
+                    formatNullable(averageDeviation)
+            ));
+        }
+
+        return rows;
+    }
+
+    private List<List<String>> buildAdminAnnualReportRows(
+            Integer year,
+            HackathonSeason season,
+            List<HackathonEvent> events
+    ) {
+        Set<UUID> eventIds = events.stream()
+                .map(HackathonEvent::getId)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        boolean eventScoped = year != null || season != null;
+
+        List<Score> confirmedScores = new ArrayList<>();
+        List<Team> teams = new ArrayList<>();
+        List<Ranking> rankings = new ArrayList<>();
+        for (HackathonEvent event : events) {
+            confirmedScores.addAll(scoreRepository.findConfirmedScoresForRblDashboard(
+                    event.getId(),
+                    null,
+                    null
+            ));
+            teams.addAll(teamRepository.findForTeamListReport(event.getId(), null, null));
+            rankings.addAll(rankingRepository.findByEventRoundTrackWithDetails(
+                    event.getId(),
+                    null,
+                    null
+            ));
+        }
+
+        List<AuditLog> scopedAuditLogs = auditLogRepository
+                .findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .filter(log -> year == null || (log.getCreatedAt() != null && log.getCreatedAt().getYear() == year))
+                .filter(log -> !eventScoped || auditLogMatchesAnyEvent(log, eventIds))
+                .toList();
+
+        Map<String, Long> auditCounts = scopedAuditLogs.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        log -> log.getActionType() == null ? "UNKNOWN" : log.getActionType().name(),
+                        TreeMap::new,
+                        java.util.stream.Collectors.counting()
+                ));
+
+        List<List<String>> rows = new ArrayList<>();
+        rows.add(row("Section", "Metric", "Value", "Scope", "Notes"));
+        rows.add(row("Scope", "Year", year == null ? "All years" : year, "", ""));
+        rows.add(row("Scope", "Season", season == null ? "All seasons" : season.name(), "", ""));
+        rows.add(row("Participation", "Events", events.size(), "system", ""));
+        rows.add(row("Participation", "Teams", teams.size(), "scoped events", ""));
+        rows.add(row("Participation", "Rankings", rankings.size(), "scoped events", ""));
+        rows.add(row("Scoring", "Confirmed Scores", confirmedScores.size(), "scoped events", ""));
+        rows.add(row("Scoring", "ICC One-Way Estimate",
+                formatNullable(calculateIccOneWay(confirmedScores)),
+                "scoped events",
+                "Confirmed non-disqualified official scores"));
+        rows.add(row("Users", "Total Users", userRepository.count(), "system", ""));
+        rows.add(row("Users", "Active Users", userRepository.countByStatus(UserStatus.ACTIVE), "system", ""));
+        rows.add(row("Users", "Unverified Users", userRepository.countByStatus(UserStatus.UNVERIFIED), "system", ""));
+        rows.add(row("Audit", "Scoped Audit Actions", scopedAuditLogs.size(), "system", ""));
+        rows.add(row("", "", "", "", ""));
+
+        rows.add(row("Event", "Name", "Status", "Teams", "ICC One-Way Estimate"));
+        for (HackathonEvent event : events) {
+            List<Score> eventScores = scoreRepository.findConfirmedScoresForRblDashboard(
+                    event.getId(),
+                    null,
+                    null
+            );
+            rows.add(row(
+                    "Event",
+                    event.getName(),
+                    event.getStatus(),
+                    teamRepository.findForTeamListReport(event.getId(), null, null).size(),
+                    formatNullable(calculateIccOneWay(eventScores))
+            ));
+        }
+        rows.add(row("", "", "", "", ""));
+
+        rows.add(row("Audit Action", "Count", "", "", ""));
+        for (Map.Entry<String, Long> entry : auditCounts.entrySet()) {
+            rows.add(row("Audit Action", entry.getKey(), entry.getValue(), "", ""));
+        }
+
+        return rows;
+    }
+
     private ExportJobResponse createAndProcessJob(
             User actor,
             ExportSpec spec,
             List<List<String>> rows,
             String filePrefix
     ) {
+        return createAndProcessJob(actor, spec, rows, filePrefix, Map.of());
+    }
+
+    private ExportJobResponse createAndProcessJob(
+            User actor,
+            ExportSpec spec,
+            List<List<String>> rows,
+            String filePrefix,
+            Map<String, Object> extraParams
+    ) {
         Map<String, Object> param = new LinkedHashMap<>();
 
-        param.put("eventId", spec.event().getId().toString());
+        if (spec.event() != null) {
+            param.put("eventId", spec.event().getId().toString());
+        }
         if (spec.roundId() != null) {
             param.put("roundId", spec.roundId().toString());
         }
@@ -561,6 +925,9 @@ public class ExportServiceImpl implements ExportService {
         param.put("includeDraftScores", spec.includeDraftScores());
         param.put("includeDisqualified", spec.includeDisqualified());
         param.put("anonymize", spec.anonymize());
+        if (extraParams != null && !extraParams.isEmpty()) {
+            param.putAll(extraParams);
+        }
 
         ExportJob job = ExportJob.builder()
                 .requestedBy(actor)
@@ -577,13 +944,7 @@ public class ExportServiceImpl implements ExportService {
                 "export_jobs",
                 job.getId(),
                 null,
-                Map.of(
-                        "exportType", spec.type().name(),
-                        "eventId", spec.event().getId().toString(),
-                        "roundId", spec.roundId() == null ? " " : spec.roundId().toString(),
-                        "trackId", spec.trackId() == null ? " " : spec.trackId().toString(),
-                        "format", spec.format()
-                ),
+                exportAuditState(spec, param),
                 null
         );
 
@@ -620,7 +981,7 @@ public class ExportServiceImpl implements ExportService {
                             "exportType", spec.type().name(),
                             "rowCount", String.valueOf(saved.getRowCount()),
                             "fileName", saved.getFileName(),
-                            "eventId", spec.event().getId().toString()
+                            "eventId", spec.event() == null ? "SYSTEM" : spec.event().getId().toString()
                     ),
                     null
             );
@@ -638,7 +999,7 @@ public class ExportServiceImpl implements ExportService {
                     null,
                     Map.of(
                             "error", ex.getMessage(),
-                            "eventId", spec.event().getId().toString()
+                            "eventId", spec.event() == null ? "SYSTEM" : spec.event().getId().toString()
                     ),
                     null
             );
@@ -812,7 +1173,7 @@ public class ExportServiceImpl implements ExportService {
     ) {
         return "%s_%s_%s_%s.%s".formatted(
                 prefix,
-                slug(event.getName()),
+                slug(event == null ? "system" : event.getName()),
                 LocalDateTime.now().format(FILE_TIMESTAMP),
                 jobId.toString().substring(0, 8),
                 extension
@@ -832,6 +1193,148 @@ public class ExportServiceImpl implements ExportService {
 
     private String text(Object value) {
         return value == null ? "" : value.toString();
+    }
+
+    private List<String> row(Object... values) {
+        return Arrays.stream(values)
+                .map(this::text)
+                .toList();
+    }
+
+    private String formatNullable(Double value) {
+        return value == null ? "" : "%.4f".formatted(value);
+    }
+
+    private Double average(List<Double> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+
+        DoubleSummaryStatistics statistics = values.stream()
+                .filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .summaryStatistics();
+        return statistics.getCount() == 0 ? null : statistics.getAverage();
+    }
+
+    private double round(double value) {
+        return Math.round(value * 10000d) / 10000d;
+    }
+
+    private Double calculateIccOneWay(List<Score> scores) {
+        if (scores == null || scores.isEmpty()) {
+            return null;
+        }
+
+        Map<String, List<Double>> valuesByScoredItem = scores.stream()
+                .filter(score -> score.getSubmission() != null
+                        && score.getSubmission().getId() != null
+                        && score.getEventCriteria() != null
+                        && score.getEventCriteria().getId() != null
+                        && score.getValue() != null)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        score -> score.getSubmission().getId()
+                                + ":"
+                                + score.getEventCriteria().getId(),
+                        LinkedHashMap::new,
+                        java.util.stream.Collectors.mapping(
+                                score -> score.getValue().doubleValue(),
+                                java.util.stream.Collectors.toList()
+                        )
+                ));
+
+        int groupCount = valuesByScoredItem.size();
+        int observationCount = valuesByScoredItem.values()
+                .stream()
+                .mapToInt(List::size)
+                .sum();
+        if (groupCount < 2 || observationCount <= groupCount) {
+            return null;
+        }
+
+        double grandMean = valuesByScoredItem.values()
+                .stream()
+                .flatMap(Collection::stream)
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0d);
+
+        double betweenGroupSquares = 0d;
+        double withinGroupSquares = 0d;
+        for (List<Double> groupValues : valuesByScoredItem.values()) {
+            double groupMean = groupValues.stream()
+                    .mapToDouble(Double::doubleValue)
+                    .average()
+                    .orElse(0d);
+            betweenGroupSquares += groupValues.size() * Math.pow(groupMean - grandMean, 2);
+            for (Double value : groupValues) {
+                withinGroupSquares += Math.pow(value - groupMean, 2);
+            }
+        }
+
+        double meanSquareBetween = betweenGroupSquares / (groupCount - 1);
+        double meanSquareWithin = withinGroupSquares / (observationCount - groupCount);
+        double averageRatingsPerSubmission = (double) observationCount / groupCount;
+        double denominator = meanSquareBetween
+                + (averageRatingsPerSubmission - 1d) * meanSquareWithin;
+        if (denominator == 0d) {
+            return null;
+        }
+
+        return round((meanSquareBetween - meanSquareWithin) / denominator);
+    }
+
+    private boolean auditLogMatchesAnyEvent(AuditLog log, Set<UUID> eventIds) {
+        if (eventIds == null || eventIds.isEmpty() || log == null) {
+            return false;
+        }
+        if (log.getTargetId() != null
+                && ("hackathon_events".equalsIgnoreCase(log.getTargetTable())
+                || "events".equalsIgnoreCase(log.getTargetTable()))
+                && eventIds.contains(log.getTargetId())) {
+            return true;
+        }
+        return containsAnyEventId(log.getBeforeState(), eventIds)
+                || containsAnyEventId(log.getAfterState(), eventIds)
+                || containsAnyEventId(log.getContext(), eventIds);
+    }
+
+    private boolean containsAnyEventId(Map<String, Object> state, Set<UUID> eventIds) {
+        if (state == null || state.isEmpty()) {
+            return false;
+        }
+        Object direct = state.get("eventId");
+        if (matchesAnyEventId(direct, eventIds)) {
+            return true;
+        }
+        for (Object value : state.values()) {
+            if (matchesAnyEventId(value, eventIds)) {
+                return true;
+            }
+            if (value instanceof Map<?, ?> nested) {
+                Object nestedEventId = nested.get("eventId");
+                if (matchesAnyEventId(nestedEventId, eventIds)) {
+                    return true;
+                }
+            }
+            if (value instanceof Iterable<?> iterable) {
+                for (Object item : iterable) {
+                    if (matchesAnyEventId(item, eventIds)) {
+                        return true;
+                    }
+                    if (item instanceof Map<?, ?> nestedItem
+                            && matchesAnyEventId(nestedItem.get("eventId"), eventIds)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean matchesAnyEventId(Object raw, Set<UUID> eventIds) {
+        return raw != null && eventIds.stream()
+                .anyMatch(eventId -> eventId.toString().equals(raw.toString()));
     }
 
     private String hashId(UUID id) {
@@ -855,6 +1358,47 @@ public class ExportServiceImpl implements ExportService {
                 Boolean.TRUE.equals(request == null ? null : request.includeDisqualified()),
                 Boolean.TRUE.equals(request == null ? null : request.anonymize())
         );
+    }
+
+    private EventExportRequest eventExportRequestFromParams(Map<String, Object> params) {
+        return new EventExportRequest(
+                parseOptionalUUID(params.get("roundId"), "roundId"),
+                parseOptionalUUID(params.get("trackId"), "trackId"),
+                normalizeFormat(params.get("format")),
+                parseBoolean(params.get("includeDraftScores"), false),
+                parseBoolean(params.get("includeDisqualified"), false),
+                parseBoolean(params.get("anonymize"), false)
+        );
+    }
+
+    private Map<String, Object> exportAuditState(
+            ExportSpec spec,
+            Map<String, Object> params
+    ) {
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("exportType", spec.type().name());
+        if (spec.event() != null) {
+            state.put("eventId", spec.event().getId().toString());
+        }
+        state.put("format", spec.format());
+        if (params != null) {
+            if (params.containsKey("roundId")) {
+                state.put("roundId", params.get("roundId"));
+            }
+            if (params.containsKey("trackId")) {
+                state.put("trackId", params.get("trackId"));
+            }
+            if (params.containsKey("year")) {
+                state.put("year", params.get("year"));
+            }
+            if (params.containsKey("season")) {
+                state.put("season", params.get("season"));
+            }
+            if (params.containsKey("scope")) {
+                state.put("scope", params.get("scope"));
+            }
+        }
+        return state;
     }
 
     private HackathonEvent getEvent(UUID eventId) {
@@ -982,9 +1526,37 @@ public class ExportServiceImpl implements ExportService {
         }
     }
 
+    private Integer parseOptionalInteger(Object value, String fieldName) {
+        if (value == null || value.toString().isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException ex) {
+            throw new BadRequestException(String.format("Invalid %s: %s", fieldName, value));
+        }
+    }
+
+    private HackathonSeason parseOptionalSeason(Object value) {
+        if (value == null || value.toString().isBlank()) {
+            return null;
+        }
+        try {
+            return HackathonSeason.valueOf(value.toString().trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid season: " + value);
+        }
+    }
+
     private void ensureCanExport(User user) {
         if (user == null || (!user.isAdmin() && !user.isCoordinator())) {
             throw new ForbiddenException("Only admin or coordinator can exports.");
+        }
+    }
+
+    private void ensureAdminCanExportSystemReports(User user) {
+        if (user == null || !user.isAdmin()) {
+            throw new ForbiddenException("Only system admin can export annual or system reports.");
         }
     }
 

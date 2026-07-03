@@ -4,6 +4,7 @@ import { mockExportApi } from "../mocks/export.mock";
 import { useSnackbar } from "notistack";
 import type { PageResponse, UUID } from "@/types/common.types";
 import type {
+  CreateExportJobRequest,
   EventExportRequest,
   ExportDownloadResponse,
   ExportJobResponse,
@@ -109,6 +110,33 @@ export function useCreateTeamListExport() {
     },
     onError: (err: any) => {
       enqueueSnackbar(err?.message || "Failed to create team list export", { variant: "error" });
+    },
+  });
+}
+
+export function useCreateGenericExport() {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (payload: CreateExportJobRequest) =>
+      unwrapApiPayload<ExportJobResponse>(await activeApi.createExportJob(payload)),
+    onSuccess: (job) => {
+      enqueueSnackbar(`${job.exportType.replace(/_/g, " ")} export job created successfully.`, {
+        variant: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
+      queryClient.setQueryData(exportKeys.detail(job.id), job);
+    },
+    onError: (err: unknown) => {
+      const error = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      enqueueSnackbar(
+        error.response?.data?.message || error.message || "Failed to create export",
+        { variant: "error" },
+      );
     },
   });
 }
