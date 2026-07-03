@@ -10,6 +10,7 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
   const [data, setData] =
     useState<PageResponse<CoordinatorTeamSummaryResponse> | null>(null);
   const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const fetchTeams = async () => {
@@ -51,7 +52,12 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
     params.search,
     params.page,
     params.size,
+    reloadKey,
   ]);
 
-  return { data, loading };
+  return {
+    data,
+    loading,
+    refetch: () => setReloadKey((value) => value + 1),
+  };
 };

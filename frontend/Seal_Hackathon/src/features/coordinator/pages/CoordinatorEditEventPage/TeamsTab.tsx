@@ -36,7 +36,7 @@ export const TeamsTab = ({ eventId, eventName, tracks }: TeamsTabProps) => {
     setSelectedTeamId(null);
   }, [eventId]);
 
-  const { data, loading } = useCoordinatorTeamsQuery(filters);
+  const { data, loading, refetch } = useCoordinatorTeamsQuery(filters);
   const items = data?.content ?? [];
   const total = data?.totalElements ?? 0;
   const totalPages = data?.totalPages ?? 0;
@@ -88,6 +88,7 @@ export const TeamsTab = ({ eventId, eventName, tracks }: TeamsTabProps) => {
         <TeamDetailDrawer
           teamId={selectedTeamId}
           onClose={() => setSelectedTeamId(null)}
+          onChanged={refetch}
         />
       )}
     </div>

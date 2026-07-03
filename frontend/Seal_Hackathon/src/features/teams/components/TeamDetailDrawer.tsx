@@ -1,25 +1,50 @@
 import { useEffect, useState } from "react";
+import { useSnackbar } from "notistack";
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import TextField from "@mui/material/TextField";
 import { teamApi } from "@/api/team.api";
 import { submissionApi } from "@/api/submission.api";
 import type { UUID } from "@/types/common.types";
 import type { CoordinatorTeamDetailResponse } from "@/types/team.types";
 import type { SubmissionDetailResponse } from "@/types/submission.types";
-import { getTeamStatusColor, getSubmissionStatusColor } from "../schemas/teams.schema";
+import {
+  formatTeamStatusLabel,
+  getTeamRegistrationStatusColor,
+  getTeamStatusColor,
+  getSubmissionStatusColor,
+} from "../schemas/teams.schema";
+import { useCoordinatorRegistrationReview } from "../hooks/useCoordinatorRegistrationReview";
 import { TeamSubmissionProgressGrid } from "./TeamSubmissionProgressGrid";
 import { SubmissionLinksPreview } from "@/features/submissions/components/SubmissionLinksPreview";
 
 type Props = {
   teamId: UUID;
   onClose: () => void;
+  onChanged?: () => void;
 };
 
-export function TeamDetailDrawer({ teamId, onClose }: Props) {
+type ReviewAction = "approve" | "reject";
+
+export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
   const [detail, setDetail] = useState<CoordinatorTeamDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [reviewAction, setReviewAction] = useState<ReviewAction | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const { approve, reject, reviewingTeamId, error, clearError } =
+    useCoordinatorRegistrationReview();
 
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<UUID | null>(null);
   const [submissionDetail, setSubmissionDetail] = useState<SubmissionDetailResponse | null>(null);
   const [loadingSubmissionDetail, setLoadingSubmissionDetail] = useState(false);
+  const isReviewing = Boolean(detail && reviewingTeamId === detail.teamId);
+  const canReviewRegistration =
+    detail?.registrationStatus?.toUpperCase() === "PENDING_APPROVAL";
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -66,6 +91,40 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
   const handleBackToTeam = () => {
     setSelectedSubmissionId(null);
     setSubmissionDetail(null);
+  };
+
+  const handleOpenReviewDialog = (action: ReviewAction) => {
+    clearError();
+    setRejectReason("");
+    setReviewAction(action);
+  };
+
+  const handleCloseReviewDialog = () => {
+    clearError();
+    setRejectReason("");
+    setReviewAction(null);
+  };
+
+  const handleSubmitRegistrationReview = async () => {
+    if (!detail || !reviewAction) return;
+
+    try {
+      const updated =
+        reviewAction === "approve"
+          ? await approve(detail.teamId)
+          : await reject(detail.teamId, rejectReason);
+      setDetail(updated);
+      onChanged?.();
+      enqueueSnackbar(
+        reviewAction === "approve"
+          ? "Team registration approved."
+          : "Team registration rejected.",
+        { variant: reviewAction === "approve" ? "success" : "info" },
+      );
+      handleCloseReviewDialog();
+    } catch {
+      // The hook exposes the displayable error message.
+    }
   };
 
   return (
@@ -199,15 +258,27 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                     TEAM OVERVIEW
                   </h3>
 
-                  {detail.status && (
-                    <span
-                      className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getTeamStatusColor(
-                        detail.status,
-                      )}`}
-                    >
-                      {detail.status}
-                    </span>
-                  )}
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {detail.status && (
+                      <span
+                        className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getTeamStatusColor(
+                          detail.status,
+                        )}`}
+                      >
+                        Team: {formatTeamStatusLabel(detail.status)}
+                      </span>
+                    )}
+                    {detail.registrationStatus && (
+                      <span
+                        className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getTeamRegistrationStatusColor(
+                          detail.registrationStatus,
+                        )}`}
+                      >
+                        Registration:{" "}
+                        {formatTeamStatusLabel(detail.registrationStatus)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-5">
@@ -251,6 +322,61 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
                     </div>
                   )}
                 </div>
+
+                {detail.registrationStatus && (
+                  <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/50">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Registration Review
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                          {formatTeamStatusLabel(detail.registrationStatus)}
+                        </p>
+                        {detail.registrationReviewedAt && (
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Reviewed by{" "}
+                            {detail.registrationReviewedByName || "Coordinator"}{" "}
+                            at{" "}
+                            {new Date(
+                              detail.registrationReviewedAt,
+                            ).toLocaleString()}
+                          </p>
+                        )}
+                        {detail.registrationRejectionReason && (
+                          <p className="mt-2 rounded-lg bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+                            Reason: {detail.registrationRejectionReason}
+                          </p>
+                        )}
+                      </div>
+
+                      {canReviewRegistration && (
+                        <div className="flex shrink-0 flex-wrap gap-2">
+                          <Button
+                            variant="contained"
+                            color="success"
+                            size="small"
+                            disabled={isReviewing}
+                            onClick={() => handleOpenReviewDialog("approve")}
+                            sx={{ fontWeight: 800, textTransform: "none" }}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            disabled={isReviewing}
+                            onClick={() => handleOpenReviewDialog("reject")}
+                            sx={{ fontWeight: 800, textTransform: "none" }}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </section>
 
               <section>
@@ -306,6 +432,68 @@ export function TeamDetailDrawer({ teamId, onClose }: Props) {
           )}
         </div>
       </div>
+
+      <Dialog
+        open={Boolean(reviewAction)}
+        onClose={isReviewing ? undefined : handleCloseReviewDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ fontWeight: 900 }}>
+          {reviewAction === "approve"
+            ? "Approve registration"
+            : "Reject registration"}
+        </DialogTitle>
+        <DialogContent dividers className="space-y-4">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            {reviewAction === "approve"
+              ? `Approve ${detail?.teamName || "this team"} for the selected event track?`
+              : `Reject ${detail?.teamName || "this team"} and provide the reason shown to coordinators later.`}
+          </p>
+
+          {reviewAction === "reject" && (
+            <TextField
+              autoFocus
+              required
+              fullWidth
+              multiline
+              minRows={3}
+              label="Rejection reason"
+              value={rejectReason}
+              onChange={(event) => setRejectReason(event.target.value)}
+              disabled={isReviewing}
+            />
+          )}
+
+          {error && <Alert severity="error">{error}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            variant="outlined"
+            onClick={handleCloseReviewDialog}
+            disabled={isReviewing}
+            sx={{ fontWeight: 800, textTransform: "none" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color={reviewAction === "reject" ? "error" : "success"}
+            onClick={handleSubmitRegistrationReview}
+            disabled={
+              isReviewing ||
+              (reviewAction === "reject" && !rejectReason.trim())
+            }
+            sx={{ fontWeight: 800, textTransform: "none" }}
+          >
+            {isReviewing
+              ? "Saving..."
+              : reviewAction === "approve"
+                ? "Approve"
+                : "Reject"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
