@@ -85,7 +85,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             submission.increaseSubmissionNumber();
         }
 
-        markSubmittedConsideringDeadline(submission, round);
+        markSubmittedBeforeDeadline(submission, round);
 
         Submission saved = submissionRepository.save(submission);
         replaceLinks(saved, request.links());
@@ -183,7 +183,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             if (!refreshed.isDraft()) {
                 refreshed.increaseSubmissionNumber();
             }
-            markSubmittedConsideringDeadline(refreshed, refreshed.getRound());
+            markSubmittedBeforeDeadline(refreshed, refreshed.getRound());
             saved = submissionRepository.save(refreshed);
             notifySubmissionChange(saved, wasSubmittedBefore);
         }
@@ -217,7 +217,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             if (!refreshed.isDraft()) {
                 refreshed.increaseSubmissionNumber();
             }
-            markSubmittedConsideringDeadline(refreshed, refreshed.getRound());
+            markSubmittedBeforeDeadline(refreshed, refreshed.getRound());
             submissionRepository.save(refreshed);
             notifySubmissionChange(refreshed, wasSubmittedBefore);
         }
@@ -291,7 +291,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             if (status == SubmissionStatus.SUBMITTED || status == SubmissionStatus.LATE) {
                 validateRequiredLinksFromEntity(submission);
                 submission.increaseSubmissionNumber();
-                markSubmittedConsideringDeadline(submission, submission.getRound());
+                markSubmittedBeforeDeadline(submission, submission.getRound());
                 notifySubmitOrUpdate = true;
             } else if (status == SubmissionStatus.DRAFT) {
                 submission.setStatus(SubmissionStatus.DRAFT);
@@ -396,7 +396,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             submission.increaseSubmissionNumber();
         }
 
-        markSubmittedConsideringDeadline(submission, submission.getRound());
+        markSubmittedBeforeDeadline(submission, submission.getRound());
 
         Submission saved = submissionRepository.save(submission);
         notifySubmissionChange(saved, wasSubmittedBefore);
@@ -555,8 +555,17 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (round.getSubmissionLockedAt() != null) {
             throw new ConflictException("ROUND_SUBMISSION_LOCKED: This round's submissions are locked.");
         }
+        ensureSubmissionDeadlineNotPassed(round);
         if (round.getStatus() != RoundStatus.OPEN) {
             throw new ConflictException("Submissions are only allowed while the round is OPEN.");
+        }
+    }
+
+    private void ensureSubmissionDeadlineNotPassed(Round round) {
+        LocalDateTime deadline = round.getSubmissionDeadline();
+        if (deadline != null && !LocalDateTime.now().isBefore(deadline)) {
+            throw new ConflictException(
+                    "ROUND_SUBMISSION_DEADLINE_EXCEEDED: The submission deadline for this round has passed.");
         }
     }
 
@@ -849,14 +858,9 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
     }
 
-    private void markSubmittedConsideringDeadline(Submission submission, Round round) {
-        boolean late = round.getSubmissionDeadline() != null
-                && LocalDateTime.now().isAfter(round.getSubmissionDeadline());
-        if (late) {
-            submission.markLate();
-        } else {
-            submission.markSubmitted();
-        }
+    private void markSubmittedBeforeDeadline(Submission submission, Round round) {
+        ensureSubmissionDeadlineNotPassed(round);
+        submission.markSubmitted();
     }
 
     private SubmissionResponse toSubmissionResponse(Submission submission) {
