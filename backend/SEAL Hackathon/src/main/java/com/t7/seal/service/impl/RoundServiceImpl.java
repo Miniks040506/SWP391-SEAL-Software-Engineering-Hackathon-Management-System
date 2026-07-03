@@ -382,6 +382,12 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException("Cannot re-open round that submissions are locked.");
         }
 
+        RoundOpenReadiness readiness = buildRoundOpenReadiness(round);
+        if (!readiness.openBlockers().isEmpty()) {
+            throw new ConflictException(
+                    "Round is not ready to open: " + String.join(" ", readiness.openBlockers()));
+        }
+
         RoundStatus before = round.getStatus();
         round.setStatus(RoundStatus.OPEN);
         Round saved = roundRepository.save(round);
@@ -1401,7 +1407,8 @@ public class RoundServiceImpl implements RoundService {
                 round.getGradingLockedAt(),
                 round.getEvent().getStatus() == RegistrationStatus.ONGOING
                         && (round.getStatus() == RoundStatus.UPCOMING || round.getStatus() == RoundStatus.CLOSED)
-                        && round.getSubmissionLockedAt() == null,
+                        && round.getSubmissionLockedAt() == null
+                        && readiness.openBlockers().isEmpty(),
                 round.getStatus() == RoundStatus.OPEN,
                 (round.getStatus() == RoundStatus.OPEN || round.getStatus() == RoundStatus.CLOSED)
                         && round.getSubmissionLockedAt() == null,
