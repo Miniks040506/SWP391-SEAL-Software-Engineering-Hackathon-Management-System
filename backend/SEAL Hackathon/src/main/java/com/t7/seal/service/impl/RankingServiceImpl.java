@@ -148,6 +148,7 @@ public class RankingServiceImpl implements RankingService {
 
         for (List<RankingDraft> trackDrafts : draftsByTrack.values()) {
             List<RankingDraft> sorted = sortRankingDraftsWithDisqualifiedLast(trackDrafts);
+            List<Ranking> trackRankings = new ArrayList<>();
 
             int rank = 1;
             for (RankingDraft draft : sorted) {
@@ -166,8 +167,10 @@ public class RankingServiceImpl implements RankingService {
                 if (isDisqualifiedSubmission(draft.submission())) {
                     ranking.markDisqualified();
                 }
-                rankings.add(ranking);
+                trackRankings.add(ranking);
             }
+            applyTieFlags(trackRankings);
+            rankings.addAll(trackRankings);
         }
 
         rankingRepository.saveAll(rankings);
@@ -623,6 +626,38 @@ public class RankingServiceImpl implements RankingService {
         return sorted;
     }
 
+    private void applyTieFlags(List<Ranking> trackRankings) {
+        trackRankings.forEach(Ranking::clearTieStatus);
+
+        Map<String, List<Ranking>> rankingsByScore = trackRankings.stream()
+                .filter(ranking -> !isDisqualifiedSubmission(ranking.getSubmission()))
+                .collect(Collectors.groupingBy(
+                        ranking -> tieScoreKey(ranking.getTotalScore()),
+                        LinkedHashMap::new,
+                        Collectors.toList())
+                );
+
+        rankingsByScore.values().stream()
+                .filter(group -> group.size() > 1)
+                .forEach(group -> {
+                    String tieGroupKey = buildTieGroupKey(group.get(0));
+                    int tieGroupSize = group.size();
+                    group.forEach(ranking -> ranking.markTie(tieGroupKey, tieGroupSize));
+                });
+    }
+
+    private String buildTieGroupKey(Ranking ranking) {
+        return "%s:%s:%s".formatted(
+                ranking.getRound().getId(),
+                ranking.getTrack().getId(),
+                tieScoreKey(ranking.getTotalScore())
+        );
+    }
+
+    private String tieScoreKey(Double score) {
+        return String.format(Locale.ROOT, "%.2f", score == null ? 0.0 : score);
+    }
+
     private RankingDraft buildDisqualifiedRankingDraft(
             Submission submission,
             List<Score> scores,
@@ -839,6 +874,10 @@ public class RankingServiceImpl implements RankingService {
                 track.getName(),
                 ranking.getTotalScore(),
                 ranking.getRankPosition(),
+                ranking.getTied(),
+                ranking.getTieGroupKey(),
+                ranking.getTieGroupSize(),
+                ranking.getManualResolutionRequired(),
                 ranking.getIsAdvanced(),
                 ranking.getJudgeCount(),
                 includeScoreBreakdown ? ranking.getScoreBreakdown() : null,

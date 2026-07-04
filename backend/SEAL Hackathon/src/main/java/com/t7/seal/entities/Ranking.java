@@ -79,6 +79,21 @@ public class Ranking {
     @Column(name = "rank_position", nullable = false)
     private Integer rankPosition;
 
+    @Column(name = "tied", nullable = false)
+    @Builder.Default
+    private Boolean tied = false;
+
+    @Column(name = "tie_group_key", length = 160)
+    private String tieGroupKey;
+
+    @Column(name = "tie_group_size", nullable = false)
+    @Builder.Default
+    private Integer tieGroupSize = 1;
+
+    @Column(name = "manual_resolution_required", nullable = false)
+    @Builder.Default
+    private Boolean manualResolutionRequired = false;
+
     /**
      * Whether the team is advanced to the next round.
      * This field is used by the advancement confirmation flow.
@@ -131,6 +146,18 @@ public class Ranking {
         if (isAdvanced == null) {
             isAdvanced = false;
         }
+
+        if (tied == null) {
+            tied = false;
+        }
+
+        if (tieGroupSize == null) {
+            tieGroupSize = 1;
+        }
+
+        if (manualResolutionRequired == null) {
+            manualResolutionRequired = false;
+        }
     }
 
     private void validateRankingValues() {
@@ -148,6 +175,10 @@ public class Ranking {
 
         if (rankPosition == null || rankPosition < 1) {
             throw new IllegalStateException("Rank position must be greater than or equal to 1.");
+        }
+
+        if (tieGroupSize == null || tieGroupSize < 1) {
+            throw new IllegalStateException("Tie group size must be greater than or equal to 1.");
         }
     }
 
@@ -188,6 +219,22 @@ public class Ranking {
     public void markDisqualified() {
         this.isAdvanced = false;
         this.advanceReason = AdvanceReason.DISQUALIFIED;
+    }
+
+    // Marks this ranking as requiring manual tie resolution.
+    public void markTie(String tieGroupKey, int tieGroupSize) {
+        this.tied = true;
+        this.tieGroupKey = tieGroupKey;
+        this.tieGroupSize = tieGroupSize;
+        this.manualResolutionRequired = true;
+    }
+
+    // Clears tie-resolution metadata after recalculation.
+    public void clearTieStatus() {
+        this.tied = false;
+        this.tieGroupKey = null;
+        this.tieGroupSize = 1;
+        this.manualResolutionRequired = false;
     }
 
 
