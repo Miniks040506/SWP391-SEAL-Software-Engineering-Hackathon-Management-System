@@ -42,7 +42,7 @@ const ALLOWED_CONTENT_TYPES = [
 ];
 
 function detectLinkType(url: string): SubmissionLinkType {
-  const lower = url.toLowerCase();
+  const lower = url.trim().toLowerCase();
 
   if (lower.includes("github.com") || lower.includes("gitlab.com")) {
     return "REPOSITORY";
@@ -73,6 +73,24 @@ function detectLinkType(url: string): SubmissionLinkType {
   }
 
   return "OTHER";
+}
+
+function getHttpUrlError(url: string): string | null {
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return null;
+
+  try {
+    const parsed = new URL(trimmedUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return "URL must start with http:// or https://.";
+    }
+    if (!parsed.hostname) {
+      return "URL must include a host.";
+    }
+    return null;
+  } catch {
+    return "Enter a valid URL.";
+  }
 }
 
 function detectTypeFromFile(file: File): SubmissionLinkType {
@@ -228,6 +246,11 @@ export function SubmissionFormPage() {
         : round && !isRoundOpen
           ? `Submissions are only allowed while the round is OPEN. Current status: ${round.status}.`
           : null;
+
+  const linkUrlErrors = useMemo(
+    () => links.map((link) => getHttpUrlError(link.url)),
+    [links],
+  );
 
   const generateId = () => crypto.randomUUID();
 
@@ -440,12 +463,22 @@ export function SubmissionFormPage() {
       }));
   };
 
+  const validateEnteredLinks = () => {
+    const invalidIndex = linkUrlErrors.findIndex(Boolean);
+    if (invalidIndex >= 0) {
+      setErrorMsg(`Link ${invalidIndex + 1}: ${linkUrlErrors[invalidIndex]}`);
+      return false;
+    }
+    return true;
+  };
+
   const handleSaveDraft = async () => {
     if (!teamId || !roundId) return;
     if (!canEdit) {
       setErrorMsg(blockedReason || "This submission is read-only.");
       return;
     }
+    if (!validateEnteredLinks()) return;
 
     setSaving(true);
     setSuccessMsg(null);
@@ -521,6 +554,8 @@ export function SubmissionFormPage() {
       setErrorMsg("Please provide at least a link or upload a file.");
       return;
     }
+    if (!validateEnteredLinks()) return;
+
     setSubmitting(true);
     setSuccessMsg(null);
     setErrorMsg(null);
@@ -1134,6 +1169,7 @@ export function SubmissionFormPage() {
                     <TextField
                       fullWidth
                       size="small"
+                      type="url"
                       disabled={!canEdit}
                       value={link.url}
                       onChange={(e) => {
@@ -1143,6 +1179,11 @@ export function SubmissionFormPage() {
                         setLinks(newLinks);
                       }}
                       placeholder="https://github.com/... or any external link"
+                      error={Boolean(linkUrlErrors[idx])}
+                      helperText={
+                        linkUrlErrors[idx] ??
+                        "Only http:// and https:// links are accepted."
+                      }
                       sx={filterTextFieldSx}
                     />
                     <TextField
