@@ -13,6 +13,11 @@ type Props = {
   isFinalSubmitted: boolean;
 };
 
+const hasMoreThanOneDecimalPlace = (value: number) =>
+  Math.abs(value * 10 - Math.round(value * 10)) > 0.0000001;
+
+const normalizeOneDecimalScore = (value: number) => Number(value.toFixed(1));
+
 export const CriteriaScoreCard = ({
   criterion,
   control,
@@ -61,6 +66,9 @@ export const CriteriaScoreCard = ({
               if (value > criterion.effectiveMaxScore) {
                 return `Max: ${criterion.effectiveMaxScore}`;
               }
+              if (hasMoreThanOneDecimalPlace(value)) {
+                return "Use at most one decimal place";
+              }
               return true;
             },
           }}
@@ -81,6 +89,8 @@ export const CriteriaScoreCard = ({
                     htmlInput: {
                       min: 0,
                       max: criterion.effectiveMaxScore,
+                      step: 0.1,
+                      inputMode: "decimal",
                       style: { textAlign: "center" },
                     },
                   }}
@@ -95,10 +105,16 @@ export const CriteriaScoreCard = ({
                     if (val === "") {
                       return;
                     }
-                    if (Number(val) < 0) {
+                    const numericValue = Number(val);
+                    if (!Number.isFinite(numericValue)) {
+                      return;
+                    }
+                    if (numericValue < 0) {
                       field.onChange(0);
-                    } else if (Number(val) > criterion.effectiveMaxScore) {
+                    } else if (numericValue > criterion.effectiveMaxScore) {
                       field.onChange(criterion.effectiveMaxScore);
+                    } else if (!hasMoreThanOneDecimalPlace(numericValue)) {
+                      field.onChange(normalizeOneDecimalScore(numericValue));
                     }
                   }}
                   sx={{
