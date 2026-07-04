@@ -31,7 +31,8 @@ export const CoordinatorPrizeSetupPage = () => {
 
   const isLoading = isLoadingEvent || isLoadingTracks || isLoadingPrizes;
 
-  const isLocked = event?.status === "PUBLISHED" || event?.status === "COMPLETED";
+  const isLocked = ["JUDGING", "COMPLETED", "CANCELLED", "ARCHIVED", "PUBLISHED"]
+    .includes(event?.status ?? "");
 
   const handleOpenCreateForm = () => {
     setSelectedPrize(null);
