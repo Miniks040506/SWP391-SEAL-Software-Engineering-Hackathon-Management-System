@@ -150,8 +150,9 @@ public class ExportServiceImpl implements ExportService {
         rows.add(List.of(
                 "Event ID", "Event", "Round ID", "Round", "Track ID", "Track",
                 "Rank", "Team ID", "Team", "Leader Name", "Project Title", "Submission ID",
-                "Submission Status", "Total Score", "Judge Count", "Advance Reason",
-                "Advanced", "Published", "Calculated At"
+                "Submission Status", "Total Score", "Tied", "Tie Group Key", "Tie Group Size",
+                "Manual Resolution Required", "Judge Count", "Advance Reason", "Advanced",
+                "Published", "Calculated At"
         ));
 
         for (Ranking ranking : rankings) {
@@ -181,6 +182,10 @@ public class ExportServiceImpl implements ExportService {
                     text(submission.getId()),
                     text(submission.getStatus()),
                     text(ranking.getTotalScore()),
+                    text(Boolean.TRUE.equals(ranking.getTied())),
+                    text(ranking.getTieGroupKey()),
+                    text(ranking.getTieGroupSize()),
+                    text(Boolean.TRUE.equals(ranking.getManualResolutionRequired())),
                     text(ranking.getJudgeCount()),
                     text(ranking.getAdvanceReason()),
                     text(Boolean.TRUE.equals(ranking.getIsAdvanced())),
@@ -738,13 +743,19 @@ public class ExportServiceImpl implements ExportService {
         rows.add(row("Ranking", "Round / Track / Rank", "Team", "Score / Advanced"));
         for (Ranking ranking : rankings) {
             Team team = ranking.getSubmission().getTeam();
+            User leader = team == null ? null : team.getLeader();
             rows.add(row(
                     "Ranking",
                     text(ranking.getRound().getName()) + " / "
                             + text(ranking.getTrack().getName()) + " / #"
                             + text(ranking.getRankPosition()),
-                    team == null ? null : team.getName(),
+                    text(team == null ? null : team.getName())
+                            + "; leader=" + text(leader == null ? null : leader.getFullName()),
                     "score=" + text(ranking.getTotalScore())
+                            + "; tied=" + text(Boolean.TRUE.equals(ranking.getTied()))
+                            + "; tieGroupSize=" + text(ranking.getTieGroupSize())
+                            + "; manualResolutionRequired="
+                            + text(Boolean.TRUE.equals(ranking.getManualResolutionRequired()))
                             + "; advanced=" + text(ranking.getIsAdvanced())
                             + "; reason=" + text(ranking.getAdvanceReason())
             ));
