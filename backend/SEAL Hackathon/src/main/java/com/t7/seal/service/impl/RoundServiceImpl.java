@@ -511,6 +511,12 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException(
                     "At least one assigned submission is required before locking grading.");
         }
+        if (progress.completed() < progress.total()) {
+            throw new ConflictException(
+                    "Cannot lock grading while scorecards are incomplete: "
+                            + progress.completed() + "/" + progress.total()
+                            + " assigned submissions completed.");
+        }
 
         LocalDateTime now = LocalDateTime.now();
         RoundStatus before = round.getStatus();
