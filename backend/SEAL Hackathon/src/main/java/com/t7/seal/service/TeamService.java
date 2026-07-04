@@ -35,6 +35,8 @@ public interface TeamService {
 
     void removeTeamMember(UUID teamId, UUID memberId, ReasonRequest reason, Authentication authentication);
 
+    void deleteTeam(UUID teamId, ReasonRequest request, Authentication authentication);
+
     TeamMemberResponse acceptInvitation(UUID invitationId, Authentication authentication);
 
     TeamMemberResponse acceptInvitationByToken(String token, Authentication authentication);
@@ -60,4 +62,6 @@ public interface TeamService {
     List<EventCompetitionSummaryResponse> getMyActiveCompetitions(Authentication authentication);
 
     TeamAdvancementStatusResponse getMyTeamAdvancementStatus(UUID teamId, UUID roundId, Authentication authentication);
+
+    int markIncompleteTeamsAfterRegistrationClose();
 }

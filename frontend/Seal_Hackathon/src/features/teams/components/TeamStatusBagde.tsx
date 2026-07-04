@@ -17,16 +17,17 @@ function getStatusLabel(status?: string) {
 
   const labelMap: Record<string, string> = {
     FORMING: "Forming",
+    COMPLETE: "Complete",
+    INCOMPLETE: "Incomplete",
     REGISTERED: "Registered",
     COMPETING: "Competing",
     ADVANCED: "Advanced",
     ELIMINATED: "Eliminated",
     WINNER: "Winner",
-    // legacy fallbacks
-    APPROVED: "Registered",
-    PENDING: "Forming",
-    PENDING_APPROVAL: "Forming",
-    REJECTED: "Eliminated",
+    APPROVED: "Approved",
+    PENDING: "Pending",
+    PENDING_APPROVAL: "Pending Approval",
+    REJECTED: "Rejected",
     ACTIVE: "Competing",
   };
 
@@ -42,6 +43,8 @@ export const TeamStatusBadge = ({
 
   const colorMap = {
     FORMING: "warning",
+    COMPLETE: "success",
+    INCOMPLETE: "warning",
     REGISTERED: "info",
     COMPETING: "primary",
     ADVANCED: "success",

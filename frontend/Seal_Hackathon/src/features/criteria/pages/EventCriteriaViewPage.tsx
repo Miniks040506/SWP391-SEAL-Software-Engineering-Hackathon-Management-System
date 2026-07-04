@@ -1,7 +1,7 @@
 import { Alert, Button, CircularProgress } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import { useNavigate, useParams } from "react-router-dom";
-import type { UUID } from "@/types";
+import type { UUID } from "@/types/common.types";
 import { useQuery } from "@tanstack/react-query";
 import { criteriaApi, eventApi, roundApi } from "@/api";
 import { EventCriteriaReadonlyList } from "../components/event/EventCriteriaReadonlyList";

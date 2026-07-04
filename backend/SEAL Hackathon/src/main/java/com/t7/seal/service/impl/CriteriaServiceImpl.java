@@ -541,7 +541,8 @@ public class CriteriaServiceImpl implements CriteriaService {
         RegistrationStatus status = event.getStatus();
         if (status == RegistrationStatus.JUDGING
                 || status == RegistrationStatus.COMPLETED
-                || status == RegistrationStatus.CANCELLED) {
+                || status == RegistrationStatus.CANCELLED
+                || status == RegistrationStatus.ARCHIVED) {
             throw new ConflictException("Event criteria cannot be modified in this status");
         }
     }

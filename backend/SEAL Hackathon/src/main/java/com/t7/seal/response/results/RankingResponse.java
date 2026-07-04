@@ -18,9 +18,16 @@ public record RankingResponse(
         String trackName,
         Double totalScore,
         Integer rankPosition,
+        Boolean tied,
+        String tieGroupKey,
+        Integer tieGroupSize,
+        Boolean manualResolutionRequired,
         Boolean advanced,
         Integer judgeCount,
         Map<String, Map<String, Float>> scoreBreakdown,
         LocalDateTime calculatedAt,
-        Boolean published
+        Boolean published,
+        String advanceReason,
+        String submissionStatus,
+        String teamStatus
 ) {}

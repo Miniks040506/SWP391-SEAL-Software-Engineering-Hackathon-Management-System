@@ -2,7 +2,10 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import EventIcon from "@mui/icons-material/Event";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import { PublicStatusBadge } from "@/features/events/components/PublicStatusBadge";
-import { getSeasonLabel } from "@/features/events/utils/publicEventView";
+import {
+  formatShortDate,
+  getSeasonLabel,
+} from "@/features/events/utils/publicEventView";
 import type { EventSummaryResponse } from "@/types/event.types";
 
 type EventCardProps = {
@@ -18,6 +21,10 @@ export function EventCard({
   onGoCompeting,
   canCompete = false,
 }: EventCardProps) {
+  const competitionPeriod = `${formatShortDate(
+    event.competitionStartAt,
+  )} - ${formatShortDate(event.competitionEndAt)}`;
+
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-blue-400 hover:shadow-xl dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-500">
       <button
@@ -37,6 +44,10 @@ export function EventCard({
         </h3>
         <p className="line-clamp-2 text-sm leading-relaxed text-gray-500 dark:text-slate-400">
           Explore event details, tracks, rounds, prizes, and announcements.
+        </p>
+
+        <p className="mt-4 text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">
+          Competition: {competitionPeriod}
         </p>
       </button>
 

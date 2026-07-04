@@ -8,5 +8,8 @@ public record AuditLogResponse(
         String actorName, String actionType,
         String targetTable, UUID targetId,
         Object beforeState, Object afterState,
-        Object context, LocalDateTime createdAt
+        Object context,
+        String ipAddress,
+        String userAgent,
+        LocalDateTime createdAt
 ) {}

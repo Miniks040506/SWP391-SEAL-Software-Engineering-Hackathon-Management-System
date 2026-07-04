@@ -6,6 +6,7 @@ import type {
   CoordinatorTeamListParams,
   CoordinatorTeamSummaryResponse,
   CreateTeamRequest,
+  DeleteTeamRequest,
   CreateTeamJoinRequest,
   EventCompetitionResponse,
   EventCompetitionSummaryResponse,
@@ -15,6 +16,7 @@ import type {
   JoinTeamByCodeRequest,
   LeaveTeamRequest,
   RejectInvitationRequest,
+  RejectTeamRegistrationRequest,
   RemoveMemberRequest,
   MentorTeamDetailResponse,
   TeamDetailResponse,
@@ -141,8 +143,26 @@ export const teamApi = {
     );
   },
 
+  approveTeamRegistration(teamId: UUID) {
+    return apiRequest.post<CoordinatorTeamDetailResponse>(
+      `/teams/${teamId}/registration/approve`,
+    );
+  },
+
+  rejectTeamRegistration(teamId: UUID, payload: RejectTeamRegistrationRequest) {
+    return apiRequest.post<CoordinatorTeamDetailResponse>(
+      `/teams/${teamId}/registration/reject`,
+      payload,
+    );
+  },
   updateTeam(teamId: UUID, payload: UpdateTeamRequest) {
     return apiRequest.patch<TeamResponse>(`/teams/${teamId}`, payload);
+  },
+
+  deleteTeam(teamId: UUID, payload?: DeleteTeamRequest) {
+    return apiRequest.delete<void>(`/teams/${teamId}`, {
+      data: payload ?? {},
+    });
   },
 
   inviteMember(teamId: UUID, payload: InviteMemberRequest) {

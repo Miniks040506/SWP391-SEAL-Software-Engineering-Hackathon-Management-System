@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { Button, CircularProgress } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 
 import type { UUID } from "@/types/common.types";
+import type { CalibrationRoundResponse } from "@/types/calibration.types";
 import {
     useEventCalibrationRoundsQuery,
     useManagedCalibrationRoundsQuery,
@@ -24,11 +24,10 @@ export const CoordinatorCalibrationPage = () => {
     const eventQuery = useEventCalibrationRoundsQuery(eventId as UUID);
     const allQuery = useManagedCalibrationRoundsQuery();
 
-    const {
-        data: calibrationRounds,
-        isLoading,
-        isError,
-    } = eventId ? eventQuery : allQuery;
+    const activeQuery = eventId ? eventQuery : allQuery;
+    const calibrationRounds: CalibrationRoundResponse[] = activeQuery.data ?? [];
+    const isLoading = activeQuery.isLoading;
+    const isError = activeQuery.isError;
 
     const publishMutation = usePublishCalibrationDistributionMutation();
     const [publishingId, setPublishingId] = useState<string | null>(null);
@@ -151,7 +150,7 @@ export const CoordinatorCalibrationPage = () => {
                     </div>
                 ) : (
                     <CalibrationRoundTable
-                        rounds={calibrationRounds || []}
+                        rounds={calibrationRounds}
                         onPublish={handlePublish}
                         isPublishing={publishingId}
                     />

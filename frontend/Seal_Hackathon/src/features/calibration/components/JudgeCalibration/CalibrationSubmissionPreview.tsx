@@ -1,4 +1,3 @@
-import React from "react";
 import type { SubmissionDetailResponse } from "@/types/submission.types";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import LinkIcon from "@mui/icons-material/Link";

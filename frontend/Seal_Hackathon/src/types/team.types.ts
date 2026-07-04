@@ -2,11 +2,19 @@ import type { ISODateTime, UUID } from "@/types/common.types";
 
 export type TeamStatus =
   | "FORMING"
+  | "COMPLETE"
+  | "INCOMPLETE"
   | "REGISTERED"
   | "COMPETING"
   | "ADVANCED"
   | "ELIMINATED"
   | "WINNER"
+  | string;
+
+export type TeamRegistrationStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
   | string;
 
 export type TeamMemberRole = "LEADER" | "MEMBER" | string;
@@ -40,6 +48,10 @@ export type RejectInvitationRequest = {
   reason?: string;
 };
 
+export type RejectTeamRegistrationRequest = {
+  reason: string;
+};
+
 export type RemoveMemberRequest = {
   reason?: string;
 };
@@ -49,6 +61,10 @@ export type TransferLeaderRequest = {
 };
 
 export type LeaveTeamRequest = {
+  reason?: string;
+};
+
+export type DeleteTeamRequest = {
   reason?: string;
 };
 
@@ -81,6 +97,7 @@ export type TeamResponse = {
   trackId?: UUID | null;
   status: TeamStatus;
   memberCount: number;
+  registrationStatus?: TeamRegistrationStatus | null;
   joinCode?: string | null;
   joinCodeEnabled?: boolean | null;
 };
@@ -90,6 +107,7 @@ export type TeamSummaryResponse = {
   name: string;
   projectTitle?: string | null;
   status: TeamStatus;
+  registrationStatus?: TeamRegistrationStatus | null;
   roleInTeam: TeamMemberRole;
 };
 
@@ -111,6 +129,7 @@ export type TeamDetailResponse = {
   leaderName: string;
   trackId?: UUID | null;
   status: TeamStatus;
+  registrationStatus?: TeamRegistrationStatus | null;
   joinCode?: string | null;
   joinCodeEnabled?: boolean | null;
   members: TeamMemberResponse[];
@@ -146,6 +165,8 @@ export type EventCompetitionRoundResponse = {
   description?: string | null;
   status: string;
   isFinal: boolean;
+  startAt?: ISODateTime | null;
+  endAt?: ISODateTime | null;
   submissionDeadline?: ISODateTime | null;
   judgingDeadline?: ISODateTime | null;
   submissionLockedAt?: ISODateTime | null;
@@ -289,6 +310,7 @@ export type CoordinatorTeamSummaryResponse = {
   teamName: string;
   projectTitle?: string | null;
   status?: TeamStatus | null;
+  registrationStatus?: TeamRegistrationStatus | null;
   eventId?: UUID | null;
   eventName?: string | null;
   trackId?: UUID | null;
@@ -310,6 +332,10 @@ export type CoordinatorTeamDetailResponse = CoordinatorTeamSummaryResponse & {
   description?: string | null;
   joinCode?: string | null;
   joinCodeEnabled: boolean;
+  registrationReviewedById?: UUID | null;
+  registrationReviewedByName?: string | null;
+  registrationReviewedAt?: ISODateTime | null;
+  registrationRejectionReason?: string | null;
   members: CoordinatorTeamMemberResponse[];
   submissions: CoordinatorTeamSubmissionProgressResponse[];
 };
@@ -320,6 +346,7 @@ export type CoordinatorTeamListParams = {
   search?: string;
   status?: string;
   page?: number;
+  registrationStatus?: TeamRegistrationStatus;
   size?: number;
 };
 

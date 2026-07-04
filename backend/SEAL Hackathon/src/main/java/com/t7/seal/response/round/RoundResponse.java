@@ -11,6 +11,8 @@ public record RoundResponse(
         Integer orderIndex,
         Boolean isFinal,
         String status,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
         LocalDateTime submissionDeadline,
         LocalDateTime judgingDeadline
 ) {}

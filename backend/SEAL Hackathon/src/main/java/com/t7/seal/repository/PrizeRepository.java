@@ -18,7 +18,7 @@ public interface PrizeRepository extends JpaRepository<Prize, UUID> {
             SELECT p FROM Prize p
                 JOIN p.event e
                     WHERE e.id = :eventId
-                        AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED')
+                        AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED', 'ARCHIVED')
                             ORDER BY p.rankPosition ASC
             """)
     List<Prize> findPublicByEventId(@Param("eventId") UUID eventId);
@@ -58,7 +58,7 @@ public interface PrizeRepository extends JpaRepository<Prize, UUID> {
             SELECT p FROM Prize p
                 JOIN p.event e
                     WHERE p.id = :prizeId
-                        AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED')
+                        AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED', 'ARCHIVED')
             """)
     Optional<Prize> findPublicById(@Param("prizeId") UUID prizeId);
 

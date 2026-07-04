@@ -1,6 +1,7 @@
 import type { UUID } from "@/types/common.types";
 import type {
   CreateTeamRequest,
+  DeleteTeamRequest,
   InviteMemberRequest,
   LeaveTeamRequest,
   RejectInvitationRequest,
@@ -143,7 +144,7 @@ export const mockTeamService = {
       leaderId: currentUserId,
       leaderName: "Nguyen Van A",
       trackId: null,
-      status: "DRAFT",
+      status: "FORMING",
       members: [
         {
           memberId: createMockId(),
@@ -174,6 +175,33 @@ export const mockTeamService = {
     });
     if (!updatedTeam) throw new Error("Team not found.");
     return toTeamResponse(updatedTeam);
+  },
+
+  async deleteTeam(teamId: UUID, _payload?: DeleteTeamRequest) {
+    await mockDelay();
+    const team = mockTeams.find((t) => t.id === teamId);
+    if (!team) throw new Error("Team not found.");
+    if (team.leaderId !== currentUserId) {
+      throw new Error("Only the team leader can delete this team.");
+    }
+    if (team.status !== "FORMING") {
+      throw new Error("Only forming teams can be deleted.");
+    }
+
+    mockTeams = mockTeams.map((item) =>
+      item.id === teamId
+        ? {
+            ...item,
+            status: "INCOMPLETE",
+            members: [],
+          }
+        : item
+    );
+    mockInvitations = mockInvitations.map((invitation) =>
+      invitation.teamId === teamId && invitation.status === "PENDING"
+        ? { ...invitation, status: "CANCELLED" }
+        : invitation
+    );
   },
 
   async inviteMember(teamId: UUID, payload: InviteMemberRequest) {

@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   Alert,
@@ -7,50 +6,24 @@ import {
   CardContent,
   Typography,
 } from "@mui/material";
-import { useEventDisqualificationsQuery } from "../hooks/useDisqualificationQueries";
+import { useActiveTeamDisqualificationsQuery } from "../hooks/useDisqualificationQueries";
 import { DisqualificationStatusBadge } from "../components/DisqualificationStatusBadge";
 import { DisqualificationAppealForm } from "../components/DisqualificationAppealForm";
-import { teamApi } from "@/api/team.api";
-import type { DisqualificationResponse } from "@/types/disqualification.types";
-import type { EventCompetitionSummaryResponse } from "@/types/team.types";
 import type { UUID } from "@/types/common.types";
 
 export function ParticipantDisqualificationPage() {
   const { teamId } = useParams<{ teamId: string }>();
 
-  const [teamComp, setTeamComp] =
-    useState<EventCompetitionSummaryResponse | null>(null);
-  const [loadingTeam, setLoadingTeam] = useState(true);
-
-  useEffect(() => {
-    if (!teamId) return;
-    setLoadingTeam(true);
-    teamApi
-      .getMyActiveCompetitions()
-      .then((res) => {
-        setTeamComp(res.find((t) => t.teamId === teamId) || null);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch team competition", err);
-      })
-      .finally(() => {
-        setLoadingTeam(false);
-      });
-  }, [teamId]);
-
-  const eventId = teamComp?.eventId as UUID;
-
   const {
     data: disqualifications = [],
-    isLoading: loadingDisqualifications,
+    isLoading,
+    isError,
     refetch,
-  } = useEventDisqualificationsQuery(eventId, undefined);
+  } = useActiveTeamDisqualificationsQuery(teamId as UUID | undefined);
 
-  const disqualification = disqualifications.find(
-    (d: DisqualificationResponse) => d.teamId === teamId,
-  );
+  const disqualification = disqualifications[0];
 
-  if (loadingTeam || (eventId && loadingDisqualifications)) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <CircularProgress />
@@ -58,10 +31,12 @@ export function ParticipantDisqualificationPage() {
     );
   }
 
-  if (!teamComp) {
+  if (!teamId || isError) {
     return (
       <div className="p-6 max-w-4xl mx-auto">
-        <Alert severity="error">Team or active competition not found.</Alert>
+        <Alert severity="error">
+          Could not load this team's disqualification status.
+        </Alert>
       </div>
     );
   }

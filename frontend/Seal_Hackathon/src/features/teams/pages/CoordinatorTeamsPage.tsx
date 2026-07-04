@@ -70,7 +70,7 @@ export function CoordinatorTeamsPage() {
     fetchTracks();
   }, [filters.eventId]);
 
-  const { data, loading } = useCoordinatorTeamsQuery(filters);
+  const { data, loading, refetch } = useCoordinatorTeamsQuery(filters);
 
   const handleCloseDrawer = () => {
     navigate("/coordinator/teams");
@@ -126,6 +126,7 @@ export function CoordinatorTeamsPage() {
         <TeamDetailDrawer
           teamId={teamId}
           onClose={handleCloseDrawer}
+          onChanged={refetch}
         />
       )}
     </div>

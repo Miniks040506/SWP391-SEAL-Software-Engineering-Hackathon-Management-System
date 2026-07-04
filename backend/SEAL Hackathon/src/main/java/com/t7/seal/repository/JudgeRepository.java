@@ -45,7 +45,8 @@ public interface JudgeRepository extends JpaRepository<Judge, UUID> {
                     WHERE activeAssignment.judge = j
                       AND activeEvent.status NOT IN (
                             com.t7.seal.domain.RegistrationStatus.COMPLETED,
-                            com.t7.seal.domain.RegistrationStatus.CANCELLED
+                            com.t7.seal.domain.RegistrationStatus.CANCELLED,
+                            com.t7.seal.domain.RegistrationStatus.ARCHIVED
                       )
               )
               AND NOT EXISTS (

@@ -1,5 +1,5 @@
-import type { ScoringCriteriaResponse } from "@/api"
-import type { ScoringCriteriaDialogState, UUID } from "@/types";
+import type { UUID } from "@/types/common.types";
+import type { ScoringCriteriaDialogState, ScoringCriteriaResponse } from "@/types/criteria.types";
 import { Alert, CircularProgress } from "@mui/material";
 import { ScoringCriteriaCard } from "./ScoringCriteriaCard";
 

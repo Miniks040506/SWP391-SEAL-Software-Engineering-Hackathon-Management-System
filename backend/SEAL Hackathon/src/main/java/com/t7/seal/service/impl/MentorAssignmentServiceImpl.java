@@ -110,7 +110,8 @@ public class MentorAssignmentServiceImpl implements MentorAssignmentService {
     private void assertAssignmentEditable(RegistrationStatus status) {
         if (status == RegistrationStatus.JUDGING
                 || status == RegistrationStatus.COMPLETED
-                || status == RegistrationStatus.CANCELLED) {
+                || status == RegistrationStatus.CANCELLED
+                || status == RegistrationStatus.ARCHIVED) {
             throw new ConflictException("Mentor assignments are locked in event status " + status + ".");
         }
     }

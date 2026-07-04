@@ -1,5 +1,4 @@
 // Reused in: AllEventsStandings, SingleEventLeaderboard
-import React from 'react';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 
 export const TransparencyBanner = () => (

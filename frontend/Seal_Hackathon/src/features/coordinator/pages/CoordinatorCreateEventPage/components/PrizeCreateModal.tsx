@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Controller, FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import Dialog from "@mui/material/Dialog";
@@ -49,7 +49,7 @@ export const PrizeCreateModal = ({
   const isEditMode = Boolean(initialPrize);
 
   const methods = useForm<PrizeFormValues>({
-    resolver: zodResolver(createEventPrizeSchema),
+    resolver: zodResolver(createEventPrizeSchema) as Resolver<PrizeFormValues>,
     defaultValues: createEmptyPrize(),
     mode: "onSubmit",
   });
@@ -70,7 +70,10 @@ export const PrizeCreateModal = ({
       return;
     }
 
-    reset(createEmptyPrize(isTrackLocked ? (lockedTrackId ?? "") : ""));
+    reset({
+      ...createEmptyPrize(),
+      trackId: isTrackLocked ? (lockedTrackId ?? "") : "",
+    });
   }, [open, initialPrize, lockedTrackId, isTrackLocked, reset]);
 
   const handleSave = handleSubmit((values) => {

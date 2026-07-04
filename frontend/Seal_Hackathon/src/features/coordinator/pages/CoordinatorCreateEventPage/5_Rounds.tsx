@@ -457,6 +457,28 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                   />
 
                   <TextField
+                    label="Round start"
+                    type="datetime-local"
+                    fullWidth
+                    sx={dateTimeFieldSx}
+                    error={Boolean(roundErrors?.startAt)}
+                    helperText={roundErrors?.startAt?.message}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    {...register(`rounds.${index}.startAt`)}
+                  />
+
+                  <TextField
+                    label="Round end"
+                    type="datetime-local"
+                    fullWidth
+                    sx={dateTimeFieldSx}
+                    error={Boolean(roundErrors?.endAt)}
+                    helperText={roundErrors?.endAt?.message}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    {...register(`rounds.${index}.endAt`)}
+                  />
+
+                  <TextField
                     label="Submission deadline"
                     type="datetime-local"
                     fullWidth
@@ -470,6 +492,7 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                   <TextField
                     label="Judging deadline"
                     type="datetime-local"
+                    required
                     fullWidth
                     sx={dateTimeFieldSx}
                     error={Boolean(roundErrors?.judgingDeadline)}
@@ -554,6 +577,10 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                           )}
                         </div>
                       </div>
+                      <p className="mt-1 text-xs font-medium text-slate-500">
+                        Period: {formatRoundTime(round.startAt)} â†’{" "}
+                        {formatRoundTime(round.endAt)}
+                      </p>
                       <p className="mt-1 text-xs font-medium text-slate-500">
                         Submit: {formatRoundTime(round.submissionDeadline)}
                       </p>

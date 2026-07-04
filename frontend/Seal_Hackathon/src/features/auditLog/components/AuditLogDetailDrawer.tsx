@@ -48,8 +48,10 @@ export const AuditLogDetailDrawer = ({ log, onClose }: Props) => {
       anchor="right"
       open={Boolean(log)}
       onClose={onClose}
-      PaperProps={{
-        sx: { width: { xs: "100%", sm: "600px", md: "800px" }, borderTopLeftRadius: 16, borderBottomLeftRadius: 16 }
+      slotProps={{
+        paper: {
+          sx: { width: { xs: "100%", sm: "600px", md: "800px" }, borderTopLeftRadius: 16, borderBottomLeftRadius: 16 }
+        }
       }}
     >
       {log && (
@@ -80,6 +82,24 @@ export const AuditLogDetailDrawer = ({ log, onClose }: Props) => {
                 <span className="font-bold text-slate-900 dark:text-white">
                   {format(new Date(log.createdAt), "MMM dd, yyyy HH:mm:ss")}
                 </span>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">IP Address</p>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm font-bold text-slate-900 dark:text-white">
+                    {log.ipAddress || "Not captured"}
+                  </span>
+                  <CopyButton text={log.ipAddress ?? undefined} />
+                </div>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">User Agent</p>
+                <div className="flex items-center gap-2">
+                  <span className="break-all text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {log.userAgent || "Not captured"}
+                  </span>
+                  <CopyButton text={log.userAgent ?? undefined} />
+                </div>
               </div>
               <div className="col-span-2">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Target</p>

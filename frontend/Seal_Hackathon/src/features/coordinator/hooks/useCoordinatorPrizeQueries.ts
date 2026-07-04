@@ -4,7 +4,9 @@ import { mockCoordinatorService } from "../mocks/coordinatorService.mock";
 import type { UUID } from "@/types/common.types";
 
 const USE_MOCK = false;
-const activePrizeApi = USE_MOCK ? (mockCoordinatorService as any).prizeApi : prizeApi;
+const activePrizeApi: typeof prizeApi = USE_MOCK
+  ? mockCoordinatorService.prizeApi as unknown as typeof prizeApi
+  : prizeApi;
 
 export const coordinatorPrizeKeys = {
   all: ["coordinator-prizes"] as const,

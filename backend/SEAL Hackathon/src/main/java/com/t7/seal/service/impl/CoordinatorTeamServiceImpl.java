@@ -1,8 +1,14 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.AuditActionType;
+import com.t7.seal.domain.NotificationChannel;
+import com.t7.seal.domain.NotificationTargetScope;
+import com.t7.seal.domain.NotificationType;
+import com.t7.seal.domain.TeamRegistrationStatus;
 import com.t7.seal.domain.SubmissionStatus;
 import com.t7.seal.domain.TeamStatus;
 import com.t7.seal.domain.UserRole;
+import com.t7.seal.entities.AuditLog;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Submission;
 import com.t7.seal.entities.Team;
@@ -10,14 +16,17 @@ import com.t7.seal.entities.TeamMember;
 import com.t7.seal.entities.Track;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.HackathonEventRepository;
+import com.t7.seal.repository.AuditLogRepository;
 import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.repository.SubmissionRepository;
 import com.t7.seal.repository.TeamMemberRepository;
 import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.repository.TrackRepository;
+import com.t7.seal.request.team.RejectTeamRegistrationRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.coordinator.CoordinatorTeamDetailResponse;
 import com.t7.seal.response.coordinator.CoordinatorTeamMemberResponse;
@@ -25,6 +34,7 @@ import com.t7.seal.response.coordinator.CoordinatorTeamSubmissionProgressRespons
 import com.t7.seal.response.coordinator.CoordinatorTeamSummaryResponse;
 import com.t7.seal.service.CoordinatorTeamService;
 import com.t7.seal.service.CurrentUserService;
+import com.t7.seal.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,8 +42,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,6 +66,8 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
     private final TrackRepository trackRepository;
     private final HackathonEventRepository hackathonEventRepository;
     private final CurrentUserService currentUserService;
+    private final AuditLogRepository auditLogRepository;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     @Override
@@ -61,6 +75,7 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
             UUID eventId,
             UUID trackId,
             String status,
+            String registrationStatus,
             String search,
             int page,
             int size,
@@ -80,6 +95,7 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
                 event.getId(),
                 trackId,
                 parseTeamStatus(status),
+                parseRegistrationStatus(registrationStatus),
                 normalizeSearch(search),
                 PageRequest.of(safePage, safeSize)
         );
@@ -108,6 +124,44 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
         return toDetailResponse(team, members, submissions);
     }
 
+    @Transactional
+    @Override
+    public CoordinatorTeamDetailResponse approveRegistration(UUID teamId, Authentication authentication) {
+        User reviewer = ensureCoordinator(authentication);
+        Team team = teamRepository.findByIdForUpdate(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found " + teamId));
+        ensureRegistrationCanBeApproved(team);
+        LocalDateTime now = LocalDateTime.now();
+        Map<String, Object> beforeState = registrationAuditState(team);
+        team.approveRegistration(reviewer, now);
+        team.setUpdatedAt(now);
+        teamRepository.save(team);
+        auditRegistrationReview(team, reviewer, beforeState, AuditActionType.TEAM_REGISTRATION_APPROVED);
+        notifyRegistrationReview(team, reviewer, true);
+        return loadTeamDetail(team);
+    }
+
+    @Transactional
+    @Override
+    public CoordinatorTeamDetailResponse rejectRegistration(UUID teamId, RejectTeamRegistrationRequest request, Authentication authentication) {
+        User reviewer = ensureCoordinator(authentication);
+        if (request == null || request.reason() == null || request.reason().isBlank()) {
+            throw new BadRequestException("Rejection reason is required.");
+        }
+        Team team = teamRepository.findByIdForUpdate(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found " + teamId));
+        ensurePendingRegistration(team);
+        String reason = request.reason().trim();
+        LocalDateTime now = LocalDateTime.now();
+        Map<String, Object> beforeState = registrationAuditState(team);
+        team.rejectRegistration(reviewer, reason, now);
+        team.setUpdatedAt(now);
+        teamRepository.save(team);
+        auditRegistrationReview(team, reviewer, beforeState, AuditActionType.TEAM_REGISTRATION_REJECTED);
+        notifyRegistrationReview(team, reviewer, false);
+        return loadTeamDetail(team);
+    }
+
     private void ensureTrackBelongsToEvent(HackathonEvent event, UUID trackId) {
         if (trackId == null) {
             return;
@@ -120,11 +174,12 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
         }
     }
 
-    private void ensureCoordinator(Authentication authentication) {
+    private User ensureCoordinator(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
         if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.COORDINATOR) {
             throw new ForbiddenException("Only coordinator or admin can access team management.");
         }
+        return user;
     }
 
     private TeamStatus parseTeamStatus(String status) {
@@ -139,8 +194,100 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
         }
     }
 
+    private TeamRegistrationStatus parseRegistrationStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return TeamRegistrationStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid team registration status: " + status);
+        }
+    }
+
     private String normalizeSearch(String search) {
         return search == null || search.isBlank() ? null : search.trim();
+    }
+
+    private void ensurePendingRegistration(Team team) {
+        if (team.getRegistrationStatus() != TeamRegistrationStatus.PENDING_APPROVAL) {
+            throw new ConflictException("Only PENDING_APPROVAL team registrations can be reviewed.");
+        }
+    }
+
+    private void ensureRegistrationCanBeApproved(Team team) {
+        ensurePendingRegistration(team);
+        Track track = team.getTrack();
+        if (track == null) {
+            throw new ConflictException("Team registration has no track.");
+        }
+        List<TeamMember> members = teamMemberRepository.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAsc(team.getId());
+        if (!track.isMemberCountAllowed(members.size())) {
+            throw new ConflictException("Team no longer meets the track member-count requirement.");
+        }
+        boolean hasInactiveMember = members.stream().anyMatch(member -> member.getUser() == null || !member.getUser().isActive());
+        if (hasInactiveMember) {
+            throw new ConflictException("All team members must have active accounts before approval.");
+        }
+        ensureTrackHasCapacity(track);
+    }
+
+    private void ensureTrackHasCapacity(Track track) {
+        if (track.getMaxTeams() == null) {
+            return;
+        }
+        if (teamRepository.CountActiveTeamByTrackId(track.getId()) >= track.getMaxTeams()) {
+            throw new ConflictException("Maximum number of approved teams for this track has been reached.");
+        }
+    }
+
+    private CoordinatorTeamDetailResponse loadTeamDetail(Team team) {
+        List<TeamMember> members = teamMemberRepository.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAsc(team.getId());
+        List<Submission> submissions = submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(team.getId());
+        return toDetailResponse(team, members, submissions);
+    }
+
+    private Map<String, Object> registrationAuditState(Team team) {
+        return Map.of(
+                "teamStatus", team.getStatus().name(),
+                "registrationStatus", team.getRegistrationStatus().name()
+        );
+    }
+
+    private void auditRegistrationReview(Team team, User reviewer, Map<String, Object> beforeState, AuditActionType action) {
+        auditLogRepository.save(AuditLog.builder()
+                .actor(reviewer)
+                .actionType(action)
+                .targetTable("teams")
+                .targetId(team.getId())
+                .beforeState(beforeState)
+                .afterState(registrationAuditState(team))
+                .context(team.getRegistrationRejectionReason() == null ? null : Map.of("rejectionReason", team.getRegistrationRejectionReason()))
+                .build()
+        );
+    }
+
+    private void notifyRegistrationReview(Team team, User reviewer, boolean approved) {
+        if (team.getLeader() == null) {
+            return;
+        }
+        HackathonEvent event = team.getTrack() == null ? null : team.getTrack().getEvent();
+        NotificationType type = approved ? NotificationType.TEAM_REGISTRATION_APPROVED : NotificationType.TEAM_REGISTRATION_REJECTED;
+        String title = approved ? "Team registration approved" : "Team registration rejected";
+        String body = approved ? "Your team is approved to compete." : "Registration rejected: " + team.getRegistrationRejectionReason();
+        notificationService.createSystemNotification(
+                reviewer,
+                event,
+                type,
+                title,
+                body,
+                NotificationTargetScope.SINGLE_USER,
+                team.getLeader().getId(),
+                null,
+                NotificationChannel.BOTH,
+                null
+        );
     }
 
     private CoordinatorTeamSummaryResponse toSummaryResponse(Team team) {
@@ -153,6 +300,7 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
                 team.getName(),
                 team.getProjectTitle(),
                 enumName(team.getStatus()),
+                enumName(team.getRegistrationStatus()),
                 eventId(team),
                 eventName(team),
                 trackId(team),
@@ -186,6 +334,7 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
                 team.getProjectTitle(),
                 team.getDescription(),
                 enumName(team.getStatus()),
+                enumName(team.getRegistrationStatus()),
                 eventId(team),
                 eventName(team),
                 trackId(team),
@@ -204,6 +353,10 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
                         .map(Enum::name)
                         .orElse(null),
                 team.getRegisteredAt(),
+                team.getRegistrationReviewedBy() == null ? null : team.getRegistrationReviewedBy().getId(),
+                team.getRegistrationReviewedBy() == null ? null : team.getRegistrationReviewedBy().getFullName(),
+                team.getRegistrationReviewedAt(),
+                team.getRegistrationRejectionReason(),
                 team.getCreatedAt(),
                 team.getUpdatedAt(),
                 members.stream().map(this::toMemberResponse).toList(),

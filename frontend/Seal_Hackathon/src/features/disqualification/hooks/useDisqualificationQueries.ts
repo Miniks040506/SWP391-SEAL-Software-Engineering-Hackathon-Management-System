@@ -15,6 +15,8 @@ export const disqualificationQueryKeys = {
     eventId: UUID,
     params?: GetEventDisqualificationsParams,
   ) => [...disqualificationQueryKeys.all, "event", eventId, params] as const,
+  activeByTeam: (teamId: UUID) =>
+    [...disqualificationQueryKeys.all, "team", teamId, "active"] as const,
   byId: (disqualificationId: UUID) =>
     [...disqualificationQueryKeys.all, "detail", disqualificationId] as const,
 };
@@ -31,6 +33,14 @@ export const useEventDisqualificationsQuery = (
     queryFn: () =>
       disqualificationApi.getEventDisqualifications(eventId!, params),
     enabled: !!eventId,
+  });
+};
+
+export const useActiveTeamDisqualificationsQuery = (teamId?: UUID) => {
+  return useQuery<DisqualificationResponse[]>({
+    queryKey: disqualificationQueryKeys.activeByTeam(teamId!),
+    queryFn: () => disqualificationApi.getActiveTeamDisqualifications(teamId!),
+    enabled: !!teamId,
   });
 };
 

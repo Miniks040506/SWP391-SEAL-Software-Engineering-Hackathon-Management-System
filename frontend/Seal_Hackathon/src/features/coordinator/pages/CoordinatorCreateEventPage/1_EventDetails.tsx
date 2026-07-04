@@ -49,7 +49,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
         </h2>
 
         <p className="mt-2 text-sm font-medium text-gray-500 dark:text-slate-400">
-          Setup event information and registration period.
+          Setup event information, registration period, and official competition period.
         </p>
       </div>
 
@@ -99,7 +99,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             required
             fullWidth
             size="small"
-            inputProps={{ maxLength: 4 }}
+            slotProps={{ htmlInput: { maxLength: 4 } }}
             sx={textFieldSx}
             {...register("year")}
           />
@@ -122,7 +122,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             fullWidth
             size="small"
             sx={dateTimeFieldSx}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
             {...register("registrationStartAt")}
           />
 
@@ -135,8 +135,50 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             fullWidth
             size="small"
             sx={dateTimeFieldSx}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
             {...register("registrationEndAt")}
+          />
+
+          <TextField
+            label="Competition Start At"
+            type="datetime-local"
+            error={Boolean(errors.competitionStartAt)}
+            helperText={errors.competitionStartAt?.message}
+            required
+            fullWidth
+            size="small"
+            sx={dateTimeFieldSx}
+            slotProps={{ inputLabel: { shrink: true } }}
+            {...register("competitionStartAt")}
+          />
+
+          <TextField
+            label="Competition End At"
+            type="datetime-local"
+            error={Boolean(errors.competitionEndAt)}
+            helperText={errors.competitionEndAt?.message}
+            required
+            fullWidth
+            size="small"
+            sx={dateTimeFieldSx}
+            slotProps={{ inputLabel: { shrink: true } }}
+            {...register("competitionEndAt")}
+          />
+
+          <TextField
+            label="Variance review threshold"
+            type="number"
+            error={Boolean(errors.varianceThresholdPoints)}
+            helperText={
+              errors.varianceThresholdPoints?.message ??
+              "Criteria at or above this standard deviation are flagged. Default: 3.0."
+            }
+            required
+            fullWidth
+            size="small"
+            sx={textFieldSx}
+            slotProps={{ htmlInput: { min: 0.01, step: 0.1 } }}
+            {...register("varianceThresholdPoints", { valueAsNumber: true })}
           />
         </div>
 

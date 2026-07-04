@@ -37,6 +37,7 @@ import {
   useUpdateRoundMutation,
 } from "@/features/coordinator/hooks/useCoordinatorEventMutations";
 import type { UUID } from "@/types/common.types";
+import type { EventDetailResponse } from "@/types/event.types";
 import type { AdvanceRuleResponse, RoundResponse } from "@/types/round.types";
 import type { TrackResponse } from "@/types/track.types";
 
@@ -47,6 +48,8 @@ type EditableRound = RoundResponse & {
   description?: string | null;
   orderIndex?: number;
   isFinal?: boolean;
+  startAt?: string | null;
+  endAt?: string | null;
   submissionDeadline?: string | null;
   judgingDeadline?: string | null;
 };
@@ -55,12 +58,15 @@ type RoundForm = {
   name: string;
   description: string;
   orderIndex: string;
+  startAt: string;
+  endAt: string;
   submissionDeadline: string;
   judgingDeadline: string;
 };
 
 type RoundsTabProps = {
   eventId: UUID;
+  event: EventDetailResponse;
   tracks: TrackResponse[];
   rounds: RoundResponse[];
   isLoading: boolean;
@@ -73,6 +79,8 @@ const emptyRound: RoundForm = {
   name: "",
   description: "",
   orderIndex: "",
+  startAt: "",
+  endAt: "",
   submissionDeadline: "",
   judgingDeadline: "",
 };
@@ -127,9 +135,118 @@ function createRoundForm(round: RoundResponse): RoundForm {
     name: getName(round),
     description: raw.description ?? "",
     orderIndex: String(raw.orderIndex ?? 0),
+    startAt: toDateTimeLocal(raw.startAt),
+    endAt: toDateTimeLocal(raw.endAt),
     submissionDeadline: toDateTimeLocal(raw.submissionDeadline),
     judgingDeadline: toDateTimeLocal(raw.judgingDeadline),
   };
+}
+
+function toApiDateTime(value?: string | null) {
+  if (!value) return undefined;
+  return value.length === 16 ? `${value}:00` : value;
+}
+
+function getEventPeriod(event: EventDetailResponse) {
+  return {
+    competitionStartAt: toDateTimeLocal(event.competitionStartAt),
+    competitionEndAt: toDateTimeLocal(event.competitionEndAt),
+  };
+}
+
+function validateRoundTiming(
+  values: RoundForm,
+  event: EventDetailResponse,
+  rounds: RoundResponse[],
+  excludedRoundId?: UUID,
+) {
+  if (!values.name.trim()) {
+    enqueueSnackbar("Round name is required.", { variant: "error" });
+    return false;
+  }
+
+  if (
+    !values.startAt ||
+    !values.endAt ||
+    !values.submissionDeadline ||
+    !values.judgingDeadline
+  ) {
+    enqueueSnackbar("Round start, end, submission, and judging deadlines are required.", {
+      variant: "error",
+    });
+    return false;
+  }
+
+  if (values.startAt >= values.endAt) {
+    enqueueSnackbar("Round end time must be after start time.", {
+      variant: "error",
+    });
+    return false;
+  }
+
+  const { competitionStartAt, competitionEndAt } = getEventPeriod(event);
+
+  if (competitionStartAt && values.startAt < competitionStartAt) {
+    enqueueSnackbar("Round start time must be within the event competition period.", {
+      variant: "error",
+    });
+    return false;
+  }
+
+  if (competitionEndAt && values.endAt > competitionEndAt) {
+    enqueueSnackbar("Round end time must be within the event competition period.", {
+      variant: "error",
+    });
+    return false;
+  }
+
+  if (
+    values.submissionDeadline < values.startAt ||
+    values.submissionDeadline > values.endAt
+  ) {
+    enqueueSnackbar("Submission deadline must be within the round period.", {
+      variant: "error",
+    });
+    return false;
+  }
+
+  if (values.submissionDeadline >= values.judgingDeadline) {
+    enqueueSnackbar("Judging deadline must be after submission deadline.", {
+      variant: "error",
+    });
+    return false;
+  }
+
+  if (values.judgingDeadline > values.endAt) {
+    enqueueSnackbar("Judging deadline must be within the round period.", {
+      variant: "error",
+    });
+    return false;
+  }
+
+  const overlapsExistingRound = rounds.some((round) => {
+    if (excludedRoundId && round.id === excludedRoundId) return false;
+
+    const raw = round as EditableRound;
+    const startAt = toDateTimeLocal(raw.startAt);
+    const endAt = toDateTimeLocal(raw.endAt);
+
+    return Boolean(
+      startAt &&
+        endAt &&
+        values.startAt < endAt &&
+        values.endAt > startAt,
+    );
+  });
+
+  if (overlapsExistingRound) {
+    enqueueSnackbar("Round period overlaps with another round in this event.", {
+      variant: "error",
+    });
+    return false;
+  }
+
+  return true;
 }
 
 const RULE_TYPE_OPTIONS = [
@@ -555,15 +672,59 @@ function RoundOperationPanel({
   return (
     <div className="col-span-1 md:col-span-2 mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-black text-slate-900 dark:text-white">
             Operation status: {status.roundStatus}
+          </p>
+          <p className="mt-1 text-xs font-semibold text-slate-500">
+            Period: {formatRoundTime(status.startAt)} â†’{" "}
+            {formatRoundTime(status.endAt)}
           </p>
           <p className="mt-1 text-xs font-semibold text-slate-500">
             Submitted/late: {status.submittedOrLateSubmissionCount} / Drafts:{" "}
             {status.draftSubmissionCount} / Judge assignments:{" "}
             {status.judgeAssignmentCount}
           </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+            <span
+              className={`rounded-full px-2.5 py-1 ${
+                status.deadlineConfigured
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+              }`}
+            >
+              Deadlines: {status.deadlineConfigured ? "Ready" : "Missing"}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-1 ${
+                status.criteriaConfigured
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+              }`}
+            >
+              Criteria: {status.criteriaCount}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-1 ${
+                status.judgeAssignmentsConfigured
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+              }`}
+            >
+              Judge coverage: {status.judgeAssignmentsConfigured ? "Ready" : "Missing"} ({status.trackCount}{" "}
+              tracks)
+            </span>
+          </div>
+          {status.openBlockers.length > 0 && (
+            <Alert severity="warning" sx={{ mt: 1.5 }}>
+              <p className="text-xs font-bold">Complete before opening:</p>
+              <ul className="mt-1 list-disc pl-5 text-xs">
+                {status.openBlockers.map((blocker) => (
+                  <li key={blocker}>{blocker}</li>
+                ))}
+              </ul>
+            </Alert>
+          )}
           {status.submissionLockedAt && (
             <p className="mt-1 text-xs font-semibold text-rose-600">
               Locked at {formatRoundTime(status.submissionLockedAt)}
@@ -616,6 +777,7 @@ function RoundOperationPanel({
 
 export function RoundsTab({
   eventId,
+  event,
   tracks,
   rounds,
   isLoading,
@@ -647,10 +809,7 @@ export function RoundsTab({
   const handleCreate = async () => {
     if (!canEdit) return;
 
-    if (!newRound.name.trim()) {
-      enqueueSnackbar("Round name is required.", { variant: "error" });
-      return;
-    }
+    if (!validateRoundTiming(newRound, event, rounds)) return;
 
     try {
       const orderIndex = rounds.length + 1;
@@ -660,12 +819,10 @@ export function RoundsTab({
         description: newRound.description.trim() || undefined,
         orderIndex,
         isFinal: true,
-        submissionDeadline: newRound.submissionDeadline
-          ? `${newRound.submissionDeadline}:00`
-          : undefined,
-        judgingDeadline: newRound.judgingDeadline
-          ? `${newRound.judgingDeadline}:00`
-          : undefined,
+        startAt: toApiDateTime(newRound.startAt),
+        endAt: toApiDateTime(newRound.endAt),
+        submissionDeadline: toApiDateTime(newRound.submissionDeadline),
+        judgingDeadline: toApiDateTime(newRound.judgingDeadline),
       });
 
       // Update other rounds to ensure only max has isFinal
@@ -678,6 +835,8 @@ export function RoundsTab({
               name: r.name,
               orderIndex: r.orderIndex,
               isFinal: false,
+              startAt: r.startAt,
+              endAt: r.endAt,
               submissionDeadline: r.submissionDeadline,
               judgingDeadline: r.judgingDeadline,
             },
@@ -700,10 +859,7 @@ export function RoundsTab({
     const id = getId(round);
     const values = editing[id];
 
-    if (!values?.name?.trim()) {
-      enqueueSnackbar("Round name is required.", { variant: "error" });
-      return;
-    }
+    if (!values || !validateRoundTiming(values, event, rounds, id)) return;
 
     try {
       const orderIndex = round.orderIndex;
@@ -717,12 +873,10 @@ export function RoundsTab({
           description: values.description.trim(),
           orderIndex,
           isFinal,
-          submissionDeadline: values.submissionDeadline
-            ? `${values.submissionDeadline}:00`
-            : undefined,
-          judgingDeadline: values.judgingDeadline
-            ? `${values.judgingDeadline}:00`
-            : undefined,
+          startAt: toApiDateTime(values.startAt),
+          endAt: toApiDateTime(values.endAt),
+          submissionDeadline: toApiDateTime(values.submissionDeadline),
+          judgingDeadline: toApiDateTime(values.judgingDeadline),
         },
       });
 
@@ -754,6 +908,8 @@ export function RoundsTab({
                 name: r.name,
                 orderIndex: expectedOrder,
                 isFinal,
+                startAt: r.startAt,
+                endAt: r.endAt,
                 submissionDeadline: r.submissionDeadline,
                 judgingDeadline: r.judgingDeadline,
               },
@@ -858,6 +1014,36 @@ export function RoundsTab({
                 />
 
                 <TextField
+                  label="Round start"
+                  type="datetime-local"
+                  value={newRound.startAt}
+                  onChange={(event) =>
+                    setNewRound((current) => ({
+                      ...current,
+                      startAt: event.target.value,
+                    }))
+                  }
+                  size="small"
+                  sx={dateTimeFieldSx}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
+
+                <TextField
+                  label="Round end"
+                  type="datetime-local"
+                  value={newRound.endAt}
+                  onChange={(event) =>
+                    setNewRound((current) => ({
+                      ...current,
+                      endAt: event.target.value,
+                    }))
+                  }
+                  size="small"
+                  sx={dateTimeFieldSx}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
+
+                <TextField
                   label="Submission deadline"
                   type="datetime-local"
                   value={newRound.submissionDeadline}
@@ -875,6 +1061,7 @@ export function RoundsTab({
                 <TextField
                   label="Judging deadline"
                   type="datetime-local"
+                  required
                   value={newRound.judgingDeadline}
                   onChange={(event) =>
                     setNewRound((current) => ({
@@ -982,6 +1169,44 @@ export function RoundsTab({
                   />
 
                   <TextField
+                    label="Round start"
+                    type="datetime-local"
+                    value={values.startAt}
+                    onChange={(event) =>
+                      setEditing((current) => ({
+                        ...current,
+                        [id]: {
+                          ...values,
+                          startAt: event.target.value,
+                        },
+                      }))
+                    }
+                    size="small"
+                    sx={dateTimeFieldSx}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    disabled={!canEdit}
+                  />
+
+                  <TextField
+                    label="Round end"
+                    type="datetime-local"
+                    value={values.endAt}
+                    onChange={(event) =>
+                      setEditing((current) => ({
+                        ...current,
+                        [id]: {
+                          ...values,
+                          endAt: event.target.value,
+                        },
+                      }))
+                    }
+                    size="small"
+                    sx={dateTimeFieldSx}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    disabled={!canEdit}
+                  />
+
+                  <TextField
                     label="Submission deadline"
                     type="datetime-local"
                     value={values.submissionDeadline}
@@ -1003,6 +1228,7 @@ export function RoundsTab({
                   <TextField
                     label="Judging deadline"
                     type="datetime-local"
+                    required
                     value={values.judgingDeadline}
                     onChange={(event) =>
                       setEditing((current) => ({
@@ -1117,6 +1343,10 @@ export function RoundsTab({
                               )}
                           </div>
                         </div>
+                        <p className="mt-1 text-xs font-medium text-slate-500">
+                          Period: {formatRoundTime(raw.startAt)} â†’{" "}
+                          {formatRoundTime(raw.endAt)}
+                        </p>
                         <p className="mt-1 text-xs font-medium text-slate-500">
                           Submit: {formatRoundTime(raw.submissionDeadline)}
                         </p>

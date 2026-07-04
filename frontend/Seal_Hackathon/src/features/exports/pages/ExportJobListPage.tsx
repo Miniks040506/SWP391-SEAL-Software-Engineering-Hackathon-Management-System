@@ -9,8 +9,7 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import CircularProgress from "@mui/material/CircularProgress";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import TextField from "@mui/material/TextField";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
@@ -24,6 +23,7 @@ import {
   useCreateRankingExport,
   useCreateScoresExport,
   useCreateTeamListExport,
+  useCreateGenericExport,
   useDownloadExport,
   useRetryExport,
   useDeleteExport,
@@ -36,10 +36,14 @@ import {
   useCoordinatorEventTracksQuery,
   useCoordinatorEventRoundsQuery
 } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
+import { useAuthStore } from "@/stores/authStore";
+import { getPrimaryRole } from "@/utils/roleRedirect";
 
 export const ExportJobListPage = () => {
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: string }>();
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = getPrimaryRole(user) === "ADMIN";
   const [page, setPage] = useState(0);
 
   const eventQuery = useCoordinatorEventDetailQuery(eventId as UUID | undefined);
@@ -54,6 +58,7 @@ export const ExportJobListPage = () => {
   const { mutate: createRanking, isPending: isRankingPending } = useCreateRankingExport();
   const { mutate: createScore, isPending: isScorePending } = useCreateScoresExport();
   const { mutate: createTeam, isPending: isTeamPending } = useCreateTeamListExport();
+  const { mutate: createGenericExport, isPending: isGenericPending } = useCreateGenericExport();
   const { mutate: downloadExport, isPending: isDownloading } = useDownloadExport();
   const { mutate: retryExport } = useRetryExport();
   const { mutate: deleteExport } = useDeleteExport();
@@ -80,6 +85,12 @@ export const ExportJobListPage = () => {
 
   const [teamFormat, setTeamFormat] = useState<ExportFormat>("CSV");
   const [teamTrackId, setTeamTrackId] = useState<string>("");
+
+  const [fullEventFormat, setFullEventFormat] = useState<ExportFormat>("CSV");
+  const [calibrationFormat, setCalibrationFormat] = useState<ExportFormat>("CSV");
+  const [annualFormat, setAnnualFormat] = useState<ExportFormat>("CSV");
+  const [annualYear, setAnnualYear] = useState<string>(String(new Date().getFullYear()));
+  const [annualSeason, setAnnualSeason] = useState<string>("");
 
   const handleCreateRanking = () => {
     if (!activeEventId) return;
@@ -114,8 +125,42 @@ export const ExportJobListPage = () => {
     createTeam({ eventId: activeEventId as UUID, payload });
   };
 
-  const jobs = jobsData?.data?.content || [];
-  const totalPages = jobsData?.data?.totalPages || 0;
+  const handleCreateFullEvent = () => {
+    if (!activeEventId) return;
+    createGenericExport({
+      exportType: "FULL_EVENT_REPORT",
+      params: {
+        eventId: activeEventId as UUID,
+        format: fullEventFormat,
+      },
+    });
+  };
+
+  const handleCreateCalibration = () => {
+    if (!activeEventId) return;
+    createGenericExport({
+      exportType: "CALIBRATION_REPORT",
+      params: {
+        eventId: activeEventId as UUID,
+        format: calibrationFormat,
+      },
+    });
+  };
+
+  const handleCreateAnnual = () => {
+    const parsedYear = annualYear.trim() ? Number(annualYear) : undefined;
+    createGenericExport({
+      exportType: "ADMIN_ANNUAL_REPORT",
+      params: {
+        format: annualFormat,
+        ...(Number.isFinite(parsedYear) && { year: parsedYear }),
+        ...(annualSeason && { season: annualSeason }),
+      },
+    });
+  };
+
+  const jobs = jobsData?.content || [];
+  const totalPages = jobsData?.totalPages || 0;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 p-4">
@@ -333,6 +378,93 @@ export const ExportJobListPage = () => {
               </div>
             }
           />
+
+          <ExportReportCard
+            title="Full Event Report"
+            description="Export event setup, teams, rankings, scores, calibration summary and ICC estimate."
+            icon={<AssessmentOutlinedIcon fontSize="small" />}
+            iconBgClass="bg-purple-100 dark:bg-purple-900/40"
+            iconColorClass="text-purple-600 dark:text-purple-400"
+            onExport={handleCreateFullEvent}
+            isExporting={isGenericPending}
+            disabled={!activeEventId}
+            exportText="Export event"
+            controls={
+              <div className="flex items-center gap-4">
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Format</InputLabel>
+                  <Select label="Format" value={fullEventFormat} onChange={(e) => setFullEventFormat(e.target.value as ExportFormat)}>
+                    <MenuItem value="CSV">CSV</MenuItem>
+                    <MenuItem value="XLSX">Excel</MenuItem>
+                  </Select>
+                </FormControl>
+              </div>
+            }
+          />
+
+          <ExportReportCard
+            title="Calibration Report"
+            description="Export calibration rounds, benchmark coverage, score counts and benchmark deviation summary."
+            icon={<WorkspacePremiumOutlinedIcon fontSize="small" />}
+            iconBgClass="bg-cyan-100 dark:bg-cyan-900/40"
+            iconColorClass="text-cyan-600 dark:text-cyan-400"
+            onExport={handleCreateCalibration}
+            isExporting={isGenericPending}
+            disabled={!activeEventId}
+            exportText="Export calibration"
+            controls={
+              <div className="flex items-center gap-4">
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Format</InputLabel>
+                  <Select label="Format" value={calibrationFormat} onChange={(e) => setCalibrationFormat(e.target.value as ExportFormat)}>
+                    <MenuItem value="CSV">CSV</MenuItem>
+                    <MenuItem value="XLSX">Excel</MenuItem>
+                  </Select>
+                </FormControl>
+              </div>
+            }
+          />
+
+          {isAdmin && (
+            <ExportReportCard
+              title="Admin Annual/System Report"
+              description="Generate cross-event annual or seasonal participation, audit and ICC summary reports."
+              icon={<AssessmentOutlinedIcon fontSize="small" />}
+              iconBgClass="bg-rose-100 dark:bg-rose-900/40"
+              iconColorClass="text-rose-600 dark:text-rose-400"
+              onExport={handleCreateAnnual}
+              isExporting={isGenericPending}
+              exportText="Export system"
+              controls={
+                <div className="flex flex-wrap items-center gap-4">
+                  <TextField
+                    size="small"
+                    label="Year"
+                    type="number"
+                    value={annualYear}
+                    onChange={(e) => setAnnualYear(e.target.value)}
+                    sx={{ width: 120 }}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Season</InputLabel>
+                    <Select label="Season" value={annualSeason} onChange={(e) => setAnnualSeason(e.target.value)}>
+                      <MenuItem value="">All Seasons</MenuItem>
+                      <MenuItem value="SPRING">Spring</MenuItem>
+                      <MenuItem value="SUMMER">Summer</MenuItem>
+                      <MenuItem value="FALL">Fall</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Format</InputLabel>
+                    <Select label="Format" value={annualFormat} onChange={(e) => setAnnualFormat(e.target.value as ExportFormat)}>
+                      <MenuItem value="CSV">CSV</MenuItem>
+                      <MenuItem value="XLSX">Excel</MenuItem>
+                    </Select>
+                  </FormControl>
+                </div>
+              }
+            />
+          )}
 
         </div>
 

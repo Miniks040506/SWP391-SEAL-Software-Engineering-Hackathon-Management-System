@@ -25,11 +25,18 @@ export type RankingResponse = {
   trackName?: string | null;
   totalScore: number;
   rankPosition: number;
+  tied?: boolean | null;
+  tieGroupKey?: string | null;
+  tieGroupSize?: number | null;
+  manualResolutionRequired?: boolean | null;
   advanced: boolean;
   judgeCount?: number | null;
   scoreBreakdown?: ScoreBreakdown | null;
   calculatedAt?: ISODateTime | null;
   published?: boolean | null;
+  advanceReason?: string | null;
+  submissionStatus?: string | null;
+  teamStatus?: string | null;
 };
 
 export type RecalculateRankingRequest = {

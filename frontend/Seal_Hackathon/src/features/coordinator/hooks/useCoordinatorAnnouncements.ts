@@ -13,7 +13,6 @@ import type {
   UpdateAnnouncementRequest,
 } from "@/types/announcement.types";
 import type { EventSummaryResponse } from "@/types/event.types";
-import type { TrackResponse } from "@/types/track.types";
 
 import type {
   AnnouncementAction,

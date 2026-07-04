@@ -11,6 +11,7 @@ export const EVENT_STATUSES = [
   "JUDGING",
   "COMPLETED",
   "CANCELLED",
+  "ARCHIVED",
 ] as const;
 
 export const REQUIRED_LINK_TYPES = [
@@ -36,6 +37,9 @@ export const requiredLinkTypeOptions = REQUIRED_LINK_TYPES;
 export const advancementRuleOptions = ADVANCEMENT_RULE_TYPES;
 
 const optionalTrimmedString = z.string().trim().optional().or(z.literal(""));
+
+const requiredDateTimeString = (label: string) =>
+  z.string().trim().min(1, `${label} is required.`);
 
 const optionalPositiveInt = z
   .union([
@@ -95,6 +99,21 @@ export const createEventDetailsSchema = z
       .trim()
       .min(1, "Registration end time is required."),
 
+    competitionStartAt: z
+      .string()
+      .trim()
+      .min(1, "Competition start time is required."),
+
+    competitionEndAt: z
+      .string()
+      .trim()
+      .min(1, "Competition end time is required."),
+
+    varianceThresholdPoints: z
+      .number()
+      .positive("Variance threshold must be greater than 0.")
+      .multipleOf(0.01, "Use no more than two decimal places."),
+
     description: optionalTrimmedString,
 
     bannerFile: z.custom<File | null>().nullable().optional(),
@@ -111,6 +130,30 @@ export const createEventDetailsSchema = z
         code: z.ZodIssueCode.custom,
         path: ["registrationEndAt"],
         message: "Registration end time must be after start time.",
+      });
+    }
+
+    if (
+      values.competitionStartAt &&
+      values.competitionEndAt &&
+      values.competitionStartAt >= values.competitionEndAt
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["competitionEndAt"],
+        message: "Competition end time must be after start time.",
+      });
+    }
+
+    if (
+      values.registrationEndAt &&
+      values.competitionStartAt &&
+      values.registrationEndAt > values.competitionStartAt
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["competitionStartAt"],
+        message: "Competition must start after registration closes.",
       });
     }
   });
@@ -176,13 +219,39 @@ export const createRoundSchema = z
       .int("Order index must be an integer.")
       .min(0, "Order index must be greater than or equal to 0."),
 
-    submissionDeadline: optionalTrimmedString,
+    startAt: requiredDateTimeString("Round start time"),
 
-    judgingDeadline: optionalTrimmedString,
+    endAt: requiredDateTimeString("Round end time"),
+
+    submissionDeadline: requiredDateTimeString("Submission deadline"),
+
+    judgingDeadline: requiredDateTimeString("Judging deadline"),
 
     advanceRules: z.array(z.custom<CreateAdvanceRuleRequest>()).default([]),
   })
   .superRefine((values, ctx) => {
+    if (values.startAt && values.endAt && values.startAt >= values.endAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["endAt"],
+        message: "Round end time must be after start time.",
+      });
+    }
+
+    if (
+      values.startAt &&
+      values.endAt &&
+      values.submissionDeadline &&
+      (values.submissionDeadline < values.startAt ||
+        values.submissionDeadline > values.endAt)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["submissionDeadline"],
+        message: "Submission deadline must be within the round period.",
+      });
+    }
+
     if (
       values.submissionDeadline &&
       values.judgingDeadline &&
@@ -192,6 +261,18 @@ export const createRoundSchema = z
         code: z.ZodIssueCode.custom,
         path: ["judgingDeadline"],
         message: "Judging deadline must be after submission deadline.",
+      });
+    }
+
+    if (
+      values.endAt &&
+      values.judgingDeadline &&
+      values.judgingDeadline > values.endAt
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["judgingDeadline"],
+        message: "Judging deadline must be within the round period.",
       });
     }
   });
@@ -294,22 +375,69 @@ export const createEventCriteriaSchema = z
     }
   });
 
-export const createEventSchema = createEventDetailsSchema.extend({
-  tracks: z.array(createTrackSchema).min(1, "Create at least one track."),
+export const createEventSchema = createEventDetailsSchema
+  .extend({
+    tracks: z.array(createTrackSchema).min(1, "Create at least one track."),
 
-  prizes: z.array(createPrizeSchema).default([]),
+    prizes: z.array(createPrizeSchema).default([]),
 
-  rounds: z.array(createRoundSchema).min(1, "Create at least one round."),
+    rounds: z.array(createRoundSchema).min(1, "Create at least one round."),
 
-  mentorJudgeAssignments: z
-    .array(createMentorJudgeAssignmentSchema)
-    .min(1, "Invite at least one mentor or judge.")
-    .default([]),
+    mentorJudgeAssignments: z
+      .array(createMentorJudgeAssignmentSchema)
+      .min(1, "Invite at least one mentor or judge.")
+      .default([]),
 
-  criteria: z.array(createEventCriteriaSchema).default([]),
-});
+    criteria: z.array(createEventCriteriaSchema).default([]),
+  })
+  .superRefine((values, ctx) => {
+    values.rounds.forEach((round, index) => {
+      if (
+        values.competitionStartAt &&
+        round.startAt &&
+        round.startAt < values.competitionStartAt
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["rounds", index, "startAt"],
+          message: "Round start time must be within the event competition period.",
+        });
+      }
 
-export type CreateEventFormValues = z.infer<typeof createEventSchema>;
+      if (
+        values.competitionEndAt &&
+        round.endAt &&
+        round.endAt > values.competitionEndAt
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["rounds", index, "endAt"],
+          message: "Round end time must be within the event competition period.",
+        });
+      }
+    });
+
+    const sortedRounds = values.rounds
+      .map((round, index) => ({ ...round, index }))
+      .filter((round) => round.startAt && round.endAt)
+      .sort((a, b) => a.startAt.localeCompare(b.startAt));
+
+    for (let index = 1; index < sortedRounds.length; index += 1) {
+      const previous = sortedRounds[index - 1];
+      const current = sortedRounds[index];
+
+      if (previous.startAt < current.endAt && previous.endAt > current.startAt) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["rounds", current.index, "startAt"],
+          message: "Round period overlaps with another round in this event.",
+        });
+      }
+    }
+  });
+
+export type CreateEventFormInput = z.input<typeof createEventSchema>;
+export type CreateEventFormValues = z.output<typeof createEventSchema>;
 export type CreateEventPayload = CreateEventFormValues;
 
 export type TrackFormValues = z.infer<typeof createTrackSchema>;
@@ -349,6 +477,8 @@ export const createEmptyRound = (orderIndex = 0): RoundFormValues => ({
   roundName: "",
   description: "",
   orderIndex,
+  startAt: "",
+  endAt: "",
   submissionDeadline: "",
   judgingDeadline: "",
   advanceRules: [],
@@ -404,6 +534,9 @@ export const initialCreateEventFormValues: CreateEventFormValues = {
 
   registrationStartAt: "",
   registrationEndAt: "",
+  competitionStartAt: "",
+  competitionEndAt: "",
+  varianceThresholdPoints: 3,
   description: "",
   bannerFile: null,
   bannerUrl: "",

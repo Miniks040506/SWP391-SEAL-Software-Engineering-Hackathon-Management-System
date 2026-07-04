@@ -12,6 +12,7 @@ import com.t7.seal.response.round.*;
 import com.t7.seal.response.team.TeamAdvancementDecisionResponse;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
+import com.t7.seal.service.RoundDeadlineReminderService;
 import com.t7.seal.service.RoundService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RoundServiceImpl implements RoundService {
 
+    private static final double WEIGHT_SUM_TOLERANCE = 0.0001d;
+    private static final double RATIO_WEIGHT_TOTAL = 1.0d;
+    private static final double PERCENT_WEIGHT_TOTAL = 100.0d;
+
     private final HackathonEventRepository hackathonEventRepository;
     private final RoundRepository roundRepository;
     private final AdvanceRuleRepository advanceRuleRepository;
@@ -39,13 +44,14 @@ public class RoundServiceImpl implements RoundService {
     private final ScoreRepository scoreRepository;
     private final RankingRepository rankingRepository;
     private final TeamRepository teamRepository;
+    private final RoundDeadlineReminderService roundDeadlineReminderService;
 
     private final CurrentUserService currentUserService;
 
     @Transactional
     @Override
     public RoundResponse createRound(UUID eventId, CreateRoundRequest request, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
@@ -53,6 +59,14 @@ public class RoundServiceImpl implements RoundService {
         assertTrackRoundEditable(event);
 
         validateCreateRoundRequest(request);
+        validateRoundSchedule(
+                event,
+                null,
+                request.startAt(),
+                request.endAt(),
+                request.submissionDeadline(),
+                request.judgingDeadline()
+        );
 
         if (roundRepository.existsByEventIdAndOrderIndex(eventId, request.orderIndex())) {
             throw new ConflictException("Round orderIndex already exists in this event");
@@ -69,10 +83,13 @@ public class RoundServiceImpl implements RoundService {
         round.setOrderIndex(request.orderIndex());
         round.setStatus(RoundStatus.UPCOMING);
         round.setIsFinal(Boolean.TRUE.equals(request.isFinal()));
+        round.setStartAt(request.startAt());
+        round.setEndAt(request.endAt());
         round.setSubmissionDeadline(request.submissionDeadline());
         round.setJudgingDeadline(request.judgingDeadline());
 
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.synchronizeSubmissionDeadlineReminders(saved, actor);
 
         return toRoundResponse(saved);
     }
@@ -119,6 +136,8 @@ public class RoundServiceImpl implements RoundService {
                 round.getOrderIndex(),
                 round.getIsFinal(),
                 round.getStatus().name(),
+                round.getStartAt(),
+                round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline(),
                 round.getSubmissionLockedAt(),
@@ -130,7 +149,7 @@ public class RoundServiceImpl implements RoundService {
     @Transactional
     @Override
     public RoundResponse updateRound(UUID roundId, UpdateRoundRequest request, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         Round round = getRound(roundId);
 
@@ -174,6 +193,14 @@ public class RoundServiceImpl implements RoundService {
             }
         }
 
+        if (request.startAt() != null) {
+            round.setStartAt(request.startAt());
+        }
+
+        if (request.endAt() != null) {
+            round.setEndAt(request.endAt());
+        }
+
         if (request.judgingDeadline() != null) {
             boolean changesJudgingDeadline = !request.judgingDeadline().equals(round.getJudgingDeadline());
             if (changesJudgingDeadline && round.getGradingLockedAt() != null) {
@@ -185,7 +212,14 @@ public class RoundServiceImpl implements RoundService {
             }
         }
 
-        validateDeadlines(round.getSubmissionDeadline(), round.getJudgingDeadline());
+        validateRoundSchedule(
+                round.getEvent(),
+                round.getId(),
+                round.getStartAt(),
+                round.getEndAt(),
+                round.getSubmissionDeadline(),
+                round.getJudgingDeadline()
+        );
 
         if (request.isFinal() != null) {
             round.setIsFinal(request.isFinal());
@@ -197,6 +231,7 @@ public class RoundServiceImpl implements RoundService {
         }
 
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.synchronizeSubmissionDeadlineReminders(saved, actor);
 
         return toRoundResponse(saved);
     }
@@ -216,6 +251,7 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException("Cannot delete a round that has been locked or had advancement confirmed");
         }
 
+        roundDeadlineReminderService.cancelSubmissionDeadlineReminders(round);
         roundRepository.delete(round);
     }
 
@@ -355,9 +391,16 @@ public class RoundServiceImpl implements RoundService {
             throw new ConflictException("Cannot re-open round that submissions are locked.");
         }
 
+        RoundOpenReadiness readiness = buildRoundOpenReadiness(round);
+        if (!readiness.openBlockers().isEmpty()) {
+            throw new ConflictException(
+                    "Round is not ready to open: " + String.join(" ", readiness.openBlockers()));
+        }
+
         RoundStatus before = round.getStatus();
         round.setStatus(RoundStatus.OPEN);
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.synchronizeSubmissionDeadlineReminders(saved, actor);
         saveRoundAudit(actor, round, AuditActionType.ROUND_OPEN, before.name(), saved.getStatus().name());
 
         saveRoundNotification(actor, round, NotificationType.ROUND_OPENED, "Round open", "Round " + saved.getName());
@@ -377,6 +420,7 @@ public class RoundServiceImpl implements RoundService {
         RoundStatus before = round.getStatus();
         round.setStatus(RoundStatus.CLOSED);
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.cancelSubmissionDeadlineReminders(saved);
         saveRoundAudit(actor, round, AuditActionType.ROUND_CLOSED, before.name(), saved.getStatus().name());
 
         saveRoundNotification(actor, round, NotificationType.ROUND_CLOSED, "Round closed", "Round " + saved.getName());
@@ -394,6 +438,7 @@ public class RoundServiceImpl implements RoundService {
         }
 
         if (round.getStatus() != RoundStatus.OPEN
+                && round.getStatus() != RoundStatus.PENDING_LOCK
                 && round.getStatus() != RoundStatus.CLOSED) {
             throw new ConflictException("Round cannot be locked in this status " + round.getStatus() + ".");
         }
@@ -403,6 +448,7 @@ public class RoundServiceImpl implements RoundService {
         round.setSubmissionLockedAt(now);
         round.setStatus(RoundStatus.CLOSED);
         Round saved = roundRepository.save(round);
+        roundDeadlineReminderService.cancelSubmissionDeadlineReminders(saved);
 
         List<Submission> drafts = submissionRepository.findDraftsByRoundId(saved.getId());
         drafts.forEach(draft -> draft.setStatus(SubmissionStatus.LATE));
@@ -464,6 +510,12 @@ public class RoundServiceImpl implements RoundService {
         if (progress.total() == 0) {
             throw new ConflictException(
                     "At least one assigned submission is required before locking grading.");
+        }
+        if (progress.completed() < progress.total()) {
+            throw new ConflictException(
+                    "Cannot lock grading while scorecards are incomplete: "
+                            + progress.completed() + "/" + progress.total()
+                            + " assigned submissions completed.");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -836,14 +888,52 @@ public class RoundServiceImpl implements RoundService {
         if (request.orderIndex() == null || request.orderIndex() < 0) {
             throw new BadRequestException("Round orderIndex must not be negative");
         }
-
-        validateDeadlines(request.submissionDeadline(), request.judgingDeadline());
     }
 
-    private void validateDeadlines(LocalDateTime submissionDeadline, LocalDateTime judgingDeadline) {
-        if (judgingDeadline != null && submissionDeadline != null &&
-                judgingDeadline.isBefore(submissionDeadline)) {
+    private void validateRoundSchedule(
+            HackathonEvent event,
+            UUID excludedRoundId,
+            LocalDateTime startAt,
+            LocalDateTime endAt,
+            LocalDateTime submissionDeadline,
+            LocalDateTime judgingDeadline
+    ) {
+        requireTime(startAt, "Round start time");
+        requireTime(endAt, "Round end time");
+        requireTime(submissionDeadline, "Submission deadline");
+
+        if (!startAt.isBefore(endAt)) {
+            throw new BadRequestException("Round start time must be before round end time");
+        }
+
+        if (event.getCompetitionStartAt() != null && startAt.isBefore(event.getCompetitionStartAt())) {
+            throw new BadRequestException("Round start time must be within the event competition period");
+        }
+
+        if (event.getCompetitionEndAt() != null && endAt.isAfter(event.getCompetitionEndAt())) {
+            throw new BadRequestException("Round end time must be within the event competition period");
+        }
+
+        if (submissionDeadline.isBefore(startAt) || submissionDeadline.isAfter(endAt)) {
+            throw new BadRequestException("Submission deadline must be within the round period");
+        }
+
+        if (judgingDeadline != null && judgingDeadline.isBefore(submissionDeadline)) {
             throw new BadRequestException("judgingDeadline cannot be before submissionDeadline");
+        }
+
+        if (judgingDeadline != null && judgingDeadline.isAfter(endAt)) {
+            throw new BadRequestException("Judging deadline must be within the round period");
+        }
+
+        if (roundRepository.existsOverlappingRoundPeriod(event.getId(), excludedRoundId, startAt, endAt)) {
+            throw new ConflictException("Round period overlaps with another round in this event.");
+        }
+    }
+
+    private void requireTime(LocalDateTime value, String fieldName) {
+        if (value == null) {
+            throw new BadRequestException(fieldName + " is required");
         }
     }
 
@@ -874,6 +964,8 @@ public class RoundServiceImpl implements RoundService {
                 round.getOrderIndex(),
                 round.getIsFinal(),
                 round.getStatus().name(),
+                round.getStartAt(),
+                round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline()
         );
@@ -925,7 +1017,8 @@ public class RoundServiceImpl implements RoundService {
         RegistrationStatus status = round.getEvent().getStatus();
 
         if (status == RegistrationStatus.COMPLETED
-                || status == RegistrationStatus.CANCELLED) {
+                || status == RegistrationStatus.CANCELLED
+                || status == RegistrationStatus.ARCHIVED) {
             throw new ConflictException("Advance rules cannot be edited in this status " + status + ".");
         }
 
@@ -1141,13 +1234,7 @@ public class RoundServiceImpl implements RoundService {
     }
 
     private long countCriteriaForRound(Round round) {
-        if (round == null || round.getEvent() == null) {
-            return 0;
-        }
-        return round.getEvent().getEventCriteria().stream()
-                .filter(EventCriteria::isActiveCriteria)
-                .filter(criteria -> criteria.appliesToRound(round.getId()))
-                .count();
+        return getActiveCriteriaForRound(round).size();
     }
 
     private List<Ranking> executeAdvanceRules(List<Ranking> rankings, List<AdvanceRule> rules) {
@@ -1164,6 +1251,9 @@ public class RoundServiceImpl implements RoundService {
         }
 
         List<Ranking> sorted = rankings.stream()
+                .filter(ranking -> ranking.getAdvanceReason() != AdvanceReason.DISQUALIFIED)
+                .filter(ranking -> ranking.getSubmission() == null
+                        || ranking.getSubmission().getStatus() != SubmissionStatus.DISQUALIFIED)
                 .sorted(Comparator
                         .comparing((Ranking r) -> r.getTrack().getId().toString())
                         .thenComparing(Ranking::getRankPosition)
@@ -1263,11 +1353,18 @@ public class RoundServiceImpl implements RoundService {
                 track.getName(),
                 ranking.getTotalScore(),
                 ranking.getRankPosition(),
+                ranking.getTied(),
+                ranking.getTieGroupKey(),
+                ranking.getTieGroupSize(),
+                ranking.getManualResolutionRequired(),
                 ranking.getIsAdvanced(),
                 ranking.getJudgeCount(),
                 ranking.getScoreBreakdown(),
                 ranking.getCalculatedAt(),
-                event.getResultPublishedAt() != null
+                event.getResultPublishedAt() != null,
+                ranking.getAdvanceReason() == null ? null : ranking.getAdvanceReason().name(),
+                submission.getStatus() == null ? null : submission.getStatus().name(),
+                team.getStatus() == null ? null : team.getStatus().name()
         );
     }
 
@@ -1312,26 +1409,177 @@ public class RoundServiceImpl implements RoundService {
                 .countSubmittedOrLateByRoundAndTrackNullable(round.getId(), null);
 
         long drafts = submissionRepository.findDraftsByRoundId(round.getId()).size();
-        long assignmentCount = roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(round.getId()).size();
+        RoundOpenReadiness readiness = buildRoundOpenReadiness(round);
 
         return new RoundOperationStatusResponse(
                 round.getId(),
                 round.getEvent().getId(),
                 round.getEvent().getStatus().name(),
                 round.getStatus().name(),
+                round.getStartAt(),
+                round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline(),
                 round.getSubmissionLockedAt(),
                 round.getGradingLockedAt(),
                 round.getEvent().getStatus() == RegistrationStatus.ONGOING
                         && (round.getStatus() == RoundStatus.UPCOMING || round.getStatus() == RoundStatus.CLOSED)
-                        && round.getSubmissionLockedAt() == null,
+                        && round.getSubmissionLockedAt() == null
+                        && readiness.openBlockers().isEmpty(),
                 round.getStatus() == RoundStatus.OPEN,
-                (round.getStatus() == RoundStatus.OPEN || round.getStatus() == RoundStatus.CLOSED)
+                (round.getStatus() == RoundStatus.OPEN
+                        || round.getStatus() == RoundStatus.PENDING_LOCK
+                        || round.getStatus() == RoundStatus.CLOSED)
                         && round.getSubmissionLockedAt() == null,
+                readiness.deadlineConfigured(),
+                readiness.criteriaConfigured(),
+                readiness.judgeAssignmentsConfigured(),
+                readiness.criteriaCount(),
+                readiness.trackCount(),
+                readiness.openBlockers(),
                 submittedOrLate,
                 drafts,
-                assignmentCount
+                readiness.judgeAssignmentCount()
         );
+    }
+
+    private RoundOpenReadiness buildRoundOpenReadiness(Round round) {
+        boolean deadlineConfigured = round.getStartAt() != null
+                && round.getEndAt() != null
+                && round.getSubmissionDeadline() != null
+                && round.getJudgingDeadline() != null;
+
+        List<EventCriteria> criteriaForRound = getActiveCriteriaForRound(round);
+        long criteriaCount = criteriaForRound.size();
+        boolean criteriaConfigured = criteriaCount > 0;
+        List<String> criteriaWeightBlockers = validateCriteriaWeightsForRound(criteriaForRound);
+
+        List<Track> tracks = trackRepository.findByEventIdOrderByNameAsc(round.getEvent().getId());
+        List<RoundJudgeAssignment> assignments =
+                roundJudgeAssignmentRepository.findByRoundIdWithJudgeAndTrack(round.getId());
+
+        boolean hasGlobalAssignment = assignments.stream()
+                .anyMatch(RoundJudgeAssignment::isAssignedToAllTracks);
+        Set<UUID> assignedTrackIds = assignments.stream()
+                .map(RoundJudgeAssignment::getTrack)
+                .filter(Objects::nonNull)
+                .map(Track::getId)
+                .collect(Collectors.toSet());
+        boolean judgeAssignmentsConfigured = !tracks.isEmpty()
+                && (hasGlobalAssignment || tracks.stream()
+                .map(Track::getId)
+                .allMatch(assignedTrackIds::contains));
+
+        List<String> openBlockers = new ArrayList<>();
+        if (!deadlineConfigured) {
+            openBlockers.add("Configure round start, end, submission, and judging deadlines.");
+        }
+        if (!criteriaConfigured) {
+            openBlockers.add("Configure at least one active scoring criterion for this round.");
+        } else {
+            openBlockers.addAll(criteriaWeightBlockers);
+        }
+        if (tracks.isEmpty()) {
+            openBlockers.add("Create at least one event track.");
+        } else if (!judgeAssignmentsConfigured) {
+            openBlockers.add("Assign at least one judge to every event track for this round.");
+        }
+
+        return new RoundOpenReadiness(
+                deadlineConfigured,
+                criteriaConfigured,
+                judgeAssignmentsConfigured,
+                criteriaCount,
+                tracks.size(),
+                assignments.size(),
+                List.copyOf(openBlockers)
+        );
+    }
+
+    private List<EventCriteria> getActiveCriteriaForRound(Round round) {
+        if (round == null || round.getEvent() == null || round.getEvent().getEventCriteria() == null) {
+            return List.of();
+        }
+
+        return round.getEvent().getEventCriteria().stream()
+                .filter(EventCriteria::isActiveCriteria)
+                .filter(criteria -> criteria.appliesToRound(round.getId()))
+                .toList();
+    }
+
+    private List<String> validateCriteriaWeightsForRound(List<EventCriteria> criteriaForRound) {
+        if (criteriaForRound == null || criteriaForRound.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> nonPositiveCriteria = criteriaForRound.stream()
+                .filter(criteria -> effectiveWeight(criteria) <= 0)
+                .map(this::criteriaDisplayName)
+                .toList();
+        if (!nonPositiveCriteria.isEmpty()) {
+            return List.of("Each active criterion weight must be greater than 0. Invalid criteria: "
+                    + String.join(", ", nonPositiveCriteria) + ".");
+        }
+
+        double totalWeight = criteriaForRound.stream()
+                .mapToDouble(this::effectiveWeight)
+                .sum();
+        Double fullWeight = resolveFullWeightValue(totalWeight);
+        if (fullWeight == null) {
+            return List.of("Round criteria weights must total exactly 100% or 1.0. Current total is "
+                    + formatWeight(totalWeight) + ".");
+        }
+
+        List<String> fullWeightCriteria = criteriaForRound.stream()
+                .filter(criteria -> effectiveWeight(criteria) >= fullWeight)
+                .map(this::criteriaDisplayName)
+                .toList();
+        if (!fullWeightCriteria.isEmpty()) {
+            return List.of("Each active criterion weight must be less than 100%. Invalid criteria: "
+                    + String.join(", ", fullWeightCriteria) + ".");
+        }
+
+        return List.of();
+    }
+
+    private double effectiveWeight(EventCriteria criteria) {
+        Float weight = criteria == null ? null : criteria.getEffectiveWeight();
+        return weight == null ? 0.0d : weight.doubleValue();
+    }
+
+    private Double resolveFullWeightValue(double totalWeight) {
+        if (approximatelyEquals(totalWeight, RATIO_WEIGHT_TOTAL)) {
+            return RATIO_WEIGHT_TOTAL;
+        }
+        if (approximatelyEquals(totalWeight, PERCENT_WEIGHT_TOTAL)) {
+            return PERCENT_WEIGHT_TOTAL;
+        }
+        return null;
+    }
+
+    private boolean approximatelyEquals(double left, double right) {
+        return Math.abs(left - right) <= WEIGHT_SUM_TOLERANCE;
+    }
+
+    private String criteriaDisplayName(EventCriteria criteria) {
+        if (criteria == null || criteria.getEffectiveName() == null || criteria.getEffectiveName().isBlank()) {
+            return "Unnamed criterion";
+        }
+        return criteria.getEffectiveName();
+    }
+
+    private String formatWeight(double value) {
+        return String.format(Locale.US, "%.4f", value);
+    }
+
+    private record RoundOpenReadiness(
+            boolean deadlineConfigured,
+            boolean criteriaConfigured,
+            boolean judgeAssignmentsConfigured,
+            long criteriaCount,
+            long trackCount,
+            long judgeAssignmentCount,
+            List<String> openBlockers
+    ) {
     }
 }

@@ -18,7 +18,7 @@ public interface TrackRepository extends JpaRepository<Track, UUID> {
             SELECT t FROM Track t 
                 JOIN t.event e 
                     WHERE e.id = :eventId
-                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
+                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED', 'ARCHIVED')
                             ORDER BY t.name ASC 
             """)
     List<Track> findPublicByEventIdOrderByNameAsc(
@@ -28,7 +28,7 @@ public interface TrackRepository extends JpaRepository<Track, UUID> {
             SELECT t FROM Track t 
                 JOIN t.event e 
                     WHERE t.id = :trackId
-                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED') 
+                        AND CAST(e.status AS STRING) NOT IN  ('DRAFT', 'CANCELLED', 'ARCHIVED')
                             ORDER BY t.name ASC 
             """)
     Optional<Track> findPublicById(

@@ -2,6 +2,7 @@ type BadgeType =
   | "ADVANCED"
   | "NOT_ADVANCED"
   | "DISQUALIFIED"
+  | "MANUAL_REVIEW"
   | "PUBLISHED"
   | "UNPUBLISHED";
 
@@ -27,6 +28,11 @@ export const RankingStatusBadge = ({ type }: RankingStatusBadgeProps) => {
     case "DISQUALIFIED":
       label = "Disqualified";
       twColor = "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30";
+      break;
+    case "MANUAL_REVIEW":
+      label = "Manual review";
+      twColor =
+        "text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30";
       break;
     case "PUBLISHED":
       label = "Published";

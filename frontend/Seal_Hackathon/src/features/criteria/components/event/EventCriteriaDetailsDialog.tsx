@@ -1,4 +1,4 @@
-import type { EventCriteriaResponse } from "@/types";
+import type { EventCriteriaResponse } from "@/types/criteria.types";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 
 type EventCriteriaDetailsDialogProps = {

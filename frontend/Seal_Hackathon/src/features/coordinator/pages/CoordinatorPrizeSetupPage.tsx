@@ -31,7 +31,8 @@ export const CoordinatorPrizeSetupPage = () => {
 
   const isLoading = isLoadingEvent || isLoadingTracks || isLoadingPrizes;
 
-  const isLocked = event?.status === "PUBLISHED" || event?.status === "COMPLETED";
+  const isLocked = ["JUDGING", "COMPLETED", "CANCELLED", "ARCHIVED", "PUBLISHED"]
+    .includes(event?.status ?? "");
 
   const handleOpenCreateForm = () => {
     setSelectedPrize(null);
@@ -63,8 +64,16 @@ export const CoordinatorPrizeSetupPage = () => {
         { onSuccess: handleCloseForm }
       );
     } else {
+      if (!eventId) return;
+      const { trackId, value, currency, ...rest } = values;
       createPrize.mutate(
-        { ...values, eventId, trackId: values.trackId || undefined },
+        {
+          ...rest,
+          eventId,
+          trackId: trackId || undefined,
+          value: value ?? undefined,
+          currency: currency ?? undefined,
+        },
         { onSuccess: handleCloseForm }
       );
     }

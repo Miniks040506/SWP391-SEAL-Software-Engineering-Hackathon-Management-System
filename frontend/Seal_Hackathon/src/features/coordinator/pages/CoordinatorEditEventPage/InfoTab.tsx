@@ -96,17 +96,43 @@ function StatusWorkflow({
   const nextStatus = getNextEventStatus(status);
   const rules = getEventEditRules(status);
 
-  if (status === "CANCELLED") {
+  if (status === "CANCELLED" || status === "ARCHIVED") {
+    const isArchived = status === "ARCHIVED";
+
     return (
-      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 dark:border-rose-500/30 dark:bg-rose-500/10">
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-rose-500">
+      <div
+        className={[
+          "rounded-2xl border p-5",
+          isArchived
+            ? "border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800/40"
+            : "border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10",
+        ].join(" ")}
+      >
+        <p
+          className={[
+            "text-sm font-black uppercase tracking-[0.18em]",
+            isArchived ? "text-slate-500" : "text-rose-500",
+          ].join(" ")}
+        >
           Event status
         </p>
-        <h3 className="mt-2 text-xl font-black text-rose-700 dark:text-rose-300">
-          Cancelled
+        <h3
+          className={[
+            "mt-2 text-xl font-black",
+            isArchived
+              ? "text-slate-700 dark:text-slate-200"
+              : "text-rose-700 dark:text-rose-300",
+          ].join(" ")}
+        >
+          {isArchived ? "Archived" : "Cancelled"}
         </h3>
-        <p className="mt-1 text-sm font-medium text-rose-500">
-          This event was cancelled and cannot move to the next state.
+        <p
+          className={[
+            "mt-1 text-sm font-medium",
+            isArchived ? "text-slate-500" : "text-rose-500",
+          ].join(" ")}
+        >
+          This event is read-only and cannot move to the next state.
         </p>
       </div>
     );
@@ -217,6 +243,13 @@ export function InfoTab({
       registrationEndAt: toDateTimeLocal(
         readString(event, "registrationEndAt", "registrationCloseAt"),
       ),
+      competitionStartAt: toDateTimeLocal(
+        readString(event, "competitionStartAt"),
+      ),
+      competitionEndAt: toDateTimeLocal(
+        readString(event, "competitionEndAt"),
+      ),
+      varianceThresholdPoints: event.varianceThresholdPoints ?? 3,
       description: readString(event, "description"),
       bannerUrl: readString(event, "bannerUrl"),
     }),
@@ -255,6 +288,58 @@ export function InfoTab({
       return;
     }
 
+    if (!form.registrationStartAt || !form.registrationEndAt) {
+      enqueueSnackbar("Registration start and end times are required.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (!form.competitionStartAt || !form.competitionEndAt) {
+      enqueueSnackbar("Competition start and end times are required.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (form.registrationStartAt >= form.registrationEndAt) {
+      enqueueSnackbar("Registration end time must be after start time.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (form.competitionStartAt >= form.competitionEndAt) {
+      enqueueSnackbar("Competition end time must be after start time.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (form.registrationEndAt > form.competitionStartAt) {
+      enqueueSnackbar("Competition must start after registration closes.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (
+      !Number.isFinite(form.varianceThresholdPoints) ||
+      form.varianceThresholdPoints <= 0
+    ) {
+      enqueueSnackbar("Variance threshold must be greater than 0.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (Math.abs(form.varianceThresholdPoints * 100 - Math.round(form.varianceThresholdPoints * 100)) > 1e-8) {
+      enqueueSnackbar("Variance threshold supports at most two decimal places.", {
+        variant: "error",
+      });
+      return;
+    }
+
     try {
       setIsSaving(true);
 
@@ -276,6 +361,13 @@ export function InfoTab({
         registrationEndAt: form.registrationEndAt
           ? `${form.registrationEndAt}:00`
           : undefined,
+        competitionStartAt: form.competitionStartAt
+          ? `${form.competitionStartAt}:00`
+          : undefined,
+        competitionEndAt: form.competitionEndAt
+          ? `${form.competitionEndAt}:00`
+          : undefined,
+        varianceThresholdPoints: form.varianceThresholdPoints,
         bannerUrl: nextBannerUrl,
       });
 
@@ -428,6 +520,49 @@ export function InfoTab({
           size="small"
           sx={dateTimeFieldSx}
           slotProps={{ inputLabel: { shrink: true } }}
+          disabled={!canEdit}
+        />
+
+        <TextField
+          label="Competition start"
+          type="datetime-local"
+          value={form.competitionStartAt}
+          onChange={(event) =>
+            updateField("competitionStartAt", event.target.value)
+          }
+          fullWidth
+          size="small"
+          sx={dateTimeFieldSx}
+          slotProps={{ inputLabel: { shrink: true } }}
+          disabled={!canEdit}
+        />
+
+        <TextField
+          label="Competition end"
+          type="datetime-local"
+          value={form.competitionEndAt}
+          onChange={(event) =>
+            updateField("competitionEndAt", event.target.value)
+          }
+          fullWidth
+          size="small"
+          sx={dateTimeFieldSx}
+          slotProps={{ inputLabel: { shrink: true } }}
+          disabled={!canEdit}
+        />
+
+        <TextField
+          label="Variance review threshold"
+          type="number"
+          value={form.varianceThresholdPoints}
+          onChange={(event) =>
+            updateField("varianceThresholdPoints", Number(event.target.value))
+          }
+          fullWidth
+          size="small"
+          sx={textFieldSx}
+          slotProps={{ htmlInput: { min: 0.01, step: 0.1 } }}
+          helperText="Standard deviation threshold used for coordinator review flags."
           disabled={!canEdit}
         />
 

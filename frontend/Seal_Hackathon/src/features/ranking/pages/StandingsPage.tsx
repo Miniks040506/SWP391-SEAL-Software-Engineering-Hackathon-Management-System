@@ -51,7 +51,7 @@ export const StandingsPage = () => {
                                     {event.name}
                                 </h3>
                                 <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
-                                    {event.shortDescription || "Join us for an amazing hackathon experience!"}
+                                    Official leaderboard for {event.name}.
                                 </p>
                             </div>
                             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">

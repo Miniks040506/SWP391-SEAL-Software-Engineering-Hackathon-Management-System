@@ -21,7 +21,7 @@ public interface RankingRepository extends JpaRepository<Ranking, UUID> {
             JOIN FETCH rd.event e
             JOIN FETCH r.track tr
             WHERE (e.resultPublishedAt IS NOT NULL OR rd.resultPublishedAt IS NOT NULL)
-              AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED')
+              AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED', 'ARCHIVED')
               AND (:eventId IS NULL OR e.id = :eventId)
               AND (:trackId IS NULL OR tr.id = :trackId)
               AND (:roundId IS NULL OR rd.id = :roundId)
@@ -57,6 +57,7 @@ public interface RankingRepository extends JpaRepository<Ranking, UUID> {
             JOIN FETCH rd.event e
             JOIN FETCH r.track tr
             WHERE (e.resultPublishedAt IS NOT NULL OR rd.resultPublishedAt IS NOT NULL)
+              AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED', 'ARCHIVED')
               AND t.id = :teamId
             ORDER BY e.year DESC, rd.orderIndex ASC, r.rankPosition ASC
             """)
@@ -110,6 +111,7 @@ public interface RankingRepository extends JpaRepository<Ranking, UUID> {
             JOIN FETCH rd.event e
             JOIN FETCH r.track tr
             WHERE (e.resultPublishedAt IS NOT NULL OR rd.resultPublishedAt IS NOT NULL)
+              AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED', 'ARCHIVED')
               AND t.id = :teamId
             ORDER BY rd.orderIndex ASC, tr.name ASC, r.rankPosition ASC
             """)
@@ -123,6 +125,7 @@ public interface RankingRepository extends JpaRepository<Ranking, UUID> {
             JOIN FETCH rd.event e
             JOIN FETCH r.track tr
             WHERE (e.resultPublishedAt IS NOT NULL OR rd.resultPublishedAt IS NOT NULL)
+              AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED', 'ARCHIVED')
               AND rd.id = :roundId
               AND t.id = :teamId
             """)
@@ -137,6 +140,7 @@ public interface RankingRepository extends JpaRepository<Ranking, UUID> {
             JOIN FETCH rd.event e
             JOIN FETCH r.track tr
             WHERE (e.resultPublishedAt IS NOT NULL OR rd.resultPublishedAt IS NOT NULL)
+              AND CAST(e.status AS STRING) NOT IN ('DRAFT', 'CANCELLED', 'ARCHIVED')
               AND su.id = :submissionId
             """)
     Optional<Ranking> findPublishedBySubmissionIdWithDetails(@Param("submissionId") UUID submissionId);

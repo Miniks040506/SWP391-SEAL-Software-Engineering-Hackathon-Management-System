@@ -47,6 +47,9 @@ async function createEventFlow(values: CreateEventFormValues) {
     year: Number(values.year),
     registrationStartAt: toLocalDateTime(values.registrationStartAt),
     registrationEndAt: toLocalDateTime(values.registrationEndAt),
+    competitionStartAt: toLocalDateTime(values.competitionStartAt),
+    competitionEndAt: toLocalDateTime(values.competitionEndAt),
+    varianceThresholdPoints: values.varianceThresholdPoints,
     bannerUrl,
     status: "DRAFT",
   });
@@ -98,6 +101,8 @@ async function createEventFlow(values: CreateEventFormValues) {
         description: nullIfBlank(round.description) ?? undefined,
         orderIndex: index + 1,
         isFinal: (index + 1) === maxOrderIndex,
+        startAt: toLocalDateTime(round.startAt),
+        endAt: toLocalDateTime(round.endAt),
         submissionDeadline: toLocalDateTime(round.submissionDeadline),
         judgingDeadline: toLocalDateTime(round.judgingDeadline),
       }),

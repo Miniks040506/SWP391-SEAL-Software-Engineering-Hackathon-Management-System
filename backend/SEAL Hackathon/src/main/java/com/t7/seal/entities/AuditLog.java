@@ -4,6 +4,7 @@ import com.t7.seal.domain.AuditActionType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -21,6 +22,7 @@ import java.util.UUID;
                 @Index(name = "idx_audit_log_created_at", columnList = "created_at")
         }
 )
+@Immutable
 @Getter
 @Setter
 @NoArgsConstructor
@@ -92,6 +94,14 @@ public class AuditLog {
     @PreUpdate
     private void preventUpdate() {
         throw new IllegalStateException("AuditLog is append-only and cannot be updated.");
+    }
+
+    /**
+     * Audit logs should not be deleted. Database triggers also enforce this for direct SQL access.
+     */
+    @PreRemove
+    private void preventDelete() {
+        throw new IllegalStateException("AuditLog is append-only and cannot be deleted.");
     }
 
     private void validateRequiredFields() {

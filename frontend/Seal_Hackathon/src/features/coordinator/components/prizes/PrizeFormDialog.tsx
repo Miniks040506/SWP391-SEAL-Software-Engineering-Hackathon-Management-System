@@ -10,7 +10,11 @@ import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import type { PrizeResponse } from "@/types/prize.types";
 import type { TrackResponse } from "@/types/track.types";
-import { prizeFormSchema, type PrizeFormValues } from "../../schemas/prize.schema";
+import {
+  prizeFormSchema,
+  type PrizeFormInput,
+  type PrizeFormValues,
+} from "../../schemas/prize.schema";
 
 type PrizeFormDialogProps = {
   open: boolean;
@@ -31,7 +35,7 @@ export const PrizeFormDialog = ({
 }: PrizeFormDialogProps) => {
   const isEditMode = Boolean(initialPrize);
 
-  const methods = useForm<PrizeFormValues>({
+  const methods = useForm<PrizeFormInput, unknown, PrizeFormValues>({
     resolver: zodResolver(prizeFormSchema),
     defaultValues: {
       trackId: "",
@@ -123,7 +127,7 @@ export const PrizeFormDialog = ({
                 fullWidth
                 required
                 size="small"
-                inputProps={{ min: 1 }}
+                slotProps={{ htmlInput: { min: 1 } }}
                 {...register("rankPosition", { valueAsNumber: true })}
               />
 
@@ -146,7 +150,7 @@ export const PrizeFormDialog = ({
                 helperText={errors.value?.message}
                 fullWidth
                 size="small"
-                inputProps={{ min: 0 }}
+                slotProps={{ htmlInput: { min: 0 } }}
                 {...register("value", { valueAsNumber: true })}
               />
 

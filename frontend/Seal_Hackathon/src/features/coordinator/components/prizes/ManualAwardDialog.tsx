@@ -13,12 +13,18 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Typography from "@mui/material/Typography";
 
 import type { PrizeResponse } from "@/types/prize.types";
-import { manualAwardSchema, type ManualAwardFormValues } from "../../schemas/prize.schema";
+import type { CoordinatorTeamSummaryResponse } from "@/types/team.types";
+import {
+  manualAwardSchema,
+  type ManualAwardFormInput,
+  type ManualAwardFormValues,
+} from "../../schemas/prize.schema";
 
 type ManualAwardDialogProps = {
   open: boolean;
   prize: PrizeResponse | null;
-  teams: any[];
+  teams: CoordinatorTeamSummaryResponse[];
+  isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (values: ManualAwardFormValues) => void;
 };
@@ -31,7 +37,11 @@ export const ManualAwardDialog = ({
   onClose,
   onSubmit,
 }: ManualAwardDialogProps) => {
-  const methods = useForm<ManualAwardFormValues>({
+  const methods = useForm<
+    ManualAwardFormInput,
+    unknown,
+    ManualAwardFormValues
+  >({
     resolver: zodResolver(manualAwardSchema),
     defaultValues: {
       teamId: "",
@@ -98,8 +108,8 @@ export const ManualAwardDialog = ({
                       <em>Select a team</em>
                     </MenuItem>
                     {teams.map((team) => (
-                      <MenuItem key={team.id} value={team.id}>
-                        {team.name} {team.trackName ? `(${team.trackName})` : ""}
+                      <MenuItem key={team.teamId} value={team.teamId}>
+                        {team.teamName} {team.trackName ? `(${team.trackName})` : ""}
                       </MenuItem>
                     ))}
                   </TextField>

@@ -1,5 +1,5 @@
 import type { MentorSummaryCard } from "../components/dashboard/MentorSummaryCards";
-import type { MentorAssignedTrack, MentorSubmission } from "../components/dashboard/MentorAssignedTrackCard";
+import type { MentorAssignedTrack, MentorSubmission } from "../schemas/mentorDashboard.schema";
 import type { MentorScheduleItem } from "../components/dashboard/MentorScheduleCard";
 
 export type MentorDashboardData = {

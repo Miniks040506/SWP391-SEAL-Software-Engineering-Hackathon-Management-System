@@ -16,9 +16,11 @@ export type ExportFormat = "CSV" | "XLSX";
 export type CreateExportJobRequest = {
   exportType: ExportType | string;
   params: {
-    eventId: UUID;
+    eventId?: UUID;
     roundId?: UUID;
     trackId?: UUID;
+    year?: number;
+    season?: "SPRING" | "SUMMER" | "FALL" | string;
     format?: ExportFormat;
     includeDraftScores?: boolean;
     includeDisqualified?: boolean;
@@ -68,5 +70,5 @@ export type GetExportJobsParams = {
 export type ExportRblDatasetRequest = {
   roundId?: UUID;
   trackId?: UUID;
-  format?: "csv" | string;
+  format?: ExportFormat;
 };

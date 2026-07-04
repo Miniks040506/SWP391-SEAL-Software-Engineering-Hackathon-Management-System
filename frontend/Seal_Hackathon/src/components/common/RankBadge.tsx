@@ -1,5 +1,4 @@
 // Reused in: AllEventsStandings, SingleEventLeaderboard
-import React from 'react';
 
 const RANK_BADGE_STYLES: Record<number, string> = {
   1: 'bg-blue-500 text-white shadow-md',

@@ -58,8 +58,12 @@ export const mockCalibrationService = {
         const isPublished = round ? !!round.distributionPublishedAt : false;
 
         const criteriaDistributions = [];
-        let benchmarkScores = round?.benchmarkScores;
-        if (!benchmarkScores || Object.keys(benchmarkScores).length === 0) {
+        let benchmarkScores: Record<string, number> =
+            round?.benchmarkScores && typeof round.benchmarkScores === "object"
+                ? (round.benchmarkScores as Record<string, number>)
+                : {};
+
+        if (Object.keys(benchmarkScores).length === 0) {
             benchmarkScores = {
                 "sc-1": 85,
                 "sc-2": 90,

@@ -55,11 +55,7 @@ export function NotificationDropdown({ inboxPath, onClose }: Props) {
   const openTarget = (notification: NotificationResponse) => {
     onClose();
     setSelectedNotification(null);
-    let url = notification.targetUrl ?? inboxPath;
-    if (url.endsWith("/awards")) {
-      url = url.replace("/awards", "");
-    }
-    navigate(url);
+    navigate(notification.targetUrl ?? inboxPath);
   };
 
   return (

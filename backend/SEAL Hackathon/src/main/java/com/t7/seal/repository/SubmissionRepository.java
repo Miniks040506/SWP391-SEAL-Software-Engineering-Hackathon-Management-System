@@ -99,4 +99,24 @@ public interface SubmissionRepository extends JpaRepository<Submission, UUID>, J
             @Param("trackId") UUID trackId
     );
 
+    @Query("""
+            SELECT DISTINCT s
+            FROM Submission s
+            JOIN FETCH s.team t
+            LEFT JOIN FETCH t.track tr
+            JOIN FETCH s.round r
+            WHERE r.id = :roundId
+              AND (:trackId IS NULL OR tr.id = :trackId)
+              AND s.status IN (
+                    com.t7.seal.domain.SubmissionStatus.SUBMITTED,
+                    com.t7.seal.domain.SubmissionStatus.LATE,
+                    com.t7.seal.domain.SubmissionStatus.DISQUALIFIED
+              )
+            ORDER BY s.submittedAt DESC
+            """)
+    List<Submission> findRankableByRoundAndTrackNullable(
+            @Param("roundId") UUID roundId,
+            @Param("trackId") UUID trackId
+    );
+
 }

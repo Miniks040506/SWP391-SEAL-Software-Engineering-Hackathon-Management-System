@@ -1,5 +1,6 @@
 package com.t7.seal.entities;
 
+import com.t7.seal.domain.TeamRegistrationStatus;
 import com.t7.seal.domain.TeamStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -62,6 +63,20 @@ public class Team {
     @Column(name = "registered_at")
     private LocalDateTime registeredAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "registration_status", length = 30)
+    private TeamRegistrationStatus registrationStatus;
+
+    @Column(name = "registration_reviewed_at")
+    private LocalDateTime registrationReviewedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "registration_reviewed_by")
+    private User registrationReviewedBy;
+
+    @Column(name = "registration_rejection_reason", columnDefinition = "TEXT")
+    private String registrationRejectionReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -89,14 +104,66 @@ public class Team {
         return memberCount != null && memberCount >= maxMembers;
     }
 
-    // Registers a forming team for the event.
-    public void register(LocalDateTime now) {
+    // Submits a forming team for coordinator review.
+    public void submitRegistration(LocalDateTime now) {
         if (status != TeamStatus.FORMING) {
-            throw new IllegalStateException("Team must be forming to register.");
+            throw new IllegalStateException("Team must be forming to submit registration.");
         }
 
-        status = TeamStatus.REGISTERED;
+        if (registrationStatus != null) {
+            throw new IllegalStateException("Team registration has already been submitted.");
+        }
+
+        registrationStatus = TeamRegistrationStatus.PENDING_APPROVAL;
         registeredAt = now;
+        registrationReviewedAt = null;
+        registrationReviewedBy = null;
+        registrationRejectionReason = null;
+    }
+
+    // Approves a pending registration and admits the team to competition.
+    public void approveRegistration(User reviewer, LocalDateTime now) {
+        if (registrationStatus != TeamRegistrationStatus.PENDING_APPROVAL) {
+            throw new IllegalStateException("Only pending team registrations can be approved.");
+        }
+
+        registrationStatus = TeamRegistrationStatus.APPROVED;
+        status = TeamStatus.REGISTERED;
+        registrationReviewedAt = now;
+        registrationReviewedBy = reviewer;
+        registrationRejectionReason = null;
+    }
+
+    // Rejects a pending registration without admitting the team to competition.
+    public void rejectRegistration(User reviewer, String reason, LocalDateTime now) {
+        if (registrationStatus != TeamRegistrationStatus.PENDING_APPROVAL) {
+            throw new IllegalStateException("Only pending team registrations can be rejected.");
+        }
+
+        registrationStatus = TeamRegistrationStatus.REJECTED;
+        registrationReviewedAt = now;
+        registrationReviewedBy = reviewer;
+        registrationRejectionReason = reason;
+    }
+
+    // Marks a non-admitted team as incomplete and prevents further team intake.
+    public void markIncomplete(User reviewer, String reason, LocalDateTime now) {
+        if (status != TeamStatus.FORMING && status != TeamStatus.COMPLETE) {
+            throw new IllegalStateException("Only non-admitted teams can be marked incomplete.");
+        }
+
+        status = TeamStatus.INCOMPLETE;
+        joinCodeEnabled = false;
+        updatedAt = now;
+
+        if (registrationStatus == TeamRegistrationStatus.PENDING_APPROVAL) {
+            registrationStatus = TeamRegistrationStatus.REJECTED;
+            registrationReviewedAt = now;
+            registrationReviewedBy = reviewer;
+            registrationRejectionReason = reason;
+        } else if (registrationRejectionReason == null || registrationRejectionReason.isBlank()) {
+            registrationRejectionReason = reason;
+        }
     }
 
     // Advances a registered or competing team.

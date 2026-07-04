@@ -54,6 +54,9 @@ export type CreateEventRequest = {
   year: number;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
+  competitionStartAt?: ISODateTime;
+  competitionEndAt?: ISODateTime;
+  varianceThresholdPoints?: number;
   bannerUrl?: string | null;
   status?: string | null;
 };
@@ -65,6 +68,9 @@ export type UpdateEventRequest = {
   year?: number;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
+  competitionStartAt?: ISODateTime;
+  competitionEndAt?: ISODateTime;
+  varianceThresholdPoints?: number;
   bannerUrl?: string | null;
   status?: string | null;
 };
@@ -76,6 +82,8 @@ export type EventSummaryResponse = {
   year: number;
   status: string;
   bannerUrl?: string | null;
+  competitionStartAt?: ISODateTime;
+  competitionEndAt?: ISODateTime;
 };
 
 export type EventDetailResponse = {
@@ -88,6 +96,10 @@ export type EventDetailResponse = {
   bannerUrl?: string | null;
   registrationStartAt?: ISODateTime;
   registrationEndAt?: ISODateTime;
+  competitionStartAt?: ISODateTime;
+  competitionEndAt?: ISODateTime;
+  resultPublishedAt?: ISODateTime | null;
+  varianceThresholdPoints?: number;
   tracks: TrackResponse[];
   rounds: RoundResponse[];
 };
@@ -108,6 +120,12 @@ export type GetEventRankingParams = {
 export type GetVarianceDashboardParams = {
   roundId?: UUID;
   trackId?: UUID;
-  criteriaType?: "TECHNICAL" | "SOFT" | string;
-  judgeType?: "INTERNAL" | "GUEST" | string;
+  criteriaType?:
+    | "TECHNICAL"
+    | "SOFT"
+    | "PRESENTATION"
+    | "INNOVATION"
+    | "BUSINESS"
+    | "PROCESS";
+  judgeType?: "INTERNAL" | "GUEST";
 };

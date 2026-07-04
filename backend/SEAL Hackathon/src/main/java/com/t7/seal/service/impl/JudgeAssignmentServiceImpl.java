@@ -527,7 +527,9 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
 
 
     private void assertAssignmentEditable(RegistrationStatus status) {
-        if (status == RegistrationStatus.COMPLETED || status == RegistrationStatus.CANCELLED) {
+        if (status == RegistrationStatus.COMPLETED
+                || status == RegistrationStatus.CANCELLED
+                || status == RegistrationStatus.ARCHIVED) {
             throw new ConflictException("Judge assignments are locked in event status " + status + ".");
         }
     }

@@ -30,6 +30,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -85,7 +87,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             submission.increaseSubmissionNumber();
         }
 
-        markSubmittedConsideringDeadline(submission, round);
+        markSubmittedBeforeDeadline(submission, round);
 
         Submission saved = submissionRepository.save(submission);
         replaceLinks(saved, request.links());
@@ -183,7 +185,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             if (!refreshed.isDraft()) {
                 refreshed.increaseSubmissionNumber();
             }
-            markSubmittedConsideringDeadline(refreshed, refreshed.getRound());
+            markSubmittedBeforeDeadline(refreshed, refreshed.getRound());
             saved = submissionRepository.save(refreshed);
             notifySubmissionChange(saved, wasSubmittedBefore);
         }
@@ -217,7 +219,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             if (!refreshed.isDraft()) {
                 refreshed.increaseSubmissionNumber();
             }
-            markSubmittedConsideringDeadline(refreshed, refreshed.getRound());
+            markSubmittedBeforeDeadline(refreshed, refreshed.getRound());
             submissionRepository.save(refreshed);
             notifySubmissionChange(refreshed, wasSubmittedBefore);
         }
@@ -291,7 +293,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             if (status == SubmissionStatus.SUBMITTED || status == SubmissionStatus.LATE) {
                 validateRequiredLinksFromEntity(submission);
                 submission.increaseSubmissionNumber();
-                markSubmittedConsideringDeadline(submission, submission.getRound());
+                markSubmittedBeforeDeadline(submission, submission.getRound());
                 notifySubmitOrUpdate = true;
             } else if (status == SubmissionStatus.DRAFT) {
                 submission.setStatus(SubmissionStatus.DRAFT);
@@ -332,13 +334,14 @@ public class SubmissionServiceImpl implements SubmissionService {
         ensureRoundCanAcceptSubmission(submission.getRound());
 
         SubmissionLinkType parsedType = parseLinkType(request.linkType());
+        String normalizedUrl = normalizeHttpUrl(request.url());
         link.setLinkType(parsedType);
-        link.setUrl(request.url().trim());
+        link.setUrl(normalizedUrl);
         link.setLabel(blankToNull(request.label()));
         link.setIsPrimary(Boolean.TRUE.equals(request.isPrimary()));
         link.setDisplayOrder(request.displayOrder() == null ? 0 : request.displayOrder());
-        link.setStorageProvider(detectStorageProvider(parsedType, request.url()));
-        link.setRepoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, request.url()));
+        link.setStorageProvider(detectStorageProvider(parsedType, normalizedUrl));
+        link.setRepoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, normalizedUrl));
 
         if (link.getStorageProvider() != SubmissionStorageProvider.AWS_S3) {
             link.setObjectKey(null);
@@ -396,7 +399,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             submission.increaseSubmissionNumber();
         }
 
-        markSubmittedConsideringDeadline(submission, submission.getRound());
+        markSubmittedBeforeDeadline(submission, submission.getRound());
 
         Submission saved = submissionRepository.save(submission);
         notifySubmissionChange(saved, wasSubmittedBefore);
@@ -544,6 +547,10 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     private void ensureTeamCanSubmit(Team team) {
+        if (team.getRegistrationStatus() != TeamRegistrationStatus.APPROVED) {
+            throw new ConflictException("Only teams with APPROVED registration may submit deliverables.");
+        }
+
         if (team.getStatus() != TeamStatus.REGISTERED
                 && team.getStatus() != TeamStatus.COMPETING
                 && team.getStatus() != TeamStatus.ADVANCED) {
@@ -555,8 +562,17 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (round.getSubmissionLockedAt() != null) {
             throw new ConflictException("ROUND_SUBMISSION_LOCKED: This round's submissions are locked.");
         }
+        ensureSubmissionDeadlineNotPassed(round);
         if (round.getStatus() != RoundStatus.OPEN) {
             throw new ConflictException("Submissions are only allowed while the round is OPEN.");
+        }
+    }
+
+    private void ensureSubmissionDeadlineNotPassed(Round round) {
+        LocalDateTime deadline = round.getSubmissionDeadline();
+        if (deadline != null && !LocalDateTime.now().isBefore(deadline)) {
+            throw new ConflictException(
+                    "ROUND_SUBMISSION_DEADLINE_EXCEEDED: The submission deadline for this round has passed.");
         }
     }
 
@@ -692,14 +708,14 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private SubmissionLink toLinkEntity(Submission submission, SubmissionLinkRequest request) {
         SubmissionLinkType parsedType = parseLinkType(request.linkType());
-        String trimmedUrl = request.url().trim();
+        String normalizedUrl = normalizeHttpUrl(request.url());
         return SubmissionLink.builder()
                 .submission(submission)
                 .linkType(parsedType)
-                .url(trimmedUrl)
+                .url(normalizedUrl)
                 .label(blankToNull(request.label()))
-                .storageProvider(detectStorageProvider(parsedType, trimmedUrl))
-                .repoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, trimmedUrl))
+                .storageProvider(detectStorageProvider(parsedType, normalizedUrl))
+                .repoMetadata(repositoryMetadataService.fetchMetadataIfRepository(parsedType, normalizedUrl))
                 .isPrimary(Boolean.TRUE.equals(request.isPrimary()))
                 .displayOrder(request.displayOrder() == null ? 0 : request.displayOrder())
                 .build();
@@ -754,6 +770,30 @@ public class SubmissionServiceImpl implements SubmissionService {
             return SubmissionStorageProvider.GITLAB;
         }
         return SubmissionStorageProvider.EXTERNAL_URL;
+    }
+
+    private String normalizeHttpUrl(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            throw new BadRequestException("Submission link URL is required.");
+        }
+
+        String trimmedUrl = rawUrl.trim();
+        URI uri;
+        try {
+            uri = new URI(trimmedUrl);
+        } catch (URISyntaxException ex) {
+            throw new BadRequestException("Submission link URL must be a valid HTTP or HTTPS URL.");
+        }
+
+        String scheme = uri.getScheme();
+        if (scheme == null
+                || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
+                || uri.getHost() == null
+                || uri.getHost().isBlank()) {
+            throw new BadRequestException("Submission link URL must start with http:// or https://.");
+        }
+
+        return trimmedUrl;
     }
 
     private SubmissionLinkType parseLinkType(String value) {
@@ -849,14 +889,9 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
     }
 
-    private void markSubmittedConsideringDeadline(Submission submission, Round round) {
-        boolean late = round.getSubmissionDeadline() != null
-                && LocalDateTime.now().isAfter(round.getSubmissionDeadline());
-        if (late) {
-            submission.markLate();
-        } else {
-            submission.markSubmitted();
-        }
+    private void markSubmittedBeforeDeadline(Submission submission, Round round) {
+        ensureSubmissionDeadlineNotPassed(round);
+        submission.markSubmitted();
     }
 
     private SubmissionResponse toSubmissionResponse(Submission submission) {

@@ -5,6 +5,7 @@ import com.t7.seal.domain.RegistrationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +54,12 @@ public class HackathonEvent {
     @Column(name = "registration_close", nullable = false)
     private LocalDateTime registrationClose;
 
+    @Column(name = "competition_start_at", nullable = false)
+    private LocalDateTime competitionStartAt;
+
+    @Column(name = "competition_end_at", nullable = false)
+    private LocalDateTime competitionEndAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     @Builder.Default
@@ -60,6 +67,10 @@ public class HackathonEvent {
 
     @Column(name = "result_published_at")
     private LocalDateTime resultPublishedAt;
+
+    @Column(name = "variance_threshold_points", nullable = false, precision = 8, scale = 2)
+    @Builder.Default
+    private BigDecimal varianceThresholdPoints = new BigDecimal("3.00");
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;

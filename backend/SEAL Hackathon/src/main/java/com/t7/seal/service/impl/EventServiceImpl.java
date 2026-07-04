@@ -12,6 +12,7 @@ import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.RoundRepository;
+import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.repository.TrackRepository;
 import com.t7.seal.request.event.CreateEventRequest;
 import com.t7.seal.request.event.UpdateEventRequest;
@@ -22,6 +23,7 @@ import com.t7.seal.response.round.RoundResponse;
 import com.t7.seal.response.track.TrackResponse;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EventService;
+import com.t7.seal.service.RoundDeadlineReminderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,7 +43,9 @@ public class EventServiceImpl implements EventService {
     private final HackathonEventRepository hackathonEventRepository;
     private final TrackRepository trackRepository;
     private final RoundRepository roundRepository;
+    private final TeamRepository teamRepository;
     private final CurrentUserService currentUserService;
+    private final RoundDeadlineReminderService roundDeadlineReminderService;
 
     private static final int MAX_PAGE_SIZE = 50;
 
@@ -146,6 +150,11 @@ public class EventServiceImpl implements EventService {
         newEvent.setYear(event.year());
         newEvent.setRegistrationOpen(event.registrationStartAt());
         newEvent.setRegistrationClose(event.registrationEndAt());
+        newEvent.setCompetitionStartAt(event.competitionStartAt());
+        newEvent.setCompetitionEndAt(event.competitionEndAt());
+        if (event.varianceThresholdPoints() != null) {
+            newEvent.setVarianceThresholdPoints(event.varianceThresholdPoints());
+        }
         newEvent.setBannerUrl(trimToNull(event.bannerUrl()));
 
         if (event.status() != null
@@ -199,7 +208,20 @@ public class EventServiceImpl implements EventService {
             event.setRegistrationClose(request.registrationEndAt());
         }
 
-        validateRegistrationTime(event.getRegistrationOpen(), event.getRegistrationClose());
+        applyIfNotNull(request.competitionStartAt(), event::setCompetitionStartAt);
+        applyIfNotNull(request.competitionEndAt(), event::setCompetitionEndAt);
+
+        validateEventTimeline(
+                event.getRegistrationOpen(),
+                event.getRegistrationClose(),
+                event.getCompetitionStartAt(),
+                event.getCompetitionEndAt()
+        );
+        validateNoCompetitionOverlap(event.getId(), event.getSeason(), event.getCompetitionStartAt(), event.getCompetitionEndAt());
+
+        if (request.varianceThresholdPoints() != null) {
+            event.setVarianceThresholdPoints(request.varianceThresholdPoints());
+        }
 
         if (request.bannerUrl() != null) {
             event.setBannerUrl(trimToNull(request.bannerUrl()));
@@ -214,7 +236,7 @@ public class EventServiceImpl implements EventService {
     @Transactional
     @Override
     public EventDetailResponse advanceEventStatus(UUID eventId, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
@@ -224,13 +246,14 @@ public class EventServiceImpl implements EventService {
             case REGISTRATION -> RegistrationStatus.ONGOING;
             case ONGOING -> RegistrationStatus.JUDGING;
             case JUDGING -> RegistrationStatus.COMPLETED;
-            case COMPLETED, CANCELLED -> throw new ConflictException("Event has no next status.");
+            case COMPLETED, CANCELLED, ARCHIVED -> throw new ConflictException("Event has no next status.");
         };
 
         changeEventStatus(event, nextStatus);
         event.setUpdatedAt(LocalDateTime.now());
 
         HackathonEvent saved = hackathonEventRepository.save(event);
+        roundDeadlineReminderService.synchronizeEventSubmissionDeadlineReminders(saved, actor);
         return buildEventDetailResponse(saved, true);
     }
 
@@ -243,10 +266,15 @@ public class EventServiceImpl implements EventService {
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
-        changeEventStatus(event, RegistrationStatus.CANCELLED);
+        RegistrationStatus deletedStatus = teamRepository.existsByEventId(eventId)
+                ? RegistrationStatus.ARCHIVED
+                : RegistrationStatus.CANCELLED;
+
+        changeEventStatus(event, deletedStatus);
         event.setUpdatedAt(LocalDateTime.now());
 
         HackathonEvent saved = hackathonEventRepository.save(event);
+        roundDeadlineReminderService.cancelEventSubmissionDeadlineReminders(saved.getId());
         return buildEventDetailResponse(saved, true);
     }
 
@@ -265,7 +293,8 @@ public class EventServiceImpl implements EventService {
         changeEventStatus(event, RegistrationStatus.CANCELLED);
         event.setUpdatedAt(LocalDateTime.now());
 
-        hackathonEventRepository.save(event);
+        HackathonEvent saved = hackathonEventRepository.save(event);
+        roundDeadlineReminderService.cancelEventSubmissionDeadlineReminders(saved.getId());
     }
 
     //HELPERS
@@ -289,6 +318,8 @@ public class EventServiceImpl implements EventService {
                 round.getOrderIndex(),
                 round.getIsFinal(),
                 round.getStatus().name(),
+                round.getStartAt(),
+                round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline()
         );
@@ -309,7 +340,9 @@ public class EventServiceImpl implements EventService {
                 e.getSeason().name(),
                 e.getYear(),
                 e.getStatus().name(),
-                e.getBannerUrl()
+                e.getBannerUrl(),
+                e.getCompetitionStartAt(),
+                e.getCompetitionEndAt()
         );
     }
 
@@ -326,13 +359,64 @@ public class EventServiceImpl implements EventService {
             throw new BadRequestException("Event year is required");
         }
 
-        validateRegistrationTime(request.registrationStartAt(), request.registrationEndAt());
+        validateEventTimeline(
+                request.registrationStartAt(),
+                request.registrationEndAt(),
+                request.competitionStartAt(),
+                request.competitionEndAt()
+        );
+        validateNoCompetitionOverlap(
+                null,
+                parseEnum(HackathonSeason.class, request.season(), "season"),
+                request.competitionStartAt(),
+                request.competitionEndAt()
+        );
 
     }
 
-    private void validateRegistrationTime(LocalDateTime start, LocalDateTime end) {
-        if (start != null && end != null && start.isAfter(end)) {
+    private void validateEventTimeline(
+            LocalDateTime registrationStartAt,
+            LocalDateTime registrationEndAt,
+            LocalDateTime competitionStartAt,
+            LocalDateTime competitionEndAt) {
+
+        requireTime(registrationStartAt, "Registration start time");
+        requireTime(registrationEndAt, "Registration end time");
+        requireTime(competitionStartAt, "Competition start time");
+        requireTime(competitionEndAt, "Competition end time");
+
+        if (!registrationStartAt.isBefore(registrationEndAt)) {
             throw new BadRequestException("Registration start time must be before registration end time");
+        }
+
+        if (!competitionStartAt.isBefore(competitionEndAt)) {
+            throw new BadRequestException("Competition start time must be before competition end time");
+        }
+
+        if (registrationEndAt.isAfter(competitionStartAt)) {
+            throw new BadRequestException("Registration end time must be before or equal to competition start time");
+        }
+    }
+
+    private void requireTime(LocalDateTime value, String fieldName) {
+        if (value == null) {
+            throw new BadRequestException(fieldName + " is required");
+        }
+    }
+
+    private void validateNoCompetitionOverlap(
+            UUID excludedEventId,
+            HackathonSeason season,
+            LocalDateTime competitionStartAt,
+            LocalDateTime competitionEndAt) {
+
+        if (hackathonEventRepository.existsOverlappingCompetitionPeriod(
+                season,
+                excludedEventId,
+                competitionStartAt,
+                competitionEndAt
+        )) {
+            throw new ConflictException("Competition period overlaps with another event in the same season.");
         }
     }
 
@@ -381,6 +465,10 @@ public class EventServiceImpl implements EventService {
                 event.getBannerUrl(),
                 event.getRegistrationOpen(),
                 event.getRegistrationClose(),
+                event.getCompetitionStartAt(),
+                event.getCompetitionEndAt(),
+                event.getResultPublishedAt(),
+                event.getVarianceThresholdPoints(),
                 tracks,
                 rounds
         );
@@ -392,13 +480,19 @@ public class EventServiceImpl implements EventService {
 
         if (status == RegistrationStatus.JUDGING
                 || status == RegistrationStatus.COMPLETED
-                || status == RegistrationStatus.CANCELLED) {
+                || status == RegistrationStatus.CANCELLED
+                || status == RegistrationStatus.ARCHIVED) {
             throw new ConflictException("Event information is locked in status " + status + ".");
         }
     }
 
     private void changeEventStatus(HackathonEvent event, RegistrationStatus requestedStatus) {
         if (requestedStatus == event.getStatus()) {
+            return;
+        }
+
+        if (requestedStatus == RegistrationStatus.ARCHIVED) {
+            event.setStatus(RegistrationStatus.ARCHIVED);
             return;
         }
 
@@ -417,6 +511,7 @@ public class EventServiceImpl implements EventService {
             case COMPLETED -> event.complete();
             case DRAFT -> throw new BadRequestException("Event status cannot move back to DRAFT.");
             case CANCELLED -> throw new BadRequestException("Invalid status transition.");
+            case ARCHIVED -> throw new BadRequestException("Invalid status transition.");
         }
     }
 

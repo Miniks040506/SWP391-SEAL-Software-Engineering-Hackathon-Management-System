@@ -1,6 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import type { CoordinatorTeamSummaryResponse } from "@/types/team.types";
-import { getTeamStatusColor } from "../schemas/teams.schema";
+import {
+  formatTeamStatusLabel,
+  getTeamRegistrationStatusColor,
+  getTeamStatusColor,
+} from "../schemas/teams.schema";
 
 type Props = {
   teams: CoordinatorTeamSummaryResponse[];
@@ -43,7 +47,7 @@ export function TeamTable({ teams, loading, onViewTeam }: Props) {
             <th className="w-3/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Team
             </th>
-            <th className="w-3/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="w-2/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Leader
             </th>
             <th className="w-2/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -54,6 +58,9 @@ export function TeamTable({ teams, loading, onViewTeam }: Props) {
             </th>
             <th className="w-2/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Team Status
+            </th>
+            <th className="w-1/12 px-6 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Registration
             </th>
             <th className="w-1/12 px-6 py-5 text-right pr-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Actions
@@ -95,7 +102,18 @@ export function TeamTable({ teams, loading, onViewTeam }: Props) {
                   <span
                     className={`px-3 py-1.5 inline-flex text-xs font-bold rounded-lg border ${getTeamStatusColor(team.status)}`}
                   >
-                    {team.status}
+                    {formatTeamStatusLabel(team.status)}
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-400 italic">Unknown</span>
+                )}
+              </td>
+              <td className="px-6 py-5 whitespace-nowrap">
+                {team.registrationStatus ? (
+                  <span
+                    className={`px-3 py-1.5 inline-flex text-xs font-bold rounded-lg border ${getTeamRegistrationStatusColor(team.registrationStatus)}`}
+                  >
+                    {formatTeamStatusLabel(team.registrationStatus)}
                   </span>
                 ) : (
                   <span className="text-xs text-slate-400 italic">Unknown</span>

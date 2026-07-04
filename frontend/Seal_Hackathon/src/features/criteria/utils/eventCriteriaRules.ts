@@ -1,6 +1,6 @@
 export function statusAllowsEventCriteriaEdit(status?: string | null) {
   const normalized = (status || "DRAFT").toUpperCase();
-  return !["JUDGING", "COMPLETED", "CANCELLED"].includes(normalized);
+  return !["JUDGING", "COMPLETED", "CANCELLED", "ARCHIVED"].includes(normalized);
 }
 
 export function getEventCriteriaReadonlyReason(status?: string | null) {
@@ -13,6 +13,9 @@ export function getEventCriteriaReadonlyReason(status?: string | null) {
   }
   if (normalized === "CANCELLED") {
     return "Event is CANCELLED, so event criteria are read-only.";
+  }
+  if (normalized === "ARCHIVED") {
+    return "Event is ARCHIVED, so event criteria are read-only.";
   }
   return "";
 }

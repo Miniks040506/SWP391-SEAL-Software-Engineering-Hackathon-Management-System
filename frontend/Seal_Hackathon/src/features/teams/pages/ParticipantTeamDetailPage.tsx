@@ -8,6 +8,7 @@ import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -40,6 +41,7 @@ import {
 } from "../schemas/myTeams.schema";
 import {
   useCancelTeamInvitationMutation,
+  useDeleteTeamMutation,
   useInviteTeamMemberMutation,
   useLeaveTeamMutation,
   useMyTeamsQuery,
@@ -70,12 +72,15 @@ export const TeamDetailPage = () => {
 
   const [activeTab, setActiveTab] = useState<TeamDetailTab>("overview");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
 
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
   const invitationsQuery = useTeamInvitationsQuery(teamId);
 
   const updateTeamMutation = useUpdateTeamMutation(teamId);
+  const deleteTeamMutation = useDeleteTeamMutation(teamId);
   const inviteMemberMutation = useInviteTeamMemberMutation(teamId);
   const cancelInvitationMutation = useCancelTeamInvitationMutation(teamId);
   const removeMemberMutation = useRemoveTeamMemberMutation(teamId);
@@ -96,6 +101,8 @@ export const TeamDetailPage = () => {
   const currentUserIsLeader = isLeaderRole(currentTeamSummary?.roleInTeam);
 
   const isTeamRegistered = team?.status?.toUpperCase() !== "FORMING";
+  const canDeleteTeam =
+    currentUserIsLeader && team?.status?.toUpperCase() === "FORMING";
 
   const {
     register: registerUpdateTeam,
@@ -191,6 +198,15 @@ export const TeamDetailPage = () => {
     navigate("/participant/teams");
   };
 
+  const handleDeleteTeam = async () => {
+    await deleteTeamMutation.mutateAsync({
+      reason: deleteReason.trim() || undefined,
+    });
+    setDeleteDialogOpen(false);
+    setDeleteReason("");
+    navigate("/participant/teams");
+  };
+
   const handleCopyJoinCode = async () => {
     if (!team.joinCode) return;
     await navigator.clipboard.writeText(team.joinCode);
@@ -230,10 +246,15 @@ export const TeamDetailPage = () => {
               </p>
             </div>
 
-            <TeamStatusBadge
-              status={team.status}
-              memberCount={members.length}
-            />
+            <div className="flex flex-wrap gap-2 md:justify-end">
+              <TeamStatusBadge
+                status={team.status}
+                memberCount={members.length}
+              />
+              {team.registrationStatus && (
+                <TeamStatusBadge status={team.registrationStatus} />
+              )}
+            </div>
           </div>
 
           <div className="mt-6 border-b border-gray-100 dark:border-slate-700">
@@ -285,6 +306,28 @@ export const TeamDetailPage = () => {
                           sx={{ fontWeight: 800, textTransform: "none" }}
                         >
                           Leave Team
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  )}
+                  {currentUserIsLeader && (
+                    <Tooltip
+                      title={
+                        canDeleteTeam
+                          ? ""
+                          : "Only forming teams can be deleted."
+                      }
+                    >
+                      <span>
+                        <Button
+                          color="error"
+                          variant="outlined"
+                          startIcon={<DeleteOutlineOutlinedIcon />}
+                          disabled={!canDeleteTeam || deleteTeamMutation.isPending}
+                          onClick={() => setDeleteDialogOpen(true)}
+                          sx={{ fontWeight: 800, textTransform: "none" }}
+                        >
+                          Delete Team
                         </Button>
                       </span>
                     </Tooltip>
@@ -406,6 +449,10 @@ export const TeamDetailPage = () => {
               <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <InfoItem label="Leader" value={team.leaderName} />
                 <InfoItem label="Team Status" value={team.status} />
+                <InfoItem
+                  label="Registration Status"
+                  value={team.registrationStatus ?? "N/A"}
+                />
 
                 <InfoItem
                   label="Track"
@@ -649,6 +696,55 @@ export const TeamDetailPage = () => {
             </Button>
           </DialogActions>
         </form>
+      </Dialog>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => {
+          if (!deleteTeamMutation.isPending) {
+            setDeleteDialogOpen(false);
+          }
+        }}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ fontWeight: 900 }}>Delete Team</DialogTitle>
+        <DialogContent dividers className="space-y-4">
+          <Alert severity="warning">
+            This marks the team as incomplete, removes active memberships, and
+            cancels pending invitations. This action is only allowed before the
+            team is admitted to competition.
+          </Alert>
+          <TextField
+            label="Reason"
+            fullWidth
+            multiline
+            minRows={3}
+            value={deleteReason}
+            onChange={(event) => setDeleteReason(event.target.value)}
+            disabled={deleteTeamMutation.isPending}
+            placeholder="Optional reason for deleting this team"
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            variant="outlined"
+            disabled={deleteTeamMutation.isPending}
+            onClick={() => setDeleteDialogOpen(false)}
+            sx={{ fontWeight: 800, textTransform: "none" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={deleteTeamMutation.isPending}
+            onClick={handleDeleteTeam}
+            sx={{ fontWeight: 800, textTransform: "none" }}
+          >
+            {deleteTeamMutation.isPending ? "Deleting..." : "Delete Team"}
+          </Button>
+        </DialogActions>
       </Dialog>
     </div>
   );

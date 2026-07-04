@@ -60,6 +60,20 @@ public interface DisqualificationRepository extends JpaRepository<Disqualificati
             JOIN FETCH s.round r
             JOIN FETCH r.event e
             JOIN FETCH d.issuedBy issuer
+            WHERE t.id = :teamId
+              AND (d.appealStatus IS NULL OR d.appealStatus <> com.t7.seal.domain.AppealStatus.OVERTURNED)
+            ORDER BY d.issuedAt DESC
+            """)
+    List<Disqualification> findActiveByTeamIdWithDetails(@Param("teamId") UUID teamId);
+
+    @Query("""
+            SELECT d FROM Disqualification d
+            JOIN FETCH d.submission s
+            JOIN FETCH s.team t
+            LEFT JOIN FETCH t.track tr
+            JOIN FETCH s.round r
+            JOIN FETCH r.event e
+            JOIN FETCH d.issuedBy issuer
             WHERE e.id = :eventId
               AND (:roundId IS NULL OR r.id = :roundId)
               AND (:trackId IS NULL OR tr.id = :trackId)

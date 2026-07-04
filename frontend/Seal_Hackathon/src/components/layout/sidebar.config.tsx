@@ -7,7 +7,6 @@ import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
-import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import HealthAndSafetyOutlinedIcon from "@mui/icons-material/HealthAndSafetyOutlined";

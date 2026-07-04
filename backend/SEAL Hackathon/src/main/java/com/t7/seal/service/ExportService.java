@@ -2,6 +2,7 @@ package com.t7.seal.service;
 
 import com.t7.seal.request.system.CreateExportJobRequest;
 import com.t7.seal.request.system.EventExportRequest;
+import com.t7.seal.request.system.ExportRblDatasetRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.ExportDownloadResponse;
 import com.t7.seal.response.system.ExportJobResponse;
@@ -27,6 +28,10 @@ public interface ExportService {
     ExportJobResponse exportEventTeamList(UUID eventId,
                                           EventExportRequest request,
                                           Authentication authentication);
+
+    ExportJobResponse exportEventRblDataset(UUID eventId,
+                                            ExportRblDatasetRequest request,
+                                            Authentication authentication);
 
     PageResponse<ExportJobResponse> getMyExportJobs(String status,
                                                     String exportType,

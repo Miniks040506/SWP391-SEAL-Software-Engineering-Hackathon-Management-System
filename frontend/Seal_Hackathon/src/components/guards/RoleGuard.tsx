@@ -14,7 +14,9 @@ export function RoleGuard({ allowedRoles, children }: Props) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  const userRoles = user.roles?.length ? user.roles : user.role ? [user.role] : [];
+
+  if (!userRoles.some((role) => allowedRoles.includes(role))) {
     return <Navigate to="/403" replace />;
   }
 

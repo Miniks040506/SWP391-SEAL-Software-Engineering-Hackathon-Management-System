@@ -1,5 +1,4 @@
 // Reused in: AllEventsStandings (compact variant), SingleEventLeaderboard (full variant)
-import React from 'react';
 import { RankBadge } from './RankBadge';
 import type { RankingEntry } from '@/types/ranking.types';
 

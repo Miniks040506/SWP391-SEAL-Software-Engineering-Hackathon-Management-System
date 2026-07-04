@@ -39,6 +39,12 @@ public class Round {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "start_at", nullable = false)
+    private LocalDateTime startAt;
+
+    @Column(name = "end_at", nullable = false)
+    private LocalDateTime endAt;
+
     @Column(name = "submission_deadline", nullable = false)
     private LocalDateTime submissionDeadline;
 

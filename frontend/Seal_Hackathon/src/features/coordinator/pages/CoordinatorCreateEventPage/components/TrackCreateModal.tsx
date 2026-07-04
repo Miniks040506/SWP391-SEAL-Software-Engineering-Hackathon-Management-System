@@ -364,6 +364,7 @@ export const TrackCreateModal = ({
                         <TextField
                           label="Judging Deadline"
                           type="datetime-local"
+                          required
                           error={Boolean(roundErrors?.judgingDeadline)}
                           helperText={roundErrors?.judgingDeadline?.message}
                           fullWidth

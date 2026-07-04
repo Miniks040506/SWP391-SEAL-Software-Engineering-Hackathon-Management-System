@@ -252,6 +252,53 @@ public class GradingServiceImpl implements GradingService {
         return buildJudgeAssignmentProgress(judgeAssignment, countCriteriaForRound(judgeAssignment.getRound()));
     }
 
+    @Transactional
+    @Override
+    public SubmissionGradingProgressResponse reopenScoreSheet(
+            UUID roundId,
+            UUID submissionId,
+            UUID judgeId,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found."));
+        Submission submission = getSubmission(submissionId);
+
+        if (submission.getRound() == null || !round.getId().equals(submission.getRound().getId())) {
+            throw new BadRequestException("Submission does not belong to this round.");
+        }
+
+        if (round.getGradingLockedAt() != null) {
+            throw new ConflictException("Cannot reopen score sheet after grading is locked.");
+        }
+
+        Judge judge = judgeRepository.findByIdWithUser(judgeId)
+                .orElseThrow(() -> new NotFoundException("Judge not found."));
+
+        if (!isAssigned(submission, judge)) {
+            throw new ForbiddenException("Judge is not assigned to this submission.");
+        }
+
+        List<Score> scores = scoreRepository
+                .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(submission.getId(), judge.getId());
+        long confirmedCount = scores.stream().filter(Score::isConfirmed).count();
+
+        if (confirmedCount == 0) {
+            throw new ConflictException("Score sheet is not final submitted.");
+        }
+
+        scores.forEach(Score::markAsDraft);
+        scoreRepository.saveAll(scores);
+
+        recordAuditLog(actor, AuditActionType.SCORE_REOPENED, submission, Map.of(
+                "judgeId", judge.getId().toString(),
+                "confirmedScoreCount", confirmedCount
+        ));
+
+        return buildSubmissionGradingProgress(submission, judge, countCriteriaForRound(round));
+    }
+
     //HELPERS
     private Judge currentJudge(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
@@ -384,10 +431,19 @@ public class GradingServiceImpl implements GradingService {
             throw new BadRequestException("Score value must be greater than or equal to 0.");
         }
 
+        if (hasMoreThanOneDecimalPlace(value)) {
+            throw new BadRequestException("Score value can include at most one decimal place.");
+        }
+
         Float max = criterion.getEffectiveMaxScore();
         if (max != null && value > max) {
             throw new BadRequestException("Score value must be less than or equal to the max score.");
         }
+    }
+
+    private boolean hasMoreThanOneDecimalPlace(Double value) {
+        double scaled = value * 10.0d;
+        return Math.abs(scaled - Math.rint(scaled)) > 0.0000001d;
     }
 
     private ScoreSheetResponse toScoreSheetResponse(Submission submission, Judge judge) {

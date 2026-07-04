@@ -94,11 +94,9 @@ public class RankingServiceImpl implements RankingService {
                 .map(EventCriteria::getId)
                 .collect(Collectors.toSet());
 
-        Map<UUID, Submission> scorableSubmissions = submissionRepository
-                .findSubmittedOrLateByRoundAndTrackNullable(roundId, trackId)
+        Map<UUID, Submission> rankableSubmissions = submissionRepository
+                .findRankableByRoundAndTrackNullable(roundId, trackId)
                 .stream()
-                .filter(submission ->
-                        submission.getStatus() != SubmissionStatus.DISQUALIFIED)
                 .filter(submission -> submission.getTeam() != null
                         && submission.getTeam().getTrack() != null)
                 .collect(Collectors.toMap(
@@ -110,7 +108,7 @@ public class RankingServiceImpl implements RankingService {
 
         List<Score> confirmedScores = scoreRepository.findConfirmedByRoundId(roundId)
                 .stream()
-                .filter(score -> scorableSubmissions
+                .filter(score -> rankableSubmissions
                         .containsKey(score.getSubmission().getId()))
                 .filter(score -> score.getEventCriteria() != null
                         && activeCriteriaIds.contains(score.getEventCriteria().getId()))
@@ -124,15 +122,13 @@ public class RankingServiceImpl implements RankingService {
                 );
 
         List<RankingDraft> rankingDrafts = new ArrayList<>();
-        for (Submission submission : scorableSubmissions.values()) {
+        for (Submission submission : rankableSubmissions.values()) {
             List<Score> submissionScores = scoresBySubmission
                     .getOrDefault(submission.getId(), List.of());
 
-            Optional<RankingDraft> draft = buildRankingDraft(
-                    submission,
-                    submissionScores,
-                    activeCriteriaIds
-            );
+            Optional<RankingDraft> draft = isDisqualifiedSubmission(submission)
+                    ? Optional.of(buildDisqualifiedRankingDraft(submission, submissionScores, activeCriteriaIds))
+                    : buildRankingDraft(submission, submissionScores, activeCriteriaIds);
 
             draft.ifPresent(rankingDrafts::add);
         }
@@ -151,20 +147,8 @@ public class RankingServiceImpl implements RankingService {
                 );
 
         for (List<RankingDraft> trackDrafts : draftsByTrack.values()) {
-            List<RankingDraft> sorted = trackDrafts.stream()
-                    .sorted(Comparator
-                            .comparing(
-                                    RankingDraft::totalScore,
-                                    Comparator.reverseOrder()
-                            )
-                            .thenComparing(
-                                    draft -> draft.submission().getSubmittedAt(),
-                                    Comparator.nullsLast(Comparator.naturalOrder())
-                            )
-                            .thenComparing(draft ->
-                                    safeString(draft.submission().getTeam().getName()))
-                    )
-                    .toList();
+            List<RankingDraft> sorted = sortRankingDraftsWithDisqualifiedLast(trackDrafts);
+            List<Ranking> trackRankings = new ArrayList<>();
 
             int rank = 1;
             for (RankingDraft draft : sorted) {
@@ -180,8 +164,13 @@ public class RankingServiceImpl implements RankingService {
                         .calculatedAt(calculatedAt)
                         .calculatedBy(actor)
                         .build();
-                rankings.add(ranking);
+                if (isDisqualifiedSubmission(draft.submission())) {
+                    ranking.markDisqualified();
+                }
+                trackRankings.add(ranking);
             }
+            applyTieFlags(trackRankings);
+            rankings.addAll(trackRankings);
         }
 
         rankingRepository.saveAll(rankings);
@@ -254,12 +243,14 @@ public class RankingServiceImpl implements RankingService {
         if (rankings.isEmpty()) {
             throw new ConflictException("Cannot publish results before rankings are calculated.");
         }
-        boolean finalRoundRanked = rankings.stream()
-                .anyMatch(ranking -> ranking.getRound().getId().equals(finalRound.getId()));
-        if (!finalRoundRanked) {
+        List<Ranking> finalRoundRankings = rankings.stream()
+                .filter(ranking -> ranking.getRound().getId().equals(finalRound.getId()))
+                .toList();
+        if (finalRoundRankings.isEmpty()) {
             throw new ConflictException(
                     "Final round rankings must be calculated before publishing event results.");
         }
+        ensureNoManualTieResolutionRequired(finalRoundRankings, "event");
 
         LocalDateTime now = LocalDateTime.now();
         event.publishResults(now);
@@ -330,6 +321,7 @@ public class RankingServiceImpl implements RankingService {
         if (rankings.isEmpty()) {
             throw new ConflictException("Cannot publish round results before rankings are calculated.");
         }
+        ensureNoManualTieResolutionRequired(rankings, "round");
 
         LocalDateTime now = LocalDateTime.now();
         round.publishResults(now);
@@ -428,6 +420,19 @@ public class RankingServiceImpl implements RankingService {
         if (event.getStatus() != RegistrationStatus.JUDGING
                 && event.getStatus() != RegistrationStatus.COMPLETED) {
             throw new ConflictException("Results can only be published when event is JUDGING or COMPLETED.");
+        }
+    }
+
+    private void ensureNoManualTieResolutionRequired(List<Ranking> rankings, String scope) {
+        long unresolvedTieCount = rankings.stream()
+                .filter(ranking -> Boolean.TRUE.equals(ranking.getManualResolutionRequired()))
+                .count();
+        if (unresolvedTieCount > 0) {
+            throw new ConflictException(
+                    "Cannot publish " + scope + " results while "
+                            + unresolvedTieCount
+                            + " tied ranking row(s) require manual resolution."
+            );
         }
     }
 
@@ -608,6 +613,85 @@ public class RankingServiceImpl implements RankingService {
             boolean notificationSent,
             boolean emailQueued
     ) {}
+
+    private List<RankingDraft> sortRankingDraftsWithDisqualifiedLast(List<RankingDraft> trackDrafts) {
+        Comparator<RankingDraft> scoredOrder = Comparator
+                .comparing(RankingDraft::totalScore, Comparator.reverseOrder())
+                .thenComparing(
+                        draft -> draft.submission().getSubmittedAt(),
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                )
+                .thenComparing(draft -> safeString(draft.submission().getTeam().getName()));
+
+        Comparator<RankingDraft> disqualifiedOrder = Comparator
+                .comparing(
+                        (RankingDraft draft) -> draft.submission().getSubmittedAt(),
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                )
+                .thenComparing(draft -> safeString(draft.submission().getTeam().getName()));
+
+        List<RankingDraft> sorted = new ArrayList<>();
+        sorted.addAll(trackDrafts.stream()
+                .filter(draft -> !isDisqualifiedSubmission(draft.submission()))
+                .sorted(scoredOrder)
+                .toList());
+        sorted.addAll(trackDrafts.stream()
+                .filter(draft -> isDisqualifiedSubmission(draft.submission()))
+                .sorted(disqualifiedOrder)
+                .toList());
+        return sorted;
+    }
+
+    private void applyTieFlags(List<Ranking> trackRankings) {
+        trackRankings.forEach(Ranking::clearTieStatus);
+
+        Map<String, List<Ranking>> rankingsByScore = trackRankings.stream()
+                .filter(ranking -> !isDisqualifiedSubmission(ranking.getSubmission()))
+                .collect(Collectors.groupingBy(
+                        ranking -> tieScoreKey(ranking.getTotalScore()),
+                        LinkedHashMap::new,
+                        Collectors.toList())
+                );
+
+        rankingsByScore.values().stream()
+                .filter(group -> group.size() > 1)
+                .forEach(group -> {
+                    String tieGroupKey = buildTieGroupKey(group.get(0));
+                    int tieGroupSize = group.size();
+                    group.forEach(ranking -> ranking.markTie(tieGroupKey, tieGroupSize));
+                });
+    }
+
+    private String buildTieGroupKey(Ranking ranking) {
+        return "%s:%s:%s".formatted(
+                ranking.getRound().getId(),
+                ranking.getTrack().getId(),
+                tieScoreKey(ranking.getTotalScore())
+        );
+    }
+
+    private String tieScoreKey(Double score) {
+        return String.format(Locale.ROOT, "%.2f", score == null ? 0.0 : score);
+    }
+
+    private RankingDraft buildDisqualifiedRankingDraft(
+            Submission submission,
+            List<Score> scores,
+            Set<UUID> activeCriteriaIds
+    ) {
+        return buildRankingDraft(submission, scores, activeCriteriaIds)
+                .orElseGet(() -> new RankingDraft(
+                        submission,
+                        submission.getTeam().getTrack(),
+                        0.0,
+                        0,
+                        new LinkedHashMap<>()
+                ));
+    }
+
+    private boolean isDisqualifiedSubmission(Submission submission) {
+        return submission != null && submission.getStatus() == SubmissionStatus.DISQUALIFIED;
+    }
 
     private Optional<RankingDraft> buildRankingDraft(
             Submission submission,
@@ -806,11 +890,18 @@ public class RankingServiceImpl implements RankingService {
                 track.getName(),
                 ranking.getTotalScore(),
                 ranking.getRankPosition(),
+                ranking.getTied(),
+                ranking.getTieGroupKey(),
+                ranking.getTieGroupSize(),
+                ranking.getManualResolutionRequired(),
                 ranking.getIsAdvanced(),
                 ranking.getJudgeCount(),
                 includeScoreBreakdown ? ranking.getScoreBreakdown() : null,
                 ranking.getCalculatedAt(),
-                isRankingPublished(ranking)
+                isRankingPublished(ranking),
+                ranking.getAdvanceReason() == null ? null : ranking.getAdvanceReason().name(),
+                submission.getStatus() == null ? null : submission.getStatus().name(),
+                team.getStatus() == null ? null : team.getStatus().name()
         );
     }
 

@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { CircularProgress, Button, Chip } from "@mui/material";
+import { Alert, CircularProgress, Button, Chip } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
@@ -12,6 +12,7 @@ import { CalibrationDistributionTable } from "../components/CalibrationChart/Cal
 import { CriterionVarianceCard } from "../components/CalibrationChart/CriterionVarianceCard";
 import { PublishDistributionDialog } from "../components/CoordinatorCalibration/PublishDistributionDialog";
 import type { UUID } from "@/types/common.types";
+import type { CriterionDistributionResponse } from "@/types/calibration.types";
 
 export const CalibrationDistributionPage = () => {
     const { calibrationId } = useParams<{ calibrationId: string }>();
@@ -23,7 +24,7 @@ export const CalibrationDistributionPage = () => {
 
     const [publishDialogOpen, setPublishDialogOpen] = useState(false);
 
-    const { data: distribution, isLoading } = useCalibrationDistributionQuery(calibrationId as UUID);
+    const { data: distribution, isLoading, isError } = useCalibrationDistributionQuery(calibrationId as UUID);
     const publishMutation = usePublishCalibrationDistributionMutation();
 
     if (isLoading) {
@@ -35,6 +36,23 @@ export const CalibrationDistributionPage = () => {
     }
 
     const isPublished = distribution?.published;
+
+    if (isCoordinator && isError) {
+        return (
+            <div className="mx-auto max-w-4xl py-20 px-6">
+                <Button
+                    startIcon={<ArrowBackOutlinedIcon />}
+                    onClick={() => navigate(backPath)}
+                    sx={{ mb: 4, textTransform: "none", fontWeight: 800 }}
+                >
+                    Back
+                </Button>
+                <Alert severity="error">
+                    Failed to load calibration distribution. Please try again.
+                </Alert>
+            </div>
+        );
+    }
 
     // If Judge and not published, show locked state
     if (!isCoordinator && !isPublished) {
@@ -62,24 +80,31 @@ export const CalibrationDistributionPage = () => {
         );
     }
 
-    const criteriaData = distribution?.distributions ?? [];
+    const criteriaData: CriterionDistributionResponse[] = distribution?.distributions ?? [];
     const judgeCount = criteriaData.reduce(
-        (maximum, criterion) => Math.max(maximum, criterion.judgeCount),
+        (maximum: number, criterion: CriterionDistributionResponse) =>
+            Math.max(maximum, criterion.judgeCount),
         0,
     );
     const criteriaCount = criteriaData.length;
     const distributionGroups = [
         {
             title: "Technical criteria",
-            data: criteriaData.filter((criterion) => criterion.technical === true),
+            data: criteriaData.filter(
+                (criterion: CriterionDistributionResponse) => criterion.technical === true,
+            ),
         },
         {
             title: "Soft-skill criteria",
-            data: criteriaData.filter((criterion) => criterion.technical === false),
+            data: criteriaData.filter(
+                (criterion: CriterionDistributionResponse) => criterion.technical === false,
+            ),
         },
         {
             title: "Other criteria",
-            data: criteriaData.filter((criterion) => criterion.technical == null),
+            data: criteriaData.filter(
+                (criterion: CriterionDistributionResponse) => criterion.technical == null,
+            ),
         },
     ].filter((group) => group.data.length > 0);
 
@@ -89,7 +114,7 @@ export const CalibrationDistributionPage = () => {
     let totalStdDev = 0;
     let validStdDevCount = 0;
 
-    criteriaData.forEach(c => {
+    criteriaData.forEach((c: CriterionDistributionResponse) => {
         const stdDev = c.standardDeviation;
         if (stdDev !== null && stdDev !== undefined) {
             totalStdDev += stdDev;
@@ -140,9 +165,10 @@ export const CalibrationDistributionPage = () => {
                         />
                     ) : (
                         <Chip
-                            label="Draft Preview"
+                            label="Not published"
                             color="warning"
-                            sx={{ fontWeight: 800, borderRadius: "8px" }}
+                            icon={<LockOutlinedIcon />}
+                            sx={{ fontWeight: 800, borderRadius: "8px", pl: 0.5 }}
                         />
                     )}
 
@@ -190,6 +216,12 @@ export const CalibrationDistributionPage = () => {
 
             {/* Main Content */}
             <div className="grid grid-cols-1 gap-12 px-6 xl:px-0">
+                {distributionGroups.length === 0 && (
+                    <Alert severity="info">
+                        No calibration score data is available for this distribution yet.
+                    </Alert>
+                )}
+
                 {distributionGroups.map((group) => (
                     <section key={group.title} className="grid grid-cols-1 gap-8">
                         <div>

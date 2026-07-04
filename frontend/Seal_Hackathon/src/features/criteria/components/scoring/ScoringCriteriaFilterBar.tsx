@@ -1,4 +1,4 @@
-import { CRITERIA_CATEGORIES, type BooleanFilterValue, type CriteriaFilterValue } from "@/types"
+import { CRITERIA_CATEGORIES, type BooleanFilterValue, type CriteriaFilterValue } from "@/types/criteria.types";
 import { MenuItem, TextField } from "@mui/material";
 import { criteriaTextFieldSx } from "../../constants/criteriaUi";
 

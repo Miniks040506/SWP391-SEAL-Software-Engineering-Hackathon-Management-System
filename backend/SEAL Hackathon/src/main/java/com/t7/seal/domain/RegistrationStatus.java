@@ -6,5 +6,6 @@ public enum RegistrationStatus {
     ONGOING,
     JUDGING,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
+    ARCHIVED
 }

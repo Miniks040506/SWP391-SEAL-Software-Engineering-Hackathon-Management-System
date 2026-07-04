@@ -15,7 +15,7 @@ export const rblApi = {
   exportAnonymizedDataset(eventId: UUID, payload?: ExportRblDatasetRequest) {
     return apiRequest.post<ExportJobResponse>(
       `/events/${eventId}/exports/rbl-dataset`,
-      payload ?? { format: "csv" },
+      payload ?? { format: "CSV" },
     );
   },
 };

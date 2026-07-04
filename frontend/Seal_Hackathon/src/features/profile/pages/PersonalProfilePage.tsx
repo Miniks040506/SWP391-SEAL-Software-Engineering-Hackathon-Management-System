@@ -39,9 +39,9 @@ function getInitialLetter(fullName?: string | null, email?: string | null) {
   return source.charAt(0).toUpperCase();
 }
 
-function normalizeNullable(value?: string | null) {
+function normalizeOptional(value?: string | null) {
   const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
+  return trimmed ? trimmed : undefined;
 }
 
 export function PersonalProfilePage() {
@@ -92,8 +92,8 @@ export function PersonalProfilePage() {
     try {
       await updateProfileMutation.mutateAsync({
         fullName: values.fullName.trim(),
-        phone: normalizeNullable(values.phone),
-        avatarUrl: normalizeNullable(values.avatarUrl),
+        phone: normalizeOptional(values.phone),
+        avatarUrl: normalizeOptional(values.avatarUrl),
       });
 
       enqueueSnackbar("Profile updated successfully.", { variant: "success" });

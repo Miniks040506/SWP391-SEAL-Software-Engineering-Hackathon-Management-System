@@ -21,8 +21,8 @@ export const activeEventApi = USE_MOCK
 const activeTrackApi = USE_MOCK
   ? (mockCoordinatorService.trackApi as any)
   : trackApi;
-const activeRoundApi = USE_MOCK
-  ? (mockCoordinatorService.roundApi as any)
+const activeRoundApi: typeof roundApi = USE_MOCK
+  ? (mockCoordinatorService.roundApi as unknown as typeof roundApi)
   : roundApi;
 const activePrizeApi = USE_MOCK
   ? (mockCoordinatorService.prizeApi as any)

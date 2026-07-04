@@ -188,6 +188,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/close").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/lock-submissions").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/lock-grading").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rounds/*/submissions/*/judges/*/scores/reopen").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/operation-status").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/scoring-progress").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/grading-status").hasRole("COORDINATOR")
@@ -234,6 +235,7 @@ public class SecurityConfig {
                         // Disqualification
                         .requestMatchers(HttpMethod.POST, API + "/disqualifications").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/events/*/disqualifications").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, API + "/teams/*/disqualifications/active").hasAnyRole("COORDINATOR", "ADMIN", "STUDENT")
                         .requestMatchers(HttpMethod.POST, API + "/submissions/*/disqualify").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/disqualifications/*").hasAnyRole("COORDINATOR", "ADMIN", "STUDENT")
                         .requestMatchers(HttpMethod.PATCH, API + "/disqualifications/*/appeal").hasAnyRole("STUDENT", "COORDINATOR")

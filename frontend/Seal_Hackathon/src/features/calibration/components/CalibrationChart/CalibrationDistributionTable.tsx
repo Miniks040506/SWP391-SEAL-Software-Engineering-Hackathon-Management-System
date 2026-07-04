@@ -1,4 +1,3 @@
-import React from "react";
 import type { CriterionDistributionResponse } from "@/types/calibration.types";
 import { Chip } from "@mui/material";
 

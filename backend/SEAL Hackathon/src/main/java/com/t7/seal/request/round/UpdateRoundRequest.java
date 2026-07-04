@@ -9,6 +9,8 @@ public record UpdateRoundRequest(
         @Size(max = 10000) String description,
         Integer orderIndex,
         Boolean isFinal,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
         LocalDateTime submissionDeadline,
         LocalDateTime judgingDeadline,
         String status

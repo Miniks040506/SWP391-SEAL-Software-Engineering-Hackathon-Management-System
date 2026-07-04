@@ -37,6 +37,8 @@ export type AuditLogResponse = {
   beforeState?: unknown;
   afterState?: unknown;
   context?: unknown;
+  ipAddress?: string | null;
+  userAgent?: string | null;
   createdAt: ISODateTime;
 };
 
@@ -70,6 +72,7 @@ export type CriteriaVarianceResponse = {
 
 export type VarianceDashboardResponse = {
   eventId: UUID;
+  eventName: string;
   roundId?: UUID | null;
   trackId?: UUID | null;
   criteriaType?: string | null;
@@ -77,6 +80,10 @@ export type VarianceDashboardResponse = {
   totalScoreCount: number;
   totalJudgeCount: number;
   totalCriteriaCount: number;
+  overallMean: number;
+  overallVariance: number;
+  overallStandardDeviation: number;
+  varianceThreshold: number;
   averageCriterionVariance: number;
   averageJudgeVariance: number;
   judgeVariances: JudgeVarianceResponse[];

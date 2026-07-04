@@ -79,4 +79,14 @@ public class DisqualificationController {
         return ResponseEntity.ok(disqualificationService.getDisqualificationsByEvent(
                 eventId, roundId, trackId, appealStatus, authentication));
     }
+
+    @PreAuthorize("hasAnyRole('STUDENT', 'COORDINATOR', 'ADMIN')")
+    @GetMapping("/teams/{teamId}/disqualifications/active")
+    public ResponseEntity<List<DisqualificationResponse>> getActiveTeamDisqualifications(
+            @PathVariable UUID teamId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(disqualificationService
+                .getActiveDisqualificationsByTeam(teamId, authentication));
+    }
 }

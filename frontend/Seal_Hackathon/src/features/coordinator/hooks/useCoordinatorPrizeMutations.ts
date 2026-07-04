@@ -13,7 +13,9 @@ import type {
 } from "@/types/prize.types";
 
 const USE_MOCK = false;
-const activePrizeApi = USE_MOCK ? (mockCoordinatorService as any).prizeApi : prizeApi;
+const activePrizeApi: typeof prizeApi = USE_MOCK
+  ? mockCoordinatorService.prizeApi as unknown as typeof prizeApi
+  : prizeApi;
 
 export function useCoordinatorPrizeMutations(eventId?: UUID) {
   const queryClient = useQueryClient();

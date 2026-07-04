@@ -4,7 +4,8 @@ export type EditableEventStatus =
   | "ONGOING"
   | "JUDGING"
   | "COMPLETED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "ARCHIVED";
 
 export const EVENT_STATUS_STEPS: Array<{
   value: EditableEventStatus;
@@ -53,7 +54,8 @@ export function normalizeEventStatus(
     value === "ONGOING" ||
     value === "JUDGING" ||
     value === "COMPLETED" ||
-    value === "CANCELLED"
+    value === "CANCELLED" ||
+    value === "ARCHIVED"
   ) {
     return value;
   }
@@ -76,6 +78,7 @@ export function getEventEditRules(status: EditableEventStatus) {
   const isJudging = status === "JUDGING";
   const isCompleted = status === "COMPLETED";
   const isCancelled = status === "CANCELLED";
+  const isArchived = status === "ARCHIVED";
 
   return {
     canEditInfo: isDraft || isRegistration || isOngoing,
@@ -85,7 +88,7 @@ export function getEventEditRules(status: EditableEventStatus) {
     canEditCriteria: isDraft || isRegistration || isOngoing,
     canAdvance: isDraft || isRegistration || isOngoing || isJudging,
     canCancel: isDraft || isRegistration || isOngoing || isJudging,
-    isReadOnly: isJudging || isCompleted || isCancelled,
+    isReadOnly: isJudging || isCompleted || isCancelled || isArchived,
     trackRoundReason: isOngoing
       ? "Event is ONGOING, so tracks and rounds are locked."
       : isJudging
@@ -94,6 +97,8 @@ export function getEventEditRules(status: EditableEventStatus) {
           ? "Event is COMPLETED, so tracks and rounds are read-only."
           : isCancelled
             ? "Event is CANCELLED, so tracks and rounds are read-only."
+            : isArchived
+              ? "Event is ARCHIVED, so tracks and rounds are read-only."
             : "",
     assignmentReason: isJudging
       ? "Event is in JUDGING, so mentor and judge assignments are locked."
@@ -101,6 +106,8 @@ export function getEventEditRules(status: EditableEventStatus) {
         ? "Event is COMPLETED, so assignments are read-only."
         : isCancelled
           ? "Event is CANCELLED, so assignments are read-only."
+          : isArchived
+            ? "Event is ARCHIVED, so assignments are read-only."
           : "",
     prizeReason: isJudging
       ? "Event is in JUDGING, so prize configuration is locked."
@@ -108,13 +115,17 @@ export function getEventEditRules(status: EditableEventStatus) {
         ? "Event is COMPLETED, so prizes are read-only."
         : isCancelled
           ? "Event is CANCELLED, so prizes are read-only."
+          : isArchived
+            ? "Event is ARCHIVED, so prizes are read-only."
           : "",
     criteriaReason: isJudging
       ? "Event is in JUDGING, so event criteria cannot be edited."
       : isCompleted
         ? "Event is COMPLETED, so event criteria are read-only."
-        : isCancelled 
-          ?"Event is CANCELLED, so event criteria are read-only."
+        : isCancelled
+          ? "Event is CANCELLED, so event criteria are read-only."
+          : isArchived
+            ? "Event is ARCHIVED, so event criteria are read-only."
           : "",
     infoReason: isJudging
       ? "Event is in JUDGING, so event information is locked."
@@ -122,6 +133,8 @@ export function getEventEditRules(status: EditableEventStatus) {
         ? "Event is COMPLETED, so event information is read-only."
         : isCancelled
           ? "Event is CANCELLED, so event information is read-only."
+          : isArchived
+            ? "Event is ARCHIVED, so event information is read-only."
           : "",
   };
 }

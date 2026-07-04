@@ -1,7 +1,5 @@
-import React from "react";
 import type { EventCriteriaResponse } from "@/types/criteria.types";
 import { CalibrationCriteriaScoreInput } from "./CalibrationCriteriaScoreInput";
-import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
 
 interface CalibrationScoreSheetProps {
     criteria: EventCriteriaResponse[];

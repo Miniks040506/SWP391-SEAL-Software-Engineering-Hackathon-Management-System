@@ -10,6 +10,7 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
   const [data, setData] =
     useState<PageResponse<CoordinatorTeamSummaryResponse> | null>(null);
   const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const fetchTeams = async () => {
@@ -23,6 +24,7 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
         const res = await teamApi.getCoordinatorEventTeams(params.eventId, {
           trackId: params.trackId,
           status: params.status,
+          registrationStatus: params.registrationStatus,
           search: params.search,
           page: params.page ? params.page - 1 : 0,
           size: params.size,
@@ -46,10 +48,16 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
     params.eventId,
     params.trackId,
     params.status,
+    params.registrationStatus,
     params.search,
     params.page,
     params.size,
+    reloadKey,
   ]);
 
-  return { data, loading };
+  return {
+    data,
+    loading,
+    refetch: () => setReloadKey((value) => value + 1),
+  };
 };

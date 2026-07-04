@@ -567,7 +567,8 @@ public class PrizeServiceImpl implements PrizeService {
 
         if (status == RegistrationStatus.JUDGING
                 || status == RegistrationStatus.COMPLETED
-                || status == RegistrationStatus.CANCELLED) {
+                || status == RegistrationStatus.CANCELLED
+                || status == RegistrationStatus.ARCHIVED) {
             throw new ConflictException("Prizes are locked in event status " + status + ".");
         }
     }

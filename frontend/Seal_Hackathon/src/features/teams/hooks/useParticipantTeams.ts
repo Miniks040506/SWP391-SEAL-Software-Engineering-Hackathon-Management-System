@@ -7,6 +7,7 @@ import { mockTeamService } from "../mocks/participantTeams.mock";
 import type { UUID } from "@/types/common.types";
 import type {
   CreateTeamRequest,
+  DeleteTeamRequest,
   InviteMemberRequest,
   LeaveTeamRequest,
   RemoveMemberRequest,
@@ -131,6 +132,30 @@ export function useUpdateTeamMutation(teamId?: string) {
     },
     onError: () =>
       enqueueSnackbar("Failed to update team.", { variant: "error" }),
+  });
+}
+
+export function useDeleteTeamMutation(teamId?: string) {
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  return useMutation({
+    mutationFn: async (payload?: DeleteTeamRequest) => {
+      return activeTeamService.deleteTeam(teamId as UUID, payload);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: participantTeamQueryKeys.myTeams,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: participantTeamQueryKeys.detail(teamId),
+      });
+      enqueueSnackbar("Team deleted successfully.", { variant: "success" });
+    },
+    onError: (error: any) =>
+      enqueueSnackbar(error.message || "Failed to delete team.", {
+        variant: "error",
+      }),
   });
 }
 

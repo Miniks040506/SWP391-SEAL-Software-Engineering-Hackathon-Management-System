@@ -127,6 +127,7 @@ public class TeamServiceImpl implements TeamService {
                 team.getLeader() == null ? null : team.getLeader().getFullName(),
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
+                team.getRegistrationStatus() == null ? null : team.getRegistrationStatus().name(),
                 team.getJoinCode(),
                 team.getJoinCodeEnabled(),
                 members.stream().map(this::toTeamMemberResponse).toList()
@@ -339,6 +340,39 @@ public class TeamServiceImpl implements TeamService {
 
     @Transactional
     @Override
+    public void deleteTeam(UUID teamId, ReasonRequest request, Authentication authentication) {
+        Team team = getTeam(teamId);
+        User actor = currentUserService.getCurrentUser(authentication);
+
+        ensureTeamLeader(team, authentication);
+        ensureTeamEditable(team);
+
+        LocalDateTime now = LocalDateTime.now();
+        String reason = blankToNull(request == null ? null : request.reason());
+        String finalReason = reason == null ? "Deleted by team leader." : reason;
+
+        Map<String, Object> before = auditTeamState(team);
+        team.markIncomplete(actor, finalReason, now);
+        team.setMemberCount(0);
+
+        activeMembers(teamId).forEach(member ->
+                member.leave(now, LeftReason.TEAM_DELETED, finalReason));
+        teamInvitationRepository.findByTeamIdAndStatus(teamId, InvitationStatus.PENDING)
+                .forEach(invitation -> invitation.cancel(now));
+
+        auditLogRepository.save(AuditLog.builder()
+                .actor(actor)
+                .actionType(AuditActionType.TEAM_DELETED)
+                .targetTable("teams")
+                .targetId(team.getId())
+                .beforeState(before)
+                .afterState(auditTeamState(team))
+                .context(Map.of("reason", finalReason))
+                .build());
+    }
+
+    @Transactional
+    @Override
     public TeamMemberResponse acceptInvitation(UUID invitationId, Authentication authentication) {
         TeamInvitation invitation = getInvitation(invitationId);
         return acceptInvitationInternal(invitation, authentication);
@@ -512,7 +546,7 @@ public class TeamServiceImpl implements TeamService {
         }
 
         team.setTrack(track);
-        team.register(LocalDateTime.now());
+        team.submitRegistration(LocalDateTime.now());
         team.setUpdatedAt(LocalDateTime.now());
 
         Team teamSaved = teamRepository.save(team);
@@ -525,7 +559,8 @@ public class TeamServiceImpl implements TeamService {
                 .afterState(Map.of(
                         "eventId", event.getId().toString(),
                         "trackId", track.getId().toString(),
-                        "status", teamSaved.getStatus().name(),
+                        "teamStatus", teamSaved.getStatus().name(),
+                        "registrationStatus", teamSaved.getRegistrationStatus().name(),
                         "memberCount", memberCount
                 ))
                 .build()
@@ -535,8 +570,8 @@ public class TeamServiceImpl implements TeamService {
                 leader,
                 event,
                 NotificationType.TEAM_REGISTERED,
-                "Team registered to track",
-                "Team " + team.getName() + " has been registered for track " + track.getName() + ".",
+                "Team registration submitted",
+                "Team " + team.getName() + " is pending approval for track " + track.getName() + ".",
                 NotificationTargetScope.TEAM,
                 teamSaved.getId(),
                 null,
@@ -620,6 +655,43 @@ public class TeamServiceImpl implements TeamService {
                 .filter(team -> team.getTrack().getEvent().getStatus() == RegistrationStatus.ONGOING)
                 .map(this::toEventCompetitionSummaryResponse)
                 .toList();
+    }
+
+    @Transactional
+    @Override
+    public int markIncompleteTeamsAfterRegistrationClose() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Team> candidates = teamRepository.findIncompleteRegistrationCandidates(now);
+
+        for (Team team : candidates) {
+            int minMembers = team.getTrack() == null || team.getTrack().getMinMembers() == null
+                    ? 1
+                    : team.getTrack().getMinMembers();
+            String reason = "Automatically marked incomplete after registration closed with "
+                    + (team.getMemberCount() == null ? 0 : team.getMemberCount())
+                    + "/" + minMembers + " members.";
+
+            team.markIncomplete(null, reason, now);
+            teamInvitationRepository.findByTeamIdAndStatus(team.getId(), InvitationStatus.PENDING)
+                    .forEach(invitation -> invitation.cancel(now));
+
+            if (team.getLeader() != null && team.getTrack() != null && team.getTrack().getEvent() != null) {
+                notificationService.createSystemNotification(
+                        team.getLeader(),
+                        team.getTrack().getEvent(),
+                        NotificationType.TEAM_DISQUALIFIED,
+                        "Team marked incomplete",
+                        "Team " + team.getName() + " was marked incomplete because it did not meet the minimum member count before registration closed.",
+                        NotificationTargetScope.TEAM,
+                        team.getId(),
+                        null,
+                        NotificationChannel.IN_APP,
+                        null
+                );
+            }
+        }
+
+        return candidates.size();
     }
 
     @Transactional(readOnly = true)
@@ -741,7 +813,9 @@ public class TeamServiceImpl implements TeamService {
     private boolean hasCompetitionAccess(Team team) {
         return team.getTrack() != null
                 && team.getTrack().getEvent() != null
-                && team.getStatus() != TeamStatus.FORMING;
+                && team.getStatus() != TeamStatus.FORMING
+                && team.getStatus() != TeamStatus.INCOMPLETE
+                && team.getStatus() != TeamStatus.COMPLETE;
     }
 
     private EventCompetitionRoundResponse toEventCompetitionRoundResponse(
@@ -769,6 +843,8 @@ public class TeamServiceImpl implements TeamService {
                 round.getDescription(),
                 round.getStatus().name(),
                 round.getIsFinal(),
+                round.getStartAt(),
+                round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline(),
                 round.getSubmissionLockedAt(),
@@ -1105,6 +1181,7 @@ public class TeamServiceImpl implements TeamService {
                 team.getLeader().getFullName(),
                 team.getTrack() == null ? null : team.getTrack().getId(),
                 team.getStatus().name(),
+                team.getRegistrationStatus() == null ? null : team.getRegistrationStatus().name(),
                 team.getMemberCount() == null ? 0 : team.getMemberCount(),
                 team.getJoinCode(),
                 team.getJoinCodeEnabled()
@@ -1150,6 +1227,7 @@ public class TeamServiceImpl implements TeamService {
                 team.getName(),
                 team.getProjectTitle(),
                 team.getStatus().name(),
+                team.getRegistrationStatus() == null ? null : team.getRegistrationStatus().name(),
                 role
         );
     }
@@ -1219,6 +1297,19 @@ public class TeamServiceImpl implements TeamService {
         if (team.getStatus() != TeamStatus.FORMING) {
             throw new BadRequestException("Team is not in forming status.");
         }
+    }
+
+    private Map<String, Object> auditTeamState(Team team) {
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("id", team.getId() == null ? null : team.getId().toString());
+        state.put("name", team.getName());
+        state.put("status", team.getStatus() == null ? null : team.getStatus().name());
+        state.put("registrationStatus", team.getRegistrationStatus() == null
+                ? null
+                : team.getRegistrationStatus().name());
+        state.put("memberCount", team.getMemberCount());
+        state.put("trackId", team.getTrack() == null ? null : team.getTrack().getId().toString());
+        return state;
     }
 
 }
