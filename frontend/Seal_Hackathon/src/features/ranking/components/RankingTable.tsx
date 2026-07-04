@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import ReportProblemOutlinedIcon from "@mui/icons-material/ReportProblemOutlined";
 import { Link, useLocation } from "react-router-dom";
 import type { RankingResponse } from "@/types/ranking.types";
 import { RankingStatusBadge } from "./RankingStatusBadge";
@@ -99,11 +100,25 @@ export const RankingTable = ({ rankings = [], awardsByTeamId }: RankingTableProp
                                 <TableCell>{row.trackName || "-"}</TableCell>
                                 <TableCell>{row.roundName}</TableCell>
                                 <TableCell>
-                                    <div className="flex items-center gap-1 font-bold text-blue-600">
-                                        {Number(row.totalScore).toFixed(2)}
-                                        <Tooltip title="Weighted average from final judge scores" arrow placement="top">
-                                            <InfoOutlinedIcon fontSize="inherit" className="text-slate-400" />
-                                        </Tooltip>
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-1 font-bold text-blue-600">
+                                            {Number(row.totalScore).toFixed(2)}
+                                            <Tooltip title="Weighted average from final judge scores" arrow placement="top">
+                                                <InfoOutlinedIcon fontSize="inherit" className="text-slate-400" />
+                                            </Tooltip>
+                                        </div>
+                                        {row.tied && (
+                                            <Tooltip
+                                                title={`Tied score group${row.tieGroupSize ? ` (${row.tieGroupSize} teams)` : ""}`}
+                                                arrow
+                                                placement="top"
+                                            >
+                                                <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                                                    <ReportProblemOutlinedIcon sx={{ fontSize: 14 }} />
+                                                    Tie{row.tieGroupSize ? ` x${row.tieGroupSize}` : ""}
+                                                </span>
+                                            </Tooltip>
+                                        )}
                                     </div>
                                 </TableCell>
                                 <TableCell>{row.judgeCount || 0}</TableCell>
@@ -116,6 +131,11 @@ export const RankingTable = ({ rankings = [], awardsByTeamId }: RankingTableProp
                                     {row.published !== undefined && (
                                         <div className="mt-1">
                                             <RankingStatusBadge type={row.published ? "PUBLISHED" : "UNPUBLISHED"} />
+                                        </div>
+                                    )}
+                                    {showActions && row.manualResolutionRequired && (
+                                        <div className="mt-1">
+                                            <RankingStatusBadge type="MANUAL_REVIEW" />
                                         </div>
                                     )}
                                 </TableCell>
