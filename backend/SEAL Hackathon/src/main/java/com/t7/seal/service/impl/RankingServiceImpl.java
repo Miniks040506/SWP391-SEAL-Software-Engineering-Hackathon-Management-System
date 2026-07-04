@@ -243,12 +243,14 @@ public class RankingServiceImpl implements RankingService {
         if (rankings.isEmpty()) {
             throw new ConflictException("Cannot publish results before rankings are calculated.");
         }
-        boolean finalRoundRanked = rankings.stream()
-                .anyMatch(ranking -> ranking.getRound().getId().equals(finalRound.getId()));
-        if (!finalRoundRanked) {
+        List<Ranking> finalRoundRankings = rankings.stream()
+                .filter(ranking -> ranking.getRound().getId().equals(finalRound.getId()))
+                .toList();
+        if (finalRoundRankings.isEmpty()) {
             throw new ConflictException(
                     "Final round rankings must be calculated before publishing event results.");
         }
+        ensureNoManualTieResolutionRequired(finalRoundRankings, "event");
 
         LocalDateTime now = LocalDateTime.now();
         event.publishResults(now);
@@ -319,6 +321,7 @@ public class RankingServiceImpl implements RankingService {
         if (rankings.isEmpty()) {
             throw new ConflictException("Cannot publish round results before rankings are calculated.");
         }
+        ensureNoManualTieResolutionRequired(rankings, "round");
 
         LocalDateTime now = LocalDateTime.now();
         round.publishResults(now);
@@ -417,6 +420,19 @@ public class RankingServiceImpl implements RankingService {
         if (event.getStatus() != RegistrationStatus.JUDGING
                 && event.getStatus() != RegistrationStatus.COMPLETED) {
             throw new ConflictException("Results can only be published when event is JUDGING or COMPLETED.");
+        }
+    }
+
+    private void ensureNoManualTieResolutionRequired(List<Ranking> rankings, String scope) {
+        long unresolvedTieCount = rankings.stream()
+                .filter(ranking -> Boolean.TRUE.equals(ranking.getManualResolutionRequired()))
+                .count();
+        if (unresolvedTieCount > 0) {
+            throw new ConflictException(
+                    "Cannot publish " + scope + " results while "
+                            + unresolvedTieCount
+                            + " tied ranking row(s) require manual resolution."
+            );
         }
     }
 
