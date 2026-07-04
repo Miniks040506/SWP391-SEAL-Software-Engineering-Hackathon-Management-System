@@ -18,6 +18,7 @@ export const GradingStatusBadge = ({ status }: GradingStatusBadgeProps) => {
             twColor = "text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30";
             break;
         case "SUBMITTED":
+        case "COMPLETED":
             label = "Submitted";
             twColor = "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/30";
             break;

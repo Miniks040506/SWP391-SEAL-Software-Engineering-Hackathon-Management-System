@@ -11,6 +11,7 @@ import type {
   SaveScoreSheetRequest,
   ScoreResponse,
   ScoreSheetResponse,
+  SubmissionGradingProgressResponse,
   UpdateScoreRequest,
 } from "@/types/grading.types";
 import type { RoundLockResponse } from "@/types/round.types";
@@ -93,5 +94,11 @@ export const gradingApi = {
 
   lockGrading(roundId: UUID) {
     return apiRequest.post<RoundLockResponse>(`/rounds/${roundId}/lock-grading`);
+  },
+
+  reopenScoreSheet(roundId: UUID, submissionId: UUID, judgeId: UUID) {
+    return apiRequest.post<SubmissionGradingProgressResponse>(
+      `/rounds/${roundId}/submissions/${submissionId}/judges/${judgeId}/scores/reopen`,
+    );
   },
 };

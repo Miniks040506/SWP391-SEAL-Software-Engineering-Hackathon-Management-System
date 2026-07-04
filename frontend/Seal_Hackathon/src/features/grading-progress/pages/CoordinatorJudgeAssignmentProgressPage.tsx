@@ -3,13 +3,18 @@ import { Button, CircularProgress, Typography } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import { useJudgeAssignmentProgressQuery } from "../hooks/useGradingProgressQueries";
+import { useReopenScoreSheetMutation } from "../hooks/useGradingProgressMutations";
 import { GradingProgressSummaryCards } from "../components/GradingProgressSummaryCards";
 import { SubmissionGradingProgressTable } from "../components/SubmissionGradingProgressTable";
+import { useSnackbar } from "notistack";
 import type { UUID } from "@/types/common.types";
+import type { SubmissionGradingProgressResponse } from "@/types/grading.types";
 
 export const CoordinatorJudgeAssignmentProgressPage = () => {
     const { assignmentId } = useParams<{ assignmentId: string }>();
     const navigate = useNavigate();
+    const { enqueueSnackbar } = useSnackbar();
+    const reopenMutation = useReopenScoreSheetMutation();
 
     const {
         data: assignmentProgress,
@@ -35,6 +40,35 @@ export const CoordinatorJudgeAssignmentProgressPage = () => {
             </div>
         );
     }
+
+    const handleReopenScoreSheet = (submission: SubmissionGradingProgressResponse) => {
+        if (!submission.roundId) {
+            enqueueSnackbar("Cannot reopen scorecard because the round is missing.", { variant: "error" });
+            return;
+        }
+
+        if (!window.confirm(`Reopen ${submission.teamName || "this team's"} scorecard for editing?`)) {
+            return;
+        }
+
+        reopenMutation.mutate(
+            {
+                roundId: submission.roundId,
+                submissionId: submission.submissionId,
+                judgeId: assignmentProgress.judgeId,
+                assignmentId: assignmentProgress.assignmentId,
+            },
+            {
+                onSuccess: () => {
+                    enqueueSnackbar("Scorecard reopened for judge editing.", { variant: "success" });
+                },
+                onError: (err: any) => {
+                    const msg = err?.response?.data?.message || "Failed to reopen scorecard.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            },
+        );
+    };
 
     return (
         <div className="mx-auto max-w-7xl animate-in fade-in duration-500 space-y-8">
@@ -85,7 +119,15 @@ export const CoordinatorJudgeAssignmentProgressPage = () => {
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">Assigned Submissions</h2>
                 </div>
-                <SubmissionGradingProgressTable submissions={assignmentProgress.submissions} />
+                <SubmissionGradingProgressTable
+                    submissions={assignmentProgress.submissions}
+                    onReopen={handleReopenScoreSheet}
+                    reopeningSubmissionId={
+                        reopenMutation.isPending
+                            ? reopenMutation.variables?.submissionId
+                            : null
+                    }
+                />
             </section>
         </div>
     );
