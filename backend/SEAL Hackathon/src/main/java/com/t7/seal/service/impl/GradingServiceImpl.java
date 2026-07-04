@@ -384,10 +384,19 @@ public class GradingServiceImpl implements GradingService {
             throw new BadRequestException("Score value must be greater than or equal to 0.");
         }
 
+        if (hasMoreThanOneDecimalPlace(value)) {
+            throw new BadRequestException("Score value can include at most one decimal place.");
+        }
+
         Float max = criterion.getEffectiveMaxScore();
         if (max != null && value > max) {
             throw new BadRequestException("Score value must be less than or equal to the max score.");
         }
+    }
+
+    private boolean hasMoreThanOneDecimalPlace(Double value) {
+        double scaled = value * 10.0d;
+        return Math.abs(scaled - Math.rint(scaled)) > 0.0000001d;
     }
 
     private ScoreSheetResponse toScoreSheetResponse(Submission submission, Judge judge) {
