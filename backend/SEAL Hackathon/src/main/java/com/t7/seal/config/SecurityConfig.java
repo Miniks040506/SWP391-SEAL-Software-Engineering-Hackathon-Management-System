@@ -188,6 +188,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/close").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/lock-submissions").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.POST, API + "/rounds/*/lock-grading").hasRole("COORDINATOR")
+                        .requestMatchers(HttpMethod.POST, API + "/rounds/*/submissions/*/judges/*/scores/reopen").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/operation-status").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/scoring-progress").hasRole("COORDINATOR")
                         .requestMatchers(HttpMethod.GET, API + "/rounds/*/grading-status").hasRole("COORDINATOR")

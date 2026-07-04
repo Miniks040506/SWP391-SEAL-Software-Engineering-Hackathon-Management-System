@@ -30,4 +30,9 @@ public interface GradingService {
     RoundGradingProgressResponse getRoundGradingProgress(UUID roundId, Authentication authentication);
 
     JudgeAssignmentProgressResponse getJudgeAssignmentProgress(UUID judgeAssignmentId, Authentication authentication);
+
+    SubmissionGradingProgressResponse reopenScoreSheet(UUID roundId,
+                                                       UUID submissionId,
+                                                       UUID judgeId,
+                                                       Authentication authentication);
 }
