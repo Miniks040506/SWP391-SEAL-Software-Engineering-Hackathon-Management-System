@@ -166,7 +166,7 @@ export const advancementApi = {
   getTeamAdvancementStatus: async (teamId: string) => ({
     data: toUiTeamAdvancementStatus(
       await apiRequest.get<BackendTeamAdvancementStatusResponse>(
-        `/teams/${teamId}/advancement`,
+        `/teams/${teamId}/advancement-status`,
       ),
     ),
   }),
