@@ -1,4 +1,8 @@
 package com.t7.seal.dto.ai;
 
-public class AiProviderResult {
-}
+public record AiProviderResult(
+        String answer,
+        String provider,
+        String model,
+        boolean usedExternalModel
+) {}
