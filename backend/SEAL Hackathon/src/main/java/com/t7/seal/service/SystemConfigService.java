@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SystemConfigService {
-    
+
     List<SystemConfigResponse> getSystemConfig(String category,
                                                boolean includeSecrets,
                                                Authentication authentication);
