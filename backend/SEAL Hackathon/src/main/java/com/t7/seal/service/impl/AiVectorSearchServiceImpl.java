@@ -14,7 +14,7 @@ import java.util.UUID;
 public class AiVectorSearchServiceImpl implements AiVectorSearchService {
     @Override
     public void upsertEmbedding(UUID chunkId, float[] embedding, String modelName, int dimension) {
-        
+
     }
 
     @Override
