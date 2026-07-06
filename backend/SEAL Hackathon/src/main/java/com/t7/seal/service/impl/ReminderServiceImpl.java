@@ -5,12 +5,14 @@ import com.t7.seal.domain.NotificationTargetScope;
 import com.t7.seal.domain.NotificationType;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Notification;
+import com.t7.seal.entities.Round;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.HackathonEventRepository;
 import com.t7.seal.repository.NotificationRepository;
+import com.t7.seal.repository.RoundRepository;
 import com.t7.seal.request.reminder.CreateReminderRequest;
 import com.t7.seal.request.reminder.GenerateEventRemindersRequest;
 import com.t7.seal.response.reminder.ReminderResponse;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,6 +49,7 @@ public class ReminderServiceImpl implements ReminderService {
 
     private final HackathonEventRepository hackathonEventRepository;
     private final NotificationRepository notificationRepository;
+    private final RoundRepository roundRepository;
 
     @Transactional(readOnly = true)
     @Override
@@ -112,9 +116,78 @@ public class ReminderServiceImpl implements ReminderService {
             GenerateEventRemindersRequest request,
             Authentication authentication
     ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureCanManage(authentication);
+        ensureRemindersEnabled();
 
+        HackathonEvent event = ensureEventExists(eventId);
+        int submissionDays = request != null && request.submissionDaysBefore() != null
+                ? Math.max(request.submissionDaysBefore(), 0)
+                : parsePositiveInteger(systemConfigService
+                .getStringValue("reminder.default_submission_days_before", "1"));
+        int judgingDays = request != null && request.judgingDaysBefore() != null
+                ? Math.max(request.judgingDaysBefore(), 0)
+                : parsePositiveInteger(systemConfigService
+                .getStringValue("reminder.default_judging_days_before", "1"));
 
-        return List.of();
+        boolean includeSubmission = request == null
+                || request.includeSubmissionReminders() == null
+                || request.includeSubmissionReminders();
+        boolean includeJudging = request == null
+                || request.includeJudgingReminders() == null
+                || request.includeJudgingReminders();
+        NotificationChannel channel = request != null && Boolean.FALSE.equals(request.emailEnabled())
+                ? NotificationChannel.IN_APP
+                : NotificationChannel.BOTH;
+
+        LocalDateTime now = LocalDateTime.now();
+        List<ReminderResponse> created = new ArrayList<>();
+
+        for (Round round : roundRepository.findByEventIdOrderByOrderIndexAsc(eventId)) {
+            if (includeSubmission && round.getSubmissionDeadline() != null) {
+                LocalDateTime scheduelAt = round.getSubmissionDeadline().minusDays(submissionDays);
+                if (scheduelAt.isAfter(now)) {
+                    created.add(createFromParts(
+                            actor,
+                            event,
+                            NotificationType.SUBMISSION_REMINDER,
+                            "Submission deadline reminder: " + round.getName(),
+                            "Round " + round.getName()
+                                    + " submission deadline is: "
+                                    + round.getSubmissionDeadline()
+                                    + ". Please submit required deliverable links before the round is locked",
+                            NotificationTargetScope.EVENT_PARTICIPANTS,
+                            null,
+                            null,
+                            channel,
+                            scheduelAt
+                    ));
+                }
+            }
+
+            if (includeJudging && round.getJudgingDeadline() != null) {
+                LocalDateTime scheduelAt = round.getJudgingDeadline().minusDays(judgingDays);
+                if (scheduelAt.isAfter(now)) {
+                    created.add(createFromParts(
+                            actor,
+                            event,
+                            NotificationType.JUDGING_REMINDER,
+                            "Judging deadline reminder: " + round.getName(),
+                            "Round " + round.getName()
+                                    + " judging deadline is: "
+                                    + round.getJudgingDeadline()
+                                    + ". Please finalize assigned scores before grading is locked",
+                            NotificationTargetScope.ROUND_JUDGES,
+                            round.getId(),
+                            null,
+                            channel,
+                            scheduelAt
+                    ));
+                }
+            }
+        }
+
+        return created;
     }
 
     @Transactional
