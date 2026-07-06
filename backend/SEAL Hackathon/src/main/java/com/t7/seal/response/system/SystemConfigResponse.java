@@ -4,7 +4,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record SystemConfigResponse(
-        UUID id, String configKey,
-        Object configValue, String category,
-        Boolean encrypted, LocalDateTime updatedAt
+        UUID id,
+        String configKey,
+        Object configValue,
+        String category,
+        String valueType,
+        Boolean encrypted,
+        Boolean active,
+        String description,
+        LocalDateTime updatedAt
 ) {}

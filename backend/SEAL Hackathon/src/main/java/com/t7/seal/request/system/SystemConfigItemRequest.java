@@ -6,5 +6,9 @@ import jakarta.validation.constraints.NotNull;
 public record SystemConfigItemRequest(
         @NotBlank String key,
         @NotNull Object value,
-        Boolean encrypted
+        Boolean encrypted,
+        String category,
+        String valueType,
+        String description,
+        Boolean active
 ) {}
