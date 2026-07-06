@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Repository
 public interface SystemConfigRepository extends JpaRepository<SystemConfig, UUID> {
-    
+
     Optional<SystemConfig> findByConfigKey(String configKey);
 
     boolean existsByConfigKey(String configKey);
