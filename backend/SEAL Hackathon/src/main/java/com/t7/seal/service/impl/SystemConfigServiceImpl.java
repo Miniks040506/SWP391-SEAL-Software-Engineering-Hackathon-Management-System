@@ -120,8 +120,29 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public SystemHealthResponse getSystemHealth(Authentication authentication) {
-        return null;
+        ensureAdmin(authentication);
+        long activeConfigCount = systemConfigRepository.findAll().stream()
+                .filter(SystemConfig::isUsable)
+                .count();
+
+        Map<String, Object> details = new LinkedHashMap<>();
+
+        details.put("activeConfigCount", activeConfigCount);
+        details.put("assistantEnabled",
+                getBooleanValue("feature.ai_assistant.enabled", true));
+        details.put("aiProvider", aiProviderProperties.getProvider());
+        details.put("aiChatModel", aiProviderProperties.getChat().getModel());
+        details.put("aiEmbeddingModel", aiProviderProperties.getEmbedding().getModel());
+        details.put("aiEmbeddingConfigured",
+                aiProviderProperties.getEmbedding().getApiKey() != null
+                && !aiProviderProperties.getEmbedding().getApiKey().isBlank());
+        details.put("remindersEnabled",
+                getBooleanValue("feature.advanced_reminders.enabled", true));
+        details.put("checkedAt", LocalDateTime.now().toString());
+
+        return new SystemHealthResponse("UP", true, true, true, details);
     }
 
     @Override
