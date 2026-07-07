@@ -80,8 +80,28 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
-    public List<SystemConfigResponse> updateSystemConfig(UpdateSystemConfigRequest request, Authentication authentication) {
-        return List.of();
+    @Transactional
+    public List<SystemConfigResponse> updateSystemConfig(
+            UpdateSystemConfigRequest request,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureAdmin(authentication);
+
+        if (request == null || request.items() == null || request.items().isEmpty()) {
+            throw new BadRequestException("At least one config item is required.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        List<SystemConfig> saved = request.items().stream()
+                .map(item ->
+                        upsertItem(item, actor, now))
+                .toList();
+
+        return saved.stream()
+                .map(config ->
+                        toResponse(config, false))
+                .toList();
     }
 
     @Override
@@ -136,7 +156,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
         Map<String, Object> before = config.getId() == null
                 ? null : auditState(config, false);
-        
+
         config.setConfigValue(serialized);
         config.setValueType(valueType);
         config.setCategory(category);
