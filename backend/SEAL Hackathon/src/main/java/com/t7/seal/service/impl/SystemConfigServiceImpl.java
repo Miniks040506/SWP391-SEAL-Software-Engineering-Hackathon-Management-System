@@ -105,8 +105,18 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
+    @Transactional
     public void seedDefaults(Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        ensureAdmin(authentication);
 
+        LocalDateTime now = LocalDateTime.now();
+
+        defaultItems().forEach(item -> {
+            if (!systemConfigRepository.existsByConfigKey(item.key())) {
+                upsertItem(item, actor, now);
+            }
+        });
     }
 
     @Override
@@ -179,6 +189,120 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 Map.of("configKey", saved.getConfigKey())
         );
         return saved;
+    }
+
+    private List<SystemConfigItemRequest> defaultItems() {
+        return List.of(
+                new SystemConfigItemRequest(
+                        "feature.ai_assistant.enabled",
+                        true,
+                        false,
+                        "FEATURE_FLAG",
+                        "BOOLEAN",
+                        "Enable the SEAL help assistant.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "feature.ai_assistant.rag.enabled",
+                        true,
+                        false,
+                        "FEATURE_FLAG",
+                        "BOOLEAN",
+                        "Enable AI knowledge-base retrieval for SEAL project scope.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "feature.ai_assistant.academic_guardrails.enabled",
+                        true,
+                        false,
+                        "FEATURE_FLAG",
+                        "BOOLEAN",
+                        "Block cheating/coding-for-submission requests.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "feature.ai_assistant.translation.enabled",
+                        true,
+                        false,
+                        "FEATURE_FLAG",
+                        "BOOLEAN",
+                        "Allow Vietnamese/English translation mode.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "feature.advanced_reminders.enabled",
+                        true,
+                        false,
+                        "FEATURE_FLAG",
+                        "BOOLEAN",
+                        "Enable scheduled reminder generation.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "reminder.default_submission_days_before",
+                        1,
+                        false,
+                        "GENERAL",
+                        "INTEGER",
+                        "Default days before submission deadline " +
+                                "to remind participants.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "reminder.default_judging_days_before",
+                        1,
+                        false,
+                        "GENERAL",
+                        "INTEGER",
+                        "Default days before judging deadline to remind judges.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "ai.rag.max_chunks",
+                        5,
+                        false,
+                        "GENERAL",
+                        "INTEGER",
+                        "Maximum SEAL knowledge chunks injected" +
+                                " into each assistant answer." +
+                                " Provider credentials are configured by environment variables," +
+                                " not stored in SystemConfig.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "ai.guardrail.strict_for_all_roles",
+                        true,
+                        false,
+                        "FEATURE_FLAG",
+                        "BOOLEAN",
+                        "Apply academic-integrity guardrails to all roles, " +
+                                "not only students.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "ai.assistant.restrict_to_project_scope",
+                        true,
+                        false,
+                        "FEATURE_FLAG",
+                        "BOOLEAN",
+                        "Block unrelated questions outside" +
+                                " SEAL/project/technology support.",
+                        true
+                ),
+                new SystemConfigItemRequest(
+                        "ai.assistant.disclaimer",
+                        "SEAL Assistant can explain system usage," +
+                                " translate Vietnamese/English, and guide debugging, " +
+                                "but it will not write hackathon solution code for participants.",
+                        false,
+                        "GENERAL",
+                        "STRING",
+                        "Assistant disclaimer shown in responses. " +
+                                "External AI provider/model/api-key are read from seal.ai." +
+                                "* environment properties.",
+                        true
+                )
+        );
     }
 
     private SystemConfigResponse toResponse(
