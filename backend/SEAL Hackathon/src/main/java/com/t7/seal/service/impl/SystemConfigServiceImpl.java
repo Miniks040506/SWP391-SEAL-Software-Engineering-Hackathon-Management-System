@@ -1,6 +1,9 @@
 package com.t7.seal.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t7.seal.domain.SystemConfigCategory;
+import com.t7.seal.domain.ValueType;
 import com.t7.seal.entities.SystemConfig;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
@@ -23,6 +26,7 @@ import java.util.Optional;
 public class SystemConfigServiceImpl implements SystemConfigService {
 
     private final SystemConfigRepository systemConfigRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -83,18 +87,54 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     //HELPERS
 
-    private SystemConfigResponse toResponse(SystemConfig config, boolean includeSecrets) {
+    private SystemConfigResponse toResponse(
+            SystemConfig config,
+            boolean includeSecrets
+    ) {
         return new SystemConfigResponse(
                 config.getId(),
                 config.getConfigKey(),
                 displayValue(config, includeSecrets),
-                config.getCategory() == null ? null : config.getCategory().name(),
-                config.getValueType() == null ? null : config.getValueType().name(),
+                config.getCategory() == null
+                        ? null : config.getCategory().name(),
+                config.getValueType() == null
+                        ? null : config.getValueType().name(),
                 Boolean.TRUE.equals(config.getIsEncrypted()),
                 Boolean.TRUE.equals(config.getIsActive()),
                 config.getDescription(),
                 config.getUpdatedAt()
         );
+    }
+
+    private Object displayValue(SystemConfig config, boolean includeSecrets) {
+        if (Boolean.TRUE.equals(config.getIsEncrypted()) && !includeSecrets) {
+            return mask(config.getConfigValue());
+        }
+
+        if (config.getValueType() == ValueType.BOOLEAN) {
+            return Boolean.parseBoolean(config.getConfigValue());
+        }
+
+        if (config.getValueType() == ValueType.INTEGER) {
+            try {
+                return Integer.parseInt(config.getConfigValue());
+            } catch (NumberFormatException ignored) {
+                return config.getConfigValue();
+            }
+        }
+
+        if (config.getValueType() == ValueType.JSON) {
+            try {
+                return objectMapper.readValue(
+                        config.getConfigValue(),
+                        Object.class
+                );
+            } catch (JsonProcessingException ignored) {
+                return config.getConfigValue();
+            }
+        }
+
+        return config.getConfigValue();
     }
 
     private SystemConfigCategory parseCategory(String category) {
@@ -103,6 +143,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unsupported system config category: " + category);
         }
+    }
+
+    private String mask(String value) {
+        if (value == null || value.isBlank()) return "********";
+        if (value.length() <= 4) return "********";
+        return "********" + value.substring(value.length() - 4);
     }
 
     private void ensureAdmin(Authentication authentication) {
