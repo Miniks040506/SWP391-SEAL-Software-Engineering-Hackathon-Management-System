@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t7.seal.domain.SystemConfigCategory;
 import com.t7.seal.domain.ValueType;
 import com.t7.seal.entities.SystemConfig;
+import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.SystemConfigRepository;
+import com.t7.seal.request.system.SystemConfigItemRequest;
 import com.t7.seal.request.system.UpdateSystemConfigRequest;
 import com.t7.seal.response.system.SystemConfigResponse;
 import com.t7.seal.response.system.SystemHealthResponse;
@@ -19,7 +21,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -99,6 +103,22 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     //HELPERS
 
+    private SystemConfig upsertItem(
+            SystemConfigItemRequest item,
+            User user,
+            LocalDateTime now
+    ) {
+        String key = normalizeKey(item.key());
+        ValueType valueType = parseValueType(item.valueType(), item.value());
+
+        SystemConfigCategory category = item.category() == null || item.category().isBlank()
+                ? inferCategory(key)
+                : parseCategory(item.category());
+
+        String serialized = serializeValue(item.value(), valueType);
+        boolean encrypted = Boolean.TRUE.equals(item.encrypted()) || looksSecret(key);
+    }
+
     private SystemConfigResponse toResponse(
             SystemConfig config,
             boolean includeSecrets
@@ -149,6 +169,44 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return config.getConfigValue();
     }
 
+    private String serializeValue(Object value, ValueType valueType) {
+        if (value == null) {
+            throw new BadRequestException("Config value is required.");
+        }
+
+        try {
+            return switch (valueType) {
+                case BOOLEAN -> String.valueOf(Boolean
+                        .parseBoolean(String.valueOf(value)));
+                case INTEGER -> String.valueOf(Integer
+                        .parseInt(String.valueOf(value)));
+                case JSON -> value instanceof String s
+                        ? s : objectMapper.writeValueAsString(value);
+                case STRING -> String.valueOf(value);
+            };
+        } catch (NumberFormatException ex) {
+            throw new BadRequestException("Invalid integer config value: " + value);
+        } catch (JsonProcessingException ex) {
+            throw new BadRequestException("Invalid JSON config value.");
+        }
+    }
+
+    private ValueType parseValueType(String valueType, Object value) {
+        if (valueType != null && !valueType.isBlank()) {
+            try {
+                return ValueType.valueOf(valueType.trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                throw new BadRequestException("Unsupported valueType: " + valueType);
+            }
+        }
+
+        if (value instanceof Boolean) return ValueType.BOOLEAN;
+        if (value instanceof Number) return ValueType.INTEGER;
+        if (value instanceof Map<?, ?> || value instanceof List<?>) return ValueType.JSON;
+
+        return ValueType.STRING;
+    }
+
     private SystemConfigCategory parseCategory(String category) {
         try {
             return SystemConfigCategory.valueOf(category.trim().toUpperCase());
@@ -157,11 +215,35 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         }
     }
 
+    private SystemConfigCategory inferCategory(String key) {
+        if (key.startsWith("smtp.") || key.startsWith("email."))
+            return SystemConfigCategory.SMTP;
+
+        if (key.startsWith("github.") || key.startsWith("gitlab.")
+                || key.startsWith("oauth.") || key.startsWith("storage."))
+            return SystemConfigCategory.INTEGRATION;
+
+        if (key.startsWith("security.")) return SystemConfigCategory.SECURITY;
+        if (key.startsWith("rate_limit.")) return SystemConfigCategory.RATE_LIMIT;
+        if (key.startsWith("feature.")) return SystemConfigCategory.FEATURE_FLAG;
+
+        return SystemConfigCategory.GENERAL;
+    }
+
     private String normalizeKey(String key) {
         if (key == null || key.isBlank()) {
             throw new BadRequestException("Config key is required.");
         }
         return key.trim().toLowerCase();
+    }
+
+    private boolean looksSecret(String key) {
+        String normalized = key.toLowerCase();
+        return normalized.contains("secret")
+                || normalized.contains("token")
+                || normalized.contains("password")
+                || normalized.contains("api_key")
+                || normalized.contains("apikey");
     }
 
     private String mask(String value) {
