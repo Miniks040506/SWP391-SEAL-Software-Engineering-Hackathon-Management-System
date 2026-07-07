@@ -146,18 +146,26 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<String> getRawValue(String key) {
-        return Optional.empty();
+        return systemConfigRepository.findByConfigKey(normalizeKey(key))
+                .filter(SystemConfig::isUsable)
+                .map(SystemConfig::getConfigValue);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public String getStringValue(String key, String fallback) {
-        return "";
+        return getRawValue(key).orElse(fallback);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean getBooleanValue(String key, boolean fallback) {
-        return false;
+        return getRawValue(key)
+                .map(String::trim)
+                .map(Boolean::parseBoolean)
+                .orElse(fallback);
     }
 
     //HELPERS
