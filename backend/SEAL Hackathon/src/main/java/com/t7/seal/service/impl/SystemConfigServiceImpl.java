@@ -1,12 +1,15 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.request.system.UpdateSystemConfigRequest;
 import com.t7.seal.response.system.SystemConfigResponse;
 import com.t7.seal.response.system.SystemHealthResponse;
+import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,8 +17,14 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class SystemConfigServiceImpl implements SystemConfigService {
+
     @Override
-    public List<SystemConfigResponse> getSystemConfig(String category, boolean includeSecrets, Authentication authentication) {
+    @Transactional(readOnly = true)
+    public List<SystemConfigResponse> getSystemConfig(
+            String category,
+            boolean includeSecrets,
+            Authentication authentication
+    ) {
         return List.of();
     }
 
@@ -52,5 +61,13 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Override
     public boolean getBooleanValue(String key, boolean fallback) {
         return false;
+    }
+
+    //HELPERS
+
+    private void ensureAdmin(Authentication authentication) {
+        if(!CurrentUser.isAdmin(authentication)) {
+            throw new ForbiddenException("Only System admin can manage system configuration");
+        }
     }
 }
