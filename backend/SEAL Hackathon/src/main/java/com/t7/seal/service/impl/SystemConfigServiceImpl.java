@@ -1,6 +1,10 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.SystemConfigCategory;
+import com.t7.seal.entities.SystemConfig;
+import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
+import com.t7.seal.repository.SystemConfigRepository;
 import com.t7.seal.request.system.UpdateSystemConfigRequest;
 import com.t7.seal.response.system.SystemConfigResponse;
 import com.t7.seal.response.system.SystemHealthResponse;
@@ -18,6 +22,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SystemConfigServiceImpl implements SystemConfigService {
 
+    private final SystemConfigRepository systemConfigRepository;
+
     @Override
     @Transactional(readOnly = true)
     public List<SystemConfigResponse> getSystemConfig(
@@ -25,7 +31,19 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             boolean includeSecrets,
             Authentication authentication
     ) {
-        return List.of();
+        ensureAdmin(authentication);
+
+        List<SystemConfig> configs;
+        if (category == null || category.isBlank()) {
+            configs = systemConfigRepository.findAllByOrderByCategoryAscConfigKeyAsc();
+        } else {
+            configs = systemConfigRepository
+                    .findByCategoryOrderByConfigKeyAsc(parseCategory(category));
+        }
+
+        return configs.stream()
+                .map(config -> toResponse(config, includeSecrets))
+                .toList();
     }
 
     @Override
@@ -64,6 +82,28 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     //HELPERS
+
+    private SystemConfigResponse toResponse(SystemConfig config, boolean includeSecrets) {
+        return new SystemConfigResponse(
+                config.getId(),
+                config.getConfigKey(),
+                displayValue(config, includeSecrets),
+                config.getCategory() == null ? null : config.getCategory().name(),
+                config.getValueType() == null ? null : config.getValueType().name(),
+                Boolean.TRUE.equals(config.getIsEncrypted()),
+                Boolean.TRUE.equals(config.getIsActive()),
+                config.getDescription(),
+                config.getUpdatedAt()
+        );
+    }
+
+    private SystemConfigCategory parseCategory(String category) {
+        try {
+            return SystemConfigCategory.valueOf(category.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Unsupported system config category: " + category);
+        }
+    }
 
     private void ensureAdmin(Authentication authentication) {
         if(!CurrentUser.isAdmin(authentication)) {
