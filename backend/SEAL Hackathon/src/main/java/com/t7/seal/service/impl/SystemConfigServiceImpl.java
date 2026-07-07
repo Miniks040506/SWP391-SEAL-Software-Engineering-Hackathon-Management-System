@@ -2,6 +2,8 @@ package com.t7.seal.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.t7.seal.config.AiProviderProperties;
+import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.domain.SystemConfigCategory;
 import com.t7.seal.domain.ValueType;
 import com.t7.seal.entities.SystemConfig;
@@ -15,6 +17,8 @@ import com.t7.seal.request.system.UpdateSystemConfigRequest;
 import com.t7.seal.response.system.SystemConfigResponse;
 import com.t7.seal.response.system.SystemHealthResponse;
 import com.t7.seal.security.guard.CurrentUser;
+import com.t7.seal.service.AuditLogService;
+import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -22,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,7 +36,10 @@ import java.util.Optional;
 public class SystemConfigServiceImpl implements SystemConfigService {
 
     private final SystemConfigRepository systemConfigRepository;
+    private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
+    private final AiProviderProperties aiProviderProperties;
 
     @Override
     @Transactional(readOnly = true)
@@ -105,7 +113,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     private SystemConfig upsertItem(
             SystemConfigItemRequest item,
-            User user,
+            User actor,
             LocalDateTime now
     ) {
         String key = normalizeKey(item.key());
@@ -117,6 +125,40 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
         String serialized = serializeValue(item.value(), valueType);
         boolean encrypted = Boolean.TRUE.equals(item.encrypted()) || looksSecret(key);
+
+        SystemConfig config = systemConfigRepository.findByConfigKey(key)
+                .orElseGet(() -> SystemConfig.builder()
+                        .configKey(key)
+                        .createdAt(now)
+                        .updatedBy(actor)
+                        .build()
+                );
+
+        Map<String, Object> before = config.getId() == null
+                ? null : auditState(config, false);
+        
+        config.setConfigValue(serialized);
+        config.setValueType(valueType);
+        config.setCategory(category);
+        config.setDescription(item.description() == null
+                ? config.getDescription() : item.description().trim());
+        config.setIsEncrypted(encrypted);
+        config.setIsActive(item.active() == null
+                ? Boolean.TRUE : item.active());
+        config.setUpdatedAt(now);
+        config.setUpdatedBy(actor);
+
+        SystemConfig saved = systemConfigRepository.save(config);
+        auditLogService.record(
+                actor,
+                AuditActionType.SYSTEM_CONFIG_CHANGED,
+                "system_configs",
+                saved.getId(),
+                before,
+                auditState(saved, false),
+                Map.of("configKey", saved.getConfigKey())
+        );
+        return saved;
     }
 
     private SystemConfigResponse toResponse(
@@ -167,6 +209,24 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         }
 
         return config.getConfigValue();
+    }
+
+    private Map<String, Object> auditState(
+            SystemConfig config,
+            boolean includeSecrets
+    ) {
+        Map<String, Object> state = new LinkedHashMap<>();
+
+        state.put("configKey", config.getConfigKey());
+        state.put("configValue", displayValue(config, includeSecrets));
+        state.put("category", config.getCategory() == null
+                ? null : config.getCategory().name());
+        state.put("valueType", config.getValueType() == null
+                ? null : config.getValueType().name());
+        state.put("encrypted", config.getIsEncrypted());
+        state.put("active", config.getIsActive());
+
+        return state;
     }
 
     private String serializeValue(Object value, ValueType valueType) {
@@ -253,7 +313,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     private void ensureAdmin(Authentication authentication) {
-        if(!CurrentUser.isAdmin(authentication)) {
+        if (!CurrentUser.isAdmin(authentication)) {
             throw new ForbiddenException("Only System admin can manage system configuration");
         }
     }
