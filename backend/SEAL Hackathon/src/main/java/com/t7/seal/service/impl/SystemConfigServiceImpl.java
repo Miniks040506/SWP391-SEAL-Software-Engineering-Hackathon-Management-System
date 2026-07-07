@@ -7,6 +7,7 @@ import com.t7.seal.domain.ValueType;
 import com.t7.seal.entities.SystemConfig;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
+import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.SystemConfigRepository;
 import com.t7.seal.request.system.UpdateSystemConfigRequest;
 import com.t7.seal.response.system.SystemConfigResponse;
@@ -51,8 +52,19 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
-    public SystemConfigResponse getSystemConfigByKey(String key, boolean includeSecrets, Authentication authentication) {
-        return null;
+    @Transactional(readOnly = true)
+    public SystemConfigResponse getSystemConfigByKey(
+            String key,
+            boolean includeSecrets,
+            Authentication authentication
+    ) {
+        ensureAdmin(authentication);
+
+        SystemConfig config = systemConfigRepository.findByConfigKey(normalizeKey(key))
+                .orElseThrow(() ->
+                        new NotFoundException("System config not found: " + key));
+
+        return toResponse(config, includeSecrets);
     }
 
     @Override
@@ -143,6 +155,13 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unsupported system config category: " + category);
         }
+    }
+
+    private String normalizeKey(String key) {
+        if (key == null || key.isBlank()) {
+            throw new BadRequestException("Config key is required.");
+        }
+        return key.trim().toLowerCase();
     }
 
     private String mask(String value) {
