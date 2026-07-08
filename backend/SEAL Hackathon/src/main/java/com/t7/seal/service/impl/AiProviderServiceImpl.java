@@ -27,9 +27,17 @@ public class AiProviderServiceImpl implements AiProviderService {
         String apiKey = properties.getChat().getApiKey();
         String model = properties.getChat().getModel();
 
+        if (!properties.isEnabled() || apiKey == null || apiKey.isBlank()
+                || provider.equals("RULE_BASED") || provider.equals("MOCK")) {
+            return fallback(request, provider, model);
+        }
 
+        if (provider.equals("OPENAI") || provider.equals("DEEPSEEK")
+                || provider.equals("OPENAI_COMPATIBLE")) {
+            return callLangChain4jOpenAiCompatible(request, provider, apiKey, model);
+        }
 
-        return null;
+        return fallback(request, provider + "_NOT_IMPLEMENTED", model);
     }
 
     //HELPERS
@@ -118,7 +126,7 @@ public class AiProviderServiceImpl implements AiProviderService {
 
                     ? "\n\nI can explain the workflow, checklist, and debugging direction, " +
                     "but I will not write a complete team submission solution."
-                    
+
                     : "\n\nMình có thể giải thích flow, checklist và hướng debug, " +
                     "nhưng không viết full solution/bài nộp cho team.");
         } else {
