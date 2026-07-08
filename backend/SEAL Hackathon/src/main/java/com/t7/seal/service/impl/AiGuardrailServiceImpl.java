@@ -3,6 +3,7 @@ package com.t7.seal.service.impl;
 import com.t7.seal.domain.AiIntent;
 import com.t7.seal.domain.AiSafetyDecision;
 import com.t7.seal.domain.AiSafetyRiskType;
+import com.t7.seal.domain.UserRole;
 import com.t7.seal.dto.ai.AiGuardrailResult;
 import com.t7.seal.entities.User;
 import com.t7.seal.request.assistant.AssistantChatRequest;
@@ -82,7 +83,57 @@ public class AiGuardrailServiceImpl implements AiGuardrailService {
             );
         }
 
-        return null;
+        boolean student = user != null && user.getRole() == UserRole.STUDENT;
+        boolean strictForAll = systemConfigService.getBooleanValue(
+                "ai.guardrail.strict_for_all_roles",
+                true
+        );
+        boolean applyAcademicGuardrail = student || strictForAll;
+
+        if (applyAcademicGuardrail && asksForAssignmentSolution(message)) {
+            return block(
+                    AiSafetyRiskType.ASSIGNMENT_CODE,
+                    AiIntent.BLOCK_ASSIGNMENT_CODE,
+                    10,
+                    "User asks the assistant to transform an assignment/project prompt," +
+                            " screenshot, or file into implementation code.",
+                    safePolicyAnswer(user)
+            );
+        }
+        if (applyAcademicGuardrail && asksForFullCode(message)) {
+            return block(
+                    AiSafetyRiskType.FULL_SOLUTION,
+                    AiIntent.BLOCK_FULL_SOLUTION,
+                    9,
+                    "User asks for a complete implementation or full code deliverable.",
+                    safePolicyAnswer(user)
+            );
+        }
+
+        if (containsAny(
+                message, "football", "world cup", "movie", "đặt đồ ăn", "du lịch"
+        ) && !containsAny(
+                message,
+                "seal", "project", "spring", "react", "api", "jwt", "database")
+        ) {
+            boolean restrictScope = systemConfigService.getBooleanValue(
+                    "ai.assistant.restrict_to_project_scope",
+                    true
+            );
+            if (restrictScope) {
+                return block(
+                        AiSafetyRiskType.OUT_OF_SCOPE,
+                        AiIntent.OUT_OF_SCOPE,
+                        4,
+                        "The request is outside SEAL/project/technology support scope.",
+                        "Mình chỉ hỗ trợ các vấn đề liên quan SEAL, " +
+                                "quy trình hackathon, hoặc công nghệ phục vụ project. " +
+                                "Bạn có thể hỏi về team, submission, grading, ranking, " +
+                                "Spring Boot, React, database, security hoặc deployment."
+                );
+            }
+        }
+        return AiGuardrailResult.allow(intent);
     }
 
     @Override
