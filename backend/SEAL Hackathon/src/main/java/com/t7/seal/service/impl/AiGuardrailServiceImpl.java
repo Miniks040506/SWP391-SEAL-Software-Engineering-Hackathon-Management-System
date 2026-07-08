@@ -1,6 +1,8 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.AiIntent;
+import com.t7.seal.domain.AiSafetyDecision;
+import com.t7.seal.domain.AiSafetyRiskType;
 import com.t7.seal.dto.ai.AiGuardrailResult;
 import com.t7.seal.entities.User;
 import com.t7.seal.request.assistant.AssistantChatRequest;
@@ -39,6 +41,46 @@ public class AiGuardrailServiceImpl implements AiGuardrailService {
         AiIntent intent = detectIntent(
                 request == null ? null : request.message(),
                 request == null ? null : request.attachmentText());
+
+        if (containsAny(message,
+                "ignore previous", "ignore all previous",
+                "bỏ qua hướng dẫn", "bỏ qua policy", "system prompt", "developer message")
+        ) {
+            return block(
+                    AiSafetyRiskType.PROMPT_INJECTION,
+                    intent,
+                    8,
+                    "Prompt injection attempt detected.",
+                    safePolicyAnswer(user)
+            );
+        }
+        if (containsAny(message,
+                "bypass plagiarism", "qua đạo văn", "tránh bị phát hiện ai",
+                "hide ai generated", "ẩn ai generated", "copy solution", "cheat", "gian lận")
+        ) {
+            return block(
+                    AiSafetyRiskType.PLAGIARISM_BYPASS,
+                    AiIntent.BLOCK_PLAGIARISM_BYPASS,
+                    10,
+                    "The request asks for plagiarism, cheating, or detection bypass.",
+                    safePolicyAnswer(user)
+            );
+        }
+        if (containsAny(message,
+                "điểm của đội khác", "submission của đội khác",
+                "raw score của đội khác", "private data", "export all private",
+                "show other team's score")
+        ) {
+            return block(
+                    AiSafetyRiskType.PRIVATE_DATA,
+                    AiIntent.BLOCK_PRIVATE_DATA,
+                    9,
+                    "The request may expose private data outside the user's authorization scope.",
+                    "Mình không thể cung cấp dữ liệu riêng tư hoặc dữ liệu " +
+                            "ngoài quyền truy cập của bạn. Mình có thể hướng dẫn bạn " +
+                            "xem dữ liệu hợp lệ trong SEAL theo đúng role."
+            );
+        }
 
         return null;
     }
@@ -102,6 +144,32 @@ public class AiGuardrailServiceImpl implements AiGuardrailService {
         }
 
         return AiIntent.GENERAL_HELP;
+    }
+
+    private AiGuardrailResult block(
+            AiSafetyRiskType riskType,
+            AiIntent intent,
+            int severity,
+            String reason,
+            String safeAnswer
+    ) {
+        return new AiGuardrailResult(
+                AiSafetyDecision.BLOCK,
+                riskType,
+                intent,
+                severity,
+                reason,
+                safeAnswer
+        );
+    }
+
+    private String safePolicyAnswer(User user) {
+        return "Mình không thể viết full code, làm bài nộp, " +
+                "hoặc biến đề bài/file/hình đề bài thành solution cho team. "
+                + "Mình có thể hỗ trợ theo hướng an toàn: " +
+                "giải thích yêu cầu, chia nhỏ task, gợi ý kiến thức cần học, " +
+                "lập checklist, viết pseudocode ngắn, " +
+                "hoặc review/debug phần code bạn đã tự viết.";
     }
 
     private String normalize(String value) {
