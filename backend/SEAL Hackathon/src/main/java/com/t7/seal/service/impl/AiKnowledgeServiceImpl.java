@@ -15,13 +15,18 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class AiKnowledgeServiceImpl implements AiKnowledgeService {
+
+    private static final int MAX_CHUNK_CHARS = 1800;
+    private static final Pattern SPLIT = Pattern.compile("\\s+");
 
     private final AiKnowledgeDocumentRepository aiKnowledgeDocumentRepository;
 
@@ -49,6 +54,8 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
                         .build()
         );
 
+        List<String> chunks = chunk(request.content());
+
         return null;
     }
 
@@ -73,6 +80,36 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     }
 
     //HELPERS
+
+    private List<String> chunk(String content) {
+        String normalized = content.replace("\r\n", "\n").trim();
+        List<String> chunks = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+
+        for (String paragraph : normalized.split("\\n\\s*\\n|\\n")) {
+            if (paragraph.isBlank()) continue;
+
+            if (current.length() + paragraph.length() + 1 > MAX_CHUNK_CHARS
+                    && !current.isEmpty()) {
+                chunks.add(current.toString().trim());
+                current = new StringBuilder();
+            }
+
+            current.append(paragraph.trim()).append("\n");
+        }
+
+        if (!current.isEmpty()) {
+            chunks.add(current.toString().trim());
+        }
+
+        if (chunks.isEmpty()) {
+            chunks.add(normalized.substring(
+                    0, Math.min(MAX_CHUNK_CHARS, normalized.length())
+            ));
+        }
+
+        return chunks;
+    }
 
     private AiKnowledgeVisibility parseVisibility(String value) {
         if (value == null || value.isBlank()) {
