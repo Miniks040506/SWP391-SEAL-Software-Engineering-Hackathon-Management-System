@@ -4,9 +4,12 @@ import com.t7.seal.config.AiProviderProperties;
 import com.t7.seal.dto.ai.AiProviderRequest;
 import com.t7.seal.dto.ai.AiProviderResult;
 import com.t7.seal.service.AiProviderService;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 
@@ -18,10 +21,58 @@ public class AiProviderServiceImpl implements AiProviderService {
 
     @Override
     public AiProviderResult generate(AiProviderRequest request) {
+        String provider = normalizeProvider(properties.getProvider());
+        String apiKey = properties.getChat().getApiKey();
+        String model = properties.getChat().getModel();
+
+
+
         return null;
     }
 
     //HELPERS
+
+    private AiProviderResult callLangChain4jOpenAiCompatible(
+            AiProviderRequest request,
+            String provider,
+            String apiKey,
+            String modelName
+    ) {
+        try {
+            ChatModel chatModel = OpenAiChatModel.builder()
+                    .baseUrl(
+                            normalizeBaseUrl(provider,
+                            properties.getChat().getBaseUrl())
+                    )
+                    .apiKey(apiKey)
+                    .modelName(modelName)
+                    .temperature(properties.getChat().getTemperature())
+                    .maxTokens(Math.max(64, properties.getChat().getMaxTokens()))
+                    .timeout(Duration.ofSeconds(
+                            Math.max(5, properties.getChat().getTimeoutSeconds()))
+                    )
+                    .build();
+
+            String answer = chatModel.chat(buildFullPrompt(request));
+            if (answer == null || answer.isBlank()) {
+                return fallback(request, provider + "_EMPTY", modelName);
+            }
+
+            return new AiProviderResult(
+                    answer.trim(),
+                    provider + ":LANGCHAIN4J",
+                    modelName,
+                    true
+            );
+        } catch (Exception ex) {
+            return fallback(
+                    request,
+                    provider + "_LANGCHAIN4J_FALLBACK",
+                    modelName
+            );
+        }
+    }
+
 
     private String summarizeContext(List<String> contexts) {
         String joined = String.join(" ", contexts);
@@ -50,7 +101,7 @@ public class AiProviderServiceImpl implements AiProviderService {
         if (provider.equals("DEEPSEEK") && baseUrl.equals("https://api.openai.com/v1")) {
             return "https://api.deepseek.com";
         }
-        
+
         return baseUrl;
     }
 }
