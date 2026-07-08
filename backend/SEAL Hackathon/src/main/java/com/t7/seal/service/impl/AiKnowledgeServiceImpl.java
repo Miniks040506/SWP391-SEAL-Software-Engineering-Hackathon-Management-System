@@ -15,6 +15,7 @@ import com.t7.seal.service.AiKnowledgeService;
 import com.t7.seal.service.AiVectorSearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -39,6 +40,7 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     private final AiVectorSearchService vectorSearchService;
 
     @Override
+    @Transactional
     public KnowledgeDocumentResponse createDocument(
             CreateKnowledgeDocumentRequest request,
             User actor
@@ -94,6 +96,7 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<KnowledgeDocumentResponse> listDocuments() {
         return documentRepository.findByIsActiveTrueOrderByUpdatedAtDesc()
                 .stream()
@@ -107,16 +110,19 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     }
 
     @Override
+    @Transactional
     public void seedDefaultKnowledge(User actor) {
 
     }
 
     @Override
+    @Transactional
     public int reindexKnowledge() {
         return 0;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AssistantSourceResponse> retrieve(String query, User user, int maxChunks) {
         return List.of();
     }
