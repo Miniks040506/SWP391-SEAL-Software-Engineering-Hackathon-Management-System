@@ -1,6 +1,8 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.AiKnowledgeVisibility;
 import com.t7.seal.entities.User;
+import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.request.assistant.CreateKnowledgeDocumentRequest;
 import com.t7.seal.response.assistant.AssistantSourceResponse;
 import com.t7.seal.response.assistant.KnowledgeDocumentResponse;
@@ -8,7 +10,12 @@ import com.t7.seal.service.AiKnowledgeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -36,5 +43,47 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     @Override
     public List<AssistantSourceResponse> retrieve(String query, User user, int maxChunks) {
         return List.of();
+    }
+
+    //HELPERS
+
+    private AiKnowledgeVisibility parseVisibility(String value) {
+        if (value == null || value.isBlank()) {
+            return AiKnowledgeVisibility.AUTHENTICATED;
+        }
+        try {
+            return AiKnowledgeVisibility.valueOf(
+                    value.trim().toUpperCase(Locale.ROOT)
+            );
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Unsupported AI knowledge visibility: " + value);
+        }
+    }
+
+    private String blankToDefault(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private String normalizeForSearch(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT).trim();
+    }
+
+    private String hash(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            return HexFormat.of().formatHex(
+                    digest.digest(value.getBytes(StandardCharsets.UTF_8))
+            );
+        } catch (NoSuchAlgorithmException ex) {
+            return Integer.toHexString(value.hashCode());
+        }
+    }
+
+    private String escape(String value) {
+        return value == null
+                ? "" : value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 }
