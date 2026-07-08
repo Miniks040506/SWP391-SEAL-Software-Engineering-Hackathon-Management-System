@@ -214,10 +214,47 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     @Override
     @Transactional(readOnly = true)
     public List<AssistantSourceResponse> retrieve(String query, User user, int maxChunks) {
+        if (query == null || query.isBlank()) return List.of();
+        int limit = Math.max(1, maxChunks);
+        List<AiKnowledgeChunk> vectorHits = vectorSearchService.search(
+                query,
+                user,
+                limit,
+                0.55
+        );
+
+        if (!vectorHits.isEmpty()) {
+            return vectorHits.stream()
+                    .map(chunk -> toSource(chunk, 1.0))
+                    .limit(limit)
+                    .toList();
+        }
+
         return List.of();
     }
 
     //HELPERS
+
+    private AssistantSourceResponse toSource(
+            AiKnowledgeChunk chunk,
+            double score
+    ) {
+        AiKnowledgeDocument doc = chunk.getDocument();
+        String content = chunk.getContent();
+        String excerpt = content.length() > 360
+                ? content.substring(0, 357) + "..." : content;
+
+        return new AssistantSourceResponse(
+                doc.getId(),
+                chunk.getId(),
+                doc.getTitle(),
+                doc.getDocType(),
+                chunk.getModule(),
+                chunk.getUseCaseId(),
+                excerpt,
+                score
+        );
+    }
 
     private KnowledgeDocumentResponse toKnowledgeDocumentResponse(
             AiKnowledgeDocument doc,
