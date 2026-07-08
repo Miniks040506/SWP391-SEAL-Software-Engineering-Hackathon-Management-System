@@ -50,6 +50,60 @@ public class AiGuardrailServiceImpl implements AiGuardrailService {
 
     //HELPERS
 
+    private AiIntent detectIntent(String message, String attachmentText) {
+        String lower = normalize(join(message, attachmentText));
+
+        if (containsAny(
+                lower, "dịch", "translate", "translation", "english", "vietnamese")
+        ) {
+            return AiIntent.TRANSLATION;
+        }
+        if (containsAny(
+                lower, "submit", "submission", "nộp", "deliverable", "repo", "demo")
+        ) {
+            return AiIntent.SUBMISSION_HELP;
+        }
+        if (containsAny(
+                lower, "team", "invite", "join", "đội", "mời", "tham gia")
+        ) {
+            return AiIntent.TEAM_HELP;
+        }
+        if (containsAny(
+                lower, "score", "grade", "judge", "chấm", "điểm", "criteria", "rubric")
+        ) {
+            return AiIntent.GRADING_HELP;
+        }
+        if (containsAny(
+                lower, "ranking", "leaderboard", "result", "award",
+                "prize", "xếp hạng", "kết quả", "giải")
+        ) {
+            return AiIntent.RESULT_HELP;
+        }
+        if (containsAny(
+                lower, "deadline", "reminder", "nhắc", "hạn", "calendar")
+        ) {
+            return AiIntent.REMINDER_HELP;
+        }
+        if (containsAny(
+                lower, "role", "permission", "access", "quyền", "không vào được")
+        ) {
+            return AiIntent.ACCESS_HELP;
+        }
+        if (containsAny(
+                lower, "bug", "error", "exception", "lỗi", "stack trace", "debug")
+        ) {
+            return AiIntent.DEBUG_GUIDANCE;
+        }
+        if (containsAny(
+                lower, "spring", "react", "jpa", "jwt", "oauth",
+                "postgres", "docker", "deploy", "api")
+        ) {
+            return AiIntent.TECH_EXPLANATION;
+        }
+
+        return AiIntent.GENERAL_HELP;
+    }
+
     private String normalize(String value) {
         return value == null ? "" : value.toLowerCase(Locale.ROOT).trim();
     }
