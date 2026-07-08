@@ -112,7 +112,97 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     @Override
     @Transactional
     public void seedDefaultKnowledge(User actor) {
+        if (!documentRepository.findByIsActiveTrueOrderByUpdatedAtDesc().isEmpty()) {
+            return;
+        }
 
+        createDocument(
+                new CreateKnowledgeDocumentRequest(
+                        "SEAL Student Guide — Teams and Submissions",
+                        "Participants create or join a team, invite members, " +
+                                "register to a track during the registration window, " +
+                                "and submit required deliverable links before the round deadline. " +
+                                "Team leaders normally submit final deliverables. " +
+                                "Members can view team/submission state. " +
+                                "SEAL Assistant may explain these steps, " +
+                                "but must not create the team's competition code or deliverable.",
+                        "USER_GUIDE",
+                        "seed:student-guide",
+                        "STUDENT",
+                        "TEAM_SUBMISSION",
+                        "UC-27",
+                        "STUDENT"),
+                actor
+        );
+        createDocument(
+                new CreateKnowledgeDocumentRequest(
+                        "SEAL Judge Guide — Scoring and Calibration",
+                        "Judges only score assigned submissions in " +
+                                "their assigned round/track. They can save draft scores " +
+                                "and then final submit. Calibration helps compare judge variance. " +
+                                "After grading is locked, confirmed scores should not be edited. " +
+                                "Judges must not see private coordinator-only controls.",
+                        "USER_GUIDE",
+                        "seed:judge-guide",
+                        "JUDGE",
+                        "GRADING",
+                        "UC-29",
+                        "JUDGE"),
+                actor
+        );
+        createDocument(
+                new CreateKnowledgeDocumentRequest(
+                        "SEAL Coordinator Guide — Ranking, Prizes, Disqualification, Export",
+                        "Coordinators manage events, rounds, criteria, " +
+                                "judge assignments, grading locks, ranking recalculation, " +
+                                "result publication, awards, disqualification/appeal, " +
+                                "audit logs, export reports, RBL variance dashboard, " +
+                                "and advanced reminders. " +
+                                "Sensitive exports and audit logs are coordinator/admin only.",
+                        "USER_GUIDE",
+                        "seed:coordinator-guide",
+                        "COORDINATOR",
+                        "OPERATIONS",
+                        "UC-35",
+                        "COORDINATOR"),
+                actor
+        );
+        createDocument(
+                new CreateKnowledgeDocumentRequest(
+                        "Academic Integrity Policy for SEAL Assistant",
+                        "The assistant must refuse requests to write full code, " +
+                                "create full assignment/project solutions, " +
+                                "transform an assignment prompt, screenshot, " +
+                                "or uploaded file into deliverable code, " +
+                                "bypass plagiarism detection, or leak private data. " +
+                                "The assistant may explain concepts, outline steps, " +
+                                "provide short pseudocode, debug user-written code, " +
+                                "and suggest tests/checklists.",
+                        "POLICY",
+                        "seed:academic-integrity",
+                        "AUTHENTICATED",
+                        "AI_GUARDRAIL",
+                        "S3-M6-ST03",
+                        "ALL"),
+                actor
+        );
+        createDocument(
+                new CreateKnowledgeDocumentRequest(
+                        "SEAL Technical Support Scope",
+                        "The assistant may explain Spring Boot, React, TypeScript, MUI, " +
+                                "Tailwind, PostgreSQL, JPA, JWT, OAuth2, API contracts, " +
+                                "deployment, Docker, and debugging when " +
+                                "the explanation supports learning or using SEAL. " +
+                                "It should avoid producing copy-paste " +
+                                "implementation for team submissions.",
+                        "TECH_GUIDE",
+                        "seed:tech-scope",
+                        "AUTHENTICATED",
+                        "TECH_SUPPORT",
+                        "S3-M6-ST01",
+                        "ALL"),
+                actor
+        );
     }
 
     @Override
