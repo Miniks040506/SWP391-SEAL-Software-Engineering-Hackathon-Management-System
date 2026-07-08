@@ -197,6 +197,33 @@ public class AiGuardrailServiceImpl implements AiGuardrailService {
         return AiIntent.GENERAL_HELP;
     }
 
+    private boolean asksForAssignmentSolution(String lower) {
+        boolean assignmentContext = containsAny(lower,
+                "đề bài", "bài làm", "bài thi", "assignment", "lab",
+                "practical exam", "file bài", "ảnh đề", "screenshot đề",
+                "team submission", "hackathon submission", "capstone"
+        );
+
+        boolean implementationAsk = containsAny(lower,
+                "code", "implement", "viết", "làm", "create", "generate",
+                "full", "hoàn chỉnh", "tạo toàn bộ", "source", "controller",
+                "service", "repo", "entity", "frontend", "backend"
+        );
+
+        return assignmentContext && implementationAsk;
+    }
+
+    private boolean asksForFullCode(String lower) {
+        return containsAny(
+                lower,
+                "write full code", "full source", "complete source",
+                "complete project", "full backend", "full frontend", "code toàn bộ",
+                "viết full", "source hoàn chỉnh", "copy paste", "code hộ",
+                "làm hộ", "làm bài hộ", "viết code bài", "giải đề rồi code",
+                "từ ảnh này viết code", "từ file này viết code"
+        );
+    }
+
     private AiGuardrailResult block(
             AiSafetyRiskType riskType,
             AiIntent intent,
