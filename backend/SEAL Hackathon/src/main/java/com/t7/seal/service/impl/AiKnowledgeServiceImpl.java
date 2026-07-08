@@ -81,6 +81,24 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
 
     //HELPERS
 
+    private KnowledgeDocumentResponse toResponse(
+            AiKnowledgeDocument doc,
+            int chunkCount
+    ) {
+        return new KnowledgeDocumentResponse(
+                doc.getId(),
+                doc.getTitle(),
+                doc.getDocType(),
+                doc.getSourceRef(),
+                doc.getVisibility() == null
+                        ? null : doc.getVisibility().name(),
+                doc.getModule(),
+                Boolean.TRUE.equals(doc.getIsActive()),
+                chunkCount,
+                doc.getUpdatedAt()
+        );
+    }
+
     private List<String> chunk(String content) {
         String normalized = content.replace("\r\n", "\n").trim();
         List<String> chunks = new ArrayList<>();
