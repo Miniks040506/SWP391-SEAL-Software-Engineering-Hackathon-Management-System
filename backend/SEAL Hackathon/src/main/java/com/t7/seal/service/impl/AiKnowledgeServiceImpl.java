@@ -1,8 +1,10 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.AiKnowledgeVisibility;
+import com.t7.seal.entities.AiKnowledgeDocument;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.repository.AiKnowledgeDocumentRepository;
 import com.t7.seal.request.assistant.CreateKnowledgeDocumentRequest;
 import com.t7.seal.response.assistant.AssistantSourceResponse;
 import com.t7.seal.response.assistant.KnowledgeDocumentResponse;
@@ -20,8 +22,33 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 public class AiKnowledgeServiceImpl implements AiKnowledgeService {
+
+    private final AiKnowledgeDocumentRepository aiKnowledgeDocumentRepository;
+
     @Override
-    public KnowledgeDocumentResponse createDocument(CreateKnowledgeDocumentRequest request, User actor) {
+    public KnowledgeDocumentResponse createDocument(
+            CreateKnowledgeDocumentRequest request,
+            User actor
+    ) {
+        if (request == null || request.content() == null || request.content().isBlank()) {
+            throw new BadRequestException("Knowledge document content is required");
+        }
+
+        AiKnowledgeVisibility visibility = parseVisibility(request.visibility());
+
+        AiKnowledgeDocument document = aiKnowledgeDocumentRepository.save(
+                AiKnowledgeDocument.builder()
+                        .title(request.title())
+                        .docType(blankToDefault(request.docType(), "GUIDE"))
+                        .sourceRef(blankToDefault(request.sourceRef(), "manual"))
+                        .visibility(visibility)
+                        .module(blankToDefault(request.module(), "GENERAL"))
+                        .contentHash(hash(request.content()))
+                        .uploadedBy(actor)
+                        .isActive(true)
+                        .build()
+        );
+
         return null;
     }
 
