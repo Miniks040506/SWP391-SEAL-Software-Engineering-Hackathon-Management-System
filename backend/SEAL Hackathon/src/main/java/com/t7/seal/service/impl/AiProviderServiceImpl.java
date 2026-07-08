@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -71,6 +72,30 @@ public class AiProviderServiceImpl implements AiProviderService {
                     modelName
             );
         }
+    }
+
+    private String buildFullPrompt(AiProviderRequest request) {
+        return request.systemPrompt() + "\n\n" + buildUserPrompt(request);
+    }
+
+    private String buildUserPrompt(AiProviderRequest request) {
+        List<String> parts = new ArrayList<>();
+
+        if (request.translationMode()) {
+            parts.add("Mode: translate or explain bilingually. " +
+                    "Target language: " + request.targetLanguage());
+        }
+
+        if (request.retrievedContext() != null && !request.retrievedContext().isEmpty()) {
+            parts.add("Relevant SEAL project context." +
+                    " Use these snippets as the primary source. " +
+                    "Cite them conceptually but do not invent private data:\n"
+                    + String.join("\n---\n", request.retrievedContext()));
+        }
+
+        parts.add("User message:\n" + request.userMessage());
+        
+        return String.join("\n\n", parts);
     }
 
 
