@@ -1,6 +1,8 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.AiKnowledgeVisibility;
+import com.t7.seal.domain.UserRole;
+import com.t7.seal.dto.ai.ScoredChunk;
 import com.t7.seal.entities.AiKnowledgeChunk;
 import com.t7.seal.entities.AiKnowledgeDocument;
 import com.t7.seal.entities.User;
@@ -20,10 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Service
@@ -230,10 +229,49 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
                     .toList();
         }
 
-        return List.of();
+        Set<String> queryTokens = importantTokens(query);
+        if (queryTokens.isEmpty()) return List.of();
+
+        return chunkRepository.findByIsActiveTrueOrderByCreatedAtDesc().stream()
+                .filter(chunk -> isVisible(chunk.getDocument(), user))
+                .map(chunk -> scored(chunk, queryTokens))
+                .filter(scored -> scored.score() > 0)
+                .sorted(Comparator
+                        .comparingDouble(ScoredChunk::score)
+                        .reversed()
+                )
+                .limit(limit)
+                .map(scored ->
+                        toSource(scored.chunk(), scored.score())
+                )
+                .toList();
     }
 
     //HELPERS
+
+    private ScoredChunk scored(
+            AiKnowledgeChunk chunk,
+            Set<String> queryTokens
+    ) {
+        String text = normalizeForSearch(chunk.getEmbeddingText() == null
+                ? chunk.getContent() : chunk.getEmbeddingText());
+
+        double score = 0;
+        for (String token : queryTokens) {
+            if (text.contains(token)) {
+                score += token.length() > 5 ? 2.0 : 1.0;
+            }
+        }
+
+        String module = chunk.getModule() == null
+                ? "" : chunk.getModule().toLowerCase(Locale.ROOT);
+
+        for (String token : queryTokens) {
+            if (module.contains(token)) score += 0.5;
+        }
+
+        return new ScoredChunk(chunk, score);
+    }
 
     private AssistantSourceResponse toSource(
             AiKnowledgeChunk chunk,
@@ -254,6 +292,39 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
                 excerpt,
                 score
         );
+    }
+
+    private boolean isVisible(AiKnowledgeDocument doc, User user) {
+        if (doc == null || !Boolean.TRUE.equals(doc.getIsActive())) {
+            return false;
+        }
+
+        AiKnowledgeVisibility visibility = doc.getVisibility();
+        if (visibility == AiKnowledgeVisibility.PUBLIC
+                || visibility == AiKnowledgeVisibility.AUTHENTICATED) {
+            return true;
+        }
+
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+
+        UserRole role = user.getRole();
+        return switch (visibility) {
+            case STUDENT -> role == UserRole.STUDENT
+                    || role == UserRole.ADMIN
+                    || role == UserRole.COORDINATOR;
+            case JUDGE -> role == UserRole.JUDGE
+                    || role == UserRole.ADMIN
+                    || role == UserRole.COORDINATOR;
+            case MENTOR -> role == UserRole.MENTOR
+                    || role == UserRole.ADMIN
+                    || role == UserRole.COORDINATOR;
+            case COORDINATOR -> role == UserRole.COORDINATOR
+                    || role == UserRole.ADMIN;
+            case ADMIN, STAFF_ONLY -> role == UserRole.ADMIN;
+            default -> true;
+        };
     }
 
     private KnowledgeDocumentResponse toKnowledgeDocumentResponse(
@@ -302,6 +373,25 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
         }
 
         return chunks;
+    }
+
+    private Set<String> importantTokens(String value) {
+        Set<String> stop = Set.of(
+                "the", "and", "or", "for", "with", "how",
+                "what", "when", "where", "this", "that",
+                "mình", "toi", "tôi", "của", "cho",
+                "làm", "như", "nào", "cach", "cách"
+        );
+        Set<String> tokens = new LinkedHashSet<>();
+
+        for (String token : SPLIT.split(normalizeForSearch(value))) {
+            String cleaned = token.replaceAll("[^\\p{L}\\p{N}_-]", "");
+            if (cleaned.length() >= 3 && !stop.contains(cleaned)) {
+                tokens.add(cleaned);
+            }
+        }
+
+        return tokens;
     }
 
     private AiKnowledgeVisibility parseVisibility(String value) {
