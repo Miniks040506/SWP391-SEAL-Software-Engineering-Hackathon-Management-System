@@ -11,6 +11,7 @@ import com.t7.seal.service.AiGuardrailService;
 import com.t7.seal.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 
@@ -21,6 +22,7 @@ public class AiGuardrailServiceImpl implements AiGuardrailService {
     private final SystemConfigService systemConfigService;
 
     @Override
+    @Transactional
     public AiGuardrailResult evaluateInput(AssistantChatRequest request, User user) {
         boolean enabled = systemConfigService.getBooleanValue(
                 "feature.ai_assistant.academic_guardrails.enabled",
@@ -137,8 +139,40 @@ public class AiGuardrailServiceImpl implements AiGuardrailService {
     }
 
     @Override
+    @Transactional
     public AiGuardrailResult evaluateOutput(String answer, User user) {
-        return null;
+        boolean enabled = systemConfigService.getBooleanValue(
+                "feature.ai_assistant.academic_guardrails.enabled",
+                true
+        );
+
+        if (!enabled) {
+            return AiGuardrailResult.allow(AiIntent.GENERAL_HELP);
+        }
+        String lower = normalize(answer);
+
+        int codeSignals = count(lower, "@restcontroller")
+                + count(lower, "@service")
+                + count(lower, "@repository")
+                + count(lower, "public class")
+                + count(lower, "package com.")
+                + count(lower, "```java")
+                + count(lower, "```tsx")
+                + count(lower, "```ts");
+
+        if (codeSignals >= 3 && containsAny(
+                lower, "full", "complete", "hoàn chỉnh", "copy", "paste")
+        ) {
+            return block(
+                    AiSafetyRiskType.FULL_SOLUTION,
+                    AiIntent.BLOCK_FULL_SOLUTION,
+                    8,
+                    "Post-check detected a full-code style answer.",
+                    safePolicyAnswer(user)
+            );
+        }
+        
+        return AiGuardrailResult.allow(AiIntent.GENERAL_HELP);
     }
 
     //HELPERS
