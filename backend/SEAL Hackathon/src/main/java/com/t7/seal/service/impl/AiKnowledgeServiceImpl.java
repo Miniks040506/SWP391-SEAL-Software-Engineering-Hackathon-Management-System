@@ -32,10 +32,10 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     private static final int MAX_CHUNK_CHARS = 1800;
     private static final Pattern SPLIT = Pattern.compile("\\s+");
 
-    private final AiKnowledgeDocumentRepository aiKnowledgeDocumentRepository;
-    private final AiKnowledgeChunkRepository aiKnowledgeChunkRepository;
+    private final AiKnowledgeDocumentRepository documentRepository;
+    private final AiKnowledgeChunkRepository chunkRepository;
 
-    private final AiEmbeddingService aiEmbeddingService;
+    private final AiEmbeddingService embeddingService;
     private final AiVectorSearchService vectorSearchService;
 
     @Override
@@ -49,7 +49,7 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
 
         AiKnowledgeVisibility visibility = parseVisibility(request.visibility());
 
-        AiKnowledgeDocument document = aiKnowledgeDocumentRepository.save(
+        AiKnowledgeDocument document = documentRepository.save(
                 AiKnowledgeDocument.builder()
                         .title(request.title())
                         .docType(blankToDefault(request.docType(), "GUIDE"))
@@ -65,7 +65,7 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
         List<String> chunks = chunk(request.content());
         int index = 0;
         for (String chunk : chunks) {
-            AiKnowledgeChunk savedChunk = aiKnowledgeChunkRepository.save(
+            AiKnowledgeChunk savedChunk = chunkRepository.save(
                     AiKnowledgeChunk.builder()
                             .document(document)
                             .chunkIndex(index++)
@@ -80,12 +80,12 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
                             .build()
             );
 
-            aiEmbeddingService.embed(savedChunk.getEmbeddingText()).ifPresent(
+            embeddingService.embed(savedChunk.getEmbeddingText()).ifPresent(
                     embedding -> vectorSearchService.upsertEmbedding(
                             savedChunk.getId(),
                             embedding,
-                            aiEmbeddingService.modelName(),
-                            aiEmbeddingService.dimension()
+                            embeddingService.modelName(),
+                            embeddingService.dimension()
                     )
             );
         }
@@ -95,7 +95,15 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
 
     @Override
     public List<KnowledgeDocumentResponse> listDocuments() {
-        return List.of();
+        return documentRepository.findByIsActiveTrueOrderByUpdatedAtDesc()
+                .stream()
+                .map(doc -> toKnowledgeDocumentResponse(
+                        doc,
+                        chunkRepository.findByDocumentIdOrderByChunkIndexAsc(
+                                doc.getId()
+                        ).size()
+                ))
+                .toList();
     }
 
     @Override
