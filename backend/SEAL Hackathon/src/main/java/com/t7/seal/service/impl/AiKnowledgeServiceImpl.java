@@ -208,7 +208,7 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     @Override
     @Transactional
     public int reindexKnowledge() {
-        return 0;
+        return vectorSearchService.reindexAllKnowledge();
     }
 
     @Override
