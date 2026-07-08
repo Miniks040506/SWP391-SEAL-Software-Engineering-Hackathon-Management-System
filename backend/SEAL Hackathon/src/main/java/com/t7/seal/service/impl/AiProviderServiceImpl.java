@@ -1,6 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.config.AiProviderProperties;
+import com.t7.seal.domain.AiLanguage;
 import com.t7.seal.dto.ai.AiProviderRequest;
 import com.t7.seal.dto.ai.AiProviderResult;
 import com.t7.seal.service.AiProviderService;
@@ -94,10 +95,50 @@ public class AiProviderServiceImpl implements AiProviderService {
         }
 
         parts.add("User message:\n" + request.userMessage());
-        
+
         return String.join("\n\n", parts);
     }
 
+    private AiProviderResult fallback(
+            AiProviderRequest request,
+            String provider,
+            String model
+    ) {
+        String answer;
+
+        if (request.translationMode()) {
+            answer = fallbackTranslate(request.userMessage(), request.targetLanguage());
+        } else if (request.retrievedContext() != null && !request.retrievedContext().isEmpty()) {
+            String langLead = request.language() == AiLanguage.EN
+                    ? "Based on SEAL project context: "
+                    : "Dựa trên context project SEAL: ";
+
+            answer = langLead + summarizeContext(request.retrievedContext())
+                    + (request.language() == AiLanguage.EN
+
+                    ? "\n\nI can explain the workflow, checklist, and debugging direction, " +
+                    "but I will not write a complete team submission solution."
+                    
+                    : "\n\nMình có thể giải thích flow, checklist và hướng debug, " +
+                    "nhưng không viết full solution/bài nộp cho team.");
+        } else {
+            answer = request.language() == AiLanguage.EN
+
+                    ? "I can help with SEAL workflows, project-related technology, " +
+                    "translation, debugging guidance, and safe checklists. " +
+                    "I cannot write complete competition or assignment code for a team. " +
+                    "Configure SEAL_AI_CHAT_API_KEY and " +
+                    "SEAL_AI_PROVIDER=OPENAI/DEEPSEEK/OPENAI_COMPATIBLE to enable the real model."
+
+                    : "Mình có thể hỗ trợ flow SEAL, công nghệ liên quan project, " +
+                    "dịch Việt/Anh, hướng debug và checklist an toàn. " +
+                    "Mình không viết full code/bài nộp cho team. " +
+                    "Hãy cấu hình SEAL_AI_CHAT_API_KEY và " +
+                    "SEAL_AI_PROVIDER=OPENAI/DEEPSEEK/OPENAI_COMPATIBLE để bật model thật.";
+        }
+
+        return new AiProviderResult(answer, provider, model, false);
+    }
 
     private String summarizeContext(List<String> contexts) {
         String joined = String.join(" ", contexts);
