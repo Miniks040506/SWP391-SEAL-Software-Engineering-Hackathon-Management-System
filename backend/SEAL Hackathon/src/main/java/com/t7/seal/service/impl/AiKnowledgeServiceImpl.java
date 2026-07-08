@@ -1,14 +1,18 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.AiKnowledgeVisibility;
+import com.t7.seal.entities.AiKnowledgeChunk;
 import com.t7.seal.entities.AiKnowledgeDocument;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.repository.AiKnowledgeChunkRepository;
 import com.t7.seal.repository.AiKnowledgeDocumentRepository;
 import com.t7.seal.request.assistant.CreateKnowledgeDocumentRequest;
 import com.t7.seal.response.assistant.AssistantSourceResponse;
 import com.t7.seal.response.assistant.KnowledgeDocumentResponse;
+import com.t7.seal.service.AiEmbeddingService;
 import com.t7.seal.service.AiKnowledgeService;
+import com.t7.seal.service.AiVectorSearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +33,10 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
     private static final Pattern SPLIT = Pattern.compile("\\s+");
 
     private final AiKnowledgeDocumentRepository aiKnowledgeDocumentRepository;
+    private final AiKnowledgeChunkRepository aiKnowledgeChunkRepository;
+
+    private final AiEmbeddingService aiEmbeddingService;
+    private final AiVectorSearchService vectorSearchService;
 
     @Override
     public KnowledgeDocumentResponse createDocument(
@@ -55,8 +63,34 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
         );
 
         List<String> chunks = chunk(request.content());
+        int index = 0;
+        for (String chunk : chunks) {
+            AiKnowledgeChunk savedChunk = aiKnowledgeChunkRepository.save(
+                    AiKnowledgeChunk.builder()
+                            .document(document)
+                            .chunkIndex(index++)
+                            .content(chunk)
+                            .module(blankToDefault(request.module(), "GENERAL"))
+                            .useCaseId(request.useCaseId())
+                            .roleScope(request.roleScope())
+                            .embeddingText(normalizeForSearch(chunk))
+                            .metadataJson("{\"sourceRef\":\""
+                                    + escape(document.getSourceRef()) + "\"}")
+                            .isActive(true)
+                            .build()
+            );
 
-        return null;
+            aiEmbeddingService.embed(savedChunk.getEmbeddingText()).ifPresent(
+                    embedding -> vectorSearchService.upsertEmbedding(
+                            savedChunk.getId(),
+                            embedding,
+                            aiEmbeddingService.modelName(),
+                            aiEmbeddingService.dimension()
+                    )
+            );
+        }
+
+        return toKnowledgeDocumentResponse(document, chunks.size());
     }
 
     @Override
@@ -81,7 +115,7 @@ public class AiKnowledgeServiceImpl implements AiKnowledgeService {
 
     //HELPERS
 
-    private KnowledgeDocumentResponse toResponse(
+    private KnowledgeDocumentResponse toKnowledgeDocumentResponse(
             AiKnowledgeDocument doc,
             int chunkCount
     ) {
