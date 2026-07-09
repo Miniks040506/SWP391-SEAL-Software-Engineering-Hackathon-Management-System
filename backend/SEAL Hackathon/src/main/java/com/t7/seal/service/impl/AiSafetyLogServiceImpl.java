@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.AiSafetyDecision;
 import com.t7.seal.dto.ai.AiGuardrailResult;
 import com.t7.seal.entities.AiConversation;
 import com.t7.seal.entities.AiSafetyLog;
@@ -52,11 +53,40 @@ public class AiSafetyLogServiceImpl implements AiSafetyLogService {
     }
 
     @Override
+    @Transactional
     public Page<AiSafetyLogResponse> listSafetyLogs(
             String decision,
             Pageable pageable
     ) {
-        return null;
+        Page<AiSafetyLog> page;
+
+        if (decision == null || decision.isBlank()) {
+            page = aiSafetyLogRepository.findAll(pageable);
+        } else {
+            page = aiSafetyLogRepository.findByDecision(
+                    AiSafetyDecision.valueOf(
+                            decision.trim().toUpperCase()),
+                    pageable
+            );
+        }
+
+        return page.map(this::toAiSafetyLogResponse);
+    }
+
+    private AiSafetyLogResponse toAiSafetyLogResponse(AiSafetyLog log) {
+        User user = log.getUser();
+        return new AiSafetyLogResponse(
+                log.getId(),
+                user == null ? null : user.getId(),
+                user == null ? null : user.getFullName(),
+                log.getDecision() == null ? null : log.getDecision().name(),
+                log.getRiskType() == null ? null : log.getRiskType().name(),
+                log.getIntent() == null ? null : log.getIntent().name(),
+                log.getSeverity() == null ? 0 : log.getSeverity(),
+                log.getReason(),
+                log.getPageContext(),
+                log.getCreatedAt()
+        );
     }
 
     private String hash(String value) {
