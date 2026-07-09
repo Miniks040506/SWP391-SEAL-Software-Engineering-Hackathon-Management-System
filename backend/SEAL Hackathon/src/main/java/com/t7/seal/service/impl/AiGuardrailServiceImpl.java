@@ -171,7 +171,7 @@ public class AiGuardrailServiceImpl implements AiGuardrailService {
                     safePolicyAnswer(user)
             );
         }
-        
+
         return AiGuardrailResult.allow(AiIntent.GENERAL_HELP);
     }
 
