@@ -195,8 +195,15 @@ public class AssistantServiceImpl implements AssistantService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AssistantConversationResponse> listConversations(Authentication authentication) {
-        return List.of();
+        User user = currentUserService.getCurrentUser(authentication);
+        
+        return aiConversationRepository
+                .findTop20ByUserIdAndIsActiveTrueOrderByUpdatedAtDesc(user.getId())
+                .stream()
+                .map(this::toConversationResponse)
+                .toList();
     }
 
     @Override
@@ -583,6 +590,20 @@ public class AssistantServiceImpl implements AssistantService {
         );
     }
 
+    private AssistantConversationResponse toConversationResponse(
+            AiConversation conversation
+    ) {
+        return new AssistantConversationResponse(
+                conversation.getId(),
+                conversation.getTitle(),
+                conversation.getLanguage() == null
+                        ? null : conversation.getLanguage().name(),
+                conversation.getLastIntent(),
+                conversation.getCreatedAt(),
+                conversation.getUpdatedAt()
+        );
+    }
+
     private void ensureAssistantEnabled() {
         if (!systemConfigService.getBooleanValue(
                 "feature.ai_assistant.enabled",
@@ -591,7 +612,6 @@ public class AssistantServiceImpl implements AssistantService {
             throw new ForbiddenException("AI assistant is currently disabled by SystemConfig.");
         }
     }
-
 
     private boolean notBlank(String value) {
         return value != null && !value.isBlank();
