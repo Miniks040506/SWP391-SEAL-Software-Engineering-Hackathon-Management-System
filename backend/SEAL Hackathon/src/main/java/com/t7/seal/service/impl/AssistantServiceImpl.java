@@ -3,6 +3,7 @@ package com.t7.seal.service.impl;
 import com.t7.seal.config.AiProviderProperties;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.repository.AiConversationRepository;
 import com.t7.seal.repository.AiMessageRepository;
 import com.t7.seal.repository.RoundJudgeAssignmentRepository;
@@ -70,6 +71,16 @@ public class AssistantServiceImpl implements AssistantService {
     }
 
     //HELPERS
+
+    private void ensureAssistantEnabled() {
+        if (!systemConfigService.getBooleanValue(
+                "feature.ai_assistant.enabled",
+                true
+        )) {
+            throw new ForbiddenException("AI assistant is currently disabled by SystemConfig.");
+        }
+    }
+
 
     private boolean notBlank(String value) {
         return value != null && !value.isBlank();
