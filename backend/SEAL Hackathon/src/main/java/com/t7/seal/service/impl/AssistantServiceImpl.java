@@ -4,6 +4,7 @@ import com.t7.seal.config.AiProviderProperties;
 import com.t7.seal.domain.*;
 import com.t7.seal.dto.ai.AiGuardrailResult;
 import com.t7.seal.dto.ai.AiProviderRequest;
+import com.t7.seal.dto.ai.AiProviderResult;
 import com.t7.seal.entities.AiConversation;
 import com.t7.seal.entities.AiMessage;
 import com.t7.seal.entities.User;
@@ -110,7 +111,72 @@ public class AssistantServiceImpl implements AssistantService {
                 targetLanguage
         );
 
-        return null;
+        AiProviderResult providerResult = aiProviderService.generate(providerRequest);
+        AiGuardrailResult outputGuardrail = aiGuardrailService.evaluateOutput(
+                providerResult.answer(),
+                user
+        );
+
+        if (outputGuardrail.blocked()) {
+            aiSafetyLogService.record(
+                    user,
+                    conversation,
+                    outputGuardrail,
+                    providerResult.answer(),
+                    request.pageContext()
+            );
+
+            persistAssistantMessage(
+                    conversation,
+                    outputGuardrail.safeAnswer(),
+                    language,
+                    outputGuardrail.intent(),
+                    outputGuardrail.decision(),
+                    "POST_GUARDRAIL",
+                    null,
+                    !sources.isEmpty(),
+                    contextsAsText(contexts)
+            );
+
+            return assistantChatResponse(
+                    conversation,
+                    outputGuardrail.safeAnswer(),
+                    outputGuardrail,
+                    language,
+                    ragEnabled,
+                    !sources.isEmpty(),
+                    "POST_GUARDRAIL",
+                    null,
+                    sources,
+                    roleContext
+            );
+        }
+
+        persistAssistantMessage(
+                conversation,
+                providerResult.answer(),
+                language,
+                intent,
+                AiSafetyDecision.ALLOW,
+                providerResult.provider(),
+                providerResult.model(),
+                !sources.isEmpty(),
+                contextsAsText(contexts)
+        );
+        AiGuardrailResult allowed = AiGuardrailResult.allow(intent);
+
+        return assistantChatResponse(
+                conversation,
+                providerResult.answer(),
+                allowed,
+                language,
+                ragEnabled,
+                !sources.isEmpty(),
+                providerResult.provider(),
+                providerResult.model(),
+                sources,
+                roleContext
+        );
     }
 
     @Override
