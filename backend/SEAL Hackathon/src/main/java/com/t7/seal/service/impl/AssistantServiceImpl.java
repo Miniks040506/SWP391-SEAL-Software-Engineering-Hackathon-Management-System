@@ -1,9 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.config.AiProviderProperties;
-import com.t7.seal.domain.AiLanguage;
-import com.t7.seal.domain.AiMessageRole;
-import com.t7.seal.domain.UserRole;
+import com.t7.seal.domain.*;
 import com.t7.seal.dto.ai.AiGuardrailResult;
 import com.t7.seal.entities.AiConversation;
 import com.t7.seal.entities.AiMessage;
@@ -16,16 +14,14 @@ import com.t7.seal.repository.AiMessageRepository;
 import com.t7.seal.repository.RoundJudgeAssignmentRepository;
 import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.request.assistant.AssistantChatRequest;
-import com.t7.seal.response.assistant.AssistantChatResponse;
-import com.t7.seal.response.assistant.AssistantContextResponse;
-import com.t7.seal.response.assistant.AssistantConversationResponse;
-import com.t7.seal.response.assistant.AssistantMessageResponse;
+import com.t7.seal.response.assistant.*;
 import com.t7.seal.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -64,6 +60,32 @@ public class AssistantServiceImpl implements AssistantService {
         AiGuardrailResult inputGuardrail = aiGuardrailService.evaluateInput(request, user);
         persistUserMessage(conversation, user, request, language, inputGuardrail);
 
+        if (inputGuardrail.blocked()) {
+            persistAssistantMessage(
+                    conversation,
+                    inputGuardrail.safeAnswer(),
+                    language,
+                    inputGuardrail.intent(),
+                    inputGuardrail.decision(),
+                    "GUARDRAIL",
+                    null,
+                    false,
+                    null
+            );
+            return assistantChatResponse(
+                    conversation,
+                    inputGuardrail.safeAnswer(),
+                    inputGuardrail,
+                    language,
+                    false,
+                    false,
+                    "GUARDRAIL",
+                    null,
+                    List.of(),
+                    roleContext
+            );
+        }
+
         return null;
     }
 
@@ -83,6 +105,39 @@ public class AssistantServiceImpl implements AssistantService {
     }
 
     //HELPERS
+
+    private AssistantChatResponse assistantChatResponse(
+            AiConversation conversation,
+            String answer,
+            AiGuardrailResult guardrail,
+            AiLanguage language,
+            boolean ragEnabled,
+            boolean usedRag,
+            String provider,
+            String model,
+            List<AssistantSourceResponse> sources,
+            Map<String, Object> roleContext
+    ) {
+        return new AssistantChatResponse(
+                conversation.getId(),
+                answer,
+                guardrail.intent() == null ? null : guardrail.intent().name(),
+                language.name(),
+                guardrail.blocked(),
+                guardrail.reason(),
+                guardrail.decision() == null ? null : guardrail.decision().name(),
+                guardrail.riskType() == null ? null : guardrail.riskType().name(),
+                guardrail.severity(),
+                ragEnabled,
+                usedRag,
+                provider,
+                model,
+                suggestionsFor(roleContext, guardrail.intent(), guardrail.blocked()),
+                sources,
+                roleContext,
+                LocalDateTime.now()
+        );
+    }
 
     private AiConversation resolveConversation(
             AssistantChatRequest request,
@@ -134,6 +189,35 @@ public class AssistantServiceImpl implements AssistantService {
 
         conversation.setLastIntent(guardrail.intent() == null
                 ? null : guardrail.intent().name());
+
+        aiConversationRepository.save(conversation);
+    }
+
+    private void persistAssistantMessage(
+            AiConversation conversation,
+            String answer,
+            AiLanguage language,
+            AiIntent intent,
+            AiSafetyDecision decision,
+            String provider,
+            String model,
+            boolean usedRag,
+            String retrievalContext
+    ) {
+        aiMessageRepository.save(AiMessage.builder()
+                .conversation(conversation)
+                .role(AiMessageRole.ASSISTANT)
+                .content(answer)
+                .language(language)
+                .intent(intent)
+                .safetyDecision(decision)
+                .provider(provider)
+                .model(model)
+                .usedRag(usedRag)
+                .retrievalContext(retrievalContext)
+                .build());
+
+        conversation.setLastIntent(intent == null ? null : intent.name());
 
         aiConversationRepository.save(conversation);
     }
@@ -228,6 +312,46 @@ public class AssistantServiceImpl implements AssistantService {
         if (en) return AiLanguage.EN;
 
         return AiLanguage.UNKNOWN;
+    }
+
+    private List<String> suggestionsFor(
+            Map<String, Object> roleContext,
+            AiIntent intent,
+            boolean blocked
+    ) {
+        if (blocked) {
+            return List.of(
+                    "Explain the requirement safely",
+                    "Create a task checklist",
+                    "Review my own code",
+                    "Explain the concept"
+            );
+        }
+
+        if (intent == AiIntent.TRANSLATION) {
+            return List.of(
+                    "Translate to Vietnamese",
+                    "Translate to English",
+                    "Keep technical terms in English"
+            );
+        }
+
+        if (intent == AiIntent.TECH_EXPLANATION
+                || intent == AiIntent.DEBUG_GUIDANCE) {
+            return List.of(
+                    "Explain root cause",
+                    "Suggest debug checklist",
+                    "Show safe pseudocode",
+                    "List files to inspect"
+            );
+        }
+
+        return List.of(
+                "Show related SEAL flow",
+                "Explain by role",
+                "Create checklist",
+                "Show sources"
+        );
     }
 
     private void ensureAssistantEnabled() {
