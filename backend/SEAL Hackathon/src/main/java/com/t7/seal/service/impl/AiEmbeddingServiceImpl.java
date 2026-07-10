@@ -15,7 +15,11 @@ public class AiEmbeddingServiceImpl implements AiEmbeddingService {
 
     @Override
     public boolean isEmbeddingEnabled() {
-        return false;
+        String apiKey = properties.getEmbedding().getApiKey();
+        return properties.isEnabled()
+                && properties.getEmbedding().isEnabled()
+                && apiKey != null
+                && !apiKey.isBlank();
     }
 
     @Override
