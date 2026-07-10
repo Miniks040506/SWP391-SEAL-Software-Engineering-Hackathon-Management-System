@@ -3,6 +3,7 @@ package com.t7.seal.service.impl;
 import com.t7.seal.config.AiProviderProperties;
 import com.t7.seal.domain.*;
 import com.t7.seal.dto.ai.AiGuardrailResult;
+import com.t7.seal.dto.ai.AiProviderRequest;
 import com.t7.seal.entities.AiConversation;
 import com.t7.seal.entities.AiMessage;
 import com.t7.seal.entities.User;
@@ -94,6 +95,20 @@ public class AssistantServiceImpl implements AssistantService {
         String query = request.message() + " " + safe(request.attachmentText());
         List<AssistantSourceResponse> sources = ragEnabled ? aiKnowledgeService.retrieve(query, user, maxChunks) : List.of();
         List<String> contexts = sources.stream().map(AssistantSourceResponse::excerpt).toList();
+
+        boolean translationMode = intent == AiIntent.TRANSLATION
+                || notBlank(request.translationTargetLanguage());
+        String targetLanguage = notBlank(request.translationTargetLanguage())
+                ? request.translationTargetLanguage()
+                : (language == AiLanguage.VI ? "English" : "Vietnamese");
+        AiProviderRequest providerRequest = new AiProviderRequest(
+                systemPrompt(user, language, intent),
+                buildUserMessage(request),
+                language,
+                contexts,
+                translationMode,
+                targetLanguage
+        );
 
         return null;
     }
@@ -229,6 +244,40 @@ public class AssistantServiceImpl implements AssistantService {
         conversation.setLastIntent(intent == null ? null : intent.name());
 
         aiConversationRepository.save(conversation);
+    }
+
+    private String systemPrompt(
+            User user,
+            AiLanguage language,
+            AiIntent intent
+    ) {
+        return "You are SEAL Assistant for the SEAL Hackathon Management System. " +
+                "Answer in " + (language == AiLanguage.EN ? "English" : "Vietnamese") +
+                " unless translation is requested. " +
+                "Use retrieved SEAL context when provided. The current role is " +
+                (user.getRole() == null ? "UNKNOWN" : user.getRole().name()) + ". " +
+                "Hard rules: do not write full code, full project, " +
+                "or team submission deliverables; " +
+                "do not convert assignment prompts/screenshots/files into complete code; " +
+                "do not bypass plagiarism/security; do not reveal unauthorized private data. " +
+                "Allowed: explain concepts, outline safe steps, provide short pseudocode, " +
+                "debug user-written code, create checklists, and translate Vietnamese/English.";
+    }
+
+    private String buildUserMessage(AssistantChatRequest request) {
+        StringBuilder builder = new StringBuilder(request.message().trim());
+
+        if (notBlank(request.pageContext())) {
+            builder.append("\nPage context: ").append(request.pageContext());
+        }
+        if (notBlank(request.attachmentText())) {
+            builder.append("\nAttachment file: ")
+                    .append(safe(request.attachmentFileName()))
+                    .append("\nExtracted attachment text:\n")
+                    .append(request.attachmentText());
+        }
+
+        return builder.toString();
     }
 
     private Map<String, Object> buildRoleContext(User user) {
