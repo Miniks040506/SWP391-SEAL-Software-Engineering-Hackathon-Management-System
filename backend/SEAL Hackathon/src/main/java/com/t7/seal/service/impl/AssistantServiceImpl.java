@@ -2,8 +2,11 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.config.AiProviderProperties;
 import com.t7.seal.domain.AiLanguage;
+import com.t7.seal.domain.AiMessageRole;
 import com.t7.seal.domain.UserRole;
+import com.t7.seal.dto.ai.AiGuardrailResult;
 import com.t7.seal.entities.AiConversation;
+import com.t7.seal.entities.AiMessage;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
@@ -58,6 +61,8 @@ public class AssistantServiceImpl implements AssistantService {
         AiLanguage language = detectLanguage(request.message(), request.preferredLanguage());
         Map<String, Object> roleContext = buildRoleContext(user);
         AiConversation conversation = resolveConversation(request, user, language);
+        AiGuardrailResult inputGuardrail = aiGuardrailService.evaluateInput(request, user);
+        persistUserMessage(conversation, user, request, language, inputGuardrail);
 
         return null;
     }
@@ -101,6 +106,36 @@ public class AssistantServiceImpl implements AssistantService {
                 .language(language)
                 .isActive(true)
                 .build());
+    }
+
+    private void persistUserMessage(
+            AiConversation conversation,
+            User user,
+            AssistantChatRequest request,
+            AiLanguage language,
+            AiGuardrailResult guardrail
+    ) {
+        String content = request.message();
+        if (notBlank(request.attachmentText())) {
+            content += "\n\n[Attachment: " +
+                    safe(request.attachmentFileName()) + "]\n" +
+                    request.attachmentText();
+        }
+
+        aiMessageRepository.save(AiMessage.builder()
+                .conversation(conversation)
+                .user(user)
+                .role(AiMessageRole.USER)
+                .content(content)
+                .language(language)
+                .intent(guardrail.intent())
+                .safetyDecision(guardrail.decision())
+                .build());
+
+        conversation.setLastIntent(guardrail.intent() == null
+                ? null : guardrail.intent().name());
+
+        aiConversationRepository.save(conversation);
     }
 
     private Map<String, Object> buildRoleContext(User user) {
