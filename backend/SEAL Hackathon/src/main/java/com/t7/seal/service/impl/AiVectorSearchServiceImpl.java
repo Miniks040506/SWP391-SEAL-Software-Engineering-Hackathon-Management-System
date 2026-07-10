@@ -156,7 +156,7 @@ public class AiVectorSearchServiceImpl implements AiVectorSearchService {
                 indexed++;
             }
         }
-        
+
         return indexed;
     }
 
