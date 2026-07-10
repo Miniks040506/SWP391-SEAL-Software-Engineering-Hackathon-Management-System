@@ -198,7 +198,7 @@ public class AssistantServiceImpl implements AssistantService {
     @Transactional(readOnly = true)
     public List<AssistantConversationResponse> listConversations(Authentication authentication) {
         User user = currentUserService.getCurrentUser(authentication);
-        
+
         return aiConversationRepository
                 .findTop20ByUserIdAndIsActiveTrueOrderByUpdatedAtDesc(user.getId())
                 .stream()
@@ -207,8 +207,22 @@ public class AssistantServiceImpl implements AssistantService {
     }
 
     @Override
-    public List<AssistantMessageResponse> getConversationMessages(UUID conversationId, Authentication authentication) {
-        return List.of();
+    @Transactional(readOnly = true)
+    public List<AssistantMessageResponse> getConversationMessages(
+            UUID conversationId,
+            Authentication authentication
+    ) {
+        User user = currentUserService.getCurrentUser(authentication);
+        AiConversation conversation = aiConversationRepository
+                .findByIdAndUserId(conversationId, user.getId())
+                .orElseThrow(() ->
+                        new NotFoundException("Assistant conversation not found."));
+
+        return aiMessageRepository
+                .findTop20ByConversationIdOrderByCreatedAtAsc(conversation.getId())
+                .stream()
+                .map(this::toMessageResponse)
+                .toList();
     }
 
     //HELPERS
@@ -601,6 +615,26 @@ public class AssistantServiceImpl implements AssistantService {
                 conversation.getLastIntent(),
                 conversation.getCreatedAt(),
                 conversation.getUpdatedAt()
+        );
+    }
+
+    private AssistantMessageResponse toMessageResponse(AiMessage message) {
+        return new AssistantMessageResponse(
+                message.getId(),
+                message.getConversation().getId(),
+                message.getRole() == null
+                        ? null : message.getRole().name(),
+                message.getContent(),
+                message.getLanguage() == null
+                        ? null : message.getLanguage().name(),
+                message.getIntent() == null
+                        ? null : message.getIntent().name(),
+                message.getSafetyDecision() == null
+                        ? null : message.getSafetyDecision().name(),
+                message.getProvider(),
+                message.getModel(),
+                message.getUsedRag(),
+                message.getCreatedAt()
         );
     }
 
