@@ -133,8 +133,31 @@ public class AiVectorSearchServiceImpl implements AiVectorSearchService {
     }
 
     @Override
+    @Transactional
     public int reindexAllKnowledge() {
-        return 0;
+        if (!embeddingService.isEmbeddingEnabled()) {
+            return 0;
+        }
+
+        int indexed = 0;
+        for (AiKnowledgeChunk chunk : chunkRepository.findByIsActiveTrueOrderByCreatedAtDesc()) {
+            String text = chunk.getEmbeddingText() == null || chunk.getEmbeddingText().isBlank()
+                    ? chunk.getContent()
+                    : chunk.getEmbeddingText();
+
+            Optional<float[]> embedding = embeddingService.embed(text);
+            if (embedding.isPresent()) {
+                upsertEmbedding(
+                        chunk.getId(),
+                        embedding.get(),
+                        embeddingService.modelName(),
+                        embeddingService.dimension()
+                );
+                indexed++;
+            }
+        }
+        
+        return indexed;
     }
 
     private VectorHit mapHit(
