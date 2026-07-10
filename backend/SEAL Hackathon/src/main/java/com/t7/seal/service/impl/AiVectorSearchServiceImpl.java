@@ -1,7 +1,10 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.config.AiProviderProperties;
+import com.t7.seal.domain.AiKnowledgeVisibility;
+import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.AiKnowledgeChunk;
+import com.t7.seal.entities.AiKnowledgeDocument;
 import com.t7.seal.entities.User;
 import com.t7.seal.repository.AiKnowledgeChunkRepository;
 import com.t7.seal.service.AiEmbeddingService;
@@ -13,9 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -106,7 +109,27 @@ public class AiVectorSearchServiceImpl implements AiVectorSearchService {
             return List.of();
         }
 
-        return List.of();
+        if (hits.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> uuids = hits.stream()
+                .map(VectorHit::chunkId)
+                .toList();
+
+        Map<UUID, AiKnowledgeChunk> byId = chunkRepository.findByIdIn(uuids)
+                .stream()
+                .filter(chunk -> isVisible(chunk.getDocument(), user))
+                .collect(Collectors.toMap(
+                        AiKnowledgeChunk::getId,
+                        Function.identity()
+                ));
+
+        return hits.stream()
+                .map(hit -> byId.get(hit.chunkId()))
+                .filter(Objects::nonNull)
+                .limit(Math.max(1, maxChunks))
+                .toList();
     }
 
     @Override
@@ -122,6 +145,39 @@ public class AiVectorSearchServiceImpl implements AiVectorSearchService {
                 UUID.fromString(rs.getString("chunk_id")),
                 rs.getDouble("similarity")
         );
+    }
+
+    private boolean isVisible(AiKnowledgeDocument doc, User user) {
+        if (doc == null || !Boolean.TRUE.equals(doc.getIsActive())) {
+            return false;
+        }
+
+        AiKnowledgeVisibility visibility = doc.getVisibility();
+        if (visibility == AiKnowledgeVisibility.PUBLIC
+                || visibility == AiKnowledgeVisibility.AUTHENTICATED) {
+            return true;
+        }
+
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        UserRole role = user.getRole();
+
+        return switch (visibility) {
+            case STUDENT -> role == UserRole.STUDENT
+                    || role == UserRole.ADMIN
+                    || role == UserRole.COORDINATOR;
+            case JUDGE -> role == UserRole.JUDGE
+                    || role == UserRole.ADMIN
+                    || role == UserRole.COORDINATOR;
+            case MENTOR -> role == UserRole.MENTOR
+                    || role == UserRole.ADMIN
+                    || role == UserRole.COORDINATOR;
+            case COORDINATOR -> role == UserRole.COORDINATOR
+                    || role == UserRole.ADMIN;
+            case ADMIN, STAFF_ONLY -> role == UserRole.ADMIN;
+            default -> true;
+        };
     }
 
     private String toPgVector(float[] values) {
