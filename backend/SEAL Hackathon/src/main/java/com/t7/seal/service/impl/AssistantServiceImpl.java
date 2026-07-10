@@ -1,6 +1,8 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.config.AiProviderProperties;
+import com.t7.seal.entities.User;
+import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.repository.AiConversationRepository;
 import com.t7.seal.repository.AiMessageRepository;
 import com.t7.seal.repository.RoundJudgeAssignmentRepository;
@@ -14,6 +16,7 @@ import com.t7.seal.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,7 +40,17 @@ public class AssistantServiceImpl implements AssistantService {
     private final AiMessageRepository aiMessageRepository;
 
     @Override
-    public AssistantChatResponse chat(AssistantChatRequest request, Authentication authentication) {
+    @Transactional
+    public AssistantChatResponse chat(
+            AssistantChatRequest request,
+            Authentication authentication
+    ) {
+        User user = currentUserService.getCurrentUser(authentication);
+        ensureAssistantEnabled();
+        if (request == null || request.message() == null || request.message().isBlank()) {
+            throw new BadRequestException("Assistant message is required.");
+        }
+
         return null;
     }
 
@@ -54,5 +67,36 @@ public class AssistantServiceImpl implements AssistantService {
     @Override
     public List<AssistantMessageResponse> getConversationMessages(UUID conversationId, Authentication authentication) {
         return List.of();
+    }
+
+    //HELPERS
+
+    private boolean notBlank(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private int parseInt(String value, int fallback) {
+        try {
+            return Integer.parseInt(value);
+        } catch (Exception ignored) {
+            return fallback;
+        }
+    }
+
+    private String contextsAsText(List<String> contexts) {
+        return contexts == null ? null : String.join("\n---\n", contexts);
+    }
+
+    private boolean containsAny(String lower, String... needles) {
+        for (String needle : needles) {
+            if (lower.contains(needle)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
