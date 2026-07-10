@@ -180,8 +180,18 @@ public class AssistantServiceImpl implements AssistantService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AssistantContextResponse getContext(Authentication authentication) {
-        return null;
+        User user = currentUserService.getCurrentUser(authentication);
+        ensureAssistantEnabled();
+        return new AssistantContextResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getRole() == null ? null : user.getRole().name(),
+                user.getStatus() == null ? null : user.getStatus().name(),
+                quickPrompts(user.getRole()),
+                buildRoleContext(user)
+        );
     }
 
     @Override
@@ -488,6 +498,49 @@ public class AssistantServiceImpl implements AssistantService {
         )) return AiIntent.TECH_EXPLANATION;
 
         return AiIntent.GENERAL_HELP;
+    }
+
+    private List<String> quickPrompts(UserRole role) {
+        if (role == UserRole.STUDENT) {
+            return List.of(
+                    "Tôi cần nộp bài như thế nào?",
+                    "Dịch hướng dẫn submission sang English",
+                    "Giải thích lỗi API 403 ở mức debug",
+                    "Team của tôi nên kiểm tra gì trước deadline?"
+            );
+        }
+
+        if (role == UserRole.JUDGE) {
+            return List.of(
+                    "How do I score assigned submissions?",
+                    "Explain calibration variance",
+                    "What can I edit before final submit?"
+            );
+        }
+
+        if (role == UserRole.COORDINATOR) {
+            return List.of(
+                    "How do I publish results safely?",
+                    "Generate reminder flow checklist",
+                    "Explain disqualification and ranking recalculation",
+                    "How to export RBL dataset?"
+            );
+        }
+
+        if (role == UserRole.ADMIN) {
+            return List.of(
+                    "How do I configure AI provider?",
+                    "How do I seed AI knowledge?",
+                    "Show guardrail policy summary",
+                    "Explain SystemConfig secrets masking"
+            );
+        }
+
+        return List.of(
+                "How do I use SEAL?",
+                "Translate this instruction",
+                "Explain project workflow"
+        );
     }
 
     private List<String> suggestionsFor(
