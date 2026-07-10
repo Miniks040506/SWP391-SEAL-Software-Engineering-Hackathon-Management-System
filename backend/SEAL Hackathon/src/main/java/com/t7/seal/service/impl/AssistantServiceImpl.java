@@ -1,6 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.config.AiProviderProperties;
+import com.t7.seal.domain.AiLanguage;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -52,6 +54,8 @@ public class AssistantServiceImpl implements AssistantService {
             throw new BadRequestException("Assistant message is required.");
         }
 
+        AiLanguage language = detectLanguage(request.message(), request.preferredLanguage());
+
         return null;
     }
 
@@ -71,6 +75,33 @@ public class AssistantServiceImpl implements AssistantService {
     }
 
     //HELPERS
+
+    private AiLanguage detectLanguage(String message, String preferred) {
+        if (notBlank(preferred)) {
+            try {
+                return AiLanguage.valueOf(
+                        preferred.trim().toUpperCase(Locale.ROOT)
+                );
+            } catch (IllegalArgumentException ignored) {
+                ignored.printStackTrace();
+            }
+        }
+
+        String lower = safe(message).toLowerCase(Locale.ROOT);
+        boolean vi = lower.matches(".*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ].*")
+                || containsAny(lower, "tôi", "mình", "không", "đội", "nộp", "chấm", "điểm", "dịch", "lỗi");
+        boolean en = containsAny(
+                lower,
+                "how", "what", "where", "when", "explain",
+                "translate", "submit", "team", "score", "error"
+        );
+
+        if (vi && en) return AiLanguage.MIXED;
+        if (vi) return AiLanguage.VI;
+        if (en) return AiLanguage.EN;
+
+        return AiLanguage.UNKNOWN;
+    }
 
     private void ensureAssistantEnabled() {
         if (!systemConfigService.getBooleanValue(
