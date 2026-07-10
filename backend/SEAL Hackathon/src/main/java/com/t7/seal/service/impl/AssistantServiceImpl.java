@@ -3,9 +3,11 @@ package com.t7.seal.service.impl;
 import com.t7.seal.config.AiProviderProperties;
 import com.t7.seal.domain.AiLanguage;
 import com.t7.seal.domain.UserRole;
+import com.t7.seal.entities.AiConversation;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
+import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.repository.AiConversationRepository;
 import com.t7.seal.repository.AiMessageRepository;
 import com.t7.seal.repository.RoundJudgeAssignmentRepository;
@@ -55,6 +57,7 @@ public class AssistantServiceImpl implements AssistantService {
 
         AiLanguage language = detectLanguage(request.message(), request.preferredLanguage());
         Map<String, Object> roleContext = buildRoleContext(user);
+        AiConversation conversation = resolveConversation(request, user, language);
 
         return null;
     }
@@ -75,6 +78,30 @@ public class AssistantServiceImpl implements AssistantService {
     }
 
     //HELPERS
+
+    private AiConversation resolveConversation(
+            AssistantChatRequest request,
+            User user,
+            AiLanguage language
+    ) {
+        if (request.conversationId() != null) {
+            return aiConversationRepository.findByIdAndUserId(request.conversationId(), user.getId())
+                    .orElseThrow(() ->
+                            new NotFoundException("Assistant conversation not found."));
+        }
+
+        String title = request.message().trim();
+        if (title.length() > 80) {
+            title = title.substring(0, 77) + "...";
+        }
+
+        return aiConversationRepository.save(AiConversation.builder()
+                .user(user)
+                .title(title)
+                .language(language)
+                .isActive(true)
+                .build());
+    }
 
     private Map<String, Object> buildRoleContext(User user) {
         Map<String, Object> ctx = new LinkedHashMap<>();
@@ -137,7 +164,7 @@ public class AssistantServiceImpl implements AssistantService {
                     "Disqualification"
             ));
         }
-        
+
         return ctx;
     }
 
