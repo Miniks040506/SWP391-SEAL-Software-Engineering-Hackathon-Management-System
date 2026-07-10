@@ -2,6 +2,7 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.config.AiProviderProperties;
 import com.t7.seal.domain.AiLanguage;
+import com.t7.seal.domain.UserRole;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
@@ -20,9 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +54,7 @@ public class AssistantServiceImpl implements AssistantService {
         }
 
         AiLanguage language = detectLanguage(request.message(), request.preferredLanguage());
+        Map<String, Object> roleContext = buildRoleContext(user);
 
         return null;
     }
@@ -75,6 +75,71 @@ public class AssistantServiceImpl implements AssistantService {
     }
 
     //HELPERS
+
+    private Map<String, Object> buildRoleContext(User user) {
+        Map<String, Object> ctx = new LinkedHashMap<>();
+
+        ctx.put("role", user.getRole() == null ? null : user.getRole().name());
+        ctx.put("status", user.getStatus() == null ? null : user.getStatus().name());
+        ctx.put("assistantMode", aiProviderProperties.getProvider());
+        ctx.put("chatModel", aiProviderProperties.getChat().getModel());
+        ctx.put("embeddingModel", aiProviderProperties.getEmbedding().getModel());
+
+        ctx.put("ragEnabled", systemConfigService.getBooleanValue(
+                "feature.ai_assistant.rag.enabled",
+                true
+        ));
+        ctx.put("guardrailsEnabled", systemConfigService.getBooleanValue(
+                "feature.ai_assistant.academic_guardrails.enabled",
+                true
+        ));
+
+        if (user.getRole() == UserRole.STUDENT) {
+            ctx.put("activeTeamCount", teamRepository
+                    .findActiveTeamByUserId(user.getId()).size());
+            ctx.put("safeTools", List.of(
+                    "getMyTeams",
+                    "getMySubmissions",
+                    "getMyInvitations"
+            ));
+        }
+
+        if (user.getRole() == UserRole.JUDGE && user.getJudge() != null) {
+            ctx.put("judgeAssignmentCount", roundJudgeAssignmentRepository
+                    .findByJudgeIdWithRoundAndTrack(user.getJudge().getId()).size());
+            ctx.put("judgeType", user.getJudge().getJudgeType() == null
+                    ? null : user.getJudge().getJudgeType().name());
+            ctx.put("safeTools", List.of(
+                    "getJudgeAssignedSubmissions",
+                    "getJudgeProgress"
+            ));
+        }
+
+        if (user.getRole() == UserRole.ADMIN) {
+            ctx.put("adminTools", List.of(
+                    "SystemConfig",
+                    "AI Knowledge",
+                    "AI Safety Logs",
+                    "AuditLog",
+                    "Exports",
+                    "Feature flags"
+            ));
+        }
+
+        if (user.getRole() == UserRole.COORDINATOR) {
+            ctx.put("coordinatorTools", List.of(
+                    "Events",
+                    "Rounds",
+                    "Grading",
+                    "Ranking",
+                    "Reminders",
+                    "Exports",
+                    "Disqualification"
+            ));
+        }
+        
+        return ctx;
+    }
 
     private AiLanguage detectLanguage(String message, String preferred) {
         if (notBlank(preferred)) {
