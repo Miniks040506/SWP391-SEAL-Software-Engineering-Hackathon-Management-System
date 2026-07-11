@@ -9,12 +9,20 @@ import type {
 } from "@/types/system.types";
 
 export const systemApi = {
-  getSystemConfig(params?: { category?: string }) {
+  getSystemConfig(params?: { category?: string; includeSecrets?: boolean }) {
     return apiRequest.get<SystemConfigResponse[]>("/system/config", {params});
+  },
+
+  getSystemConfigByKey(key: string, params?: { includeSecrets?: boolean }) {
+    return apiRequest.get<SystemConfigResponse>(`/system/config/${encodeURIComponent(key)}`, {params});
   },
 
   updateSystemConfig(payload: UpdateSystemConfigRequest) {
     return apiRequest.put<SystemConfigResponse[]>("/system/config", payload);
+  },
+
+  seedDefaultSystemConfig() {
+    return apiRequest.post<void>("/system/config/defaults");
   },
 
   getSystemHealth() {
