@@ -13,7 +13,7 @@ export const useUpdateSystemConfigMutation = () => {
       enqueueSnackbar("System configuration saved.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: systemQueryKeys.all });
     },
-        
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
       enqueueSnackbar(
         error?.response?.data?.message || error?.message || "Could not save system configuration.",
@@ -32,7 +32,6 @@ export const useSeedSystemConfigMutation = () => {
       enqueueSnackbar("Default system configuration seeded.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: systemQueryKeys.all });
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
       enqueueSnackbar(
         error?.response?.data?.message || error?.message || "Could not seed default configuration.",
