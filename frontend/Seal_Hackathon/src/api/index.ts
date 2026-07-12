@@ -18,3 +18,6 @@ export * from "@/api/notification.api";
 export * from "@/api/announcement.api";
 export * from "@/api/export.api";
 export * from "@/api/auth.api";
+export * from "@/api/assistant.api";
+export * from "@/api/assistantAdmin.api";
+export * from "@/api/reminder.api";

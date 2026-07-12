@@ -119,6 +119,9 @@ import { CoordinatorDisqualificationsPage } from "@/features/disqualification/pa
 import { ParticipantDisqualificationPage } from "@/features/disqualification/pages/ParticipantDisqualificationPage";
 
 import { ScoreVarianceDashboardPage } from "@/features/rbl/pages/ScoreVarianceDashboardPage";
+import { AdminSystemConfigPage, AdminSystemHealthPage } from "@/features/system";
+import { CoordinatorEventRemindersPage } from "@/features/reminders";
+import { AdminAiKnowledgePage, AdminAiSafetyLogsPage } from "@/features/assistant";
 
 export const router = createBrowserRouter([
   {
@@ -243,6 +246,10 @@ export const router = createBrowserRouter([
         element: <ScoreVarianceDashboardPage />,
       },
       {
+        path: "events/:eventId/reminders",
+        element: <CoordinatorEventRemindersPage />,
+      },
+      {
         path: "rounds/:roundId/rankings",
         element: <CoordinatorRoundRankingPage />,
       },
@@ -299,6 +306,7 @@ export const router = createBrowserRouter([
       { path: "announcement", element: <CoordinatorAnnouncementPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
       { path: "schedule", element: <NotFoundPage /> },
+      { path: "reminders", element: <CoordinatorEventRemindersPage /> },
       { path: "exports", element: <CoordinatorExportsRedirectPage /> },
       { path: "events/:eventId/exports", element: <ExportJobListPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
@@ -323,11 +331,13 @@ export const router = createBrowserRouter([
       { path: "audit-logs", element: <AuditLogsPage /> },
       { path: "auditLogs", element: <AuditLogsPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
-      { path: "system-config", element: <NotFoundPage /> },
-      { path: "health", element: <NotFoundPage /> },
+      { path: "system-config", element: <AdminSystemConfigPage /> },
+      { path: "health", element: <AdminSystemHealthPage /> },
       { path: "criteria", element: <ScoringCriteriaManagementPage /> },
       { path: "criteria/:id/edit", element: <ScoringCriteriaManagementPage /> },
       { path: "exports", element: <ExportJobListPage /> },
+      { path: "ai/knowledge", element: <AdminAiKnowledgePage /> },
+      { path: "ai/safety-logs", element: <AdminAiSafetyLogsPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
     ],
@@ -370,6 +380,7 @@ export const router = createBrowserRouter([
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
       { path: "schedule", element: <NotFoundPage /> },
+      { path: "reminders", element: <CoordinatorEventRemindersPage /> },
     ],
   },
 
@@ -391,6 +402,7 @@ export const router = createBrowserRouter([
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
       { path: "schedule", element: <NotFoundPage /> },
+      { path: "reminders", element: <CoordinatorEventRemindersPage /> },
     ],
   },
 

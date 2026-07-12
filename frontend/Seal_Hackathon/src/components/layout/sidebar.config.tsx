@@ -20,6 +20,8 @@ import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
 import StickyNote2OutlinedIcon from "@mui/icons-material/StickyNote2Outlined";
 import ModelTrainingOutlinedIcon from "@mui/icons-material/ModelTrainingOutlined";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import PsychologyOutlinedIcon from "@mui/icons-material/PsychologyOutlined";
+import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 
 export type SidebarItem = {
   label: string;
@@ -95,6 +97,16 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Health",
             path: "/admin/health",
             icon: <HealthAndSafetyOutlinedIcon fontSize="small" />,
+          },
+          {
+            label: "AI Knowledge",
+            path: "/admin/ai/knowledge",
+            icon: <PsychologyOutlinedIcon fontSize="small" />,
+          },
+          {
+            label: "AI Safety Logs",
+            path: "/admin/ai/safety-logs",
+            icon: <ShieldOutlinedIcon fontSize="small" />,
           },
           {
             label: "Criteria",
@@ -187,6 +199,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Schedule",
             path: "/coordinator/schedule",
             icon: <CalendarMonthOutlinedIcon fontSize="small" />,
+          },
+          {
+            label: "Reminders",
+            path: "/coordinator/reminders",
+            icon: <NotificationsNoneOutlinedIcon fontSize="small" />,
           },
           {
             label: "Exports",

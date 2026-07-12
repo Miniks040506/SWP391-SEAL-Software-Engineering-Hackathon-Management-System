@@ -1,9 +1,16 @@
 import type { ISODateTime, UUID } from "@/types/common.types";
 
+export type SystemConfigCategory = "INTEGRATION" | "SMTP" | "SECURITY" | "FEATURE_FLAG" | "RATE_LIMIT" | "GENERAL";
+export type SystemConfigValueType = "STRING" | "INTEGER" | "BOOLEAN" | "JSON";
+
 export type SystemConfigItemRequest = {
   key: string;
   value: unknown;
   encrypted?: boolean;
+  category?: SystemConfigCategory | string;
+  valueType?: SystemConfigValueType | string;
+  description?: string;
+  active?: boolean;
 };
 
 export type UpdateSystemConfigRequest = {
@@ -14,8 +21,11 @@ export type SystemConfigResponse = {
   id: UUID;
   configKey: string;
   configValue: unknown;
-  category?: string;
+  category?: SystemConfigCategory | string;
+  valueType?: SystemConfigValueType | string;
   encrypted: boolean;
+  active: boolean;
+  description?: string;
   updatedAt: ISODateTime;
 };
 
