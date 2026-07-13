@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   Typography,
+  Button,
 } from "@mui/material";
 import { useActiveTeamDisqualificationsQuery } from "../hooks/useDisqualificationQueries";
 import { DisqualificationStatusBadge } from "../components/DisqualificationStatusBadge";

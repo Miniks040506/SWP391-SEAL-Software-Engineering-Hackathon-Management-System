@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Button, TextField, Typography } from "@mui/material";
+import { Alert, Button, TextField } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useUpdateAppealMutation } from "../hooks/useDisqualificationQueries";
 import {
