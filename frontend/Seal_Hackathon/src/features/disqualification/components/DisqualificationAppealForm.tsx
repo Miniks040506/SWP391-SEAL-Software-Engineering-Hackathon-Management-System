@@ -61,12 +61,6 @@ export function DisqualificationAppealForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmitAppeal)} className="space-y-4">
-      <Typography
-        variant="subtitle2"
-        className="font-bold text-slate-800 dark:text-slate-200"
-      >
-        Submit an Appeal
-      </Typography>
       <Alert severity="info" className="mb-4">
         If you believe this disqualification was made in error, you may submit
         one appeal. Please provide a clear explanation.
