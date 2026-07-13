@@ -56,6 +56,7 @@ export type ExportJobResponse = {
 export type ExportDownloadResponse = {
   exportId: UUID;
   fileName: string;
+  contentType: string;
   downloadUrl: string;
   expiresAt: ISODateTime;
 };

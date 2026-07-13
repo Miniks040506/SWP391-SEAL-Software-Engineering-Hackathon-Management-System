@@ -37,7 +37,8 @@ const getExportErrorMessage = (error: unknown, fallback: string) => {
 export const exportKeys = {
   all: ["exports"] as const,
   lists: () => [...exportKeys.all, "list"] as const,
-  list: (params?: GetExportJobsParams) => [...exportKeys.lists(), params] as const,
+  list: (params?: GetExportJobsParams) =>
+    [...exportKeys.lists(), params] as const,
   details: () => [...exportKeys.all, "detail"] as const,
   detail: (id: UUID) => [...exportKeys.details(), id] as const,
 };
@@ -72,16 +73,30 @@ export function useCreateRankingExport() {
   const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
-    mutationFn: async ({ eventId, payload }: { eventId: UUID; payload?: EventExportRequest }) =>
+    mutationFn: async ({
+      eventId,
+      payload,
+    }: {
+      eventId: UUID;
+      payload?: EventExportRequest;
+    }) =>
       unwrapApiPayload<ExportJobResponse>(
         await activeApi.exportEventRanking(eventId, payload),
       ),
-    onSuccess: () => {
-      enqueueSnackbar("Ranking export job created successfully.", { variant: "success" });
+    onSuccess: (job) => {
+      enqueueSnackbar(
+        job.status === "FAILED"
+          ? job.errorMessage || "Ranking workbook could not be created."
+          : "Ranking workbook saved to Recent exports.",
+        { variant: job.status === "FAILED" ? "error" : "success" },
+      );
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (error: unknown) => {
-      enqueueSnackbar(getExportErrorMessage(error, "Failed to create ranking export"), { variant: "error" });
+      enqueueSnackbar(
+        getExportErrorMessage(error, "Failed to create ranking export"),
+        { variant: "error" },
+      );
     },
   });
 }
@@ -91,16 +106,30 @@ export function useCreateScoresExport() {
   const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
-    mutationFn: async ({ eventId, payload }: { eventId: UUID; payload?: EventExportRequest }) =>
+    mutationFn: async ({
+      eventId,
+      payload,
+    }: {
+      eventId: UUID;
+      payload?: EventExportRequest;
+    }) =>
       unwrapApiPayload<ExportJobResponse>(
         await activeApi.exportEventScores(eventId, payload),
       ),
-    onSuccess: () => {
-      enqueueSnackbar("Score export job created successfully.", { variant: "success" });
+    onSuccess: (job) => {
+      enqueueSnackbar(
+        job.status === "FAILED"
+          ? job.errorMessage || "Score workbook could not be created."
+          : "Score workbook saved to Recent exports.",
+        { variant: job.status === "FAILED" ? "error" : "success" },
+      );
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (error: unknown) => {
-      enqueueSnackbar(getExportErrorMessage(error, "Failed to create score export"), { variant: "error" });
+      enqueueSnackbar(
+        getExportErrorMessage(error, "Failed to create score export"),
+        { variant: "error" },
+      );
     },
   });
 }
@@ -110,16 +139,30 @@ export function useCreateTeamListExport() {
   const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
-    mutationFn: async ({ eventId, payload }: { eventId: UUID; payload?: EventExportRequest }) =>
+    mutationFn: async ({
+      eventId,
+      payload,
+    }: {
+      eventId: UUID;
+      payload?: EventExportRequest;
+    }) =>
       unwrapApiPayload<ExportJobResponse>(
         await activeApi.exportEventTeamList(eventId, payload),
       ),
-    onSuccess: () => {
-      enqueueSnackbar("Team list export job created successfully.", { variant: "success" });
+    onSuccess: (job) => {
+      enqueueSnackbar(
+        job.status === "FAILED"
+          ? job.errorMessage || "Team list workbook could not be created."
+          : "Team list workbook saved to Recent exports.",
+        { variant: job.status === "FAILED" ? "error" : "success" },
+      );
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (error: unknown) => {
-      enqueueSnackbar(getExportErrorMessage(error, "Failed to create team list export"), { variant: "error" });
+      enqueueSnackbar(
+        getExportErrorMessage(error, "Failed to create team list export"),
+        { variant: "error" },
+      );
     },
   });
 }
@@ -130,11 +173,16 @@ export function useCreateGenericExport() {
 
   return useMutation({
     mutationFn: async (payload: CreateExportJobRequest) =>
-      unwrapApiPayload<ExportJobResponse>(await activeApi.createExportJob(payload)),
+      unwrapApiPayload<ExportJobResponse>(
+        await activeApi.createExportJob(payload),
+      ),
     onSuccess: (job) => {
-      enqueueSnackbar(`${job.exportType.replace(/_/g, " ")} export job created successfully.`, {
-        variant: "success",
-      });
+      enqueueSnackbar(
+        job.status === "FAILED"
+          ? job.errorMessage || "The Excel workbook could not be created."
+          : `${job.exportType.replace(/_/g, " ")} workbook saved to Recent exports.`,
+        { variant: job.status === "FAILED" ? "error" : "success" },
+      );
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
       queryClient.setQueryData(exportKeys.detail(job.id), job);
     },
@@ -144,7 +192,9 @@ export function useCreateGenericExport() {
         message?: string;
       };
       enqueueSnackbar(
-        error.response?.data?.message || error.message || "Failed to create export",
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create export",
         { variant: "error" },
       );
     },
@@ -156,18 +206,29 @@ export function useCreateRblDatasetExport() {
   const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
-    mutationFn: async ({ eventId, payload }: { eventId: UUID; payload?: ExportRblDatasetRequest }) =>
+    mutationFn: async ({
+      eventId,
+      payload,
+    }: {
+      eventId: UUID;
+      payload?: ExportRblDatasetRequest;
+    }) =>
       unwrapApiPayload<ExportJobResponse>(
         await activeApi.exportRblDataset(eventId, payload),
       ),
     onSuccess: (job) => {
-      enqueueSnackbar("Anonymized RBL dataset export created.", { variant: "success" });
+      enqueueSnackbar("Anonymized RBL dataset export created.", {
+        variant: "success",
+      });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
       queryClient.setQueryData(exportKeys.detail(job.id), job);
     },
     onError: (error: unknown) => {
       enqueueSnackbar(
-        getExportErrorMessage(error, "Failed to create anonymized RBL dataset export"),
+        getExportErrorMessage(
+          error,
+          "Failed to create anonymized RBL dataset export",
+        ),
         { variant: "error" },
       );
     },
@@ -195,7 +256,9 @@ export function useDownloadExport() {
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
-      enqueueSnackbar(`Downloading ${link.download}`, { variant: "success" });
+      enqueueSnackbar(`Download started: ${link.download}`, {
+        variant: "success",
+      });
     },
     onError: (error: unknown) => {
       enqueueSnackbar(
@@ -212,13 +275,17 @@ export function useRetryExport() {
 
   return useMutation({
     mutationFn: async (exportId: UUID) =>
-      unwrapApiPayload<ExportJobResponse>(await activeApi.retryExport(exportId)),
+      unwrapApiPayload<ExportJobResponse>(
+        await activeApi.retryExport(exportId),
+      ),
     onSuccess: () => {
       enqueueSnackbar("Export job queued for retry.", { variant: "info" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (error: unknown) => {
-      enqueueSnackbar(getExportErrorMessage(error, "Failed to retry export"), { variant: "error" });
+      enqueueSnackbar(getExportErrorMessage(error, "Failed to retry export"), {
+        variant: "error",
+      });
     },
   });
 }
@@ -231,11 +298,15 @@ export function useDeleteExport() {
     mutationFn: async (exportId: UUID) =>
       unwrapApiPayload<void>(await activeApi.deleteExport(exportId)),
     onSuccess: () => {
-      enqueueSnackbar("Export job deleted successfully.", { variant: "success" });
+      enqueueSnackbar("Export job deleted successfully.", {
+        variant: "success",
+      });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
     onError: (error: unknown) => {
-      enqueueSnackbar(getExportErrorMessage(error, "Failed to delete export"), { variant: "error" });
+      enqueueSnackbar(getExportErrorMessage(error, "Failed to delete export"), {
+        variant: "error",
+      });
     },
   });
 }

@@ -69,15 +69,24 @@ export const mockExportApi = {
   },
 
   async exportEventRanking(eventId: UUID, payload?: EventExportRequest) {
-    return this.createExportJob({ exportType: "RANKING", params: { eventId, ...payload } });
+    return this.createExportJob({
+      exportType: "RANKING",
+      params: { eventId, ...payload },
+    });
   },
 
   async exportEventScores(eventId: UUID, payload?: EventExportRequest) {
-    return this.createExportJob({ exportType: "SCORE_REPORT", params: { eventId, ...payload } });
+    return this.createExportJob({
+      exportType: "SCORE_REPORT",
+      params: { eventId, ...payload },
+    });
   },
 
   async exportEventTeamList(eventId: UUID, payload?: EventExportRequest) {
-    return this.createExportJob({ exportType: "TEAM_LIST", params: { eventId, ...payload } });
+    return this.createExportJob({
+      exportType: "TEAM_LIST",
+      params: { eventId, ...payload },
+    });
   },
 
   async exportRblDataset(eventId: UUID, payload?: ExportRblDatasetRequest) {
@@ -134,7 +143,9 @@ export const mockExportApi = {
 
     const res: ExportDownloadResponse = {
       exportId,
-      fileName: job.fileName || "export.csv",
+      fileName: job.fileName || "seal-export.xlsx",
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       downloadUrl: `/api/v1/exports/${exportId}/download-file`,
       expiresAt: job.expiresAt || new Date().toISOString(),
     };
@@ -144,7 +155,9 @@ export const mockExportApi = {
   async downloadExportFile(exportId: UUID) {
     const job = mockJobDb.find((item) => item.id === exportId);
     if (!job || job.status !== "DONE") throw new Error("Export is not ready");
-    return new Blob(["Mock export file"], { type: "text/plain" });
+    return new Blob(["Mock Excel workbook"], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
   },
 
   async downloadExportJob(jobId: UUID) {

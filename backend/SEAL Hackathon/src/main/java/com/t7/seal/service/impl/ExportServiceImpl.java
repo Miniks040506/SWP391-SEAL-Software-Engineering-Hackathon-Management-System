@@ -39,15 +39,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -57,8 +62,31 @@ public class ExportServiceImpl implements ExportService {
 
     private static final DateTimeFormatter FILE_TIMESTAMP = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final String RBL_HASH_PREFIX = "SEAL-RBL-v1:";
+    private static final String FORMAT_CSV = "CSV";
+    private static final String FORMAT_XLSX = "XLSX";
+    private static final String CSV_CONTENT_TYPE = "text/csv;charset=UTF-8";
+    private static final String XLSX_CONTENT_TYPE =
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     private static final int MAX_PAGE_SIZE = 100;
     private static final int EXPORT_EXPIRY_DAYS = 7;
+    private static final int XLSX_TITLE_ROW = 1;
+    private static final int XLSX_SUBTITLE_ROW = 2;
+    private static final int XLSX_METADATA_ROW = 3;
+    private static final int XLSX_TABLE_HEADER_ROW = 5;
+    private static final Pattern SAFE_NUMBER = Pattern.compile("[-+]?(?:0|[1-9]\\d*)(?:\\.\\d+)?");
+    private static final Set<String> NUMERIC_EXPORT_COLUMNS = Set.of(
+            "rank", "total score", "tie group size", "judge count", "weight", "max score",
+            "score", "member count", "benchmark criteria count", "score count",
+            "average absolute benchmark deviation", "rawscore", "maxscore"
+    );
+    private static final Set<String> BOOLEAN_EXPORT_COLUMNS = Set.of(
+            "tied", "manual resolution required", "advanced", "published", "technical",
+            "draft", "mandatory"
+    );
+    private static final Set<String> DATE_EXPORT_COLUMNS = Set.of(
+            "calculated at", "scored at", "updated at", "registered at", "created at",
+            "start", "end", "distribution published at", "createdatbucket"
+    );
 
     private final CurrentUserService currentUserService;
     private final AuditLogService auditLogService;
@@ -525,6 +553,7 @@ public class ExportServiceImpl implements ExportService {
         return new ExportDownloadResponse(
                 job.getId(),
                 job.getFileName(),
+                contentTypeForJob(job),
                 job.getFileUrl(),
                 job.getExpiresAt()
         );
@@ -548,9 +577,7 @@ public class ExportServiceImpl implements ExportService {
         }
 
         Resource resource = new FileSystemResource(file.toFile());
-        String contentType = job.getFileName().endsWith(".xlsx")
-                ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                : "text/csv";
+        String contentType = contentTypeForJob(job);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
@@ -963,12 +990,14 @@ public class ExportServiceImpl implements ExportService {
             job.markProcessing();
             exportJobRepository.saveAndFlush(job);
 
-            String extension = spec.format().equals("XLSX") ? "xlsx" : "csv";
-            String fileName = buildFileName(filePrefix, spec.event(), job.getId(), extension);
+            boolean xlsx = FORMAT_XLSX.equals(spec.format());
+            String extension = xlsx ? "xlsx" : "csv";
+            LocalDateTime generatedAt = LocalDateTime.now();
+            String fileName = buildFileName(filePrefix, spec.event(), job.getId(), extension, generatedAt);
             Path file = exportDirectory().resolve(fileName);
 
-            byte[] data = spec.format().equals("XLSX")
-                    ? writeXlsx(rows)
+            byte[] data = xlsx
+                    ? writeXlsx(rows, spec, param, generatedAt)
                     : writeCsv(rows).getBytes(StandardCharsets.UTF_8);
             Files.write(file, data);
 
@@ -1102,37 +1131,114 @@ public class ExportServiceImpl implements ExportService {
 
     private String stylesXml() {
         return """
-                                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-                                <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-                                  <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
-                                  <fills count="1"><fill><patternFill patternType="none"/></fill></fills>
-                                  <borders count="1"><border/></borders>
-                                  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-                <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
-                                </styleSheet>
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <fonts count="2">
+                    <font><sz val="11"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+                    <font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+                  </fonts>
+                  <fills count="3">
+                    <fill><patternFill patternType="none"/></fill>
+                    <fill><patternFill patternType="gray125"/></fill>
+                    <fill><patternFill patternType="solid"><fgColor rgb="FF1D4ED8"/><bgColor indexed="64"/></patternFill></fill>
+                  </fills>
+                  <borders count="3">
+                    <border><left/><right/><top/><bottom/><diagonal/></border>
+                    <border>
+                      <left style="thin"><color rgb="FFBFDBFE"/></left>
+                      <right style="thin"><color rgb="FFBFDBFE"/></right>
+                      <top style="thin"><color rgb="FFBFDBFE"/></top>
+                      <bottom style="thin"><color rgb="FFBFDBFE"/></bottom>
+                      <diagonal/>
+                    </border>
+                    <border><left/><right/><top/><bottom style="thin"><color rgb="FFE2E8F0"/></bottom><diagonal/></border>
+                  </borders>
+                  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+                  <cellXfs count="3">
+                    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+                    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+                      <alignment horizontal="center" vertical="center" wrapText="1"/>
+                    </xf>
+                    <xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyBorder="1" applyAlignment="1">
+                      <alignment vertical="center"/>
+                    </xf>
+                  </cellXfs>
+                  <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+                  <dxfs count="0"/>
+                  <tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleLight16"/>
+                </styleSheet>
                 """;
     }
 
     private String worksheetXml(List<List<String>> rows) {
-        StringBuilder builder = new StringBuilder("""
-                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-                <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-                  <sheetData>
-                """);
+        int columnCount = rows.stream().mapToInt(List::size).max().orElse(0);
+        String lastCell = rows.isEmpty() || columnCount == 0
+                ? "A1"
+                : cellRef(columnCount - 1, rows.size());
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>")
+                .append("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">")
+                .append("<dimension ref=\"A1:").append(lastCell).append("\"/>")
+                .append("<sheetViews><sheetView workbookViewId=\"0\">");
+
+        if (!rows.isEmpty()) {
+            builder.append("<pane ySplit=\"1\" topLeftCell=\"A2\" activePane=\"bottomLeft\" state=\"frozen\"/>")
+                    .append("<selection pane=\"bottomLeft\" activeCell=\"A2\" sqref=\"A2\"/>");
+        }
+
+        builder.append("</sheetView></sheetViews>")
+                .append("<sheetFormatPr defaultRowHeight=\"15\"/>");
+
+        if (columnCount > 0) {
+            builder.append("<cols>");
+            for (int c = 0; c < columnCount; c++) {
+                builder.append("<col min=\"").append(c + 1)
+                        .append("\" max=\"").append(c + 1)
+                        .append("\" width=\"").append(columnWidth(rows, c))
+                        .append("\" customWidth=\"1\"/>");
+            }
+            builder.append("</cols>");
+        }
+
+        builder.append("<sheetData>");
         for (int r = 0; r < rows.size(); r++) {
-            builder.append("<row r=\"").append(r + 1).append("\">");
+            builder.append("<row r=\"").append(r + 1).append("\"");
+            if (r == 0) {
+                builder.append(" ht=\"24\" customHeight=\"1\"");
+            }
+            builder.append(">");
             List<String> row = rows.get(r);
             for (int c = 0; c < row.size(); c++) {
                 builder.append("<c r=\"")
                         .append(cellRef(c, r + 1))
-                        .append("\" t=\"inlineStr\"><is><t>")
+                        .append("\" s=\"").append(r == 0 ? 1 : 2)
+                        .append("\" t=\"inlineStr\"><is><t xml:space=\"preserve\">")
                         .append(xmlEscape(row.get(c)))
                         .append("</t></is></c>");
             }
             builder.append("</row>");
         }
-        builder.append("</sheetData></worksheet>");
+        builder.append("</sheetData>");
+
+        if (!rows.isEmpty() && columnCount > 0) {
+            builder.append("<autoFilter ref=\"A1:").append(lastCell).append("\"/>");
+        }
+
+        builder.append("<pageMargins left=\"0.7\" right=\"0.7\" top=\"0.75\" bottom=\"0.75\" header=\"0.3\" footer=\"0.3\"/>")
+                .append("</worksheet>");
         return builder.toString();
+    }
+
+    private int columnWidth(List<List<String>> rows, int columnIndex) {
+        int maxLength = rows.stream()
+                .filter(row -> columnIndex < row.size())
+                .map(row -> row.get(columnIndex))
+                .filter(Objects::nonNull)
+                .mapToInt(value -> value.codePointCount(0, value.length()))
+                .max()
+                .orElse(0);
+        return Math.min(40, Math.max(10, maxLength + 2));
     }
 
     private String cellRef(int columnIndex, int rowIndex) {
@@ -1146,12 +1252,27 @@ public class ExportServiceImpl implements ExportService {
     }
 
     private String xmlEscape(String value) {
-        return (value == null ? "" : value)
+        String safe = value == null ? "" : value;
+        StringBuilder validXml = new StringBuilder(safe.length());
+        safe.codePoints()
+                .filter(this::isValidXmlCodePoint)
+                .forEach(validXml::appendCodePoint);
+
+        return validXml.toString()
                 .replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
                 .replace("'", "&apos;");
+    }
+
+    private boolean isValidXmlCodePoint(int codePoint) {
+        return codePoint == 0x9
+                || codePoint == 0xA
+                || codePoint == 0xD
+                || (codePoint >= 0x20 && codePoint <= 0xD7FF)
+                || (codePoint >= 0xE000 && codePoint <= 0xFFFD)
+                || (codePoint >= 0x10000 && codePoint <= 0x10FFFF);
     }
 
     private String writeCsv(List<List<String>> rows) {
@@ -1583,6 +1704,26 @@ public class ExportServiceImpl implements ExportService {
         }
     }
 
+    private String contentTypeForJob(ExportJob job) {
+        String fileName = job.getFileName();
+        if (fileName != null) {
+            String normalizedFileName = fileName.toLowerCase(Locale.ROOT);
+            if (normalizedFileName.endsWith(".xlsx")) {
+                return XLSX_CONTENT_TYPE;
+            }
+            if (normalizedFileName.endsWith(".csv")) {
+                return CSV_CONTENT_TYPE;
+            }
+        }
+
+        Object format = job.getParams() == null ? null : job.getParams().get("format");
+        return contentTypeForFormat(format == null ? FORMAT_CSV : format.toString());
+    }
+
+    private String contentTypeForFormat(String format) {
+        return FORMAT_XLSX.equalsIgnoreCase(format) ? XLSX_CONTENT_TYPE : CSV_CONTENT_TYPE;
+    }
+
     private ExportType parseExportType(String value) {
         if (value == null || value.isBlank()) {
             throw new BadRequestException("Export type is required");
@@ -1624,10 +1765,10 @@ public class ExportServiceImpl implements ExportService {
 
     private String normalizeFormat(Object value) {
         if (value == null || value.toString().isBlank()) {
-            return "CSV";
+            return FORMAT_XLSX;
         }
         String format = value.toString().trim().toUpperCase();
-        if (!format.equals("CSV") && !format.equals("XLSX")) {
+        if (!format.equals(FORMAT_CSV) && !format.equals(FORMAT_XLSX)) {
             throw new BadRequestException("Invalid export format: " + value);
         }
         return format;

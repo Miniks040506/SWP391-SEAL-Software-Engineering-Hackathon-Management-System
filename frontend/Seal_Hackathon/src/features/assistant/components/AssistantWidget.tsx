@@ -24,7 +24,6 @@ import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
 import SourceOutlinedIcon from "@mui/icons-material/SourceOutlined";
 import TranslateOutlinedIcon from "@mui/icons-material/TranslateOutlined";
-import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 
 import {
   useAssistantContextQuery,
@@ -49,6 +48,14 @@ const FALLBACK_PROMPTS = [
 
 const MAX_ATTACHMENT_BYTES = 256 * 1024;
 const MAX_ATTACHMENT_CHARACTERS = 6_000;
+
+const LANGUAGE_LABELS: Record<AiLanguage | "AUTO", string> = {
+  AUTO: "Auto detect",
+  VI: "Vietnamese",
+  EN: "English",
+  MIXED: "Mixed language",
+  UNKNOWN: "Unknown language",
+};
 
 type ChatMessage = {
   id: string;
@@ -155,8 +162,9 @@ export function AssistantWidget() {
   const [historyHydrated, setHistoryHydrated] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyAnchor, setHistoryAnchor] = useState<HTMLElement | null>(null);
-  const [preferredLanguage, setPreferredLanguage] =
-    useState<AiLanguage | "AUTO">("AUTO");
+  const [preferredLanguage, setPreferredLanguage] = useState<
+    AiLanguage | "AUTO"
+  >("AUTO");
   const [translationTarget, setTranslationTarget] = useState("");
   const [attachmentText, setAttachmentText] = useState("");
   const [attachmentFileName, setAttachmentFileName] = useState("");
@@ -186,11 +194,23 @@ export function AssistantWidget() {
   );
 
   const contextErrorStatus = getErrorStatus(contextQuery.error);
-  const contextBlocked = contextErrorStatus === 401 || contextErrorStatus === 403;
+  const contextBlocked =
+    contextErrorStatus === 401 || contextErrorStatus === 403;
   const modelLabel =
     typeof contextQuery.data?.roleContext?.chatModel === "string"
       ? contextQuery.data.roleContext.chatModel
       : "SEAL model";
+  const latestDetectedLanguage = useMemo(
+    () =>
+      [...chat]
+        .reverse()
+        .find((item) => item.role === "assistant" && item.language)?.language,
+    [chat],
+  );
+  const languageStatusLabel =
+    preferredLanguage === "AUTO" && latestDetectedLanguage
+      ? `Detected: ${LANGUAGE_LABELS[latestDetectedLanguage]}`
+      : LANGUAGE_LABELS[preferredLanguage];
 
   const isLoadingHistory =
     open &&
@@ -216,12 +236,7 @@ export function AssistantWidget() {
     } else {
       setHistoryHydrated(true);
     }
-  }, [
-    conversationId,
-    conversationsQuery.data,
-    open,
-    startFresh,
-  ]);
+  }, [conversationId, conversationsQuery.data, open, startFresh]);
 
   useEffect(() => {
     if (
@@ -248,7 +263,10 @@ export function AssistantWidget() {
 
   useEffect(() => {
     if (!open) return;
-    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 120);
+    const focusTimer = window.setTimeout(
+      () => composerRef.current?.focus(),
+      120,
+    );
     return () => window.clearTimeout(focusTimer);
   }, [open]);
 
@@ -345,7 +363,9 @@ export function AssistantWidget() {
 
   const retryMessage = async (item: ChatMessage) => {
     if (!item.retryPayload || chatMutation.isPending) return;
-    setChat((current) => current.filter((messageItem) => messageItem.id !== item.id));
+    setChat((current) =>
+      current.filter((messageItem) => messageItem.id !== item.id),
+    );
     await sendPayload(item.retryPayload, false);
   };
 
@@ -422,7 +442,7 @@ export function AssistantWidget() {
                 xs: "calc(16px + env(safe-area-inset-bottom))",
                 sm: 24,
               },
-              zIndex: (theme) => theme.zIndex.modal + 1,
+              zIndex: 55,
               width: 52,
               height: 52,
               bgcolor: "#1d4ed8",
@@ -453,22 +473,30 @@ export function AssistantWidget() {
           className="flex flex-col overflow-hidden border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950"
           sx={{
             position: "fixed",
-            right: { xs: 12, sm: 24 },
+            right: {
+              xs: "calc(12px + env(safe-area-inset-right))",
+              sm: 24,
+            },
             bottom: {
               xs: "calc(12px + env(safe-area-inset-bottom))",
               sm: 24,
             },
-            zIndex: (theme) => theme.zIndex.modal + 1,
-            width: { xs: "calc(100vw - 24px)", sm: 400 },
+            // This is a non-modal surface. Keeping it below MUI's modal layer
+            // lets portalled history/select menus and page dialogs stay reachable.
+            zIndex: 55,
+            width: {
+              xs: "calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right))",
+              sm: 384,
+            },
             height: {
-              xs: "min(660px, calc(100dvh - 24px - env(safe-area-inset-bottom)))",
-              sm: "min(640px, calc(100dvh - 48px))",
+              xs: "min(620px, calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))",
+              sm: "min(600px, calc(100dvh - 48px))",
             },
             borderRadius: { xs: "18px", sm: "20px" },
             boxShadow: "0 28px 80px rgba(15, 23, 42, 0.24)",
           }}
         >
-          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+          <header className="relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-700 text-white">
                 <SmartToyOutlinedIcon sx={{ fontSize: 20 }} />
@@ -529,7 +557,14 @@ export function AssistantWidget() {
             anchorEl={historyAnchor}
             open={Boolean(historyAnchor)}
             onClose={() => setHistoryAnchor(null)}
-            slotProps={{ paper: { sx: { width: 300, maxHeight: 340 } } }}
+            slotProps={{
+              paper: {
+                sx: {
+                  width: "min(320px, calc(100vw - 32px))",
+                  maxHeight: "min(360px, calc(100dvh - 96px))",
+                },
+              },
+            }}
           >
             <MenuItem onClick={beginNewChat}>
               <AddCommentOutlinedIcon sx={{ mr: 1.5, fontSize: 19 }} />
@@ -551,7 +586,9 @@ export function AssistantWidget() {
                 onClick={() => selectConversation(conversation.id)}
                 sx={{ display: "block" }}
               >
-                <p className="truncate text-sm font-medium">{conversation.title}</p>
+                <p className="truncate text-sm font-medium">
+                  {conversation.title}
+                </p>
                 <p className="mt-0.5 text-[11px] text-slate-500">
                   {new Date(conversation.updatedAt).toLocaleString()}
                 </p>
@@ -606,8 +643,9 @@ export function AssistantWidget() {
                         How can I help?
                       </p>
                       <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                        Ask about SEAL workflows, translate instructions, or debug code
-                        you have written. Academic-integrity safeguards stay on.
+                        Ask about SEAL workflows, translate instructions, or
+                        debug code you have written. Academic-integrity
+                        safeguards stay on.
                       </p>
                     </div>
                   </div>
@@ -673,7 +711,12 @@ export function AssistantWidget() {
                           variant="outlined"
                           onClick={() => void sendMessage(suggestion)}
                           disabled={chatMutation.isPending || contextBlocked}
-                          sx={{ borderRadius: 2, fontSize: 11, px: 1.25, py: 0.25 }}
+                          sx={{
+                            borderRadius: 2,
+                            fontSize: 11,
+                            px: 1.25,
+                            py: 0.25,
+                          }}
                         >
                           {suggestion}
                         </Button>
@@ -683,13 +726,14 @@ export function AssistantWidget() {
 
                   <SourceList sources={item.sources} />
 
-                  {item.role === "assistant" && (item.model || item.provider) && (
-                    <p className="mt-2 text-[10px] text-slate-400">
-                      {[item.model, item.usedRag ? "SEAL sources" : null]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  )}
+                  {item.role === "assistant" &&
+                    (item.model || item.provider) && (
+                      <p className="mt-2 text-[10px] text-slate-400">
+                        {[item.model, item.usedRag ? "SEAL sources" : null]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
                 </article>
               ))}
 
@@ -702,16 +746,42 @@ export function AssistantWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-          <footer className="shrink-0 border-t border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+          <footer className="relative z-10 max-h-[55dvh] shrink-0 overflow-y-auto overscroll-contain border-t border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-2 flex min-w-0 items-center justify-between gap-2 px-1">
+              <button
+                type="button"
+                aria-expanded={settingsOpen}
+                aria-controls="seal-ai-language-options"
+                onClick={() => setSettingsOpen((current) => !current)}
+                className="inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+              >
+                <TranslateOutlinedIcon sx={{ fontSize: 15 }} />
+                <span className="truncate">{languageStatusLabel}</span>
+              </button>
+              {translationTarget && (
+                <span
+                  className="min-w-0 truncate text-[10px] text-slate-400"
+                  title={`Translate to ${translationTarget}`}
+                >
+                  Translate to {translationTarget}
+                </span>
+              )}
+            </div>
+
             <Collapse in={settingsOpen}>
-              <div className="mb-2 grid grid-cols-1 gap-2 rounded-xl bg-slate-50 p-2 sm:grid-cols-2 dark:bg-slate-950/70">
+              <div
+                id="seal-ai-language-options"
+                className="mb-2 grid grid-cols-1 gap-2 rounded-xl bg-slate-50 p-2 sm:grid-cols-2 dark:bg-slate-950/70"
+              >
                 <TextField
                   select
                   size="small"
                   label="Answer language"
                   value={preferredLanguage}
                   onChange={(event) =>
-                    setPreferredLanguage(event.target.value as AiLanguage | "AUTO")
+                    setPreferredLanguage(
+                      event.target.value as AiLanguage | "AUTO",
+                    )
                   }
                 >
                   <MenuItem value="AUTO">Auto detect</MenuItem>
@@ -747,7 +817,7 @@ export function AssistantWidget() {
               </div>
             )}
 
-            <div className="flex items-end gap-1.5">
+            <div className="flex min-w-0 items-end gap-1.5">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -756,7 +826,7 @@ export function AssistantWidget() {
                 accept=".txt,.md,.json,.csv,.log,.java,.ts,.tsx,.html,.css"
               />
               <Tooltip title="Attach a text file">
-                <span>
+                <span className="shrink-0">
                   <IconButton
                     aria-label="Attach a text file"
                     onClick={() => fileInputRef.current?.click()}
@@ -786,10 +856,14 @@ export function AssistantWidget() {
                   }
                 }}
                 aria-label="Message SEAL AI"
-                placeholder={contextBlocked ? "Assistant unavailable" : "Message SEAL AI"}
+                placeholder={
+                  contextBlocked ? "Assistant unavailable" : "Message SEAL AI"
+                }
                 multiline
                 maxRows={4}
                 sx={{
+                  minWidth: 0,
+                  flex: 1,
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 3,
                     pr: 0.5,
@@ -797,23 +871,8 @@ export function AssistantWidget() {
                 }}
               />
 
-              <Tooltip title="Language options">
-                <IconButton
-                  aria-label="Toggle language options"
-                  aria-expanded={settingsOpen}
-                  onClick={() => setSettingsOpen((current) => !current)}
-                  sx={{ mb: 0.25 }}
-                >
-                  {settingsOpen ? (
-                    <TranslateOutlinedIcon fontSize="small" />
-                  ) : (
-                    <TuneOutlinedIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </Tooltip>
-
               <Tooltip title="Send">
-                <span>
+                <span className="shrink-0">
                   <IconButton
                     aria-label="Send message"
                     onClick={() => void sendMessage()}
