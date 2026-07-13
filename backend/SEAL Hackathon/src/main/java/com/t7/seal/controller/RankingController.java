@@ -6,6 +6,7 @@ import com.t7.seal.response.results.RankingRecalculationResponse;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.results.TeamRankingHistoryResponse;
 import com.t7.seal.service.RankingService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/rankings")
+@Tag(
+        name = "Ranking Queries",
+        description = "Filtered rankings and team ranking history."
+)
 public class RankingController {
 
     private final RankingService rankingService;
