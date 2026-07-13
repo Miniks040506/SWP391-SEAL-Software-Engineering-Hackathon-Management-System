@@ -7,6 +7,7 @@ import com.t7.seal.response.grading.JudgeSubmissionAssignmentResponse;
 import com.t7.seal.response.grading.JudgeSubmissionQueueSummaryResponse;
 import com.t7.seal.response.round.JudgeAssignmentResponse;
 import com.t7.seal.service.JudgeAssignmentService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +24,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Judges",
+        description = "Judge assignments and assigned-submission queues."
+)
 public class JudgeController {
 
     private final JudgeAssignmentService judgeAssignmentService;

@@ -6,6 +6,7 @@ import com.t7.seal.response.grading.JudgeAssignmentProgressResponse;
 import com.t7.seal.response.grading.RoundGradingProgressResponse;
 import com.t7.seal.response.grading.SubmissionGradingProgressResponse;
 import com.t7.seal.service.GradingService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +22,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Coordinator Grading",
+        description = "Coordinator grading progress and score-sheet reopening."
+)
 public class CoordinatorGradingController {
 
     private final GradingService gradingService;

@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.response.system.ExportDownloadResponse;
 import com.t7.seal.response.system.ExportJobResponse;
 import com.t7.seal.service.ExportService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/export-jobs")
+@Tag(
+        name = "Export Jobs",
+        description = "Compatibility endpoints for export status and downloads."
+)
 public class ExportJobController {
 
     private final ExportService exportService;

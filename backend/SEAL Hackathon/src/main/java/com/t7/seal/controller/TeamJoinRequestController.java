@@ -6,6 +6,7 @@ import com.t7.seal.request.team.ReasonRequest;
 import com.t7.seal.response.team.TeamJoinRequestResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
 import com.t7.seal.service.TeamJoinRequestService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiPaths.API_V1)
 @RequiredArgsConstructor
+@Tag(
+        name = "Team Join Requests",
+        description = "Participant join requests and leader decisions."
+)
 public class TeamJoinRequestController {
 
     private final TeamJoinRequestService joinRequestService;

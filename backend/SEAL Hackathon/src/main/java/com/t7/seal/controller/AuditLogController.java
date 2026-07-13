@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.AuditLogResponse;
 import com.t7.seal.service.AuditLogService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +21,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Audit Logs",
+        description = "Query append-only audit activity and supported action types."
+)
 public class AuditLogController {
 
     private final AuditLogService auditLogService;

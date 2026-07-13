@@ -5,6 +5,7 @@ import com.t7.seal.request.round.*;
 import com.t7.seal.response.round.*;
 import com.t7.seal.service.JudgeAssignmentService;
 import com.t7.seal.service.RoundService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiPaths.API_V1)
 @RequiredArgsConstructor
+@Tag(
+        name = "Rounds",
+        description = "Round lifecycle, advance rules, assignments, locks, and progress."
+)
 public class RoundController {
 
     private final RoundService roundService;

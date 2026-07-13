@@ -6,6 +6,7 @@ import com.t7.seal.request.calibration.SubmitCalibrationScoreRequest;
 import com.t7.seal.request.calibration.UpdateCalibrationRoundRequest;
 import com.t7.seal.response.calibration.*;
 import com.t7.seal.service.CalibrationService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Calibration",
+        description = "Calibration rounds, benchmark scoring, and score distributions."
+)
 public class CalibrationController {
 
     private final CalibrationService calibrationService;

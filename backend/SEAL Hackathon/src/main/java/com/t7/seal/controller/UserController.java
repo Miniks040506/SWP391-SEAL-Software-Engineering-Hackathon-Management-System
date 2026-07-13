@@ -5,6 +5,7 @@ import com.t7.seal.request.user.*;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.user.*;
 import com.t7.seal.service.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/users")
+@Tag(
+        name = "Users",
+        description = "User administration, approval, guest judges, and profile operations."
+)
 public class UserController {
 
     private final UserService userService;

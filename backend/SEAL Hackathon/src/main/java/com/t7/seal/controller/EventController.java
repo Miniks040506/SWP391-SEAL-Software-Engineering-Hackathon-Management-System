@@ -17,6 +17,7 @@ import com.t7.seal.service.CloudinaryStorageService;
 import com.t7.seal.service.EventService;
 import com.t7.seal.service.RankingService;
 import com.t7.seal.service.RblResearchService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiPaths.API_V1 + "/events")
 @RequiredArgsConstructor
+@Tag(
+        name = "Events",
+        description = "Event lifecycle, public discovery, result publication, and RBL entry points."
+)
 public class EventController {
 
     private final EventService eventService;

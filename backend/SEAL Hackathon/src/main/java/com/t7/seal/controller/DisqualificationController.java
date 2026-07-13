@@ -6,6 +6,7 @@ import com.t7.seal.request.results.OverturnDisqualificationRequest;
 import com.t7.seal.request.results.UpdateAppealRequest;
 import com.t7.seal.response.results.DisqualificationResponse;
 import com.t7.seal.service.DisqualificationService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Disqualifications",
+        description = "Disqualification, appeal, overturn, and active-case lookup."
+)
 public class DisqualificationController {
 
     private final DisqualificationService disqualificationService;

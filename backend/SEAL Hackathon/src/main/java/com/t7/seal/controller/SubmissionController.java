@@ -11,6 +11,7 @@ import com.t7.seal.response.results.DisqualificationResponse;
 import com.t7.seal.service.DisqualificationService;
 import com.t7.seal.service.RankingService;
 import com.t7.seal.service.SubmissionService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Submissions",
+        description = "Submission drafts, deliverables, files, metadata, and score visibility."
+)
 public class SubmissionController {
 
     private final SubmissionService submissionService;

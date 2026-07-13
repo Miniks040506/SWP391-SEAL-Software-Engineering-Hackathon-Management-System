@@ -11,6 +11,7 @@ import com.t7.seal.response.assistant.KnowledgeDocumentResponse;
 import com.t7.seal.service.AiKnowledgeService;
 import com.t7.seal.service.AiSafetyLogService;
 import com.t7.seal.service.CurrentUserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,10 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/admin/assistant")
+@Tag(
+        name = "AI Administration",
+        description = "Manage AI knowledge, embeddings, and safety logs."
+)
 public class AiAdminController {
 
     private final AiKnowledgeService aiKnowledgeService;

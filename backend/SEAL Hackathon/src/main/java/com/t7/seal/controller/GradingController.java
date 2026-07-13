@@ -11,6 +11,7 @@ import com.t7.seal.response.grading.ScoreResponse;
 import com.t7.seal.response.grading.ScoreSheetResponse;
 import com.t7.seal.service.GradingService;
 import com.t7.seal.service.JudgeAssignmentService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jdk.management.jfr.RemoteRecordingStream;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/grading")
+@Tag(
+        name = "Grading",
+        description = "Judge score-sheet retrieval, draft save, and final submission."
+)
 public class GradingController {
 
     private final JudgeAssignmentService judgeAssignmentService;

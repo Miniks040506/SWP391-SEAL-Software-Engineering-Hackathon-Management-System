@@ -5,6 +5,7 @@ import com.t7.seal.request.results.PublishResultsRequest;
 import com.t7.seal.response.results.PublishResultsResponse;
 import com.t7.seal.response.results.RankingRecalculationResponse;
 import com.t7.seal.response.results.RankingResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import com.t7.seal.service.RankingService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Results and Rankings",
+        description = "Ranking calculation, leaderboards, advancement, and result publication."
+)
 public class ResultRankingController {
 
     private final RankingService rankingService;
@@ -32,7 +37,6 @@ public class ResultRankingController {
     ) {
         return ResponseEntity.ok(rankingService.calculateRoundRankings(roundId, trackId, authentication));
     }
-
 
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")

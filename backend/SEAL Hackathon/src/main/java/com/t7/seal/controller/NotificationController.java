@@ -9,6 +9,7 @@ import com.t7.seal.response.system.NotificationRecipientResolutionResponse;
 import com.t7.seal.response.system.UnreadCountResponse;
 import com.t7.seal.service.NotificationRecipientResolver;
 import com.t7.seal.service.NotificationService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/notifications")
+@Tag(
+        name = "Notifications",
+        description = "Notification inbox, dispatch, recipient resolution, and email testing."
+)
 public class NotificationController {
 
     private final NotificationRecipientResolver notificationRecipientResolver;
