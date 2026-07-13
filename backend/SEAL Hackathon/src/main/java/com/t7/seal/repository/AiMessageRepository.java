@@ -10,5 +10,5 @@ import java.util.UUID;
 @Repository
 public interface AiMessageRepository extends JpaRepository<AiMessage, UUID> {
 
-    List<AiMessage> findTop20ByConversationIdOrderByCreatedAtAsc(UUID conversationId);
+    List<AiMessage> findTop50ByConversationIdOrderByCreatedAtDesc(UUID conversationId);
 }

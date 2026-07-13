@@ -63,6 +63,13 @@ public class AssistantServiceImpl implements AssistantService {
         persistUserMessage(conversation, user, request, language, inputGuardrail);
 
         if (inputGuardrail.blocked()) {
+            aiSafetyLogService.record(
+                    user,
+                    conversation,
+                    inputGuardrail,
+                    request.message() + " " + safe(request.attachmentText()),
+                    request.pageContext()
+            );
             persistAssistantMessage(
                     conversation,
                     inputGuardrail.safeAnswer(),
@@ -218,8 +225,11 @@ public class AssistantServiceImpl implements AssistantService {
                 .orElseThrow(() ->
                         new NotFoundException("Assistant conversation not found."));
 
-        return aiMessageRepository
-                .findTop20ByConversationIdOrderByCreatedAtAsc(conversation.getId())
+        List<AiMessage> messages = new ArrayList<>(aiMessageRepository
+                .findTop50ByConversationIdOrderByCreatedAtDesc(conversation.getId()));
+        Collections.reverse(messages);
+
+        return messages
                 .stream()
                 .map(this::toMessageResponse)
                 .toList();
