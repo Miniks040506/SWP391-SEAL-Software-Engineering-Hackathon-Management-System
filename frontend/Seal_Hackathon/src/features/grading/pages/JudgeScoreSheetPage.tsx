@@ -1,6 +1,11 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useParams, useLocation, useBlocker, useNavigate } from "react-router-dom";
+import {
+  useParams,
+  useLocation,
+  useBlocker,
+  useNavigate,
+} from "react-router-dom";
 
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
@@ -14,7 +19,10 @@ import { isAxiosError } from "axios";
 import { useSnackbar } from "notistack";
 
 import type { EventCriteriaResponse } from "@/types/criteria.types";
-import type { JudgeScoreFormValues, ScoreResponse } from "@/types/grading.types";
+import type {
+  JudgeScoreFormValues,
+  ScoreResponse,
+} from "@/types/grading.types";
 import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
 
 import { useScoreSheet } from "../hooks/useScoreSheet";
@@ -28,7 +36,9 @@ export const JudgeScoreSheetPage = () => {
   const { submissionId } = useParams();
   const { state } = useLocation();
   const navigate = useNavigate();
-  const assignmentInfo = state?.assignmentInfo as JudgeSubmissionAssignmentResponse | undefined;
+  const assignmentInfo = state?.assignmentInfo as
+    | JudgeSubmissionAssignmentResponse
+    | undefined;
 
   const { submission, scoreSheet, isLoading, isError, error } = useScoreSheet(
     submissionId!,
@@ -51,9 +61,7 @@ export const JudgeScoreSheetPage = () => {
   const canEdit = scoreSheet?.canEdit ?? false;
   const navigationBlocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      isDirty &&
-      canEdit &&
-      currentLocation.pathname !== nextLocation.pathname,
+      isDirty && canEdit && currentLocation.pathname !== nextLocation.pathname,
   );
 
   useEffect(() => {
@@ -161,7 +169,9 @@ export const JudgeScoreSheetPage = () => {
     0,
   );
 
-  const gradingStatus = assignmentInfo?.gradingStatus || (isFinalSubmitted ? "SUBMITTED" : "PENDING");
+  const gradingStatus =
+    assignmentInfo?.gradingStatus ||
+    (isFinalSubmitted ? "SUBMITTED" : "PENDING");
 
   const preparePayload = (data: JudgeScoreFormValues) => {
     const scoreItems = Object.entries(data.scores || {})
@@ -184,19 +194,27 @@ export const JudgeScoreSheetPage = () => {
 
   const onFinalSubmit = handleSubmit(async (data) => {
     let hasMissingOrInvalid = false;
-    const activeCriteria = submission.criteria.filter((c: EventCriteriaResponse) => c.isActive);
+    const activeCriteria = submission.criteria.filter(
+      (c: EventCriteriaResponse) => c.isActive,
+    );
 
     for (const crit of activeCriteria) {
       const val = data.scores?.[crit.id];
       if (val === undefined || val === null || val === "") {
         hasMissingOrInvalid = true;
-        setError(`scores.${crit.id}`, { type: "manual", message: "Score is required for final submit" });
+        setError(`scores.${crit.id}`, {
+          type: "manual",
+          message: "Score is required for final submit",
+        });
         continue;
       }
       const num = Number(val);
       if (!Number.isFinite(num)) {
         hasMissingOrInvalid = true;
-        setError(`scores.${crit.id}`, { type: "manual", message: "Score must be a number" });
+        setError(`scores.${crit.id}`, {
+          type: "manual",
+          message: "Score must be a number",
+        });
         continue;
       }
       if (num < 0) {
@@ -206,15 +224,21 @@ export const JudgeScoreSheetPage = () => {
       }
       if (num > crit.effectiveMaxScore) {
         hasMissingOrInvalid = true;
-        setError(`scores.${crit.id}`, { type: "manual", message: `Max: ${crit.effectiveMaxScore}` });
+        setError(`scores.${crit.id}`, {
+          type: "manual",
+          message: `Max: ${crit.effectiveMaxScore}`,
+        });
         continue;
       }
     }
 
     if (hasMissingOrInvalid) {
-      enqueueSnackbar("Cannot final submit: All criteria must have a valid score.", {
-        variant: "error",
-      });
+      enqueueSnackbar(
+        "Cannot final submit: All criteria must have a valid score.",
+        {
+          variant: "error",
+        },
+      );
       return;
     }
 
@@ -244,7 +268,8 @@ export const JudgeScoreSheetPage = () => {
 
         {isCalibrationIncomplete && (
           <Alert severity="warning" sx={{ mb: 4, borderRadius: 2 }}>
-            Complete all mandatory calibration rounds before grading this submission.
+            Complete all mandatory calibration rounds before grading this
+            submission.
           </Alert>
         )}
 
@@ -321,9 +346,13 @@ export const JudgeScoreSheetPage = () => {
                   <div className="flex justify-between border-b border-gray-100 pb-4 dark:border-slate-800">
                     <span className="flex items-center gap-2 text-gray-500 dark:text-slate-400">
                       {allCriteriaScored ? (
-                        <CheckCircleOutlineIcon sx={{ fontSize: 18, color: "#10b981" }} />
+                        <CheckCircleOutlineIcon
+                          sx={{ fontSize: 18, color: "#10b981" }}
+                        />
                       ) : (
-                        <RadioButtonUncheckedIcon sx={{ fontSize: 18, color: "#d1d5db" }} />
+                        <RadioButtonUncheckedIcon
+                          sx={{ fontSize: 18, color: "#d1d5db" }}
+                        />
                       )}
                       Completed
                     </span>
@@ -375,7 +404,7 @@ export const JudgeScoreSheetPage = () => {
                 <div className="mt-8">
                   <ScoreDraftBar
                     isDirty={isDirty}
-                    isLocked={!canEdit}
+                    isLocked={isGradingLocked}
                     isFinalSubmitted={isFinalSubmitted}
                     isSaving={isSaving}
                     isSubmitting={isSubmitting}
