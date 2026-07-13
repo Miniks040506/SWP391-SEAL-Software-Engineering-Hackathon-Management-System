@@ -353,6 +353,9 @@ export function AssistantWidget() {
     setStartFresh(true);
     setConversationId(undefined);
     setChat([]);
+    setMessage("");
+    clearAttachment();
+    setTranslationTarget("");
     setHistoryHydrated(true);
     setHistoryAnchor(null);
     window.setTimeout(() => composerRef.current?.focus(), 0);
