@@ -1,8 +1,15 @@
+import { useState } from "react";
 import { type Control, Controller } from "react-hook-form";
+
 import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import FormHelperText from "@mui/material/FormHelperText";
 import Chip from "@mui/material/Chip";
+import Collapse from "@mui/material/Collapse";
+import IconButton from "@mui/material/IconButton";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+
 import type { EventCriteriaResponse } from "@/types/criteria.types";
 import type { JudgeScoreFormValues } from "@/types/grading.types";
 
@@ -25,11 +32,15 @@ export const CriteriaScoreCard = ({
   isFinalSubmitted,
 }: Props) => {
   const disabled = isLocked || isFinalSubmitted;
+  const [rubricOpen, setRubricOpen] = useState(false);
+
+  const hasRubric = Boolean(criterion.effectiveRubric);
+  const hasDescription = Boolean(criterion.effectiveDescription);
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-start justify-between gap-4">
-        <div>
+        <div className="flex-1">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-slate-500">
               {criterion.templateCategory}
@@ -44,13 +55,61 @@ export const CriteriaScoreCard = ({
                 bgcolor: "rgba(0,0,0,0.05)",
               }}
             />
+            <Chip
+              label={`Max: ${criterion.effectiveMaxScore}`}
+              size="small"
+              sx={{
+                height: "20px",
+                fontSize: "10px",
+                fontWeight: "bold",
+                bgcolor: "rgba(59,130,246,0.08)",
+                color: "#3b82f6",
+              }}
+            />
           </div>
-          <p className="font-extrabold text-gray-900 dark:text-white text-lg">
+          <p className="text-lg font-extrabold text-gray-900 dark:text-white">
             {criterion.effectiveName}
           </p>
-          <p className="mt-1 text-sm text-gray-600 dark:text-slate-400 leading-relaxed">
-            {criterion.effectiveDescription || criterion.effectiveRubric}
-          </p>
+
+          {hasDescription && (
+            <p className="mt-1 text-sm leading-relaxed text-gray-600 dark:text-slate-400">
+              {criterion.effectiveDescription}
+            </p>
+          )}
+
+          {hasRubric && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setRubricOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                <MenuBookIcon sx={{ fontSize: 14 }} />
+                Rubric
+                <IconButton size="small" sx={{ p: 0, ml: -0.5 }}>
+                  <ExpandMoreIcon
+                    sx={{
+                      fontSize: 16,
+                      transform: rubricOpen ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.2s ease",
+                      color: "inherit",
+                    }}
+                  />
+                </IconButton>
+              </button>
+              <Collapse in={rubricOpen}>
+                <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-sm leading-relaxed text-gray-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-slate-300">
+                  {criterion.effectiveRubric}
+                </div>
+              </Collapse>
+            </div>
+          )}
+
+          {!hasDescription && !hasRubric && (
+            <p className="mt-1 text-sm italic text-gray-400 dark:text-slate-500">
+              No description or rubric provided.
+            </p>
+          )}
         </div>
       </div>
 
