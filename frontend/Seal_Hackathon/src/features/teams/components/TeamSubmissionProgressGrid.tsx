@@ -1,13 +1,16 @@
+import { Tooltip } from "@mui/material";
 import type { UUID } from "@/types/common.types";
 import type { CoordinatorTeamSubmissionProgressResponse } from "@/types/team.types";
 import { getSubmissionStatusColor } from "../schemas/teams.schema";
 
 type Props = {
   submissions: CoordinatorTeamSubmissionProgressResponse[];
+  teamStatus?: string | null;
   onSelectSubmission?: (submissionId: UUID) => void;
+  onDisqualifySubmission?: (submissionId: UUID) => void;
 };
 
-export function TeamSubmissionProgressGrid({ submissions, onSelectSubmission }: Props) {
+export function TeamSubmissionProgressGrid({ submissions, teamStatus, onSelectSubmission, onDisqualifySubmission }: Props) {
   if (!submissions || submissions.length === 0) {
     return (
       <p className="text-sm text-slate-500 dark:text-slate-400 italic">
@@ -55,14 +58,47 @@ export function TeamSubmissionProgressGrid({ submissions, onSelectSubmission }: 
               </p>
             </div>
           </div>
-          {onSelectSubmission && sub.submissionId && (
-            <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700/50">
-              <button
-                onClick={() => onSelectSubmission(sub.submissionId as UUID)}
-                className="w-full py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-600 font-semibold rounded-lg transition-colors text-sm"
-              >
-                View Submission Details
-              </button>
+          {(onSelectSubmission || onDisqualifySubmission) && sub.submissionId && (
+            <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700/50 flex flex-col gap-2">
+              {onSelectSubmission && (
+                <button
+                  onClick={() => onSelectSubmission(sub.submissionId as UUID)}
+                  className="w-full py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-600 font-semibold rounded-lg transition-colors text-sm"
+                >
+                  View Submission Details
+                </button>
+              )}
+              {onDisqualifySubmission && (
+                (() => {
+                  const isScorable = sub.submissionStatus === "SUBMITTED" || sub.submissionStatus === "LATE";
+                  const isEliminated = teamStatus === "ELIMINATED" || teamStatus === "DISQUALIFIED";
+                  const disabled = !isScorable || isEliminated;
+                  
+                  const button = (
+                    <button
+                      onClick={() => !disabled && onDisqualifySubmission(sub.submissionId as UUID)}
+                      disabled={disabled}
+                      className={`w-full py-2.5 font-semibold rounded-lg border transition-colors text-sm ${
+                        disabled
+                          ? "bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed"
+                          : "bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border-slate-200 dark:border-slate-600 hover:border-red-200 dark:hover:border-red-800"
+                      }`}
+                    >
+                      Disqualify
+                    </button>
+                  );
+
+                  if (disabled) {
+                    return (
+                      <Tooltip title={isEliminated ? "This team has already been disqualified." : "Only submitted submissions can be disqualified."} arrow placement="top">
+                        <span>{button}</span>
+                      </Tooltip>
+                    );
+                  }
+                  
+                  return button;
+                })()
+              )}
             </div>
           )}
         </div>

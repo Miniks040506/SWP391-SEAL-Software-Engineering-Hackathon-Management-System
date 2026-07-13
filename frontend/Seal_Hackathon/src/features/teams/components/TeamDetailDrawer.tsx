@@ -7,6 +7,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 import { teamApi } from "@/api/team.api";
 import { submissionApi } from "@/api/submission.api";
 import type { UUID } from "@/types/common.types";
@@ -21,6 +22,10 @@ import {
 import { useCoordinatorRegistrationReview } from "../hooks/useCoordinatorRegistrationReview";
 import { TeamSubmissionProgressGrid } from "./TeamSubmissionProgressGrid";
 import { SubmissionLinksPreview } from "@/features/submissions/components/SubmissionLinksPreview";
+import { DisqualifySubmissionDialog } from "@/features/disqualification/components/DisqualifySubmissionDialog";
+import { useDisqualifySubmissionMutation } from "@/features/disqualification/hooks/useDisqualificationQueries";
+import type { DisqualifyFormValues } from "@/features/disqualification/schemas/disqualification.schema";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   teamId: UUID;
@@ -42,6 +47,11 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<UUID | null>(null);
   const [submissionDetail, setSubmissionDetail] = useState<SubmissionDetailResponse | null>(null);
   const [loadingSubmissionDetail, setLoadingSubmissionDetail] = useState(false);
+  
+  const [disqualifySubmissionId, setDisqualifySubmissionId] = useState<UUID | null>(null);
+  const disqualifyMutation = useDisqualifySubmissionMutation();
+  const queryClient = useQueryClient();
+
   const isReviewing = Boolean(detail && reviewingTeamId === detail.teamId);
   const canReviewRegistration =
     detail?.registrationStatus?.toUpperCase() === "PENDING_APPROVAL";
@@ -103,6 +113,25 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
     clearError();
     setRejectReason("");
     setReviewAction(null);
+  };
+
+  const handleDisqualify = async (values: DisqualifyFormValues) => {
+    if (!disqualifySubmissionId) return;
+    const res = await disqualifyMutation.mutateAsync({
+      submissionId: disqualifySubmissionId,
+      payload: values,
+    });
+    
+    try {
+      const updated = await teamApi.getCoordinatorTeamSummary(teamId);
+      setDetail(updated);
+    } catch {
+      setDetail(null);
+    }
+    
+    onChanged?.();
+    queryClient.invalidateQueries({ queryKey: ["coordinator-team-detail"] });
+    return res;
   };
 
   const handleSubmitRegistrationReview = async () => {
@@ -220,6 +249,38 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                         </div>
                       )}
                     </div>
+                    <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                      {(() => {
+                        const isScorable = submissionDetail.status === "SUBMITTED" || submissionDetail.status === "LATE";
+                        const isEliminated = detail?.status === "ELIMINATED" || detail?.status === "DISQUALIFIED";
+                        const disabled = !isScorable || isEliminated;
+                        
+                        const button = (
+                          <span className="w-full block">
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              color="error"
+                              disabled={disabled}
+                              onClick={() => !disabled && setDisqualifySubmissionId(submissionDetail.id)}
+                              sx={{ textTransform: "none", fontWeight: 600, py: 1 }}
+                            >
+                              Disqualify submission
+                            </Button>
+                          </span>
+                        );
+
+                        if (disabled) {
+                          return (
+                            <Tooltip title={isEliminated ? "This team has already been disqualified." : "Only submitted submissions can be disqualified."} arrow placement="top">
+                              {button}
+                            </Tooltip>
+                          );
+                        }
+                        
+                        return button;
+                      })()}
+                    </div>
                   </section>
 
                   <section>
@@ -239,6 +300,8 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                       </div>
                     </section>
                   )}
+
+
                 </>
               ) : (
                 <div className="text-center text-slate-500 dark:text-slate-400 mt-10 text-sm">
@@ -421,7 +484,9 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
 
                 <TeamSubmissionProgressGrid
                   submissions={detail.submissions}
+                  teamStatus={detail.status}
                   onSelectSubmission={handleViewSubmission}
+                  onDisqualifySubmission={(id) => setDisqualifySubmissionId(id)}
                 />
               </section>
             </div>
@@ -494,6 +559,16 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {disqualifySubmissionId && (
+        <DisqualifySubmissionDialog
+          open={Boolean(disqualifySubmissionId)}
+          onClose={() => setDisqualifySubmissionId(null)}
+          submissionId={disqualifySubmissionId}
+          isPending={disqualifyMutation.isPending}
+          onConfirm={handleDisqualify}
+        />
+      )}
     </>
   );
 }
