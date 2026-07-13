@@ -12,7 +12,6 @@ import type { UserRole } from "@/types/auth.types";
 import { getPrimaryRole } from "@/utils/roleRedirect";
 // import { ThemeTransitionLayer } from "./themeTransitionLayer";
 import { AppNavbar } from "./AppNarbar";
-import { AssistantWidget } from "@/features/assistant";
 
 type LoggedinLayoutProps = {
   sectionRole: UserRole;
@@ -86,8 +85,6 @@ export function LoggedinLayout({ sectionRole }: LoggedinLayoutProps) {
       <main className="ml-64 px-8 py-8 pb-20">
         <Outlet />
       </main>
-
-      <AssistantWidget />
     </div>
   );
 }
