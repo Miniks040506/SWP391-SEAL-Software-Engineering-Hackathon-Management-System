@@ -17,6 +17,8 @@ import Select from "@mui/material/Select";
 
 import type { TeamDetailResponse } from "@/types/team.types";
 import { useTrackRegistration } from "../hooks/useTrackRegistration";
+import { useQuery } from "@tanstack/react-query";
+import { trackApi } from "@/api/track.api";
 
 type TeamRegisterTrackPanelProps = {
   team: TeamDetailResponse;
@@ -46,6 +48,12 @@ export const TeamRegisterTrackPanel = ({
     setConfirmOpen(false);
   };
 
+  const registeredTrackQuery = useQuery({
+    queryKey: ["track", team.trackId],
+    queryFn: () => trackApi.getTrackById(team.trackId!),
+    enabled: Boolean(team.trackId),
+  });
+
   return (
     <Card
       variant="outlined"
@@ -63,12 +71,12 @@ export const TeamRegisterTrackPanel = ({
         </div>
 
         {team.trackId ? (
-          <Alert severity="success">
+          <Alert severity={team.registrationStatus === "REJECTED" ? "error" : "success"}>
             <strong>Registration submitted!</strong>
             <br />
-            Registered Track: {availableTracksQuery.data?.find((t) => t.id === team.trackId)?.name || (team as any).trackName || team.trackId}
+            Registered Track: {registeredTrackQuery.data?.name || availableTracksQuery.data?.find((t) => t.id === team.trackId)?.name || (team as any).trackName || team.trackId}
             <br />
-            Status: PENDING_APPROVAL. Awaiting coordinator approval.
+            Status: {team.registrationStatus === "APPROVED" ? "APPROVED. Registration approved." : team.registrationStatus === "REJECTED" ? "REJECTED. Registration rejected." : "PENDING_APPROVAL. Awaiting coordinator approval."}
           </Alert>
         ) : (
           <>
