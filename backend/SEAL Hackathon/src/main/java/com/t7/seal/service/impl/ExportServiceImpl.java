@@ -50,6 +50,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -77,7 +78,8 @@ public class ExportServiceImpl implements ExportService {
     private static final Set<String> NUMERIC_EXPORT_COLUMNS = Set.of(
             "rank", "total score", "tie group size", "judge count", "weight", "max score",
             "score", "member count", "benchmark criteria count", "score count",
-            "average absolute benchmark deviation", "rawscore", "maxscore"
+            "average absolute benchmark deviation", "rawscore", "maxscore", "value",
+            "teams", "count", "year", "icc one-way estimate"
     );
     private static final Set<String> BOOLEAN_EXPORT_COLUMNS = Set.of(
             "tied", "manual resolution required", "advanced", "published", "technical",
@@ -1067,15 +1069,20 @@ public class ExportServiceImpl implements ExportService {
         );
     }
 
-    private byte[] writeXlsx(List<List<String>> rows) throws IOException {
+    private byte[] writeXlsx(
+            List<List<String>> rows,
+            ExportSpec spec,
+            Map<String, Object> params,
+            LocalDateTime generatedAt
+    ) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
         try (ZipOutputStream zip = new ZipOutputStream(output, StandardCharsets.UTF_8)) {
             put(zip, "[Content_Types].xml", contentTypesXml());
             put(zip, "_rels/.rels", rootRelsXml());
-            put(zip, "xl/workbook.xml", workbookXml());
+            put(zip, "xl/workbook.xml", workbookXml(reportSheetName(spec.type())));
             put(zip, "xl/_rels/workbook.xml.rels", workbookRelsXml());
-            put(zip, "xl/worksheets/sheet1.xml", worksheetXml(rows));
+            put(zip, "xl/worksheets/sheet1.xml", worksheetXml(rows, spec, params, generatedAt));
             put(zip, "xl/styles.xml", stylesXml());
 
         }
@@ -1110,13 +1117,13 @@ public class ExportServiceImpl implements ExportService {
                 """;
     }
 
-    private String workbookXml() {
+    private String workbookXml(String sheetName) {
         return """
                 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-                  <sheets><sheet name="Report" sheetId="1" r:id="rId1"/></sheets>
+                  <sheets><sheet name="%s" sheetId="1" r:id="rId1"/></sheets>
                 </workbook>
-                """;
+                """.formatted(xmlEscape(sheetName));
     }
 
     private String workbookRelsXml() {
@@ -1133,14 +1140,20 @@ public class ExportServiceImpl implements ExportService {
         return """
                 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-                  <fonts count="2">
+                  <numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd hh:mm"/></numFmts>
+                  <fonts count="5">
                     <font><sz val="11"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
-                    <font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+                    <font><b/><color rgb="FFFFFFFF"/><sz val="16"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+                    <font><color rgb="FFE2E8F0"/><sz val="10"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+                    <font><b/><color rgb="FFFFFFFF"/><sz val="10"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+                    <font><b/><color rgb="FF1D4ED8"/><sz val="10"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
                   </fonts>
-                  <fills count="3">
+                  <fills count="5">
                     <fill><patternFill patternType="none"/></fill>
                     <fill><patternFill patternType="gray125"/></fill>
+                    <fill><patternFill patternType="solid"><fgColor rgb="FF0F172A"/><bgColor indexed="64"/></patternFill></fill>
                     <fill><patternFill patternType="solid"><fgColor rgb="FF1D4ED8"/><bgColor indexed="64"/></patternFill></fill>
+                    <fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/><bgColor indexed="64"/></patternFill></fill>
                   </fills>
                   <borders count="3">
                     <border><left/><right/><top/><bottom/><diagonal/></border>
@@ -1154,13 +1167,37 @@ public class ExportServiceImpl implements ExportService {
                     <border><left/><right/><top/><bottom style="thin"><color rgb="FFE2E8F0"/></bottom><diagonal/></border>
                   </borders>
                   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-                  <cellXfs count="3">
+                  <cellXfs count="11">
                     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-                    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+                    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1">
+                      <alignment horizontal="left" vertical="center"/>
+                    </xf>
+                    <xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1">
+                      <alignment horizontal="left" vertical="center"/>
+                    </xf>
+                    <xf numFmtId="0" fontId="0" fillId="4" borderId="0" xfId="0" applyFill="1" applyAlignment="1">
+                      <alignment horizontal="left" vertical="center"/>
+                    </xf>
+                    <xf numFmtId="0" fontId="3" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
                       <alignment horizontal="center" vertical="center" wrapText="1"/>
                     </xf>
                     <xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyBorder="1" applyAlignment="1">
-                      <alignment vertical="center"/>
+                      <alignment horizontal="left" vertical="center"/>
+                    </xf>
+                    <xf numFmtId="1" fontId="0" fillId="0" borderId="2" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1">
+                      <alignment horizontal="right" vertical="center"/>
+                    </xf>
+                    <xf numFmtId="2" fontId="0" fillId="0" borderId="2" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1">
+                      <alignment horizontal="right" vertical="center"/>
+                    </xf>
+                    <xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyBorder="1" applyAlignment="1">
+                      <alignment horizontal="center" vertical="center"/>
+                    </xf>
+                    <xf numFmtId="164" fontId="0" fillId="0" borderId="2" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1">
+                      <alignment horizontal="right" vertical="center"/>
+                    </xf>
+                    <xf numFmtId="0" fontId="4" fillId="4" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+                      <alignment horizontal="left" vertical="center" wrapText="1"/>
                     </xf>
                   </cellXfs>
                   <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
@@ -1170,62 +1207,111 @@ public class ExportServiceImpl implements ExportService {
                 """;
     }
 
-    private String worksheetXml(List<List<String>> rows) {
-        int columnCount = rows.stream().mapToInt(List::size).max().orElse(0);
-        String lastCell = rows.isEmpty() || columnCount == 0
-                ? "A1"
-                : cellRef(columnCount - 1, rows.size());
+    private String worksheetXml(
+            List<List<String>> rows,
+            ExportSpec spec,
+            Map<String, Object> params,
+            LocalDateTime generatedAt
+    ) {
+        int columnCount = Math.max(1, rows.stream().mapToInt(List::size).max().orElse(0));
+        int lastDataRow = rows.isEmpty()
+                ? XLSX_TABLE_HEADER_ROW
+                : XLSX_TABLE_HEADER_ROW + rows.size() - 1;
+        String lastCell = cellRef(columnCount - 1, lastDataRow);
+        boolean sectionedReport = rows.stream().skip(1).anyMatch(this::isBlankRow);
+        String title = reportTitle(spec.type());
 
         StringBuilder builder = new StringBuilder();
         builder.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>")
                 .append("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">")
+                .append("<sheetPr><pageSetUpPr fitToPage=\"1\"/></sheetPr>")
                 .append("<dimension ref=\"A1:").append(lastCell).append("\"/>")
-                .append("<sheetViews><sheetView workbookViewId=\"0\">");
+                .append("<sheetViews><sheetView workbookViewId=\"0\" showGridLines=\"0\">");
 
         if (!rows.isEmpty()) {
-            builder.append("<pane ySplit=\"1\" topLeftCell=\"A2\" activePane=\"bottomLeft\" state=\"frozen\"/>")
-                    .append("<selection pane=\"bottomLeft\" activeCell=\"A2\" sqref=\"A2\"/>");
+            builder.append("<pane ySplit=\"5\" topLeftCell=\"A6\" activePane=\"bottomLeft\" state=\"frozen\"/>")
+                    .append("<selection pane=\"bottomLeft\" activeCell=\"A6\" sqref=\"A6\"/>");
         }
 
         builder.append("</sheetView></sheetViews>")
-                .append("<sheetFormatPr defaultRowHeight=\"15\"/>");
-
-        if (columnCount > 0) {
-            builder.append("<cols>");
-            for (int c = 0; c < columnCount; c++) {
-                builder.append("<col min=\"").append(c + 1)
-                        .append("\" max=\"").append(c + 1)
-                        .append("\" width=\"").append(columnWidth(rows, c))
-                        .append("\" customWidth=\"1\"/>");
-            }
-            builder.append("</cols>");
+                .append("<sheetFormatPr defaultRowHeight=\"18\"/>")
+                .append("<cols>");
+        for (int c = 0; c < columnCount; c++) {
+            builder.append("<col min=\"").append(c + 1)
+                    .append("\" max=\"").append(c + 1)
+                    .append("\" width=\"").append(columnWidth(rows, c))
+                    .append("\" customWidth=\"1\"/>");
         }
+        builder.append("</cols><sheetData>");
 
-        builder.append("<sheetData>");
+        appendStyledTextRow(builder, XLSX_TITLE_ROW, 30, 1, "SEAL · " + title);
+        appendStyledTextRow(builder, XLSX_SUBTITLE_ROW, 20, 2, reportSubtitle(spec));
+        appendStyledTextRow(
+                builder,
+                XLSX_METADATA_ROW,
+                19,
+                3,
+                reportMetadata(params, generatedAt)
+        );
+        builder.append("<row r=\"4\" ht=\"8\" customHeight=\"1\"/>");
+
+        List<String> activeHeaders = rows.isEmpty() ? List.of() : rows.getFirst();
         for (int r = 0; r < rows.size(); r++) {
-            builder.append("<row r=\"").append(r + 1).append("\"");
-            if (r == 0) {
-                builder.append(" ht=\"24\" customHeight=\"1\"");
+            int excelRow = XLSX_TABLE_HEADER_ROW + r;
+            List<String> row = rows.get(r);
+            if (isBlankRow(row)) {
+                builder.append("<row r=\"").append(excelRow)
+                        .append("\" ht=\"8\" customHeight=\"1\"/>");
+                continue;
+            }
+
+            boolean primaryHeader = r == 0;
+            boolean sectionHeader = r > 0 && isBlankRow(rows.get(r - 1));
+            if (sectionHeader) {
+                activeHeaders = row;
+            }
+            builder.append("<row r=\"").append(excelRow).append("\"");
+            if (primaryHeader || sectionHeader) {
+                builder.append(" ht=\"").append(primaryHeader ? 28 : 22)
+                        .append("\" customHeight=\"1\"");
             }
             builder.append(">");
-            List<String> row = rows.get(r);
+
             for (int c = 0; c < row.size(); c++) {
-                builder.append("<c r=\"")
-                        .append(cellRef(c, r + 1))
-                        .append("\" s=\"").append(r == 0 ? 1 : 2)
-                        .append("\" t=\"inlineStr\"><is><t xml:space=\"preserve\">")
-                        .append(xmlEscape(row.get(c)))
-                        .append("</t></is></c>");
+                String reference = cellRef(c, excelRow);
+                String value = row.get(c);
+                if (primaryHeader || sectionHeader) {
+                    appendInlineCell(builder, reference, primaryHeader ? 4 : 10, value);
+                } else {
+                    String header = c < activeHeaders.size() ? activeHeaders.get(c) : "";
+                    appendDataCell(builder, reference, value, header);
+                }
             }
             builder.append("</row>");
         }
         builder.append("</sheetData>");
 
-        if (!rows.isEmpty() && columnCount > 0) {
-            builder.append("<autoFilter ref=\"A1:").append(lastCell).append("\"/>");
+        if (columnCount > 1) {
+            String lastColumn = cellRef(columnCount - 1, 1).replaceAll("\\d", "");
+            builder.append("<mergeCells count=\"3\">")
+                    .append("<mergeCell ref=\"A1:").append(lastColumn).append("1\"/>")
+                    .append("<mergeCell ref=\"A2:").append(lastColumn).append("2\"/>")
+                    .append("<mergeCell ref=\"A3:").append(lastColumn).append("3\"/>")
+                    .append("</mergeCells>");
         }
 
-        builder.append("<pageMargins left=\"0.7\" right=\"0.7\" top=\"0.75\" bottom=\"0.75\" header=\"0.3\" footer=\"0.3\"/>")
+        if (!sectionedReport && rows.size() > 1) {
+            builder.append("<autoFilter ref=\"A5:").append(lastCell).append("\"/>");
+        }
+
+        builder.append("<printOptions horizontalCentered=\"0\" verticalCentered=\"0\"/>")
+                .append("<pageMargins left=\"0.35\" right=\"0.35\" top=\"0.6\" bottom=\"0.6\" header=\"0.3\" footer=\"0.3\"/>")
+                .append("<pageSetup paperSize=\"9\" orientation=\"landscape\" fitToWidth=\"1\" fitToHeight=\"0\"/>")
+                .append("<headerFooter><oddHeader>&amp;LSEAL Hackathon&amp;R")
+                .append(xmlEscape(title))
+                .append("</oddHeader><oddFooter>&amp;LGenerated ")
+                .append(xmlEscape(generatedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))))
+                .append("&amp;RPage &amp;P of &amp;N</oddFooter></headerFooter>")
                 .append("</worksheet>");
         return builder.toString();
     }
@@ -1239,6 +1325,174 @@ public class ExportServiceImpl implements ExportService {
                 .max()
                 .orElse(0);
         return Math.min(40, Math.max(10, maxLength + 2));
+    }
+
+    private void appendStyledTextRow(
+            StringBuilder builder,
+            int rowIndex,
+            int height,
+            int style,
+            String value
+    ) {
+        builder.append("<row r=\"").append(rowIndex)
+                .append("\" ht=\"").append(height)
+                .append("\" customHeight=\"1\">");
+        appendInlineCell(builder, "A" + rowIndex, style, value);
+        builder.append("</row>");
+    }
+
+    private void appendInlineCell(
+            StringBuilder builder,
+            String reference,
+            int style,
+            String value
+    ) {
+        builder.append("<c r=\"").append(reference)
+                .append("\" s=\"").append(style)
+                .append("\" t=\"inlineStr\"><is><t xml:space=\"preserve\">")
+                .append(xmlEscape(value))
+                .append("</t></is></c>");
+    }
+
+    private void appendDataCell(
+            StringBuilder builder,
+            String reference,
+            String value,
+            String header
+    ) {
+        String safeValue = value == null ? "" : value;
+        String trimmed = safeValue.trim();
+        String normalizedHeader = normalizeExportHeader(header);
+
+        if (BOOLEAN_EXPORT_COLUMNS.contains(normalizedHeader)
+                && (trimmed.equalsIgnoreCase("true") || trimmed.equalsIgnoreCase("false"))) {
+            builder.append("<c r=\"").append(reference)
+                    .append("\" s=\"8\" t=\"b\"><v>")
+                    .append(Boolean.parseBoolean(trimmed) ? "1" : "0")
+                    .append("</v></c>");
+            return;
+        }
+
+        if (DATE_EXPORT_COLUMNS.contains(normalizedHeader)) {
+            Double serial = parseExcelDateSerial(trimmed);
+            if (serial != null) {
+                builder.append("<c r=\"").append(reference)
+                        .append("\" s=\"9\"><v>")
+                        .append(BigDecimal.valueOf(serial).stripTrailingZeros().toPlainString())
+                        .append("</v></c>");
+                return;
+            }
+        }
+
+        if (NUMERIC_EXPORT_COLUMNS.contains(normalizedHeader)
+                && SAFE_NUMBER.matcher(trimmed).matches()) {
+            BigDecimal number = new BigDecimal(trimmed);
+            builder.append("<c r=\"").append(reference)
+                    .append("\" s=\"").append(trimmed.contains(".") ? 7 : 6)
+                    .append("\"><v>")
+                    .append(number.toPlainString())
+                    .append("</v></c>");
+            return;
+        }
+
+        appendInlineCell(builder, reference, 5, safeValue);
+    }
+
+    private Double parseExcelDateSerial(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        LocalDateTime dateTime;
+        try {
+            dateTime = OffsetDateTime.parse(value).toLocalDateTime();
+        } catch (DateTimeParseException ignoredOffset) {
+            try {
+                dateTime = LocalDateTime.parse(value);
+            } catch (DateTimeParseException ignoredDateTime) {
+                try {
+                    dateTime = LocalDate.parse(value).atStartOfDay();
+                } catch (DateTimeParseException ignoredDate) {
+                    return null;
+                }
+            }
+        }
+
+        LocalDate excelEpoch = LocalDate.of(1899, 12, 30);
+        long days = ChronoUnit.DAYS.between(excelEpoch, dateTime.toLocalDate());
+        double dayFraction = dateTime.toLocalTime().toNanoOfDay() / 86_400_000_000_000d;
+        return days + dayFraction;
+    }
+
+    private String normalizeExportHeader(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isBlankRow(List<String> row) {
+        return row == null || row.stream().allMatch(value -> value == null || value.isBlank());
+    }
+
+    private String reportTitle(ExportType type) {
+        return switch (type) {
+            case RANKING -> "Ranking report";
+            case SCORE_REPORT -> "Score report";
+            case SCORE_DATASET_ANONYMIZED -> "Anonymized RBL dataset";
+            case TEAM_LIST -> "Team list report";
+            case CALIBRATION_REPORT -> "Calibration report";
+            case FULL_EVENT_REPORT -> "Full event report";
+            case ADMIN_ANNUAL_REPORT -> "Annual system report";
+        };
+    }
+
+    private String reportSheetName(ExportType type) {
+        return switch (type) {
+            case RANKING -> "Ranking";
+            case SCORE_REPORT -> "Scores";
+            case SCORE_DATASET_ANONYMIZED -> "RBL dataset";
+            case TEAM_LIST -> "Teams";
+            case CALIBRATION_REPORT -> "Calibration";
+            case FULL_EVENT_REPORT -> "Event report";
+            case ADMIN_ANNUAL_REPORT -> "Annual report";
+        };
+    }
+
+    private String reportSubtitle(ExportSpec spec) {
+        return spec.event() == null
+                ? "System-wide administration"
+                : spec.event().getName();
+    }
+
+    private String reportMetadata(Map<String, Object> params, LocalDateTime generatedAt) {
+        List<String> details = new ArrayList<>();
+        details.add("Generated " + generatedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        details.add("Excel workbook (.xlsx)");
+
+        Object year = params.get("year");
+        if (year != null) {
+            details.add("Year: " + year);
+        }
+        Object season = params.get("season");
+        if (season != null) {
+            details.add("Season: " + season);
+        }
+        Object roundId = params.get("roundId");
+        if (roundId != null) {
+            details.add("Round filter: " + roundId);
+        }
+        Object trackId = params.get("trackId");
+        if (trackId != null) {
+            details.add("Track filter: " + trackId);
+        }
+        if (Boolean.TRUE.equals(params.get("includeDraftScores"))) {
+            details.add("Draft scores included");
+        }
+        if (Boolean.TRUE.equals(params.get("includeDisqualified"))) {
+            details.add("Disqualified entries included");
+        }
+        if (Boolean.TRUE.equals(params.get("anonymize"))) {
+            details.add("Identifiers anonymized");
+        }
+        return String.join("  ·  ", details);
     }
 
     private String cellRef(int columnIndex, int rowIndex) {
@@ -1301,12 +1555,13 @@ public class ExportServiceImpl implements ExportService {
             String prefix,
             HackathonEvent event,
             UUID jobId,
-            String extension
+            String extension,
+            LocalDateTime generatedAt
     ) {
         return "%s_%s_%s_%s.%s".formatted(
                 prefix,
                 slug(event == null ? "system" : event.getName()),
-                LocalDateTime.now().format(FILE_TIMESTAMP),
+                generatedAt.format(FILE_TIMESTAMP),
                 jobId.toString().substring(0, 8),
                 extension
         );

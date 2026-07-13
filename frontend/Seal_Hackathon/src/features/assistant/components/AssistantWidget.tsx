@@ -217,7 +217,13 @@ export function AssistantWidget() {
     !startFresh &&
     !historyHydrated &&
     (conversationsQuery.isLoading ||
-      (Boolean(conversationId) && messagesQuery.isLoading));
+      (Boolean(conversationId) &&
+        (messagesQuery.isLoading || messagesQuery.isFetching)));
+  const historyLoadFailed =
+    open &&
+    !startFresh &&
+    Boolean(conversationId) &&
+    messagesQuery.isError;
 
   useEffect(() => {
     if (
@@ -341,6 +347,7 @@ export function AssistantWidget() {
       !trimmed ||
       chatMutation.isPending ||
       isReadingAttachment ||
+      historyLoadFailed ||
       contextBlocked
     ) {
       return;
@@ -370,6 +377,7 @@ export function AssistantWidget() {
   };
 
   const beginNewChat = () => {
+    if (chatMutation.isPending) return;
     setStartFresh(true);
     setConversationId(undefined);
     setChat([]);
@@ -382,9 +390,13 @@ export function AssistantWidget() {
   };
 
   const selectConversation = (id: UUID) => {
+    if (chatMutation.isPending) return;
     setStartFresh(false);
     setConversationId(id);
     setChat([]);
+    setMessage("");
+    clearAttachment();
+    setTranslationTarget("");
     setHistoryHydrated(false);
     setHistoryAnchor(null);
   };
@@ -481,8 +493,8 @@ export function AssistantWidget() {
               xs: "calc(12px + env(safe-area-inset-bottom))",
               sm: 24,
             },
-            // This is a non-modal surface. Keeping it below MUI's modal layer
-            // lets portalled history/select menus and page dialogs stay reachable.
+            // Above the z-50 application chrome, but below page drawers/dialogs
+            // (z-60+) and MUI's portalled menus/modals.
             zIndex: 55,
             width: {
               xs: "calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right))",
@@ -527,6 +539,7 @@ export function AssistantWidget() {
                 <IconButton
                   size="small"
                   aria-label="Open conversation history"
+                  disabled={chatMutation.isPending}
                   onClick={(event) => setHistoryAnchor(event.currentTarget)}
                 >
                   <HistoryOutlinedIcon fontSize="small" />
@@ -536,6 +549,7 @@ export function AssistantWidget() {
                 <IconButton
                   size="small"
                   aria-label="Start a new chat"
+                  disabled={chatMutation.isPending}
                   onClick={beginNewChat}
                 >
                   <AddCommentOutlinedIcon fontSize="small" />
@@ -566,7 +580,7 @@ export function AssistantWidget() {
               },
             }}
           >
-            <MenuItem onClick={beginNewChat}>
+            <MenuItem onClick={beginNewChat} disabled={chatMutation.isPending}>
               <AddCommentOutlinedIcon sx={{ mr: 1.5, fontSize: 19 }} />
               New conversation
             </MenuItem>
@@ -575,7 +589,14 @@ export function AssistantWidget() {
                 <CircularProgress size={16} sx={{ mr: 1.5 }} /> Loading history…
               </MenuItem>
             )}
+            {conversationsQuery.isError && (
+              <MenuItem onClick={() => void conversationsQuery.refetch()}>
+                <RefreshOutlinedIcon sx={{ mr: 1.5, fontSize: 19 }} />
+                Retry loading history
+              </MenuItem>
+            )}
             {!conversationsQuery.isLoading &&
+              !conversationsQuery.isError &&
               conversationsQuery.data?.length === 0 && (
                 <MenuItem disabled>No saved conversations</MenuItem>
               )}
@@ -583,6 +604,7 @@ export function AssistantWidget() {
               <MenuItem
                 key={conversation.id}
                 selected={conversation.id === conversationId && !startFresh}
+                disabled={chatMutation.isPending}
                 onClick={() => selectConversation(conversation.id)}
                 sx={{ display: "block" }}
               >
@@ -630,7 +652,33 @@ export function AssistantWidget() {
               </div>
             )}
 
-            {!isLoadingHistory && chat.length === 0 && (
+            {historyLoadFailed && (
+              <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5 text-center dark:border-amber-900/60 dark:bg-amber-950/30">
+                <div>
+                  <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+                    Conversation could not be restored
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-300">
+                    Retry this conversation or start a new one. Nothing was deleted.
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<RefreshOutlinedIcon />}
+                    onClick={() => void messagesQuery.refetch()}
+                  >
+                    Retry
+                  </Button>
+                  <Button size="small" onClick={beginNewChat}>
+                    New chat
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!isLoadingHistory && !historyLoadFailed && chat.length === 0 && (
               <div className="space-y-4 pt-2">
                 <div className="rounded-xl bg-white p-4 dark:bg-slate-900">
                   <div className="flex items-start gap-3">
@@ -668,6 +716,7 @@ export function AssistantWidget() {
             )}
 
             {!isLoadingHistory &&
+              !historyLoadFailed &&
               chat.map((item) => (
                 <article
                   key={item.id}
@@ -830,7 +879,9 @@ export function AssistantWidget() {
                   <IconButton
                     aria-label="Attach a text file"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={isReadingAttachment || contextBlocked}
+                    disabled={
+                      isReadingAttachment || historyLoadFailed || contextBlocked
+                    }
                     sx={{ mb: 0.25 }}
                   >
                     <AttachFileOutlinedIcon fontSize="small" />
@@ -843,7 +894,7 @@ export function AssistantWidget() {
                 fullWidth
                 size="small"
                 value={message}
-                disabled={contextBlocked}
+                disabled={contextBlocked || historyLoadFailed}
                 onChange={(event) => setMessage(event.target.value)}
                 onKeyDown={(event) => {
                   if (
@@ -857,7 +908,11 @@ export function AssistantWidget() {
                 }}
                 aria-label="Message SEAL AI"
                 placeholder={
-                  contextBlocked ? "Assistant unavailable" : "Message SEAL AI"
+                  contextBlocked
+                    ? "Assistant unavailable"
+                    : historyLoadFailed
+                      ? "Restore or start a conversation"
+                      : "Message SEAL AI"
                 }
                 multiline
                 maxRows={4}
@@ -880,6 +935,7 @@ export function AssistantWidget() {
                       !message.trim() ||
                       chatMutation.isPending ||
                       isReadingAttachment ||
+                      historyLoadFailed ||
                       contextBlocked
                     }
                     sx={{
