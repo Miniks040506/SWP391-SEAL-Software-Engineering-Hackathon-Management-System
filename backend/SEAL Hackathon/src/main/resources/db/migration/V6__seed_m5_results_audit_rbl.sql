@@ -124,3 +124,24 @@ INSERT INTO audit_logs (id, actor_id, action_type, target_table, target_id, befo
 ('a08ea385-4971-5189-86d9-0888f4ce0d06', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'JUDGE_ASSIGNED', 'round_judge_assignments', 'b30e8542-4f67-56c4-a81f-8dcd34dd7f3c', NULL, '{"round": "Qualification Round", "judge": "Judge Architecture"}'::jsonb, '{"source": "seed"}'::jsonb, '127.0.0.1', 'seed-script', TIMESTAMP '2026-06-05 09:00:00'),
 ('775f722d-5ad8-53fb-9db7-4d7014fdd4d7', '35fb4dd4-d4f0-5f08-b17f-856159cd2793', 'MENTOR_FEEDBACK_CREATED', 'mentor_feedbacks', '2094f137-1dff-5598-8529-b100587d0334', NULL, '{"team": "Alpha Coders", "visibility": "PUBLISHED"}'::jsonb, '{"source": "seed"}'::jsonb, '127.0.0.1', 'seed-script', TIMESTAMP '2026-06-09 10:00:00'),
 ('4e2b13ea-03e8-5205-a9d1-3984ea9d7061', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'RESULT_PUBLISHED', 'hackathon_events', '6953e3ce-f471-540d-a19d-b9224bf9870e', NULL, '{"status": "COMPLETED"}'::jsonb, '{"source": "seed"}'::jsonb, '127.0.0.1', 'seed-script', TIMESTAMP '2025-04-20 10:00:00');
+
+-- ---- AI assistant and RAG knowledge base ----
+INSERT INTO ai_conversations (id, user_id, title, language, last_intent, is_active, created_at, updated_at) VALUES
+('6a000000-0000-4000-8000-000000000001', '9084de5c-695d-57ca-b0f4-1d0f6153bf85', 'Submission preparation help', 'EN', 'SUBMISSION_HELP', TRUE, TIMESTAMP '2026-06-09 14:00:00', TIMESTAMP '2026-06-09 14:05:00'),
+('6a000000-0000-4000-8000-000000000002', '2af79072-be0e-59a6-a502-53f82d6bd9a3', 'Safe debugging guidance', 'EN', 'BLOCK_FULL_SOLUTION', TRUE, TIMESTAMP '2026-06-09 15:00:00', TIMESTAMP '2026-06-09 15:03:00');
+
+INSERT INTO ai_messages (id, conversation_id, user_id, role, content, language, intent, safety_decision, provider, model, used_rag, retrieval_context, created_at) VALUES
+('6a000000-0000-4000-8000-000000000101', '6a000000-0000-4000-8000-000000000001', '9084de5c-695d-57ca-b0f4-1d0f6153bf85', 'USER', 'What files are required for the qualification submission?', 'EN', 'SUBMISSION_HELP', 'ALLOW', NULL, NULL, FALSE, NULL, TIMESTAMP '2026-06-09 14:00:00'),
+('6a000000-0000-4000-8000-000000000102', '6a000000-0000-4000-8000-000000000001', NULL, 'ASSISTANT', 'Check the round requirements and provide every required link before the submission deadline.', 'EN', 'SUBMISSION_HELP', 'ALLOW', 'RULE_BASED', 'local-fallback', TRUE, 'Qualification round submission guidance.', TIMESTAMP '2026-06-09 14:00:02'),
+('6a000000-0000-4000-8000-000000000103', '6a000000-0000-4000-8000-000000000002', '2af79072-be0e-59a6-a502-53f82d6bd9a3', 'USER', 'Write the complete solution for my hackathon project.', 'EN', 'BLOCK_FULL_SOLUTION', 'BLOCK', NULL, NULL, FALSE, NULL, TIMESTAMP '2026-06-09 15:00:00');
+
+INSERT INTO ai_safety_logs (id, user_id, conversation_id, decision, risk_type, intent, severity, reason, message_hash, page_context, created_at) VALUES
+('6a000000-0000-4000-8000-000000000201', '2af79072-be0e-59a6-a502-53f82d6bd9a3', '6a000000-0000-4000-8000-000000000002', 'BLOCK', 'FULL_SOLUTION', 'BLOCK_FULL_SOLUTION', 90, 'The request asks the assistant to produce a complete competition solution.', 'ce6c845af12223bf9955cd3e6986cc91c94f0c4c3f93f44a420ff26d3e0d3b24', '/assistant', TIMESTAMP '2026-06-09 15:00:01');
+
+INSERT INTO ai_knowledge_documents (id, title, doc_type, source_ref, visibility, module, content_hash, is_active, uploaded_by, created_at, updated_at) VALUES
+('6a000000-0000-4000-8000-000000000301', 'SEAL Submission Guide', 'SYSTEM_GUIDE', 'docs/submission-guide.md', 'AUTHENTICATED', 'SUBMISSION', 'df22b5f63f804017ac7874c42ef7e2a0f4fca4dd8c2a836b685f67e5692ecc7b', TRUE, '99701e51-ee61-5105-8b22-4b546557a27c', TIMESTAMP '2026-06-01 09:00:00', TIMESTAMP '2026-06-01 09:00:00'),
+('6a000000-0000-4000-8000-000000000302', 'Responsible AI Rules', 'POLICY', 'docs/responsible-ai.md', 'PUBLIC', 'AI_GUARDRAIL', 'df9846f754174a99545c02b2228e850e04f7370db82e321afcf84cc123272760', TRUE, '99701e51-ee61-5105-8b22-4b546557a27c', TIMESTAMP '2026-06-01 09:10:00', TIMESTAMP '2026-06-01 09:10:00');
+
+INSERT INTO ai_knowledge_chunks (id, document_id, chunk_index, content, module, use_case_id, role_scope, metadata_json, embedding_text, is_active, created_at) VALUES
+('6a000000-0000-4000-8000-000000000401', '6a000000-0000-4000-8000-000000000301', 0, 'A submission must include every link type required by the selected track and must be submitted before the round deadline.', 'SUBMISSION', 'UC-SUBMISSION-HELP', 'STUDENT', '{"section":"requirements"}', 'Required submission links and round deadlines.', TRUE, TIMESTAMP '2026-06-01 09:00:00'),
+('6a000000-0000-4000-8000-000000000402', '6a000000-0000-4000-8000-000000000302', 0, 'The assistant may explain concepts and guide debugging but must not generate a complete hackathon solution for a participant.', 'AI_GUARDRAIL', 'UC-AI-SAFETY', 'AUTHENTICATED', '{"section":"prohibited-assistance"}', 'Responsible AI rules for solution generation.', TRUE, TIMESTAMP '2026-06-01 09:10:00');

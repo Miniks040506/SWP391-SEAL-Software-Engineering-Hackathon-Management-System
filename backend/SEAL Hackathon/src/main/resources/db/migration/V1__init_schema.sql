@@ -528,6 +528,78 @@ CREATE TABLE email_delivery_logs (
     created_at      timestamp NOT NULL
 );
 
+-- ---------------------------------------------------------------------
+-- AI assistant and RAG knowledge base
+-- ---------------------------------------------------------------------
+CREATE TABLE ai_conversations (
+    id          uuid PRIMARY KEY,
+    user_id     uuid NOT NULL,
+    title       varchar(200),
+    language    varchar(20),
+    last_intent varchar(80),
+    is_active   boolean NOT NULL DEFAULT true,
+    created_at  timestamp NOT NULL,
+    updated_at  timestamp NOT NULL
+);
+
+CREATE TABLE ai_messages (
+    id                uuid PRIMARY KEY,
+    conversation_id   uuid NOT NULL,
+    user_id           uuid,
+    role              varchar(20) NOT NULL,
+    content           text NOT NULL,
+    language          varchar(30),
+    intent            varchar(80),
+    safety_decision   varchar(30),
+    provider          varchar(80),
+    model             varchar(120),
+    used_rag          boolean,
+    retrieval_context text,
+    created_at        timestamp NOT NULL
+);
+
+CREATE TABLE ai_safety_logs (
+    id              uuid PRIMARY KEY,
+    user_id         uuid,
+    conversation_id uuid,
+    decision        varchar(30) NOT NULL,
+    risk_type       varchar(50) NOT NULL,
+    intent          varchar(80),
+    severity        integer NOT NULL,
+    reason          text,
+    message_hash    varchar(64),
+    page_context    varchar(500),
+    created_at      timestamp NOT NULL
+);
+
+CREATE TABLE ai_knowledge_documents (
+    id           uuid PRIMARY KEY,
+    title        varchar(250) NOT NULL,
+    doc_type     varchar(80) NOT NULL,
+    source_ref   varchar(500),
+    visibility   varchar(30) NOT NULL,
+    module       varchar(120),
+    content_hash varchar(64),
+    is_active    boolean NOT NULL DEFAULT true,
+    uploaded_by  uuid,
+    created_at   timestamp NOT NULL,
+    updated_at   timestamp NOT NULL
+);
+
+CREATE TABLE ai_knowledge_chunks (
+    id             uuid PRIMARY KEY,
+    document_id    uuid NOT NULL,
+    chunk_index    integer NOT NULL,
+    content        text NOT NULL,
+    module         varchar(120),
+    use_case_id    varchar(80),
+    role_scope     varchar(80),
+    metadata_json  text,
+    embedding_text text,
+    is_active      boolean NOT NULL DEFAULT true,
+    created_at     timestamp NOT NULL
+);
+
 -- =====================================================================
 -- Foreign keys
 -- =====================================================================
@@ -617,6 +689,14 @@ ALTER TABLE export_jobs              ADD CONSTRAINT fk_export_job_requested_by  
 
 ALTER TABLE email_outbox             ADD CONSTRAINT fk_email_outbox_notification  FOREIGN KEY (notification_id)      REFERENCES notifications (id);
 ALTER TABLE email_delivery_logs      ADD CONSTRAINT fk_email_delivery_outbox      FOREIGN KEY (email_outbox_id)      REFERENCES email_outbox (id);
+
+ALTER TABLE ai_conversations         ADD CONSTRAINT fk_ai_conversation_user       FOREIGN KEY (user_id)              REFERENCES users (id) ON DELETE CASCADE;
+ALTER TABLE ai_messages              ADD CONSTRAINT fk_ai_message_conversation    FOREIGN KEY (conversation_id)      REFERENCES ai_conversations (id) ON DELETE CASCADE;
+ALTER TABLE ai_messages              ADD CONSTRAINT fk_ai_message_user            FOREIGN KEY (user_id)              REFERENCES users (id) ON DELETE SET NULL;
+ALTER TABLE ai_safety_logs           ADD CONSTRAINT fk_ai_safety_user             FOREIGN KEY (user_id)              REFERENCES users (id) ON DELETE SET NULL;
+ALTER TABLE ai_safety_logs           ADD CONSTRAINT fk_ai_safety_conversation     FOREIGN KEY (conversation_id)      REFERENCES ai_conversations (id) ON DELETE SET NULL;
+ALTER TABLE ai_knowledge_documents   ADD CONSTRAINT fk_ai_document_uploaded_by    FOREIGN KEY (uploaded_by)           REFERENCES users (id) ON DELETE SET NULL;
+ALTER TABLE ai_knowledge_chunks      ADD CONSTRAINT fk_ai_chunk_document          FOREIGN KEY (document_id)          REFERENCES ai_knowledge_documents (id) ON DELETE CASCADE;
 
 -- =====================================================================
 -- Indexes (as declared on entities)
@@ -736,3 +816,24 @@ CREATE INDEX idx_email_outbox_created      ON email_outbox (created_at);
 CREATE INDEX idx_email_delivery_outbox ON email_delivery_logs (email_outbox_id);
 CREATE INDEX idx_email_delivery_status ON email_delivery_logs (status);
 CREATE INDEX idx_email_delivery_created ON email_delivery_logs (created_at);
+
+CREATE INDEX idx_ai_conversation_user       ON ai_conversations (user_id);
+CREATE INDEX idx_ai_conversation_updated_at ON ai_conversations (updated_at);
+
+CREATE INDEX idx_ai_message_conversation ON ai_messages (conversation_id);
+CREATE INDEX idx_ai_message_created_at    ON ai_messages (created_at);
+CREATE INDEX idx_ai_message_intent        ON ai_messages (intent);
+
+CREATE INDEX idx_ai_safety_user       ON ai_safety_logs (user_id);
+CREATE INDEX idx_ai_safety_decision   ON ai_safety_logs (decision);
+CREATE INDEX idx_ai_safety_risk       ON ai_safety_logs (risk_type);
+CREATE INDEX idx_ai_safety_created_at ON ai_safety_logs (created_at);
+
+CREATE INDEX idx_ai_doc_type       ON ai_knowledge_documents (doc_type);
+CREATE INDEX idx_ai_doc_visibility ON ai_knowledge_documents (visibility);
+CREATE INDEX idx_ai_doc_active     ON ai_knowledge_documents (is_active);
+
+CREATE INDEX idx_ai_chunk_document ON ai_knowledge_chunks (document_id);
+CREATE INDEX idx_ai_chunk_active   ON ai_knowledge_chunks (is_active);
+CREATE INDEX idx_ai_chunk_module   ON ai_knowledge_chunks (module);
+CREATE INDEX idx_ai_chunk_use_case ON ai_knowledge_chunks (use_case_id);
