@@ -7,7 +7,7 @@ import { notificationApi } from "@/api/notification.api";
 
 import { mentorDashboardMock, type MentorDashboardData } from "../mocks/mentorDashboard.mock";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export function useMentorDashboard() {
   const navigate = useNavigate();

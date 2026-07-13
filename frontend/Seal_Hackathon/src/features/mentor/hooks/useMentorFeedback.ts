@@ -13,7 +13,7 @@ import {
   publishMockFeedback,
 } from "../mocks/mentorFeedback.mock";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const MENTOR_FEEDBACK_KEYS = {

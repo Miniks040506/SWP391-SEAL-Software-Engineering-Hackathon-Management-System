@@ -9,7 +9,7 @@ import { useJudgeCalibrationRoundsQuery } from "@/features/calibration/hooks/use
 
 import { judgeDashboardMock, type JudgeDashboardData } from "../mocks/judgeDashboard.mock";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export function useJudgeDashboard() {
   const navigate = useNavigate();
