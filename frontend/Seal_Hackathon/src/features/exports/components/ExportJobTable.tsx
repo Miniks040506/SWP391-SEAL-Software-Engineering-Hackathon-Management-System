@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { useState } from "react";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -29,6 +30,8 @@ function formatBytes(bytes?: number) {
 }
 
 export const ExportJobTable = ({ jobs, onDownload, onRetry, onDelete, isDownloading, isLoading }: Props) => {
+  const [renderedAt] = useState(() => Date.now());
+
   if (isLoading) {
     return (
       <div className="flex h-40 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
@@ -117,7 +120,11 @@ export const ExportJobTable = ({ jobs, onDownload, onRetry, onDelete, isDownload
                         variant="contained"
                         disableElevation
                         onClick={() => onDownload(job.id)}
-                        disabled={isDownloading}
+                        disabled={Boolean(
+                          isDownloading ||
+                            (job.expiresAt &&
+                              new Date(job.expiresAt).getTime() <= renderedAt),
+                        )}
                         startIcon={<DownloadIcon sx={{ fontSize: 14 }} />}
                         sx={{
                           textTransform: "none",
@@ -129,7 +136,10 @@ export const ExportJobTable = ({ jobs, onDownload, onRetry, onDelete, isDownload
                           py: 0.5,
                         }}
                       >
-                        Download
+                        {job.expiresAt &&
+                        new Date(job.expiresAt).getTime() <= renderedAt
+                          ? "Expired"
+                          : "Download"}
                       </Button>
                     )}
                     {job.status === "FAILED" && (

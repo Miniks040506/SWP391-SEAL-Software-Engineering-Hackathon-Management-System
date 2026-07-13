@@ -29,9 +29,8 @@ export const ExportReportCard = ({
   disabled = false,
 }: Props) => {
   return (
-    <div className="flex items-center rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      {/* Left: identity */}
-      <div className="flex items-center gap-4 px-6 py-4 w-[380px] shrink-0">
+    <article className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md xl:grid-cols-[minmax(260px,380px)_1fr_auto] xl:items-center dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-start gap-4 px-5 py-4 sm:px-6">
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconBgClass} ${iconColorClass}`}>
           {icon}
         </div>
@@ -43,13 +42,11 @@ export const ExportReportCard = ({
         </div>
       </div>
 
-      {/* Middle: controls */}
-      <div className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3 border-y border-slate-100 px-5 py-4 sm:px-6 xl:border-x xl:border-y-0 dark:border-slate-800">
         {controls}
       </div>
 
-      {/* Right: action */}
-      <div className="px-6 py-4 shrink-0">
+      <div className="px-5 pb-5 pt-4 sm:px-6 xl:p-5">
         <Button
           variant="contained"
           disableElevation
@@ -64,11 +61,12 @@ export const ExportReportCard = ({
             whiteSpace: "nowrap",
             minWidth: 130,
             height: 38,
+            width: { xs: "100%", xl: "auto" },
           }}
         >
           {isExporting ? "Queuing..." : exportText}
         </Button>
       </div>
-    </div>
+    </article>
   );
 };

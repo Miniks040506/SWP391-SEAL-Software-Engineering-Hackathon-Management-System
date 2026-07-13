@@ -31,6 +31,7 @@ import {
 } from "../hooks/useExports";
 import type { EventExportRequest, ExportFormat } from "@/types/export.types";
 import type { UUID } from "@/types/common.types";
+import type { TrackResponse } from "@/types/track.types";
 import {
   useCoordinatorEventDetailQuery,
   useCoordinatorEventsQuery,
@@ -68,7 +69,9 @@ export const ExportJobListPage = () => {
   const { mutate: createRanking, isPending: isRankingPending } = useCreateRankingExport();
   const { mutate: createScore, isPending: isScorePending } = useCreateScoresExport();
   const { mutate: createTeam, isPending: isTeamPending } = useCreateTeamListExport();
-  const { mutate: createGenericExport, isPending: isGenericPending } = useCreateGenericExport();
+  const { mutate: createFullEventExport, isPending: isFullEventPending } = useCreateGenericExport();
+  const { mutate: createCalibrationExport, isPending: isCalibrationPending } = useCreateGenericExport();
+  const { mutate: createAnnualExport, isPending: isAnnualPending } = useCreateGenericExport();
   const { mutate: downloadExport, isPending: isDownloading } = useDownloadExport();
   const { mutate: retryExport } = useRetryExport();
   const { mutate: deleteExport } = useDeleteExport();
@@ -78,7 +81,9 @@ export const ExportJobListPage = () => {
 
   const tracksQuery = useCoordinatorEventTracksQuery(activeEventId as UUID | undefined);
   const roundsQuery = useCoordinatorEventRoundsQuery(activeEventId as UUID | undefined);
-  const tracks = tracksQuery.data || [];
+  const tracks: TrackResponse[] = Array.isArray(tracksQuery.data)
+    ? tracksQuery.data
+    : [];
   const rounds = roundsQuery.data || [];
 
   const [rankingFormat, setRankingFormat] = useState<ExportFormat>("CSV");
@@ -137,7 +142,7 @@ export const ExportJobListPage = () => {
 
   const handleCreateFullEvent = () => {
     if (!activeEventId) return;
-    createGenericExport({
+    createFullEventExport({
       exportType: "FULL_EVENT_REPORT",
       params: {
         eventId: activeEventId as UUID,
@@ -148,7 +153,7 @@ export const ExportJobListPage = () => {
 
   const handleCreateCalibration = () => {
     if (!activeEventId) return;
-    createGenericExport({
+    createCalibrationExport({
       exportType: "CALIBRATION_REPORT",
       params: {
         eventId: activeEventId as UUID,
@@ -159,7 +164,7 @@ export const ExportJobListPage = () => {
 
   const handleCreateAnnual = () => {
     const parsedYear = annualYear.trim() ? Number(annualYear) : undefined;
-    createGenericExport({
+    createAnnualExport({
       exportType: "ADMIN_ANNUAL_REPORT",
       params: {
         format: annualFormat,
@@ -436,7 +441,7 @@ export const ExportJobListPage = () => {
             iconBgClass="bg-purple-100 dark:bg-purple-900/40"
             iconColorClass="text-purple-600 dark:text-purple-400"
             onExport={handleCreateFullEvent}
-            isExporting={isGenericPending}
+            isExporting={isFullEventPending}
             disabled={!activeEventId}
             exportText="Export event"
             controls={
@@ -459,7 +464,7 @@ export const ExportJobListPage = () => {
             iconBgClass="bg-cyan-100 dark:bg-cyan-900/40"
             iconColorClass="text-cyan-600 dark:text-cyan-400"
             onExport={handleCreateCalibration}
-            isExporting={isGenericPending}
+            isExporting={isCalibrationPending}
             disabled={!activeEventId}
             exportText="Export calibration"
             controls={
@@ -483,7 +488,7 @@ export const ExportJobListPage = () => {
               iconBgClass="bg-rose-100 dark:bg-rose-900/40"
               iconColorClass="text-rose-600 dark:text-rose-400"
               onExport={handleCreateAnnual}
-              isExporting={isGenericPending}
+              isExporting={isAnnualPending}
               exportText="Export system"
               controls={
                 <div className="flex flex-wrap items-center gap-4">

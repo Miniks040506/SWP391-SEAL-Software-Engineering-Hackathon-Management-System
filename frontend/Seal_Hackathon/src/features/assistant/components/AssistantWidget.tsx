@@ -165,6 +165,7 @@ export function AssistantWidget() {
   const [isReadingAttachment, setIsReadingAttachment] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileReaderRef = useRef<FileReader | null>(null);
   const composerRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -260,6 +261,8 @@ export function AssistantWidget() {
   }, [chat.length, chatMutation.isPending, isLoadingHistory, open]);
 
   const clearAttachment = () => {
+    fileReaderRef.current?.abort();
+    fileReaderRef.current = null;
     setAttachmentText("");
     setAttachmentFileName("");
     setAttachmentError("");
@@ -377,13 +380,18 @@ export function AssistantWidget() {
     setAttachmentFileName(file.name);
     setIsReadingAttachment(true);
     const reader = new FileReader();
+    fileReaderRef.current = reader;
     reader.onload = () => {
+      if (fileReaderRef.current !== reader) return;
       const text = String(reader.result ?? "");
       setAttachmentText(text.slice(0, MAX_ATTACHMENT_CHARACTERS));
       setAttachmentTruncated(text.length > MAX_ATTACHMENT_CHARACTERS);
       setIsReadingAttachment(false);
+      fileReaderRef.current = null;
     };
     reader.onerror = () => {
+      if (fileReaderRef.current !== reader) return;
+      fileReaderRef.current = null;
       clearAttachment();
       setAttachmentError("The file could not be read. Try another text file.");
     };
