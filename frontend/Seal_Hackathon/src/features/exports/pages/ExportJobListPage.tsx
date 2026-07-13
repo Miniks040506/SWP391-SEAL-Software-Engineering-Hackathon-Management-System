@@ -48,8 +48,7 @@ export const ExportJobListPage = () => {
   const [page, setPage] = useState(0);
 
   const eventQuery = useCoordinatorEventDetailQuery(eventId as UUID | undefined);
-  const eventData = eventQuery.data as any;
-  const eventName = eventData?.name ?? eventData?.eventName ?? eventData?.title;
+  const eventName = eventQuery.data?.name;
 
   const {
     data: eventsData,
@@ -273,9 +272,9 @@ export const ExportJobListPage = () => {
               {!isLoadingEvents && eventList.length === 0 && (
                 <MenuItem value="" disabled>No events found</MenuItem>
               )}
-              {eventList.map((e: any) => (
-                <MenuItem key={e.id} value={e.id}>
-                  {e.name || e.eventName || e.title || e.id}
+              {eventList.map((event) => (
+                <MenuItem key={event.id} value={event.id}>
+                  {event.name}
                 </MenuItem>
               ))}
             </Select>
@@ -311,14 +310,14 @@ export const ExportJobListPage = () => {
                     <InputLabel>Track</InputLabel>
                     <Select label="Track" value={rankingTrackId} onChange={(e) => setRankingTrackId(e.target.value)}>
                       <MenuItem value="">All Tracks</MenuItem>
-                      {tracks.map((t: any) => <MenuItem key={t.id} value={t.id}>{t.name || t.trackName || t.id}</MenuItem>)}
+                      {tracks.map((track) => <MenuItem key={track.id} value={track.id}>{track.name}</MenuItem>)}
                     </Select>
                   </FormControl>
                   <FormControl size="small" sx={{ minWidth: 140 }}>
                     <InputLabel>Round</InputLabel>
                     <Select label="Round" value={rankingRoundId} onChange={(e) => setRankingRoundId(e.target.value)}>
                       <MenuItem value="">All Rounds</MenuItem>
-                      {rounds.map((r: any) => <MenuItem key={r.id} value={r.id}>{r.name || r.roundName || r.id}</MenuItem>)}
+                      {rounds.map((round) => <MenuItem key={round.id} value={round.id}>{round.name}</MenuItem>)}
                     </Select>
                   </FormControl>
                 </div>
@@ -356,14 +355,14 @@ export const ExportJobListPage = () => {
                     <InputLabel>Track</InputLabel>
                     <Select label="Track" value={scoreTrackId} onChange={(e) => setScoreTrackId(e.target.value)}>
                       <MenuItem value="">All Tracks</MenuItem>
-                      {tracks.map((t: any) => <MenuItem key={t.id} value={t.id}>{t.name || t.trackName || t.id}</MenuItem>)}
+                      {tracks.map((track) => <MenuItem key={track.id} value={track.id}>{track.name}</MenuItem>)}
                     </Select>
                   </FormControl>
                   <FormControl size="small" sx={{ minWidth: 140 }}>
                     <InputLabel>Round</InputLabel>
                     <Select label="Round" value={scoreRoundId} onChange={(e) => setScoreRoundId(e.target.value)}>
                       <MenuItem value="">All Rounds</MenuItem>
-                      {rounds.map((r: any) => <MenuItem key={r.id} value={r.id}>{r.name || r.roundName || r.id}</MenuItem>)}
+                      {rounds.map((round) => <MenuItem key={round.id} value={round.id}>{round.name}</MenuItem>)}
                     </Select>
                   </FormControl>
                 </div>
@@ -413,7 +412,7 @@ export const ExportJobListPage = () => {
                     <InputLabel>Track</InputLabel>
                     <Select label="Track" value={teamTrackId} onChange={(e) => setTeamTrackId(e.target.value)}>
                       <MenuItem value="">All Tracks</MenuItem>
-                      {tracks.map((t: any) => <MenuItem key={t.id} value={t.id}>{t.name || t.trackName || t.id}</MenuItem>)}
+                      {tracks.map((track) => <MenuItem key={track.id} value={track.id}>{track.name}</MenuItem>)}
                     </Select>
                   </FormControl>
                 </div>

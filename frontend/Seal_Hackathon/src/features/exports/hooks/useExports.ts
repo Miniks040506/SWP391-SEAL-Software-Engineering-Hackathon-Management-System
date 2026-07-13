@@ -24,6 +24,16 @@ const unwrapApiPayload = <T>(response: ApiPayload<T>): T => {
   return response as T;
 };
 
+type ExportApiError = {
+  response?: { data?: { message?: string } };
+  message?: string;
+};
+
+const getExportErrorMessage = (error: unknown, fallback: string) => {
+  const apiError = error as ExportApiError;
+  return apiError.response?.data?.message || apiError.message || fallback;
+};
+
 export const exportKeys = {
   all: ["exports"] as const,
   lists: () => [...exportKeys.all, "list"] as const,
@@ -70,8 +80,8 @@ export function useCreateRankingExport() {
       enqueueSnackbar("Ranking export job created successfully.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
-    onError: (err: any) => {
-      enqueueSnackbar(err?.message || "Failed to create ranking export", { variant: "error" });
+    onError: (error: unknown) => {
+      enqueueSnackbar(getExportErrorMessage(error, "Failed to create ranking export"), { variant: "error" });
     },
   });
 }
@@ -89,8 +99,8 @@ export function useCreateScoresExport() {
       enqueueSnackbar("Score export job created successfully.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
-    onError: (err: any) => {
-      enqueueSnackbar(err?.message || "Failed to create score export", { variant: "error" });
+    onError: (error: unknown) => {
+      enqueueSnackbar(getExportErrorMessage(error, "Failed to create score export"), { variant: "error" });
     },
   });
 }
@@ -108,8 +118,8 @@ export function useCreateTeamListExport() {
       enqueueSnackbar("Team list export job created successfully.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
-    onError: (err: any) => {
-      enqueueSnackbar(err?.message || "Failed to create team list export", { variant: "error" });
+    onError: (error: unknown) => {
+      enqueueSnackbar(getExportErrorMessage(error, "Failed to create team list export"), { variant: "error" });
     },
   });
 }
@@ -155,11 +165,9 @@ export function useCreateRblDatasetExport() {
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
       queryClient.setQueryData(exportKeys.detail(job.id), job);
     },
-    onError: (err: any) => {
+    onError: (error: unknown) => {
       enqueueSnackbar(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Failed to create anonymized RBL dataset export",
+        getExportErrorMessage(error, "Failed to create anonymized RBL dataset export"),
         { variant: "error" },
       );
     },
@@ -189,13 +197,9 @@ export function useDownloadExport() {
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
       enqueueSnackbar(`Downloading ${link.download}`, { variant: "success" });
     },
-    onError: (err: unknown) => {
-      const error = err as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
+    onError: (error: unknown) => {
       enqueueSnackbar(
-        error.response?.data?.message || error.message || "Failed to download export",
+        getExportErrorMessage(error, "Failed to download export"),
         { variant: "error" },
       );
     },
@@ -213,8 +217,8 @@ export function useRetryExport() {
       enqueueSnackbar("Export job queued for retry.", { variant: "info" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
-    onError: (err: any) => {
-      enqueueSnackbar(err?.message || "Failed to retry export", { variant: "error" });
+    onError: (error: unknown) => {
+      enqueueSnackbar(getExportErrorMessage(error, "Failed to retry export"), { variant: "error" });
     },
   });
 }
@@ -230,8 +234,8 @@ export function useDeleteExport() {
       enqueueSnackbar("Export job deleted successfully.", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: exportKeys.lists() });
     },
-    onError: (err: any) => {
-      enqueueSnackbar(err?.message || "Failed to delete export", { variant: "error" });
+    onError: (error: unknown) => {
+      enqueueSnackbar(getExportErrorMessage(error, "Failed to delete export"), { variant: "error" });
     },
   });
 }
