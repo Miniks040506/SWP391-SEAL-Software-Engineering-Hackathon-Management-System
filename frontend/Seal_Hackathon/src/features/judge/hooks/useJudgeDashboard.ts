@@ -1,10 +1,9 @@
 import { useMemo } from "react";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { userApi } from "@/api/user.api";
-import { eventApi } from "@/api/event.api";
-import { roundApi } from "@/api/round.api";
+import { judgeApi } from "@/api/judge.api";
 import { notificationApi } from "@/api/notification.api";
 import { useJudgeCalibrationRoundsQuery } from "@/features/calibration/hooks/useCalibrationQueries";
 
@@ -15,91 +14,80 @@ const USE_MOCK = false;
 export function useJudgeDashboard() {
   const navigate = useNavigate();
 
+  // --- Profile ---
   const profileQuery = useQuery({
     queryKey: ["judge-profile"],
     queryFn: () => userApi.getMyProfile(),
     enabled: !USE_MOCK,
   });
 
-  const eventsQuery = useQuery({
-    queryKey: ["judge-events"],
-    queryFn: () => eventApi.getPublicEvents({ page: 0, size: 100 }),
+  // --- My assignments from the judge-specific API (no admin auth required) ---
+  const assignmentsQuery = useQuery({
+    queryKey: ["judge-my-assignments"],
+    queryFn: () => judgeApi.getMyAssignments(),
     enabled: !USE_MOCK,
   });
+  const myAssignments = assignmentsQuery.data || [];
 
-  const myUserId = profileQuery.data?.id;
-  const apiEvents = eventsQuery.data?.content || (eventsQuery.data as any)?.data?.content || [];
-  const activeEvent = apiEvents.find((e: any) => ["ONGOING", "REGISTRATION"].includes((e.status || "").toUpperCase())) || apiEvents[0];
-
-  const roundsQuery = useQuery({
-    queryKey: ["judge-rounds", activeEvent?.id],
-    queryFn: () => roundApi.getRoundsByEvent(activeEvent!.id),
-    enabled: !USE_MOCK && Boolean(activeEvent?.id),
+  // --- Submission summary (pending / completed) ---
+  const summaryQuery = useQuery({
+    queryKey: ["judge-submission-summary"],
+    queryFn: () => judgeApi.getMySubmissionSummary(),
+    enabled: !USE_MOCK,
   });
-  const rounds = roundsQuery.data || [];
+  const summary = summaryQuery.data as any;
 
+  // --- Calibration rounds ---
   const calibrationsQuery = useJudgeCalibrationRoundsQuery();
 
-  const assignmentsQueries = useQueries({
-    queries: rounds.map((round) => ({
-      queryKey: ["judge-assignments", round.id],
-      queryFn: () => roundApi.getJudgeAssignments(round.id),
-      enabled: !USE_MOCK && Boolean(round.id),
-    })),
-  });
-
-  const myAssignments = useMemo(() => {
-    if (USE_MOCK || !myUserId) return [];
-    const found: any[] = [];
-    for (let i = 0; i < rounds.length; i++) {
-      const judgesInRound = assignmentsQueries[i].data || [];
-      const myTask = judgesInRound.find((j) => j.judgeId === myUserId);
-      if (myTask) {
-        found.push({ ...myTask, roundName: rounds[i].name, judgingDeadline: rounds[i].judgingDeadline });
-      }
-    }
-    return found;
-  }, [myUserId, rounds, assignmentsQueries, USE_MOCK]);
-
+  // --- Notifications ---
   const notifsQuery = useQuery({
     queryKey: ["judge-notifs"],
     queryFn: () => notificationApi.getMyNotifications({ page: 0, size: 5 }),
     enabled: !USE_MOCK,
   });
 
+  // --- Compute totals ---
+  const totalPending = useMemo(() => {
+    // Try summary API first; fall back to summing assignments
+    if (summary?.pendingCount != null) return summary.pendingCount as number;
+    if (summary?.totalPending != null) return summary.totalPending as number;
+    return myAssignments.reduce((acc: number, a: any) => {
+      const done = a.scoringProgress ?? 0;
+      const total = a.totalToScore ?? 0;
+      return acc + Math.max(0, total - done);
+    }, 0);
+  }, [summary, myAssignments]);
+
+  const totalCompleted = useMemo(() => {
+    if (summary?.completedCount != null) return summary.completedCount as number;
+    if (summary?.totalCompleted != null) return summary.totalCompleted as number;
+    return myAssignments.reduce((acc: number, a: any) => acc + (a.scoringProgress ?? 0), 0);
+  }, [summary, myAssignments]);
 
   let dashboard: JudgeDashboardData;
 
   if (USE_MOCK) {
     dashboard = judgeDashboardMock;
   } else {
-    let totalPending = 0;
-    let totalCompleted = 0;
-    myAssignments.forEach(task => {
-      const completed = task.scoringProgress || 0;
-      const total = task.totalToScore || 0;
-      totalCompleted += completed;
-      totalPending += Math.max(0, total - completed);
-    });
-
-    const activeTask = myAssignments[0] || null;
+    const activeTask = myAssignments[0] as any || null;
 
     const calibrations = calibrationsQuery.data || [];
-    const requiredCalibrations = calibrations.filter((round) => round.mandatory);
+    const requiredCalibrations = calibrations.filter((r: any) => r.mandatory);
     const hasCalibration = requiredCalibrations.length > 0;
     const calibrationCompleted = !hasCalibration
-      || requiredCalibrations.every((round) => round.submittedByCurrentJudge === true);
+      || requiredCalibrations.every((r: any) => r.submittedByCurrentJudge === true);
 
     const notifs = notifsQuery.data?.content || (notifsQuery.data as any)?.data?.content || [];
     const recentActivities = notifs.slice(0, 3).map((n: any, i: number) => ({
       id: `act-${i}`,
       time: new Date(n.sentAt || n.createdAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
-      title: n.title,
-      description: n.body,
+      title: n.title || "Notification",
+      description: n.body || n.message || "",
     }));
 
     const pendingActions: any[] = [];
-    
+
     if (hasCalibration && !calibrationCompleted) {
       pendingActions.push({
         id: "complete-calibration",
@@ -107,7 +95,7 @@ export function useJudgeDashboard() {
         description: "You must finish calibration before official grading is available.",
         priority: "High",
         actionLabel: "Start Calibration",
-        path: "/judge/calibrations"
+        path: "/judge/calibrations",
       });
     }
 
@@ -118,7 +106,7 @@ export function useJudgeDashboard() {
         description: `${totalPending} submissions are waiting for your scorecards.`,
         priority: "High",
         actionLabel: "Start Grading",
-        path: "/judge/submissions"
+        path: "/judge/submissions",
       });
     }
 
@@ -128,41 +116,88 @@ export function useJudgeDashboard() {
         title: "All caught up",
         description: "No pending submissions to grade.",
         priority: "Low",
-        actionLabel: "View Events",
-        path: "/judge/events"
+        actionLabel: "View Assignments",
+        path: "/judge/submissions",
       });
     }
+
+    // Derive event & round name from the active assignment's roundId
+    const eventName = (summary as any)?.eventName
+      || (activeTask as any)?.eventName
+      || (myAssignments.length > 0 ? "Assigned Event" : "No Event");
+    const roundName = (activeTask as any)?.roundName
+      || (myAssignments.length > 0 ? `Round (${(activeTask as any)?.roundId?.slice(0, 8) ?? ""}...)` : "No assigned round");
+    const deadline = (activeTask as any)?.judgingDeadline
+      ? new Date((activeTask as any).judgingDeadline).toLocaleString()
+      : (summary as any)?.deadline
+        ? new Date((summary as any).deadline).toLocaleString()
+        : "—";
 
     dashboard = {
       judgeName: profileQuery.data?.fullName || "Judge",
       summaryCards: [
-        { title: "Assigned Events", value: activeEvent ? 1 : 0, description: "Events assigned to you", iconType: "event", color: "bg-blue-50 text-blue-600" },
-        { title: "Assigned Rounds", value: myAssignments.length, description: "Rounds requiring grading", iconType: "round", color: "bg-indigo-50 text-indigo-600" },
-        { title: "Pending Scorecards", value: totalPending, description: "Scorecards waiting for review", iconType: "pending", color: "bg-amber-50 text-amber-600" },
-        { title: "Grading Deadline", value: activeTask?.judgingDeadline ? new Date(activeTask.judgingDeadline).toLocaleDateString() : "No Deadline", description: "Nearest grading deadline", iconType: "deadline", color: "bg-rose-50 text-rose-600" },
+        {
+          title: "Assigned Rounds",
+          value: myAssignments.length,
+          description: "Rounds requiring your grading",
+          iconType: "round",
+          color: "bg-indigo-50 text-indigo-600",
+        },
+        {
+          title: "Pending Scorecards",
+          value: totalPending,
+          description: "Submissions waiting for review",
+          iconType: "pending",
+          color: "bg-amber-50 text-amber-600",
+        },
+        {
+          title: "Completed Scorecards",
+          value: totalCompleted,
+          description: "Submissions already graded",
+          iconType: "completed",
+          color: "bg-emerald-50 text-emerald-600",
+        },
+        {
+          title: "Grading Deadline",
+          value: deadline !== "—" ? new Date(deadline).toLocaleDateString() : "No Deadline",
+          description: "Nearest grading deadline",
+          iconType: "deadline",
+          color: "bg-rose-50 text-rose-600",
+        },
       ],
       currentGrading: {
-        eventName: activeEvent?.name || "No Event",
-        roundName: activeTask?.roundName || "No assigned round",
-        trackName: activeTask?.trackId ? "Assigned Track" : "General",
+        eventName,
+        roundName,
+        trackName: (activeTask as any)?.trackId ? `Track ${(activeTask as any).trackId.slice(0, 6)}...` : "General",
         pendingSubmissions: totalPending,
         completedSubmissions: totalCompleted,
-        deadline: activeTask?.judgingDeadline ? new Date(activeTask.judgingDeadline).toLocaleString() : "—",
+        deadline,
       },
       calibration: {
         required: hasCalibration,
         completed: calibrationCompleted,
         status: calibrationCompleted ? "Completed" : "Not Completed",
       },
-      pendingActions: pendingActions,
-      recentActivities: recentActivities.length > 0 ? recentActivities : [
-        { id: "a1", time: new Date().toLocaleTimeString(), title: "System Login", description: "You logged into the Judge Portal." }
-      ],
+      pendingActions,
+      recentActivities:
+        recentActivities.length > 0
+          ? recentActivities
+          : [
+            {
+              id: "a1",
+              time: new Date().toLocaleTimeString(),
+              title: "System Login",
+              description: "You logged into the Judge Portal.",
+            },
+          ],
     };
   }
 
   const totalScorecards = dashboard.currentGrading.pendingSubmissions + dashboard.currentGrading.completedSubmissions;
-  const gradingProgressPercent = totalScorecards === 0 ? 0 : Math.round((dashboard.currentGrading.completedSubmissions / totalScorecards) * 100);
+  const gradingProgressPercent =
+    totalScorecards === 0
+      ? 0
+      : Math.round((dashboard.currentGrading.completedSubmissions / totalScorecards) * 100);
 
   const goToEvents = () => navigate("/judge/events");
   const goToScoring = () => navigate("/judge/submissions");
