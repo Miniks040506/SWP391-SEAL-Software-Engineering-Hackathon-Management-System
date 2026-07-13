@@ -7,6 +7,7 @@ import com.t7.seal.security.oauth2.OAuth2AuthenticationFailureHandler;
 import com.t7.seal.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -36,6 +37,9 @@ public class SecurityConfig {
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     private final AuthenticationProvider authenticationProvider;
+
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -291,6 +295,7 @@ public class SecurityConfig {
                 CorsConfiguration corsConfiguration = new CorsConfiguration();
 
                 corsConfiguration.setAllowedOriginPatterns(List.of(
+                        frontendUrl,
                         "http://localhost:5173",
                         "http://localhost:3000",
                         "http://127.0.0.1:5173"
