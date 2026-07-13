@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import { NotFoundPage } from "@/components/common/NotFoundPage";
+import { RouteErrorPage } from "@/components/common/RouteErrorPage";
 
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
@@ -125,6 +126,7 @@ import { AdminAiKnowledgePage, AdminAiSafetyLogsPage } from "@/features/assistan
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
       { path: "/", element: <Navigate to="/events" replace /> },
       { path: "/events", element: <EventsPage /> },
@@ -140,6 +142,7 @@ export const router = createBrowserRouter([
 
   {
     element: <AuthLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
       { path: "/register", element: <RegisterPage /> },
       { path: "/verify-email", element: <VerifyEmailPage /> },
@@ -155,6 +158,7 @@ export const router = createBrowserRouter([
   {
     path: "/participant",
     element: <RootLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="teams" replace /> },
       { path: "teams", element: <MyTeamsPage /> },
@@ -196,6 +200,7 @@ export const router = createBrowserRouter([
   {
     path: "/coordinator",
     element: <LoggedinLayout sectionRole="COORDINATOR" />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <CoordinatorDashboardPage /> },
@@ -318,6 +323,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin",
     element: <LoggedinLayout sectionRole="ADMIN" />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <AdminDashboardPage /> },
@@ -345,6 +351,7 @@ export const router = createBrowserRouter([
   {
     path: "/judge",
     element: <LoggedinLayout sectionRole="JUDGE" />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <JudgeDashboardPage /> },
@@ -386,6 +393,7 @@ export const router = createBrowserRouter([
   {
     path: "/mentor",
     element: <LoggedinLayout sectionRole="MENTOR" />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <MentorDashboardPage /> },
@@ -408,18 +416,22 @@ export const router = createBrowserRouter([
   {
     path: "/invitations/accept",
     element: <InvitationResponsePage action="accept" />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: "/invitations/reject",
     element: <InvitationResponsePage action="reject" />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: "/join-requests/accept",
     element: <JoinRequestResponsePage action="accept" />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: "/join-requests/reject",
     element: <JoinRequestResponsePage action="reject" />,
+    errorElement: <RouteErrorPage />,
   },
 
   { path: "*", element: <NotFoundPage /> },
