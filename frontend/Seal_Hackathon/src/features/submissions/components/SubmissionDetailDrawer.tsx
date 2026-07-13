@@ -6,7 +6,7 @@ import { getTeamStatusColor } from "@/features/teams/schemas/teams.schema";
 import { teamApi } from "@/api/team.api";
 import type { UUID } from "@/types/common.types";
 import type { TeamDetailResponse } from "@/types/team.types";
-import { Button } from "@mui/material";
+import { Button, Tooltip } from "@mui/material";
 import { DisqualifySubmissionDialog } from "../../disqualification/components/DisqualifySubmissionDialog";
 import { useDisqualifySubmissionMutation } from "../../disqualification/hooks/useDisqualificationQueries";
 import type { DisqualifyFormValues } from "../../disqualification/schemas/disqualification.schema";
@@ -314,17 +314,35 @@ export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh }: Pro
                         View Team Details →
                       </button>
 
-                      {detail.status !== "DISQUALIFIED" && (
-                        <Button
-                          fullWidth
-                          variant="contained"
-                          color="error"
-                          onClick={() => setDisqualifyOpen(true)}
-                          sx={{ textTransform: "none", fontWeight: 600, py: 1 }}
-                        >
-                          Disqualify submission
-                        </Button>
-                      )}
+                      {(() => {
+                        const isScorable = detail.status === "SUBMITTED" || detail.status === "LATE";
+                        const alreadyDisqualified = detail.status === "DISQUALIFIED";
+                        const disabled = !isScorable || alreadyDisqualified;
+                        
+                        const button = (
+                          <span className="w-full block">
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              color="error"
+                              disabled={disabled}
+                              onClick={() => setDisqualifyOpen(true)}
+                              sx={{ textTransform: "none", fontWeight: 600, py: 1 }}
+                            >
+                              Disqualify submission
+                            </Button>
+                          </span>
+                        );
+                        
+                        if (disabled) {
+                          return (
+                            <Tooltip title={alreadyDisqualified ? "This submission has already been disqualified." : "Only submitted submissions can be disqualified."} arrow placement="top">
+                              {button}
+                            </Tooltip>
+                          );
+                        }
+                        return button;
+                      })()}
                     </div>
                   </section>
 

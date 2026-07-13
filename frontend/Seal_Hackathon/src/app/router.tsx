@@ -14,6 +14,7 @@ import {
   JudgeDashboardPage,
   JudgeSubmissionDetailPage,
   JudgeAssignedSubmissionPage,
+  JudgeSubmissionsPage,
 } from "@/features/judge";
 
 import { JudgeScoreSheetPage } from "@/features/grading/pages/JudgeScoreSheetPage";
@@ -24,7 +25,6 @@ import {
   CalibrationDistributionPage,
 } from "@/features/calibration";
 
-
 import {
   MentorDashboardPage,
   MentorSubmissionDetailPage,
@@ -32,7 +32,6 @@ import {
   MentorTeamsPage,
   MentorTeamDetailPage,
 } from "@/features/mentor";
-
 
 import {
   ForgotPasswordPage,
@@ -44,7 +43,6 @@ import {
   VerifyEmailSuccessPage,
 } from "@/features/auth";
 
-
 import {
   EventAwardsPage,
   EventDetailPage,
@@ -55,7 +53,7 @@ import {
   CoordinatorRankingPage,
   CoordinatorRoundRankingPage,
   PublicEventLeaderboardPage,
-  StandingsPage
+  StandingsPage,
 } from "@/features/ranking";
 
 import { TeamDetailedScorePage } from "@/features/results/pages/TeamDetailedScorePage";
@@ -80,7 +78,6 @@ import {
   GradingProgressRedirectPage,
 } from "@/features/grading-progress";
 
-
 import {
   CreateTeamPage,
   EventCompetitionPage,
@@ -91,9 +88,7 @@ import {
   TeamDetailPage,
 } from "@/features/teams";
 
-
 import { CoordinatorUsersPage } from "@/features/coordinator/pages/CoordinatorUsersPage";
-
 
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
 import { PersonalProfilePage } from "@/features/profile";
@@ -109,7 +104,7 @@ import { SubmissionFormPage } from "@/features/submissions/pages/SubmissionFormP
 
 import {
   CoordinatorCalibrationPage,
-  CalibrationRoundFormPage
+  CalibrationRoundFormPage,
 } from "@/features/calibration";
 
 import { RoundAdvancementPage } from "@/features/advancement/pages/RoundAdvancementPage";
@@ -119,9 +114,15 @@ import { CoordinatorDisqualificationsPage } from "@/features/disqualification/pa
 import { ParticipantDisqualificationPage } from "@/features/disqualification/pages/ParticipantDisqualificationPage";
 
 import { ScoreVarianceDashboardPage } from "@/features/rbl/pages/ScoreVarianceDashboardPage";
-import { AdminSystemConfigPage, AdminSystemHealthPage } from "@/features/system";
+import {
+  AdminSystemConfigPage,
+  AdminSystemHealthPage,
+} from "@/features/system";
 import { CoordinatorEventRemindersPage } from "@/features/reminders";
-import { AdminAiKnowledgePage, AdminAiSafetyLogsPage } from "@/features/assistant";
+import {
+  AdminAiKnowledgePage,
+  AdminAiSafetyLogsPage,
+} from "@/features/assistant";
 
 export const router = createBrowserRouter([
   {
@@ -135,8 +136,14 @@ export const router = createBrowserRouter([
       { path: "/events/:eventId/awards", element: <EventAwardsPage /> },
       { path: "/events/:eventId", element: <EventDetailPage /> },
       { path: "/standings", element: <StandingsPage /> },
-      { path: "/events/:eventId/leaderboard", element: <PublicEventLeaderboardPage /> },
-      { path: "/events/:eventId/tracks/:trackId/leaderboard", element: <PublicEventLeaderboardPage /> },
+      {
+        path: "/events/:eventId/leaderboard",
+        element: <PublicEventLeaderboardPage />,
+      },
+      {
+        path: "/events/:eventId/tracks/:trackId/leaderboard",
+        element: <PublicEventLeaderboardPage />,
+      },
     ],
   },
 
@@ -207,8 +214,14 @@ export const router = createBrowserRouter([
       { path: "events", element: <CoordinatorEventsPage /> },
       { path: "events/create", element: <CoordinatorCreateEventPage /> },
       { path: "events/:eventId/edit", element: <CoordinatorEditEventPage /> },
-      { path: "events/:eventId/prizes", element: <CoordinatorPrizeSetupPage /> },
-      { path: "events/:eventId/awards", element: <CoordinatorAwardManagementPage /> },
+      {
+        path: "events/:eventId/prizes",
+        element: <CoordinatorPrizeSetupPage />,
+      },
+      {
+        path: "events/:eventId/awards",
+        element: <CoordinatorAwardManagementPage />,
+      },
       {
         path: "events/:eventId/criteria",
         element: <EventCriteriaManagementPage />,
@@ -369,11 +382,20 @@ export const router = createBrowserRouter([
         path: "submissions/:submissionId/score",
         element: <JudgeScoreSheetPage />,
       },
-      { path: "scoring", element: <NotFoundPage /> },
+      { path: "scoring", element: <JudgeSubmissionsPage /> },
       { path: "calibrations", element: <JudgeCalibrationListPage /> },
-      { path: "calibrations/:calibrationId", element: <Navigate to="score" replace /> },
-      { path: "calibrations/:calibrationId/score", element: <JudgeCalibrationScorePage /> },
-      { path: "calibrations/:calibrationId/distribution", element: <CalibrationDistributionPage /> },
+      {
+        path: "calibrations/:calibrationId",
+        element: <Navigate to="score" replace />,
+      },
+      {
+        path: "calibrations/:calibrationId/score",
+        element: <JudgeCalibrationScorePage />,
+      },
+      {
+        path: "calibrations/:calibrationId/distribution",
+        element: <CalibrationDistributionPage />,
+      },
       {
         path: "rounds/:roundId/criteria",
         element: <EventCriteriaViewPage mode="ROUND" />,
@@ -399,7 +421,6 @@ export const router = createBrowserRouter([
       { path: "dashboard", element: <MentorDashboardPage /> },
       { path: "teams", element: <MentorTeamsPage /> },
       { path: "teams/:teamId", element: <MentorTeamDetailPage /> },
-      { path: "feedback", element: <NotFoundPage /> },
       { path: "submissions", element: <MentorSubmissionPage /> },
       {
         path: "submissions/:submissionId",
