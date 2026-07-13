@@ -171,20 +171,33 @@ export function useDownloadExport() {
 
   return useMutation({
     mutationFn: async (exportId: UUID) => {
-      return unwrapApiPayload<ExportDownloadResponse>(
+      const metadata = unwrapApiPayload<ExportDownloadResponse>(
         await activeApi.downloadExport(exportId),
       );
+      const file = await activeApi.downloadExportFile(exportId);
+      return { metadata, file };
     },
-    onSuccess: (data) => {
-      if (USE_MOCK) {
-        enqueueSnackbar(`Downloading mock file: ${data.fileName}`, { variant: "info" });
-      } else {
-        // Open download url in new tab
-        window.open(data.downloadUrl, "_blank");
-      }
+    onSuccess: ({ metadata, file }) => {
+      const objectUrl = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = metadata.fileName || "seal-export";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+      enqueueSnackbar(`Downloading ${link.download}`, { variant: "success" });
     },
-    onError: (err: any) => {
-      enqueueSnackbar(err?.message || "Failed to download export", { variant: "error" });
+    onError: (err: unknown) => {
+      const error = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      enqueueSnackbar(
+        error.response?.data?.message || error.message || "Failed to download export",
+        { variant: "error" },
+      );
     },
   });
 }

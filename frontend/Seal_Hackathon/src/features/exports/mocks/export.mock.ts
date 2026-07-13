@@ -141,6 +141,12 @@ export const mockExportApi = {
     return { data: res };
   },
 
+  async downloadExportFile(exportId: UUID) {
+    const job = mockJobDb.find((item) => item.id === exportId);
+    if (!job || job.status !== "DONE") throw new Error("Export is not ready");
+    return new Blob(["Mock export file"], { type: "text/plain" });
+  },
+
   async downloadExportJob(jobId: UUID) {
     return this.downloadExport(jobId);
   },

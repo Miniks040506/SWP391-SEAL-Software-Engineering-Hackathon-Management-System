@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
@@ -50,11 +51,21 @@ export const ExportJobListPage = () => {
   const eventData = eventQuery.data as any;
   const eventName = eventData?.name ?? eventData?.eventName ?? eventData?.title;
 
-  const { data: eventsData, isLoading: isLoadingEvents } = useCoordinatorEventsQuery({ page: 0, size: 100 });
+  const {
+    data: eventsData,
+    isLoading: isLoadingEvents,
+    isError: isEventsError,
+    refetch: refetchEvents,
+  } = useCoordinatorEventsQuery({ page: 0, size: 100 });
   const events = eventsData?.content || eventsData || [];
   const eventList = Array.isArray(events) ? events : [];
 
-  const { data: jobsData, isLoading, refetch } = useExportJobsQuery({ page, size: 10 });
+  const {
+    data: jobsData,
+    isLoading,
+    isError: isJobsError,
+    refetch,
+  } = useExportJobsQuery({ page, size: 10 });
   const { mutate: createRanking, isPending: isRankingPending } = useCreateRankingExport();
   const { mutate: createScore, isPending: isScorePending } = useCreateScoresExport();
   const { mutate: createTeam, isPending: isTeamPending } = useCreateTeamListExport();
@@ -177,7 +188,7 @@ export const ExportJobListPage = () => {
             </Button>
           )}
           <h1 className="text-3xl font-black text-slate-950 dark:text-white flex items-center gap-3">
-            Export Reports
+            Export reports
             {eventName && (
               <>
                 <span className="text-slate-300 dark:text-slate-600 font-light">|</span>
@@ -204,21 +215,55 @@ export const ExportJobListPage = () => {
         </div>
       </header>
 
+      {isJobsError && (
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          }
+        >
+          Export jobs could not be loaded. Your existing exports are unchanged.
+        </Alert>
+      )}
+
+      {eventId && eventQuery.isError && (
+        <Alert severity="warning">
+          The selected event could not be loaded. Return to Events and check that it still exists.
+        </Alert>
+      )}
+
       {!eventId && (
         <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
           <p className="mb-1 text-sm font-bold text-blue-900 dark:text-blue-100">
-            Global Admin Mode
+            {isAdmin ? "All-event export workspace" : "Choose an event"}
           </p>
           <p className="mb-4 text-xs font-medium text-blue-700 dark:text-blue-300">
-            You are viewing export jobs across all events. To create a new export, select an Event below.
+            {isAdmin
+              ? "You are viewing export jobs across all events. Select an event to create a report."
+              : "Select the event you manage to create a report. You can still review existing jobs below."}
           </p>
+          {isEventsError && (
+            <Alert
+              severity="warning"
+              sx={{ mb: 2 }}
+              action={
+                <Button color="inherit" size="small" onClick={() => void refetchEvents()}>
+                  Retry
+                </Button>
+              }
+            >
+              Events could not be loaded. The export page remains available.
+            </Alert>
+          )}
           <FormControl size="small" sx={{ width: 320, bgcolor: "background.paper", borderRadius: 2 }}>
             <InputLabel>Target Event</InputLabel>
             <Select
               label="Target Event"
               value={manualEventId}
               onChange={(e) => setManualEventId(e.target.value)}
-              disabled={isLoadingEvents}
+              disabled={isLoadingEvents || isEventsError}
             >
               {isLoadingEvents && (
                 <MenuItem value="" disabled>
@@ -236,6 +281,12 @@ export const ExportJobListPage = () => {
             </Select>
           </FormControl>
         </div>
+      )}
+
+      {activeEventId && (tracksQuery.isError || roundsQuery.isError) && (
+        <Alert severity="warning">
+          Some event filters could not be loaded. You can retry by reselecting the event or export without a track/round filter.
+        </Alert>
       )}
 
       <section>
