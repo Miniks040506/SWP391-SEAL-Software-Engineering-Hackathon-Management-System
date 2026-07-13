@@ -22,6 +22,7 @@ import ModelTrainingOutlinedIcon from "@mui/icons-material/ModelTrainingOutlined
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import PsychologyOutlinedIcon from "@mui/icons-material/PsychologyOutlined";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 
 export type SidebarItem = {
   label: string;
@@ -164,6 +165,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Grading Progress",
             path: "/coordinator/grading-progress",
             icon: <AssessmentOutlinedIcon fontSize="small" />,
+          },
+          {
+            label: "Disqualifications",
+            path: "/coordinator/disqualifications",
+            icon: <GavelOutlinedIcon fontSize="small" />,
           },
           {
             label: "Awards",

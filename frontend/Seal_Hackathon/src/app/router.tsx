@@ -112,6 +112,7 @@ import { TeamAdvancementPage } from "@/features/advancement/pages/TeamAdvancemen
 
 import { CoordinatorDisqualificationsPage } from "@/features/disqualification/pages/CoordinatorDisqualificationsPage";
 import { ParticipantDisqualificationPage } from "@/features/disqualification/pages/ParticipantDisqualificationPage";
+import { DisqualificationsRedirectPage } from "@/features/disqualification/pages/DisqualificationsRedirectPage";
 
 import { ScoreVarianceDashboardPage } from "@/features/rbl/pages/ScoreVarianceDashboardPage";
 import {
@@ -249,6 +250,10 @@ export const router = createBrowserRouter([
       {
         path: "events/:eventId/disqualifications",
         element: <CoordinatorDisqualificationsPage />,
+      },
+      {
+        path: "disqualifications",
+        element: <DisqualificationsRedirectPage />,
       },
       {
         path: "grading-progress",

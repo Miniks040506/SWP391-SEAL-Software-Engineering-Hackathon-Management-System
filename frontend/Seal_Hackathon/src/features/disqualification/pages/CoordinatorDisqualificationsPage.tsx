@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   FormControl,
   InputLabel,
@@ -22,6 +22,7 @@ import {
   useOverturnDisqualificationMutation,
   useDisqualifySubmissionMutation,
 } from "../hooks/useDisqualificationQueries";
+import { SubmissionDetailDrawer } from "@/features/submissions/components/SubmissionDetailDrawer";
 import type {
   DisqualifyFormValues,
   OverturnFormValues,
@@ -52,6 +53,8 @@ export function CoordinatorDisqualificationsPage() {
 
   const [viewAppealDialogOpen, setViewAppealDialogOpen] = useState(false);
   const [selectedAppealDisqualification, setSelectedAppealDisqualification] = useState<DisqualificationResponse | null>(null);
+
+  const [drawerDisqualification, setDrawerDisqualification] = useState<DisqualificationResponse | null>(null);
 
   const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
   const { data: tracks = [] } = useCoordinatorEventTracksQuery(eventId);
@@ -284,15 +287,14 @@ export function CoordinatorDisqualificationsPage() {
                     {new Date(d.issuedAt).toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-center space-x-2 whitespace-nowrap">
-                    <Link to={`/coordinator/submissions/${d.submissionId}`}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        sx={{ textTransform: "none" }}
-                      >
-                        View details
-                      </Button>
-                    </Link>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      sx={{ textTransform: "none" }}
+                      onClick={() => setDrawerDisqualification(d)}
+                    >
+                      View details
+                    </Button>
                     {d.appealNote && (
                       <Button
                         size="small"
@@ -304,16 +306,7 @@ export function CoordinatorDisqualificationsPage() {
                         View Appeal
                       </Button>
                     )}
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="warning"
-                      sx={{ textTransform: "none" }}
-                      disabled={d.appealStatus === "OVERTURNED"}
-                      onClick={() => handleOpenOverturn(d.id)}
-                    >
-                      Overturn
-                    </Button>
+
                     {d.submissionStatus !== "DISQUALIFIED" && (
                       <Button
                         size="small"
@@ -417,6 +410,18 @@ export function CoordinatorDisqualificationsPage() {
             </Button>
           </DialogActions>
         </Dialog>
+      )}
+
+      {drawerDisqualification && (
+        <SubmissionDetailDrawer
+          submissionId={drawerDisqualification.submissionId}
+          onClose={() => setDrawerDisqualification(null)}
+          onRefresh={refetch}
+          // @ts-ignore
+          overturnDisqualificationId={drawerDisqualification.id}
+          // @ts-ignore
+          disableOverturn={drawerDisqualification.appealStatus === "OVERTURNED"}
+        />
       )}
     </div>
   );
