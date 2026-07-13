@@ -9,6 +9,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.criteria.EventCriteriaResponse;
 import com.t7.seal.response.criteria.ScoringCriteriaResponse;
 import com.t7.seal.service.CriteriaService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiPaths.API_V1)
 @RequiredArgsConstructor
+@Tag(
+        name = "Scoring Criteria",
+        description = "Reusable criteria and event-specific criteria configuration."
+)
 public class CriteriaController {
 
     private final CriteriaService criteriaService;
