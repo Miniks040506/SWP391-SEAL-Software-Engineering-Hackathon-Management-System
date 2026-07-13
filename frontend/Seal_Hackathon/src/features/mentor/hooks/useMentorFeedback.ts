@@ -13,7 +13,7 @@ import {
   publishMockFeedback,
 } from "../mocks/mentorFeedback.mock";
 
-const USE_MOCK = false;
+const USE_MOCK = true;
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const MENTOR_FEEDBACK_KEYS = {
@@ -28,12 +28,14 @@ export function useMentorGlobalFeedbackQuery() {
     queryFn: async () => {
       if (USE_MOCK) {
         await delay(500);
-        return { data: getMockFeedbacks() };
+        return getMockFeedbacks();
       }
-      return { data: [] };
+      // The global list endpoint is not available — return empty so callers handle gracefully
+      return [] as any[];
     },
   });
 }
+
 
 export function useMentorTeamFeedbackQuery(teamId?: string) {
   return useQuery({
