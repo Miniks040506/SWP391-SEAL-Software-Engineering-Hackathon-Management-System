@@ -44,18 +44,19 @@ export type ExportJobResponse = {
   exportType: ExportType | string;
   params: Record<string, unknown>;
   status: ExportJobStatus | string;
-  fileName?: string;
-  fileSizeBytes?: number;
-  rowCount?: number;
-  errorMessage?: string;
+  fileName?: string | null;
+  fileSizeBytes?: number | null;
+  rowCount?: number | null;
+  errorMessage?: string | null;
   requestedAt: ISODateTime;
-  completedAt?: ISODateTime;
-  expiresAt?: ISODateTime;
+  completedAt?: ISODateTime | null;
+  expiresAt?: ISODateTime | null;
 };
 
 export type ExportDownloadResponse = {
   exportId: UUID;
   fileName: string;
+  contentType: string;
   downloadUrl: string;
   expiresAt: ISODateTime;
 };

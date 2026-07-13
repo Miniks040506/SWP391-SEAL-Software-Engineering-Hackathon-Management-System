@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { useState } from "react";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -19,16 +20,40 @@ type Props = {
   isLoading?: boolean;
 };
 
-function formatBytes(bytes?: number) {
-  if (bytes === undefined || bytes === null) return "—";
+function formatBytes(bytes?: number | null) {
+  if (bytes === undefined || bytes === null || !Number.isFinite(bytes) || bytes < 0) {
+    return "—";
+  }
   if (bytes === 0) return "0 B";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
+function formatDate(value: string | null | undefined, pattern: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : format(date, pattern);
+}
+
+function isExpired(value: string | null | undefined, renderedAt: number) {
+  if (!value) return false;
+  const expiresAt = new Date(value).getTime();
+  return Number.isFinite(expiresAt) && expiresAt <= renderedAt;
+}
+
+function formatParams(params: Record<string, unknown> | null | undefined) {
+  if (!params || typeof params !== "object") return "";
+  return Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => `${key}=${String(value)}`)
+    .join(", ");
+}
+
 export const ExportJobTable = ({ jobs, onDownload, onRetry, onDelete, isDownloading, isLoading }: Props) => {
+  const [renderedAt] = useState(() => Date.now());
+
   if (isLoading) {
     return (
       <div className="flex h-40 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
@@ -64,26 +89,25 @@ export const ExportJobTable = ({ jobs, onDownload, onRetry, onDelete, isDownload
             {jobs.map((job) => (
               <tr key={job.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
                 <td className="px-5 py-4 text-slate-700 dark:text-slate-300">
-                  <p className="font-medium">{format(new Date(job.requestedAt), "MMM dd, HH:mm")}</p>
+                  <p className="font-medium tabular-nums">
+                    {formatDate(job.requestedAt, "MMM dd, HH:mm")}
+                  </p>
                   {job.expiresAt && (
                     <p className="mt-0.5 text-[10px] text-slate-400">
-                      Exp: {format(new Date(job.expiresAt), "MMM dd, yyyy")}
+                      Expires {formatDate(job.expiresAt, "MMM dd, yyyy")}
                     </p>
                   )}
                 </td>
                 <td className="px-5 py-4">
                   <p className="font-bold text-slate-800 dark:text-slate-200">
-                    {job.exportType.replace(/_/g, " ")}
+                    {job.exportType?.replace(/_/g, " ") || "Unknown report"}
                   </p>
-                  {job.params && (
+                  {formatParams(job.params) && (
                     <p
                       className="mt-0.5 max-w-[200px] truncate font-mono text-[10px] text-slate-400"
-                      title={JSON.stringify(job.params)}
+                      title={formatParams(job.params)}
                     >
-                      {Object.entries(job.params)
-                        .filter(([, v]) => v !== undefined && v !== null)
-                        .map(([k, v]) => `${k}=${v}`)
-                        .join(", ")}
+                      {formatParams(job.params)}
                     </p>
                   )}
                 </td>
@@ -100,13 +124,17 @@ export const ExportJobTable = ({ jobs, onDownload, onRetry, onDelete, isDownload
                 <td className="px-5 py-4">
                   <p
                     className="max-w-[180px] truncate font-medium text-slate-700 dark:text-slate-300"
-                    title={job.fileName}
+                    title={job.fileName ?? undefined}
                   >
                     {job.fileName || "—"}
                   </p>
                   <div className="mt-0.5 flex gap-3 text-[10px] text-slate-400">
                     <span>{formatBytes(job.fileSizeBytes)}</span>
-                    {job.rowCount !== undefined && <span>{job.rowCount.toLocaleString()} rows</span>}
+                    {job.rowCount != null && (
+                      <span className="tabular-nums">
+                        {job.rowCount.toLocaleString()} rows
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className="px-5 py-4 text-right">
@@ -117,7 +145,7 @@ export const ExportJobTable = ({ jobs, onDownload, onRetry, onDelete, isDownload
                         variant="contained"
                         disableElevation
                         onClick={() => onDownload(job.id)}
-                        disabled={isDownloading}
+                        disabled={Boolean(isDownloading || isExpired(job.expiresAt, renderedAt))}
                         startIcon={<DownloadIcon sx={{ fontSize: 14 }} />}
                         sx={{
                           textTransform: "none",
@@ -129,7 +157,7 @@ export const ExportJobTable = ({ jobs, onDownload, onRetry, onDelete, isDownload
                           py: 0.5,
                         }}
                       >
-                        Download
+                        {isExpired(job.expiresAt, renderedAt) ? "Expired" : "Download"}
                       </Button>
                     )}
                     {job.status === "FAILED" && (

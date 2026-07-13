@@ -244,7 +244,16 @@ public class AiGuardrailServiceImpl implements AiGuardrailService {
                 "service", "repo", "entity", "frontend", "backend"
         );
 
-        return assignmentContext && implementationAsk;
+        boolean explanationOnly = containsAny(lower,
+                "do not write code", "don't write code", "without writing code",
+                "explain the requirements only", "explain requirements only",
+                "không viết code", "không code hộ", "chỉ giải thích",
+                "giải thích yêu cầu"
+        );
+
+        return assignmentContext
+                && implementationAsk
+                && !(explanationOnly && !asksForFullCode(lower));
     }
 
     private boolean asksForFullCode(String lower) {

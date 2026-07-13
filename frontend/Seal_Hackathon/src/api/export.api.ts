@@ -62,6 +62,12 @@ export const exportApi = {
     );
   },
 
+  downloadExportFile(exportId: UUID) {
+    return apiRequest.get<Blob>(`/exports/${exportId}/download-file`, {
+      responseType: "blob",
+    });
+  },
+
   downloadExportJob(jobId: UUID) {
     return apiRequest.get<ExportDownloadResponse>(
       `/export-jobs/${jobId}/download`,
