@@ -1291,6 +1291,10 @@ public class ExportServiceImpl implements ExportService {
         }
         builder.append("</sheetData>");
 
+        if (!sectionedReport && rows.size() > 1) {
+            builder.append("<autoFilter ref=\"A5:").append(lastCell).append("\"/>");
+        }
+
         if (columnCount > 1) {
             String lastColumn = cellRef(columnCount - 1, 1).replaceAll("\\d", "");
             builder.append("<mergeCells count=\"3\">")
@@ -1298,10 +1302,6 @@ public class ExportServiceImpl implements ExportService {
                     .append("<mergeCell ref=\"A2:").append(lastColumn).append("2\"/>")
                     .append("<mergeCell ref=\"A3:").append(lastColumn).append("3\"/>")
                     .append("</mergeCells>");
-        }
-
-        if (!sectionedReport && rows.size() > 1) {
-            builder.append("<autoFilter ref=\"A5:").append(lastCell).append("\"/>");
         }
 
         builder.append("<printOptions horizontalCentered=\"0\" verticalCentered=\"0\"/>")

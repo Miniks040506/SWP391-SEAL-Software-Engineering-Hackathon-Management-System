@@ -220,10 +220,7 @@ export function AssistantWidget() {
       (Boolean(conversationId) &&
         (messagesQuery.isLoading || messagesQuery.isFetching)));
   const historyLoadFailed =
-    open &&
-    !startFresh &&
-    Boolean(conversationId) &&
-    messagesQuery.isError;
+    open && !startFresh && Boolean(conversationId) && messagesQuery.isError;
 
   useEffect(() => {
     if (
@@ -659,7 +656,8 @@ export function AssistantWidget() {
                     Conversation could not be restored
                   </p>
                   <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-300">
-                    Retry this conversation or start a new one. Nothing was deleted.
+                    Retry this conversation or start a new one. Nothing was
+                    deleted.
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
