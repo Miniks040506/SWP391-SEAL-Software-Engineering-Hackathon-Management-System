@@ -6,6 +6,7 @@ import com.t7.seal.response.team.*;
 import com.t7.seal.response.submission.TeamDetailedScoreResponse;
 import com.t7.seal.service.RankingService;
 import com.t7.seal.service.TeamService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiPaths.API_V1 + "/teams")
 @RequiredArgsConstructor
+@Tag(
+        name = "Teams",
+        description = "Team lifecycle, membership, invitations, join codes, and advancement status."
+)
 public class TeamController {
 
     private final TeamService teamService;
