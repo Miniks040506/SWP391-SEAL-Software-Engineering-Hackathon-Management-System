@@ -419,19 +419,84 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+            summary = "Delete Notification",
+            description = "Delete Notification through DELETE /api/v1/notifications/{notificationId}. Successful execution returns HTTP 204 without a response body. Access: Authenticated via SecurityConfig matcher /api/v1/notifications/**.",
+            operationId = "notificationDeleteNotification",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Delete notification completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @DeleteMapping("/{notificationId}")
     public ResponseEntity<Void> deleteNotification(
-            @PathVariable("notificationId") UUID notificationId,
-            Authentication authentication
+            @Parameter(description = "Notification Id value.", required = true)
+            @PathVariable UUID notificationId,
+            @Parameter(hidden = true) Authentication authentication
     ) {
         notificationService.deleteNotification(notificationId, authentication);
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+            summary = "Clear Notifications",
+            description = "Clear Notifications through DELETE /api/v1/notifications/clear. Successful execution returns HTTP 204 without a response body. Access: Authenticated via SecurityConfig matcher /api/v1/notifications/**.",
+            operationId = "notificationClearNotifications",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Clear notifications completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @DeleteMapping("/clear")
     public ResponseEntity<Void> clearNotifications(
+            @Parameter(description = "Read value. (optional)", required = false)
             @RequestParam(required = false) Boolean read,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         notificationService.clearMyNotifications(read, authentication);
         return ResponseEntity.noContent().build();
