@@ -164,21 +164,82 @@ public class SubmissionController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Upload Submission File",
+            description = "Upload Submission File through POST /api/v1/teams/{teamId}/rounds/{roundId}/submission/file; POST /api/v1/teams/{teamId}/rounds/{roundId}/submissions/files. Successful execution returns HTTP 201 with SubmissionResponse. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\"). Consumes \"multipart/form-data\".",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Upload submission file completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "413",
+                    description = "The uploaded file exceeds the configured size limit.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "415",
+                    description = "The uploaded media type is not supported.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping(value = {
             "/teams/{teamId}/rounds/{roundId}/submission/file",
             "/teams/{teamId}/rounds/{roundId}/submissions/files"
     }, consumes = "multipart/form-data")
     public ResponseEntity<SubmissionResponse> uploadSubmissionFile(
+            @Parameter(description = "Unique team identifier.", required = true)
             @PathVariable UUID teamId,
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
+            @Parameter(description = "Link Type value.", required = true)
             @RequestParam String linkType,
+            @Parameter(description = "Note value. (optional)", required = false)
             @RequestParam(required = false) String note,
+            @Parameter(description = "Label value. (optional)", required = false)
             @RequestParam(required = false) String label,
+            @Parameter(description = "Is Primary value. (default: false, optional)", required = false)
             @RequestParam(required = false, defaultValue = "false") Boolean isPrimary,
+            @Parameter(description = "Display Order value. (default: 0, optional)", required = false)
             @RequestParam(required = false, defaultValue = "0") Integer displayOrder,
+            @Parameter(description = "Submit Now value. (default: false, optional)", required = false)
             @RequestParam(required = false, defaultValue = "false") Boolean submitNow,
+            @Parameter(description = "Uploaded binary file.", required = true)
             @RequestPart("file") MultipartFile file,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(submissionService.uploadSubmissionFile(
@@ -190,16 +251,76 @@ public class SubmissionController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Upload File To Submission",
+            description = "Upload File To Submission through POST /api/v1/submissions/{submissionId}/files. Successful execution returns HTTP 201 with SubmissionResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submissions/**; @PreAuthorize(\"isAuthenticated()\"). Consumes \"multipart/form-data\".",
+            operationId = "submissionUploadFileToSubmission",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Upload file to submission completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "413",
+                    description = "The uploaded file exceeds the configured size limit.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "415",
+                    description = "The uploaded media type is not supported.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping(value = "/submissions/{submissionId}/files", consumes = "multipart/form-data")
     public ResponseEntity<SubmissionResponse> uploadFileToSubmission(
+            @Parameter(description = "Unique submission identifier.", required = true)
             @PathVariable UUID submissionId,
+            @Parameter(description = "Link Type value.", required = true)
             @RequestParam String linkType,
+            @Parameter(description = "Label value. (optional)", required = false)
             @RequestParam(required = false) String label,
+            @Parameter(description = "Is Primary value. (default: false, optional)", required = false)
             @RequestParam(required = false, defaultValue = "false") Boolean isPrimary,
+            @Parameter(description = "Display Order value. (default: 0, optional)", required = false)
             @RequestParam(required = false, defaultValue = "0") Integer displayOrder,
+            @Parameter(description = "Submit Now value. (default: false, optional)", required = false)
             @RequestParam(required = false, defaultValue = "false") Boolean submitNow,
+            @Parameter(description = "Uploaded binary file.", required = true)
             @RequestPart("file") MultipartFile file,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authenticatio
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(submissionService.uploadFileToSubmission(
