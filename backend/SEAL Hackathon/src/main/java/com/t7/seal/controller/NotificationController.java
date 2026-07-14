@@ -136,22 +136,84 @@ public class NotificationController {
                 .body(notificationService.createNotification(request, authentication));
     }
 
+    @Operation(
+            summary = "Get My Notifications Root",
+            description = "Get My Notifications Root through GET /api/v1/notifications. Successful execution returns HTTP 200 with PageResponse<NotificationResponse>. Access: Authenticated via SecurityConfig matcher /api/v1/notifications/**.",
+            operationId = "notificationGetMyNotificationsRoot",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my notifications root completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping
     public ResponseEntity<PageResponse<NotificationResponse>> getMyNotificationsRoot(
+            @Parameter(description = "Read value. (optional)", required = false)
             @RequestParam(required = false) Boolean read,
+            @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Maximum number of items returned in one page. (default: 20, optional)", required = false)
             @RequestParam(defaultValue = "20") int size,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(notificationService.getMyNotifications(read, page, size, authentication));
     }
 
+    @Operation(
+            summary = "Get My Notifications",
+            description = "Get My Notifications through GET /api/v1/notifications/me. Successful execution returns HTTP 200 with PageResponse<NotificationResponse>. Access: Authenticated via SecurityConfig matcher /api/v1/notifications/**.",
+            operationId = "notificationGetMyNotifications",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my notifications completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/me")
     public ResponseEntity<PageResponse<NotificationResponse>> getMyNotifications(
+            @Parameter(description = "Read value. (optional)", required = false)
             @RequestParam(required = false) Boolean read,
+            @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Maximum number of items returned in one page. (default: 20, optional)", required = false)
             @RequestParam(defaultValue = "20") int size,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(notificationService.getMyNotifications(read, page, size, authentication));
     }
