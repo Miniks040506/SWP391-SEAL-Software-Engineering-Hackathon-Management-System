@@ -1,29 +1,143 @@
 package com.t7.seal.response.team;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Schema(name = "TeamAdvancementStatusResponse", description = "Response payload for team advancement status.")
 public record TeamAdvancementStatusResponse(
+        @Schema(
+                description = "Hackathon event UUID.",
+                example = "18000000-0000-4000-8000-000000000303",
+                format = "uuid",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         UUID eventId,
+        @Schema(
+                description = "API-returned value for event name.",
+                example = "event name example",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         String eventName,
+        @Schema(
+                description = "Team UUID.",
+                example = "18000000-0000-4000-8000-000000000701",
+                format = "uuid",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         UUID teamId,
+        @Schema(
+                description = "API-returned value for team name.",
+                example = "team name example",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         String teamName,
+        @Schema(
+                description = "API-returned value for team status.",
+                example = "COMPLETE",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         String teamStatus,
+        @Schema(
+                description = "Track UUID.",
+                example = "18000000-0000-4000-8000-000000000403",
+                format = "uuid",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         UUID trackId,
+        @Schema(
+                description = "API-returned value for track name.",
+                example = "track name example",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         String trackName,
+        @Schema(
+                description = "Competition round UUID.",
+                example = "18000000-0000-4000-8000-000000000504",
+                format = "uuid",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         UUID roundId,
+        @Schema(
+                description = "API-returned value for round name.",
+                example = "round name example",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         String roundName,
+        @Schema(
+                description = "API-returned value for advancement confirmed.",
+                example = "true",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         Boolean advancementConfirmed,
+        @Schema(
+                description = "Timestamp for advancement confirmed.",
+                example = "2027-08-25T08:00:00",
+                format = "date-time",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         LocalDateTime advancementConfirmedAt,
+        @Schema(
+                description = "API-returned value for advanced.",
+                example = "true",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         Boolean advanced,
+        @Schema(
+                description = "API-returned value for eliminated.",
+                example = "true",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         Boolean eliminated,
+        @Schema(
+                description = "API-returned value for advance reason.",
+                example = "advance reason example",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         String advanceReason,
+        @Schema(
+                description = "Ranking position.",
+                example = "1",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         Integer rankPosition,
+        @Schema(
+                description = "Weighted total score.",
+                example = "8.5",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         Double totalScore,
+        @Schema(
+                description = "UUID reference to the next round.",
+                example = "18000000-0000-4000-8000-000000000999",
+                format = "uuid",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         UUID nextRoundId,
+        @Schema(
+                description = "API-returned value for next round name.",
+                example = "next round name example",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         String nextRoundName,
+        @Schema(
+                description = "API-returned value for next round status.",
+                example = "COMPLETE",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         String nextRoundStatus,
+        @Schema(
+                description = "API-returned value for can access next round.",
+                example = "true",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         Boolean canAccessNextRound,
+        @Schema(
+                description = "Client-safe response message.",
+                example = "Request validation failed",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
         String message
 ) {
 }
