@@ -243,14 +243,71 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-
+    @Operation(
+            summary = "Forgot Password",
+            description = "Forgot Password through POST /api/v1/auth/forgot-password. Successful execution returns HTTP 200 with AuthMessageResponse. Access: Public via SecurityConfig matcher /api/v1/auth/forgot-password. Requires an EmailRequest request body validated with Jakarta Bean Validation.",
+            operationId = "authForgotPassword"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Forgot password completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/forgot-password")
-    public ResponseEntity<AuthMessageResponse> forgotPassword(@Valid @RequestBody EmailRequest request) {
+    public ResponseEntity<AuthMessageResponse> forgotPassword(
+            @Valid @RequestBody EmailRequest request
+    ) {
         return ResponseEntity.ok(authService.forgotPassword(request));
     }
 
+    @Operation(
+            summary = "Reset Password",
+            description = "Reset Password through POST /api/v1/auth/reset-password. Successful execution returns HTTP 200 with AuthMessageResponse. Access: Public via SecurityConfig matcher /api/v1/auth/reset-password. Requires a ResetPasswordRequest request body validated with Jakarta Bean Validation.",
+            operationId = "authResetPassword"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Reset password completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/reset-password")
-    public ResponseEntity<AuthMessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<AuthMessageResponse> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
         return ResponseEntity.ok(authService.resetPassword(request));
     }
 }
