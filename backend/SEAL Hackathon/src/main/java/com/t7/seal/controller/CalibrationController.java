@@ -511,10 +511,53 @@ public class CalibrationController {
     }
 
     @PreAuthorize("hasRole('COORDINATOR') or hasRole('ADMIN')")
+    @Operation(
+            summary = "Publish Distribution",
+            description = "Publish Distribution through POST /api/v1/calibrations/{calibrationId}/publish-distribution; POST /api/v1/calibration-rounds/{calibrationId}/publish-distribution. Successful execution returns HTTP 200 with CalibrationRoundResponse. Access: SecurityConfig roles COORDINATOR, ADMIN via matcher /api/v1/calibrations/*/publish-distribution; @PreAuthorize(\"hasRole('COORDINATOR') or hasRole('ADMIN')\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Publish distribution completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping({"/calibrations/{calibrationId}/publish-distribution", "/calibration-rounds/{calibrationId}/publish-distribution"})
     public ResponseEntity<CalibrationRoundResponse> publishDistribution(
+            @Parameter(description = "Unique calibration identifier.", required = true)
             @PathVariable("calibrationId") UUID calibrationId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService
                 .publishDistribution(calibrationId, authentication));
