@@ -48,9 +48,15 @@ export function useCoordinatorDashboard() {
 
   const teamsQuery = useQuery({
     queryKey: ["coord-dashboard-teams", currentEventId],
-    queryFn: () => teamApi.getCoordinatorEventTeams(currentEventId!, { page: 0, size: 1000 }),
+    queryFn: () =>
+      teamApi.getCoordinatorEventTeams(currentEventId!, {
+        page: 0,
+        size: 1,
+        registrationStatus: "APPROVED",
+      }),
     enabled: Boolean(currentEventId) && !USE_MOCK,
   });
+
 
   const submissionsQuery = useQuery({
     queryKey: ["coord-dashboard-submissions", currentEventId],
@@ -78,10 +84,7 @@ export function useCoordinatorDashboard() {
   const summaryCards: SummaryCardType[] = useMemo(() => {
     if (USE_MOCK) return mockCoordinatorDashboard.summaryCards;
 
-    const teamsList = teamsQuery.data?.content ?? [];
-    const registeredTeamsCount = teamsList.filter(
-      (t) => ["REGISTERED", "COMPETING", "ADVANCED", "WINNER"].includes((t.status ?? "").toUpperCase())
-    ).length;
+    const registeredTeamsCount = teamsQuery.data?.totalElements ?? 0;
     const totalSubmissions = submissionsQuery.data?.totalElements ?? 0;
     const draftScorecards = (scoringQuery.data as any)?.draftCount ?? 0;
 
@@ -92,6 +95,7 @@ export function useCoordinatorDashboard() {
       { title: "Draft Scorecards", value: draftScorecards, description: "Need judge completion", iconType: "grading", color: "bg-rose-50 text-rose-600" },
     ];
   }, [USE_MOCK, activeEvents.length, teamsQuery.data, submissionsQuery.data, scoringQuery.data]);
+
 
   const pendingActions: PendingActionType[] = useMemo(() => {
     if (USE_MOCK) return mockCoordinatorDashboard.pendingActions;
@@ -147,14 +151,26 @@ export function useCoordinatorDashboard() {
         .replace(/team registrations? (?:are )?waiting for approval/gi, "teams still forming — not yet registered");
     };
 
-    const notifsList = notifsQuery.data?.content ?? [];
+    const notifsList =
+      notifsQuery.data?.content ??
+      (notifsQuery.data as any)?.data?.content ??
+      [];
+
+    const formatTime = (n: any) => {
+      const raw = n.sentAt ?? n.scheduledAt;
+      if (!raw) return "—";
+      const d = new Date(raw);
+      return isNaN(d.getTime()) ? "—" : d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+    };
+
     return notifsList.slice(0, 4).map((n: any) => ({
       id: n.id,
-      time: new Date(n.sentAt || n.createdAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
+      time: formatTime(n),
       title: normalizeText(n.title),
       description: normalizeText(n.body),
     }));
   }, [USE_MOCK, notifsQuery.data]);
+
 
   const resultStatus: ResultStatusType = useMemo(() => {
     if (USE_MOCK) return mockCoordinatorDashboard.resultStatus;
@@ -176,5 +192,6 @@ export function useCoordinatorDashboard() {
     resultStatus,
     pendingActions,
     recentActivities,
+    registeredTeamsCount: USE_MOCK ? null : (teamsQuery.data?.totalElements ?? null),
   };
 }
