@@ -7,6 +7,7 @@ import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.system.AnnouncementResponse;
 import com.t7.seal.service.AnnouncementService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -63,9 +64,11 @@ public class AnnouncementController {
     })
     @GetMapping("/events/{eventId}/announcements")
     public ResponseEntity<List<AnnouncementResponse>> getEventAnnouncements(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
+            @Parameter(description = "Whether to return management-only information. (default: false, optional)", required = false)
             @RequestParam(defaultValue = "false") boolean manage,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         if (manage) {
             return ResponseEntity.ok(announcementService.getManageEventAnnouncements(eventId, authentication));
@@ -119,19 +122,49 @@ public class AnnouncementController {
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @PostMapping("/events/{eventId}/announcements")
     public ResponseEntity<AnnouncementResponse> createAnnouncement(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
             @Valid @RequestBody CreateAnnouncementRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(announcementService.createAnnouncement(eventId, request, authentication));
     }
 
+    @Operation(
+            summary = "Get Announcement By Id",
+            description = "Get Announcement By Id through GET /api/v1/announcements/{announcementId}. Successful execution returns HTTP 200 with AnnouncementResponse. Access: Public via SecurityConfig matcher /api/v1/announcements/*.",
+            operationId = "announcementGetAnnouncementById"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get announcement by id completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/announcements/{announcementId}")
     public ResponseEntity<AnnouncementResponse> getAnnouncementById(
+            @Parameter(description = "Unique announcement identifier.", required = true)
             @PathVariable UUID announcementId,
+            @Parameter(description = "Whether to return management-only information. (default: false, optional)", required = false)
             @RequestParam(defaultValue = "false") boolean manage,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         if (manage) {
             return ResponseEntity.ok(announcementService.getAnnouncementByIdForManage(announcementId, authentication));
@@ -140,11 +173,55 @@ public class AnnouncementController {
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Update Announcement",
+            description = "Update Announcement through PATCH /api/v1/announcements/{announcementId}. Successful execution returns HTTP 200 with AnnouncementResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/announcements/*; @PreAuthorize(\"hasRole('COORDINATOR')\"). Requires an UpdateAnnouncementRequest request body validated with Jakarta Bean Validation.",
+            operationId = "announcementUpdateAnnouncement",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update announcement completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/announcements/{announcementId}")
     public ResponseEntity<AnnouncementResponse> updateAnnouncement(
+            @Parameter(description = "Unique announcement identifier.", required = true)
             @PathVariable UUID announcementId,
             @Valid @RequestBody UpdateAnnouncementRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(announcementService
                 .updateAnnouncement(announcementId, request, authentication));
