@@ -216,24 +216,102 @@ public class UserController {
         return ResponseEntity.ok(userService.getMyProfile(authentication));
     }
 
-
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Get User By Id",
+            description = "Get User By Id through GET /api/v1/users/{userId}. Successful execution returns HTTP 200 with UserDetailResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/users/*; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\").",
+            operationId = "userGetUserById",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get user by id completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/{userId}")
     public ResponseEntity<UserDetailResponse> getUserById(
+            @Parameter(description = "Unique user identifier.", required = true)
             @PathVariable UUID userId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(userService.getUserById(userId, authentication));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Create User",
+            description = "Create User through POST /api/v1/users. Successful execution returns HTTP 201 with UserDetailResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/users; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\"). Requires a CreateUserRequest request body validated with Jakarta Bean Validation.",
+            operationId = "userCreateUser",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Create user completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping
     public ResponseEntity<UserDetailResponse> createUser(
             @Valid @RequestBody CreateUserRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request, authentication));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(userService.createUser(request, authentication));
     }
+
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @PostMapping("/{userId}/approve")
