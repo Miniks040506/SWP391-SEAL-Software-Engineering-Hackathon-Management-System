@@ -164,23 +164,77 @@ public class EventController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response); // 2 method to create response
     }
 
+    @Operation(
+            summary = "Get Public Events",
+            description = "Get Public Events through GET /api/v1/events. Successful execution returns HTTP 200 with PageResponse<EventSummaryResponse>. Access: Public via SecurityConfig matcher /api/v1/events.",
+            operationId = "eventGetPublicEvents"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get public events completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping
     public ResponseEntity<PageResponse<EventSummaryResponse>> getPublicEvents(
+            @Parameter(description = "Optional event-season filter. (optional)", required = false)
             @RequestParam(required = false) String season,
+            @Parameter(description = "Optional event-year filter. (optional)", required = false)
             @RequestParam(required = false) Integer year,
+            @Parameter(description = "Optional status filter. (optional)", required = false)
             @RequestParam(required = false) String status,
+            @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Maximum number of items returned in one page. (default: 6, optional)", required = false)
             @RequestParam(defaultValue = "6") int size
     ) {
         return ResponseEntity.ok(eventService.getPublicEvent(season, year, status, size, page));
     }
 
+    @Operation(
+            summary = "Get All Events",
+            description = "Get All Events through GET /api/v1/events/all. Successful execution returns HTTP 200 with PageResponse<EventSummaryResponse>. Access: Public via SecurityConfig matcher /api/v1/events/*.",
+            operationId = "eventGetAllEvents"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get all events completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/all")
     public ResponseEntity<PageResponse<EventSummaryResponse>> getAllEvents(
+            @Parameter(description = "Optional event-season filter. (optional)", required = false)
             @RequestParam(required = false) String season,
+            @Parameter(description = "Optional event-year filter. (optional)", required = false)
             @RequestParam(required = false) Integer year,
+            @Parameter(description = "Optional status filter. (optional)", required = false)
             @RequestParam(required = false) String status,
+            @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Maximum number of items returned in one page. (default: 6, optional)", required = false)
             @RequestParam(defaultValue = "6") int size) {
         return ResponseEntity.ok(eventService.getAllEvents(season, year, status, size, page));
     }
