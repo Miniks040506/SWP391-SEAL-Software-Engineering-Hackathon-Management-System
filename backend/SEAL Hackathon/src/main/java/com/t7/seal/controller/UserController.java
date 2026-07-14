@@ -420,20 +420,103 @@ public class UserController {
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Create Guest Judge",
+            description = "Create Guest Judge through POST /api/v1/users/guest-judge. Successful execution returns HTTP 201 with GuestJudgeResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/users/guest-judge; @PreAuthorize(\"hasRole('COORDINATOR')\"). Requires a CreateGuestJudgeRequest request body validated with Jakarta Bean Validation.",
+            operationId = "userCreateGuestJudge",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Create guest judge completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/guest-judge")
     public ResponseEntity<GuestJudgeResponse> createGuestJudge(
             @Valid @RequestBody CreateGuestJudgeRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createGuestJudge(request, authentication));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(userService.createGuestJudge(request, authentication));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Update User",
+            description = "Update User through PATCH /api/v1/users/{userId}. Successful execution returns HTTP 200 with UserDetailResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/users/*; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\"). Requires an UpdateUserRequest request body validated with Jakarta Bean Validation.",
+            operationId = "userUpdateUser",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update user completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/{userId}")
     public ResponseEntity<UserDetailResponse> updateUser(
+            @Parameter(description = "Unique user identifier.", required = true)
             @PathVariable UUID userId,
             @Valid @RequestBody UpdateUserRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(userService.updateUser(userId, request, authentication));
     }
