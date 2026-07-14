@@ -30,13 +30,12 @@ export interface DisqualifySubmissionDialogProps {
   onClose: () => void;
   submissionId: UUID;
   isPending: boolean;
-  onConfirm: (values: DisqualifyFormValues) => Promise<any>;
+  onConfirm: (values: DisqualifyFormValues) => Promise<import("@/types/disqualification.types").DisqualificationResponse | undefined>;
 }
 
 export function DisqualifySubmissionDialog({
   open,
   onClose,
-  submissionId: _submissionId,
   isPending,
   onConfirm,
 }: DisqualifySubmissionDialogProps) {
@@ -68,9 +67,10 @@ export function DisqualifySubmissionDialog({
         },
       );
       handleClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       enqueueSnackbar(
-        error?.response?.data?.message || "Failed to disqualify submission.",
+        err?.response?.data?.message || "Failed to disqualify submission.",
         { variant: "error" },
       );
     }

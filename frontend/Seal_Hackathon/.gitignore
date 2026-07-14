@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 .history
-.history/*
+.history/*diff.txt

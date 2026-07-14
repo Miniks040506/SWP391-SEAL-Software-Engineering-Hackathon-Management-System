@@ -51,9 +51,10 @@ export function DisqualificationAppealForm({
       enqueueSnackbar("Appeal submitted successfully.", { variant: "success" });
       reset();
       if (onSuccess) onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       enqueueSnackbar(
-        error?.response?.data?.message || "Failed to submit appeal.",
+        err?.response?.data?.message || "Failed to submit appeal.",
         { variant: "error" },
       );
     }

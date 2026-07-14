@@ -63,7 +63,7 @@ export const useDisqualifySubmissionMutation = () => {
       submissionId: UUID;
       payload: DisqualifySubmissionRequest;
     }) => disqualificationApi.disqualifySubmissionById(submissionId, payload),
-    onSuccess: (data: any) => {
+    onSuccess: (data: DisqualificationResponse) => {
       if (data?.rankingRecalculated) {
         sessionStorage.setItem("rankingRecalculated", "true");
       }
@@ -98,7 +98,7 @@ export const useOverturnDisqualificationMutation = () => {
       payload: OverturnDisqualificationRequest;
     }) =>
       disqualificationApi.overturnDisqualification(disqualificationId, payload),
-    onSuccess: (data: any) => {
+    onSuccess: (data: DisqualificationResponse) => {
       if (data?.rankingRecalculated) {
         sessionStorage.setItem("rankingRecalculated", "true");
       }
