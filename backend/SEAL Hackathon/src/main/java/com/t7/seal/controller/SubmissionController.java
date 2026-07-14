@@ -533,20 +533,108 @@ public class SubmissionController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Submit Existing Submission",
+            description = "Submit Existing Submission through POST /api/v1/submissions/{submissionId}/submit. Successful execution returns HTTP 200 with SubmissionResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submissions/**; @PreAuthorize(\"isAuthenticated()\").",
+            operationId = "submissionSubmitExistingSubmission",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Submit existing submission completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/submissions/{submissionId}/submit")
     public ResponseEntity<SubmissionResponse> submitExistingSubmission(
+            @Parameter(description = "Unique submission identifier.", required = true)
             @PathVariable UUID submissionId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.submitExistingSubmission(submissionId, authentication));
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Add Submission Links",
+            description = "Add Submission Links through POST /api/v1/submissions/{submissionId}/links. Successful execution returns HTTP 201 with SubmissionResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submissions/**; @PreAuthorize(\"isAuthenticated()\"). Requires a SubmissionLinkRequest request body validated with Jakarta Bean Validation.",
+            operationId = "submissionAddSubmissionLinks",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Add submission links completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/submissions/{submissionId}/links")
     public ResponseEntity<SubmissionResponse> addSubmissionLinks(
+            @Parameter(description = "Unique submission identifier.", required = true)
             @PathVariable UUID submissionId,
             @Valid @RequestBody SubmissionLinkRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(submissionService.addSubmissionLinks(submissionId, request, authentication));
