@@ -331,19 +331,107 @@ public class EventController {
     }
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
+    @Operation(
+            summary = "Advance Event Status",
+            description = "Advance Event Status through POST /api/v1/events/{eventId}/advance-status. Successful execution returns HTTP 200 with EventDetailResponse. Access: Authenticated via SecurityConfig matcher anyRequest(); @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId, authentication)\").",
+            operationId = "eventAdvanceEventStatus",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Advance event status completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/{eventId}/advance-status")
     public ResponseEntity<EventDetailResponse> advanceEventStatus(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(eventService.advanceEventStatus(eventId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
+    @Operation(
+            summary = "Cancel Event",
+            description = "Cancel Event through POST /api/v1/events/{eventId}/cancel. Successful execution returns HTTP 200 with EventDetailResponse. Access: Authenticated via SecurityConfig matcher anyRequest(); @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId, authentication)\").",
+            operationId = "eventCancelEvent",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Cancel event completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/{eventId}/cancel")
     public ResponseEntity<EventDetailResponse> cancelEvent(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(eventService.cancelEvent(eventId, authentication));
     }
