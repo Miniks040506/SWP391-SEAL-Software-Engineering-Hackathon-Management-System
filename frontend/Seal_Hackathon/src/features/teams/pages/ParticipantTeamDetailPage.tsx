@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useSnackbar } from "notistack";
+
 
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
@@ -111,6 +113,8 @@ export const TeamDetailPage = () => {
       (comp) => comp.teamId === teamId,
     );
   }, [activeCompetitionsQuery.data, teamId]);
+
+
 
   const currentUserIsLeader = isLeaderRole(currentTeamSummary?.roleInTeam);
 
@@ -272,30 +276,56 @@ export const TeamDetailPage = () => {
               </div>
 
               {activeCompetitionsQuery.isLoading ? (
-                <div className="pt-2">
-                  <Skeleton variant="rounded" width={160} height={36} sx={{ borderRadius: "10px" }} />
+                <div className="pt-2 flex flex-row flex-wrap gap-2 md:justify-end">
+                  <Skeleton
+                    variant="rounded"
+                    width={160}
+                    height={36}
+                    sx={{ borderRadius: "10px" }}
+                  />
+                  <Skeleton
+                    variant="rounded"
+                    width={160}
+                    height={36}
+                    sx={{ borderRadius: "10px" }}
+                  />
                 </div>
               ) : activeCompetition ? (
-                <div className="pt-2">
+                <div className="pt-2 flex flex-row flex-wrap gap-2 md:justify-end">
                   <Button
+                    color="secondary"
                     variant="contained"
                     endIcon={<RocketLaunchOutlinedIcon />}
                     onClick={() =>
                       navigate(
                         `/participant/events/${activeCompetition.eventId}/competing`,
-                        { state: { fromInternal: true } }
+                        { state: { fromInternal: true } },
                       )
                     }
                     sx={{
-                      bgcolor: "#10b981",
                       fontWeight: 800,
                       textTransform: "none",
                       borderRadius: "10px",
-                      boxShadow: "none",
-                      "&:hover": { bgcolor: "#059669", boxShadow: "none" },
+                      whiteSpace: "nowrap",
                     }}
                   >
                     Event Competing
+                  </Button>
+
+                  <Button
+                    color="primary"
+                    variant="contained"
+                    onClick={() =>
+                      navigate(`/participant/teams/${teamId}/submissions`)
+                    }
+                    sx={{
+                      fontWeight: 800,
+                      textTransform: "none",
+                      borderRadius: "10px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Submissions
                   </Button>
                 </div>
               ) : null}

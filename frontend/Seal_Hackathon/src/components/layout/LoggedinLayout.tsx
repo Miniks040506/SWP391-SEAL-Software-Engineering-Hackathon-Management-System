@@ -12,6 +12,7 @@ import type { UserRole } from "@/types/auth.types";
 import { getPrimaryRole } from "@/utils/roleRedirect";
 // import { ThemeTransitionLayer } from "./themeTransitionLayer";
 import { AppNavbar } from "./AppNarbar";
+import { usePendingAppealCount } from "@/features/disqualification/hooks/usePendingAppealCount";
 
 type LoggedinLayoutProps = {
   sectionRole: UserRole;
@@ -55,6 +56,12 @@ export function LoggedinLayout({ sectionRole }: LoggedinLayoutProps) {
     window.scrollTo({ top: 0, left: 0 });
   }, [location.pathname]);
 
+  const isCoordinator = sectionRole === "COORDINATOR";
+  const { count: pendingAppealCount } = usePendingAppealCount(isCoordinator);
+  const badgeCounts = isCoordinator
+    ? { pendingAppeals: pendingAppealCount }
+    : undefined;
+
   if (!accessToken || !user) {
     return <Navigate to="/login" replace />;
   }
@@ -80,7 +87,7 @@ export function LoggedinLayout({ sectionRole }: LoggedinLayoutProps) {
         maxWidthClassName="max-w-none"
       />
 
-      <SidebarLoggedin sections={layoutConfig.sidebar} />
+      <SidebarLoggedin sections={layoutConfig.sidebar} badgeCounts={badgeCounts} />
 
       <main className="ml-64 px-8 py-8 pb-20">
         <Outlet />

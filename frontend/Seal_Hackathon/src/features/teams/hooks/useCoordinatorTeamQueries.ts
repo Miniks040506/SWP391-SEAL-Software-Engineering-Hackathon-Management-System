@@ -30,7 +30,8 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
           size: params.size,
         });
         const filteredContent = res.content.filter(
-          (team) => team.status !== "FORMING",
+          (team) =>
+            team.status !== "FORMING" || team.registrationStatus != null,
         );
         setData({
           ...res,

@@ -477,7 +477,7 @@ export const MyTeamsPage = () => {
                         </div>
                       </div>
 
-                      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
                           <p className="text-sm font-semibold text-gray-500">
                             Role
@@ -521,28 +521,32 @@ export const MyTeamsPage = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 shrink-0">
+                    <div className="flex flex-col gap-1.5 shrink-0">
                       <Button
-                        variant="contained"
+                        color="primary"
+                        variant="outlined"
                         onClick={() =>
                           navigate(`/participant/teams/${team.id}`)
                         }
                         sx={{
-                          bgcolor: "#2563eb",
                           fontWeight: 800,
                           textTransform: "none",
                           borderRadius: "10px",
-                          boxShadow: "none",
-                          "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
                         }}
                       >
                         View Team
                       </Button>
 
                       {activeCompetitionsQuery.isLoading ? (
-                        <Skeleton variant="rounded" width="100%" height={36} sx={{ borderRadius: "10px" }} />
+                        <Skeleton
+                          variant="rounded"
+                          width="100%"
+                          height={36}
+                          sx={{ borderRadius: "10px" }}
+                        />
                       ) : activeCompetition ? (
                         <Button
+                          color="secondary"
                           variant="contained"
                           endIcon={<RocketLaunchOutlinedIcon />}
                           onClick={() =>
@@ -552,15 +556,10 @@ export const MyTeamsPage = () => {
                             )
                           }
                           sx={{
-                            bgcolor: "#10b981",
                             fontWeight: 800,
                             textTransform: "none",
                             borderRadius: "10px",
-                            boxShadow: "none",
-                            "&:hover": {
-                              bgcolor: "#059669",
-                              boxShadow: "none",
-                            },
+                            whiteSpace: "nowrap",
                           }}
                         >
                           Event Competing
