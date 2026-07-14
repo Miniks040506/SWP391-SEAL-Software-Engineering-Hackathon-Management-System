@@ -135,21 +135,106 @@ public class CoordinatorGradingController {
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Get Judge Assignment Progress",
+            description = "Get Judge Assignment Progress through GET /api/v1/judge-assignments/{assignmentId}/progress. Successful execution returns HTTP 200 with JudgeAssignmentProgressResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/judge-assignments/*/progress; @PreAuthorize(\"hasRole('COORDINATOR')\").",
+            operationId = "coordinatorGradingGetJudgeAssignmentProgress",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get judge assignment progress completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/judge-assignments/{assignmentId}/progress")
     public ResponseEntity<JudgeAssignmentProgressResponse> getJudgeAssignmentProgress(
+            @Parameter(description = "Assignment Id value.", required = true)
             @PathVariable UUID assignmentId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(gradingService.getJudgeAssignmentProgress(assignmentId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @Operation(
+            summary = "Reopen Score Sheet",
+            description = "Reopen Score Sheet through POST /api/v1/rounds/{roundId}/submissions/{submissionId}/judges/{judgeId}/scores/reopen. Successful execution returns HTTP 200 with SubmissionGradingProgressResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/rounds/*/submissions/*/judges/*/scores/reopen; @PreAuthorize(\"@eventSecurity.canManageRound(#roundId, authentication)\").",
+            operationId = "coordinatorGradingReopenScoreSheet",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Reopen score sheet completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/rounds/{roundId}/submissions/{submissionId}/judges/{judgeId}/scores/reopen")
     public ResponseEntity<SubmissionGradingProgressResponse> reopenScoreSheet(
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
+            @Parameter(description = "Unique submission identifier.", required = true)
             @PathVariable UUID submissionId,
+            @Parameter(description = "Unique judge identifier.", required = true)
             @PathVariable UUID judgeId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(gradingService.reopenScoreSheet(roundId, submissionId, judgeId, authentication));
     }
