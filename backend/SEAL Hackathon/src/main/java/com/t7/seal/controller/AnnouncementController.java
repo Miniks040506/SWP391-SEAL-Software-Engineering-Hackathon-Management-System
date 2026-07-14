@@ -332,21 +332,109 @@ public class AnnouncementController {
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Schedule Announcement",
+            description = "Schedule Announcement through POST /api/v1/announcements/{announcementId}/schedule. Successful execution returns HTTP 200 with AnnouncementResponse. Access: Authenticated via SecurityConfig matcher anyRequest(); @PreAuthorize(\"hasRole('COORDINATOR')\"). Requires an UpdateAnnouncementRequest request body validated with Jakarta Bean Validation.",
+            operationId = "announcementScheduleAnnouncement",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Schedule announcement completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/announcements/{announcementId}/schedule")
     public ResponseEntity<AnnouncementResponse> scheduleAnnouncement(
+            @Parameter(description = "Unique announcement identifier.", required = true)
             @PathVariable UUID announcementId,
             @Valid @RequestBody UpdateAnnouncementRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(
                 announcementService.scheduleAnnouncement(announcementId, request, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Unpublish Announcement",
+            description = "Unpublish Announcement through POST /api/v1/announcements/{announcementId}/unpublish. Successful execution returns HTTP 200 with AnnouncementResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/announcements/*/unpublish; @PreAuthorize(\"hasRole('COORDINATOR')\").",
+            operationId = "announcementUnpublishAnnouncement",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Unpublish announcement completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/announcements/{announcementId}/unpublish")
     public ResponseEntity<AnnouncementResponse> unpublishAnnouncement(
+            @Parameter(description = "Unique announcement identifier.", required = true)
             @PathVariable UUID announcementId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(
                 announcementService.unpublishAnnouncement(announcementId, authentication));
