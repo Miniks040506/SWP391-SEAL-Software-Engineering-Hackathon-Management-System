@@ -641,18 +641,97 @@ public class RoundController {
     }
 
     @PreAuthorize("@eventSecurity.canManageAdvanceRule(#ruleId, authentication)")
+    @Operation(
+            summary = "Delete Advance Rule",
+            description = "Delete Advance Rule through DELETE /api/v1/advance-rules/{ruleId}. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/advance-rules/**; @PreAuthorize(\"@eventSecurity.canManageAdvanceRule(#ruleId, authentication)\").",
+            operationId = "roundDeleteAdvanceRule",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Delete advance rule completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @DeleteMapping("/advance-rules/{ruleId}")
     public ResponseEntity<Void> deleteAdvanceRule(
+            @Parameter(description = "Rule Id value.", required = true)
             @PathVariable UUID ruleId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         roundService.deleteAdvanceRule(ruleId, authentication);
         return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @Operation(
+            summary = "Get Judge Assignments",
+            description = "Get Judge Assignments through GET /api/v1/rounds/{roundId}/judge-assignments. Successful execution returns HTTP 200 with List<JudgeAssignmentResponse>. Access: SecurityConfig role COORDINATOR via matcher /api/v1/rounds/*/judge-assignments/**; @PreAuthorize(\"@eventSecurity.canManageRound(#roundId, authentication)\").",
+            operationId = "roundGetJudgeAssignments",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get judge assignments completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/rounds/{roundId}/judge-assignments")
-    public ResponseEntity<List<JudgeAssignmentResponse>> getJudgeAssignments(@PathVariable UUID roundId) {
+    public ResponseEntity<List<JudgeAssignmentResponse>> getJudgeAssignments(@Parameter(description = "Unique round identifier.", required = true)
+                                                                             @PathVariable UUID roundId) {
         return ResponseEntity.ok(judgeAssignmentService.getJudgeAssignments(roundId));
     }
 
