@@ -532,22 +532,110 @@ public class RoundController {
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @Operation(
+            summary = "Create Advance Rule",
+            description = "Create Advance Rule through POST /api/v1/rounds/{roundId}/advance-rules. Successful execution returns HTTP 201 with AdvanceRuleResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/rounds/*/advance-rules; @PreAuthorize(\"@eventSecurity.canManageRound(#roundId, authentication)\"). Requires a CreateAdvanceRuleRequest request body validated with Jakarta Bean Validation.",
+            operationId = "roundCreateAdvanceRule",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Create advance rule completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/rounds/{roundId}/advance-rules")
     public ResponseEntity<AdvanceRuleResponse> createAdvanceRule(
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
             @Valid @RequestBody CreateAdvanceRuleRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(roundService.createAdvanceRule(roundId, request, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageAdvanceRule(#ruleId, authentication)")
+    @Operation(
+            summary = "Update Advance Rule",
+            description = "Update Advance Rule through PATCH /api/v1/advance-rules/{ruleId}. Successful execution returns HTTP 200 with AdvanceRuleResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/advance-rules/**; @PreAuthorize(\"@eventSecurity.canManageAdvanceRule(#ruleId, authentication)\"). Requires an UpdateAdvanceRuleRequest request body validated with Jakarta Bean Validation.",
+            operationId = "roundUpdateAdvanceRule",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update advance rule completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/advance-rules/{ruleId}")
     public ResponseEntity<AdvanceRuleResponse> updateAdvanceRule(
+            @Parameter(description = "Rule Id value.", required = true)
             @PathVariable UUID ruleId,
             @Valid @RequestBody UpdateAdvanceRuleRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(roundService.updateAdvanceRule(ruleId, request, authentication));
     }
