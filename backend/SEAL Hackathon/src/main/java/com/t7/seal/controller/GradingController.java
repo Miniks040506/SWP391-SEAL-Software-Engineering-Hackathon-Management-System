@@ -353,11 +353,55 @@ public class GradingController {
     }
 
     @PreAuthorize("hasRole('JUDGE')")
+    @Operation(
+            summary = "Save Scores",
+            description = "Save Scores through POST /api/v1/grading/submissions/{submissionId}/scores. Successful execution returns HTTP 200 with ScoreSheetResponse. Access: SecurityConfig role JUDGE via matcher /api/v1/grading/**; @PreAuthorize(\"hasRole('JUDGE')\"). Requires a SaveScoreSheetRequest request body validated with Jakarta Bean Validation.",
+            operationId = "gradingSaveScores",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Save scores completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/submissions/{submissionId}/scores")
     public ResponseEntity<ScoreSheetResponse> saveScores(
+            @Parameter(description = "Unique submission identifier.", required = true)
             @PathVariable UUID submissionId,
             @Valid @RequestBody SaveScoreSheetRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         boolean draft = request.draft() == null || request.draft();
 
@@ -367,11 +411,56 @@ public class GradingController {
     }
 
     @PreAuthorize("hasRole('JUDGE')")
+    @Operation(
+            summary = "Confirm Score Sheet",
+            description = "Confirm Score Sheet through POST /api/v1/grading/submissions/{submissionId}/scores/confirm. Successful execution returns HTTP 200 with ScoreSheetResponse. Access: SecurityConfig role JUDGE via matcher /api/v1/grading/**; @PreAuthorize(\"hasRole('JUDGE')\"). Requires a ConfirmScoreSheetRequest request body validated with Jakarta Bean Validation.",
+            operationId = "gradingConfirmScoreSheet",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Confirm score sheet completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/submissions/{submissionId}/scores/confirm")
     public ResponseEntity<ScoreSheetResponse> confirmScoreSheet(
+            @Parameter(description = "Unique submission identifier.", required = true)
             @PathVariable UUID submissionId,
             @Valid @RequestBody ConfirmScoreSheetRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
+
     ) {
         return ResponseEntity.ok(gradingService.confirmScoreSheet(submissionId, request, authentication));
     }
