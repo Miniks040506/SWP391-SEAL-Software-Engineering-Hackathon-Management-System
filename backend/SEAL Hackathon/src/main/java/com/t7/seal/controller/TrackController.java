@@ -331,19 +331,99 @@ public class TrackController {
     }
 
     @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
+    @Operation(
+            summary = "Get Mentor Assignments",
+            description = "Get Mentor Assignments through GET /api/v1/tracks/{trackId}/mentor-assignments. Successful execution returns HTTP 200 with List<MentorAssignmentResponse>. Access: SecurityConfig role COORDINATOR via matcher /api/v1/tracks/*/mentor-assignments/**; @PreAuthorize(\"@eventSecurity.canManageTrack(#trackId, authentication)\").",
+            operationId = "trackGetMentorAssignments",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get mentor assignments completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/tracks/{trackId}/mentor-assignments")
     public ResponseEntity<List<MentorAssignmentResponse>> getMentorAssignments(
+            @Parameter(description = "Unique track identifier.", required = true)
             @PathVariable UUID trackId
     ) {
         return ResponseEntity.ok(mentorAssignmentService.getMentorAssignments(trackId));
     }
 
     @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
+    @Operation(
+            summary = "Remove Mentor Assignment",
+            description = "Remove Mentor Assignment through DELETE /api/v1/tracks/{trackId}/mentor-assignments/{assignmentId}. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig role COORDINATOR via matcher /api/v1/tracks/*/mentor-assignments/**; @PreAuthorize(\"@eventSecurity.canManageTrack(#trackId, authentication)\").",
+            operationId = "trackRemoveMentorAssignment",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Remove mentor assignment completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @DeleteMapping("/tracks/{trackId}/mentor-assignments/{assignmentId}")
     public ResponseEntity<Void> removeMentorAssignment(
+            @Parameter(description = "Unique track identifier.", required = true)
             @PathVariable UUID trackId,
+            @Parameter(description = "Assignment Id value.", required = true)
             @PathVariable UUID assignmentId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         mentorAssignmentService.removeMentorAssignment(trackId, assignmentId, authentication);
         return ResponseEntity.noContent().build();
