@@ -159,6 +159,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
     }
 
     @Override
+    @Transactional
     public void removeJudgeAssignmentById(UUID assignmentId, Authentication authentication) {
         currentUserService.getCurrentUser(authentication);
 
