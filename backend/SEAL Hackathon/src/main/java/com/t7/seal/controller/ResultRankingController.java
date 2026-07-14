@@ -2,9 +2,17 @@ package com.t7.seal.controller;
 
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.results.PublishResultsRequest;
+import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.results.PublishResultsResponse;
 import com.t7.seal.response.results.RankingRecalculationResponse;
 import com.t7.seal.response.results.RankingResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import com.t7.seal.service.RankingService;
@@ -29,22 +37,110 @@ public class ResultRankingController {
     private final RankingService rankingService;
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @Operation(
+            summary = "Calculate Round Rankings",
+            description = "Calculate Round Rankings through POST /api/v1/rounds/{roundId}/rankings/calculate. Successful execution returns HTTP 200 with RankingRecalculationResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/rounds/*/rankings/calculate; @PreAuthorize(\"@eventSecurity.canManageRound(#roundId, authentication)\").",
+            operationId = "resultRankingCalculateRoundRankings",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Calculate round rankings completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/rounds/{roundId}/rankings/calculate")
     public ResponseEntity<RankingRecalculationResponse> calculateRoundRankings(
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
+            @Parameter(description = "Unique track identifier. (optional)", required = false)
             @RequestParam(required = false) UUID trackId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(rankingService.calculateRoundRankings(roundId, trackId, authentication));
     }
 
-
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
+    @Operation(
+            summary = "Publish Event Results",
+            description = "Publish Event Results through POST /api/v1/events/{eventId}/results/publish. Successful execution returns HTTP 200 with PublishResultsResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events/*/results/publish; @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId, authentication)\"). Optionally accepts a PublishResultsRequest request body validated with Jakarta Bean Validation.",
+            operationId = "resultRankingPublishEventResults",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Publish event results completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/events/{eventId}/results/publish")
     public ResponseEntity<PublishResultsResponse> publishEventResults(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
             @Valid @RequestBody(required = false) PublishResultsRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(rankingService.publishEventResults(eventId, request, authentication));
     }
