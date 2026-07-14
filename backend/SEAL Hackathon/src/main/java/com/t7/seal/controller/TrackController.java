@@ -534,10 +534,44 @@ public class TrackController {
         return ResponseEntity.ok(teamService.registerTeamForTrack(teamId, request, authentication));
     }
 
+    @Operation(
+            summary = "Get Available Tracks",
+            description = "Get Available Tracks through GET /api/v1/events/{eventId}/tracks/available. Successful execution returns HTTP 200 with List<TrackAvailabilityResponse>. Access: Authenticated via SecurityConfig matcher anyRequest().",
+            operationId = "trackGetAvailableTracks",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get available tracks completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/events/{eventId}/tracks/available")
     public ResponseEntity<List<TrackAvailabilityResponse>> getAvailableTracks(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(trackService.getAvailableTracks(eventId, authentication));
     }
