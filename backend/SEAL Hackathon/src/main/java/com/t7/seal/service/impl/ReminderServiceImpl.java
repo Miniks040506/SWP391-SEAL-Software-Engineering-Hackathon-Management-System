@@ -275,7 +275,7 @@ public class ReminderServiceImpl implements ReminderService {
     }
 
     private void ensureCanManage(Authentication authentication) {
-        if (CurrentUser.isAdminOrCoordinator(authentication)) {
+        if (!CurrentUser.isAdminOrCoordinator(authentication)) {
             throw new ForbiddenException("Only admin or coordinator can manage reminders.");
         }
     }
