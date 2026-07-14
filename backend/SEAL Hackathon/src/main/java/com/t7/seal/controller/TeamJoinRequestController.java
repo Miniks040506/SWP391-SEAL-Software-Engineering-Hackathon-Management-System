@@ -316,13 +316,75 @@ public class TeamJoinRequestController {
         return ResponseEntity.ok(joinRequestService.getByToken(token));
     }
 
+    @Operation(
+            summary = "Accept By Token",
+            description = "Accept By Token through POST /api/v1/team-join-requests/token/{token}/accept. Successful execution returns HTTP 200 with TeamMemberResponse. Access: Public via SecurityConfig matcher /api/v1/team-join-requests/token/*/accept.",
+            operationId = "teamJoinRequestAcceptByToken"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Accept by token completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/team-join-requests/token/{token}/accept")
-    public ResponseEntity<TeamMemberResponse> acceptByToken(@PathVariable String token) {
+    public ResponseEntity<TeamMemberResponse> acceptByToken(@Parameter(description = "Opaque action or verification token.", required = true)
+                                                            @PathVariable String token) {
         return ResponseEntity.ok(joinRequestService.acceptByToken(token));
     }
 
+    @Operation(
+            summary = "Reject By Token",
+            description = "Reject By Token through POST /api/v1/team-join-requests/token/{token}/reject. Successful execution returns HTTP 204 without a response body. Access: Public via SecurityConfig matcher /api/v1/team-join-requests/token/*/reject. Optionally accepts a ReasonRequest request body validated with Jakarta Bean Validation.",
+            operationId = "teamJoinRequestRejectByToken"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Reject by token completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/team-join-requests/token/{token}/reject")
     public ResponseEntity<Void> rejectByToken(
+            @Parameter(description = "Opaque action or verification token.", required = true)
             @PathVariable String token,
             @Valid @RequestBody(required = false) ReasonRequest reason
     ) {
