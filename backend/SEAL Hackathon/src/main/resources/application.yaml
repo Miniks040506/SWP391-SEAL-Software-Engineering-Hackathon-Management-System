@@ -167,9 +167,18 @@ seal:
 
 springdoc:
   api-docs:
+    enabled: true
     path: /v3/api-docs
+
   swagger-ui:
+    enabled: true
     path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+
+  packages-to-scan: com.t7.seal.controller
+  paths-to-match: /api/v1/**
 
 management:
   endpoints:
