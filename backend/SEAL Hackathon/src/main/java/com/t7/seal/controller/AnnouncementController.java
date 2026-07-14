@@ -441,30 +441,162 @@ public class AnnouncementController {
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Pin Announcement",
+            description = "Pin Announcement through POST /api/v1/announcements/{announcementId}/pin. Successful execution returns HTTP 200 with AnnouncementResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/announcements/*/pin; @PreAuthorize(\"hasRole('COORDINATOR')\").",
+            operationId = "announcementPinAnnouncement",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Pin announcement completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/announcements/{announcementId}/pin")
     public ResponseEntity<AnnouncementResponse> pinAnnouncement(
+            @Parameter(description = "Unique announcement identifier.", required = true)
             @PathVariable UUID announcementId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(
                 announcementService.pinAnnouncement(announcementId, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Unpin Announcement",
+            description = "Unpin Announcement through POST /api/v1/announcements/{announcementId}/unpin. Successful execution returns HTTP 200 with AnnouncementResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/announcements/*/unpin; @PreAuthorize(\"hasRole('COORDINATOR')\").",
+            operationId = "announcementUnpinAnnouncement",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Unpin announcement completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/announcements/{announcementId}/unpin")
     public ResponseEntity<AnnouncementResponse> unpinAnnouncement(
+            @Parameter(description = "Unique announcement identifier.", required = true)
             @PathVariable UUID announcementId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(
                 announcementService.unpinAnnouncement(announcementId, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Mark Result Announcement",
+            description = "Mark Result Announcement through POST /api/v1/announcements/{announcementId}/mark-result. Successful execution returns HTTP 200 with AnnouncementResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/announcements/*/mark-result; @PreAuthorize(\"hasRole('COORDINATOR')\").",
+            operationId = "announcementMarkResultAnnouncement",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Mark result announcement completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/announcements/{announcementId}/mark-result")
     public ResponseEntity<AnnouncementResponse> markResultAnnouncement(
+            @Parameter(description = "Unique announcement identifier.", required = true)
             @PathVariable UUID announcementId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(
                 announcementService.markResultAnnouncement(announcementId, authentication));
