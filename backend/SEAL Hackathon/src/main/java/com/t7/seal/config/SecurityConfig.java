@@ -66,8 +66,10 @@ public class SecurityConfig {
                         // CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Swagger
+                        // Swagger and OpenAPI documentation
                         .requestMatchers(
+                                "/v3/api-docs",
+                                "/v3/api-docs.yaml",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
