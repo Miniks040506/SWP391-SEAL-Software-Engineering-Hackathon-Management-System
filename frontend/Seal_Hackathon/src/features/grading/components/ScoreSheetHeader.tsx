@@ -1,28 +1,79 @@
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
-import type { GradingSubmissionDetailResponse } from "@/types/grading.types";
+import LockIcon from "@mui/icons-material/Lock";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+
+import type { GradingSubmissionDetailResponse, ScoreSheetResponse } from "@/types/grading.types";
 import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
 
 type Props = {
   submission: GradingSubmissionDetailResponse;
+  scoreSheet: ScoreSheetResponse;
   isLocked: boolean;
   assignmentInfo?: JudgeSubmissionAssignmentResponse;
 };
 
+const getGradingStatusColor = (
+  status: string,
+): "default" | "warning" | "info" | "success" | "error" => {
+  switch (status) {
+    case "SUBMITTED":
+      return "success";
+    case "DRAFT_SAVED":
+      return "info";
+    case "LOCKED":
+      return "error";
+    case "PENDING":
+    default:
+      return "warning";
+  }
+};
+
+const getGradingStatusLabel = (status: string): string => {
+  switch (status) {
+    case "SUBMITTED":
+      return "Submitted";
+    case "DRAFT_SAVED":
+      return "Draft Saved";
+    case "LOCKED":
+      return "Locked";
+    case "PENDING":
+      return "Pending";
+    default:
+      return status;
+  }
+};
+
 export const ScoreSheetHeader = ({
   submission,
+  scoreSheet,
   isLocked,
   assignmentInfo,
 }: Props) => {
+  const gradingStatus = assignmentInfo?.gradingStatus || "PENDING";
+
   return (
     <div className="flex flex-col gap-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-col gap-1">
-        <Typography
-          variant="h4"
-          className="font-extrabold text-gray-900 dark:text-white"
-        >
-          {submission.projectTitle || submission.teamName}
-        </Typography>
+        <div className="flex items-center gap-3">
+          <Typography
+            variant="h4"
+            className="font-extrabold text-gray-900 dark:text-white"
+          >
+            {submission.projectTitle || submission.teamName}
+          </Typography>
+          {scoreSheet.confirmed && (
+            <Chip
+              icon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
+              label="Final Submitted"
+              size="small"
+              color="success"
+              variant="filled"
+              sx={{ fontWeight: 800, borderRadius: "8px" }}
+            />
+          )}
+        </div>
         <Typography
           variant="subtitle1"
           className="font-bold text-gray-500 dark:text-slate-400"
@@ -31,7 +82,7 @@ export const ScoreSheetHeader = ({
         </Typography>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 rounded-xl bg-slate-50 p-4 dark:bg-slate-950">
+      <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-3 dark:bg-slate-950">
         <div>
           <Typography
             variant="caption"
@@ -43,7 +94,9 @@ export const ScoreSheetHeader = ({
             variant="body2"
             className="font-bold text-gray-900 dark:text-slate-200"
           >
-            Hackathon Event
+            {assignmentInfo?.roundName
+              ? "Current Event"
+              : "Hackathon Event"}
           </Typography>
         </div>
         <div>
@@ -95,11 +148,9 @@ export const ScoreSheetHeader = ({
             Grading:
           </Typography>
           <Chip
-            label={assignmentInfo?.gradingStatus || "PENDING"}
+            label={getGradingStatusLabel(gradingStatus)}
             size="small"
-            color={
-              assignmentInfo?.gradingStatus === "GRADED" ? "success" : "warning"
-            }
+            color={getGradingStatusColor(gradingStatus)}
             sx={{ fontWeight: "bold" }}
           />
         </div>
@@ -109,6 +160,13 @@ export const ScoreSheetHeader = ({
             Lock State:
           </Typography>
           <Chip
+            icon={
+              isLocked ? (
+                <LockIcon sx={{ fontSize: 14 }} />
+              ) : (
+                <LockOpenIcon sx={{ fontSize: 14 }} />
+              )
+            }
             label={isLocked ? "LOCKED" : "UNLOCKED"}
             size="small"
             color={isLocked ? "error" : "success"}

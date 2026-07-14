@@ -29,6 +29,7 @@ import type { TeamMemberResponse } from "@/types/team.types";
 
 import { useTeamAdvancementStatusQuery } from "@/features/advancement/hooks/useAdvancementQueries";
 import { TeamAdvancementStatusBanner } from "@/features/advancement/components/TeamAdvancementStatusBanner";
+import { useActiveTeamDisqualificationsQuery } from "@/features/disqualification/hooks/useDisqualificationQueries";
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
 import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
 import { TeamJoinRequestsPanel } from "../components/TeamJoinRequestsPanel";
@@ -78,6 +79,9 @@ export const TeamDetailPage = () => {
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
   const invitationsQuery = useTeamInvitationsQuery(teamId);
+  const disqualificationsQuery = useActiveTeamDisqualificationsQuery(
+    teamQuery.data?.status === "ELIMINATED" ? teamId : undefined,
+  );
 
   const updateTeamMutation = useUpdateTeamMutation(teamId);
   const deleteTeamMutation = useDeleteTeamMutation(teamId);
@@ -274,6 +278,25 @@ export const TeamDetailPage = () => {
 
           {activeTab === "overview" && (
             <div className="space-y-6 pt-6">
+              {team.status === "ELIMINATED" &&
+                !disqualificationsQuery.isLoading &&
+                (disqualificationsQuery.data?.length ?? 0) > 0 && (
+                  <Alert
+                    severity="error"
+                  action={
+                    <Button
+                      color="inherit"
+                      size="small"
+                      onClick={() => navigate(`/participant/teams/${team.id}/disqualification`)}
+                      sx={{ fontWeight: 800 }}
+                    >
+                      View Details
+                    </Button>
+                  }
+                >
+                  <strong>Team Eliminated.</strong> If your team was disqualified, click here to view the reason and appeal status.
+                </Alert>
+              )}
               {advancementData && (
                 <TeamAdvancementStatusBanner
                   status={advancementData.status}

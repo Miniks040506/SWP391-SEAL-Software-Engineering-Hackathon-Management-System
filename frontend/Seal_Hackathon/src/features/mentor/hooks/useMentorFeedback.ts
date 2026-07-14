@@ -28,12 +28,14 @@ export function useMentorGlobalFeedbackQuery() {
     queryFn: async () => {
       if (USE_MOCK) {
         await delay(500);
-        return { data: getMockFeedbacks() };
+        return getMockFeedbacks();
       }
-      return { data: [] };
+      // The global list endpoint is not available — return empty so callers handle gracefully
+      return [] as any[];
     },
   });
 }
+
 
 export function useMentorTeamFeedbackQuery(teamId?: string) {
   return useQuery({

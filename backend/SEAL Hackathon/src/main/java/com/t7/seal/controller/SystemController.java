@@ -5,6 +5,7 @@ import com.t7.seal.request.system.UpdateSystemConfigRequest;
 import com.t7.seal.response.system.SystemConfigResponse;
 import com.t7.seal.response.system.SystemHealthResponse;
 import com.t7.seal.service.SystemConfigService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,10 @@ import java.util.List;
 @RestController
 @RequestMapping(ApiPaths.API_V1 + "/system")
 @RequiredArgsConstructor
+@Tag(
+        name = "System",
+        description = "System configuration and health information."
+)
 public class SystemController {
 
     private final SystemConfigService systemConfigService;
