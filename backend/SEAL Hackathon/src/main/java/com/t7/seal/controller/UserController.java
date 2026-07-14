@@ -135,22 +135,87 @@ public class UserController {
         );
     }
 
-    //8
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Get Pending Approval Users",
+            description = "Get Pending Approval Users through GET /api/v1/users/pending-approval. Successful execution returns HTTP 200 with PageResponse<UserApprovalResponse>. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/users/*; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\").",
+            operationId = "userGetPendingApprovalUsers",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get pending approval users completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/pending-approval")
     public ResponseEntity<PageResponse<UserApprovalResponse>> getPendingApprovalUsers(
+            @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Maximum number of items returned in one page. (default: 20, optional)", required = false)
             @RequestParam(defaultValue = "20") int size,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(userService.getPendingApprovalUsers(page, size, authentication));
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get My Profile",
+            description = "Get My Profile through GET /api/v1/users/me. Successful execution returns HTTP 200 with ProfileResponse. Access: Authenticated via SecurityConfig matcher /api/v1/users/me; @PreAuthorize(\"isAuthenticated()\").",
+            operationId = "userGetMyProfile",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my profile completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/me")
-    public ResponseEntity<ProfileResponse> getMyProfile(Authentication authentication) {
+    public ResponseEntity<ProfileResponse> getMyProfile(
+            @Parameter(hidden = true) Authentication authentication
+    ) {
         return ResponseEntity.ok(userService.getMyProfile(authentication));
     }
+
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @GetMapping("/{userId}")
