@@ -122,24 +122,92 @@ public class JudgeController {
     }
 
     @PreAuthorize("hasRole('JUDGE')")
+    @Operation(
+            summary = "Get My Assigned Submissions By Round",
+            description = "Get My Assigned Submissions By Round through GET /api/v1/judge/rounds/{roundId}/submissions; GET /api/v1/judges/me/rounds/{roundId}/submissions. Successful execution returns HTTP 200 with PageResponse<JudgeSubmissionAssignmentResponse>. Access: SecurityConfig role JUDGE via matcher /api/v1/judge/**; @PreAuthorize(\"hasRole('JUDGE')\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my assigned submissions by round completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping({"/judge/rounds/{roundId}/submissions", "/judges/me/rounds/{roundId}/submissions"})
     public ResponseEntity<PageResponse<JudgeSubmissionAssignmentResponse>> getMyAssignedSubmissionsByRound(
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
+            @Parameter(description = "Optional status filter. (optional)", required = false)
             @RequestParam(required = false) String status,
+            @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Maximum number of items returned in one page. (default: 20, optional)", required = false)
             @RequestParam(defaultValue = "20") int size,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(judgeAssignmentService.getMySubmissionQueue(roundId, status, page, size, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
+    @Operation(
+            summary = "Get My Submission Summary",
+            description = "Get My Submission Summary through GET /api/v1/judge/submissions/summary; GET /api/v1/judges/me/submissions/summary. Successful execution returns HTTP 200 with JudgeSubmissionQueueSummaryResponse. Access: SecurityConfig role JUDGE via matcher /api/v1/judge/**; @PreAuthorize(\"hasRole('JUDGE')\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my submission summary completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping({
             "/judge/submissions/summary",
             "/judges/me/submissions/summary"
     })
     public ResponseEntity<JudgeSubmissionQueueSummaryResponse> getMySubmissionSummary(
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(judgeAssignmentService
                 .getMySubmissionQueueSummary(null, authentication));
