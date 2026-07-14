@@ -30,13 +30,12 @@ export interface OverturnDisqualificationDialogProps {
   onClose: () => void;
   disqualificationId: UUID;
   isPending: boolean;
-  onConfirm: (values: OverturnFormValues) => Promise<any>;
+  onConfirm: (values: OverturnFormValues) => Promise<import("@/types/disqualification.types").DisqualificationResponse | undefined>;
 }
 
 export function OverturnDisqualificationDialog({
   open,
   onClose,
-  disqualificationId: _disqualificationId,
   isPending,
   onConfirm,
 }: OverturnDisqualificationDialogProps) {
@@ -68,9 +67,9 @@ export function OverturnDisqualificationDialog({
       );
       handleClose();
     } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       enqueueSnackbar(
-        (error as any)?.response?.data?.message ||
-          "Failed to overturn disqualification.",
+        err?.response?.data?.message || "Failed to overturn disqualification.",
         { variant: "error" },
       );
     }

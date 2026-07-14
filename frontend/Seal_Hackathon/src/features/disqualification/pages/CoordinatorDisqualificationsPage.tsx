@@ -160,7 +160,7 @@ export function CoordinatorDisqualificationsPage() {
             onChange={(e) => setRoundId(e.target.value)}
           >
             <MenuItem value="all">All Rounds</MenuItem>
-            {rounds.map((r: any) => (
+            {rounds.map((r: { id: string; name: string }) => (
               <MenuItem key={r.id} value={r.id}>
                 {r.name}
               </MenuItem>
@@ -176,7 +176,7 @@ export function CoordinatorDisqualificationsPage() {
             onChange={(e) => setTrackId(e.target.value)}
           >
             <MenuItem value="all">All Tracks</MenuItem>
-            {tracks.map((t: any) => (
+            {tracks.map((t: { id: string; name: string }) => (
               <MenuItem key={t.id} value={t.id}>
                 {t.name}
               </MenuItem>
@@ -417,9 +417,7 @@ export function CoordinatorDisqualificationsPage() {
           submissionId={drawerDisqualification.submissionId}
           onClose={() => setDrawerDisqualification(null)}
           onRefresh={refetch}
-          // @ts-ignore
           overturnDisqualificationId={drawerDisqualification.id}
-          // @ts-ignore
           disableOverturn={drawerDisqualification.appealStatus === "OVERTURNED"}
         />
       )}
