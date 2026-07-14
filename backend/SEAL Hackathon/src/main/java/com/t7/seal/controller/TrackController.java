@@ -135,20 +135,92 @@ public class TrackController {
         return ResponseEntity.ok(trackService.getTracksByEvent(eventId, authentications));
     }
 
+    @Operation(
+            summary = "Get Track By Id",
+            description = "Get Track By Id through GET /api/v1/tracks/{trackId}. Successful execution returns HTTP 200 with TrackDetailResponse. Access: Public via SecurityConfig matcher /api/v1/tracks/*.",
+            operationId = "trackGetTrackById"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get track by id completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/tracks/{trackId}")
     public ResponseEntity<TrackDetailResponse> getTrackById(
+            @Parameter(description = "Unique track identifier.", required = true)
             @PathVariable UUID trackId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(trackService.getTrackById(trackId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
+    @Operation(
+            summary = "Update Track",
+            description = "Update Track through PATCH /api/v1/tracks/{trackId}. Successful execution returns HTTP 200 with TrackResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/tracks/*; @PreAuthorize(\"@eventSecurity.canManageTrack(#trackId, authentication)\"). Requires an UpdateTrackRequest request body validated with Jakarta Bean Validation.",
+            operationId = "trackUpdateTrack",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update track completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/tracks/{trackId}")
     public ResponseEntity<TrackResponse> updateTrack(
+            @Parameter(description = "Unique track identifier.", required = true)
             @PathVariable UUID trackId,
             @Valid @RequestBody UpdateTrackRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(trackService.updateTrack(trackId, request, authentication));
     }
