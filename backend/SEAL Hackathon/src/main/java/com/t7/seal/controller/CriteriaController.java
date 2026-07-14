@@ -450,22 +450,110 @@ public class CriteriaController {
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Create Event Criteria",
+            description = "Create Event Criteria through POST /api/v1/events/{eventId}/criteria. Successful execution returns HTTP 201 with EventCriteriaResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events/*/criteria; @PreAuthorize(\"hasRole('COORDINATOR')\"). Requires a CreateEventCriteriaRequest request body validated with Jakarta Bean Validation.",
+            operationId = "criteriaCreateEventCriteria",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Create event criteria completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/events/{eventId}/criteria")
     public ResponseEntity<EventCriteriaResponse> createEventCriteria(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
             @Valid @RequestBody CreateEventCriteriaRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(criteriaService.createEventCriteria(eventId, request, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Update Event Criteria",
+            description = "Update Event Criteria through PATCH /api/v1/event-criteria/{eventCriteriaId}. Successful execution returns HTTP 200 with EventCriteriaResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/event-criteria/*; @PreAuthorize(\"hasRole('COORDINATOR')\"). Requires an UpdateEventCriteriaRequest request body validated with Jakarta Bean Validation.",
+            operationId = "criteriaUpdateEventCriteria",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update event criteria completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/event-criteria/{eventCriteriaId}")
     public ResponseEntity<EventCriteriaResponse> updateEventCriteria(
+            @Parameter(description = "Event Criteria Id value.", required = true)
             @PathVariable UUID eventCriteriaId,
             @Valid @RequestBody UpdateEventCriteriaRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(criteriaService.updateEventCriteria(eventCriteriaId, request, authentication));
