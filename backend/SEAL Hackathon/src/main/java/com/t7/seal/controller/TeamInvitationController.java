@@ -2,9 +2,17 @@ package com.t7.seal.controller;
 
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.team.ReasonRequest;
+import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.team.TeamInvitationResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
 import com.t7.seal.service.TeamService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,13 +36,69 @@ public class TeamInvitationController {
     private final TeamService teamService;
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get My Invitations",
+            description = "Get My Invitations through GET /api/v1/invitations/me. Successful execution returns HTTP 200 with List<TeamInvitationResponse>. Access: Authenticated via SecurityConfig matcher /api/v1/invitations/**; @PreAuthorize(\"isAuthenticated()\").",
+            operationId = "teamInvitationGetMyInvitations",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my invitations completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/me")
-    public ResponseEntity<List<TeamInvitationResponse>> getMyInvitations(Authentication authentication) {
+    public ResponseEntity<List<TeamInvitationResponse>> getMyInvitations(@Parameter(hidden = true) Authentication authentication) {
         return ResponseEntity.ok(teamService.getMyInvitations(authentication));
     }
 
+    @Operation(
+            summary = "Get Invitation By Token",
+            description = "Get Invitation By Token through GET /api/v1/invitations/token/{token}. Successful execution returns HTTP 200 with TeamInvitationResponse. Access: Public via SecurityConfig matcher /api/v1/invitations/token/*.",
+            operationId = "teamInvitationGetInvitationByToken"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get invitation by token completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/token/{token}")
-    public ResponseEntity<TeamInvitationResponse> getInvitationByToken(@PathVariable String token) {
+    public ResponseEntity<TeamInvitationResponse> getInvitationByToken(@Parameter(description = "Opaque action or verification token.", required = true)
+                                                                       @PathVariable String token) {
         return ResponseEntity.ok(teamService.getInvitationByToken(token));
     }
 
