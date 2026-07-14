@@ -900,22 +900,106 @@ public class TeamController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Reject Invitation",
+            description = "Reject Invitation through POST /api/v1/teams/invitations/{invitationId}/reject. Successful execution returns HTTP 204 without a response body. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\"). Optionally accepts a ReasonRequest request body validated with Jakarta Bean Validation.",
+            operationId = "teamRejectInvitation",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Reject invitation completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/invitations/{invitationId}/reject")
     public ResponseEntity<Void> rejectInvitation(
+            @Parameter(description = "Unique invitation identifier.", required = true)
             @PathVariable UUID invitationId,
             @Valid @RequestBody(required = false) ReasonRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         teamService.rejectInvitation(invitationId, request, authentication);
         return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Transfer Leader",
+            description = "Transfer Leader through POST /api/v1/teams/{teamId}/transfer-leader. Successful execution returns HTTP 200 with TeamResponse. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\"). Requires a TransferLeaderRequest request body validated with Jakarta Bean Validation.",
+            operationId = "teamTransferLeader",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Transfer leader completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/{teamId}/transfer-leader")
     public ResponseEntity<TeamResponse> transferLeader(
+            @Parameter(description = "Unique team identifier.", required = true)
             @PathVariable UUID teamId,
             @Valid @RequestBody TransferLeaderRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(teamService.transferLeader(teamId, request, authentication));
     }
