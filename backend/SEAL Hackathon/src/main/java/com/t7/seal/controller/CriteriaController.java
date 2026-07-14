@@ -560,18 +560,97 @@ public class CriteriaController {
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Delete Event Criteria",
+            description = "Delete Event Criteria through DELETE /api/v1/event-criteria/{eventCriteriaId}. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig role COORDINATOR via matcher /api/v1/event-criteria/*; @PreAuthorize(\"hasRole('COORDINATOR')\").",
+            operationId = "criteriaDeleteEventCriteria",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Delete event criteria completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @DeleteMapping("/event-criteria/{eventCriteriaId}")
     public ResponseEntity<Void> deleteEventCriteria(
+            @Parameter(description = "Event Criteria Id value.", required = true)
             @PathVariable UUID eventCriteriaId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         criteriaService.deleteEventCriteria(eventCriteriaId, authentication);
         return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasAnyRole('JUDGE', 'COORDINATOR')")
+    @Operation(
+            summary = "Get Criteria By Round",
+            description = "Get Criteria By Round through GET /api/v1/rounds/{roundId}/criteria. Successful execution returns HTTP 200 with List<EventCriteriaResponse>. Access: SecurityConfig roles JUDGE, COORDINATOR, ADMIN via matcher /api/v1/rounds/*/criteria; @PreAuthorize(\"hasAnyRole('JUDGE', 'COORDINATOR')\").",
+            operationId = "criteriaGetCriteriaByRound",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get criteria by round completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/rounds/{roundId}/criteria")
     public ResponseEntity<List<EventCriteriaResponse>> getCriteriaByRound(
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId
     ) {
         return ResponseEntity.ok(criteriaService.getCriteriaByRound(roundId));
