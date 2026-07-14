@@ -313,21 +313,102 @@ public class CalibrationController {
     }
 
     @PreAuthorize("hasRole('JUDGE')")
+    @Operation(
+            summary = "Get Score Sheet",
+            description = "Get Score Sheet through GET /api/v1/calibrations/{calibrationId}/score-sheet; GET /api/v1/calibration-rounds/{calibrationId}/score-sheet. Successful execution returns HTTP 200 with CalibrationScoreSheetResponse. Access: SecurityConfig roles JUDGE, COORDINATOR, ADMIN via matcher /api/v1/calibrations/**; @PreAuthorize(\"hasRole('JUDGE')\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get score sheet completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping({"/calibrations/{calibrationId}/score-sheet", "/calibration-rounds/{calibrationId}/score-sheet"})
     public ResponseEntity<CalibrationScoreSheetResponse> getScoreSheet(
+            @Parameter(description = "Unique calibration identifier.", required = true)
             @PathVariable("calibrationId") UUID calibrationId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService
                 .getScoreSheet(calibrationId, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
+    @Operation(
+            summary = "Submit Calibration Score",
+            description = "Submit Calibration Score through POST /api/v1/calibrations/{calibrationId}/scores; POST /api/v1/calibration-rounds/{calibrationId}/scores. Successful execution returns HTTP 200 with List<CalibrationScoreResponse>. Access: SecurityConfig role JUDGE via matcher /api/v1/calibrations/*/scores; @PreAuthorize(\"hasRole('JUDGE')\"). Requires a SubmitCalibrationScoreRequest request body validated with Jakarta Bean Validation.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Submit calibration score completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping({"/calibrations/{calibrationId}/scores", "/calibration-rounds/{calibrationId}/scores"})
     public ResponseEntity<List<CalibrationScoreResponse>> submitCalibrationScore(
+            @Parameter(description = "Unique calibration identifier.", required = true)
             @PathVariable("calibrationId") UUID calibrationId,
             @Valid @RequestBody SubmitCalibrationScoreRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService
                 .submitCalibrationScores(calibrationId, request, authentication));
