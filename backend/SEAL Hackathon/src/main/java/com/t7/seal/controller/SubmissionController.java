@@ -5,12 +5,20 @@ import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.request.results.DisqualifySubmissionRequest;
+import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import com.t7.seal.response.results.DisqualificationResponse;
 import com.t7.seal.service.DisqualificationService;
 import com.t7.seal.service.RankingService;
 import com.t7.seal.service.SubmissionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,30 +46,118 @@ public class SubmissionController {
     private final DisqualificationService disqualificationService;
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Submit Deliverables",
+            description = "Submit Deliverables through POST /api/v1/teams/{teamId}/rounds/{roundId}/submission; POST /api/v1/teams/{teamId}/rounds/{roundId}/submissions. Successful execution returns HTTP 201 with SubmissionResponse. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\"). Requires a SubmitDeliverablesRequest request body validated with Jakarta Bean Validation.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Submit deliverables completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping({
             "/teams/{teamId}/rounds/{roundId}/submission",
             "/teams/{teamId}/rounds/{roundId}/submissions"
     })
     public ResponseEntity<SubmissionResponse> submitDeliverables(
+            @Parameter(description = "Unique team identifier.", required = true)
             @PathVariable UUID teamId,
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
             @Valid @RequestBody SubmitDeliverablesRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(submissionService.submitDeliverables(teamId, roundId, request, authentication));
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Save Submission Draft",
+            description = "Save Submission Draft through POST /api/v1/teams/{teamId}/rounds/{roundId}/submission/draft; POST /api/v1/teams/{teamId}/rounds/{roundId}/submissions/draft. Successful execution returns HTTP 201 with SubmissionResponse. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\"). Optionally accepts an UpdateSubmissionRequest request body validated with Jakarta Bean Validation.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Save submission draft completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping({
             "/teams/{teamId}/rounds/{roundId}/submission/draft",
             "/teams/{teamId}/rounds/{roundId}/submissions/draft"
     })
     public ResponseEntity<SubmissionResponse> saveSubmissionDraft(
+            @Parameter(description = "Unique team identifier.", required = true)
             @PathVariable UUID teamId,
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
             @Valid @RequestBody(required = false) UpdateSubmissionRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(submissionService.saveSubmissionDraft(teamId, roundId, request, authentication));
