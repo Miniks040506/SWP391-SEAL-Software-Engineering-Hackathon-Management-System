@@ -150,19 +150,97 @@ public class MentorController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get Team Feedback",
+            description = "Get Team Feedback through GET /api/v1/teams/{teamId}/feedback. Successful execution returns HTTP 200 with List<MentorFeedbackResponse>. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\").",
+            operationId = "mentorGetTeamFeedback",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get team feedback completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/teams/{teamId}/feedback")
     public ResponseEntity<List<MentorFeedbackResponse>> getTeamFeedback(
+            @Parameter(description = "Unique team identifier.", required = true)
             @PathVariable("teamId") UUID teamId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(mentorFeedbackService.getTeamFeedback(teamId, authentication));
     }
 
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Get Feedback By Id",
+            description = "Get Feedback By Id through GET /api/v1/mentor-feedback/{feedbackId}. Successful execution returns HTTP 200 with MentorFeedbackResponse. Access: SecurityConfig roles MENTOR, STUDENT, COORDINATOR via matcher /api/v1/mentor-feedback/**; @PreAuthorize(\"hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')\").",
+            operationId = "mentorGetFeedbackById",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get feedback by id completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/mentor-feedback/{feedbackId}")
     public ResponseEntity<MentorFeedbackResponse> getFeedbackById(
+            @Parameter(description = "Feedback Id value.", required = true)
             @PathVariable("feedbackId") UUID feedbackId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(mentorFeedbackService.getFeedbackById(feedbackId, authentication));
     }
