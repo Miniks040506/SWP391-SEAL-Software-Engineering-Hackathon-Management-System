@@ -503,10 +503,44 @@ public class NotificationController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Send Test Email",
+            description = "Send Test Email through POST /api/v1/notifications/test-email. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/notifications/test-email; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\"). Requires a TestEmailRequest request body validated with Jakarta Bean Validation.",
+            operationId = "notificationSendTestEmail",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Send test email completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/test-email")
     public ResponseEntity<Void> sendTestEmail(
             @Valid @RequestBody TestEmailRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         notificationService.sendTestEmail(request, authentication);
         return ResponseEntity.noContent().build();
