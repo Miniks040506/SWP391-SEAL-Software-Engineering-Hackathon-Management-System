@@ -139,17 +139,73 @@ public class CalibrationController {
     }
 
     @PreAuthorize("hasRole('JUDGE')")
+    @Operation(
+            summary = "Get My Calibration Rounds",
+            description = "Get My Calibration Rounds through GET /api/v1/calibrations/my. Successful execution returns HTTP 200 with List<CalibrationRoundResponse>. Access: SecurityConfig roles JUDGE, COORDINATOR, ADMIN via matcher /api/v1/calibrations/**; @PreAuthorize(\"hasRole('JUDGE')\").",
+            operationId = "calibrationGetMyCalibrationRounds",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my calibration rounds completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/calibrations/my")
     public ResponseEntity<List<CalibrationRoundResponse>> getMyCalibrationRounds(
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService.getMyCalibrationRounds(authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR') or hasRole('ADMIN')")
+    @Operation(
+            summary = "Get Managed Calibration Rounds",
+            description = "Get Managed Calibration Rounds through GET /api/v1/calibrations/managed. Successful execution returns HTTP 200 with List<CalibrationRoundResponse>. Access: SecurityConfig roles JUDGE, COORDINATOR, ADMIN via matcher /api/v1/calibrations/**; @PreAuthorize(\"hasRole('COORDINATOR') or hasRole('ADMIN')\").",
+            operationId = "calibrationGetManagedCalibrationRounds",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get managed calibration rounds completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/calibrations/managed")
     public ResponseEntity<List<CalibrationRoundResponse>> getManagedCalibrationRounds(
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService.getManagedCalibrationRounds(authentication));
     }
