@@ -226,21 +226,105 @@ public class TrackController {
     }
 
     @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
+    @Operation(
+            summary = "Delete Track",
+            description = "Delete Track through DELETE /api/v1/tracks/{trackId}. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig role COORDINATOR via matcher /api/v1/tracks/*; @PreAuthorize(\"@eventSecurity.canManageTrack(#trackId, authentication)\").",
+            operationId = "trackDeleteTrack",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Delete track completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @DeleteMapping("/tracks/{trackId}")
     public ResponseEntity<Void> deleteTrack(
+            @Parameter(description = "Unique track identifier.", required = true)
             @PathVariable UUID trackId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         trackService.deleteTrack(trackId, authentication);
         return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("@eventSecurity.canManageTrack(#trackId, authentication)")
+    @Operation(
+            summary = "Assign Mentor",
+            description = "Assign Mentor through POST /api/v1/tracks/{trackId}/mentor-assignments. Successful execution returns HTTP 201 with MentorAssignmentResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/tracks/*/mentor-assignments/**; @PreAuthorize(\"@eventSecurity.canManageTrack(#trackId, authentication)\"). Requires an AssignMentorRequest request body validated with Jakarta Bean Validation.",
+            operationId = "trackAssignMentor",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Assign mentor completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/tracks/{trackId}/mentor-assignments")
     public ResponseEntity<MentorAssignmentResponse> assignMentor(
+            @Parameter(description = "Unique track identifier.", required = true)
             @PathVariable UUID trackId,
             @Valid @RequestBody AssignMentorRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         MentorAssignmentResponse response = mentorAssignmentService.assignMentor(trackId, request, authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
