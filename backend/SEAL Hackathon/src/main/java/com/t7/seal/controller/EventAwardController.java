@@ -8,6 +8,7 @@ import com.t7.seal.response.grading.AssignedSubmissionResponse;
 import com.t7.seal.response.results.PrizeAssignmentResponse;
 import com.t7.seal.response.results.PrizeResponse;
 import com.t7.seal.service.PrizeService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Awards",
+        description = "Award prizes, clear awards, and derive winners from ranking."
+)
 public class EventAwardController {
 
     private final PrizeService prizeService;

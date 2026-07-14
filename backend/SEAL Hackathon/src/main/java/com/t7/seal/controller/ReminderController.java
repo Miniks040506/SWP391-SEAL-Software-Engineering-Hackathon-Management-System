@@ -5,6 +5,7 @@ import com.t7.seal.request.reminder.CreateReminderRequest;
 import com.t7.seal.request.reminder.GenerateEventRemindersRequest;
 import com.t7.seal.response.reminder.ReminderResponse;
 import com.t7.seal.service.ReminderService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Reminders",
+        description = "Manual and generated event deadline reminders."
+)
 public class ReminderController {
 
     private final ReminderService reminderService;

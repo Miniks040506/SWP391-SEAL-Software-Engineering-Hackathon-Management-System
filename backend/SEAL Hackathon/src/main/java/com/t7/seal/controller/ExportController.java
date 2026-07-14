@@ -6,6 +6,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.system.ExportDownloadResponse;
 import com.t7.seal.response.system.ExportJobResponse;
 import com.t7.seal.service.ExportService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -19,6 +20,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/exports")
+@Tag(
+        name = "Exports",
+        description = "Create, inspect, download, retry, and delete export jobs."
+)
 public class ExportController {
 
     private final ExportService exportService;

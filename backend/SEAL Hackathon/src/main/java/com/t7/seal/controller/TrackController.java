@@ -11,6 +11,7 @@ import com.t7.seal.response.track.*;
 import com.t7.seal.service.MentorAssignmentService;
 import com.t7.seal.service.TeamService;
 import com.t7.seal.service.TrackService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiPaths.API_V1)
 @RequiredArgsConstructor
+@Tag(
+        name = "Tracks",
+        description = "Track configuration, mentor assignment, availability, and registration."
+)
 public class TrackController {
 
     private final TrackService trackService;

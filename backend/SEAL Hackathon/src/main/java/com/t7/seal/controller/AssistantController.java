@@ -7,6 +7,7 @@ import com.t7.seal.response.assistant.AssistantContextResponse;
 import com.t7.seal.response.assistant.AssistantConversationResponse;
 import com.t7.seal.response.assistant.AssistantMessageResponse;
 import com.t7.seal.service.AssistantService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/assistant")
+@Tag(
+        name = "AI Assistant",
+        description = "Role-aware bilingual assistant conversations and RAG responses."
+)
 public class AssistantController {
 
     private final AssistantService assistantService;

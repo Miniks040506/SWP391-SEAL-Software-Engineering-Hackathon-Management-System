@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.team.FormingTeamResponse;
 import com.t7.seal.service.FormingTeamService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiPaths.API_V1 + "/teams/forming")
 @RequiredArgsConstructor
+@Tag(
+        name = "Forming Teams",
+        description = "Discover teams currently accepting participants."
+)
 public class FormingTeamController {
 
     private final FormingTeamService formingTeamService;

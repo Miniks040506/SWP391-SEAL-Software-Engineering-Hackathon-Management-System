@@ -6,6 +6,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.coordinator.CoordinatorTeamDetailResponse;
 import com.t7.seal.response.coordinator.CoordinatorTeamSummaryResponse;
 import com.t7.seal.service.CoordinatorTeamService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiPaths.API_V1)
 @RequiredArgsConstructor
+@Tag(
+        name = "Coordinator Teams",
+        description = "Coordinator team search, review, and registration decisions."
+)
 public class CoordinatorTeamController {
 
     private final CoordinatorTeamService coordinatorTeamService;

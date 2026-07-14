@@ -5,6 +5,7 @@ import com.t7.seal.request.team.ReasonRequest;
 import com.t7.seal.response.team.TeamInvitationResponse;
 import com.t7.seal.response.team.TeamMemberResponse;
 import com.t7.seal.service.TeamService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiPaths.API_V1 + "/invitations")
 @RequiredArgsConstructor
+@Tag(
+        name = "Team Invitations",
+        description = "Invitation inbox and token-based invitation actions."
+)
 public class TeamInvitationController {
 
     private final TeamService teamService;

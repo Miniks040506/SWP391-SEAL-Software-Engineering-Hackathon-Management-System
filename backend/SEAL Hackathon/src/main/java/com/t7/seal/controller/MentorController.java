@@ -10,6 +10,7 @@ import com.t7.seal.response.mentor.MentorTeamProgressResponse;
 import com.t7.seal.response.mentor.MentorTrackResponse;
 import com.t7.seal.service.MentorFeedbackService;
 import com.t7.seal.service.MentorTeamService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1)
+@Tag(
+        name = "Mentors",
+        description = "Mentor tracks, team progress, submissions, and feedback."
+)
 public class MentorController {
 
     private final MentorFeedbackService mentorFeedbackService;

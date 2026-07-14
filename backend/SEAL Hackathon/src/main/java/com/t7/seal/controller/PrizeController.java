@@ -7,6 +7,7 @@ import com.t7.seal.request.results.CreatePrizeRequest;
 import com.t7.seal.request.results.UpdatePrizeRequest;
 import com.t7.seal.response.results.PrizeResponse;
 import com.t7.seal.service.PrizeService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/prizes")
+@Tag(
+        name = "Prizes",
+        description = "Prize CRUD and event prize lookup."
+)
 public class PrizeController {
 
     private final PrizeService prizeService;

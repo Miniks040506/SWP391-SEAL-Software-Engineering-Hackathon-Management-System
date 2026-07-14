@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.system.EventExportRequest;
 import com.t7.seal.response.system.ExportJobResponse;
 import com.t7.seal.service.ExportService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +16,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/events/{eventId}/exports")
+@Tag(
+        name = "Event Exports",
+        description = "Create event ranking, score, and team-list exports."
+)
 public class EventExportController {
 
     private final ExportService exportService;

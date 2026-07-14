@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.auth.*;
 import com.t7.seal.response.auth.*;
 import com.t7.seal.service.AuthService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.API_V1 + "/auth")
+@Tag(
+        name = "Authentication",
+        description = "Registration, verification, login, token, logout, and password recovery."
+)
 public class AuthController {
 
     private final AuthService authService;
