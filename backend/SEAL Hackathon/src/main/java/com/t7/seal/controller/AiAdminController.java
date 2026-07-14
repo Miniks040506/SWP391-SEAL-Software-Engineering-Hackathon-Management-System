@@ -141,15 +141,86 @@ public class AiAdminController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Seed Knowledge",
+            description = "Seed Knowledge through POST /api/v1/admin/assistant/knowledge/seed. Successful execution returns HTTP 204 without a response body. Access: Authenticated via SecurityConfig matcher anyRequest(); @PreAuthorize(\"hasRole('ADMIN')\").",
+            operationId = "aiAdminSeedKnowledge",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Seed knowledge completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "502",
+                    description = "The external AI or embedding provider failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/knowledge/seed")
-    public ResponseEntity<Void> seedKnowledge(Authentication authentication) {
+    public ResponseEntity<Void> seedKnowledge(@Parameter(hidden = true) Authentication authentication) {
         User actor = currentUserService.getCurrentUser(authentication);
         aiKnowledgeService.seedDefaultKnowledge(actor);
         return ResponseEntity.noContent().build();
     }
 
-
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Reindex Knowledge",
+            description = "Reindex Knowledge through POST /api/v1/admin/assistant/knowledge/reindex. Successful execution returns HTTP 200 with AiReindexResponse. Access: Authenticated via SecurityConfig matcher anyRequest(); @PreAuthorize(\"hasRole('ADMIN')\").",
+            operationId = "aiAdminReindexKnowledge",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Reindex knowledge completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "502",
+                    description = "The external AI or embedding provider failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/knowledge/reindex")
     public ResponseEntity<AiReindexResponse> reindexKnowledge() {
         int indexed = aiKnowledgeService.reindexKnowledge();
