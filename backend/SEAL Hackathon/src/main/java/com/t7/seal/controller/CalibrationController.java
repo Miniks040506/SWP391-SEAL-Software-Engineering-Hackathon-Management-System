@@ -415,20 +415,96 @@ public class CalibrationController {
     }
 
     @PreAuthorize("hasRole('JUDGE')")
+    @Operation(
+            summary = "Get My Scores",
+            description = "Get My Scores through GET /api/v1/calibrations/{calibrationId}/my-scores; GET /api/v1/calibration-rounds/{calibrationId}/my-scores. Successful execution returns HTTP 200 with List<CalibrationScoreResponse>. Access: SecurityConfig roles JUDGE, COORDINATOR, ADMIN via matcher /api/v1/calibrations/**; @PreAuthorize(\"hasRole('JUDGE')\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my scores completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping({"/calibrations/{calibrationId}/my-scores", "/calibration-rounds/{calibrationId}/my-scores"})
     public ResponseEntity<List<CalibrationScoreResponse>> getMyScores(
+            @Parameter(description = "Unique calibration identifier.", required = true)
             @PathVariable("calibrationId") UUID calibrationId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService
                 .getMyScores(calibrationId, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE') or hasRole('COORDINATOR') or hasRole('ADMIN')")
+    @Operation(
+            summary = "Get Distribution",
+            description = "Get Distribution through GET /api/v1/calibrations/{calibrationId}/distribution; GET /api/v1/calibration-rounds/{calibrationId}/distribution. Successful execution returns HTTP 200 with CalibrationDistributionResponse. Access: SecurityConfig roles JUDGE, COORDINATOR, ADMIN via matcher /api/v1/calibrations/**; @PreAuthorize(\"hasRole('JUDGE') or hasRole('COORDINATOR') or hasRole('ADMIN')\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get distribution completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping({"/calibrations/{calibrationId}/distribution", "/calibration-rounds/{calibrationId}/distribution"})
     public ResponseEntity<CalibrationDistributionResponse> getDistribution(
+            @Parameter(description = "Unique calibration identifier.", required = true)
             @PathVariable("calibrationId") UUID calibrationId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService
                 .getDistribution(calibrationId, authentication));
