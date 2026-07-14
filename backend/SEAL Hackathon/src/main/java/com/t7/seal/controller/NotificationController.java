@@ -343,17 +343,78 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.sendNotificationNow(notificationId, authentication));
     }
 
+    @Operation(
+            summary = "Mark As Read",
+            description = "Mark As Read through POST /api/v1/notifications/{notificationId}/read. Successful execution returns HTTP 204 without a response body. Access: Authenticated via SecurityConfig matcher /api/v1/notifications/**.",
+            operationId = "notificationMarkAsRead",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Mark as read completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/{notificationId}/read")
     public ResponseEntity<Void> markAsRead(
-            @PathVariable("notificationId") UUID notificationId,
-            Authentication authentication
+            @Parameter(description = "Notification Id value.", required = true)
+            @PathVariable UUID notificationId,
+            @Parameter(hidden = true) Authentication authentication
     ) {
         notificationService.markAsRead(notificationId, authentication);
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+            summary = "Mark All As Read",
+            description = "Mark All As Read through POST /api/v1/notifications/read-all. Successful execution returns HTTP 204 without a response body. Access: Authenticated via SecurityConfig matcher /api/v1/notifications/**.",
+            operationId = "notificationMarkAllAsRead",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Mark all as read completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/read-all")
-    public ResponseEntity<Void> markAllAsRead(Authentication authentication) {
+    public ResponseEntity<Void> markAllAsRead(
+            @Parameter(hidden = true) Authentication authentication
+    ) {
         notificationService.markAllAsRead(authentication);
         return ResponseEntity.noContent().build();
     }
