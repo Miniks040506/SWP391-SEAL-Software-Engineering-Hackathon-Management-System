@@ -9,11 +9,13 @@ import { useAuthStore } from "@/stores/authStore";
 type SidebarLoggedinProps = {
   sections: SidebarSection[];
   helpPath?: string;
+  badgeCounts?: Record<string, number>;
 };
 
 export function SidebarLoggedin({
   sections,
   helpPath = "/help",
+  badgeCounts,
 }: SidebarLoggedinProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -102,6 +104,14 @@ export function SidebarLoggedin({
                       </span>
 
                       <span>{item.label}</span>
+
+                      {item.badgeKey &&
+                        badgeCounts &&
+                        badgeCounts[item.badgeKey] > 0 && (
+                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white">
+                            {badgeCounts[item.badgeKey]}
+                          </span>
+                        )}
                     </button>
                   );
                 })}

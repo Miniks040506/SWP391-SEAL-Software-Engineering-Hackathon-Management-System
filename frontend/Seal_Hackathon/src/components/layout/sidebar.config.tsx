@@ -29,6 +29,7 @@ export type SidebarItem = {
   path: string;
   icon: ReactNode;
   end?: boolean;
+  badgeKey?: string;
 };
 
 export type SidebarSection = {
@@ -170,6 +171,7 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Disqualifications",
             path: "/coordinator/disqualifications",
             icon: <GavelOutlinedIcon fontSize="small" />,
+            badgeKey: "pendingAppeals",
           },
           {
             label: "Awards",

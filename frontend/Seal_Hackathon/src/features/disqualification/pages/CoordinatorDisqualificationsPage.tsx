@@ -222,10 +222,18 @@ export function CoordinatorDisqualificationsPage() {
               disqualifications.map((d: DisqualificationResponse) => (
                 <tr
                   key={d.id}
-                  className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  className={[
+                    "hover:bg-slate-50 dark:hover:bg-slate-800/50",
+                    d.appealStatus === "PENDING"
+                      ? "border-l-4 border-l-amber-400 bg-amber-50/50 dark:bg-amber-500/5"
+                      : "",
+                  ].join(" ")}
                 >
                   <td className="px-4 py-3">
-                    <div className="font-medium text-slate-900 dark:text-slate-100">
+                    <div className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-slate-100">
+                      {d.appealStatus === "PENDING" && (
+                        <span className="text-amber-500 text-base leading-none" title="Appeal pending review">⚠</span>
+                      )}
                       {d.teamName}
                     </div>
                   </td>
