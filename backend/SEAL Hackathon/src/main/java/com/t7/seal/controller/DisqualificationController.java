@@ -246,23 +246,104 @@ public class DisqualificationController {
     }
 
     @PreAuthorize("hasAnyRole('COORDINATOR', 'ADMIN')")
+    @Operation(
+            summary = "Get Event Disqualifications",
+            description = "Get Event Disqualifications through GET /api/v1/events/{eventId}/disqualifications. Successful execution returns HTTP 200 with List<DisqualificationResponse>. Access: SecurityConfig roles COORDINATOR, ADMIN via matcher /api/v1/events/*/disqualifications; @PreAuthorize(\"hasAnyRole('COORDINATOR', 'ADMIN')\").",
+            operationId = "disqualificationGetEventDisqualifications",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get event disqualifications completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/events/{eventId}/disqualifications")
     public ResponseEntity<List<DisqualificationResponse>> getEventDisqualifications(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
+            @Parameter(description = "Unique round identifier. (optional)", required = false)
             @RequestParam(required = false) UUID roundId,
+            @Parameter(description = "Unique track identifier. (optional)", required = false)
             @RequestParam(required = false) UUID trackId,
+            @Parameter(description = "Appeal Status value. (optional)", required = false)
             @RequestParam(required = false) String appealStatus,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(disqualificationService.getDisqualificationsByEvent(
                 eventId, roundId, trackId, appealStatus, authentication));
     }
 
     @PreAuthorize("hasAnyRole('STUDENT', 'COORDINATOR', 'ADMIN')")
+    @Operation(
+            summary = "Get Active Team Disqualifications",
+            description = "Get Active Team Disqualifications through GET /api/v1/teams/{teamId}/disqualifications/active. Successful execution returns HTTP 200 with List<DisqualificationResponse>. Access: SecurityConfig roles COORDINATOR, ADMIN, STUDENT via matcher /api/v1/teams/*/disqualifications/active; @PreAuthorize(\"hasAnyRole('STUDENT', 'COORDINATOR', 'ADMIN')\").",
+            operationId = "disqualificationGetActiveTeamDisqualifications",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get active team disqualifications completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/teams/{teamId}/disqualifications/active")
     public ResponseEntity<List<DisqualificationResponse>> getActiveTeamDisqualifications(
+            @Parameter(description = "Unique team identifier.", required = true)
             @PathVariable UUID teamId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(disqualificationService
                 .getActiveDisqualificationsByTeam(teamId, authentication));
