@@ -236,19 +236,79 @@ public class ResultRankingController {
         return ResponseEntity.ok(rankingService.getRankings(null, trackId, roundId));
     }
 
+    @Operation(
+            summary = "Get Published Event Rankings",
+            description = "Get Published Event Rankings through GET /api/v1/events/{eventId}/rankings. Successful execution returns HTTP 200 with List<RankingResponse>. Access: Public via SecurityConfig matcher /api/v1/events/*/rankings.",
+            operationId = "resultRankingGetPublishedEventRankings"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get published event rankings completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/events/{eventId}/rankings")
     public ResponseEntity<List<RankingResponse>> getPublishedEventRankings(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
+            @Parameter(description = "Unique round identifier. (optional)", required = false)
             @RequestParam(required = false) UUID roundId,
+            @Parameter(description = "Unique track identifier. (optional)", required = false)
             @RequestParam(required = false) UUID trackId
     ) {
         return ResponseEntity.ok(rankingService.getRankings(eventId, trackId, roundId));
     }
 
+    @Operation(
+            summary = "Get Published Track Rankings",
+            description = "Get Published Track Rankings through GET /api/v1/tracks/{trackId}/rankings. Successful execution returns HTTP 200 with List<RankingResponse>. Access: Public via SecurityConfig matcher /api/v1/tracks/*/rankings.",
+            operationId = "resultRankingGetPublishedTrackRankings"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get published track rankings completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/tracks/{trackId}/rankings")
     public ResponseEntity<List<RankingResponse>> getPublishedTrackRankings(
+            @Parameter(description = "Unique track identifier.", required = true)
             @PathVariable UUID trackId,
+            @Parameter(description = "Unique event identifier. (optional)", required = false)
             @RequestParam(required = false) UUID eventId,
+            @Parameter(description = "Unique round identifier. (optional)", required = false)
             @RequestParam(required = false) UUID roundId
     ) {
         return ResponseEntity.ok(rankingService.getRankings(eventId, trackId, roundId));
