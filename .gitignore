@@ -27,4 +27,4 @@ target/
 
 # Scratch files
 diff_output.txt
-/*.txt
+*.txt

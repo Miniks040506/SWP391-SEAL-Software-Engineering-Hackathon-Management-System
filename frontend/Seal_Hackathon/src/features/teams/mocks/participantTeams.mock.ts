@@ -113,6 +113,22 @@ export const mockTeamService = {
     return mockTeams.filter(t => t.members.some(m => m.userId === currentUserId)).map(toTeamSummary);
   },
 
+  async getMyActiveCompetitions() {
+    await mockDelay();
+    return [
+      {
+        eventId: "event-1111-1111-1111-111111111111" as UUID,
+        eventName: "SEAL Hackathon 2026",
+        eventStatus: "ONGOING",
+        teamId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" as UUID,
+        teamName: "Code Warriors",
+        teamStatus: "APPROVED",
+        trackId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" as UUID,
+        trackName: "AI Track",
+      }
+    ];
+  },
+
   async getTeamById(teamId: UUID) {
     await mockDelay();
     const team = mockTeams.find((t) => t.id === teamId);
