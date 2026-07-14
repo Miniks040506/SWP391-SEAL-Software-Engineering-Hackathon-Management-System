@@ -246,20 +246,104 @@ public class MentorController {
     }
 
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Update Feedback",
+            description = "Update Feedback through PATCH /api/v1/mentor-feedback/{feedbackId}. Successful execution returns HTTP 200 with MentorFeedbackResponse. Access: SecurityConfig roles MENTOR, STUDENT, COORDINATOR via matcher /api/v1/mentor-feedback/**; @PreAuthorize(\"hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')\"). Requires an UpdateMentorFeedbackRequest request body validated with Jakarta Bean Validation.",
+            operationId = "mentorUpdateFeedback",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update feedback completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/mentor-feedback/{feedbackId}")
     public ResponseEntity<MentorFeedbackResponse> updateFeedback(
+            @Parameter(description = "Feedback Id value.", required = true)
             @PathVariable("feedbackId") UUID feedbackId,
             @Valid @RequestBody UpdateMentorFeedbackRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(mentorFeedbackService.updateFeedback(feedbackId, request, authentication));
     }
 
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Delete Feedback",
+            description = "Delete Feedback through DELETE /api/v1/mentor-feedback/{feedbackId}. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig roles MENTOR, STUDENT, COORDINATOR via matcher /api/v1/mentor-feedback/**; @PreAuthorize(\"hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')\").",
+            operationId = "mentorDeleteFeedback",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Delete feedback completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @DeleteMapping("/mentor-feedback/{feedbackId}")
     public ResponseEntity<Void> deleteFeedback(
+            @Parameter(description = "Feedback Id value.", required = true)
             @PathVariable("feedbackId") UUID feedbackId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         mentorFeedbackService.deleteFeedback(feedbackId, authentication);
         return ResponseEntity.noContent().build();
