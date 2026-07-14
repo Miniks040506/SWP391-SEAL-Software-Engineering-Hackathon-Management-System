@@ -5,10 +5,18 @@ import com.t7.seal.request.criteria.CreateEventCriteriaRequest;
 import com.t7.seal.request.criteria.CreateScoringCriteriaRequest;
 import com.t7.seal.request.criteria.UpdateEventCriteriaRequest;
 import com.t7.seal.request.criteria.UpdateScoringCriteriaRequest;
+import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.criteria.EventCriteriaResponse;
 import com.t7.seal.response.criteria.ScoringCriteriaResponse;
 import com.t7.seal.service.CriteriaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,12 +41,50 @@ public class CriteriaController {
     private final CriteriaService criteriaService;
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Get Scoring Criteria",
+            description = "Get Scoring Criteria through GET /api/v1/criteria. Successful execution returns HTTP 200 with PageResponse<ScoringCriteriaResponse>. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/criteria; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\").",
+            operationId = "criteriaGetScoringCriteria",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get scoring criteria completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/criteria")
     public ResponseEntity<PageResponse<ScoringCriteriaResponse>> getScoringCriteria(
+            @Parameter(description = "Is Active value. (optional)", required = false)
             @RequestParam(required = false) Boolean isActive,
+            @Parameter(description = "Is Technical value. (optional)", required = false)
             @RequestParam(required = false) Boolean isTechnical,
+            @Parameter(description = "Category value. (optional)", required = false)
             @RequestParam(required = false) String category,
+            @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Maximum number of items returned in one page. (default: 20, optional)", required = false)
             @RequestParam(defaultValue = "20") int size
     ) {
         return ResponseEntity.ok(criteriaService.getScoringCriteria(
@@ -47,10 +93,48 @@ public class CriteriaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Create Scoring Criteria",
+            description = "Create Scoring Criteria through POST /api/v1/criteria. Successful execution returns HTTP 201 with ScoringCriteriaResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/criteria; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\"). Requires a CreateScoringCriteriaRequest request body validated with Jakarta Bean Validation.",
+            operationId = "criteriaCreateScoringCriteria",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Create scoring criteria completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/criteria")
     public ResponseEntity<ScoringCriteriaResponse> createScoringCriteria(
             @Valid @RequestBody CreateScoringCriteriaRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(criteriaService.createScoringCriteria(request, authentication));
