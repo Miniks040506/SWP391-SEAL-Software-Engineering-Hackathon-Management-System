@@ -51,8 +51,7 @@ export function useCoordinatorDashboard() {
     queryFn: () =>
       teamApi.getCoordinatorEventTeams(currentEventId!, {
         page: 0,
-        size: 1,
-        registrationStatus: "APPROVED",
+        size: 1000,
       }),
     enabled: Boolean(currentEventId) && !USE_MOCK,
   });
@@ -84,7 +83,11 @@ export function useCoordinatorDashboard() {
   const summaryCards: SummaryCardType[] = useMemo(() => {
     if (USE_MOCK) return mockCoordinatorDashboard.summaryCards;
 
-    const registeredTeamsCount = teamsQuery.data?.totalElements ?? 0;
+    const teamsList = teamsQuery.data?.content ?? [];
+    const registeredTeamsCount = teamsList.filter(
+      (t) => ["REGISTERED", "COMPETING", "ADVANCED", "WINNER"].includes((t.status ?? "").toUpperCase())
+    ).length;
+
     const totalSubmissions = submissionsQuery.data?.totalElements ?? 0;
     const draftScorecards = (scoringQuery.data as any)?.draftCount ?? 0;
 
