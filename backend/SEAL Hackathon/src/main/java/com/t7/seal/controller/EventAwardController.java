@@ -147,24 +147,113 @@ public class EventAwardController {
     }
 
     @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
+    @Operation(
+            summary = "Update Prize Winner",
+            description = "Update Prize Winner through PATCH /api/v1/prizes/{prizeId}/winner. Successful execution returns HTTP 200 with PrizeResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/prizes/*/winner; @PreAuthorize(\"@eventSecurity.canManagePrize(authentication)\"). Requires an AwardPrizeRequest request body validated with Jakarta Bean Validation.",
+            operationId = "eventAwardUpdatePrizeWinner",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update prize winner completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/prizes/{prizeId}/winner")
     public ResponseEntity<PrizeResponse> updatePrizeWinner(
+            @Parameter(description = "Unique prize identifier.", required = true)
             @PathVariable UUID prizeId,
             @Valid @RequestBody AwardPrizeRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(prizeService.awardPrize(prizeId, request, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
+    @Operation(
+            summary = "Assign Prizes From Ranking",
+            description = "Assign Prizes From Ranking through POST /api/v1/events/{eventId}/prizes/assign-from-ranking. Successful execution returns HTTP 200 with PrizeAssignmentResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events/*/prizes/assign-from-ranking; @PreAuthorize(\"@eventSecurity.canManagePrize(authentication)\"). Optionally accepts an AssignPrizesFromRankingRequest request body validated with Jakarta Bean Validation.",
+            operationId = "eventAwardAssignPrizesFromRanking",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Assign prizes from ranking completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/events/{eventId}/prizes/assign-from-ranking")
     public ResponseEntity<PrizeAssignmentResponse> assignPrizesFromRanking(
-            @PathVariable("eventId") UUID eventId,
+            @Parameter(description = "Unique event identifier.", required = true)
+            @PathVariable UUID eventId,
             @Valid @RequestBody(required = false) AssignPrizesFromRankingRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(prizeService.assignPrizesFromRanking(eventId, request, authentication));
     }
+
 
     @GetMapping("events/{eventId}/awards")
     public ResponseEntity<List<PrizeResponse>> getPublishedAwards(
