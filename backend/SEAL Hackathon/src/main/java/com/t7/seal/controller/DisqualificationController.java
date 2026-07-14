@@ -136,22 +136,110 @@ public class DisqualificationController {
     }
 
     @PreAuthorize("hasAnyRole('STUDENT', 'COORDINATOR')")
+    @Operation(
+            summary = "Update Appeal",
+            description = "Update Appeal through PATCH /api/v1/disqualifications/{disqualificationId}/appeal. Successful execution returns HTTP 200 with DisqualificationResponse. Access: SecurityConfig roles STUDENT, COORDINATOR via matcher /api/v1/disqualifications/*/appeal; @PreAuthorize(\"hasAnyRole('STUDENT', 'COORDINATOR')\"). Requires an UpdateAppealRequest request body validated with Jakarta Bean Validation.",
+            operationId = "disqualificationUpdateAppeal",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update appeal completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/disqualifications/{disqualificationId}/appeal")
     public ResponseEntity<DisqualificationResponse> updateAppeal(
+            @Parameter(description = "Unique disqualification identifier.", required = true)
             @PathVariable UUID disqualificationId,
             @Valid @RequestBody UpdateAppealRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(disqualificationService
                 .updateAppeal(disqualificationId, request, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Overturn Disqualification",
+            description = "Overturn Disqualification through POST /api/v1/disqualifications/{disqualificationId}/overturn. Successful execution returns HTTP 200 with DisqualificationResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/disqualifications/*/overturn; @PreAuthorize(\"hasRole('COORDINATOR')\"). Requires an OverturnDisqualificationRequest request body validated with Jakarta Bean Validation.",
+            operationId = "disqualificationOverturnDisqualification",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Overturn disqualification completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/disqualifications/{disqualificationId}/overturn")
     public ResponseEntity<DisqualificationResponse> overturnDisqualification(
+            @Parameter(description = "Unique disqualification identifier.", required = true)
             @PathVariable UUID disqualificationId,
             @Valid @RequestBody OverturnDisqualificationRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(disqualificationService
                 .overturnDisqualification(disqualificationId, request, authentication));
