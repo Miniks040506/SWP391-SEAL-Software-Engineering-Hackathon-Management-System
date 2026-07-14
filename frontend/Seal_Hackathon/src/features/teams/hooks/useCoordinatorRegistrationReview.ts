@@ -12,8 +12,10 @@ export const useCoordinatorRegistrationReview = () => {
     setError(null);
     try {
       return await teamApi.approveTeamRegistration(teamId);
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Failed to approve team registration.";
+    } catch (cause: any) {
+      const message =
+        cause?.response?.data?.message ||
+        (cause instanceof Error ? cause.message : "Failed to approve team registration.");
       setError(message);
       throw cause;
     } finally {
@@ -31,8 +33,10 @@ export const useCoordinatorRegistrationReview = () => {
       return await teamApi.rejectTeamRegistration(teamId, {
         reason: reason.trim(),
       });
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Failed to reject team registration.";
+    } catch (cause: any) {
+      const message =
+        cause?.response?.data?.message ||
+        (cause instanceof Error ? cause.message : "Failed to reject team registration.");
       setError(message);
       throw cause;
     } finally {

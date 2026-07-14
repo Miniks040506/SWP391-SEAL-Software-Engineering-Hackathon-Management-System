@@ -37,18 +37,24 @@ type ReviewAction = "approve" | "reject";
 
 export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
   const { enqueueSnackbar } = useSnackbar();
-  const [detail, setDetail] = useState<CoordinatorTeamDetailResponse | null>(null);
+  const [detail, setDetail] = useState<CoordinatorTeamDetailResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [reviewAction, setReviewAction] = useState<ReviewAction | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const { approve, reject, reviewingTeamId, error, clearError } =
     useCoordinatorRegistrationReview();
 
-  const [selectedSubmissionId, setSelectedSubmissionId] = useState<UUID | null>(null);
-  const [submissionDetail, setSubmissionDetail] = useState<SubmissionDetailResponse | null>(null);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<UUID | null>(
+    null,
+  );
+  const [submissionDetail, setSubmissionDetail] =
+    useState<SubmissionDetailResponse | null>(null);
   const [loadingSubmissionDetail, setLoadingSubmissionDetail] = useState(false);
-  
-  const [disqualifySubmissionId, setDisqualifySubmissionId] = useState<UUID | null>(null);
+
+  const [disqualifySubmissionId, setDisqualifySubmissionId] =
+    useState<UUID | null>(null);
   const disqualifyMutation = useDisqualifySubmissionMutation();
   const queryClient = useQueryClient();
 
@@ -121,14 +127,14 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
       submissionId: disqualifySubmissionId,
       payload: values,
     });
-    
+
     try {
       const updated = await teamApi.getCoordinatorTeamSummary(teamId);
       setDetail(updated);
     } catch {
       setDetail(null);
     }
-    
+
     onChanged?.();
     queryClient.invalidateQueries({ queryKey: ["coordinator-team-detail"] });
     return res;
@@ -229,7 +235,9 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                         </p>
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
                           {submissionDetail.submittedAt
-                            ? new Date(submissionDetail.submittedAt).toLocaleString()
+                            ? new Date(
+                                submissionDetail.submittedAt,
+                              ).toLocaleString()
                             : "Not submitted yet"}
                         </p>
                       </div>
@@ -251,10 +259,14 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                     </div>
                     <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700 space-y-3">
                       {(() => {
-                        const isScorable = submissionDetail.status === "SUBMITTED" || submissionDetail.status === "LATE";
-                        const isEliminated = detail?.status === "ELIMINATED" || detail?.status === "DISQUALIFIED";
+                        const isScorable =
+                          submissionDetail.status === "SUBMITTED" ||
+                          submissionDetail.status === "LATE";
+                        const isEliminated =
+                          detail?.status === "ELIMINATED" ||
+                          detail?.status === "DISQUALIFIED";
                         const disabled = !isScorable || isEliminated;
-                        
+
                         const button = (
                           <span className="w-full block">
                             <Button
@@ -262,8 +274,15 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                               variant="contained"
                               color="error"
                               disabled={disabled}
-                              onClick={() => !disabled && setDisqualifySubmissionId(submissionDetail.id)}
-                              sx={{ textTransform: "none", fontWeight: 600, py: 1 }}
+                              onClick={() =>
+                                !disabled &&
+                                setDisqualifySubmissionId(submissionDetail.id)
+                              }
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 600,
+                                py: 1,
+                              }}
                             >
                               Disqualify submission
                             </Button>
@@ -272,12 +291,20 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
 
                         if (disabled) {
                           return (
-                            <Tooltip title={isEliminated ? "This team has already been disqualified." : "Only submitted submissions can be disqualified."} arrow placement="top">
+                            <Tooltip
+                              title={
+                                isEliminated
+                                  ? "This team has already been disqualified."
+                                  : "Only submitted submissions can be disqualified."
+                              }
+                              arrow
+                              placement="top"
+                            >
                               {button}
                             </Tooltip>
                           );
                         }
-                        
+
                         return button;
                       })()}
                     </div>
@@ -287,7 +314,9 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                     <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
                       Deliverable Links
                     </h3>
-                    <SubmissionLinksPreview links={submissionDetail.links || []} />
+                    <SubmissionLinksPreview
+                      links={submissionDetail.links || []}
+                    />
                   </section>
 
                   {submissionDetail.note && (
@@ -300,8 +329,6 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                       </div>
                     </section>
                   )}
-
-
                 </>
               ) : (
                 <div className="text-center text-slate-500 dark:text-slate-400 mt-10 text-sm">
@@ -359,7 +386,10 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                       Leader
                     </p>
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                      {detail.leaderName || detail.members?.find((m) => m.role === "LEADER")?.fullName || "Unassigned"}
+                      {detail.leaderName ||
+                        detail.members?.find((m) => m.role === "LEADER")
+                          ?.fullName ||
+                        "Unassigned"}
                     </p>
                   </div>
 
@@ -388,7 +418,7 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
 
                 {detail.registrationStatus && (
                   <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/50">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="flex flex-col gap-4">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           Registration Review
@@ -414,27 +444,21 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                       </div>
 
                       {canReviewRegistration && (
-                        <div className="flex shrink-0 flex-wrap gap-2">
-                          <Button
-                            variant="contained"
-                            color="success"
-                            size="small"
+                        <div className="flex w-full gap-2 mt-2">
+                          <button
                             disabled={isReviewing}
                             onClick={() => handleOpenReviewDialog("approve")}
-                            sx={{ fontWeight: 800, textTransform: "none" }}
+                            className="flex-1 py-2.5 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700 font-semibold rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Approve
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
+                          </button>
+                          <button
                             disabled={isReviewing}
                             onClick={() => handleOpenReviewDialog("reject")}
-                            sx={{ fontWeight: 800, textTransform: "none" }}
+                            className="flex-1 py-2.5 bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-700 font-semibold rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Reject
-                          </Button>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -546,8 +570,7 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
             color={reviewAction === "reject" ? "error" : "success"}
             onClick={handleSubmitRegistrationReview}
             disabled={
-              isReviewing ||
-              (reviewAction === "reject" && !rejectReason.trim())
+              isReviewing || (reviewAction === "reject" && !rejectReason.trim())
             }
             sx={{ fontWeight: 800, textTransform: "none" }}
           >
