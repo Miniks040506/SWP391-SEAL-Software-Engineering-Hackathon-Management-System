@@ -121,22 +121,89 @@ public class TeamController {
     }
 
     @PreAuthorize("hasRole('STUDENT')")
+    @Operation(
+            summary = "Get My Active Competitions",
+            description = "Get My Active Competitions through GET /api/v1/teams/competitions/me. Successful execution returns HTTP 200 with List<EventCompetitionSummaryResponse>. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"hasRole('STUDENT')\").",
+            operationId = "teamGetMyActiveCompetitions",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my active competitions completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/competitions/me")
     public ResponseEntity<List<EventCompetitionSummaryResponse>> getMyActiveCompetitions(
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(teamService.getMyActiveCompetitions(authentication));
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get My Team Advancement Status",
+            description = "Get My Team Advancement Status through GET /api/v1/teams/{teamId}/advancement-status; GET /api/v1/teams/{teamId}/rounds/{roundId}/advancement-status. Successful execution returns HTTP 200 with TeamAdvancementStatusResponse. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get my team advancement status completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping({
             "/{teamId}/advancement-status",
             "/{teamId}/rounds/{roundId}/advancement-status"
     })
     public ResponseEntity<TeamAdvancementStatusResponse> getMyTeamAdvancementStatus(
+            @Parameter(description = "Unique team identifier.", required = true)
             @PathVariable UUID teamId,
+            @Parameter(description = "Unique round identifier. (optional)", required = false)
             @PathVariable(required = false) UUID roundId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(teamService.getMyTeamAdvancementStatus(teamId, roundId, authentication));
     }
