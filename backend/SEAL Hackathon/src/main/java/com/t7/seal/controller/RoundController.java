@@ -2,9 +2,17 @@ package com.t7.seal.controller;
 
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.round.*;
+import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.round.*;
 import com.t7.seal.service.JudgeAssignmentService;
 import com.t7.seal.service.RoundService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,20 +38,92 @@ public class RoundController {
     private final JudgeAssignmentService judgeAssignmentService;
 
     @PreAuthorize("@eventSecurity.canCreateRound(#eventId, authentication)")
+    @Operation(
+            summary = "Create Round",
+            description = "Create Round through POST /api/v1/events/{eventId}/rounds. Successful execution returns HTTP 201 with RoundResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events/*/rounds; @PreAuthorize(\"@eventSecurity.canCreateRound(#eventId, authentication)\"). Requires a CreateRoundRequest request body validated with Jakarta Bean Validation.",
+            operationId = "roundCreateRound",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Create round completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/events/{eventId}/rounds")
     public ResponseEntity<RoundResponse> createRound(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
             @Valid @RequestBody CreateRoundRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(roundService.createRound(eventId, request, authentication));
     }
 
+    @Operation(
+            summary = "Get Rounds By Event",
+            description = "Get Rounds By Event through GET /api/v1/events/{eventId}/rounds. Successful execution returns HTTP 200 with List<RoundResponse>. Access: Public via SecurityConfig matcher /api/v1/events/*/rounds.",
+            operationId = "roundGetRoundsByEvent"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get rounds by event completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/events/{eventId}/rounds")
     public ResponseEntity<List<RoundResponse>> getRoundsByEvent(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(roundService.getRoundsByEvent(eventId, authentication));
     }
