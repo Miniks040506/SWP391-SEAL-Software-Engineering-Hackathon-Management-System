@@ -255,9 +255,37 @@ public class EventAwardController {
     }
 
 
+    @Operation(
+            summary = "Get Published Awards",
+            description = "Get Published Awards through GET /api/v1/events/{eventId}/awards. Successful execution returns HTTP 200 with List<PrizeResponse>. Access: Public via SecurityConfig matcher /api/v1/events/*/awards.",
+            operationId = "eventAwardGetPublishedAwards"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get published awards completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("events/{eventId}/awards")
     public ResponseEntity<List<PrizeResponse>> getPublishedAwards(
-            @PathVariable("eventId") UUID eventId
+            @Parameter(description = "Unique event identifier.", required = true)
+            @PathVariable UUID eventId
     ) {
         return ResponseEntity.ok(prizeService.getPublishedAwards(eventId));
     }
