@@ -145,17 +145,89 @@ public class TeamJoinRequestController {
         return ResponseEntity.ok(joinRequestService.getForTeam(teamId, authentication));
     }
 
+    @Operation(
+            summary = "Get For Current User",
+            description = "Get For Current User through GET /api/v1/teams/join-requests/me. Successful execution returns HTTP 200 with List<TeamJoinRequestResponse>. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"hasRole('STUDENT')\").",
+            operationId = "teamJoinRequestGetForCurrentUser",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get for current user completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/teams/join-requests/me")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<List<TeamJoinRequestResponse>> getForCurrentUser(Authentication authentication) {
+    public ResponseEntity<List<TeamJoinRequestResponse>> getForCurrentUser(@Parameter(hidden = true) Authentication authentication) {
         return ResponseEntity.ok(joinRequestService.getForCurrentUser(authentication));
     }
 
+    @Operation(
+            summary = "Accept",
+            description = "Accept through POST /api/v1/teams/join-requests/{requestId}/accept. Successful execution returns HTTP 200 with TeamMemberResponse. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\").",
+            operationId = "teamJoinRequestAccept",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Accept completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/teams/join-requests/{requestId}/accept")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TeamMemberResponse> accept(
+            @Parameter(description = "Unique request identifier.", required = true)
             @PathVariable UUID requestId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(joinRequestService.accept(requestId, authentication));
     }
