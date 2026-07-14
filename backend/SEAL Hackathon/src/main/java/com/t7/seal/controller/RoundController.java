@@ -322,26 +322,107 @@ public class RoundController {
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @Operation(
+            summary = "Get Scoring Progress",
+            description = "Get Scoring Progress through GET /api/v1/rounds/{roundId}/scoring-progress; GET /api/v1/rounds/{roundId}/grading-status. Successful execution returns HTTP 200 with ScoringProgressResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/rounds/*/scoring-progress; @PreAuthorize(\"@eventSecurity.canManageRound(#roundId, authentication)\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get scoring progress completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping({
             "/rounds/{roundId}/scoring-progress",
             "/rounds/{roundId}/grading-status"
     })
     public ResponseEntity<ScoringProgressResponse> getScoringProgress(
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(roundService.getScoringProgress(roundId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @Operation(
+            summary = "Preview Advance Rules",
+            description = "Preview Advance Rules through POST /api/v1/rounds/{roundId}/advance-rules/preview; POST /api/v1/rounds/{roundId}/advancement-preview; POST /api/v1/rounds/{roundId}/advancement/suggestions. Successful execution returns HTTP 200 with AdvancementPreviewResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/rounds/*/advance-rules/**; @PreAuthorize(\"@eventSecurity.canManageRound(#roundId, authentication)\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Preview advance rules completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping({
             "/rounds/{roundId}/advance-rules/preview",
             "/rounds/{roundId}/advancement-preview",
             "/rounds/{roundId}/advancement/suggestions"
     })
     public ResponseEntity<AdvancementPreviewResponse> previewAdvanceRules(
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(roundService.previewAdvanceRules(roundId, authentication));
     }
