@@ -21,12 +21,12 @@ export function ParticipantSubmissionsPage() {
       navigate(-1);
       return;
     }
-    
+
     const competitions = activeCompetitionsQuery.data ?? [];
     const activeCompetition = competitions.find((c) => c.teamId === teamId);
-    
+
     if (activeCompetition) {
-      navigate(`/participant/events/${activeCompetition.eventId}/competing`);
+      navigate(`/participant/events/${activeCompetition.eventId}/competing`, { state: { fromInternal: true } });
     } else {
       navigate(`/participant/teams/${teamId}`);
     }
@@ -45,7 +45,9 @@ export function ParticipantSubmissionsPage() {
         </button>
 
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">My Submissions</h1>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+            My Submissions
+          </h1>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
             View and manage your team's deliverables across all rounds.
           </p>
@@ -55,11 +57,15 @@ export function ParticipantSubmissionsPage() {
           {loading ? (
             <div className="py-24 flex flex-col items-center justify-center gap-3">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-slate-500 dark:text-slate-400">Loading submissions...</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Loading submissions...
+              </p>
             </div>
           ) : submissions.length === 0 ? (
             <div className="py-24 text-center">
-              <p className="text-base font-medium text-slate-500 dark:text-slate-400">No submissions yet.</p>
+              <p className="text-base font-medium text-slate-500 dark:text-slate-400">
+                No submissions yet.
+              </p>
               <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
                 Submit your deliverables when your round is open.
               </p>
@@ -79,13 +85,21 @@ export function ParticipantSubmissionsPage() {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
                       <span>#{sub.submissionNumber}</span>
-                      <span>{sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : "Not submitted"}</span>
+                      <span>
+                        {sub.submittedAt
+                          ? new Date(sub.submittedAt).toLocaleString()
+                          : "Not submitted"}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-4">
                     <SubmissionStatusBadge status={sub.status} size="sm" />
                     <button
-                      onClick={() => navigate(`/participant/teams/${teamId}/rounds/${sub.roundId}/submission`)}
+                      onClick={() =>
+                        navigate(
+                          `/participant/teams/${teamId}/rounds/${sub.roundId}/submission`,
+                        )
+                      }
                       className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50 px-3 py-1.5 rounded-lg transition-all font-medium"
                     >
                       {sub.status === "DRAFT" ? "Continue →" : "View →"}

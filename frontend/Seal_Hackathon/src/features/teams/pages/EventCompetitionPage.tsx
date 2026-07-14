@@ -114,7 +114,7 @@ export function EventCompetitionPage() {
   }
 
   const handleBack = () => {
-    if (location.key !== "default") {
+    if (location.state?.fromInternal) {
       navigate(-1);
     } else {
       navigate("/participant/teams");

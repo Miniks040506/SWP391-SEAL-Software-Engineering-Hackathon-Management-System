@@ -14,6 +14,7 @@ import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CircularProgress from "@mui/material/CircularProgress";
+import Skeleton from "@mui/material/Skeleton";
 import IconButton from "@mui/material/IconButton";
 import Popover from "@mui/material/Popover";
 import Tooltip from "@mui/material/Tooltip";
@@ -53,7 +54,8 @@ export const MyTeamsPage = () => {
 
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
-  const [previewData, setPreviewData] = useState<TeamJoinCodePreviewResponse | null>(null);
+  const [previewData, setPreviewData] =
+    useState<TeamJoinCodePreviewResponse | null>(null);
 
   const myTeamsQuery = useMyTeamsQuery();
   const invitationsQuery = useMyInvitationsQuery();
@@ -69,9 +71,11 @@ export const MyTeamsPage = () => {
     (inv) => inv.status === "PENDING",
   );
 
-  const showEmptyState = !myTeamsQuery.isLoading && (myTeamsQuery.isError || teams.length === 0);
+  const showEmptyState =
+    !myTeamsQuery.isLoading && (myTeamsQuery.isError || teams.length === 0);
 
-  const handleOpenNotifications = (e: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(e.currentTarget);
+  const handleOpenNotifications = (e: React.MouseEvent<HTMLButtonElement>) =>
+    setAnchorEl(e.currentTarget);
   const handleCloseNotifications = () => setAnchorEl(null);
   const isNotificationOpen = Boolean(anchorEl);
 
@@ -93,11 +97,14 @@ export const MyTeamsPage = () => {
   };
 
   const handleConfirmJoin = () => {
-    joinMutation.mutate({ joinCode }, {
-      onSuccess: () => {
-        handleCloseJoinDialog();
+    joinMutation.mutate(
+      { joinCode },
+      {
+        onSuccess: () => {
+          handleCloseJoinDialog();
+        },
       },
-    });
+    );
   };
 
   return (
@@ -116,13 +123,16 @@ export const MyTeamsPage = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-
           <IconButton
             onClick={handleOpenNotifications}
             className="border border-gray-200 bg-white transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
             sx={{ width: 44, height: 44, borderRadius: "12px" }}
           >
-            <Badge badgeContent={invitations.length} color="error" sx={{ "& .MuiBadge-badge": { fontWeight: "bold" } }}>
+            <Badge
+              badgeContent={invitations.length}
+              color="error"
+              sx={{ "& .MuiBadge-badge": { fontWeight: "bold" } }}
+            >
               <NotificationsOutlinedIcon className="text-gray-700 dark:text-slate-200" />
             </Badge>
           </IconButton>
@@ -138,7 +148,11 @@ export const MyTeamsPage = () => {
               borderColor: "#e2e8f0",
               color: "#334155",
               "&:hover": { borderColor: "#cbd5e1", bgcolor: "#f8fafc" },
-              ".dark &": { borderColor: "#334155", color: "#e2e8f0", "&:hover": { borderColor: "#475569", bgcolor: "#1e293b" } }
+              ".dark &": {
+                borderColor: "#334155",
+                color: "#e2e8f0",
+                "&:hover": { borderColor: "#475569", bgcolor: "#1e293b" },
+              },
             }}
           >
             Join by Code
@@ -171,41 +185,88 @@ export const MyTeamsPage = () => {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
         slotProps={{
           paper: {
-            className: "mt-2 w-full max-w-[360px] rounded-2xl border border-gray-100 shadow-xl dark:border-slate-700 dark:bg-slate-800",
+            className:
+              "mt-2 w-full max-w-[360px] rounded-2xl border border-gray-100 shadow-xl dark:border-slate-700 dark:bg-slate-800",
           },
         }}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-slate-700">
-          <h3 className="font-extrabold text-gray-900 dark:text-white">Invitations</h3>
+          <h3 className="font-extrabold text-gray-900 dark:text-white">
+            Invitations
+          </h3>
           {invitations.length > 0 && (
-            <Button size="small" onClick={() => { handleCloseNotifications(); navigate("/participant/invitations"); }} sx={{ textTransform: "none", fontWeight: 800, fontSize: "0.75rem" }}>
+            <Button
+              size="small"
+              onClick={() => {
+                handleCloseNotifications();
+                navigate("/participant/invitations");
+              }}
+              sx={{
+                textTransform: "none",
+                fontWeight: 800,
+                fontSize: "0.75rem",
+              }}
+            >
               View All
             </Button>
           )}
         </div>
         <div className="max-h-[320px] overflow-y-auto p-2">
           {invitationsQuery.isLoading ? (
-            <div className="flex justify-center p-4"><CircularProgress size={24} /></div>
+            <div className="flex justify-center p-4">
+              <CircularProgress size={24} />
+            </div>
           ) : invitations.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-6 text-center">
               <DraftsOutlinedIcon className="mb-2 text-4xl text-gray-300 dark:text-slate-600" />
-              <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">No pending invitations.</p>
+              <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">
+                No pending invitations.
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-1">
               {invitations.map((inv: any) => (
-                <div key={inv.id} className="flex items-center justify-between rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div
+                  key={inv.id}
+                  className="flex items-center justify-between rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-gray-900 dark:text-white">{inv.teamName}</p>
-                    <p className="truncate text-xs font-medium text-gray-500 dark:text-slate-400">{inv.invitedEmail}</p>
+                    <p className="truncate text-sm font-bold text-gray-900 dark:text-white">
+                      {inv.teamName}
+                    </p>
+                    <p className="truncate text-xs font-medium text-gray-500 dark:text-slate-400">
+                      {inv.invitedEmail}
+                    </p>
                   </div>
                   <div className="ml-3 flex shrink-0 items-center gap-1">
                     <Tooltip title="Decline">
-                      <span><IconButton color="error" size="small" disabled={rejectMutation.isPending || acceptMutation.isPending} onClick={() => rejectMutation.mutate(inv.id)}><CancelIcon /></IconButton></span>
+                      <span>
+                        <IconButton
+                          color="error"
+                          size="small"
+                          disabled={
+                            rejectMutation.isPending || acceptMutation.isPending
+                          }
+                          onClick={() => rejectMutation.mutate(inv.id)}
+                        >
+                          <CancelIcon />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                     <Tooltip title="Accept">
                       <span>
-                        <IconButton color="primary" size="small" disabled={rejectMutation.isPending || acceptMutation.isPending} onClick={() => { acceptMutation.mutate(inv.id); if (invitations.length === 1) handleCloseNotifications(); }}>
+                        <IconButton
+                          color="primary"
+                          size="small"
+                          disabled={
+                            rejectMutation.isPending || acceptMutation.isPending
+                          }
+                          onClick={() => {
+                            acceptMutation.mutate(inv.id);
+                            if (invitations.length === 1)
+                              handleCloseNotifications();
+                          }}
+                        >
                           <CheckCircleIcon />
                         </IconButton>
                       </span>
@@ -218,13 +279,25 @@ export const MyTeamsPage = () => {
         </div>
       </Popover>
 
-      <Dialog open={joinDialogOpen} onClose={handleCloseJoinDialog} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>Join Team by Code</DialogTitle>
+      <Dialog
+        open={joinDialogOpen}
+        onClose={handleCloseJoinDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>
+          Join Team by Code
+        </DialogTitle>
         <DialogContent dividers className="space-y-4">
           {!previewData ? (
-            <form id="preview-code-form" onSubmit={handlePreviewCode} className="pt-2">
+            <form
+              id="preview-code-form"
+              onSubmit={handlePreviewCode}
+              className="pt-2"
+            >
               <p className="text-sm text-gray-500 mb-4 dark:text-slate-400">
-                Enter the unique code provided by the Team Leader to join their team.
+                Enter the unique code provided by the Team Leader to join their
+                team.
               </p>
               <TextField
                 autoFocus
@@ -239,7 +312,7 @@ export const MyTeamsPage = () => {
             </form>
           ) : (
             <div className="space-y-4 pt-2">
-              <Alert severity="success" sx={{ borderRadius: '12px' }}>
+              <Alert severity="success" sx={{ borderRadius: "12px" }}>
                 Team found! Please confirm the details below before joining.
               </Alert>
               <div className="rounded-2xl border border-gray-100 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900/50">
@@ -275,7 +348,9 @@ export const MyTeamsPage = () => {
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button
             variant="outlined"
-            onClick={previewData ? () => setPreviewData(null) : handleCloseJoinDialog}
+            onClick={
+              previewData ? () => setPreviewData(null) : handleCloseJoinDialog
+            }
             sx={{ fontWeight: 800, textTransform: "none", borderRadius: "8px" }}
           >
             {previewData ? "Back" : "Cancel"}
@@ -287,7 +362,14 @@ export const MyTeamsPage = () => {
               form="preview-code-form"
               variant="contained"
               disabled={!joinCode.trim() || previewMutation.isPending}
-              sx={{ bgcolor: "#2563eb", fontWeight: 800, textTransform: "none", borderRadius: "8px", boxShadow: 'none', "&:hover": { bgcolor: "#1d4ed8", boxShadow: 'none' } }}
+              sx={{
+                bgcolor: "#2563eb",
+                fontWeight: 800,
+                textTransform: "none",
+                borderRadius: "8px",
+                boxShadow: "none",
+                "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+              }}
             >
               {previewMutation.isPending ? "Checking..." : "Verify Code"}
             </Button>
@@ -296,7 +378,14 @@ export const MyTeamsPage = () => {
               variant="contained"
               onClick={handleConfirmJoin}
               disabled={joinMutation.isPending}
-              sx={{ bgcolor: "#16a34a", fontWeight: 800, textTransform: "none", borderRadius: "8px", boxShadow: 'none', "&:hover": { bgcolor: "#15803d", boxShadow: 'none' } }}
+              sx={{
+                bgcolor: "#16a34a",
+                fontWeight: 800,
+                textTransform: "none",
+                borderRadius: "8px",
+                boxShadow: "none",
+                "&:hover": { bgcolor: "#15803d", boxShadow: "none" },
+              }}
             >
               {joinMutation.isPending ? "Joining..." : "Confirm Join"}
             </Button>
@@ -304,8 +393,14 @@ export const MyTeamsPage = () => {
         </DialogActions>
       </Dialog>
 
-      {myTeamsQuery.isError && <Alert severity="warning">Cannot connect right now. Try later.</Alert>}
-      {myTeamsQuery.isLoading && <div className="flex justify-center py-24"><CircularProgress /></div>}
+      {myTeamsQuery.isError && (
+        <Alert severity="warning">Cannot connect right now. Try later.</Alert>
+      )}
+      {myTeamsQuery.isLoading && (
+        <div className="flex justify-center py-24">
+          <CircularProgress />
+        </div>
+      )}
 
       {showEmptyState && (
         <section className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -316,13 +411,36 @@ export const MyTeamsPage = () => {
             You are not in any team yet.
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-gray-500 dark:text-slate-400">
-            Create a team to join a SEAL event or use a Join Code from another Team Leader.
+            Create a team to join a SEAL event or use a Join Code from another
+            Team Leader.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => navigate("/participant/teams/create")} sx={{ bgcolor: "#2563eb", fontWeight: 800, textTransform: "none", borderRadius: "12px", boxShadow: "none", "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" } }}>
+            <Button
+              variant="contained"
+              startIcon={<AddOutlinedIcon />}
+              onClick={() => navigate("/participant/teams/create")}
+              sx={{
+                bgcolor: "#2563eb",
+                fontWeight: 800,
+                textTransform: "none",
+                borderRadius: "12px",
+                boxShadow: "none",
+                "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+              }}
+            >
               Create Team
             </Button>
-            <Button variant="outlined" onClick={() => setJoinDialogOpen(true)} sx={{ fontWeight: 800, textTransform: "none", borderRadius: "12px", color: "#334155", borderColor: "#e2e8f0" }}>
+            <Button
+              variant="outlined"
+              onClick={() => setJoinDialogOpen(true)}
+              sx={{
+                fontWeight: 800,
+                textTransform: "none",
+                borderRadius: "12px",
+                color: "#334155",
+                borderColor: "#e2e8f0",
+              }}
+            >
               Join by Code
             </Button>
           </div>
@@ -333,91 +451,125 @@ export const MyTeamsPage = () => {
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {teams.map((team) => {
             const activeCompetition = (activeCompetitionsQuery.data ?? []).find(
-              (c) => c.teamId === team.id
+              (c) => c.teamId === team.id,
             );
 
             return (
-            <Card key={team.id} variant="outlined" className="overflow-hidden rounded-2xl dark:border-slate-700 dark:bg-slate-800">
-              <CardContent>
-                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
-                        <GroupsOutlinedIcon />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h2 className="truncate text-2xl font-extrabold text-gray-900 dark:text-white">
-                          {team.name}
-                        </h2>
-                        <p className="mt-1 truncate text-sm text-gray-500 dark:text-slate-400">
-                          {team.projectTitle || "No project title yet"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
-                        <p className="text-sm font-semibold text-gray-500">Role</p>
-                        <div className="mt-2"><TeamStatusBadge status={team.roleInTeam} /></div>
-                      </div>
-                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
-                        <p className="text-sm font-semibold text-gray-500">Team Status</p>
-                        <div className="mt-2"><TeamStatusBadge status={team.status} /></div>
-                      </div>
-                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
-                        <p className="text-sm font-semibold text-gray-500">Registration</p>
-                        <div className="mt-2">
-                          {team.registrationStatus ? (
-                            <TeamStatusBadge status={team.registrationStatus} />
-                          ) : (
-                            <span className="text-xs font-bold text-gray-400">N/A</span>
-                          )}
+              <Card
+                key={team.id}
+                variant="outlined"
+                className="overflow-hidden rounded-2xl dark:border-slate-700 dark:bg-slate-800"
+              >
+                <CardContent>
+                  <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
+                          <GroupsOutlinedIcon />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h2 className="truncate text-2xl font-extrabold text-gray-900 dark:text-white">
+                            {team.name}
+                          </h2>
+                          <p className="mt-1 truncate text-sm text-gray-500 dark:text-slate-400">
+                            {team.projectTitle || "No project title yet"}
+                          </p>
                         </div>
                       </div>
-                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
-                        <p className="text-sm font-semibold text-gray-500">Members</p>
-                        <div className="mt-2"><TeamStatusBadge memberCount={team.memberCount} /></div>
+
+                      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
+                          <p className="text-sm font-semibold text-gray-500">
+                            Role
+                          </p>
+                          <div className="mt-2">
+                            <TeamStatusBadge status={team.roleInTeam} />
+                          </div>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
+                          <p className="text-sm font-semibold text-gray-500">
+                            Team Status
+                          </p>
+                          <div className="mt-2">
+                            <TeamStatusBadge status={team.status} />
+                          </div>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
+                          <p className="text-sm font-semibold text-gray-500">
+                            Registration
+                          </p>
+                          <div className="mt-2">
+                            {team.registrationStatus ? (
+                              <TeamStatusBadge
+                                status={team.registrationStatus}
+                              />
+                            ) : (
+                              <span className="text-xs font-bold text-gray-400">
+                                N/A
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40">
+                          <p className="text-sm font-semibold text-gray-500">
+                            Members
+                          </p>
+                          <div className="mt-2">
+                            <TeamStatusBadge memberCount={team.memberCount} />
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex flex-col gap-2 shrink-0">
-                    <Button
-                      variant="contained"
-                      onClick={() => navigate(`/participant/teams/${team.id}`)}
-                      sx={{
-                        bgcolor: "#2563eb",
-                        fontWeight: 800,
-                        textTransform: "none",
-                        borderRadius: "10px",
-                        boxShadow: "none",
-                        "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
-                      }}
-                    >
-                      View Team
-                    </Button>
-
-                    {activeCompetition && (
+                    <div className="flex flex-col gap-2 shrink-0">
                       <Button
                         variant="contained"
-                        endIcon={<RocketLaunchOutlinedIcon />}
-                        onClick={() => navigate(`/participant/events/${activeCompetition.eventId}/competing`)}
+                        onClick={() =>
+                          navigate(`/participant/teams/${team.id}`)
+                        }
                         sx={{
-                          bgcolor: "#10b981",
+                          bgcolor: "#2563eb",
                           fontWeight: 800,
                           textTransform: "none",
                           borderRadius: "10px",
                           boxShadow: "none",
-                          "&:hover": { bgcolor: "#059669", boxShadow: "none" },
+                          "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
                         }}
                       >
-                        Event Competing
+                        View Team
                       </Button>
-                    )}
+
+                      {activeCompetitionsQuery.isLoading ? (
+                        <Skeleton variant="rounded" width="100%" height={36} sx={{ borderRadius: "10px" }} />
+                      ) : activeCompetition ? (
+                        <Button
+                          variant="contained"
+                          endIcon={<RocketLaunchOutlinedIcon />}
+                          onClick={() =>
+                            navigate(
+                              `/participant/events/${activeCompetition.eventId}/competing`,
+                              { state: { fromInternal: true } }
+                            )
+                          }
+                          sx={{
+                            bgcolor: "#10b981",
+                            fontWeight: 800,
+                            textTransform: "none",
+                            borderRadius: "10px",
+                            boxShadow: "none",
+                            "&:hover": {
+                              bgcolor: "#059669",
+                              boxShadow: "none",
+                            },
+                          }}
+                        >
+                          Event Competing
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
