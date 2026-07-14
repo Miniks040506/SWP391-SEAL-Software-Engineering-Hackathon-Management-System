@@ -9,6 +9,7 @@ import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
 
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -52,6 +53,7 @@ import {
   useToggleJoinCodeMutation,
   useTransferTeamLeaderMutation,
   useUpdateTeamMutation,
+  useMyActiveCompetitionsQuery,
 } from "../hooks/useParticipantTeams";
 
 type TeamDetailTab = "overview" | "members" | "track-registration";
@@ -78,6 +80,7 @@ export const TeamDetailPage = () => {
 
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
+  const activeCompetitionsQuery = useMyActiveCompetitionsQuery();
   const invitationsQuery = useTeamInvitationsQuery(teamId);
   const disqualificationsQuery = useActiveTeamDisqualificationsQuery(
     teamQuery.data?.status === "ELIMINATED" ? teamId : undefined,
@@ -101,6 +104,12 @@ export const TeamDetailPage = () => {
   const currentTeamSummary = useMemo(() => {
     return (myTeamsQuery.data ?? []).find((item) => item.id === teamId);
   }, [myTeamsQuery.data, teamId]);
+
+  const activeCompetition = useMemo(() => {
+    return (activeCompetitionsQuery.data ?? []).find(
+      (comp) => comp.teamId === teamId,
+    );
+  }, [activeCompetitionsQuery.data, teamId]);
 
   const currentUserIsLeader = isLeaderRole(currentTeamSummary?.roleInTeam);
 
@@ -250,13 +259,35 @@ export const TeamDetailPage = () => {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 md:justify-end">
-              <TeamStatusBadge
-                status={team.status}
-                memberCount={members.length}
-              />
-              {team.registrationStatus && (
-                <TeamStatusBadge status={team.registrationStatus} />
+            <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                <TeamStatusBadge
+                  status={team.status}
+                  memberCount={members.length}
+                />
+                {team.registrationStatus && (
+                  <TeamStatusBadge status={team.registrationStatus} />
+                )}
+              </div>
+              
+              {activeCompetition && (
+                <div className="pt-2">
+                  <Button
+                    variant="contained"
+                    endIcon={<RocketLaunchOutlinedIcon />}
+                    onClick={() => navigate(`/participant/events/${activeCompetition.eventId}/competing`)}
+                    sx={{
+                      bgcolor: "#10b981",
+                      fontWeight: 800,
+                      textTransform: "none",
+                      borderRadius: "10px",
+                      boxShadow: "none",
+                      "&:hover": { bgcolor: "#059669", boxShadow: "none" },
+                    }}
+                  >
+                    Event Competing
+                  </Button>
+                </div>
               )}
             </div>
           </div>

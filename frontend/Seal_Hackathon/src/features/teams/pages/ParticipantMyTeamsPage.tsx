@@ -6,7 +6,8 @@ import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
-import DraftsOutlinedIcon from "@mui/icons-material/DraftsOutlined"
+import DraftsOutlinedIcon from "@mui/icons-material/DraftsOutlined";
+import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
 import Alert from "@mui/material/Alert";
 import Badge from "@mui/material/Badge";
 import Button from "@mui/material/Button";
@@ -31,6 +32,7 @@ import {
   useRejectInvitationMutation,
   usePreviewJoinCodeMutation,
   useJoinTeamByCodeMutation,
+  useMyActiveCompetitionsQuery,
 } from "../hooks/useParticipantTeams";
 import type { TeamJoinCodePreviewResponse } from "@/types/team.types";
 
@@ -55,6 +57,7 @@ export const MyTeamsPage = () => {
 
   const myTeamsQuery = useMyTeamsQuery();
   const invitationsQuery = useMyInvitationsQuery();
+  const activeCompetitionsQuery = useMyActiveCompetitionsQuery();
 
   const acceptMutation = useAcceptInvitationMutation();
   const rejectMutation = useRejectInvitationMutation();
@@ -328,7 +331,12 @@ export const MyTeamsPage = () => {
 
       {!myTeamsQuery.isLoading && teams.length > 0 && (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-          {teams.map((team) => (
+          {teams.map((team) => {
+            const activeCompetition = (activeCompetitionsQuery.data ?? []).find(
+              (c) => c.teamId === team.id
+            );
+
+            return (
             <Card key={team.id} variant="outlined" className="overflow-hidden rounded-2xl dark:border-slate-700 dark:bg-slate-800">
               <CardContent>
                 <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
@@ -373,24 +381,45 @@ export const MyTeamsPage = () => {
                     </div>
                   </div>
 
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate(`/participant/teams/${team.id}`)}
-                    sx={{
-                      bgcolor: "#2563eb",
-                      fontWeight: 800,
-                      textTransform: "none",
-                      borderRadius: "10px",
-                      boxShadow: "none",
-                      "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
-                    }}
-                  >
-                    View Team
-                  </Button>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <Button
+                      variant="contained"
+                      onClick={() => navigate(`/participant/teams/${team.id}`)}
+                      sx={{
+                        bgcolor: "#2563eb",
+                        fontWeight: 800,
+                        textTransform: "none",
+                        borderRadius: "10px",
+                        boxShadow: "none",
+                        "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+                      }}
+                    >
+                      View Team
+                    </Button>
+
+                    {activeCompetition && (
+                      <Button
+                        variant="contained"
+                        endIcon={<RocketLaunchOutlinedIcon />}
+                        onClick={() => navigate(`/participant/events/${activeCompetition.eventId}/competing`)}
+                        sx={{
+                          bgcolor: "#10b981",
+                          fontWeight: 800,
+                          textTransform: "none",
+                          borderRadius: "10px",
+                          boxShadow: "none",
+                          "&:hover": { bgcolor: "#059669", boxShadow: "none" },
+                        }}
+                      >
+                        Event Competing
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 

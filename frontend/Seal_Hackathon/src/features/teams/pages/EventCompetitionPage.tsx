@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
@@ -50,6 +50,7 @@ function roundStateLabel(round: EventCompetitionRoundResponse) {
 export function EventCompetitionPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [clock, setClock] = useState(() => Date.now());
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
   const lastOpenRoundId = useRef<string | null>(null);
@@ -63,7 +64,9 @@ export function EventCompetitionPage() {
 
   const competition = competitionQuery.data;
 
-  const advancementQuery = useTeamAdvancementStatusQuery(competition?.teamId ?? "");
+  const advancementQuery = useTeamAdvancementStatusQuery(
+    competition?.teamId ?? "",
+  );
   const advancementData = advancementQuery.data?.data;
 
   useEffect(() => {
@@ -89,7 +92,8 @@ export function EventCompetitionPage() {
   }, [competition, selectedRoundId]);
 
   const serverOffset = competition
-    ? new Date(competition.serverTime).getTime() - competitionQuery.dataUpdatedAt
+    ? new Date(competition.serverTime).getTime() -
+      competitionQuery.dataUpdatedAt
     : 0;
   const currentTime = clock + serverOffset;
 
@@ -109,35 +113,45 @@ export function EventCompetitionPage() {
     );
   }
 
+  const handleBack = () => {
+    if (location.key !== "default") {
+      navigate(-1);
+    } else {
+      navigate("/participant/teams");
+    }
+  };
+
   if (competitionQuery.isError || !competition) {
     return (
       <div className="mx-auto max-w-3xl space-y-5 py-24">
         <Alert severity="warning">
-          You can view the event competing page only after your team has registered to a track and the event is ongoing.
+          You can view the event competing page only after your team has
+          registered to a track and the event is ongoing.
         </Alert>
         <button
           type="button"
-          onClick={() => navigate("/events")}
+          onClick={handleBack}
           className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 transition hover:border-blue-400 hover:text-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
         >
           <ArrowBackIcon style={{ fontSize: 16 }} />
-          Back to events
+          Go Back
         </button>
       </div>
     );
   }
 
-  const canOpenSubmission = selectedRound?.canSubmit && competition.teamStatus !== "ELIMINATED";
+  const canOpenSubmission =
+    selectedRound?.canSubmit && competition.teamStatus !== "ELIMINATED";
 
   return (
     <div className="space-y-7 animate-in slide-in-from-bottom-4 duration-500">
       <button
         type="button"
-        onClick={() => navigate(`/events/${competition.eventId}`)}
+        onClick={handleBack}
         className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-gray-400 transition-colors hover:text-blue-500"
       >
         <ArrowBackIcon style={{ fontSize: 15 }} />
-        Back to event detail
+        Go Back
       </button>
 
       <section className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-600 to-slate-950 text-white shadow-xl shadow-blue-500/20">
@@ -153,15 +167,29 @@ export function EventCompetitionPage() {
                 {competition.eventName}
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100 md:text-base">
-                Team <span className="font-bold text-white">{competition.teamName}</span> is competing in track <span className="font-bold text-white">{competition.trackName}</span>. Watch round status here and submit deliverables when a coordinator opens a round.
+                Team{" "}
+                <span className="font-bold text-white">
+                  {competition.teamName}
+                </span>{" "}
+                is competing in track{" "}
+                <span className="font-bold text-white">
+                  {competition.trackName}
+                </span>
+                . Watch round status here and submit deliverables when a
+                coordinator opens a round.
               </p>
             </div>
 
             <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">
-              <p className="text-xs font-bold uppercase tracking-widest text-blue-100">Current round timer</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-blue-100">
+                Current round timer
+              </p>
               <p className="mt-2 text-3xl font-black">
                 {selectedRound?.open
-                  ? formatCountdown(selectedRound.submissionDeadline, currentTime)
+                  ? formatCountdown(
+                      selectedRound.submissionDeadline,
+                      currentTime,
+                    )
                   : "Waiting"}
               </p>
               <p className="mt-1 text-xs font-medium text-blue-100">
@@ -176,12 +204,14 @@ export function EventCompetitionPage() {
 
       {competition.teamStatus === "ELIMINATED" && (
         <Alert severity="error">
-          Your team has been eliminated and can no longer participate in this event.
+          Your team has been eliminated and can no longer participate in this
+          event.
         </Alert>
       )}
       {competition.teamStatus === "ADVANCED" && (
         <Alert severity="success">
-          Your team has advanced! You are eligible for the next round when it opens.
+          Your team has advanced! You are eligible for the next round when it
+          opens.
         </Alert>
       )}
       {competition.teamStatus === "WINNER" && (
@@ -227,7 +257,8 @@ export function EventCompetitionPage() {
                     {roundStateLabel(round)}
                   </p>
                   <p className="mt-1 text-xs font-semibold text-gray-500 dark:text-slate-400">
-                    {formatDateTime(round.startAt)} â†’ {formatDateTime(round.endAt)}
+                    {formatDateTime(round.startAt)} â†’{" "}
+                    {formatDateTime(round.endAt)}
                   </p>
                 </div>
                 <span
@@ -266,10 +297,12 @@ export function EventCompetitionPage() {
                     {selectedRound.roundName}
                   </h2>
                   <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
-                    Round period: {formatDateTime(selectedRound.startAt)} â†’ {formatDateTime(selectedRound.endAt)}
+                    Round period: {formatDateTime(selectedRound.startAt)} â†’{" "}
+                    {formatDateTime(selectedRound.endAt)}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
-                    Submission deadline: {formatDateTime(selectedRound.submissionDeadline)}
+                    Submission deadline:{" "}
+                    {formatDateTime(selectedRound.submissionDeadline)}
                   </p>
                 </div>
 
@@ -283,7 +316,11 @@ export function EventCompetitionPage() {
                         : "bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-300",
                   ].join(" ")}
                 >
-                  {selectedRound.open ? <PlayArrowIcon style={{ fontSize: 15 }} /> : <LockIcon style={{ fontSize: 15 }} />}
+                  {selectedRound.open ? (
+                    <PlayArrowIcon style={{ fontSize: 15 }} />
+                  ) : (
+                    <LockIcon style={{ fontSize: 15 }} />
+                  )}
                   {roundStateLabel(selectedRound)}
                 </span>
               </div>
@@ -293,25 +330,32 @@ export function EventCompetitionPage() {
                   Competing exam / round instruction
                 </p>
                 <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-700 dark:text-slate-300">
-                  {selectedRound.description || "No exam instruction has been configured for this round yet. Please wait for the coordinator announcement."}
+                  {selectedRound.description ||
+                    "No exam instruction has been configured for this round yet. Please wait for the coordinator announcement."}
                 </p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-                  <p className="text-xs font-black uppercase text-gray-400">Submission status</p>
+                  <p className="text-xs font-black uppercase text-gray-400">
+                    Submission status
+                  </p>
                   <p className="mt-2 text-lg font-black text-gray-900 dark:text-white">
                     {selectedRound.submissionStatus ?? "Not submitted"}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-                  <p className="text-xs font-black uppercase text-gray-400">Attempt</p>
+                  <p className="text-xs font-black uppercase text-gray-400">
+                    Attempt
+                  </p>
                   <p className="mt-2 text-lg font-black text-gray-900 dark:text-white">
                     #{selectedRound.submissionNumber ?? 0}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-                  <p className="text-xs font-black uppercase text-gray-400">Links</p>
+                  <p className="text-xs font-black uppercase text-gray-400">
+                    Links
+                  </p>
                   <p className="mt-2 text-lg font-black text-gray-900 dark:text-white">
                     {selectedRound.linkCount}
                   </p>
@@ -320,13 +364,15 @@ export function EventCompetitionPage() {
 
               {!competition.leader && (
                 <Alert severity="info">
-                  Only the team leader can submit or update deliverables. You can still view round status and instructions here.
+                  Only the team leader can submit or update deliverables. You
+                  can still view round status and instructions here.
                 </Alert>
               )}
 
               {selectedRound.submissionLocked && (
                 <Alert severity="warning">
-                  Submission is locked for this round. Your team can view previous submissions but cannot update them.
+                  Submission is locked for this round. Your team can view
+                  previous submissions but cannot update them.
                 </Alert>
               )}
 
@@ -352,7 +398,11 @@ export function EventCompetitionPage() {
 
                 <button
                   type="button"
-                  onClick={() => navigate(`/participant/teams/${competition.teamId}/submissions`)}
+                  onClick={() =>
+                    navigate(
+                      `/participant/teams/${competition.teamId}/submissions`,
+                    )
+                  }
                   className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-6 py-3 text-sm font-black text-gray-600 transition-all hover:border-blue-400 hover:text-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   View submission history
@@ -360,7 +410,9 @@ export function EventCompetitionPage() {
               </div>
             </div>
           ) : (
-            <Alert severity="info">No round has been configured for this event yet.</Alert>
+            <Alert severity="info">
+              No round has been configured for this event yet.
+            </Alert>
           )}
         </section>
       </div>

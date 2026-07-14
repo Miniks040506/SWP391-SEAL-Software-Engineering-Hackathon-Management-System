@@ -1,16 +1,50 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+import { teamApi } from "@/api/team.api";
 import { useTeamSubmissionsQuery } from "../hooks/useParticipantSubmissionQueries";
 import { SubmissionStatusBadge } from "../components/SubmissionStatusBadge";
 
 export function ParticipantSubmissionsPage() {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { submissions, loading } = useTeamSubmissionsQuery(teamId);
 
+  const activeCompetitionsQuery = useQuery({
+    queryKey: ["my-active-competitions"],
+    queryFn: () => teamApi.getMyActiveCompetitions(),
+  });
+
+  const handleBack = () => {
+    if (location.key !== "default") {
+      navigate(-1);
+      return;
+    }
+    
+    const competitions = activeCompetitionsQuery.data ?? [];
+    const activeCompetition = competitions.find((c) => c.teamId === teamId);
+    
+    if (activeCompetition) {
+      navigate(`/participant/events/${activeCompetition.eventId}/competing`);
+    } else {
+      navigate(`/participant/teams/${teamId}`);
+    }
+  };
+
   return (
-    <div className="flex-1 min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
+    <div className="flex-1 min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent animate-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-gray-400 transition-colors hover:text-blue-500"
+        >
+          <ArrowBackOutlinedIcon style={{ fontSize: 16 }} />
+          Back
+        </button>
+
+        <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">My Submissions</h1>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
             View and manage your team's deliverables across all rounds.
