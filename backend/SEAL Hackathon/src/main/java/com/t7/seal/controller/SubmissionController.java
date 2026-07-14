@@ -745,11 +745,55 @@ public class SubmissionController {
     }
 
     @PreAuthorize("hasRole('COORDINATOR')")
+    @Operation(
+            summary = "Disqualify Submission",
+            description = "Disqualify Submission through POST /api/v1/submissions/{submissionId}/disqualify. Successful execution returns HTTP 201 with DisqualificationResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/submissions/*/disqualify; @PreAuthorize(\"hasRole('COORDINATOR')\"). Requires a DisqualifySubmissionRequest request body validated with Jakarta Bean Validation.",
+            operationId = "submissionDisqualifySubmission",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Disqualify submission completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/submissions/{submissionId}/disqualify")
     public ResponseEntity<DisqualificationResponse> disqualifySubmission(
+            @Parameter(description = "Unique submission identifier.", required = true)
             @PathVariable UUID submissionId,
             @Valid @RequestBody DisqualifySubmissionRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(disqualificationService
@@ -757,16 +801,56 @@ public class SubmissionController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @Operation(
+            summary = "Get Event Submissions",
+            description = "Get Event Submissions through GET /api/v1/submissions. Successful execution returns HTTP 200 with PageResponse<CoordinatorSubmissionSummaryResponse>. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/submissions; @PreAuthorize(\"hasAnyRole('ADMIN','COORDINATOR')\").",
+            operationId = "submissionGetEventSubmissions",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get event submissions completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/submissions")
     public ResponseEntity<PageResponse<CoordinatorSubmissionSummaryResponse>> getEventSubmissions(
+            @Parameter(description = "Unique event identifier. (optional)", required = false)
             @RequestParam(required = false) UUID eventId,
+            @Parameter(description = "Unique round identifier. (optional)", required = false)
             @RequestParam(required = false) UUID roundId,
+            @Parameter(description = "Unique track identifier. (optional)", required = false)
             @RequestParam(required = false) UUID trackId,
+            @Parameter(description = "Optional status filter. (optional)", required = false)
             @RequestParam(required = false) String status,
+            @Parameter(description = "Optional free-text search term. (optional)", required = false)
             @RequestParam(required = false) String search,
+            @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Maximum number of items returned in one page. (default: 20, optional)", required = false)
             @RequestParam(defaultValue = "20") int size,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.getEventSubmissions(eventId, roundId, trackId, status, search, page, size, authentication));
     }
