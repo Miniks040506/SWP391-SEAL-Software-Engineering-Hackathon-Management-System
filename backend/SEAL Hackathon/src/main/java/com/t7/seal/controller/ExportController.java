@@ -133,23 +133,100 @@ public class ExportController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Get Export Job By Id",
+            description = "Get Export Job By Id through GET /api/v1/exports/{exportId}. Successful execution returns HTTP 200 with ExportJobResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/exports/**; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\").",
+            operationId = "exportGetExportJobById",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get export job by id completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/{exportId}")
     public ResponseEntity<ExportJobResponse> getExportJobById(
+            @Parameter(description = "Unique export job identifier.", required = true)
             @PathVariable UUID exportId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(exportService.getExportJobById(exportId, authentication));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Download Export",
+            description = "Download Export through GET /api/v1/exports/{exportId}/download. Successful execution returns HTTP 200 with ExportDownloadResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/exports/**; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\").",
+            operationId = "exportDownloadExport",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Download export completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/{exportId}/download")
     public ResponseEntity<ExportDownloadResponse> downloadExport(
-            @PathVariable("exportId") UUID exportId,
-            Authentication authentication
+            @Parameter(description = "Unique export job identifier.", required = true)
+            @PathVariable UUID exportId,
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(exportService.downloadExport(exportId, authentication));
     }
-
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @GetMapping("/{exportId}/download-file")
     public ResponseEntity<Resource> downloadExportFile(
