@@ -5,6 +5,7 @@ import com.t7.seal.request.event.UpdateEventRequest;
 import com.t7.seal.request.results.PublishResultsRequest;
 import com.t7.seal.request.event.CreateEventRequest;
 import com.t7.seal.request.system.ExportRblDatasetRequest;
+import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.UploadFileResponse;
 import com.t7.seal.response.event.EventDetailResponse;
@@ -17,6 +18,13 @@ import com.t7.seal.service.CloudinaryStorageService;
 import com.t7.seal.service.EventService;
 import com.t7.seal.service.RankingService;
 import com.t7.seal.service.RblResearchService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,11 +54,60 @@ public class EventController {
     private final RblResearchService rblResearchService;
 
     @PreAuthorize("@eventSecurity.canCreateEvent(authentication)")
+    @Operation(
+            summary = "Upload Event Banner",
+            description = "Upload Event Banner through POST /api/v1/events/banner. Successful execution returns HTTP 200 with UploadFileResponse. Access: Authenticated via SecurityConfig matcher anyRequest(); @PreAuthorize(\"@eventSecurity.canCreateEvent(authentication)\"). Consumes MediaType.MULTIPART_FORM_DATA_VALUE.",
+            operationId = "eventUploadEventBanner",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Upload event banner completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "413",
+                    description = "The uploaded file exceeds the configured size limit.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "415",
+                    description = "The uploaded media type is not supported.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping(
             value = "/banner",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<UploadFileResponse> uploadEventBanner(
+            @Parameter(description = "Uploaded binary file.", required = true)
             @RequestPart("file") MultipartFile file
     ) {
         return ResponseEntity.ok(
@@ -59,10 +116,48 @@ public class EventController {
     }
 
     @PreAuthorize("@eventSecurity.canCreateEvent(authentication)")
+    @Operation(
+            summary = "Create Event",
+            description = "Create Event through POST /api/v1/events. Successful execution returns HTTP 201 with EventDetailResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events; @PreAuthorize(\"@eventSecurity.canCreateEvent(authentication)\"). Requires a CreateEventRequest request body validated with Jakarta Bean Validation.",
+            operationId = "eventCreateEvent",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Create event completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping
     public ResponseEntity<EventDetailResponse> createEvent(
             @Valid @RequestBody CreateEventRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         EventDetailResponse response = eventService.createEvent(request, authentication);
 //        return new ResponseEntity<>(response, HttpStatus.CREATED);
