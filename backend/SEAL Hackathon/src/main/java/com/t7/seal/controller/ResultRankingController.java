@@ -393,22 +393,103 @@ public class ResultRankingController {
     }
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
+    @Operation(
+            summary = "Get Coordinator Event Results",
+            description = "Get Coordinator Event Results through GET /api/v1/events/{eventId}/results. Successful execution returns HTTP 200 with List<RankingResponse>. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events/*/results; @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId, authentication)\").",
+            operationId = "resultRankingGetCoordinatorEventResults",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get coordinator event results completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/events/{eventId}/results")
     public ResponseEntity<List<RankingResponse>> getCoordinatorEventResults(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
+            @Parameter(description = "Unique round identifier. (optional)", required = false)
             @RequestParam(required = false) UUID roundId,
+            @Parameter(description = "Unique track identifier. (optional)", required = false)
             @RequestParam(required = false) UUID trackId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(rankingService.getCoordinatorRankings(eventId, trackId, roundId, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @Operation(
+            summary = "Get Coordinator Round Results",
+            description = "Get Coordinator Round Results through GET /api/v1/rounds/{roundId}/results. Successful execution returns HTTP 200 with List<RankingResponse>. Access: SecurityConfig role COORDINATOR via matcher /api/v1/rounds/*/results; @PreAuthorize(\"@eventSecurity.canManageRound(#roundId, authentication)\").",
+            operationId = "resultRankingGetCoordinatorRoundResults",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get coordinator round results completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/rounds/{roundId}/results")
     public ResponseEntity<List<RankingResponse>> getCoordinatorRoundResults(
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
+            @Parameter(description = "Unique track identifier. (optional)", required = false)
             @RequestParam(required = false) UUID trackId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(rankingService.getCoordinatorRankings(null, trackId, roundId, authentication));
     }
