@@ -211,21 +211,102 @@ public class CalibrationController {
     }
 
     @PreAuthorize("hasRole('JUDGE') or hasRole('COORDINATOR') or hasRole('ADMIN')")
+    @Operation(
+            summary = "Get Calibration Round By Id",
+            description = "Get Calibration Round By Id through GET /api/v1/calibrations/{calibrationId}; GET /api/v1/calibration-rounds/{calibrationId}. Successful execution returns HTTP 200 with CalibrationRoundDetailResponse. Access: SecurityConfig roles JUDGE, COORDINATOR, ADMIN via matcher /api/v1/calibrations/**; @PreAuthorize(\"hasRole('JUDGE') or hasRole('COORDINATOR') or hasRole('ADMIN')\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get calibration round by id completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping({"/calibrations/{calibrationId}", "/calibration-rounds/{calibrationId}"})
     public ResponseEntity<CalibrationRoundDetailResponse> getCalibrationRoundById(
+            @Parameter(description = "Unique calibration identifier.", required = true)
             @PathVariable("calibrationId") UUID calibrationId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService
                 .getCalibrationRoundById(calibrationId, authentication));
     }
 
     @PreAuthorize("hasRole('COORDINATOR') or hasRole('ADMIN')")
+    @Operation(
+            summary = "Update Calibration Round",
+            description = "Update Calibration Round through PATCH /api/v1/calibrations/{calibrationId}; PATCH /api/v1/calibration-rounds/{calibrationId}. Successful execution returns HTTP 200 with CalibrationRoundResponse. Access: SecurityConfig roles COORDINATOR, ADMIN via matcher /api/v1/calibrations/*; @PreAuthorize(\"hasRole('COORDINATOR') or hasRole('ADMIN')\"). Requires an UpdateCalibrationRoundRequest request body validated with Jakarta Bean Validation.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update calibration round completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping({"/calibrations/{calibrationId}", "/calibration-rounds/{calibrationId}"})
     public ResponseEntity<CalibrationRoundResponse> updateCalibrationRound(
+            @Parameter(description = "Unique calibration identifier.", required = true)
             @PathVariable("calibrationId") UUID calibrationId,
             @Valid @RequestBody UpdateCalibrationRoundRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService
                 .updateCalibrationRound(calibrationId, request, authentication));
