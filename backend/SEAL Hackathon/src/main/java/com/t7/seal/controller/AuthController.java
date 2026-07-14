@@ -2,8 +2,14 @@ package com.t7.seal.controller;
 
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.auth.*;
+import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.auth.*;
 import com.t7.seal.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,13 +28,72 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @Operation(
+            summary = "Register",
+            description = "Register through POST /api/v1/auth/register. Successful execution returns HTTP 201 with RegisterResponse. Access: Public via SecurityConfig matcher /api/v1/auth/register. Requires a RegisterRequest request body validated with Jakarta Bean Validation.",
+            operationId = "authRegister"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Register completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    public ResponseEntity<RegisterResponse> register(
+            @Valid @RequestBody RegisterRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(authService.register(request));
     }
 
+    @Operation(
+            summary = "Verify Email",
+            description = "Verify Email through POST /api/v1/auth/verify-email. Successful execution returns HTTP 200 with VerifyEmailResponse. Access: Public via SecurityConfig matcher /api/v1/auth/verify-email. Requires a VerifyEmailRequest request body validated with Jakarta Bean Validation.",
+            operationId = "authVerifyEmail"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Verify email completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/verify-email")
-    public ResponseEntity<VerifyEmailResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+    public ResponseEntity<VerifyEmailResponse> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request
+    ) {
         return ResponseEntity.ok(authService.verifyEmail(request));
     }
 
