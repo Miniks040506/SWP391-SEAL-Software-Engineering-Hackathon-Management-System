@@ -6,6 +6,7 @@ import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.auth.*;
 import com.t7.seal.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -170,16 +171,78 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @Operation(
+            summary = "Refresh Token",
+            description = "Refresh Token through POST /api/v1/auth/refresh-token. Successful execution returns HTTP 200 with RefreshTokenResponse. Access: Public via SecurityConfig matcher /api/v1/auth/refresh-token. Requires a TokenRequest request body validated with Jakarta Bean Validation.",
+            operationId = "authRefreshToken"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Refresh token completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/refresh-token")
-    public ResponseEntity<RefreshTokenResponse> refreshToken(@Valid @RequestBody TokenRequest request) {
+    public ResponseEntity<RefreshTokenResponse> refreshToken(
+            @Valid @RequestBody TokenRequest request
+    ) {
         return ResponseEntity.ok(authService.refreshToken(request));
     }
 
+    @Operation(
+            summary = "Logout",
+            description = "Logout through POST /api/v1/auth/logout. Successful execution returns HTTP 204 without a response body. Access: Authenticated via SecurityConfig matcher anyRequest().",
+            operationId = "authLogout",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Logout completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<Void> logout(
+            @Parameter(description = "Authorization value.", required = true)
+            @RequestHeader("Authorization") String authorizationHeader
+    ) {
         authService.logout(authorizationHeader);
         return ResponseEntity.noContent().build();
     }
+
 
     @PostMapping("/forgot-password")
     public ResponseEntity<AuthMessageResponse> forgotPassword(@Valid @RequestBody EmailRequest request) {
