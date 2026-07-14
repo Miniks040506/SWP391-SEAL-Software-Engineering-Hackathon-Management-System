@@ -531,24 +531,111 @@ public class EventController {
     }
 
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
+    @Operation(
+            summary = "Publish Results",
+            description = "Publish Results through POST /api/v1/events/{eventId}/publish-results. Successful execution returns HTTP 200 with PublishResultsResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events/*/publish-results; @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId, authentication)\"). Optionally accepts a PublishResultsRequest request body validated with Jakarta Bean Validation.",
+            operationId = "eventPublishResults",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Publish results completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/{eventId}/publish-results")
     public ResponseEntity<PublishResultsResponse> publishResults(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
             @Valid @RequestBody(required = false) PublishResultsRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(rankingService.publishEventResults(eventId, request, authentication));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Get Variance Dashboard",
+            description = "Get Variance Dashboard through GET /api/v1/events/{eventId}/variance-dashboard. Successful execution returns HTTP 200 with VarianceDashboardResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/events/*/variance-dashboard; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\").",
+            operationId = "eventGetVarianceDashboard",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get variance dashboard completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/{eventId}/variance-dashboard")
     public ResponseEntity<VarianceDashboardResponse> getVarianceDashboard(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
+            @Parameter(description = "Unique round identifier. (optional)", required = false)
             @RequestParam(required = false) UUID roundId,
+            @Parameter(description = "Unique track identifier. (optional)", required = false)
             @RequestParam(required = false) UUID trackId,
+            @Parameter(description = "Criteria Type value. (optional)", required = false)
             @RequestParam(required = false) String criteriaType,
+            @Parameter(description = "Judge Type value. (optional)", required = false)
             @RequestParam(required = false) String judgeType,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(rblResearchService.getVarianceDashboard(
                 eventId,
@@ -561,11 +648,55 @@ public class EventController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "Export Rbl Dataset",
+            description = "Export Rbl Dataset through POST /api/v1/events/{eventId}/exports/rbl-dataset. Successful execution returns HTTP 200 with ExportJobResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/events/*/exports/**; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\"). Optionally accepts an ExportRblDatasetRequest request body.",
+            operationId = "eventExportRblDataset",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Export rbl dataset completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/{eventId}/exports/rbl-dataset")
     public ResponseEntity<ExportJobResponse> exportRblDataset(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable UUID eventId,
             @RequestBody(required = false) ExportRblDatasetRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(rblResearchService.exportAnonymizedDataset(eventId, request, authentication));
     }
