@@ -1,18 +1,24 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Alert,
   CircularProgress,
   Card,
   CardContent,
   Typography,
+  Button,
 } from "@mui/material";
 import { useActiveTeamDisqualificationsQuery } from "../hooks/useDisqualificationQueries";
 import { DisqualificationStatusBadge } from "../components/DisqualificationStatusBadge";
 import { DisqualificationAppealForm } from "../components/DisqualificationAppealForm";
+import { ArrowBack } from "@mui/icons-material";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import type { UUID } from "@/types/common.types";
 
 export function ParticipantDisqualificationPage() {
   const { teamId } = useParams<{ teamId: string }>();
+  const navigate = useNavigate();
+  const [appealDialogOpen, setAppealDialogOpen] = useState(false);
 
   const {
     data: disqualifications = [],
@@ -43,14 +49,23 @@ export function ParticipantDisqualificationPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-          Disqualification & Appeal
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          View your team's disqualification status and manage your appeal if
-          applicable.
-        </p>
+      <div className="flex items-center gap-4">
+        <IconButton
+          onClick={() => navigate(`/participant/teams/${teamId}`)}
+          className="bg-white shadow-sm border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700"
+          size="small"
+        >
+          <ArrowBack fontSize="small" className="text-slate-600 dark:text-slate-300" />
+        </IconButton>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+            Disqualification
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            View your team's disqualification status and manage your appeal if
+            applicable.
+          </p>
+        </div>
       </div>
 
       {!disqualification ? (
@@ -129,10 +144,38 @@ export function ParticipantDisqualificationPage() {
             {/* Appeal Section */}
             <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
               {!disqualification.appealStatus ? (
-                <DisqualificationAppealForm
-                  disqualificationId={disqualification.id}
-                  onSuccess={() => refetch()}
-                />
+                <>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => setAppealDialogOpen(true)}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    Create an Appeal
+                  </Button>
+
+                  <Dialog
+                    open={appealDialogOpen}
+                    onClose={() => setAppealDialogOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    classes={{ paper: "bg-white dark:bg-slate-800 dark:text-slate-200" }}
+                    sx={{ "& .MuiDialog-paper": { backgroundImage: "none" } }}
+                  >
+                    <DialogTitle className="font-bold text-slate-800 dark:text-slate-100">
+                      Create an Appeal
+                    </DialogTitle>
+                    <DialogContent className="pt-2">
+                      <DisqualificationAppealForm
+                        disqualificationId={disqualification.id}
+                        onSuccess={() => {
+                          setAppealDialogOpen(false);
+                          refetch();
+                        }}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </>
               ) : (
                 <div className="space-y-3">
                   <Typography

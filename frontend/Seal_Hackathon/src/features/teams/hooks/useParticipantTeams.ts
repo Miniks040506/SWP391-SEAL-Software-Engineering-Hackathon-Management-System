@@ -39,6 +39,18 @@ export function useMyTeamsQuery() {
   });
 }
 
+export function useMyActiveCompetitionsQuery(enabled = true) {
+  return useQuery({
+    queryKey: ["my-active-competitions"],
+    queryFn: async () => {
+      return activeTeamService.getMyActiveCompetitions();
+    },
+    enabled,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
+}
+
 export function useTeamDetailQuery(teamId?: string) {
   return useQuery({
     queryKey: participantTeamQueryKeys.detail(teamId),

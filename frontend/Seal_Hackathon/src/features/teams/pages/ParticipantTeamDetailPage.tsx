@@ -9,6 +9,7 @@ import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
 
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -19,6 +20,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import Skeleton from "@mui/material/Skeleton";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import TextField from "@mui/material/TextField";
@@ -52,6 +54,7 @@ import {
   useToggleJoinCodeMutation,
   useTransferTeamLeaderMutation,
   useUpdateTeamMutation,
+  useMyActiveCompetitionsQuery,
 } from "../hooks/useParticipantTeams";
 
 type TeamDetailTab = "overview" | "members" | "track-registration";
@@ -78,6 +81,7 @@ export const TeamDetailPage = () => {
 
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
+  const activeCompetitionsQuery = useMyActiveCompetitionsQuery();
   const invitationsQuery = useTeamInvitationsQuery(teamId);
   const disqualificationsQuery = useActiveTeamDisqualificationsQuery(
     teamQuery.data?.status === "ELIMINATED" ? teamId : undefined,
@@ -101,6 +105,12 @@ export const TeamDetailPage = () => {
   const currentTeamSummary = useMemo(() => {
     return (myTeamsQuery.data ?? []).find((item) => item.id === teamId);
   }, [myTeamsQuery.data, teamId]);
+
+  const activeCompetition = useMemo(() => {
+    return (activeCompetitionsQuery.data ?? []).find(
+      (comp) => comp.teamId === teamId,
+    );
+  }, [activeCompetitionsQuery.data, teamId]);
 
   const currentUserIsLeader = isLeaderRole(currentTeamSummary?.roleInTeam);
 
@@ -250,14 +260,45 @@ export const TeamDetailPage = () => {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 md:justify-end">
-              <TeamStatusBadge
-                status={team.status}
-                memberCount={members.length}
-              />
-              {team.registrationStatus && (
-                <TeamStatusBadge status={team.registrationStatus} />
-              )}
+            <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                <TeamStatusBadge
+                  status={team.status}
+                  memberCount={members.length}
+                />
+                {team.registrationStatus && (
+                  <TeamStatusBadge status={team.registrationStatus} />
+                )}
+              </div>
+
+              {activeCompetitionsQuery.isLoading ? (
+                <div className="pt-2">
+                  <Skeleton variant="rounded" width={160} height={36} sx={{ borderRadius: "10px" }} />
+                </div>
+              ) : activeCompetition ? (
+                <div className="pt-2">
+                  <Button
+                    variant="contained"
+                    endIcon={<RocketLaunchOutlinedIcon />}
+                    onClick={() =>
+                      navigate(
+                        `/participant/events/${activeCompetition.eventId}/competing`,
+                        { state: { fromInternal: true } }
+                      )
+                    }
+                    sx={{
+                      bgcolor: "#10b981",
+                      fontWeight: 800,
+                      textTransform: "none",
+                      borderRadius: "10px",
+                      boxShadow: "none",
+                      "&:hover": { bgcolor: "#059669", boxShadow: "none" },
+                    }}
+                  >
+                    Event Competing
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -283,20 +324,26 @@ export const TeamDetailPage = () => {
                 (disqualificationsQuery.data?.length ?? 0) > 0 && (
                   <Alert
                     severity="error"
-                  action={
-                    <Button
-                      color="inherit"
-                      size="small"
-                      onClick={() => navigate(`/participant/teams/${team.id}/disqualification`)}
-                      sx={{ fontWeight: 800 }}
-                    >
-                      View Details
-                    </Button>
-                  }
-                >
-                  <strong>Team Eliminated.</strong> If your team was disqualified, click here to view the reason and appeal status.
-                </Alert>
-              )}
+                    action={
+                      <Button
+                        color="inherit"
+                        size="small"
+                        onClick={() =>
+                          navigate(
+                            `/participant/teams/${team.id}/disqualification`,
+                          )
+                        }
+                        sx={{ fontWeight: 800 }}
+                      >
+                        View Details
+                      </Button>
+                    }
+                  >
+                    <strong>Team Eliminated.</strong> If your team was
+                    disqualified, click here to view the reason and appeal
+                    status.
+                  </Alert>
+                )}
               {advancementData && (
                 <TeamAdvancementStatusBanner
                   status={advancementData.status}
@@ -319,13 +366,21 @@ export const TeamDetailPage = () => {
                     </p>
                   </div>
                   {!currentUserIsLeader && (
-                    <Tooltip title={isTeamRegistered ? "Cannot leave the team because it is already registered." : ""}>
+                    <Tooltip
+                      title={
+                        isTeamRegistered
+                          ? "Cannot leave the team because it is already registered."
+                          : ""
+                      }
+                    >
                       <span>
                         <Button
                           color="error"
                           variant="outlined"
                           onClick={handleLeaveTeam}
-                          disabled={leaveTeamMutation.isPending || isTeamRegistered}
+                          disabled={
+                            leaveTeamMutation.isPending || isTeamRegistered
+                          }
                           sx={{ fontWeight: 800, textTransform: "none" }}
                         >
                           Leave Team
@@ -346,7 +401,9 @@ export const TeamDetailPage = () => {
                           color="error"
                           variant="outlined"
                           startIcon={<DeleteOutlineOutlinedIcon />}
-                          disabled={!canDeleteTeam || deleteTeamMutation.isPending}
+                          disabled={
+                            !canDeleteTeam || deleteTeamMutation.isPending
+                          }
                           onClick={() => setDeleteDialogOpen(true)}
                           sx={{ fontWeight: 800, textTransform: "none" }}
                         >
@@ -419,7 +476,8 @@ export const TeamDetailPage = () => {
                       Team Join Code
                     </p>
                     <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      Share this code with approved members, or disable it and use email invitations only.
+                      Share this code with approved members, or disable it and
+                      use email invitations only.
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <code className="rounded-lg bg-white px-4 py-2 text-base font-black tracking-widest text-slate-900 ring-1 ring-blue-100 dark:bg-slate-950 dark:text-white dark:ring-blue-500/20">
@@ -458,7 +516,9 @@ export const TeamDetailPage = () => {
                           fontWeight: 800,
                           textTransform: "none",
                           "&:hover": {
-                            bgcolor: team.joinCodeEnabled ? "#475569" : "#1d4ed8",
+                            bgcolor: team.joinCodeEnabled
+                              ? "#475569"
+                              : "#1d4ed8",
                           },
                         }}
                       >
@@ -503,19 +563,29 @@ export const TeamDetailPage = () => {
                   </p>
                 </div>
 
-                <Tooltip title={isTeamRegistered ? "Cannot invite members because the team is already registered." : ""}>
+                <Tooltip
+                  title={
+                    isTeamRegistered
+                      ? "Cannot invite members because the team is already registered."
+                      : ""
+                  }
+                >
                   <span>
                     <Button
                       variant="contained"
                       startIcon={<GroupAddOutlinedIcon />}
-                      disabled={members.length >= 5 || inviteMemberMutation.isPending || isTeamRegistered}
+                      disabled={
+                        members.length >= 5 ||
+                        inviteMemberMutation.isPending ||
+                        isTeamRegistered
+                      }
                       onClick={() => setInviteDialogOpen(true)}
                       sx={{
                         bgcolor: "#2563eb",
                         fontWeight: 800,
                         textTransform: "none",
                         "&:hover": { bgcolor: "#1d4ed8" },
-                        "&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" } 
+                        "&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
                       }}
                     >
                       Invite Member
@@ -564,29 +634,53 @@ export const TeamDetailPage = () => {
                         </div>
                         {currentUserIsLeader && !memberIsLeader && (
                           <div className="flex flex-wrap gap-2">
-                            <Tooltip title={isTeamRegistered ? "Cannot remove members because the team is already registered." : ""}>
+                            <Tooltip
+                              title={
+                                isTeamRegistered
+                                  ? "Cannot remove members because the team is already registered."
+                                  : ""
+                              }
+                            >
                               <span>
                                 <Button
                                   variant="outlined"
                                   size="small"
                                   color="error"
-                                  disabled={removeMemberMutation.isPending || isTeamRegistered}
+                                  disabled={
+                                    removeMemberMutation.isPending ||
+                                    isTeamRegistered
+                                  }
                                   onClick={() => handleRemoveMember(member)}
-                                  sx={{ fontWeight: 800, textTransform: "none" }}
+                                  sx={{
+                                    fontWeight: 800,
+                                    textTransform: "none",
+                                  }}
                                 >
                                   Remove
                                 </Button>
                               </span>
                             </Tooltip>
 
-                            <Tooltip title={isTeamRegistered ? "Cannot transfer leadership because the team is already registered." : ""}>
+                            <Tooltip
+                              title={
+                                isTeamRegistered
+                                  ? "Cannot transfer leadership because the team is already registered."
+                                  : ""
+                              }
+                            >
                               <span>
                                 <Button
                                   variant="outlined"
                                   size="small"
-                                  disabled={transferLeaderMutation.isPending || isTeamRegistered}
+                                  disabled={
+                                    transferLeaderMutation.isPending ||
+                                    isTeamRegistered
+                                  }
                                   onClick={() => handleTransferLeader(member)}
-                                  sx={{ fontWeight: 800, textTransform: "none" }}
+                                  sx={{
+                                    fontWeight: 800,
+                                    textTransform: "none",
+                                  }}
                                 >
                                   Transfer Leader
                                 </Button>
@@ -657,7 +751,9 @@ export const TeamDetailPage = () => {
                   </div>
                 )}
               </section>
-              {currentUserIsLeader && <TeamJoinRequestsPanel teamId={team.id} />}
+              {currentUserIsLeader && (
+                <TeamJoinRequestsPanel teamId={team.id} />
+              )}
             </div>
           )}
 

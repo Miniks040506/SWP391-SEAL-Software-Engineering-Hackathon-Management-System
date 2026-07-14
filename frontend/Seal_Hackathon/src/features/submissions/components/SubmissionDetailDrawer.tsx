@@ -11,13 +11,19 @@ import { DisqualifySubmissionDialog } from "../../disqualification/components/Di
 import { useDisqualifySubmissionMutation } from "../../disqualification/hooks/useDisqualificationQueries";
 import type { DisqualifyFormValues } from "../../disqualification/schemas/disqualification.schema";
 import { DisqualificationStatusBadge } from "../../disqualification/components/DisqualificationStatusBadge";
+import { OverturnDisqualificationDialog } from "../../disqualification/components/OverturnDisqualificationDialog";
+import { useOverturnDisqualificationMutation } from "../../disqualification/hooks/useDisqualificationQueries";
+import type { OverturnFormValues } from "../../disqualification/schemas/disqualification.schema";
+
 type Props = {
   submissionId: UUID;
   onClose: () => void;
   onRefresh?: () => void;
+  overturnDisqualificationId?: UUID | null;
+  disableOverturn?: boolean;
 };
 
-export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh }: Props) {
+export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh, overturnDisqualificationId, disableOverturn }: Props) {
   const { detail, loading, refetch } = useSubmissionAdminDetailQuery(submissionId);
 
   const [isViewingTeam, setIsViewingTeam] = useState(false);
@@ -26,6 +32,9 @@ export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh }: Pro
 
   const disqualifyMutation = useDisqualifySubmissionMutation();
   const [disqualifyOpen, setDisqualifyOpen] = useState(false);
+
+  const overturnMutation = useOverturnDisqualificationMutation();
+  const [overturnOpen, setOverturnOpen] = useState(false);
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -315,6 +324,21 @@ export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh }: Pro
                       </button>
 
                       {(() => {
+                        if (overturnDisqualificationId) {
+                          return (
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              color="warning"
+                              disabled={disableOverturn}
+                              onClick={() => setOverturnOpen(true)}
+                              sx={{ textTransform: "none", fontWeight: 600, py: 1 }}
+                            >
+                              Overturn Disqualification
+                            </Button>
+                          );
+                        }
+
                         const isScorable = detail.status === "SUBMITTED" || detail.status === "LATE";
                         const alreadyDisqualified = detail.status === "DISQUALIFIED";
                         const disabled = !isScorable || alreadyDisqualified;
@@ -386,6 +410,25 @@ export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh }: Pro
               payload: values,
             });
             setDisqualifyOpen(false);
+            refetch();
+            if (onRefresh) onRefresh();
+            return res;
+          }}
+        />
+      )}
+
+      {overturnOpen && overturnDisqualificationId && (
+        <OverturnDisqualificationDialog
+          open={overturnOpen}
+          onClose={() => setOverturnOpen(false)}
+          disqualificationId={overturnDisqualificationId}
+          isPending={overturnMutation.isPending}
+          onConfirm={async (values: OverturnFormValues) => {
+            const res = await overturnMutation.mutateAsync({
+              disqualificationId: overturnDisqualificationId,
+              payload: { reason: values.overturnReason },
+            });
+            setOverturnOpen(false);
             refetch();
             if (onRefresh) onRefresh();
             return res;

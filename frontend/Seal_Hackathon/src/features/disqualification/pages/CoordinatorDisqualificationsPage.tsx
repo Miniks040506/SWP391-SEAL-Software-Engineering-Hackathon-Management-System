@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   FormControl,
   InputLabel,
@@ -8,6 +8,11 @@ import {
   Button,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
 } from "@mui/material";
 import { DisqualificationStatusBadge } from "../components/DisqualificationStatusBadge";
 import { OverturnDisqualificationDialog } from "../components/OverturnDisqualificationDialog";
@@ -17,6 +22,7 @@ import {
   useOverturnDisqualificationMutation,
   useDisqualifySubmissionMutation,
 } from "../hooks/useDisqualificationQueries";
+import { SubmissionDetailDrawer } from "@/features/submissions/components/SubmissionDetailDrawer";
 import type {
   DisqualifyFormValues,
   OverturnFormValues,
@@ -44,6 +50,11 @@ export function CoordinatorDisqualificationsPage() {
     selectedSubmissionIdToDisqualify,
     setSelectedSubmissionIdToDisqualify,
   ] = useState<string | null>(null);
+
+  const [viewAppealDialogOpen, setViewAppealDialogOpen] = useState(false);
+  const [selectedAppealDisqualification, setSelectedAppealDisqualification] = useState<DisqualificationResponse | null>(null);
+
+  const [drawerDisqualification, setDrawerDisqualification] = useState<DisqualificationResponse | null>(null);
 
   const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
   const { data: tracks = [] } = useCoordinatorEventTracksQuery(eventId);
@@ -101,6 +112,16 @@ export function CoordinatorDisqualificationsPage() {
     });
     refetch();
     return res;
+  };
+
+  const handleOpenViewAppeal = (disqualification: DisqualificationResponse) => {
+    setSelectedAppealDisqualification(disqualification);
+    setViewAppealDialogOpen(true);
+  };
+
+  const handleCloseViewAppeal = () => {
+    setViewAppealDialogOpen(false);
+    setSelectedAppealDisqualification(null);
   };
 
   if (isLoading) {
@@ -266,25 +287,26 @@ export function CoordinatorDisqualificationsPage() {
                     {new Date(d.issuedAt).toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-center space-x-2 whitespace-nowrap">
-                    <Link to={`/coordinator/submissions/${d.submissionId}`}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        sx={{ textTransform: "none" }}
-                      >
-                        View details
-                      </Button>
-                    </Link>
                     <Button
                       size="small"
-                      variant="contained"
-                      color="warning"
+                      variant="outlined"
                       sx={{ textTransform: "none" }}
-                      disabled={d.appealStatus === "OVERTURNED"}
-                      onClick={() => handleOpenOverturn(d.id)}
+                      onClick={() => setDrawerDisqualification(d)}
                     >
-                      Overturn
+                      View details
                     </Button>
+                    {d.appealNote && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="info"
+                        sx={{ textTransform: "none" }}
+                        onClick={() => handleOpenViewAppeal(d)}
+                      >
+                        View Appeal
+                      </Button>
+                    )}
+
                     {d.submissionStatus !== "DISQUALIFIED" && (
                       <Button
                         size="small"
@@ -330,6 +352,75 @@ export function CoordinatorDisqualificationsPage() {
           submissionId={selectedSubmissionIdToDisqualify}
           isPending={disqualifyMutation.isPending}
           onConfirm={handleConfirmDisqualify}
+        />
+      )}
+
+      {selectedAppealDisqualification && (
+        <Dialog
+          open={viewAppealDialogOpen}
+          onClose={handleCloseViewAppeal}
+          maxWidth="sm"
+          fullWidth
+          classes={{ paper: "bg-white dark:bg-slate-800 dark:text-slate-200" }}
+        >
+          <DialogTitle className="font-bold text-slate-800 dark:text-slate-100">
+            View Appeal
+          </DialogTitle>
+          <DialogContent className="space-y-4">
+            <div>
+              <Typography variant="subtitle2" className="text-slate-500 uppercase mb-1">
+                Team
+              </Typography>
+              <Typography className="text-slate-800 dark:text-slate-200">
+                {selectedAppealDisqualification.teamName}
+              </Typography>
+            </div>
+            <div>
+              <Typography variant="subtitle2" className="text-slate-500 uppercase mb-1">
+                Disqualification Reason
+              </Typography>
+              <Typography className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
+                {selectedAppealDisqualification.reason}
+              </Typography>
+            </div>
+            <div className="bg-blue-50 dark:bg-slate-900 p-4 rounded-lg border border-blue-100 dark:border-slate-700 mt-4">
+              <Typography variant="subtitle2" className="text-blue-800 dark:text-blue-300 font-bold mb-2">
+                Appeal Note
+              </Typography>
+              <Typography className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
+                {selectedAppealDisqualification.appealNote}
+              </Typography>
+            </div>
+          </DialogContent>
+          <DialogActions className="px-6 pb-4">
+            <Button onClick={handleCloseViewAppeal} sx={{ textTransform: "none" }}>
+              Close
+            </Button>
+            <Button
+              variant="contained"
+              color="warning"
+              onClick={() => {
+                handleCloseViewAppeal();
+                handleOpenOverturn(selectedAppealDisqualification.id);
+              }}
+              disabled={selectedAppealDisqualification.appealStatus === "OVERTURNED"}
+              sx={{ textTransform: "none", fontWeight: 700 }}
+            >
+              Overturn Disqualification
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {drawerDisqualification && (
+        <SubmissionDetailDrawer
+          submissionId={drawerDisqualification.submissionId}
+          onClose={() => setDrawerDisqualification(null)}
+          onRefresh={refetch}
+          // @ts-ignore
+          overturnDisqualificationId={drawerDisqualification.id}
+          // @ts-ignore
+          disableOverturn={drawerDisqualification.appealStatus === "OVERTURNED"}
         />
       )}
     </div>
