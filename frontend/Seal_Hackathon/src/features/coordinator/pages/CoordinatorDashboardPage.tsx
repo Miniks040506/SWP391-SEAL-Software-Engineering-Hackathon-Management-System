@@ -14,13 +14,10 @@ import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
 
-// Gọi duy nhất 1 Hook tổng hợp dữ liệu
 import { useCoordinatorDashboard } from "../hooks/useCoordinatorDashboard";
 import type { EventSummaryResponse, EventDetailResponse } from "@/types/event.types";
 
-// ==========================================
-// ĐỊNH NGHĨA TYPE UI NỘI BỘ (Chỉ dùng cho UI Render)
-// ==========================================
+
 export type SummaryCardType = {
   title: string;
   value: string | number;
@@ -103,7 +100,9 @@ export const CoordinatorDashboardPage = () => {
     resultStatus,
     pendingActions,
     recentActivities,
+    registeredTeamsCount,
   } = useCoordinatorDashboard();
+
 
   const getPriorityColor = (priority: PendingActionType["priority"]) => {
     switch (priority) {
@@ -241,7 +240,9 @@ export const CoordinatorDashboardPage = () => {
               </div>
               <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
                 <p className="text-sm text-gray-500">Registered Teams</p>
-                <p className="mt-1 font-bold text-gray-900 dark:text-white">{getRegisteredTeamCount(currentEvent)}</p>
+                <p className="mt-1 font-bold text-gray-900 dark:text-white">
+                  {registeredTeamsCount != null ? registeredTeamsCount : "—"}
+                </p>
               </div>
             </div>
 

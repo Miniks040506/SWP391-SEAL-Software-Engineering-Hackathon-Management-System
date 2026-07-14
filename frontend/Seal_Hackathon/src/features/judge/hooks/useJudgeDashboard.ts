@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { userApi } from "@/api/user.api";
 import { judgeApi } from "@/api/judge.api";
 import { notificationApi } from "@/api/notification.api";
+import { eventApi } from "@/api/event.api";
+import { roundApi } from "@/api/round.api";
+import { trackApi } from "@/api/track.api";
 import { useJudgeCalibrationRoundsQuery } from "@/features/calibration/hooks/useCalibrationQueries";
 
 import { judgeDashboardMock, type JudgeDashboardData } from "../mocks/judgeDashboard.mock";
@@ -72,6 +75,25 @@ export function useJudgeDashboard() {
   } else {
     const activeTask = myAssignments[0] as any || null;
 
+    // Fetch details to get friendly names instead of UUIDs
+    const roundQuery = useQuery({
+      queryKey: ["judge-dashboard-round", activeTask?.roundId],
+      queryFn: () => roundApi.getRoundById(activeTask.roundId),
+      enabled: Boolean(activeTask?.roundId) && !USE_MOCK,
+    });
+
+    const trackQuery = useQuery({
+      queryKey: ["judge-dashboard-track", activeTask?.trackId],
+      queryFn: () => trackApi.getTrackById(activeTask.trackId),
+      enabled: Boolean(activeTask?.trackId) && !USE_MOCK,
+    });
+
+    const eventQuery = useQuery({
+      queryKey: ["judge-dashboard-event", roundQuery.data?.eventId],
+      queryFn: () => eventApi.getEventById(roundQuery.data!.eventId),
+      enabled: Boolean(roundQuery.data?.eventId) && !USE_MOCK,
+    });
+
     const calibrations = calibrationsQuery.data || [];
     const requiredCalibrations = calibrations.filter((r: any) => r.mandatory);
     const hasCalibration = requiredCalibrations.length > 0;
@@ -79,12 +101,20 @@ export function useJudgeDashboard() {
       || requiredCalibrations.every((r: any) => r.submittedByCurrentJudge === true);
 
     const notifs = notifsQuery.data?.content || (notifsQuery.data as any)?.data?.content || [];
-    const recentActivities = notifs.slice(0, 3).map((n: any, i: number) => ({
-      id: `act-${i}`,
-      time: new Date(n.sentAt || n.createdAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
-      title: n.title || "Notification",
-      description: n.body || n.message || "",
-    }));
+    const recentActivities = notifs.slice(0, 3).map((n: any, i: number) => {
+      const raw = n.sentAt ?? n.scheduledAt;
+      const d = raw ? new Date(raw) : null;
+      const time = d && !isNaN(d.getTime())
+        ? d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+        : "—";
+      return {
+        id: `act-${i}`,
+        time,
+        title: n.title || "Notification",
+        description: n.body || n.message || "",
+      };
+    });
+
 
     const pendingActions: any[] = [];
 
@@ -121,17 +151,23 @@ export function useJudgeDashboard() {
       });
     }
 
-    // Derive event & round name from the active assignment's roundId
-    const eventName = (summary as any)?.eventName
+    // Derive event, round, and track name from fetched details or fallback to old logic
+    const eventName = eventQuery.data?.name
+      || (summary as any)?.eventName
       || (activeTask as any)?.eventName
       || (myAssignments.length > 0 ? "Assigned Event" : "No Event");
-    const roundName = (activeTask as any)?.roundName
+
+    const roundName = roundQuery.data?.name
+      || (activeTask as any)?.roundName
       || (myAssignments.length > 0 ? `Round (${(activeTask as any)?.roundId?.slice(0, 8) ?? ""}...)` : "No assigned round");
-    const deadline = (activeTask as any)?.judgingDeadline
-      ? new Date((activeTask as any).judgingDeadline).toLocaleString()
-      : (summary as any)?.deadline
-        ? new Date((summary as any).deadline).toLocaleString()
-        : "—";
+
+    const trackName = trackQuery.data?.name
+      || (activeTask as any)?.trackName
+      || ((activeTask as any)?.trackId ? `Track ${(activeTask as any).trackId.slice(0, 6)}...` : "General");
+    const rawDeadline = roundQuery.data?.judgingDeadline || roundQuery.data?.endAt;
+    const deadline = rawDeadline
+      ? new Date(rawDeadline).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+      : "—";
 
     dashboard = {
       judgeName: profileQuery.data?.fullName || "Judge",
@@ -168,7 +204,7 @@ export function useJudgeDashboard() {
       currentGrading: {
         eventName,
         roundName,
-        trackName: (activeTask as any)?.trackId ? `Track ${(activeTask as any).trackId.slice(0, 6)}...` : "General",
+        trackName,
         pendingSubmissions: totalPending,
         completedSubmissions: totalCompleted,
         deadline,
