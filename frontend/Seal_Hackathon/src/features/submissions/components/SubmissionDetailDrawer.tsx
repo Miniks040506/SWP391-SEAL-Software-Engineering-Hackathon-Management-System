@@ -210,7 +210,7 @@ export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh, overt
                               Current Submission
                             </span>
                             {detail.status === "DISQUALIFIED" ? (
-                              <DisqualificationStatusBadge appealStatus={(detail as any).appealStatus} />
+                              <DisqualificationStatusBadge />
                             ) : (
                               <span
                                 className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
@@ -325,12 +325,13 @@ export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh, overt
 
                       {(() => {
                         if (overturnDisqualificationId) {
+                          const isAlreadyOverturned = detail.status !== "DISQUALIFIED" || disableOverturn;
                           return (
                             <Button
                               fullWidth
                               variant="contained"
                               color="warning"
-                              disabled={disableOverturn}
+                              disabled={isAlreadyOverturned}
                               onClick={() => setOverturnOpen(true)}
                               sx={{ textTransform: "none", fontWeight: 600, py: 1 }}
                             >

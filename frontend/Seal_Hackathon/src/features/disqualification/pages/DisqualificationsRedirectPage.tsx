@@ -26,7 +26,7 @@ export const DisqualificationsRedirectPage = () => {
         const events = data?.content ?? data ?? [];
         const eventList = Array.isArray(events) ? events : [];
 
-        const activeEvent = eventList.find((e: any) =>
+        const activeEvent = eventList.find((e: { id: string; status: string }) =>
             ACTIVE_STATUSES.includes(e.status?.toUpperCase?.())
         );
 
