@@ -3,8 +3,15 @@ package com.t7.seal.controller;
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.system.CreateAnnouncementRequest;
 import com.t7.seal.request.system.UpdateAnnouncementRequest;
+import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.system.AnnouncementResponse;
 import com.t7.seal.service.AnnouncementService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +34,33 @@ import java.util.UUID;
 public class AnnouncementController {
     private final AnnouncementService announcementService;
 
+    @Operation(
+            summary = "Get Event Announcements",
+            description = "Get Event Announcements through GET /api/v1/events/{eventId}/announcements. Successful execution returns HTTP 200 with List<AnnouncementResponse>. Access: Public via SecurityConfig matcher /api/v1/events/*/announcements.",
+            operationId = "announcementGetEventAnnouncements"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get event announcements completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/events/{eventId}/announcements")
     public ResponseEntity<List<AnnouncementResponse>> getEventAnnouncements(
             @PathVariable UUID eventId,
@@ -39,6 +73,49 @@ public class AnnouncementController {
         return ResponseEntity.ok(announcementService.getEventAnnouncements(eventId));
     }
 
+    @Operation(
+            summary = "Create Announcement",
+            description = "Create Announcement through POST /api/v1/events/{eventId}/announcements. Successful execution returns HTTP 201 with AnnouncementResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events/*/announcements; @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId, authentication)\"). Requires a CreateAnnouncementRequest request body validated with Jakarta Bean Validation.",
+            operationId = "announcementCreateAnnouncement",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Create announcement completed and the resource was created.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @PostMapping("/events/{eventId}/announcements")
     public ResponseEntity<AnnouncementResponse> createAnnouncement(
