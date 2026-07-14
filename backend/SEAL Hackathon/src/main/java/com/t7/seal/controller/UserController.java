@@ -622,10 +622,45 @@ public class UserController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Change My Password",
+            description = "Change My Password through PATCH /api/v1/users/me/password. Successful execution returns HTTP 204 without a response body. Access: Authenticated via SecurityConfig matcher /api/v1/users/me/password; @PreAuthorize(\"isAuthenticated()\"). Requires a ChangePasswordRequest request body validated with Jakarta Bean Validation.",
+            operationId = "userChangeMyPassword",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Change my password completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/me/password")
     public ResponseEntity<Void> changeMyPassword(
-            Authentication authentication,
+            @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody ChangePasswordRequest request,
+            @Parameter(description = "Authorization value. (optional)", required = false)
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader
     ) {
         userService.changeMyPassword(authentication, request, authorizationHeader);
@@ -633,13 +668,62 @@ public class UserController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Upload Avatar",
+            description = "Upload Avatar through POST /api/v1/users/me/avatar. Successful execution returns HTTP 200 with ProfileResponse. Access: Authenticated via SecurityConfig matcher /api/v1/users/me/avatar; @PreAuthorize(\"isAuthenticated()\"). Consumes MediaType.MULTIPART_FORM_DATA_VALUE.",
+            operationId = "userUploadAvatar",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Upload avatar completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "413",
+                    description = "The uploaded file exceeds the configured size limit.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "415",
+                    description = "The uploaded media type is not supported.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping(
             value = "/me/avatar",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<ProfileResponse> uploadAvatar(
+            @Parameter(description = "Uploaded binary file.", required = true)
             @RequestPart("file") MultipartFile file,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(userService.uploadFileAvatar(file, authentication));
     }
