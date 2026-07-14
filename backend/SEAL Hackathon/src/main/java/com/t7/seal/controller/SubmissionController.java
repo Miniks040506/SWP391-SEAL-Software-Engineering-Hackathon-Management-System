@@ -641,20 +641,104 @@ public class SubmissionController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Update Submission Link",
+            description = "Update Submission Link through PATCH /api/v1/submission-links/{linkId}. Successful execution returns HTTP 200 with SubmissionLinkResponse. Access: SecurityConfig roles STUDENT, COORDINATOR via matcher /api/v1/submission-links/**; @PreAuthorize(\"isAuthenticated()\"). Requires a SubmissionLinkRequest request body validated with Jakarta Bean Validation.",
+            operationId = "submissionUpdateSubmissionLink",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update submission link completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/submission-links/{linkId}")
     public ResponseEntity<SubmissionLinkResponse> updateSubmissionLink(
+            @Parameter(description = "Link Id value.", required = true)
             @PathVariable UUID linkId,
             @Valid @RequestBody SubmissionLinkRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.updateSubmissionLink(linkId, request, authentication));
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Delete Submission Link",
+            description = "Delete Submission Link through DELETE /api/v1/submission-links/{linkId}. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig roles STUDENT, COORDINATOR via matcher /api/v1/submission-links/**; @PreAuthorize(\"isAuthenticated()\").",
+            operationId = "submissionDeleteSubmissionLink",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Delete submission link completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @DeleteMapping("/submission-links/{linkId}")
     public ResponseEntity<Void> deleteSubmissionLink(
+            @Parameter(description = "Link Id value.", required = true)
             @PathVariable UUID linkId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         submissionService.deleteSubmissionLink(linkId, authentication);
         return ResponseEntity.noContent().build();
