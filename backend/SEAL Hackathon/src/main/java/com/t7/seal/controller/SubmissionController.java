@@ -856,19 +856,97 @@ public class SubmissionController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @Operation(
+            summary = "Get Round Submissions",
+            description = "Get Round Submissions through GET /api/v1/rounds/{roundId}/submissions. Successful execution returns HTTP 200 with List<SubmissionSummaryResponse>. Access: Authenticated via SecurityConfig matcher anyRequest(); @PreAuthorize(\"hasAnyRole('ADMIN','COORDINATOR')\").",
+            operationId = "submissionGetRoundSubmissions",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get round submissions completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/rounds/{roundId}/submissions")
     public ResponseEntity<List<SubmissionSummaryResponse>> getRoundSubmissions(
+            @Parameter(description = "Unique round identifier.", required = true)
             @PathVariable UUID roundId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.getRoundSubmissions(roundId, authentication));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @Operation(
+            summary = "Get Track Submissions",
+            description = "Get Track Submissions through GET /api/v1/tracks/{trackId}/submissions. Successful execution returns HTTP 200 with List<SubmissionSummaryResponse>. Access: Authenticated via SecurityConfig matcher anyRequest(); @PreAuthorize(\"hasAnyRole('ADMIN','COORDINATOR')\").",
+            operationId = "submissionGetTrackSubmissions",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get track submissions completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/tracks/{trackId}/submissions")
     public ResponseEntity<List<SubmissionSummaryResponse>> getTrackSubmissions(
+            @Parameter(description = "Unique track identifier.", required = true)
             @PathVariable UUID trackId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.getTrackSubmissions(trackId, authentication));
     }
