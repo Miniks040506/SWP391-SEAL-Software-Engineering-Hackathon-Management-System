@@ -156,22 +156,105 @@ public class PrizeController {
         return ResponseEntity.ok(prizeService.getPrizeById(prizeId));
     }
 
-
     @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
+    @Operation(
+            summary = "Update Prize",
+            description = "Update Prize through PATCH /api/v1/prizes/{prizeId}. Successful execution returns HTTP 200 with PrizeResponse. Access: SecurityConfig role COORDINATOR via matcher /api/v1/prizes/*; @PreAuthorize(\"@eventSecurity.canManagePrize(authentication)\"). Requires an UpdatePrizeRequest request body validated with Jakarta Bean Validation.",
+            operationId = "prizeUpdatePrize",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update prize completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/{prizeId}")
     public ResponseEntity<PrizeResponse> updatePrize(
-            @PathVariable("prizeId") UUID prizeId,
+            @Parameter(description = "Unique prize identifier.", required = true)
+            @PathVariable UUID prizeId,
             @Valid @RequestBody UpdatePrizeRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(prizeService.updatePrize(prizeId, request, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManagePrize(authentication)")
+    @Operation(
+            summary = "Delete Prize",
+            description = "Delete Prize through DELETE /api/v1/prizes/{prizeId}. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig role COORDINATOR via matcher /api/v1/prizes/*; @PreAuthorize(\"@eventSecurity.canManagePrize(authentication)\").",
+            operationId = "prizeDeletePrize",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Delete prize completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @DeleteMapping("/{prizeId}")
     public ResponseEntity<Void> deletePrize(
-            @PathVariable("prizeId") UUID prizeId,
-            Authentication authentication
+            @Parameter(description = "Unique prize identifier.", required = true)
+            @PathVariable UUID prizeId,
+            @Parameter(hidden = true) Authentication authentication
     ) {
         prizeService.deletePrize(prizeId, authentication);
         return ResponseEntity.noContent().build();
