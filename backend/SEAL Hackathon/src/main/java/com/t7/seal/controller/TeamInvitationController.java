@@ -103,19 +103,107 @@ public class TeamInvitationController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Accept Invitation",
+            description = "Accept Invitation through POST /api/v1/invitations/{invitationId}/accept. Successful execution returns HTTP 200 with TeamMemberResponse. Access: Authenticated via SecurityConfig matcher /api/v1/invitations/**; @PreAuthorize(\"isAuthenticated()\").",
+            operationId = "teamInvitationAcceptInvitation",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Accept invitation completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/{invitationId}/accept")
     public ResponseEntity<TeamMemberResponse> acceptInvitation(
+            @Parameter(description = "Unique invitation identifier.", required = true)
             @PathVariable UUID invitationId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(teamService.acceptInvitation(invitationId, authentication));
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Accept Invitation By Token",
+            description = "Accept Invitation By Token through POST /api/v1/invitations/token/{token}/accept. Successful execution returns HTTP 200 with TeamMemberResponse. Access: Authenticated via SecurityConfig matcher /api/v1/invitations/**; @PreAuthorize(\"isAuthenticated()\").",
+            operationId = "teamInvitationAcceptInvitationByToken",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Accept invitation by token completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/token/{token}/accept")
     public ResponseEntity<TeamMemberResponse> acceptInvitationByToken(
+            @Parameter(description = "Opaque action or verification token.", required = true)
             @PathVariable String token,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(teamService.acceptInvitationByToken(token, authentication));
     }
