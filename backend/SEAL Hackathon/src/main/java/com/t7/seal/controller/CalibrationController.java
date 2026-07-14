@@ -4,8 +4,16 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.calibration.CreateCalibrationRoundRequest;
 import com.t7.seal.request.calibration.SubmitCalibrationScoreRequest;
 import com.t7.seal.request.calibration.UpdateCalibrationRoundRequest;
+import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.calibration.*;
 import com.t7.seal.service.CalibrationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,21 +37,102 @@ public class CalibrationController {
     private final CalibrationService calibrationService;
 
     @PreAuthorize("hasRole('COORDINATOR') or hasRole('ADMIN')")
+    @Operation(
+            summary = "Create Calibration Round",
+            description = "Create Calibration Round through POST /api/v1/calibrations; POST /api/v1/events/{eventId}/calibration-rounds. Successful execution returns HTTP 200 with CalibrationRoundResponse. Access: SecurityConfig roles COORDINATOR, ADMIN via matcher /api/v1/calibrations; @PreAuthorize(\"hasRole('COORDINATOR') or hasRole('ADMIN')\"). Requires a CreateCalibrationRoundRequest request body validated with Jakarta Bean Validation.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Create calibration round completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping({"/calibrations", "/events/{eventId}/calibration-rounds"})
     public ResponseEntity<CalibrationRoundResponse> createCalibrationRound(
+            @Parameter(description = "Unique event identifier. (optional)", required = false)
             @PathVariable(value = "eventId", required = false) UUID eventId,
             @Valid @RequestBody CreateCalibrationRoundRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService
                 .createCalibrationRound(eventId, request, authentication));
     }
 
     @PreAuthorize("hasRole('JUDGE') or hasRole('COORDINATOR') or hasRole('ADMIN')")
+    @Operation(
+            summary = "Get Calibration Rounds By Event",
+            description = "Get Calibration Rounds By Event through GET /api/v1/calibrations/events/{eventId}; GET /api/v1/events/{eventId}/calibration-rounds. Successful execution returns HTTP 200 with List<CalibrationRoundResponse>. Access: SecurityConfig roles JUDGE, COORDINATOR, ADMIN via matcher /api/v1/calibrations/**; @PreAuthorize(\"hasRole('JUDGE') or hasRole('COORDINATOR') or hasRole('ADMIN')\").",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get calibration rounds by event completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping({"/calibrations/events/{eventId}", "/events/{eventId}/calibration-rounds"})
     public ResponseEntity<List<CalibrationRoundResponse>> getCalibrationRoundsByEvent(
+            @Parameter(description = "Unique event identifier.", required = true)
             @PathVariable("eventId") UUID eventId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(calibrationService
                 .getCalibrationRoundsByEvent(eventId, authentication));
