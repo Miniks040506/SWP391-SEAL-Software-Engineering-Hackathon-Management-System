@@ -180,15 +180,72 @@ public class SystemController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Seed Default System Config",
+            description = "Seed Default System Config through POST /api/v1/system/config/defaults. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig role ADMIN via matcher /api/v1/system/config/**; @PreAuthorize(\"hasRole('ADMIN')\").",
+            operationId = "systemSeedDefaultSystemConfig",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Seed default system config completed successfully with no response body."),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PostMapping("/config/defaults")
-    public ResponseEntity<Void> seedDefaultSystemConfig(Authentication authentication) {
+    public ResponseEntity<Void> seedDefaultSystemConfig(@Parameter(hidden = true) Authentication authentication) {
         systemConfigService.seedDefaults(authentication);
         return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Get System Health",
+            description = "Get System Health through GET /api/v1/system/health. Successful execution returns HTTP 200 with SystemHealthResponse. Access: SecurityConfig role ADMIN via matcher /api/v1/system/health; @PreAuthorize(\"hasRole('ADMIN')\").",
+            operationId = "systemGetSystemHealth",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get system health completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/health")
-    public ResponseEntity<SystemHealthResponse> getSystemHealth(Authentication authentication) {
+    public ResponseEntity<SystemHealthResponse> getSystemHealth(@Parameter(hidden = true) Authentication authentication) {
         return ResponseEntity.ok(systemConfigService.getSystemHealth(authentication));
     }
 }
