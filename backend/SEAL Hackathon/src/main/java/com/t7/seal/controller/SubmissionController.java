@@ -429,21 +429,104 @@ public class SubmissionController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
+    @Operation(
+            summary = "Get Submission Admin View",
+            description = "Get Submission Admin View through GET /api/v1/submissions/{submissionId}/admin-view. Successful execution returns HTTP 200 with SubmissionDetailResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submissions/**; @PreAuthorize(\"hasAnyRole('ADMIN','COORDINATOR')\").",
+            operationId = "submissionGetSubmissionAdminView",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get submission admin view completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @GetMapping("/submissions/{submissionId}/admin-view")
     public ResponseEntity<SubmissionDetailResponse> getSubmissionAdminView(
+            @Parameter(description = "Unique submission identifier.", required = true)
             @PathVariable UUID submissionId,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.
                 getSubmissionForAdmin(submissionId, authentication));
     }
 
     @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Update Submission",
+            description = "Update Submission through PATCH /api/v1/submissions/{submissionId}. Successful execution returns HTTP 200 with SubmissionResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submissions/**; @PreAuthorize(\"isAuthenticated()\"). Requires an UpdateSubmissionRequest request body validated with Jakarta Bean Validation.",
+            operationId = "submissionUpdateSubmission",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Update submission completed successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request syntax, parameter conversion, or validation failed.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user does not satisfy the required authorization policy.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The requested resource or action token was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The operation conflicts with the current resource or workflow state.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
     @PatchMapping("/submissions/{submissionId}")
     public ResponseEntity<SubmissionResponse> updateSubmission(
+            @Parameter(description = "Unique submission identifier.", required = true)
             @PathVariable UUID submissionId,
             @Valid @RequestBody UpdateSubmissionRequest request,
-            Authentication authentication
+            @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.
                 updateSubmission(submissionId, request, authentication));
