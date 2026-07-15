@@ -150,6 +150,9 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
           : await reject(detail.teamId, rejectReason);
       setDetail(updated);
       onChanged?.();
+      queryClient.invalidateQueries({
+        queryKey: ["pending-team-approval-count"],
+      });
       enqueueSnackbar(
         reviewAction === "approve"
           ? "Team registration approved."
