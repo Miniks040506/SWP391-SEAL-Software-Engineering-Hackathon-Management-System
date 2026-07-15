@@ -171,9 +171,12 @@ function validateRoundTiming(
     !values.submissionDeadline ||
     !values.judgingDeadline
   ) {
-    enqueueSnackbar("Round start, end, submission, and judging deadlines are required.", {
-      variant: "error",
-    });
+    enqueueSnackbar(
+      "Round start, end, submission, and judging deadlines are required.",
+      {
+        variant: "error",
+      },
+    );
     return false;
   }
 
@@ -187,16 +190,22 @@ function validateRoundTiming(
   const { competitionStartAt, competitionEndAt } = getEventPeriod(event);
 
   if (competitionStartAt && values.startAt < competitionStartAt) {
-    enqueueSnackbar("Round start time must be within the event competition period.", {
-      variant: "error",
-    });
+    enqueueSnackbar(
+      "Round start time must be within the event competition period.",
+      {
+        variant: "error",
+      },
+    );
     return false;
   }
 
   if (competitionEndAt && values.endAt > competitionEndAt) {
-    enqueueSnackbar("Round end time must be within the event competition period.", {
-      variant: "error",
-    });
+    enqueueSnackbar(
+      "Round end time must be within the event competition period.",
+      {
+        variant: "error",
+      },
+    );
     return false;
   }
 
@@ -232,10 +241,7 @@ function validateRoundTiming(
     const endAt = toDateTimeLocal(raw.endAt);
 
     return Boolean(
-      startAt &&
-        endAt &&
-        values.startAt < endAt &&
-        values.endAt > startAt,
+      startAt && endAt && values.startAt < endAt && values.endAt > startAt,
     );
   });
 
@@ -640,7 +646,9 @@ function RoundOperationPanel({
   };
 
   const handleLock = async () => {
-    if (!window.confirm("Lock submissions for this round? This cannot be undone.")) {
+    if (
+      !window.confirm("Lock submissions for this round? This cannot be undone.")
+    ) {
       return;
     }
 
@@ -671,8 +679,8 @@ function RoundOperationPanel({
 
   return (
     <div className="col-span-1 md:col-span-2 mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex-1 min-w-[280px]">
           <p className="text-sm font-black text-slate-900 dark:text-white">
             Operation status: {status.roundStatus}
           </p>
@@ -711,11 +719,12 @@ function RoundOperationPanel({
                   : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
               }`}
             >
-              Judge coverage: {status.judgeAssignmentsConfigured ? "Ready" : "Missing"} ({status.trackCount}{" "}
-              tracks)
+              Judge coverage:{" "}
+              {status.judgeAssignmentsConfigured ? "Ready" : "Missing"} (
+              {status.trackCount} tracks)
             </span>
           </div>
-          {status.openBlockers.length > 0 && (
+          {status.openBlockers?.length > 0 && (
             <Alert severity="warning" sx={{ mt: 1.5 }}>
               <p className="text-xs font-bold">Complete before opening:</p>
               <ul className="mt-1 list-disc pl-5 text-xs">
@@ -726,25 +735,30 @@ function RoundOperationPanel({
             </Alert>
           )}
           {status.submissionLockedAt && (
-            <p className="mt-1 text-xs font-semibold text-rose-600">
+            <p className="mt-3 text-xs font-semibold text-rose-600">
               Locked at {formatRoundTime(status.submissionLockedAt)}
             </p>
           )}
           {!canEdit && readonlyReason && (
-            <p className="mt-1 text-xs font-semibold text-amber-600">
+            <p className="mt-3 text-xs font-semibold text-amber-600">
               {readonlyReason}
             </p>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 shrink-0">
           <Button
             size="small"
             variant="outlined"
             startIcon={<PlayArrowOutlinedIcon />}
             disabled={!canEdit || !status.canOpen || operating}
             onClick={handleOpen}
-            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 800 }}
+            sx={{
+              borderRadius: "10px",
+              textTransform: "none",
+              fontWeight: 800,
+              whiteSpace: "nowrap",
+            }}
           >
             Open
           </Button>
@@ -754,7 +768,12 @@ function RoundOperationPanel({
             startIcon={<StopCircleOutlinedIcon />}
             disabled={!canEdit || !status.canClose || operating}
             onClick={handleClose}
-            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 800 }}
+            sx={{
+              borderRadius: "10px",
+              textTransform: "none",
+              fontWeight: 800,
+              whiteSpace: "nowrap",
+            }}
           >
             Close
           </Button>
@@ -765,7 +784,12 @@ function RoundOperationPanel({
             startIcon={<LockOutlinedIcon />}
             disabled={!canEdit || !status.canLockSubmissions || operating}
             onClick={handleLock}
-            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 800 }}
+            sx={{
+              borderRadius: "10px",
+              textTransform: "none",
+              fontWeight: 800,
+              whiteSpace: "nowrap",
+            }}
           >
             Lock submissions
           </Button>

@@ -186,18 +186,20 @@ export const paginationSx = {
 
 export const getTeamStatusColor = (status: string) => {
   const s = status.toUpperCase();
+  if (s === "WINNER")
+    return "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20";
+  if (s === "ELIMINATED" || s === "DISQUALIFIED")
+    return "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20";
   if (
+    s === "FORMING" ||
+    s === "INCOMPLETE" ||
+    s === "PENDING" ||
     s === "COMPLETE" ||
     s === "REGISTERED" ||
     s === "COMPETING" ||
-    s === "ADVANCED" ||
-    s === "WINNER"
+    s === "ADVANCED"
   )
-    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20";
-  if (s === "ELIMINATED" || s === "DISQUALIFIED")
-    return "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20";
-  if (s === "FORMING" || s === "INCOMPLETE" || s === "PENDING")
-    return "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20";
+    return "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border-blue-200 dark:border-blue-500/20";
   return "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400 border-slate-200 dark:border-slate-500/20";
 };
 
@@ -208,7 +210,7 @@ export const getTeamRegistrationStatusColor = (status: string) => {
   if (s === "REJECTED")
     return "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20";
   if (s === "PENDING_APPROVAL")
-    return "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20";
+    return "bg-amber-500 text-white dark:bg-amber-600 dark:text-white border-2 border-amber-600 dark:border-amber-400 shadow-md animate-pulse";
   return "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400 border-slate-200 dark:border-slate-500/20";
 };
 

@@ -156,6 +156,7 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Teams",
             path: "/coordinator/teams",
             icon: <GroupsOutlinedIcon fontSize="small" />,
+            badgeKey: "pendingTeamApprovals",
           },
           {
             label: "Submissions",

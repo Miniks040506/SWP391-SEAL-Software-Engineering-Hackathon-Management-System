@@ -118,6 +118,7 @@ export const useOverturnDisqualificationMutation = () => {
       });
       queryClient.invalidateQueries({ queryKey: ["participant-my-teams"] });
       queryClient.invalidateQueries({ queryKey: ["participant-team-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-appeal-count"] });
     },
   });
 };
@@ -136,6 +137,7 @@ export const useUpdateAppealMutation = () => {
       queryClient.invalidateQueries({
         queryKey: disqualificationQueryKeys.all,
       });
+      queryClient.invalidateQueries({ queryKey: ["pending-appeal-count"] });
     },
   });
 };

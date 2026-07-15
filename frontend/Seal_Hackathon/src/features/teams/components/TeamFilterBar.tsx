@@ -34,6 +34,7 @@ type Props = {
   onChange: (filters: CoordinatorTeamListParams) => void;
   events?: { id: string; name: string }[];
   tracks?: { id: string; name: string; eventId: string }[];
+  pendingCountsByEvent?: Record<string, number>;
 };
 
 export function TeamFilterBar({
@@ -41,6 +42,7 @@ export function TeamFilterBar({
   onChange,
   events = [],
   tracks = [],
+  pendingCountsByEvent,
 }: Props) {
   const [localSearch, setLocalSearch] = useState(filters.search || "");
 
@@ -220,24 +222,62 @@ export function TeamFilterBar({
                 renderValue={(selected) => {
                   if (!selected)
                     return (
-                      <span className="text-slate-500 dark:text-slate-400">
+                      <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                         All Events
+                        {pendingCountsByEvent &&
+                          Object.values(pendingCountsByEvent).some(
+                            (c) => c > 0,
+                          ) && (
+                            <span
+                              className="text-amber-500 text-base leading-none"
+                              title="Some events have teams pending approval"
+                            >
+                              ⚠
+                            </span>
+                          )}
                       </span>
                     );
                   const found = events.find((e) => e.id === selected);
-                  return found ? (
-                    found.name
-                  ) : (
-                    <span className="text-rose-500">Invalid Event</span>
+                  if (!found)
+                    return (
+                      <span className="text-rose-500">Invalid Event</span>
+                    );
+                  const pendingCount =
+                    pendingCountsByEvent?.[found.id] ?? 0;
+                  return (
+                    <span className="flex items-center gap-1.5">
+                      {found.name}
+                      {pendingCount > 0 && (
+                        <span
+                          className="text-amber-500 text-base leading-none"
+                          title={`${pendingCount} team(s) pending approval`}
+                        >
+                          ⚠
+                        </span>
+                      )}
+                    </span>
                   );
                 }}
               >
                 <MenuItem value="">All Events</MenuItem>
-                {events.map((e) => (
-                  <MenuItem key={e.id} value={e.id}>
-                    {e.name}
-                  </MenuItem>
-                ))}
+                {events.map((e) => {
+                  const pendingCount =
+                    pendingCountsByEvent?.[e.id] ?? 0;
+                  return (
+                    <MenuItem
+                      key={e.id}
+                      value={e.id}
+                      sx={{ display: "flex", justifyContent: "space-between" }}
+                    >
+                      <span>{e.name}</span>
+                      {pendingCount > 0 && (
+                        <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white">
+                          {pendingCount}
+                        </span>
+                      )}
+                    </MenuItem>
+                  );
+                })}
               </Select>
             </FormControl>
 

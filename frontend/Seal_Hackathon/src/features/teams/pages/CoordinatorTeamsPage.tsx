@@ -4,6 +4,7 @@ import { Pagination } from "@mui/material";
 import { eventApi } from "@/api/event.api";
 import { trackApi } from "@/api/track.api";
 import { useCoordinatorTeamsQuery } from "../hooks/useCoordinatorTeamQueries";
+import { usePendingTeamApprovalCounts } from "../hooks/usePendingTeamApprovalCounts";
 import { TeamFilterBar } from "../components/TeamFilterBar";
 import { TeamTable } from "../components/TeamTable";
 import { TeamDetailDrawer } from "../components/TeamDetailDrawer";
@@ -71,6 +72,8 @@ export function CoordinatorTeamsPage() {
   }, [filters.eventId]);
 
   const { data, loading, refetch } = useCoordinatorTeamsQuery(filters);
+  const { countsByEventId: pendingCountsByEvent } =
+    usePendingTeamApprovalCounts();
 
   const handleCloseDrawer = () => {
     navigate("/coordinator/teams");
@@ -99,6 +102,7 @@ export function CoordinatorTeamsPage() {
           onChange={setFilters} 
           events={events}
           tracks={tracks}
+          pendingCountsByEvent={pendingCountsByEvent}
         />
 
         <TeamTable teams={items} loading={loading} />

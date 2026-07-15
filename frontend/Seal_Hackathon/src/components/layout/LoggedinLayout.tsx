@@ -13,6 +13,7 @@ import { getPrimaryRole } from "@/utils/roleRedirect";
 // import { ThemeTransitionLayer } from "./themeTransitionLayer";
 import { AppNavbar } from "./AppNarbar";
 import { usePendingAppealCount } from "@/features/disqualification/hooks/usePendingAppealCount";
+import { usePendingTeamApprovalCounts } from "@/features/teams/hooks/usePendingTeamApprovalCounts";
 
 type LoggedinLayoutProps = {
   sectionRole: UserRole;
@@ -58,8 +59,13 @@ export function LoggedinLayout({ sectionRole }: LoggedinLayoutProps) {
 
   const isCoordinator = sectionRole === "COORDINATOR";
   const { count: pendingAppealCount } = usePendingAppealCount(isCoordinator);
+  const { totalCount: pendingTeamApprovalCount } =
+    usePendingTeamApprovalCounts(isCoordinator);
   const badgeCounts = isCoordinator
-    ? { pendingAppeals: pendingAppealCount }
+    ? {
+        pendingAppeals: pendingAppealCount,
+        pendingTeamApprovals: pendingTeamApprovalCount,
+      }
     : undefined;
 
   if (!accessToken || !user) {
