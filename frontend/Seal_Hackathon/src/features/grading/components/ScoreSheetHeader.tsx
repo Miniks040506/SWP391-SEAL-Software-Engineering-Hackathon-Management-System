@@ -14,19 +14,17 @@ type Props = {
   assignmentInfo?: JudgeSubmissionAssignmentResponse;
 };
 
-const getGradingStatusColor = (
-  status: string,
-): "default" | "warning" | "info" | "success" | "error" => {
+const getGradingStatusColor = (status: string): string => {
   switch (status) {
     case "SUBMITTED":
-      return "success";
+      return "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400 border-violet-200 dark:border-violet-500/20";
     case "DRAFT_SAVED":
-      return "info";
+      return "bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 border-purple-200 dark:border-purple-500/20";
     case "LOCKED":
-      return "error";
+      return "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-400 border-fuchsia-200 dark:border-fuchsia-500/20";
     case "PENDING":
     default:
-      return "warning";
+      return "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400 border-slate-200 dark:border-slate-500/20";
   }
 };
 
@@ -147,12 +145,11 @@ export const ScoreSheetHeader = ({
           <Typography variant="caption" className="font-bold text-gray-500">
             Grading:
           </Typography>
-          <Chip
-            label={getGradingStatusLabel(gradingStatus)}
-            size="small"
-            color={getGradingStatusColor(gradingStatus)}
-            sx={{ fontWeight: "bold" }}
-          />
+          <span
+            className={`px-3 py-0.5 rounded-full border text-xs font-bold ${getGradingStatusColor(gradingStatus)}`}
+          >
+            {getGradingStatusLabel(gradingStatus)}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
