@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { TextField, Button } from "@mui/material";
+import { TextField, Button, MenuItem } from "@mui/material";
 import { submissionApi } from "@/api/submission.api";
 import {
   useParticipantSubmissionData,
@@ -31,38 +31,20 @@ type StorageItem = {
   path: string;
 };
 
-function detectLinkType(url: string): SubmissionLinkType {
-  const lower = url.trim().toLowerCase();
+type ResourceLinkDraft = {
+  clientId: string;
+  linkType: SubmissionLinkType;
+  url: string;
+  label: string;
+};
 
-  if (lower.includes("github.com") || lower.includes("gitlab.com")) {
-    return "REPOSITORY";
-  }
-
-  if (lower.endsWith(".mp4")) {
-    return "VIDEO";
-  }
-
-  if (
-    lower.includes("slides.google.com") ||
-    lower.endsWith(".ppt") ||
-    lower.endsWith(".pptx")
-  ) {
-    return "SLIDE";
-  }
-
-  if (lower.endsWith(".pdf")) {
-    return "REPORT";
-  }
-
-  if (
-    lower.includes("vercel.app") ||
-    lower.includes("netlify.app") ||
-    lower.includes("render.com")
-  ) {
-    return "DEMO";
-  }
-
-  return "OTHER";
+function createResourceLinkDraft(): ResourceLinkDraft {
+  return {
+    clientId: crypto.randomUUID(),
+    linkType: "OTHER",
+    url: "",
+    label: "Resource Link",
+  };
 }
 
 function getHttpUrlError(url: string): string | null {
@@ -174,8 +156,8 @@ export function SubmissionFormPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"icon" | "list" | "tree">("icon");
 
-  const [links, setLinks] = useState<Array<{ url: string; label: string }>>([
-    { url: "", label: "Resource Link" },
+  const [links, setLinks] = useState<ResourceLinkDraft[]>(() => [
+    createResourceLinkDraft(),
   ]);
   const [note, setNote] = useState("");
 
@@ -219,15 +201,17 @@ export function SubmissionFormPage() {
       if (urlLinks.length > 0) {
         setLinks(
           urlLinks.map((l) => ({
+            clientId: l.id,
+            linkType: l.linkType as SubmissionLinkType,
             url: l.url,
             label: l.label || "Resource Link",
           })),
         );
       } else {
-        setLinks([{ url: "", label: "Resource Link" }]);
+        setLinks([createResourceLinkDraft()]);
       }
     } else {
-      setLinks([{ url: "", label: "Resource Link" }]);
+      setLinks([createResourceLinkDraft()]);
     }
     if (submission?.note) setNote(submission.note);
   }, [submission]);
@@ -238,6 +222,7 @@ export function SubmissionFormPage() {
     ? "Submission requirements could not be loaded. Retry before making changes."
     : requirementsQuery.data?.blockedMessage;
   const uploadPolicy = requirementsQuery.data?.uploadPolicy;
+  const linkTypeOptions = requirementsQuery.data?.requirements ?? [];
   const localFileAvailability = requirementsQuery.data?.providerAvailability.find(
     (provider) => provider.source === "LOCAL_FILE",
   );
@@ -462,24 +447,18 @@ export function SubmissionFormPage() {
     );
   };
 
-  const autoFetchGithubLink = () => {
-    const url = `https://github.com/organization/${teamInfo?.name?.replace(/\s+/g, "-") || "project"}`;
-    setLinks((prev) => {
-      if (prev.length === 1 && !prev[0].url) {
-        return [{ url, label: "GitHub Repo" }];
-      }
-      return [...prev, { url, label: "GitHub Repo" }];
-    });
-  };
-
   const buildLinks = (): CreateSubmissionLinkRequest[] => {
-    return links
-      .filter((l) => l.url.trim() !== "")
+    const enteredLinks = links.filter((link) => link.url.trim() !== "");
+    const primaryType = linkTypeOptions.find((requirement) => requirement.primary)?.type;
+
+    return enteredLinks
       .map((l, idx) => ({
-        linkType: detectLinkType(l.url),
+        linkType: l.linkType,
         label: l.label.trim() || "Resource Link",
         url: l.url.trim(),
-        isPrimary: idx === 0,
+        isPrimary:
+          l.linkType === primaryType &&
+          enteredLinks.findIndex((candidate) => candidate.linkType === l.linkType) === idx,
         displayOrder: idx,
       }));
   };
@@ -1137,9 +1116,29 @@ export function SubmissionFormPage() {
                 </div>
                 {links.map((link, idx) => (
                   <div
-                    key={idx}
+                    key={link.clientId}
                     className="flex flex-col sm:flex-row gap-3 items-start"
                   >
+                    <TextField
+                      select
+                      size="small"
+                      label="Submission type"
+                      disabled={!canEdit}
+                      value={linkTypeOptions.length > 0 ? link.linkType : ""}
+                      onChange={(e) => {
+                        userHasEdited.current = true;
+                        const newLinks = [...links];
+                        newLinks[idx].linkType = e.target.value as SubmissionLinkType;
+                        setLinks(newLinks);
+                      }}
+                      sx={{ ...filterTextFieldSx, minWidth: 180 }}
+                    >
+                      {linkTypeOptions.map((option) => (
+                        <MenuItem key={option.type} value={option.type}>
+                          {option.label}{option.required ? " (Required)" : ""}
+                        </MenuItem>
+                      ))}
+                    </TextField>
                     <TextField
                       fullWidth
                       size="small"
@@ -1165,6 +1164,7 @@ export function SubmissionFormPage() {
                       disabled={!canEdit}
                       value={link.label}
                       onChange={(e) => {
+                        userHasEdited.current = true;
                         const newLinks = [...links];
                         newLinks[idx].label = e.target.value;
                         setLinks(newLinks);
@@ -1177,6 +1177,7 @@ export function SubmissionFormPage() {
                         variant="outlined"
                         color="error"
                         onClick={() => {
+                          userHasEdited.current = true;
                           setLinks(links.filter((_, i) => i !== idx));
                         }}
                         sx={{
@@ -1204,10 +1205,8 @@ export function SubmissionFormPage() {
                     <Button
                       variant="outlined"
                       onClick={() => {
-                        setLinks([
-                          ...links,
-                          { url: "", label: "Resource Link" },
-                        ]);
+                        userHasEdited.current = true;
+                        setLinks([...links, createResourceLinkDraft()]);
                       }}
                       sx={{
                         textTransform: "none",
@@ -1217,37 +1216,6 @@ export function SubmissionFormPage() {
                       }}
                     >
                       + Add Link
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={autoFetchGithubLink}
-                      sx={{
-                        textTransform: "none",
-                        fontWeight: 700,
-                        borderRadius: "10px",
-                        boxShadow: "none",
-                        bgcolor: "#0f172a",
-                        color: "#ffffff",
-                        height: 40,
-                        whiteSpace: "nowrap",
-                        "&:hover": { bgcolor: "#1e293b" },
-                        ".dark &": {
-                          bgcolor: "#f8fafc",
-                          color: "#0f172a",
-                          "&:hover": { bgcolor: "#e2e8f0" },
-                        },
-                      }}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="16"
-                        height="16"
-                        fill="currentColor"
-                        style={{ marginRight: 6 }}
-                      >
-                        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                      </svg>
-                      Fetch GitHub
                     </Button>
                   </div>
                 )}
