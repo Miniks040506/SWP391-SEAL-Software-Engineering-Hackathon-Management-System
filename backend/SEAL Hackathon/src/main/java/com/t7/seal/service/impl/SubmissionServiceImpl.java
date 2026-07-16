@@ -7,6 +7,7 @@ import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
 import com.t7.seal.exception.NotFoundException;
 import com.t7.seal.exception.ForbiddenException;
+import com.t7.seal.exception.SubmissionUploadException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
@@ -828,6 +829,16 @@ public class SubmissionServiceImpl implements SubmissionService {
             String label, Boolean isPrimary,
             Integer displayOrder, MultipartFile file
     ) {
+        int maximumFiles = requirementCatalog.uploadPolicy().maximumFiles();
+        long persistedFiles = submissionLinkRepository
+                .countBySubmissionIdAndObjectKeyIsNotNull(submission.getId());
+        if (persistedFiles >= maximumFiles) {
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_FILE_LIMIT_REACHED",
+                    "A submission can contain at most " + maximumFiles + " files."
+            );
+        }
+
         UUID eventId = submission.getRound().getEvent() == null
                 ? null : submission.getRound().getEvent().getId();
 
