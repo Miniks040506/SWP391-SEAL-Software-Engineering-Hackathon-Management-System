@@ -100,6 +100,15 @@ public class SubmissionServiceImpl implements SubmissionService {
                 requirements.missingRequiredTypes(),
                 LocalDateTime.now()
         );
+        if (currentSubmission.map(Submission::isScorable).orElse(false)
+                && permissions.canEdit()) {
+            permissions = new SubmissionMutationPolicy.Evaluation(
+                    false,
+                    false,
+                    SubmissionBlockedReason.SUBMISSION_RESUBMISSION_REQUIRED,
+                    "Begin a resubmission before changing finalized evidence."
+            );
+        }
 
         HackathonEvent event = round.getEvent();
         Track track = team.getTrack();
@@ -139,7 +148,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             SubmitDeliverablesRequest request,
             Authentication authentication
     ) {
-        Team team = getTeam(teamId);
+        Team team = getTeamForSubmissionMutation(teamId);
         Round round = getRound(roundId);
 
         ensureRoundBelongsToTeamEvent(team, round);
@@ -157,12 +166,8 @@ public class SubmissionServiceImpl implements SubmissionService {
                         .submissionLinks(new ArrayList<>())
                         .build());
 
-        boolean existed = submission.getId() != null;
-        boolean wasSubmittedBefore = existed && !submission.isDraft();
+        ensureDraftSubmission(submission);
         submission.setNote(blankToNull(request.note()));
-        if (existed && !submission.isDraft()) {
-            submission.increaseSubmissionNumber();
-        }
 
         markSubmittedBeforeDeadline(submission, round);
 
@@ -170,7 +175,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         replaceLinks(saved, request.links());
         saved = getSubmission(saved.getId());
         attemptSnapshotService.createSnapshot(saved);
-        notifySubmissionChange(saved, wasSubmittedBefore);
+        notifySubmissionChange(saved, false);
 
         return toSubmissionResponse(saved);
     }
@@ -183,7 +188,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             UpdateSubmissionRequest request,
             Authentication authentication
     ) {
-        Team team = getTeam(teamId);
+        Team team = getTeamForSubmissionMutation(teamId);
         Round round = getRound(roundId);
 
         ensureRoundBelongsToTeamEvent(team, round);
@@ -199,6 +204,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                         .submissionNumber(1)
                         .submissionLinks(new ArrayList<>())
                         .build());
+        ensureDraftSubmission(submission);
 
         if (request != null) {
             if (request.status() != null && parseSubmissionStatus(request.status()) != SubmissionStatus.DRAFT) {
@@ -229,13 +235,16 @@ public class SubmissionServiceImpl implements SubmissionService {
             MultipartFile file,
             Authentication authentication
     ) {
-        Team team = getTeam(teamId);
+        Team team = getTeamForSubmissionMutation(teamId);
         Round round = getRound(roundId);
 
         ensureRoundBelongsToTeamEvent(team, round);
         ensureTeamLeader(team, authentication);
         ensureTeamCanSubmit(team);
         ensureRoundCanAcceptSubmission(round);
+        if (Boolean.TRUE.equals(submitNow)) {
+            throw new BadRequestException("Upload the file first, then use the submission finalize endpoint.");
+        }
 
         Submission submission = submissionRepository.findByTeamIdAndRoundId(teamId, roundId)
                 .orElseGet(() -> Submission.builder()
@@ -245,6 +254,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                         .submissionNumber(1)
                         .submissionLinks(new ArrayList<>())
                         .build());
+        ensureDraftSubmission(submission);
 
         if (note != null) {
             submission.setNote(blankToNull(note));
@@ -255,19 +265,6 @@ public class SubmissionServiceImpl implements SubmissionService {
         //Add upload file link
         addUploadedFileLink(saved, parseLinkType(linkType),
                 label, isPrimary, displayOrder, file);
-
-        if (Boolean.TRUE.equals(submitNow)) {
-            Submission refreshed = getSubmission(saved.getId());
-            boolean wasSubmittedBefore = !refreshed.isDraft();
-            validateRequiredLinksFromEntity(refreshed);
-            if (!refreshed.isDraft()) {
-                refreshed.increaseSubmissionNumber();
-            }
-            markSubmittedBeforeDeadline(refreshed, refreshed.getRound());
-            saved = submissionRepository.save(refreshed);
-            attemptSnapshotService.createSnapshot(saved);
-            notifySubmissionChange(saved, wasSubmittedBefore);
-        }
 
         return toSubmissionResponse(getSubmission(saved.getId()));
     }
@@ -281,28 +278,19 @@ public class SubmissionServiceImpl implements SubmissionService {
             MultipartFile file,
             Authentication authentication
     ) {
-        Submission submission = getSubmission(submissionId);
+        Submission submission = getSubmissionForUpdate(submissionId);
         Team team = submission.getTeam();
         Round round = submission.getRound();
 
         ensureTeamLeader(team, authentication);
         ensureRoundCanAcceptSubmission(round);
+        ensureDraftSubmission(submission);
+        if (Boolean.TRUE.equals(submitNow)) {
+            throw new BadRequestException("Upload the file first, then use the submission finalize endpoint.");
+        }
 
         addUploadedFileLink(submission, parseLinkType(linkType),
                 label, isPrimary, displayOrder, file);
-
-        if (Boolean.TRUE.equals(submitNow)) {
-            Submission refreshed = getSubmission(submissionId);
-            boolean wasSubmittedBefore = !refreshed.isDraft();
-            validateRequiredLinksFromEntity(refreshed);
-            if (!refreshed.isDraft()) {
-                refreshed.increaseSubmissionNumber();
-            }
-            markSubmittedBeforeDeadline(refreshed, refreshed.getRound());
-            Submission saved = submissionRepository.save(refreshed);
-            attemptSnapshotService.createSnapshot(saved);
-            notifySubmissionChange(saved, wasSubmittedBefore);
-        }
 
         return toSubmissionResponse(getSubmission(submissionId));
     }
@@ -366,11 +354,10 @@ public class SubmissionServiceImpl implements SubmissionService {
             UpdateSubmissionRequest request,
             Authentication authentication
     ) {
-        Submission submission = getSubmission(submissionId);
+        Submission submission = getSubmissionForUpdate(submissionId);
         ensureTeamLeader(submission.getTeam(), authentication);
         ensureRoundCanAcceptSubmission(submission.getRound());
-        boolean wasSubmittedBefore = !submission.isDraft();
-        boolean notifySubmitOrUpdate = false;
+        ensureDraftSubmission(submission);
 
         if (request.note() != null) {
             submission.setNote(blankToNull(request.note()));
@@ -386,33 +373,23 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         if (request.status() != null && !request.status().isBlank()) {
             SubmissionStatus status = parseSubmissionStatus(request.status());
-            if (status == SubmissionStatus.SUBMITTED || status == SubmissionStatus.LATE) {
-                validateRequiredLinksFromEntity(submission);
-                submission.increaseSubmissionNumber();
-                markSubmittedBeforeDeadline(submission, submission.getRound());
-                notifySubmitOrUpdate = true;
-            } else if (status == SubmissionStatus.DRAFT) {
-                submission.setStatus(SubmissionStatus.DRAFT);
-            } else {
-                throw new BadRequestException("This submission status cannot be set from this endpoint.");
+            if (status != SubmissionStatus.DRAFT) {
+                throw new BadRequestException("Use the submission finalize endpoint to submit a draft.");
             }
         }
 
         Submission saved = submissionRepository.save(submission);
-        if (notifySubmitOrUpdate) {
-            attemptSnapshotService.createSnapshot(saved);
-            notifySubmissionChange(saved, wasSubmittedBefore);
-        }
         return toSubmissionResponse(getSubmission(saved.getId()));
     }
 
     @Transactional
     @Override
     public SubmissionResponse addSubmissionLinks(UUID submissionId, SubmissionLinkRequest request, Authentication authentication) {
-        Submission submission = getSubmission(submissionId);
+        Submission submission = getSubmissionForUpdate(submissionId);
 
         ensureTeamLeader(submission.getTeam(), authentication);
         ensureRoundCanAcceptSubmission(submission.getRound());
+        ensureDraftSubmission(submission);
 
         SubmissionLink link = toLinkEntity(submission, request);
         submissionLinkRepository.save(link);
@@ -425,10 +402,11 @@ public class SubmissionServiceImpl implements SubmissionService {
     public SubmissionLinkResponse updateSubmissionLink(UUID linkId, SubmissionLinkRequest request, Authentication authentication) {
         SubmissionLink link = submissionLinkRepository.findById(linkId)
                 .orElseThrow(() -> new NotFoundException("Submission link not found."));
-        Submission submission = getSubmission(link.getSubmission().getId());
+        Submission submission = getSubmissionForUpdate(link.getSubmission().getId());
 
         ensureTeamLeader(submission.getTeam(), authentication);
         ensureRoundCanAcceptSubmission(submission.getRound());
+        ensureDraftSubmission(submission);
 
         SubmissionLinkType parsedType = parseLinkType(request.linkType());
         String normalizedUrl = normalizeHttpUrl(request.url());
@@ -459,10 +437,11 @@ public class SubmissionServiceImpl implements SubmissionService {
     ) {
         SubmissionLink link = submissionLinkRepository.findById(linkId)
                 .orElseThrow(() -> new NotFoundException("Submission link not found."));
-        Submission submission = getSubmission(link.getSubmission().getId());
+        Submission submission = getSubmissionForUpdate(link.getSubmission().getId());
 
         ensureTeamLeader(submission.getTeam(), authentication);
         ensureRoundCanAcceptSubmission(submission.getRound());
+        ensureDraftSubmission(submission);
 
         if (request.linkType() == null && request.label() == null
                 && request.isPrimary() == null && request.displayOrder() == null) {
@@ -494,10 +473,11 @@ public class SubmissionServiceImpl implements SubmissionService {
     public void deleteSubmissionLink(UUID linkId, Authentication authentication) {
         SubmissionLink link = submissionLinkRepository.findById(linkId)
                 .orElseThrow(() -> new NotFoundException("Submission link not found."));
-        Submission submission = getSubmission(link.getSubmission().getId());
+        Submission submission = getSubmissionForUpdate(link.getSubmission().getId());
 
         ensureTeamLeader(submission.getTeam(), authentication);
         ensureRoundCanAcceptSubmission(submission.getRound());
+        ensureDraftSubmission(submission);
 
         submissionLinkRepository.delete(link);
         submissionLinkRepository.flush();
@@ -723,6 +703,11 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .orElseThrow(() -> new NotFoundException("Team not found."));
     }
 
+    private Team getTeamForSubmissionMutation(UUID teamId) {
+        return teamRepository.findByIdForUpdate(teamId)
+                .orElseThrow(() -> new NotFoundException("Team not found."));
+    }
+
     private Round getRound(UUID roundId) {
         return roundRepository.findById(roundId)
                 .orElseThrow(() -> new NotFoundException("Round not found."));
@@ -732,6 +717,18 @@ public class SubmissionServiceImpl implements SubmissionService {
         return submissionRepository.findDetailById(submissionId)
                 .or(() -> submissionRepository.findById(submissionId))
                 .orElseThrow(() -> new NotFoundException("Submission not found."));
+    }
+
+    private Submission getSubmissionForUpdate(UUID submissionId) {
+        return submissionRepository.findByIdForUpdate(submissionId)
+                .orElseThrow(() -> new NotFoundException("Submission not found."));
+    }
+
+    private void ensureDraftSubmission(Submission submission) {
+        if (!submission.isDraft()) {
+            throw new ConflictException(
+                    "SUBMISSION_RESUBMISSION_REQUIRED: Begin a resubmission before changing finalized evidence.");
+        }
     }
 
     private void ensureRoundBelongsToTeamEvent(Team team, Round round) {
