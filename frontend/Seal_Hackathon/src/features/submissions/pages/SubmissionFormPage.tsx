@@ -29,6 +29,7 @@ type StorageItem = {
   author: string;
   license: string;
   path: string;
+  linkType?: SubmissionLinkType;
 };
 
 type ResourceLinkDraft = {
@@ -63,26 +64,6 @@ function getHttpUrlError(url: string): string | null {
   } catch {
     return "Enter a valid URL.";
   }
-}
-
-function detectTypeFromFile(file: File): SubmissionLinkType {
-  const type = file.type.toLowerCase();
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-
-  if (type === "video/mp4" || ext === "mp4") return "VIDEO";
-
-  if (
-    type === "application/vnd.ms-powerpoint" ||
-    type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
-    ext === "ppt" ||
-    ext === "pptx"
-  ) {
-    return "SLIDE";
-  }
-
-  if (type === "application/pdf" || ext === "pdf") return "REPORT";
-
-  return "OTHER";
 }
 
 function formatDate(ts: number): string {
@@ -172,6 +153,7 @@ export function SubmissionFormPage() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTab, setPickerTab] = useState<"local" | "drive">("local");
   const [tempFile, setTempFile] = useState<File | null>(null);
+  const [tempLinkType, setTempLinkType] = useState<SubmissionLinkType | "">("");
   const [tempSaveAs, setTempSaveAs] = useState("");
   const [tempAuthor, setTempAuthor] = useState("");
   const [tempLicense, setTempLicense] = useState("All rights reserved");
@@ -183,6 +165,7 @@ export function SubmissionFormPage() {
   const [editAuthor, setEditAuthor] = useState("");
   const [editLicense, setEditLicense] = useState("");
   const [editPath, setEditPath] = useState("");
+  const [editLinkType, setEditLinkType] = useState<SubmissionLinkType | "">("");
 
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("New folder");
@@ -223,6 +206,9 @@ export function SubmissionFormPage() {
     : requirementsQuery.data?.blockedMessage;
   const uploadPolicy = requirementsQuery.data?.uploadPolicy;
   const linkTypeOptions = requirementsQuery.data?.requirements ?? [];
+  const localFileTypeOptions = linkTypeOptions.filter((requirement) =>
+    requirement.allowedSources.includes("LOCAL_FILE"),
+  );
   const localFileAvailability = requirementsQuery.data?.providerAvailability.find(
     (provider) => provider.source === "LOCAL_FILE",
   );
@@ -256,6 +242,19 @@ export function SubmissionFormPage() {
     }
     return null;
   };
+
+  const validateStagedFileTypes = (): boolean => {
+    const untypedFile = items.find(
+      (item) => item.type === "file" && item.file && !item.linkType,
+    );
+    if (!untypedFile) return true;
+    setErrorMsg(`Select a submission type for ${untypedFile.name}.`);
+    return false;
+  };
+
+  const submissionTypeLabel = (linkType?: SubmissionLinkType) =>
+    linkTypeOptions.find((option) => option.type === linkType)?.label ||
+    "Select type";
 
   const linkUrlErrors = useMemo(
     () => links.map((link) => getHttpUrlError(link.url)),
@@ -307,6 +306,7 @@ export function SubmissionFormPage() {
     setTempAuthor(teamInfo?.name || "Participant");
     setTempSaveAs("");
     setTempFile(null);
+    setTempLinkType("");
     setTempLicense("All rights reserved");
     setPickerTab("local");
     setIsPickerOpen(true);
@@ -314,6 +314,10 @@ export function SubmissionFormPage() {
 
   const handleModalUpload = () => {
     if (tempFile) {
+      if (!tempLinkType) {
+        setErrorMsg("Select a submission type for this file.");
+        return;
+      }
       const validationError = validateLocalFiles([tempFile]);
       if (validationError) {
         setErrorMsg(validationError);
@@ -335,6 +339,7 @@ export function SubmissionFormPage() {
         author: tempAuthor,
         license: tempLicense,
         path: currentPath,
+        linkType: tempLinkType,
       };
 
       setItems((prev) => [...prev, newItem]);
@@ -373,10 +378,15 @@ export function SubmissionFormPage() {
     setEditAuthor(item.author);
     setEditLicense(item.license);
     setEditPath(item.path);
+    setEditLinkType(item.linkType ?? "");
   };
 
   const saveEdit = () => {
     if (editItem) {
+      if (editItem.type === "file" && !editLinkType) {
+        setErrorMsg("Select a submission type for this file.");
+        return;
+      }
       setItems((prev) =>
         prev.map((i) =>
           i.id === editItem.id
@@ -386,6 +396,7 @@ export function SubmissionFormPage() {
                 author: editAuthor,
                 license: editLicense,
                 path: editPath,
+                linkType: editItem.type === "file" ? editLinkType || undefined : undefined,
               }
             : i,
         ),
@@ -479,6 +490,7 @@ export function SubmissionFormPage() {
       return;
     }
     if (!validateEnteredLinks()) return;
+    if (!validateStagedFileTypes()) return;
 
     setSaving(true);
     setSuccessMsg(null);
@@ -492,10 +504,10 @@ export function SubmissionFormPage() {
 
       const newFiles = items.filter((i) => i.type === "file" && i.file);
       for (const item of newFiles) {
-        if (!item.file) continue;
+        if (!item.file || !item.linkType) continue;
         const formData = new FormData();
         formData.append("file", item.file);
-        formData.append("linkType", detectTypeFromFile(item.file));
+        formData.append("linkType", item.linkType);
         formData.append("label", item.name);
         formData.append("isPrimary", "false");
 
@@ -536,6 +548,7 @@ export function SubmissionFormPage() {
       return;
     }
     if (!validateEnteredLinks()) return;
+    if (!validateStagedFileTypes()) return;
 
     setSubmitting(true);
     setSuccessMsg(null);
@@ -549,10 +562,10 @@ export function SubmissionFormPage() {
 
       const newFiles = items.filter((i) => i.type === "file" && i.file);
       for (const item of newFiles) {
-        if (!item.file) continue;
+        if (!item.file || !item.linkType) continue;
         const formData = new FormData();
         formData.append("file", item.file);
-        formData.append("linkType", detectTypeFromFile(item.file));
+        formData.append("linkType", item.linkType);
         formData.append("label", item.name);
         formData.append("isPrimary", "false");
 
@@ -668,6 +681,11 @@ export function SubmissionFormPage() {
                 >
                   {item.name}
                 </span>
+                {item.type === "file" && (
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {submissionTypeLabel(item.linkType)}
+                  </span>
+                )}
               </div>
               {item.type === "folder" && renderTree(itemPath, depth + 1)}
             </li>
@@ -1000,6 +1018,11 @@ export function SubmissionFormPage() {
                                 >
                                   {item.name}
                                 </span>
+                                {item.type === "file" && (
+                                  <span className="mt-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                                    {submissionTypeLabel(item.linkType)}
+                                  </span>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -1091,7 +1114,7 @@ export function SubmissionFormPage() {
                                   <td className="p-3 text-slate-500 dark:text-slate-400 text-xs">
                                     {item.type === "folder"
                                       ? "Folder"
-                                      : `${getExt(item.name)} document`}
+                                      : submissionTypeLabel(item.linkType)}
                                   </td>
                                 </tr>
                               ))}
@@ -1438,6 +1461,26 @@ export function SubmissionFormPage() {
                     />
                   </div>
 
+                  <TextField
+                    select
+                    fullWidth
+                    required
+                    size="small"
+                    label="Submission type"
+                    value={tempLinkType}
+                    onChange={(event) =>
+                      setTempLinkType(event.target.value as SubmissionLinkType)
+                    }
+                    helperText="Choose what requirement this file satisfies."
+                    sx={filterTextFieldSx}
+                  >
+                    {localFileTypeOptions.map((option) => (
+                      <MenuItem key={option.type} value={option.type}>
+                        {option.label}{option.required ? " (Required)" : ""}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
                   <div className="flex flex-col gap-1.5 w-full">
                     <label className="text-sm font-semibold text-slate-800 dark:text-slate-300">
                       Author
@@ -1472,7 +1515,7 @@ export function SubmissionFormPage() {
                     <Button
                       variant="contained"
                       onClick={handleModalUpload}
-                      disabled={!tempFile}
+                      disabled={!tempFile || !tempLinkType}
                       sx={{
                         textTransform: "none",
                         fontWeight: 700,
@@ -1669,6 +1712,25 @@ export function SubmissionFormPage() {
 
               {editItem.type === "file" && (
                 <>
+                  <TextField
+                    select
+                    fullWidth
+                    required
+                    size="small"
+                    label="Submission type"
+                    value={editLinkType}
+                    onChange={(event) =>
+                      setEditLinkType(event.target.value as SubmissionLinkType)
+                    }
+                    helperText="Choose what requirement this file satisfies."
+                    sx={filterTextFieldSx}
+                  >
+                    {localFileTypeOptions.map((option) => (
+                      <MenuItem key={option.type} value={option.type}>
+                        {option.label}{option.required ? " (Required)" : ""}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                   <div className="flex flex-col gap-1.5 w-full">
                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                       Author
@@ -1749,6 +1811,7 @@ export function SubmissionFormPage() {
                 <Button
                   variant="contained"
                   onClick={saveEdit}
+                  disabled={editItem.type === "file" && !editLinkType}
                   sx={{
                     textTransform: "none",
                     fontWeight: 700,
