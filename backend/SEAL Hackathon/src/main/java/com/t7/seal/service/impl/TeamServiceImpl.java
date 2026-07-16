@@ -1228,7 +1228,8 @@ public class TeamServiceImpl implements TeamService {
                 team.getProjectTitle(),
                 team.getStatus().name(),
                 team.getRegistrationStatus() == null ? null : team.getRegistrationStatus().name(),
-                role
+                role,
+                Math.toIntExact(teamMemberRepository.countByTeamIdAndLeftAtIsNull(team.getId()))
         );
     }
 

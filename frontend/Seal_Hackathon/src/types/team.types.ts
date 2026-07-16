@@ -109,6 +109,7 @@ export type TeamSummaryResponse = {
   status: TeamStatus;
   registrationStatus?: TeamRegistrationStatus | null;
   roleInTeam: TeamMemberRole;
+  memberCount: number;
 };
 
 export type TeamMemberResponse = {
