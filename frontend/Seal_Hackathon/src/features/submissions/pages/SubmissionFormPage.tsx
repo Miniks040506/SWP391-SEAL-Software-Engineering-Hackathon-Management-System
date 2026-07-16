@@ -16,6 +16,7 @@ import type {
   CreateSubmissionLinkRequest,
   SubmissionLinkType,
   SubmissionHistoryEntry,
+  SubmissionUploadPolicyResponse,
 } from "@/types/submission.types";
 
 type StorageItem = {
@@ -29,18 +30,6 @@ type StorageItem = {
   license: string;
   path: string;
 };
-
-const ALLOWED_CONTENT_TYPES = [
-  "application/pdf",
-  "application/zip",
-  "application/x-zip-compressed",
-  "application/vnd.ms-powerpoint",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "video/mp4",
-  "image/png",
-  "image/jpeg",
-  "text/plain",
-];
 
 function detectLinkType(url: string): SubmissionLinkType {
   const lower = url.trim().toLowerCase();
@@ -138,6 +127,36 @@ function getExt(name: string): string {
   return parts.length > 1 ? (parts.pop()?.toUpperCase() ?? "FILE") : "FILE";
 }
 
+function getFileExtension(name: string): string {
+  const dotIndex = name.lastIndexOf(".");
+  return dotIndex >= 0 ? name.slice(dotIndex).toLowerCase() : "";
+}
+
+function getFilePolicyError(
+  file: File,
+  policy: SubmissionUploadPolicyResponse,
+): string | null {
+  const mimeType = file.type.toLowerCase();
+  const extension = getFileExtension(file.name);
+  const acceptedMimeTypes = policy.acceptedMimeTypes.map((type) =>
+    type.toLowerCase(),
+  );
+  const acceptedExtensions = policy.acceptedExtensions.map((ext) =>
+    ext.startsWith(".") ? ext.toLowerCase() : `.${ext.toLowerCase()}`,
+  );
+
+  if (
+    !acceptedMimeTypes.includes(mimeType) ||
+    !acceptedExtensions.includes(extension)
+  ) {
+    return `${file.name} is unsupported. Allowed extensions: ${acceptedExtensions.join(", ")}.`;
+  }
+  if (file.size > policy.maximumFileSizeBytes) {
+    return `${file.name} exceeds the ${formatSize(policy.maximumFileSizeBytes)} limit.`;
+  }
+  return null;
+}
+
 export function SubmissionFormPage() {
   const { teamId, roundId } = useParams<{ teamId: string; roundId: string }>();
   const navigate = useNavigate();
@@ -218,6 +237,40 @@ export function SubmissionFormPage() {
   const blockedReason = requirementsQuery.isError
     ? "Submission requirements could not be loaded. Retry before making changes."
     : requirementsQuery.data?.blockedMessage;
+  const uploadPolicy = requirementsQuery.data?.uploadPolicy;
+  const localFileAvailability = requirementsQuery.data?.providerAvailability.find(
+    (provider) => provider.source === "LOCAL_FILE",
+  );
+  const canUploadLocalFile = canEdit && localFileAvailability?.available === true;
+  const uploadAccept = uploadPolicy
+    ? [...uploadPolicy.acceptedMimeTypes, ...uploadPolicy.acceptedExtensions].join(",")
+    : undefined;
+  const persistedFileCount = (submission?.links ?? []).filter(
+    (link) => Boolean(link.objectKey) || link.fileSizeBytes != null,
+  ).length;
+  const pendingFileCount = items.filter(
+    (item) => item.type === "file" && item.file,
+  ).length;
+
+  const validateLocalFiles = (files: File[]): string | null => {
+    if (!localFileAvailability?.available) {
+      return localFileAvailability?.message || "Local file upload is unavailable.";
+    }
+    if (!uploadPolicy) {
+      return "Upload limits are still loading. Try again.";
+    }
+    if (
+      persistedFileCount + pendingFileCount + files.length >
+      uploadPolicy.maximumFiles
+    ) {
+      return `A submission can contain at most ${uploadPolicy.maximumFiles} files.`;
+    }
+    for (const file of files) {
+      const error = getFilePolicyError(file, uploadPolicy);
+      if (error) return error;
+    }
+    return null;
+  };
 
   const linkUrlErrors = useMemo(
     () => links.map((link) => getHttpUrlError(link.url)),
@@ -238,19 +291,14 @@ export function SubmissionFormPage() {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && canEdit) {
-      const validFiles = Array.from(e.dataTransfer.files).filter((f) => {
-        if (!ALLOWED_CONTENT_TYPES.includes(f.type)) {
-          setErrorMsg(`Unsupported file type: ${f.name}`);
-          return false;
-        }
-        if (f.size > 25 * 1024 * 1024) {
-          setErrorMsg(`File exceeds max size 25MB: ${f.name}`);
-          return false;
-        }
-        return true;
-      });
+      const files = Array.from(e.dataTransfer.files);
+      const validationError = validateLocalFiles(files);
+      if (validationError) {
+        setErrorMsg(validationError);
+        return;
+      }
 
-      const newItems: StorageItem[] = validFiles.map((f) => ({
+      const newItems: StorageItem[] = files.map((f) => ({
         id: generateId(),
         type: "file",
         name: f.name,
@@ -267,6 +315,10 @@ export function SubmissionFormPage() {
 
   const openPicker = () => {
     if (!canEdit) return;
+    if (!localFileAvailability?.available) {
+      setErrorMsg(localFileAvailability?.message || "Local file upload is unavailable.");
+      return;
+    }
     setTempAuthor(teamInfo?.name || "Participant");
     setTempSaveAs("");
     setTempFile(null);
@@ -277,12 +329,9 @@ export function SubmissionFormPage() {
 
   const handleModalUpload = () => {
     if (tempFile) {
-      if (!ALLOWED_CONTENT_TYPES.includes(tempFile.type)) {
-        setErrorMsg(`Unsupported file type: ${tempFile.name}`);
-        return;
-      }
-      if (tempFile.size > 25 * 1024 * 1024) {
-        setErrorMsg(`File exceeds max size 25MB: ${tempFile.name}`);
+      const validationError = validateLocalFiles([tempFile]);
+      if (validationError) {
+        setErrorMsg(validationError);
         return;
       }
 
@@ -728,7 +777,9 @@ export function SubmissionFormPage() {
                     File submissions
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
-                    Max size: 25 MB, max files: 20
+                    {uploadPolicy
+                      ? `Max size: ${formatSize(uploadPolicy.maximumFileSizeBytes)}, max files: ${uploadPolicy.maximumFiles}`
+                      : "Loading upload limits..."}
                   </div>
                 </div>
 
@@ -737,9 +788,9 @@ export function SubmissionFormPage() {
                     <div className="flex gap-1.5">
                       <button
                         onClick={openPicker}
-                        disabled={!canEdit}
+                        disabled={!canUploadLocalFile}
                         className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
-                        title="Add file"
+                        title={localFileAvailability?.message || "Add file"}
                       >
                         <svg
                           width="14"
@@ -1387,20 +1438,16 @@ export function SubmissionFormPage() {
                     </div>
                     <input
                       type="file"
-                      accept={[...ALLOWED_CONTENT_TYPES, ".pdf", ".zip", ".ppt", ".pptx", ".mp4", ".png", ".jpg", ".jpeg", ".txt"].join(",")}
+                      accept={uploadAccept}
                       className="hidden"
                       ref={pickerFileInputRef}
                       onChange={(e) => {
                         if (e.target.files?.[0]) {
                           const file = e.target.files[0];
-                          if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
-                            setErrorMsg(`Unsupported file type: ${file.name}`);
-                            return;
-                          }
-                          if (file.size > 25 * 1024 * 1024) {
-                            setErrorMsg(
-                              `File exceeds max size 25MB: ${file.name}`,
-                            );
+                          const validationError = validateLocalFiles([file]);
+                          if (validationError) {
+                            setErrorMsg(validationError);
+                            e.target.value = "";
                             return;
                           }
                           setTempFile(file);
