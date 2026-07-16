@@ -1,6 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { TextField, Button, MenuItem } from "@mui/material";
+import {
+  TextField,
+  Button,
+  MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from "@mui/material";
 import { submissionApi } from "@/api/submission.api";
 import {
   useParticipantSubmissionData,
@@ -11,11 +19,13 @@ import {
 import { SubmissionRequirementsPanel } from "../components/SubmissionRequirementsPanel";
 import { SubmissionStatusBadge } from "../components/SubmissionStatusBadge";
 import { SubmissionHistoryTable } from "../components/SubmissionHistoryTable";
+import { SubmissionLinksPreview } from "../components/SubmissionLinksPreview";
 import { filterTextFieldSx } from "../schemas/submissions.schema";
 import type {
   CreateSubmissionLinkRequest,
   SubmissionLinkType,
   SubmissionHistoryEntry,
+  SubmissionLinkResponse,
   SubmissionUploadPolicyResponse,
 } from "@/types/submission.types";
 
@@ -38,6 +48,10 @@ type ResourceLinkDraft = {
   url: string;
   label: string;
 };
+
+type DeleteTarget =
+  | { kind: "staged"; id: string | "selected" }
+  | { kind: "persisted"; link: SubmissionLinkResponse };
 
 function createResourceLinkDraft(): ResourceLinkDraft {
   return {
@@ -172,9 +186,8 @@ export function SubmissionFormPage() {
   const [newFolderName, setNewFolderName] = useState("New folder");
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<string | "selected" | null>(
-    null,
-  );
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deletingEvidence, setDeletingEvidence] = useState(false);
 
   useEffect(() => {
     if (userHasEdited.current) return;
@@ -407,19 +420,44 @@ export function SubmissionFormPage() {
   };
 
   const confirmDelete = (target: string | "selected") => {
-    setDeleteTarget(target);
+    setDeleteTarget({ kind: "staged", id: target });
     setIsDeleteModalOpen(true);
   };
 
-  const executeDelete = () => {
-    if (deleteTarget === "selected") {
+  const confirmPersistedDelete = (link: SubmissionLinkResponse) => {
+    setDeleteTarget({ kind: "persisted", link });
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    if (deletingEvidence) return;
+    setIsDeleteModalOpen(false);
+    setDeleteTarget(null);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.kind === "persisted") {
+      setDeletingEvidence(true);
+      setErrorMsg(null);
+      try {
+        await submissionApi.deleteSubmissionLink(deleteTarget.link.id);
+        await Promise.all([refetch(), requirementsQuery.refetch()]);
+        setSuccessMsg("Saved evidence deleted.");
+      } catch (error) {
+        setErrorMsg((error as { message?: string })?.message || "Saved evidence could not be deleted.");
+        return;
+      } finally {
+        setDeletingEvidence(false);
+      }
+    } else if (deleteTarget.id === "selected") {
       setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
       setSelectedIds(new Set());
-    } else if (deleteTarget) {
+    } else {
       setItems((prev) =>
         prev.filter(
           (i) =>
-            i.id !== deleteTarget &&
+            i.id !== deleteTarget.id &&
             !i.path.startsWith(
               editItem?.path === "/"
                 ? `/${editItem?.name}`
@@ -429,7 +467,7 @@ export function SubmissionFormPage() {
       );
       setSelectedIds(
         new Set(
-          [...selectedIds].filter((selectedId) => selectedId !== deleteTarget),
+          [...selectedIds].filter((selectedId) => selectedId !== deleteTarget.id),
         ),
       );
       setEditItem(null);
@@ -785,6 +823,24 @@ export function SubmissionFormPage() {
                       : "Loading upload limits..."}
                   </div>
                 </div>
+
+                {submission?.links && submission.links.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/30">
+                    <h2 className="mb-3 text-sm font-bold text-slate-800 dark:text-slate-200">
+                      Saved evidence
+                    </h2>
+                    <SubmissionLinksPreview
+                      links={submission.links}
+                      canDelete={canEdit}
+                      deletingLinkId={
+                        deleteTarget?.kind === "persisted" && deletingEvidence
+                          ? deleteTarget.link.id
+                          : null
+                      }
+                      onDelete={confirmPersistedDelete}
+                    />
+                  </div>
+                )}
 
                 <div className="w-full border border-slate-200 dark:border-slate-700 rounded-xl bg-[#f8fafc] dark:bg-[#1e293b] flex flex-col min-h-85 overflow-hidden">
                   <div className="bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 p-2 flex justify-between items-center">
@@ -1883,80 +1939,44 @@ export function SubmissionFormPage() {
         </div>
       )}
 
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setIsDeleteModalOpen(false)}
-          />
-          <div className="relative border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl flex flex-col p-6 animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                Confirm Deletion
-              </h2>
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-              Are you sure you want to delete{" "}
-              {deleteTarget === "selected" ? "the selected items" : "this item"}
-              ? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outlined"
-                onClick={() => setIsDeleteModalOpen(false)}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: "10px",
-                  height: 40,
-                  borderColor: "#e2e8f0",
-                  color: "#64748b",
-                  "&:hover": { borderColor: "#cbd5e1", bgcolor: "#f8fafc" },
-                  ".dark &": {
-                    borderColor: "#334155",
-                    color: "#94a3b8",
-                    "&:hover": { borderColor: "#475569", bgcolor: "#1e293b" },
-                  },
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={executeDelete}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: "10px",
-                  boxShadow: "none",
-                  height: 40,
-                  bgcolor: "#ef4444",
-                  "&:hover": { bgcolor: "#dc2626" },
-                }}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={isDeleteModalOpen}
+        onClose={closeDeleteDialog}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>Confirm deletion</DialogTitle>
+        <DialogContent dividers>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Delete {deleteTarget?.kind === "persisted"
+              ? deleteTarget.link.originalFileName || deleteTarget.link.label || "this saved evidence"
+              : deleteTarget?.id === "selected" ? "the selected items" : "this staged item"}?
+            {deleteTarget?.kind === "persisted" &&
+              (deleteTarget.link.storageProvider === "AWS_S3" || deleteTarget.link.objectKey) &&
+              " Its stored file will also be removed."}
+            {" This action cannot be undone."}
+          </p>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            variant="outlined"
+            disabled={deletingEvidence}
+            onClick={closeDeleteDialog}
+            sx={{ textTransform: "none", fontWeight: 700 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={deletingEvidence || !deleteTarget}
+            onClick={executeDelete}
+            sx={{ textTransform: "none", fontWeight: 700 }}
+          >
+            {deletingEvidence ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
