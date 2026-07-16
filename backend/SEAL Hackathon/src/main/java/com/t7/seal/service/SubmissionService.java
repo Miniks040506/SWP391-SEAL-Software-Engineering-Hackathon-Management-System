@@ -13,6 +13,10 @@ import java.util.UUID;
 
 public interface SubmissionService {
 
+    SubmissionRequirementsResponse getSubmissionRequirements(UUID teamId,
+                                                              UUID roundId,
+                                                              Authentication authentication);
+
     SubmissionResponse submitDeliverables(UUID teamId, UUID roundId,
                                           SubmitDeliverablesRequest request,
                                           Authentication authentication);
