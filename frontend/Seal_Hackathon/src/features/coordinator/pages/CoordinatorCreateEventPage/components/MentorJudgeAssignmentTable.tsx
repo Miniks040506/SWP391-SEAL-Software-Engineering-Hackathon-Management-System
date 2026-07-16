@@ -22,6 +22,7 @@ import { createJudgeTrackRoundAssignment } from "../../../schemas/createEvent.sc
 
 type MentorJudgeAssignmentTableProps = {
   assignments: MentorJudgeFormValues[];
+  rowKeys: string[];
   tracks: TrackFormValues[];
   rounds: RoundFormValues[];
   onRemove: (index: number) => void;
@@ -53,6 +54,7 @@ function hasSameTrackRoleConflict(
 
 export const MentorJudgeAssignmentTable = ({
   assignments,
+  rowKeys,
   tracks,
   rounds,
   onRemove,
@@ -88,7 +90,7 @@ export const MentorJudgeAssignmentTable = ({
 
         return (
           <div
-            key={assignment.id}
+            key={rowKeys[index] ?? assignment.id}
             className="grid grid-cols-[1.1fr_96px_minmax(320px,1.6fr)_80px] items-start gap-4 border-t border-gray-100 px-6 py-5"
           >
             <div>
@@ -313,7 +315,11 @@ export const MentorJudgeAssignmentTable = ({
             </div>
 
             <div className="text-right">
-              <IconButton color="error" onClick={() => onRemove(index)}>
+              <IconButton
+                color="error"
+                onClick={() => onRemove(index)}
+                aria-label={`Remove ${assignment.fullName} assignment`}
+              >
                 <DeleteOutlineOutlinedIcon />
               </IconButton>
             </div>

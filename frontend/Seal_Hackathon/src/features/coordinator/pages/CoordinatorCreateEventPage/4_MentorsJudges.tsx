@@ -48,13 +48,19 @@ export function MentorsJudgesStep({
     AssignableUserResponse[]
   >([]);
 
-  const assignments = useWatch({ control, name: "mentorJudgeAssignments" }) ?? [];
+  const watchedAssignments =
+    useWatch({ control, name: "mentorJudgeAssignments" }) ?? [];
 
-  const { remove, append } = useFieldArray({
+  const { fields, remove, append } = useFieldArray({
     control,
     name: "mentorJudgeAssignments",
     keyName: "fieldId",
   });
+
+  const assignments = fields.map((field, index) => ({
+    ...field,
+    ...(watchedAssignments[index] ?? {}),
+  }));
 
   const handleTabChange = (
     _event: React.MouseEvent<HTMLElement>,
@@ -150,9 +156,7 @@ export function MentorsJudgesStep({
 
   const handleRemoveAssignment = (index: number) => {
     remove(index);
-    window.setTimeout(() => {
-      void trigger("mentorJudgeAssignments");
-    }, 0);
+    void trigger("mentorJudgeAssignments");
   };
 
   const arrayError = errors.mentorJudgeAssignments?.root?.message || errors.mentorJudgeAssignments?.message;
@@ -249,6 +253,7 @@ export function MentorsJudgesStep({
         <div className="min-w-0">
           <MentorJudgeAssignmentTable
             assignments={assignments}
+            rowKeys={fields.map((field) => field.fieldId)}
             tracks={tracks}
             rounds={rounds}
             onRemove={handleRemoveAssignment}
