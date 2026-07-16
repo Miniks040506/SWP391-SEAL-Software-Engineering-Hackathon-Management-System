@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
@@ -6,8 +5,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
-  InputAdornment,
   MenuItem,
   Select,
   TextField,
@@ -15,9 +12,8 @@ import {
   FormControlLabel,
   Radio,
 } from "@mui/material";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import { Controller, useForm } from "react-hook-form";
+import { isAxiosError } from "axios";
+import { Controller, useForm, type Resolver } from "react-hook-form";
 import { enqueueSnackbar } from "notistack";
 import { ZodType } from "zod";
 
@@ -54,8 +50,20 @@ export type BaseCreateUserPayload = {
   role: string;
   status: string;
   phone?: string;
-  password?: string;
 };
+
+type CreateUserDialogValues = {
+  email: string;
+  fullName: string;
+  role: "ADMIN" | "COORDINATOR" | "JUDGE" | "MENTOR";
+  phone?: string;
+  judgeType: "INTERNAL" | "GUEST";
+  affiliation?: string;
+  expertise?: string;
+  temporaryAccountExpiresAt?: string;
+};
+
+type CreatableUserRole = CreateUserDialogValues["role"];
 
 export type CreateGuestJudgePayload = {
   email: string;
@@ -68,9 +76,9 @@ export type CreateGuestJudgePayload = {
 export interface CreateUserDialogProps {
   open: boolean;
   onClose: () => void;
-  availableRoles: readonly string[];
-  defaultRole: string;
-  validationSchema: ZodType<any, any, any>;
+  availableRoles: readonly CreatableUserRole[];
+  defaultRole: CreatableUserRole;
+  validationSchema: ZodType<CreateUserDialogValues, CreateUserDialogValues>;
   isPending: boolean;
   isPendingGuestJudge: boolean;
   onSubmitUser: (payload: BaseCreateUserPayload) => Promise<void>;
@@ -88,8 +96,6 @@ export function CreateUserDialog({
   onSubmitUser,
   onSubmitGuestJudge,
 }: CreateUserDialogProps) {
-  const [showPassword, setShowPassword] = useState(false);
-
   const {
     register,
     handleSubmit,
@@ -97,14 +103,13 @@ export function CreateUserDialog({
     reset,
     watch,
     formState: { errors },
-  } = useForm<any>({
-    resolver: zodResolver(validationSchema),
+  } = useForm<CreateUserDialogValues>({
+    resolver: zodResolver(validationSchema) as Resolver<CreateUserDialogValues>,
     defaultValues: {
       role: defaultRole,
       judgeType: "INTERNAL",
       fullName: "",
       email: "",
-      password: "",
       phone: "",
       affiliation: "",
       expertise: "",
@@ -115,9 +120,14 @@ export function CreateUserDialog({
   const role = watch("role");
   const judgeType = watch("judgeType");
 
-  const handleClose = () => {
+  const closeDialog = () => {
     reset();
     onClose();
+  };
+
+  const handleClose = () => {
+    if (isPending || isPendingGuestJudge) return;
+    closeDialog();
   };
 
   const normalizeExpiresAt = (value?: string) => {
@@ -125,7 +135,7 @@ export function CreateUserDialog({
     return value.length === 16 ? `${value}:00` : value;
   };
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: CreateUserDialogValues) => {
     try {
       if (values.role === "JUDGE" && values.judgeType === "GUEST") {
         await onSubmitGuestJudge({
@@ -139,17 +149,20 @@ export function CreateUserDialog({
         });
       } else {
         await onSubmitUser({
-          ...values,
           email: values.email.trim().toLowerCase(),
+          fullName: values.fullName.trim(),
           phone: values.phone || undefined,
+          role: values.role,
           status: "ACTIVE",
         });
       }
       enqueueSnackbar("User created successfully.", { variant: "success" });
-      handleClose();
-    } catch (error: any) {
+      closeDialog();
+    } catch (error: unknown) {
       enqueueSnackbar(
-        error?.response?.data?.message || "Failed to create user.",
+        isAxiosError<{ message?: string }>(error)
+          ? error.response?.data?.message || "Failed to create user."
+          : "Failed to create user.",
         { variant: "error" },
       );
     }
@@ -191,47 +204,21 @@ export function CreateUserDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <TextField
-              fullWidth
-              size="small"
-              label="Password *"
-              type={showPassword ? "text" : "password"}
-              {...register("password")}
-              error={Boolean(errors.password)}
-              helperText={errors.password?.message as string}
-              sx={textFieldSx}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        type="button"
-                        onClick={() => setShowPassword((s) => !s)}
-                      >
-                        {showPassword ? (
-                          <VisibilityOffIcon fontSize="small" />
-                        ) : (
-                          <VisibilityIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-            <TextField
-              fullWidth
-              size="small"
-              label="Phone"
-              placeholder="Optional"
-              {...register("phone")}
-              error={Boolean(errors.phone)}
-              helperText={errors.phone?.message as string}
-              sx={textFieldSx}
-            />
-          </div>
+          <TextField
+            fullWidth
+            size="small"
+            label="Phone"
+            placeholder="Optional"
+            {...register("phone")}
+            error={Boolean(errors.phone)}
+            helperText={errors.phone?.message as string}
+            sx={textFieldSx}
+          />
+
+          <p className="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
+            SEAL will email a single-use setup code. The user must set their own
+            password before the code expires.
+          </p>
 
           <div className="grid grid-cols-2 gap-4">
             <Controller
