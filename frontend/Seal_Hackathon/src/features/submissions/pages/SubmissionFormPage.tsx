@@ -15,6 +15,7 @@ import { submissionApi } from "@/api/submission.api";
 import {
   useParticipantSubmissionData,
   useSaveSubmissionDraftMutation,
+  useSubmissionAttemptsQuery,
   useSubmissionRequirementsQuery,
   useSubmitExistingSubmissionMutation,
 } from "../hooks/useParticipantSubmissionQueries";
@@ -26,7 +27,6 @@ import { filterTextFieldSx } from "../schemas/submissions.schema";
 import type {
   CreateSubmissionLinkRequest,
   SubmissionLinkType,
-  SubmissionHistoryEntry,
   SubmissionLinkResponse,
   SubmissionUploadPolicyResponse,
 } from "@/types/submission.types";
@@ -145,6 +145,7 @@ export function SubmissionFormPage() {
   const { submission, loading, refetch } =
     useParticipantSubmissionData(teamId, roundId);
   const requirementsQuery = useSubmissionRequirementsQuery(teamId, roundId);
+  const attemptsQuery = useSubmissionAttemptsQuery(submission?.id);
   const saveDraftMutation = useSaveSubmissionDraftMutation(teamId, roundId);
 
   const submitExistingSubmissionMutation =
@@ -646,23 +647,6 @@ export function SubmissionFormPage() {
 
   const currentItems = items;
 
-  const historyEntries: SubmissionHistoryEntry[] = useMemo(
-    () =>
-      submission
-        ? [
-            {
-              id: submission.id,
-              submissionNumber: submission.submissionNumber,
-              status: submission.status,
-              submittedAt: submission.submittedAt ?? null,
-              linkCount: submission.links?.length ?? 0,
-              note: submission.note ?? undefined,
-            },
-          ]
-        : [],
-    [submission],
-  );
-
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -732,7 +716,12 @@ export function SubmissionFormPage() {
         </div>
 
         {activeTab === "history" ? (
-          <SubmissionHistoryTable history={historyEntries} />
+          <SubmissionHistoryTable
+            history={attemptsQuery.data ?? []}
+            loading={attemptsQuery.isLoading}
+            error={attemptsQuery.error}
+            onRetry={() => void attemptsQuery.refetch()}
+          />
         ) : (
           <div className="space-y-6">
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm p-6 space-y-8">
