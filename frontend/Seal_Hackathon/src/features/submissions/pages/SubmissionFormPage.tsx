@@ -8,6 +8,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { submissionApi } from "@/api/submission.api";
 import {
@@ -195,6 +197,13 @@ export function SubmissionFormPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deletingEvidence, setDeletingEvidence] = useState(false);
+  const [editEvidenceTarget, setEditEvidenceTarget] = useState<SubmissionLinkResponse | null>(null);
+  const [editEvidenceType, setEditEvidenceType] = useState<SubmissionLinkType>("OTHER");
+  const [editEvidenceLabel, setEditEvidenceLabel] = useState("");
+  const [editEvidencePrimary, setEditEvidencePrimary] = useState(false);
+  const [editEvidenceOrder, setEditEvidenceOrder] = useState("0");
+  const [editEvidenceError, setEditEvidenceError] = useState<string | null>(null);
+  const [savingEvidenceMetadata, setSavingEvidenceMetadata] = useState(false);
 
   useEffect(() => {
     if (userHasEdited.current) return;
@@ -440,6 +449,54 @@ export function SubmissionFormPage() {
     if (deletingEvidence) return;
     setIsDeleteModalOpen(false);
     setDeleteTarget(null);
+  };
+
+  const openEvidenceEditor = (link: SubmissionLinkResponse) => {
+    setEditEvidenceTarget(link);
+    setEditEvidenceType(link.linkType as SubmissionLinkType);
+    setEditEvidenceLabel(link.label || "");
+    setEditEvidencePrimary(Boolean(link.isPrimary));
+    setEditEvidenceOrder(String(link.displayOrder ?? 0));
+    setEditEvidenceError(null);
+  };
+
+  const closeEvidenceEditor = () => {
+    if (savingEvidenceMetadata) return;
+    setEditEvidenceTarget(null);
+    setEditEvidenceError(null);
+  };
+
+  const saveEvidenceMetadata = async () => {
+    if (!editEvidenceTarget) return;
+    const displayOrder = Number(editEvidenceOrder);
+    if (!Number.isInteger(displayOrder) || displayOrder < 0) {
+      setEditEvidenceError("Display order must be a non-negative whole number.");
+      return;
+    }
+    if (editEvidenceType === "OTHER" && !editEvidenceLabel.trim()) {
+      setEditEvidenceError("A label is required for OTHER evidence.");
+      return;
+    }
+
+    setSavingEvidenceMetadata(true);
+    setEditEvidenceError(null);
+    try {
+      await submissionApi.updateSubmissionLinkMetadata(editEvidenceTarget.id, {
+        linkType: editEvidenceType,
+        label: editEvidenceLabel.trim(),
+        isPrimary: editEvidencePrimary,
+        displayOrder,
+      });
+      await Promise.all([refetch(), requirementsQuery.refetch()]);
+      setEditEvidenceTarget(null);
+      setSuccessMsg("Saved evidence metadata updated.");
+    } catch (error) {
+      setEditEvidenceError(
+        (error as { message?: string })?.message || "Evidence metadata could not be updated.",
+      );
+    } finally {
+      setSavingEvidenceMetadata(false);
+    }
   };
 
   const executeDelete = async () => {
@@ -853,12 +910,14 @@ export function SubmissionFormPage() {
                     <SubmissionLinksPreview
                       links={submission.links}
                       canDelete={canEdit}
+                      canEdit={canEdit}
                       deletingLinkId={
                         deleteTarget?.kind === "persisted" && deletingEvidence
                           ? deleteTarget.link.id
                           : null
                       }
                       onDelete={confirmPersistedDelete}
+                      onEdit={openEvidenceEditor}
                     />
                   </div>
                 )}
@@ -2005,6 +2064,83 @@ export function SubmissionFormPage() {
             sx={{ textTransform: "none", fontWeight: 700 }}
           >
             {deletingEvidence ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(editEvidenceTarget)}
+        onClose={closeEvidenceEditor}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>Edit saved evidence</DialogTitle>
+        <DialogContent dividers>
+          <div className="grid gap-4 pt-1 sm:grid-cols-2">
+            <TextField
+              select
+              fullWidth
+              label="Submission type"
+              value={editEvidenceType}
+              onChange={(event) => setEditEvidenceType(event.target.value as SubmissionLinkType)}
+            >
+              {linkTypeOptions.map((option) => (
+                <MenuItem key={option.type} value={option.type}>
+                  {option.label}{option.required ? " (Required)" : ""}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              fullWidth
+              label="Display label"
+              required={editEvidenceType === "OTHER"}
+              value={editEvidenceLabel}
+              onChange={(event) => setEditEvidenceLabel(event.target.value)}
+              slotProps={{ htmlInput: { maxLength: 200 } }}
+            />
+            <TextField
+              fullWidth
+              type="number"
+              label="Display order"
+              value={editEvidenceOrder}
+              onChange={(event) => setEditEvidenceOrder(event.target.value)}
+              slotProps={{ htmlInput: { min: 0, step: 1 } }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={editEvidencePrimary}
+                  onChange={(event) => setEditEvidencePrimary(event.target.checked)}
+                />
+              }
+              label="Primary evidence"
+            />
+          </div>
+          <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            File name, storage provider, object key, MIME type, size, and URL remain unchanged.
+          </p>
+          {editEvidenceError && (
+            <p role="alert" className="mt-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
+              {editEvidenceError}
+            </p>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            variant="outlined"
+            disabled={savingEvidenceMetadata}
+            onClick={closeEvidenceEditor}
+            sx={{ textTransform: "none", fontWeight: 700 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={savingEvidenceMetadata || !editEvidenceTarget}
+            onClick={saveEvidenceMetadata}
+            sx={{ textTransform: "none", fontWeight: 700 }}
+          >
+            {savingEvidenceMetadata ? "Saving..." : "Save metadata"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -6,8 +6,10 @@ import type { SubmissionLinkResponse } from "@/types/submission.types";
 type Props = {
   links: SubmissionLinkResponse[];
   canDelete?: boolean;
+  canEdit?: boolean;
   deletingLinkId?: string | null;
   onDelete?: (link: SubmissionLinkResponse) => void;
+  onEdit?: (link: SubmissionLinkResponse) => void;
 };
 
 const formatBytes = (bytes?: number | null) => {
@@ -20,8 +22,10 @@ const formatBytes = (bytes?: number | null) => {
 export function SubmissionLinksPreview({
   links,
   canDelete = false,
+  canEdit = false,
   deletingLinkId,
   onDelete,
+  onEdit,
 }: Props) {
   const [openingLinkId, setOpeningLinkId] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
@@ -100,6 +104,15 @@ export function SubmissionLinksPreview({
                 sx={{ textTransform: "none", fontWeight: 700 }}
               >
                 Open link
+              </Button>
+            )}
+            {canEdit && onEdit && (
+              <Button
+                size="small"
+                onClick={() => onEdit(link)}
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Edit metadata
               </Button>
             )}
             {canDelete && onDelete && (

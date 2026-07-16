@@ -14,6 +14,7 @@ import type {
   SubmitDeliverablesRequest,
   TeamDetailedScoreResponse,
   UpdateSubmissionLinkRequest,
+  UpdateSubmissionLinkMetadataRequest,
   UpdateSubmissionRequest,
 } from "@/types/submission.types";
 
@@ -95,6 +96,16 @@ export const submissionApi = {
   updateSubmissionLink(linkId: UUID, payload: UpdateSubmissionLinkRequest) {
     return apiRequest.patch<SubmissionLinkResponse>(
       `/submission-links/${linkId}`,
+      payload,
+    );
+  },
+
+  updateSubmissionLinkMetadata(
+    linkId: UUID,
+    payload: UpdateSubmissionLinkMetadataRequest,
+  ) {
+    return apiRequest.patch<SubmissionLinkResponse>(
+      `/submission-links/${linkId}/metadata`,
       payload,
     );
   },
