@@ -159,6 +159,7 @@ export function SubmissionFormPage() {
   const [tempLicense, setTempLicense] = useState("All rights reserved");
   const pickerFileInputRef = useRef<HTMLInputElement>(null);
   const userHasEdited = useRef(false);
+  const submitInFlight = useRef(false);
 
   const [editItem, setEditItem] = useState<StorageItem | null>(null);
   const [editName, setEditName] = useState("");
@@ -532,8 +533,8 @@ export function SubmissionFormPage() {
   };
 
   const handleSubmit = async () => {
-    if (!teamId || !roundId) return;
-    if (!canEdit) {
+    if (!teamId || !roundId || submitInFlight.current) return;
+    if (!canSubmit) {
       setErrorMsg(blockedReason || "This submission is read-only.");
       return;
     }
@@ -550,6 +551,7 @@ export function SubmissionFormPage() {
     if (!validateEnteredLinks()) return;
     if (!validateStagedFileTypes()) return;
 
+    submitInFlight.current = true;
     setSubmitting(true);
     setSuccessMsg(null);
     setErrorMsg(null);
@@ -573,11 +575,14 @@ export function SubmissionFormPage() {
       }
 
       setItems((prev) => prev.filter((i) => !i.file));
-      await submitExistingSubmissionMutation.mutateAsync(currentSubId);
+      const finalized = await submitExistingSubmissionMutation.mutateAsync(currentSubId);
+      if (finalized.status !== "SUBMITTED" && finalized.status !== "LATE") {
+        throw new Error("The server did not persist a final submission status.");
+      }
 
-      setSuccessMsg("Submission confirmed! Reviewers have been notified.");
       userHasEdited.current = false;
-      refetch();
+      await Promise.all([refetch(), requirementsQuery.refetch()]);
+      setSuccessMsg(`Submission confirmed with ${finalized.status} status.`);
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message;
       setErrorMsg(
@@ -589,6 +594,7 @@ export function SubmissionFormPage() {
             : msg || "Failed to submit.",
       );
     } finally {
+      submitInFlight.current = false;
       setSubmitting(false);
     }
   };
@@ -1343,7 +1349,7 @@ export function SubmissionFormPage() {
                     "&:hover": { bgcolor: "#2563eb" },
                   }}
                 >
-                  {submitting ? "Saving..." : "Save Changes"}
+                  {submitting ? "Submitting..." : "Submit Final"}
                 </Button>
               </div>
             )}
