@@ -81,6 +81,9 @@ public interface SubmissionService {
     SubmissionResponse submitExistingSubmission(UUID submissionId,
                                                 Authentication authentication);
 
+    SubmissionResponse beginSubmissionResubmission(UUID submissionId,
+                                                   Authentication authentication);
+
     PageResponse<CoordinatorSubmissionSummaryResponse> getEventSubmissions(UUID eventId, UUID roundId,
                                                                            UUID trackId, String status,
                                                                            String search,

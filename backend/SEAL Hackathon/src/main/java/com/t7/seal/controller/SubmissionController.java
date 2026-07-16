@@ -680,6 +680,51 @@ public class SubmissionController {
 
     @PreAuthorize("isAuthenticated()")
     @Operation(
+            summary = "Begin Submission Resubmission",
+            description = "Reopens a finalized submission as the next draft attempt while preserving its immutable history.",
+            operationId = "submissionBeginResubmission",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "The next draft attempt is ready for editing.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Only the team leader can begin a resubmission.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The submission was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The submission, round, lock, or deadline state prevents resubmission.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @PostMapping("/submissions/{submissionId}/resubmit")
+    public ResponseEntity<SubmissionResponse> beginSubmissionResubmission(
+            @Parameter(description = "Unique submission identifier.", required = true)
+            @PathVariable UUID submissionId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                submissionService.beginSubmissionResubmission(submissionId, authentication)
+        );
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
             summary = "Add Submission Links",
             description = "Add Submission Links through POST /api/v1/submissions/{submissionId}/links. Successful execution returns HTTP 201 with SubmissionResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submissions/**; @PreAuthorize(\"isAuthenticated()\"). Requires a SubmissionLinkRequest request body validated with Jakarta Bean Validation.",
             operationId = "submissionAddSubmissionLinks",

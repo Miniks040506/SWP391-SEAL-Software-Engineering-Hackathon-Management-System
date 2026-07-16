@@ -185,6 +185,14 @@ public class Submission {
         }
     }
 
+    public void beginResubmission() {
+        if (!isScorable()) {
+            throw new IllegalStateException("Only a submitted or late submission can be resubmitted.");
+        }
+        increaseSubmissionNumber();
+        this.status = SubmissionStatus.DRAFT;
+    }
+
 
     // Handles resubmission by updating the note, submission count, and status.
     public void resubmit(String newNote, boolean late) {
