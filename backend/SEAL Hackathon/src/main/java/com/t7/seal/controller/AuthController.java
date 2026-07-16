@@ -101,9 +101,8 @@ public class AuthController {
 
     @Operation(
             summary = "Resend Verification",
-            description = "Resend Verification through POST /api/v1/auth/resend-verification. Successful execution returns HTTP 200 with AuthMessageResponse. Access: Authenticated via SecurityConfig matcher anyRequest(). Requires an EmailRequest request body validated with Jakarta Bean Validation.",
-            operationId = "authResendVerification",
-            security = @SecurityRequirement(name = "bearerAuth")
+            description = "Request another email verification code. The response is intentionally identical when the email is unknown or already verified. Access: Public.",
+            operationId = "authResendVerification"
     )
     @ApiResponses({
             @ApiResponse(
@@ -114,11 +113,6 @@ public class AuthController {
             @ApiResponse(
                     responseCode = "400",
                     description = "Request syntax, parameter conversion, or validation failed.",
-                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Authentication is required or the access token is invalid.",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             ),
             @ApiResponse(
@@ -154,6 +148,16 @@ public class AuthController {
                     responseCode = "400",
                     description = "Request syntax, parameter conversion, or validation failed.",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Credentials are invalid or the account is unverified. Unverified accounts return code ACCOUNT_UNVERIFIED.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "423",
+                    description = "The account is temporarily locked after repeated failed attempts.",
+                    content = @Content(schema = @Schema(implementation = LoginLockoutResponse.class))
             ),
             @ApiResponse(
                     responseCode = "409",

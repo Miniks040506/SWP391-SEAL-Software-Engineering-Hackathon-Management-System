@@ -136,15 +136,13 @@ public class AuthServiceImpl implements AuthService {
         user.verifyEmail();
         user.setEmailVerificationExpiresAt(null);
 
-//        user.setStatus(UserStatus.ACTIVE);
-
         userRepository.save(user);
 
         return new VerifyEmailResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getStatus().name(),
-                "Email verified successfully. Your account is waiting for coordinator approval."
+                "Email verified successfully. Your account is now active."
         );
     }
 
@@ -153,21 +151,27 @@ public class AuthServiceImpl implements AuthService {
     public AuthMessageResponse resendVerification(EmailRequest request) {
         String email = normalizeEmail(request.email());
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BadRequestException("Account not found."));
+        userRepository.findByEmail(email)
+                .filter(User::isUnverified)
+                .ifPresent(user -> {
+                    String code = tokenGenerator.generateSixDigitCode();
+                    user.setEmailVerificationToken(code);
+                    user.setEmailVerificationExpiresAt(
+                            LocalDateTime.now().plusMinutes(emailVerificationExpirationMinutes)
+                    );
 
-        if (!user.isUnverified()) {
-            throw new BadRequestException("This account does not need email verification.");
-        }
+                    userRepository.save(user);
+                    emailService.sendVerificationCode(
+                            user.getEmail(),
+                            user.getFullName(),
+                            code,
+                            emailVerificationExpirationMinutes
+                    );
+                });
 
-        String code = tokenGenerator.generateSixDigitCode();
-        user.setEmailVerificationToken(code);
-        user.setEmailVerificationExpiresAt(LocalDateTime.now().plusMinutes(emailVerificationExpirationMinutes));
-
-        userRepository.save(user);
-        emailService.sendVerificationCode(user.getEmail(), user.getFullName(), code, emailVerificationExpirationMinutes);
-
-        return new AuthMessageResponse("A new verification code has been sent.");
+        return new AuthMessageResponse(
+                "If the account requires verification, a new code has been sent."
+        );
     }
 
     @Override
@@ -214,7 +218,10 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (user.isUnverified()) {
-            throw new UnauthorizedException("Please verify your email before logging in.");
+            throw new UnauthorizedException(
+                    "ACCOUNT_UNVERIFIED",
+                    "Please verify your account before logging in."
+            );
         }
 
         if (user.isPendingApproval()) {

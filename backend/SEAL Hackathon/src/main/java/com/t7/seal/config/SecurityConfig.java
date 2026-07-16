@@ -79,6 +79,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,
                                 API + "/auth/register",
                                 API + "/auth/verify-email",
+                                API + "/auth/resend-verification",
                                 API + "/auth/login",
                                 API + "/auth/refresh-token",
                                 API + "/auth/forgot-password",
