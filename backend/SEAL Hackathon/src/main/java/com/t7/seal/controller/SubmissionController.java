@@ -47,6 +47,58 @@ public class SubmissionController {
 
     @PreAuthorize("isAuthenticated()")
     @Operation(
+            summary = "Get Submission Requirements",
+            description = "Returns the authoritative submission requirements, server upload limits, provider availability, current draft state, and current-user permissions for a team and round.",
+            operationId = "submissionGetRequirements",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Submission requirements returned successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "The round does not belong to the team's event.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The current user is not allowed to view this team's submission requirements.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The team or round was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @GetMapping("/teams/{teamId}/rounds/{roundId}/submission-requirements")
+    public ResponseEntity<SubmissionRequirementsResponse> getSubmissionRequirements(
+            @Parameter(description = "Unique team identifier.", required = true)
+            @PathVariable UUID teamId,
+            @Parameter(description = "Unique round identifier.", required = true)
+            @PathVariable UUID roundId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                submissionService.getSubmissionRequirements(teamId, roundId, authentication)
+        );
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
             summary = "Submit Deliverables",
             description = "Submit Deliverables through POST /api/v1/teams/{teamId}/rounds/{roundId}/submission; POST /api/v1/teams/{teamId}/rounds/{roundId}/submissions. Successful execution returns HTTP 201 with SubmissionResponse. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\"). Requires a SubmitDeliverablesRequest request body validated with Jakarta Bean Validation.",
             security = @SecurityRequirement(name = "bearerAuth")
