@@ -15,6 +15,7 @@ import java.util.List;
 public class ProviderOAuthProperties {
 
     private String credentialEncryptionKey = "";
+    private boolean cookieSecure;
     private GoogleDrive googleDrive = new GoogleDrive();
 
     public boolean hasValidEncryptionKey() {
