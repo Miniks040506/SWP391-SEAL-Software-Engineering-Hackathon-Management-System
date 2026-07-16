@@ -6,6 +6,7 @@ import type {
   FileDownloadUrlResponse,
   GetEventSubmissionsParams,
   SaveSubmissionDraftRequest,
+  SubmissionAttemptResponse,
   SubmissionDetailResponse,
   SubmissionLinkResponse,
   SubmissionRequirementsResponse,
@@ -61,6 +62,12 @@ export const submissionApi = {
 
   getSubmissionById(submissionId: UUID) {
     return apiRequest.get<SubmissionDetailResponse>(`/submissions/${submissionId}`);
+  },
+
+  getSubmissionAttempts(submissionId: UUID) {
+    return apiRequest.get<SubmissionAttemptResponse[]>(
+      `/submissions/${submissionId}/attempts`,
+    );
   },
 
   getMentorTeamSubmissions(teamId: UUID) {
@@ -123,6 +130,12 @@ export const submissionApi = {
   getMyTeamDetailedScores(submissionId: UUID) {
     return apiRequest.get<TeamDetailedScoreResponse>(
       `/submissions/${submissionId}/scores/me`,
+    );
+  },
+
+  createSubmissionAttemptFileDownloadUrl(submissionId: UUID, evidenceId: UUID) {
+    return apiRequest.get<FileDownloadUrlResponse>(
+      `/submissions/${submissionId}/attempts/evidence/${evidenceId}/download-url`,
     );
   },
 
