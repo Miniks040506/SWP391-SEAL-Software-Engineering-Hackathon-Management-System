@@ -12,6 +12,7 @@ import com.t7.seal.repository.*;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
+import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import com.t7.seal.security.guard.CurrentUser;
@@ -420,6 +421,45 @@ public class SubmissionServiceImpl implements SubmissionService {
             link.setOriginalFileName(null);
             link.setContentType(null);
             link.setFileSizeBytes(null);
+        }
+
+        return toLinkResponse(submissionLinkRepository.save(link));
+    }
+
+    @Transactional
+    @Override
+    public SubmissionLinkResponse updateSubmissionLinkMetadata(
+            UUID linkId,
+            UpdateSubmissionLinkMetadataRequest request,
+            Authentication authentication
+    ) {
+        SubmissionLink link = submissionLinkRepository.findById(linkId)
+                .orElseThrow(() -> new NotFoundException("Submission link not found."));
+        Submission submission = getSubmission(link.getSubmission().getId());
+
+        ensureTeamLeader(submission.getTeam(), authentication);
+        ensureRoundCanAcceptSubmission(submission.getRound());
+
+        if (request.linkType() == null && request.label() == null
+                && request.isPrimary() == null && request.displayOrder() == null) {
+            throw new BadRequestException("At least one evidence metadata field is required.");
+        }
+
+        SubmissionLinkType updatedType = request.linkType() == null
+                ? link.getLinkType() : parseLinkType(request.linkType());
+        String updatedLabel = request.label() == null
+                ? link.getLabel() : blankToNull(request.label());
+        if (updatedType == SubmissionLinkType.OTHER && updatedLabel == null) {
+            throw new BadRequestException("A label is required for OTHER submission evidence.");
+        }
+
+        link.setLinkType(updatedType);
+        link.setLabel(updatedLabel);
+        if (request.isPrimary() != null) {
+            link.setIsPrimary(request.isPrimary());
+        }
+        if (request.displayOrder() != null) {
+            link.setDisplayOrder(request.displayOrder());
         }
 
         return toLinkResponse(submissionLinkRepository.save(link));
