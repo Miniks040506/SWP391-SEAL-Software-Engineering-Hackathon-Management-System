@@ -8,6 +8,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import { Button, CircularProgress, TextField } from "@mui/material";
+import { isAxiosError } from "axios";
 import { enqueueSnackbar } from "notistack";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -27,6 +28,7 @@ import {
   useForgotPasswordMutation,
   useResetPasswordMutation,
 } from "@/features/auth/hooks/useAuthMutations";
+import type { AuthErrorResponse } from "@/types/auth.types";
 
 const resetSteps = [
   { label: "Email" },
@@ -37,6 +39,10 @@ const resetSteps = [
 
 type ResetStep = 1 | 2 | 3 | 4;
 type ResetCodeStatus = "input" | "error";
+
+function getAuthErrorPayload(error: unknown) {
+  return isAxiosError<AuthErrorResponse>(error) ? error.response?.data : undefined;
+}
 
 const textFieldSx = {
   "& .MuiOutlinedInput-root": {
@@ -183,9 +189,10 @@ export function ForgotPasswordPage() {
       enqueueSnackbar("Password reset code sent to your email.", {
         variant: "success",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorPayload = getAuthErrorPayload(error);
       enqueueSnackbar(
-        error?.response?.data?.message || "Cannot send password reset code.",
+        errorPayload?.message || "Cannot send password reset code.",
         { variant: "error" },
       );
     }
@@ -242,9 +249,10 @@ export function ForgotPasswordPage() {
       enqueueSnackbar("Password reset code sent again.", {
         variant: "success",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorPayload = getAuthErrorPayload(error);
       enqueueSnackbar(
-        error?.response?.data?.message || "Cannot resend password reset code.",
+        errorPayload?.message || "Cannot resend password reset code.",
         { variant: "error" },
       );
     }
@@ -270,16 +278,43 @@ export function ForgotPasswordPage() {
       enqueueSnackbar("Password has been reset.", {
         variant: "success",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorPayload = getAuthErrorPayload(error);
+      const errorMessage = errorPayload?.message || "Cannot reset password.";
+
       enqueueSnackbar(
-        error?.response?.data?.message || "Cannot reset password.",
+        errorMessage,
         { variant: "error" },
       );
 
-      if (error?.response?.status === 400 || error?.response?.status === 404) {
+      if (errorPayload?.code === "RESET_CODE_INVALID_OR_EXPIRED") {
         setCodeStatus("error");
-        setCodeError("Invalid or expired reset code. Please try again.");
+        setCodeError(errorMessage);
         setCurrentStep(2);
+        return;
+      }
+
+      const passwordFieldErrors = errorPayload?.fieldErrors?.filter(
+        (fieldError) => fieldError.field === "newPassword"
+          || fieldError.field === "confirmPassword",
+      ) ?? [];
+
+      passwordFieldErrors.forEach((fieldError) => {
+        passwordForm.setError(fieldError.field as keyof ResetPasswordNewPasswordFormValues, {
+          type: "server",
+          message: fieldError.message,
+        });
+      });
+
+      if (passwordFieldErrors.length === 0) {
+        const targetField = errorPayload?.code === "PASSWORD_CONFIRMATION_MISMATCH"
+          ? "confirmPassword"
+          : "newPassword";
+
+        passwordForm.setError(targetField, {
+          type: "server",
+          message: errorMessage,
+        });
       }
     }
   };
