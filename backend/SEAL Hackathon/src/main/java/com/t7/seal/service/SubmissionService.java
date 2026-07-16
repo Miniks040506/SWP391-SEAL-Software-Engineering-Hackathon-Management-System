@@ -45,6 +45,9 @@ public interface SubmissionService {
     SubmissionDetailResponse getSubmissionById(UUID submissionId,
                                                Authentication authentication);
 
+    List<SubmissionAttemptResponse> getSubmissionAttempts(UUID submissionId,
+                                                          Authentication authentication);
+
     SubmissionDetailResponse getSubmissionForAdmin(UUID submissionId,
                                                    Authentication authentication);
 
