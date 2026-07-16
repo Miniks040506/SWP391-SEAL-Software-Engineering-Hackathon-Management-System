@@ -44,6 +44,6 @@ export const googleDriveApi = {
   },
 
   disconnect() {
-    return apiRequest.delete<void>("/integrations/google-drive");
+    return apiRequest.delete<void>("/integrations/google-drive/connection");
   },
 };
