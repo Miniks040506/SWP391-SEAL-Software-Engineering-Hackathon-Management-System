@@ -192,27 +192,28 @@ export function SubmissionFormPage() {
   const [savingEvidenceMetadata, setSavingEvidenceMetadata] = useState(false);
 
   useEffect(() => {
-    if (userHasEdited.current) return;
-    if (submission?.links && submission.links.length > 0) {
-      const urlLinks = submission.links.filter(
-        (l) => l.storageProvider !== "AWS_S3"
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled || userHasEdited.current) return;
+      const urlLinks = (submission?.links ?? []).filter(
+        (link) => link.storageProvider !== "AWS_S3",
       );
-      if (urlLinks.length > 0) {
-        setLinks(
-          urlLinks.map((l) => ({
-            clientId: l.id,
-            linkType: l.linkType as SubmissionLinkType,
-            url: l.url,
-            label: l.label || "Resource Link",
-          })),
-        );
-      } else {
-        setLinks([createResourceLinkDraft()]);
-      }
-    } else {
-      setLinks([createResourceLinkDraft()]);
-    }
-    if (submission?.note) setNote(submission.note);
+      setLinks(
+        urlLinks.length > 0
+          ? urlLinks.map((link) => ({
+              clientId: link.id,
+              linkType: link.linkType as SubmissionLinkType,
+              url: link.url,
+              label: link.label || "Resource Link",
+            }))
+          : [createResourceLinkDraft()],
+      );
+      setNote(submission?.note ?? "");
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [submission]);
 
   const canEdit = requirementsQuery.data?.canEdit ?? false;
@@ -793,22 +794,6 @@ export function SubmissionFormPage() {
                           fill="currentColor"
                         >
                           <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                        </svg>
-                      </button>
-                      <button
-                        disabled
-                        className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 opacity-50"
-                        title="Download all"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
                         </svg>
                       </button>
                       {selectedIds.size > 0 && canEdit && (
@@ -1426,9 +1411,6 @@ export function SubmissionFormPage() {
 
             <div className="p-6 space-y-5">
               <div className="flex gap-3">
-                <button className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg transition-colors">
-                  Download
-                </button>
                 <button
                   onClick={() => confirmDelete(editItem.id)}
                   className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg transition-colors"
@@ -1518,14 +1500,6 @@ export function SubmissionFormPage() {
                   <div className="flex gap-4">
                     <span className="w-24 text-slate-500 dark:text-slate-400 font-medium">
                       Last modified
-                    </span>
-                    <span className="text-slate-800 dark:text-slate-200">
-                      {formatDate(editItem.lastModified)}
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="w-24 text-slate-500 dark:text-slate-400 font-medium">
-                      Created
                     </span>
                     <span className="text-slate-800 dark:text-slate-200">
                       {formatDate(editItem.lastModified)}
