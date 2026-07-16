@@ -75,6 +75,15 @@ public class SubmissionLink {
     @Column(name = "file_size_bytes")
     private Long fileSizeBytes;
 
+    @Column(name = "provider_resource_id", length = 255)
+    private String providerResourceId;
+
+    @Column(name = "provider_checksum", length = 128)
+    private String providerChecksum;
+
+    @Column(name = "provider_modified_at")
+    private LocalDateTime providerModifiedAt;
+
     /**
      * Repository metadata extracted from Git APIs.
      * This field should only be used when linkType is repository.

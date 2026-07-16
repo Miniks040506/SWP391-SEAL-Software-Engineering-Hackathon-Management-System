@@ -48,6 +48,16 @@ public record SubmissionAttemptEvidenceResponse(
         String contentType,
         @Schema(description = "Captured file size in bytes.", accessMode = Schema.AccessMode.READ_ONLY)
         Long fileSizeBytes,
+        @Schema(description = "Stable provider file identifier frozen with the attempt.", accessMode = Schema.AccessMode.READ_ONLY)
+        String providerResourceId,
+        @Schema(description = "Provider checksum frozen with the attempt.", accessMode = Schema.AccessMode.READ_ONLY)
+        String providerChecksum,
+        @Schema(
+                description = "Provider modification time frozen with the attempt.",
+                format = "date-time",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        LocalDateTime providerModifiedAt,
         @Schema(description = "Repository metadata frozen with the attempt.", accessMode = Schema.AccessMode.READ_ONLY)
         RepositoryMetadata repoMetadata,
         @Schema(description = "Whether this was the primary evidence of its type.", accessMode = Schema.AccessMode.READ_ONLY)
