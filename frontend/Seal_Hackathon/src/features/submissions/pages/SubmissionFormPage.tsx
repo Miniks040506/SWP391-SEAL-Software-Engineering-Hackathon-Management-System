@@ -184,9 +184,6 @@ export function SubmissionFormPage() {
   const [editPath, setEditPath] = useState("");
   const [editLinkType, setEditLinkType] = useState<SubmissionLinkType | "">("");
 
-  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("New folder");
-
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deletingEvidence, setDeletingEvidence] = useState(false);
@@ -363,28 +360,6 @@ export function SubmissionFormPage() {
 
       setItems((prev) => [...prev, newItem]);
       setIsPickerOpen(false);
-    }
-  };
-
-  const openFolderModal = () => {
-    if (!canEdit) return;
-    setNewFolderName("New folder");
-    setIsFolderModalOpen(true);
-  };
-
-  const handleCreateFolder = () => {
-    if (newFolderName.trim()) {
-      const newFolder: StorageItem = {
-        id: generateId(),
-        type: "folder",
-        name: newFolderName.trim(),
-        size: 0,
-        lastModified: Date.now(),
-        path: currentPath,
-      };
-      setItems((prev) => [...prev, newFolder]);
-      setIsFolderModalOpen(false);
-      setNewFolderName("New folder");
     }
   };
 
@@ -931,26 +906,6 @@ export function SubmissionFormPage() {
                           fill="currentColor"
                         >
                           <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={openFolderModal}
-                        disabled={!canEdit}
-                        className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
-                        title="Create folder"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-                          <path
-                            d="M19 13h-4v4h-2v-4h-4v-2h4V7h2v4h4v2z"
-                            fill="currentColor"
-                            opacity={0.5}
-                          />
                         </svg>
                       </button>
                       <button
@@ -1639,89 +1594,6 @@ export function SubmissionFormPage() {
                     </Button>
                   </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isFolderModalOpen && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setIsFolderModalOpen(false)}
-          />
-          <div className="relative border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl flex flex-col p-6 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                Create Folder
-              </h2>
-              <button
-                onClick={() => setIsFolderModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            <div className="flex flex-col gap-1.5 mb-6">
-              <label className="text-sm font-semibold text-slate-800 dark:text-slate-300">
-                Folder name
-              </label>
-              <TextField
-                fullWidth
-                size="small"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Folder name"
-                autoFocus
-                sx={filterTextFieldSx}
-              />
-            </div>
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outlined"
-                onClick={() => setIsFolderModalOpen(false)}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: "10px",
-                  height: 40,
-                  borderColor: "#e2e8f0",
-                  color: "#64748b",
-                  "&:hover": { borderColor: "#cbd5e1", bgcolor: "#f8fafc" },
-                  ".dark &": {
-                    borderColor: "#334155",
-                    color: "#94a3b8",
-                    "&:hover": { borderColor: "#475569", bgcolor: "#1e293b" },
-                  },
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleCreateFolder}
-                disabled={!newFolderName.trim()}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: "10px",
-                  boxShadow: "none",
-                  height: 40,
-                }}
-              >
-                Create
-              </Button>
             </div>
           </div>
         </div>
