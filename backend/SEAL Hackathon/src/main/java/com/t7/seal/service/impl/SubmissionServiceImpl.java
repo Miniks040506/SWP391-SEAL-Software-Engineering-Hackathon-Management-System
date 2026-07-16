@@ -460,21 +460,27 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Transactional
     @Override
     public SubmissionResponse submitExistingSubmission(UUID submissionId, Authentication authentication) {
-        Submission submission = getSubmission(submissionId);
+        Submission submission = submissionRepository.findByIdForUpdate(submissionId)
+                .orElseThrow(() -> new NotFoundException("Submission not found."));
 
         ensureTeamLeader(submission.getTeam(), authentication);
-        ensureRoundCanAcceptSubmission(submission.getRound());
-        validateRequiredLinksFromEntity(submission);
-        boolean wasSubmittedBefore = !submission.isDraft();
+
+        if (submission.isScorable()) {
+            return toSubmissionResponse(submission);
+        }
 
         if (!submission.isDraft()) {
-            submission.increaseSubmissionNumber();
+            throw new ConflictException(
+                    "SUBMISSION_NOT_EDITABLE: Only a draft submission can be finalized.");
         }
+
+        ensureRoundCanAcceptSubmission(submission.getRound());
+        validateRequiredLinksFromEntity(submission);
 
         markSubmittedBeforeDeadline(submission, submission.getRound());
 
         Submission saved = submissionRepository.save(submission);
-        notifySubmissionChange(saved, wasSubmittedBefore);
+        notifySubmissionChange(saved, false);
         return toSubmissionResponse(saved);
     }
 
