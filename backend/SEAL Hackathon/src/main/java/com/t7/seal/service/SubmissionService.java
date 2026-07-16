@@ -72,6 +72,12 @@ public interface SubmissionService {
     FileDownloadUrlResponse createSubmissionFileDownloadUrl(UUID linkId,
                                                             Authentication authentication);
 
+    FileDownloadUrlResponse createSubmissionAttemptFileDownloadUrl(
+            UUID submissionId,
+            UUID evidenceId,
+            Authentication authentication
+    );
+
     SubmissionResponse submitExistingSubmission(UUID submissionId,
                                                 Authentication authentication);
 

@@ -1241,6 +1241,55 @@ public class SubmissionController {
 
     @PreAuthorize("isAuthenticated()")
     @Operation(
+            summary = "Create Submission Attempt File Download URL",
+            description = "Creates a short-lived download URL for authorized immutable attempt evidence.",
+            operationId = "submissionCreateAttemptFileDownloadUrl",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Short-lived attempt evidence download URL created successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "The evidence is not a downloadable uploaded file.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user cannot view this submission.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The submission or attempt evidence was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @GetMapping("/submissions/{submissionId}/attempts/evidence/{evidenceId}/download-url")
+    public ResponseEntity<FileDownloadUrlResponse> createSubmissionAttemptFileDownloadUrl(
+            @Parameter(description = "Unique submission identifier.", required = true)
+            @PathVariable UUID submissionId,
+            @Parameter(description = "Immutable attempt-evidence identifier.", required = true)
+            @PathVariable UUID evidenceId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.createSubmissionAttemptFileDownloadUrl(
+                submissionId,
+                evidenceId,
+                authentication
+        ));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
             summary = "Get My Team Detailed Scores",
             description = "Get My Team Detailed Scores through GET /api/v1/submissions/{submissionId}/scores/me. Successful execution returns HTTP 200 with TeamDetailedScoreResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submissions/**; @PreAuthorize(\"isAuthenticated()\").",
             operationId = "submissionGetMyTeamDetailedScores",
