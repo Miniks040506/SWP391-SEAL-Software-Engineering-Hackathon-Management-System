@@ -89,6 +89,14 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(SubmissionUploadException.class)
+    public ResponseEntity<ApiErrorResponse> handleSubmissionUpload(
+            SubmissionUploadException ex,
+            HttpServletRequest request
+    ) {
+        return error(ex.getStatus(), ex.getCode(), ex.getMessage(), request);
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFound(
             NotFoundException ex,
@@ -112,6 +120,7 @@ public class GlobalExceptionHandler {
                 false,
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "VALIDATION_FAILED",
                 "Validation failed.",
                 request.getRequestURI(),
                 java.time.Instant.now(),
@@ -316,6 +325,7 @@ public class GlobalExceptionHandler {
                 false,
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "VALIDATION_FAILED",
                 "Validation failed.",
                 request.getRequestURI(),
                 java.time.Instant.now(),
@@ -338,10 +348,20 @@ public class GlobalExceptionHandler {
             String message,
             HttpServletRequest request
     ) {
+        return error(status, null, message, request);
+    }
+
+    private ResponseEntity<ApiErrorResponse> error(
+            HttpStatus status,
+            String code,
+            String message,
+            HttpServletRequest request
+    ) {
         return ResponseEntity.status(status).body(
                 ApiErrorResponse.of(
                         status.value(),
                         status.getReasonPhrase(),
+                        code,
                         message,
                         request.getRequestURI()
                 )

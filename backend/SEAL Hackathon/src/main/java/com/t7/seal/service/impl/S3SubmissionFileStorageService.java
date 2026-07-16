@@ -3,6 +3,7 @@ package com.t7.seal.service.impl;
 import com.t7.seal.config.SubmissionProperties;
 import com.t7.seal.dto.UploadedSubmissionFile;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.SubmissionUploadException;
 import com.t7.seal.service.SubmissionFileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,7 +78,10 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                     file.getSize()
             ));
         } catch (IOException e) {
-            throw new BadRequestException("Cannot read uploaded submission file.");
+            throw SubmissionUploadException.badRequest(
+                    "SUBMISSION_FILE_UNREADABLE",
+                    "Cannot read uploaded submission file."
+            );
         }
 
         return new UploadedSubmissionFile(
@@ -116,24 +120,31 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
 
     private void validateConfiguration() {
         if (!"AWS_S3".equalsIgnoreCase(storageProvider)) {
-            throw new BadRequestException("Submission file upload is disabled. " +
-                    "Set app.submission.storage.provider=AWS_S3 to enable it.");
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_STORAGE_UNAVAILABLE",
+                    "Submission file upload is disabled. Set app.submission.storage.provider=AWS_S3 to enable it."
+            );
         }
         if (isBlank(region) || isBlank(bucket)) {
-            throw new BadRequestException("AWS S3 submission storage is not configured. " +
-                    "Missing aws.s3.region or aws.s3.bucket.");
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_STORAGE_UNAVAILABLE",
+                    "AWS S3 submission storage is not configured. Missing aws.s3.region or aws.s3.bucket."
+            );
         }
     }
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new BadRequestException("Submission file is required.");
+            throw SubmissionUploadException.badRequest(
+                    "SUBMISSION_FILE_REQUIRED",
+                    "Submission file is required."
+            );
         }
 
         SubmissionProperties.Upload uploadPolicy = submissionProperties.getUpload();
         long maxBytes = uploadPolicy.getMaxSizeBytes();
         if (file.getSize() > maxBytes) {
-            throw new BadRequestException(
+            throw SubmissionUploadException.tooLarge(
                     "Submission file exceeds max size of " + uploadPolicy.getMaxSizeMb() + " MB."
             );
         }
@@ -144,7 +155,7 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                     .anyMatch(contentType::equalsIgnoreCase);
 
             if (!allowed) {
-                throw new BadRequestException("Unsupported file type: " + contentType);
+                throw SubmissionUploadException.unsupported("Unsupported file type: " + contentType);
             }
         }
 
@@ -154,7 +165,7 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                 .map(value -> value.toLowerCase(Locale.ROOT))
                 .anyMatch(extension::equals);
         if (!extensionAllowed) {
-            throw new BadRequestException(
+            throw SubmissionUploadException.unsupported(
                     "Unsupported file extension: " + (extension.isEmpty() ? "none" : extension)
             );
         }
