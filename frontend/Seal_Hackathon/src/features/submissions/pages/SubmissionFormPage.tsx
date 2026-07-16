@@ -33,12 +33,10 @@ import type {
 
 type StorageItem = {
   id: string;
-  type: "file" | "folder";
   name: string;
   file?: File;
   size: number;
   lastModified: number;
-  path: string;
   linkType?: SubmissionLinkType;
 };
 
@@ -153,7 +151,6 @@ export function SubmissionFormPage() {
     useSubmitExistingSubmissionMutation();
 
   const [items, setItems] = useState<StorageItem[]>([]);
-  const currentPath = "/";
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"icon" | "list">("icon");
 
@@ -181,7 +178,6 @@ export function SubmissionFormPage() {
 
   const [editItem, setEditItem] = useState<StorageItem | null>(null);
   const [editName, setEditName] = useState("");
-  const [editPath, setEditPath] = useState("");
   const [editLinkType, setEditLinkType] = useState<SubmissionLinkType | "">("");
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -242,9 +238,7 @@ export function SubmissionFormPage() {
   const persistedFileCount = (submission?.links ?? []).filter(
     (link) => Boolean(link.objectKey) || link.fileSizeBytes != null,
   ).length;
-  const pendingFileCount = items.filter(
-    (item) => item.type === "file" && item.file,
-  ).length;
+  const pendingFileCount = items.filter((item) => item.file).length;
 
   const validateLocalFiles = (files: File[]): string | null => {
     if (!localFileAvailability?.available) {
@@ -267,9 +261,7 @@ export function SubmissionFormPage() {
   };
 
   const validateStagedFileTypes = (): boolean => {
-    const untypedFile = items.find(
-      (item) => item.type === "file" && item.file && !item.linkType,
-    );
+    const untypedFile = items.find((item) => item.file && !item.linkType);
     if (!untypedFile) return true;
     setErrorMsg(`Select a submission type for ${untypedFile.name}.`);
     return false;
@@ -307,12 +299,10 @@ export function SubmissionFormPage() {
 
       const newItems: StorageItem[] = files.map((f) => ({
         id: generateId(),
-        type: "file",
         name: f.name,
         file: f,
         size: f.size,
         lastModified: f.lastModified,
-        path: currentPath,
       }));
       setItems((prev) => [...prev, ...newItems]);
     }
@@ -349,12 +339,10 @@ export function SubmissionFormPage() {
 
       const newItem: StorageItem = {
         id: generateId(),
-        type: "file",
         name: finalName,
         file: fileToSave,
         size: fileToSave.size,
         lastModified: fileToSave.lastModified,
-        path: currentPath,
         linkType: tempLinkType,
       };
 
@@ -367,13 +355,12 @@ export function SubmissionFormPage() {
     if (!canEdit) return;
     setEditItem(item);
     setEditName(item.name);
-    setEditPath(item.path);
     setEditLinkType(item.linkType ?? "");
   };
 
   const saveEdit = () => {
     if (editItem) {
-      if (editItem.type === "file" && !editLinkType) {
+      if (!editLinkType) {
         setErrorMsg("Select a submission type for this file.");
         return;
       }
@@ -383,8 +370,7 @@ export function SubmissionFormPage() {
             ? {
                 ...i,
                 name: editName,
-                path: editPath,
-                linkType: editItem.type === "file" ? editLinkType || undefined : undefined,
+                linkType: editLinkType,
               }
             : i,
         ),
@@ -476,17 +462,7 @@ export function SubmissionFormPage() {
       setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
       setSelectedIds(new Set());
     } else {
-      setItems((prev) =>
-        prev.filter(
-          (i) =>
-            i.id !== deleteTarget.id &&
-            !i.path.startsWith(
-              editItem?.path === "/"
-                ? `/${editItem?.name}`
-                : `${editItem?.path}/${editItem?.name}`,
-            ),
-        ),
-      );
+      setItems((prev) => prev.filter((i) => i.id !== deleteTarget.id));
       setSelectedIds(
         new Set(
           [...selectedIds].filter((selectedId) => selectedId !== deleteTarget.id),
@@ -541,7 +517,7 @@ export function SubmissionFormPage() {
   const uploadStagedFiles = async (submissionId: string) => {
     const stagedFiles = items.filter(
       (item): item is StorageItem & { file: File; linkType: SubmissionLinkType } =>
-        item.type === "file" && Boolean(item.file && item.linkType),
+        Boolean(item.file && item.linkType),
     );
     let uploadedCount = 0;
 
@@ -619,7 +595,7 @@ export function SubmissionFormPage() {
       return;
     }
 
-    const actualFiles = items.filter((i) => i.type === "file");
+    const actualFiles = items;
     const validLinks = links.filter((l) => l.url.trim() !== "");
     const existingUploadedFiles = (submission?.links ?? []).filter(
       (l) => l.storageProvider === "AWS_S3"
@@ -667,28 +643,7 @@ export function SubmissionFormPage() {
     }
   };
 
-  const currentItems = useMemo(
-    () => items.filter((i) => i.path === currentPath),
-    [items, currentPath],
-  );
-  const folders = useMemo(
-    () => items.filter((i) => i.type === "folder"),
-    [items],
-  );
-
-  const availableFolders = useMemo(
-    () =>
-      folders.filter((f) => {
-        if (f.id === editItem?.id) return false;
-        const editItemPath =
-          editItem?.path === "/"
-            ? `/${editItem?.name}`
-            : `${editItem?.path}/${editItem?.name}`;
-        if (f.path.startsWith(editItemPath)) return false;
-        return true;
-      }),
-    [folders, editItem],
-  );
+  const currentItems = items;
 
   const historyEntries: SubmissionHistoryEntry[] = useMemo(
     () =>
@@ -1471,31 +1426,15 @@ export function SubmissionFormPage() {
 
             <div className="p-6 space-y-5">
               <div className="flex gap-3">
-                {editItem.type === "folder" ? (
-                  <>
-                    <button
-                      onClick={() => confirmDelete(editItem.id)}
-                      className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg transition-colors"
-                    >
-                      Delete
-                    </button>
-                    <button className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg transition-colors">
-                      Zip
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg transition-colors">
-                      Download
-                    </button>
-                    <button
-                      onClick={() => confirmDelete(editItem.id)}
-                      className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
+                <button className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg transition-colors">
+                  Download
+                </button>
+                <button
+                  onClick={() => confirmDelete(editItem.id)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg transition-colors"
+                >
+                  Delete
+                </button>
               </div>
 
               <div className="flex flex-col gap-1.5 w-full">
@@ -1511,47 +1450,25 @@ export function SubmissionFormPage() {
                 />
               </div>
 
-              {editItem.type === "file" && (
-                <>
-                  <TextField
-                    select
-                    fullWidth
-                    required
-                    size="small"
-                    label="Submission type"
-                    value={editLinkType}
-                    onChange={(event) =>
-                      setEditLinkType(event.target.value as SubmissionLinkType)
-                    }
-                    helperText="Choose what requirement this file satisfies."
-                    sx={filterTextFieldSx}
-                  >
-                    {localFileTypeOptions.map((option) => (
-                      <MenuItem key={option.type} value={option.type}>
-                        {option.label}{option.required ? " (Required)" : ""}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </>
-              )}
-
-              <div className="flex flex-col gap-1.5 w-full">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Path
-                </label>
-                <select
-                  className="w-full px-3 py-2.5 text-sm border border-slate-300 dark:border-slate-700 rounded-xl bg-[#f8fafc] dark:bg-[#1e293b] text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                  value={editPath}
-                  onChange={(e) => setEditPath(e.target.value)}
-                >
-                  <option value="/">/</option>
-                  {availableFolders.map((f) => (
-                    <option key={f.id} value={`/${f.name}`}>
-                      /{f.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <TextField
+                select
+                fullWidth
+                required
+                size="small"
+                label="Submission type"
+                value={editLinkType}
+                onChange={(event) =>
+                  setEditLinkType(event.target.value as SubmissionLinkType)
+                }
+                helperText="Choose what requirement this file satisfies."
+                sx={filterTextFieldSx}
+              >
+                {localFileTypeOptions.map((option) => (
+                  <MenuItem key={option.type} value={option.type}>
+                    {option.label}{option.required ? " (Required)" : ""}
+                  </MenuItem>
+                ))}
+              </TextField>
 
               <div className="flex justify-end gap-3 pt-2 border-b border-slate-100 dark:border-slate-700 pb-6">
                 <Button
@@ -1577,7 +1494,7 @@ export function SubmissionFormPage() {
                 <Button
                   variant="contained"
                   onClick={saveEdit}
-                  disabled={editItem.type === "file" && !editLinkType}
+                  disabled={!editLinkType}
                   sx={{
                     textTransform: "none",
                     fontWeight: 700,
@@ -1592,22 +1509,10 @@ export function SubmissionFormPage() {
 
               <div className="flex items-center gap-6 pt-2">
                 <div className="w-18 h-20 border border-slate-300 dark:border-slate-600 rounded-lg flex items-center justify-center bg-white dark:bg-slate-800 shrink-0 relative">
-                  {editItem.type === "folder" ? (
-                    <svg
-                      className="w-10 h-10 text-slate-800 dark:text-slate-300"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-                    </svg>
-                  ) : (
-                    <>
-                      <div className="absolute top-0 right-0 w-4.5 h-4.5 border-l border-b border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-bl-md"></div>
-                      <span className="text-[14px] font-black text-slate-800 dark:text-slate-300 mt-2">
-                        {getExt(editItem.name)}
-                      </span>
-                    </>
-                  )}
+                  <div className="absolute top-0 right-0 w-4.5 h-4.5 border-l border-b border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-bl-md"></div>
+                  <span className="text-[14px] font-black text-slate-800 dark:text-slate-300 mt-2">
+                    {getExt(editItem.name)}
+                  </span>
                 </div>
                 <div className="flex flex-col gap-1.5 text-sm">
                   <div className="flex gap-4">
@@ -1626,16 +1531,14 @@ export function SubmissionFormPage() {
                       {formatDate(editItem.lastModified)}
                     </span>
                   </div>
-                  {editItem.type === "file" && (
-                    <div className="flex gap-4">
-                      <span className="w-24 text-slate-500 dark:text-slate-400 font-medium">
-                        Size
-                      </span>
-                      <span className="text-slate-800 dark:text-slate-200">
-                        {formatSize(editItem.size)}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex gap-4">
+                    <span className="w-24 text-slate-500 dark:text-slate-400 font-medium">
+                      Size
+                    </span>
+                    <span className="text-slate-800 dark:text-slate-200">
+                      {formatSize(editItem.size)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
