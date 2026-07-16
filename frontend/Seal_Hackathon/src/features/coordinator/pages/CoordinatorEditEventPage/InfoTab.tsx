@@ -1,16 +1,31 @@
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
-import { Alert, Button, MenuItem, TextField } from "@mui/material";
+import {
+  Alert,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  MenuItem,
+  TextField,
+} from "@mui/material";
+import { isAxiosError } from "axios";
 import { enqueueSnackbar } from "notistack";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { eventAssetApi } from "@/api/eventAsset.api";
 import { eventApi } from "@/api/event.api";
-import type { UUID } from "@/types/common.types";
+import type { ApiErrorResponse, UUID } from "@/types/common.types";
 import type { EventDetailResponse } from "@/types/event.types";
 import { EventBannerCropUpload } from "@/features/coordinator/pages/CoordinatorCreateEventPage/components/EventBannerCropUpload";
+import { useDeleteEventMutation } from "@/features/coordinator/hooks/useCoordinatorEventMutations";
 import {
   EVENT_STATUS_STEPS,
   getEventEditRules,
@@ -77,18 +92,30 @@ function readNumber(event: EventDetailResponse, ...keys: string[]) {
   return new Date().getFullYear();
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (isAxiosError<ApiErrorResponse>(error)) {
+    return error.response?.data.message || fallback;
+  }
+
+  return fallback;
+}
+
 function StatusWorkflow({
   status,
   isAdvancing,
   isCancelling,
+  isDeleting,
   onAdvance,
   onCancel,
+  onDelete,
 }: {
   status: EditableEventStatus;
   isAdvancing: boolean;
   isCancelling: boolean;
+  isDeleting: boolean;
   onAdvance: () => void;
   onCancel: () => void;
+  onDelete: () => void;
 }) {
   const currentIndex = EVENT_STATUS_STEPS.findIndex(
     (step) => step.value === status,
@@ -161,7 +188,11 @@ function StatusWorkflow({
             endIcon={<ArrowForwardOutlinedIcon />}
             onClick={onAdvance}
             disabled={
-              !rules.canAdvance || !nextStatus || isAdvancing || isCancelling
+              !rules.canAdvance ||
+              !nextStatus ||
+              isAdvancing ||
+              isCancelling ||
+              isDeleting
             }
             sx={{
               borderRadius: "12px",
@@ -178,7 +209,9 @@ function StatusWorkflow({
             variant="outlined"
             startIcon={<CancelOutlinedIcon />}
             onClick={onCancel}
-            disabled={!rules.canCancel || isAdvancing || isCancelling}
+            disabled={
+              !rules.canCancel || isAdvancing || isCancelling || isDeleting
+            }
             sx={{
               borderRadius: "12px",
               textTransform: "none",
@@ -188,6 +221,24 @@ function StatusWorkflow({
           >
             Cancel event
           </Button>
+
+          {status === "DRAFT" && (
+            <Button
+              color="error"
+              variant="text"
+              startIcon={<DeleteOutlineOutlinedIcon />}
+              onClick={onDelete}
+              disabled={isAdvancing || isCancelling || isDeleting}
+              sx={{
+                borderRadius: "12px",
+                textTransform: "none",
+                fontWeight: 900,
+                minWidth: 210,
+              }}
+            >
+              Delete event
+            </Button>
+          )}
         </div>
       </div>
 
@@ -231,6 +282,8 @@ export function InfoTab({
   canEdit,
   readonlyReason,
 }: InfoTabProps) {
+  const navigate = useNavigate();
+  const deleteEventMutation = useDeleteEventMutation();
   const initialValues = useMemo(
     () => ({
       name: readString(event, "name", "eventName", "title"),
@@ -261,6 +314,10 @@ export function InfoTab({
   const [isSaving, setIsSaving] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<
+    "cancel" | "delete" | null
+  >(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -400,26 +457,42 @@ export function InfoTab({
   };
 
   const handleCancelStatus = async () => {
-    if (
-      !window.confirm(
-        "Cancel this event? This will lock the event as CANCELLED.",
-      )
-    ) {
-      return;
-    }
-
     try {
       setIsCancelling(true);
+      setActionError(null);
       const updatedEvent = await eventApi.cancelEvent(eventId);
       enqueueSnackbar(`Event moved to ${updatedEvent.status}.`, {
         variant: "success",
       });
+      setConfirmAction(null);
       await onUpdated();
-    } catch {
-      enqueueSnackbar("Cannot cancel this event.", { variant: "error" });
+    } catch (error) {
+      setActionError(getErrorMessage(error, "Cannot cancel this event."));
     } finally {
       setIsCancelling(false);
     }
+  };
+
+  const handleDeleteEvent = async () => {
+    try {
+      setActionError(null);
+      await deleteEventMutation.mutateAsync(eventId);
+      enqueueSnackbar("Draft event deleted.", { variant: "success" });
+      navigate("/coordinator/events", { replace: true });
+    } catch (error) {
+      setActionError(getErrorMessage(error, "Cannot delete this event."));
+    }
+  };
+
+  const openConfirmation = (action: "cancel" | "delete") => {
+    setActionError(null);
+    setConfirmAction(action);
+  };
+
+  const closeConfirmation = () => {
+    if (isCancelling || deleteEventMutation.isPending) return;
+    setConfirmAction(null);
+    setActionError(null);
   };
 
   return (
@@ -428,9 +501,68 @@ export function InfoTab({
         status={form.status}
         isAdvancing={isAdvancing}
         isCancelling={isCancelling}
+        isDeleting={deleteEventMutation.isPending}
         onAdvance={handleAdvanceStatus}
-        onCancel={handleCancelStatus}
+        onCancel={() => openConfirmation("cancel")}
+        onDelete={() => openConfirmation("delete")}
       />
+
+      <Dialog
+        open={confirmAction !== null}
+        onClose={closeConfirmation}
+        maxWidth="sm"
+        fullWidth
+        aria-labelledby="event-action-dialog-title"
+      >
+        <DialogTitle id="event-action-dialog-title" sx={{ fontWeight: 900 }}>
+          {confirmAction === "delete" ? "Delete draft event?" : "Cancel event?"}
+        </DialogTitle>
+        <DialogContent dividers>
+          <DialogContentText component="div">
+            <strong>{form.name || "This event"}</strong>
+            {confirmAction === "delete"
+              ? " will be permanently deleted. This action cannot be undone."
+              : " will stop accepting workflow changes and become read-only."}
+          </DialogContentText>
+          {confirmAction === "delete" && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              Deletion is allowed only for a DRAFT event without dependent
+              records.
+            </Alert>
+          )}
+          {actionError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {actionError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={closeConfirmation}
+            disabled={isCancelling || deleteEventMutation.isPending}
+          >
+            Keep event
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={
+              confirmAction === "delete"
+                ? handleDeleteEvent
+                : handleCancelStatus
+            }
+            disabled={isCancelling || deleteEventMutation.isPending}
+            startIcon={
+              isCancelling || deleteEventMutation.isPending ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : undefined
+            }
+            sx={{ fontWeight: 900 }}
+          >
+            {confirmAction === "delete" ? "Delete event" : "Cancel event"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {!canEdit && readonlyReason && (
         <Alert severity="warning">{readonlyReason}</Alert>
