@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
+import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
 import com.t7.seal.request.results.DisqualifySubmissionRequest;
 import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.PageResponse;
@@ -744,6 +745,57 @@ public class SubmissionController {
             @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.updateSubmissionLink(linkId, request, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Update Submission Evidence Metadata",
+            description = "Updates type, label, primary flag, or display order without changing the evidence URL or storage identity.",
+            operationId = "submissionUpdateSubmissionLinkMetadata",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Submission evidence metadata updated successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "No metadata was provided or a metadata value is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Only the team leader may edit this evidence.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Submission evidence was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The round is closed, locked, or past its submission deadline.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @PatchMapping("/submission-links/{linkId}/metadata")
+    public ResponseEntity<SubmissionLinkResponse> updateSubmissionLinkMetadata(
+            @Parameter(description = "Unique submission evidence identifier.", required = true)
+            @PathVariable UUID linkId,
+            @Valid @RequestBody UpdateSubmissionLinkMetadataRequest request,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                submissionService.updateSubmissionLinkMetadata(linkId, request, authentication)
+        );
     }
 
     @PreAuthorize("isAuthenticated()")

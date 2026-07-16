@@ -3,6 +3,7 @@ package com.t7.seal.service;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
+import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import org.springframework.security.core.Authentication;
@@ -56,8 +57,12 @@ public interface SubmissionService {
                                           Authentication authentication);
 
     SubmissionLinkResponse updateSubmissionLink(UUID linkId,
-                                                SubmissionLinkRequest request,
-                                                Authentication authentication);
+                                                 SubmissionLinkRequest request,
+                                                 Authentication authentication);
+
+    SubmissionLinkResponse updateSubmissionLinkMetadata(UUID linkId,
+                                                         UpdateSubmissionLinkMetadataRequest request,
+                                                         Authentication authentication);
 
     void deleteSubmissionLink(UUID linkId, Authentication authentication);
 
