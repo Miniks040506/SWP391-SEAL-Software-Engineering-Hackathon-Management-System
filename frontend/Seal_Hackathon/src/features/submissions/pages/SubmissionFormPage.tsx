@@ -5,9 +5,11 @@ import { submissionApi } from "@/api/submission.api";
 import {
   useParticipantSubmissionData,
   useSaveSubmissionDraftMutation,
+  useSubmissionRequirementsQuery,
   useSubmitExistingSubmissionMutation,
   useUpdateSubmissionMutation,
 } from "../hooks/useParticipantSubmissionQueries";
+import { SubmissionRequirementsPanel } from "../components/SubmissionRequirementsPanel";
 import { SubmissionStatusBadge } from "../components/SubmissionStatusBadge";
 import { SubmissionHistoryTable } from "../components/SubmissionHistoryTable";
 import { filterTextFieldSx } from "../schemas/submissions.schema";
@@ -126,18 +128,6 @@ function formatDate(ts: number): string {
   return `${day} ${month} ${year}, ${time}`;
 }
 
-function formatDateTime(value?: string | null): string {
-  if (!value) return "";
-
-  return new Date(value).toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 function formatSize(bytes: number): string {
   if (bytes === 0) return "-";
   if (bytes < 1024) return bytes + " B";
@@ -153,8 +143,9 @@ export function SubmissionFormPage() {
   const { teamId, roundId } = useParams<{ teamId: string; roundId: string }>();
   const navigate = useNavigate();
 
-  const { submission, teamInfo, round, loading, refetch } =
+  const { submission, teamInfo, loading, refetch } =
     useParticipantSubmissionData(teamId, roundId);
+  const requirementsQuery = useSubmissionRequirementsQuery(teamId, roundId);
   const saveDraftMutation = useSaveSubmissionDraftMutation(teamId, roundId);
   const updateSubmissionMutation = useUpdateSubmissionMutation();
 
@@ -224,28 +215,11 @@ export function SubmissionFormPage() {
     if (submission?.note) setNote(submission.note);
   }, [submission]);
 
-  const isLeader = teamInfo?.roleInTeam === "LEADER";
-  const isRegistered =
-    teamInfo?.status === "REGISTERED" ||
-    teamInfo?.status === "COMPETING" ||
-    teamInfo?.status === "ADVANCED";
-  const lockTime =
-    submission?.roundSubmissionLockedAt ?? round?.submissionLockedAt ?? null;
-  const isRoundSubmissionLocked = Boolean(
-    submission?.roundSubmissionLocked || lockTime,
-  );
-  const isRoundOpen = round?.status === "OPEN";
-  const canEdit =
-    isLeader && isRegistered && isRoundOpen && !isRoundSubmissionLocked;
-  const blockedReason = !isLeader
-    ? "Only the Team Leader can submit or edit deliverables."
-    : !isRegistered
-      ? "Your team must be REGISTERED, COMPETING, or ADVANCED to submit."
-      : isRoundSubmissionLocked
-        ? "Submissions are locked for this round."
-        : round && !isRoundOpen
-          ? `Submissions are only allowed while the round is OPEN. Current status: ${round.status}.`
-          : null;
+  const canEdit = requirementsQuery.data?.canEdit ?? false;
+  const canSubmit = requirementsQuery.data?.canSubmit ?? false;
+  const blockedReason = requirementsQuery.isError
+    ? "Submission requirements could not be loaded. Retry before making changes."
+    : requirementsQuery.data?.blockedMessage;
 
   const linkUrlErrors = useMemo(
     () => links.map((link) => getHttpUrlError(link.url)),
@@ -752,35 +726,24 @@ export function SubmissionFormPage() {
           </div>
         </div>
 
-        {!isLeader && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-            <strong>Read-only mode:</strong> Only the Team Leader can submit or
-            edit deliverables.
+        {requirementsQuery.isLoading && (
+          <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 text-sm font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            Loading submission requirements…
           </div>
         )}
-        {isLeader && !isRegistered && (
-          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
-            <strong>Action blocked:</strong> Your team must be REGISTERED or
-            COMPETING to submit. Submissions are disabled.
+        {requirementsQuery.isError && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+            <span>Submission requirements could not be loaded. Editing is disabled.</span>
+            <Button size="small" onClick={() => requirementsQuery.refetch()}>
+              Retry
+            </Button>
           </div>
         )}
-        {isRoundSubmissionLocked && (
-          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
-            <strong>Submissions locked:</strong> This round no longer accepts
-            submission changes
-            {lockTime ? ` since ${formatDateTime(lockTime)}` : ""}.
+        {requirementsQuery.data && (
+          <div className="mb-6">
+            <SubmissionRequirementsPanel requirements={requirementsQuery.data} />
           </div>
         )}
-        {isLeader &&
-          isRegistered &&
-          !isRoundSubmissionLocked &&
-          round &&
-          !isRoundOpen && (
-            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-              <strong>Round not open:</strong> Submissions are only allowed
-              while the round is OPEN. Current status: {round.status}.
-            </div>
-          )}
 
         <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6 gap-6">
           {(["form", "history"] as const).map((tab) => (
@@ -1367,7 +1330,7 @@ export function SubmissionFormPage() {
                   variant="contained"
                   color="primary"
                   onClick={handleSubmit}
-                  disabled={submitting || saving}
+                  disabled={submitting || saving || !canSubmit}
                   sx={{
                     textTransform: "none",
                     fontWeight: 700,
