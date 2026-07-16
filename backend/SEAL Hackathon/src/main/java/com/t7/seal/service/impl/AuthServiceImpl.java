@@ -41,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenGenerator tokenGenerator;
     private final EmailService emailService;
     private final PasswordHistoryService passwordHistoryService;
+    private final LoginAttemptPersistenceService loginAttemptPersistenceService;
 
     @Value("${app.email-verification-expiration-minutes:1440}")
     private int emailVerificationExpirationMinutes;
@@ -174,31 +175,30 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest request) {
         String email = normalizeEmail(request.email());
 
+        loginAttemptPersistenceService.clearExpiredLock(email);
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password."));
-
-        boolean hadExpiredLock = user.hasExpiredLock();
-        user.clearExpiredLockIfNecessary();
-
-        if (hadExpiredLock) {
-            userRepository.save(user);
-        }
 
         if (user.isLocked()) {
             throwAccountLocked(user);
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            user.recordFailedLogin(maxFailedLoginAttempts, loginLockDurationMinutes);
-            userRepository.save(user);
+            LoginAttemptPersistenceService.LoginFailureState failureState =
+                    loginAttemptPersistenceService.recordFailure(
+                            user.getId(),
+                            maxFailedLoginAttempts,
+                            loginLockDurationMinutes
+                    );
 
-            if (user.isLocked()) {
-                throwAccountLocked(user);
+            if (failureState.locked()) {
+                throwAccountLocked(failureState);
             }
 
             int remainingAttempts = Math.max(
                     0,
-                    maxFailedLoginAttempts - user.getFailedLoginCount()
+                    maxFailedLoginAttempts - failureState.failedLoginCount()
             );
 
             throw new UnauthorizedException(
@@ -210,8 +210,7 @@ public class AuthServiceImpl implements AuthService {
         // A correct password breaks the consecutive-failure chain even if the
         // account is still not allowed to log in because of business status.
         if (user.getFailedLoginCount() != null && user.getFailedLoginCount() > 0) {
-            user.clearFailedLoginAttempts();
-            userRepository.save(user);
+            loginAttemptPersistenceService.clearFailures(user.getId());
         }
 
         if (user.isUnverified()) {
@@ -337,6 +336,16 @@ public class AuthServiceImpl implements AuthService {
                         + loginLockDurationMinutes + " minutes.",
                 user.getLockedUntil(),
                 user.getRemainingLockSeconds(),
+                maxFailedLoginAttempts
+        );
+    }
+
+    private void throwAccountLocked(LoginAttemptPersistenceService.LoginFailureState failureState) {
+        throw new AccountLockedException(
+                "Too many failed login attempts. Your account is temporarily locked for "
+                        + loginLockDurationMinutes + " minutes.",
+                failureState.lockedUntil(),
+                failureState.remainingLockSeconds(),
                 maxFailedLoginAttempts
         );
     }
