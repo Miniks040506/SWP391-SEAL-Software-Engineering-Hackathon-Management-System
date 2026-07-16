@@ -12,5 +12,5 @@ public interface SubmissionLinkRepository extends JpaRepository<SubmissionLink, 
 
     List<SubmissionLink> findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(UUID submissionId);
 
-    void deleteBySubmissionId(UUID submissionId);
+    void deleteBySubmissionIdAndObjectKeyIsNull(UUID submissionId);
 }

@@ -7,7 +7,6 @@ import {
   useSaveSubmissionDraftMutation,
   useSubmissionRequirementsQuery,
   useSubmitExistingSubmissionMutation,
-  useUpdateSubmissionMutation,
 } from "../hooks/useParticipantSubmissionQueries";
 import { SubmissionRequirementsPanel } from "../components/SubmissionRequirementsPanel";
 import { SubmissionStatusBadge } from "../components/SubmissionStatusBadge";
@@ -147,7 +146,6 @@ export function SubmissionFormPage() {
     useParticipantSubmissionData(teamId, roundId);
   const requirementsQuery = useSubmissionRequirementsQuery(teamId, roundId);
   const saveDraftMutation = useSaveSubmissionDraftMutation(teamId, roundId);
-  const updateSubmissionMutation = useUpdateSubmissionMutation();
 
   const submitExistingSubmissionMutation =
     useSubmitExistingSubmissionMutation();
@@ -458,30 +456,11 @@ export function SubmissionFormPage() {
     setSuccessMsg(null);
     setErrorMsg(null);
     try {
-      const existingFileLinks: CreateSubmissionLinkRequest[] = (submission?.links ?? [])
-        .filter((l) => l.storageProvider === "AWS_S3")
-        .map((l) => ({
-          linkType: l.linkType,
-          url: l.url,
-          label: l.label ?? undefined,
-          isPrimary: l.isPrimary ?? false,
-          displayOrder: l.displayOrder ?? 0,
-        }));
-      const allLinks = [...buildLinks(), ...existingFileLinks];
-      const payload = { links: allLinks, note: note.trim() || undefined };
-      let currentSubId = submission?.id;
-      if (currentSubId) {
-        await updateSubmissionMutation.mutateAsync({
-          submissionId: currentSubId,
-          payload: {
-            note: note.trim() || undefined,
-            links: allLinks,
-          },
-        });
-      } else {
-        const created = await saveDraftMutation.mutateAsync(payload);
-        currentSubId = created.id;
-      }
+      const savedDraft = await saveDraftMutation.mutateAsync({
+        links: buildLinks(),
+        note: note.trim() || undefined,
+      });
+      const currentSubId = savedDraft.id;
 
       const newFiles = items.filter((i) => i.type === "file" && i.file);
       for (const item of newFiles) {
@@ -534,30 +513,11 @@ export function SubmissionFormPage() {
     setSuccessMsg(null);
     setErrorMsg(null);
     try {
-      const existingFileLinks: CreateSubmissionLinkRequest[] = (submission?.links ?? [])
-        .filter((l) => l.storageProvider === "AWS_S3")
-        .map((l) => ({
-          linkType: l.linkType,
-          url: l.url,
-          label: l.label ?? undefined,
-          isPrimary: l.isPrimary ?? false,
-          displayOrder: l.displayOrder ?? 0,
-        }));
-      const allLinks = [...buildLinks(), ...existingFileLinks];
-      const payload = { links: allLinks, note: note.trim() || undefined };
-      let currentSubId = submission?.id;
-      if (currentSubId) {
-        await updateSubmissionMutation.mutateAsync({
-          submissionId: currentSubId,
-          payload: {
-            note: note.trim() || undefined,
-            links: allLinks,
-          },
-        });
-      } else {
-        const created = await saveDraftMutation.mutateAsync(payload);
-        currentSubId = created.id;
-      }
+      const savedDraft = await saveDraftMutation.mutateAsync({
+        links: buildLinks(),
+        note: note.trim() || undefined,
+      });
+      const currentSubId = savedDraft.id;
 
       const newFiles = items.filter((i) => i.type === "file" && i.file);
       for (const item of newFiles) {
