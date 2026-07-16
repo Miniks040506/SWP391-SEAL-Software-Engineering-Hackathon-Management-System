@@ -8,6 +8,8 @@ import { useCreateEventCriteriaStep } from "@/features/criteria/hooks/useCreateE
 type EventCriteriaStepProps = {
   onBack: () => void;
   isSubmitting: boolean;
+  setupError?: string;
+  isResuming?: boolean;
 };
 
 function getArrayErrorMessage(error: unknown) {
@@ -21,7 +23,12 @@ function getArrayErrorMessage(error: unknown) {
   return maybeError.message ?? maybeError.root?.message ?? "";
 }
 
-export function EventCriteriaStep({ onBack, isSubmitting }: EventCriteriaStepProps) {
+export function EventCriteriaStep({
+  onBack,
+  isSubmitting,
+  setupError,
+  isResuming,
+}: EventCriteriaStepProps) {
   const {
     errors,
     rounds,
@@ -49,7 +56,10 @@ export function EventCriteriaStep({ onBack, isSubmitting }: EventCriteriaStepPro
       </div>
 
       <div className="space-y-5 px-7 py-6">
-        {arrayErrorMessage && <Alert severity="error">{arrayErrorMessage}</Alert>}
+        {setupError && <Alert severity="warning">{setupError}</Alert>}
+        {arrayErrorMessage && (
+          <Alert severity="error">{arrayErrorMessage}</Alert>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -80,7 +90,8 @@ export function EventCriteriaStep({ onBack, isSubmitting }: EventCriteriaStepPro
 
         {templatesQuery.isError && (
           <Alert severity="warning">
-            Cannot load global scoring criteria templates. You can still create custom event-only criteria.
+            Cannot load global scoring criteria templates. You can still create
+            custom event-only criteria.
           </Alert>
         )}
 
@@ -124,7 +135,13 @@ export function EventCriteriaStep({ onBack, isSubmitting }: EventCriteriaStepPro
             boxShadow: "none",
           }}
         >
-          {isSubmitting ? "Creating..." : "Create Event"}
+          {isSubmitting
+            ? isResuming
+              ? "Resuming..."
+              : "Creating..."
+            : isResuming
+              ? "Resume Setup"
+              : "Create Event"}
         </Button>
       </div>
     </section>

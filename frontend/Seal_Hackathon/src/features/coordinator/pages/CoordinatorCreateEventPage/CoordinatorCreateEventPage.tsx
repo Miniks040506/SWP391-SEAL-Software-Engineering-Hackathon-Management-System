@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@mui/material";
 import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
+import { isAxiosError } from "axios";
 import { enqueueSnackbar } from "notistack";
 import { useState } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
@@ -8,7 +9,10 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuthStore } from "@/stores/authStore";
 
-import { useCreateEventFlowMutation } from "@/features/coordinator/hooks/useCreateEventFlow";
+import {
+  CreateEventSetupError,
+  useCreateEventFlowMutation,
+} from "@/features/coordinator/hooks/useCreateEventFlow";
 import {
   createEventSchema,
   initialCreateEventFormValues,
@@ -22,6 +26,7 @@ import { PrizesStep } from "./3_Prizes";
 import { RoundsStep } from "./5_Rounds";
 import { MentorsJudgesStep } from "./4_MentorsJudges";
 import { EventCriteriaStep } from "./6_EventCriteria";
+import type { ApiErrorResponse } from "@/types/common.types";
 
 const steps = [
   "Event Details",
@@ -31,6 +36,13 @@ const steps = [
   "Mentors & Judges",
   "Event Criteria",
 ];
+
+function getCreateErrorMessage(error: unknown) {
+  if (isAxiosError<ApiErrorResponse>(error)) {
+    return error.response?.data.message || "Cannot create this event.";
+  }
+  return error instanceof Error ? error.message : "Cannot create this event.";
+}
 
 function Stepper({ activeStep }: { activeStep: number }) {
   return (
@@ -90,19 +102,23 @@ export const CoordinatorCreateEventPage = () => {
   const createEventFlowMutation = useCreateEventFlowMutation();
 
   const [activeStep, setActiveStep] = useState(1);
+  const [setupError, setSetupError] = useState<CreateEventSetupError | null>(
+    null,
+  );
 
-  const methods = useForm<CreateEventFormInput, unknown, CreateEventFormValues>({
-    resolver: zodResolver(createEventSchema),
-    defaultValues: initialCreateEventFormValues,
-    mode: "onTouched",
-    reValidateMode: "onChange",
-  });
+  const methods = useForm<CreateEventFormInput, unknown, CreateEventFormValues>(
+    {
+      resolver: zodResolver(createEventSchema),
+      defaultValues: initialCreateEventFormValues,
+      mode: "onTouched",
+      reValidateMode: "onChange",
+    },
+  );
 
   const tracks = (useWatch({ control: methods.control, name: "tracks" }) ??
     []) as CreateEventFormValues["tracks"];
   const rounds = (useWatch({ control: methods.control, name: "rounds" }) ??
     []) as CreateEventFormValues["rounds"];
-
   const handlePreviousStep = () => {
     setActiveStep((step) => Math.max(1, step - 1));
   };
@@ -126,11 +142,16 @@ export const CoordinatorCreateEventPage = () => {
       );
     }
 
-    if (activeStep === 2) return methods.trigger("tracks", { shouldFocus: true });
-    if (activeStep === 3) return methods.trigger("prizes", { shouldFocus: true });
-    if (activeStep === 4) return methods.trigger("rounds", { shouldFocus: true });
-    if (activeStep === 5) return methods.trigger("mentorJudgeAssignments", { shouldFocus: true });
-    if (activeStep === 6) return methods.trigger("criteria", { shouldFocus: true });
+    if (activeStep === 2)
+      return methods.trigger("tracks", { shouldFocus: true });
+    if (activeStep === 3)
+      return methods.trigger("prizes", { shouldFocus: true });
+    if (activeStep === 4)
+      return methods.trigger("rounds", { shouldFocus: true });
+    if (activeStep === 5)
+      return methods.trigger("mentorJudgeAssignments", { shouldFocus: true });
+    if (activeStep === 6)
+      return methods.trigger("criteria", { shouldFocus: true });
 
     return true;
   };
@@ -167,17 +188,22 @@ export const CoordinatorCreateEventPage = () => {
     try {
       const createdEvent = await createEventFlowMutation.mutateAsync(values);
 
+      setSetupError(null);
       enqueueSnackbar("Event created successfully.", { variant: "success" });
 
-      navigate(`/coordinator/events/${createdEvent.id}/edit`, { replace: true });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Cannot create event. Please check API and token.";
-
-      enqueueSnackbar(message, { variant: "error" });
+      navigate(`/coordinator/events/${createdEvent.id}/edit`, {
+        replace: true,
+      });
+    } catch (error) {
+      if (error instanceof CreateEventSetupError) {
+        setSetupError(error);
+        enqueueSnackbar(
+          `Event created, but setup stopped at ${error.stage}. Fix the issue and select Resume Setup.`,
+          { variant: "warning", preventDuplicate: true },
+        );
+        return;
+      }
+      enqueueSnackbar(getCreateErrorMessage(error), { variant: "error" });
     }
   });
 
@@ -210,14 +236,15 @@ export const CoordinatorCreateEventPage = () => {
         )}
 
         {activeStep === 3 && (
-          <PrizesStep
-            onBack={handlePreviousStep}
-            onNext={handleNextStep}
-          />
+          <PrizesStep onBack={handlePreviousStep} onNext={handleNextStep} />
         )}
 
         {activeStep === 4 && (
-          <RoundsStep tracks={tracks} onBack={handlePreviousStep} onNext={handleNextStep} />
+          <RoundsStep
+            tracks={tracks}
+            onBack={handlePreviousStep}
+            onNext={handleNextStep}
+          />
         )}
 
         {activeStep === 5 && (
@@ -233,6 +260,12 @@ export const CoordinatorCreateEventPage = () => {
           <EventCriteriaStep
             onBack={handlePreviousStep}
             isSubmitting={createEventFlowMutation.isPending}
+            isResuming={Boolean(setupError)}
+            setupError={
+              setupError
+                ? `Event "${setupError.event.name}" (${setupError.event.id}) already exists. Setup stopped while creating ${setupError.stage}; retry resumes from that step without creating another event.`
+                : undefined
+            }
           />
         )}
       </form>
