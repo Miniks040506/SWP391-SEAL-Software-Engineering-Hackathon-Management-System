@@ -174,7 +174,6 @@ export function SubmissionFormPage() {
   const [dragActive, setDragActive] = useState(false);
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerTab, setPickerTab] = useState<"local" | "drive">("local");
   const [tempFile, setTempFile] = useState<File | null>(null);
   const [tempLinkType, setTempLinkType] = useState<SubmissionLinkType | "">("");
   const [tempSaveAs, setTempSaveAs] = useState("");
@@ -241,6 +240,9 @@ export function SubmissionFormPage() {
   );
   const localFileAvailability = requirementsQuery.data?.providerAvailability.find(
     (provider) => provider.source === "LOCAL_FILE",
+  );
+  const driveAvailability = requirementsQuery.data?.providerAvailability.find(
+    (provider) => provider.source === "GOOGLE_DRIVE",
   );
   const canUploadLocalFile = canEdit && localFileAvailability?.available === true;
   const uploadAccept = uploadPolicy
@@ -338,7 +340,6 @@ export function SubmissionFormPage() {
     setTempFile(null);
     setTempLinkType("");
     setTempLicense("All rights reserved");
-    setPickerTab("local");
     setIsPickerOpen(true);
   };
 
@@ -1534,24 +1535,30 @@ export function SubmissionFormPage() {
                 </button>
               </div>
               <div className="flex px-6 gap-6">
-                <button
-                  onClick={() => setPickerTab("local")}
-                  className={`pb-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${pickerTab === "local" ? "text-blue-600 dark:text-blue-400 border-blue-600" : "text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-300"}`}
-                >
+                <span className="-mb-px border-b-2 border-blue-600 pb-3 text-sm font-semibold text-blue-600 dark:text-blue-400">
                   Upload a file
-                </button>
+                </span>
                 <button
-                  onClick={() => setPickerTab("drive")}
-                  className={`pb-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${pickerTab === "drive" ? "text-blue-600 dark:text-blue-400 border-blue-600" : "text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-300"}`}
+                  type="button"
+                  disabled
+                  title={driveAvailability?.message || "Google Drive is not configured."}
+                  className="-mb-px cursor-not-allowed border-b-2 border-transparent pb-3 text-sm font-semibold text-slate-400 opacity-70"
                 >
-                  Google Drive
+                  Google Drive unavailable
                 </button>
               </div>
             </div>
 
             <div className="p-6 overflow-y-auto">
-              {pickerTab === "local" && (
-                <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-5">
+                <div
+                  role="note"
+                  className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+                >
+                  <span className="font-bold">Google Drive is disabled.</span>{" "}
+                  {driveAvailability?.message ||
+                    "Configure the Google Drive provider before selecting Drive evidence."}
+                </div>
                   <div className="flex flex-col gap-1.5 w-full">
                     <label className="text-sm font-semibold text-slate-800 dark:text-slate-300">
                       File Attachment
@@ -1679,29 +1686,7 @@ export function SubmissionFormPage() {
                       Upload this file
                     </Button>
                   </div>
-                </div>
-              )}
-
-              {pickerTab === "drive" && (
-                <div className="py-12 flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-4">
-                    <svg
-                      className="w-8 h-8 text-blue-600 dark:text-blue-400"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M6.812 21L1.5 12l4.5-7.794h11.988L22.5 12 17.188 21H6.812zm1.04-1.5h8.296l4.148-7.5-4.148-7.5H7.852L3.704 12l4.148 7.5zM8.5 17l-3-5.5 3-5.5h7l3 5.5-3 5.5h-7z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">
-                    Google Drive
-                  </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-                    Google Drive integration is currently pending API approval.
-                    Please upload local files.
-                  </p>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
