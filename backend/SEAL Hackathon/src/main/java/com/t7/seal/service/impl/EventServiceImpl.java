@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.domain.HackathonSeason;
 import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.UserRole;
@@ -21,10 +22,12 @@ import com.t7.seal.response.event.EventDetailResponse;
 import com.t7.seal.response.event.EventSummaryResponse;
 import com.t7.seal.response.round.RoundResponse;
 import com.t7.seal.response.track.TrackResponse;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EventService;
 import com.t7.seal.service.RoundDeadlineReminderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
@@ -33,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -46,6 +50,7 @@ public class EventServiceImpl implements EventService {
     private final TeamRepository teamRepository;
     private final CurrentUserService currentUserService;
     private final RoundDeadlineReminderService roundDeadlineReminderService;
+    private final AuditLogService auditLogService;
 
     private static final int MAX_PAGE_SIZE = 50;
 
@@ -281,20 +286,45 @@ public class EventServiceImpl implements EventService {
     @Transactional
     @Override
     public void deleteEvent(UUID eventId, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
 
-        if (event.getResultPublishedAt() != null) {
-            throw new ConflictException("Cannot delete event that has already published result");
+        if (event.getStatus() != RegistrationStatus.DRAFT) {
+            throw new ConflictException(
+                    "EVENT_DELETE_REQUIRES_DRAFT",
+                    "Only draft events can be deleted. Cancel the event instead."
+            );
         }
 
-        changeEventStatus(event, RegistrationStatus.CANCELLED);
-        event.setUpdatedAt(LocalDateTime.now());
+        Map<String, Object> beforeState = Map.of(
+                "name", event.getName(),
+                "status", event.getStatus().name(),
+                "season", event.getSeason().name(),
+                "year", event.getYear()
+        );
 
-        HackathonEvent saved = hackathonEventRepository.save(event);
-        roundDeadlineReminderService.cancelEventSubmissionDeadlineReminders(saved.getId());
+        try {
+            roundDeadlineReminderService.cancelEventSubmissionDeadlineReminders(eventId);
+            hackathonEventRepository.delete(event);
+            hackathonEventRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ConflictException(
+                    "EVENT_DELETE_HAS_DEPENDENCIES",
+                    "This draft event has dependent records and cannot be deleted."
+            );
+        }
+
+        auditLogService.record(
+                actor,
+                AuditActionType.EVENT_DELETED,
+                "hackathon_events",
+                eventId,
+                beforeState,
+                null,
+                null
+        );
     }
 
     //HELPERS
