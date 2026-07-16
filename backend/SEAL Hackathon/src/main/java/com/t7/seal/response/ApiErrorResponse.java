@@ -26,6 +26,13 @@ public record ApiErrorResponse(
         )
         String error,
         @Schema(
+                description = "Stable machine-readable business error code when available.",
+                example = "SUBMISSION_FILE_TOO_LARGE",
+                accessMode = Schema.AccessMode.READ_ONLY,
+                nullable = true
+        )
+        String code,
+        @Schema(
                 description = "Client-safe response message.",
                 example = "Request validation failed",
                 accessMode = Schema.AccessMode.READ_ONLY
@@ -51,6 +58,12 @@ public record ApiErrorResponse(
         List<FieldErrorResponse> fieldErrors
 ) {
     public static ApiErrorResponse of(int status, String error, String message, String path) {
-        return new ApiErrorResponse(false, status, error, message, path, Instant.now(), List.of());
+        return of(status, error, null, message, path);
+    }
+
+    public static ApiErrorResponse of(
+            int status, String error, String code, String message, String path
+    ) {
+        return new ApiErrorResponse(false, status, error, code, message, path, Instant.now(), List.of());
     }
 }

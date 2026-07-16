@@ -3,6 +3,7 @@ package com.t7.seal.service;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
+import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import org.springframework.security.core.Authentication;
@@ -12,6 +13,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface SubmissionService {
+
+    SubmissionRequirementsResponse getSubmissionRequirements(UUID teamId,
+                                                              UUID roundId,
+                                                              Authentication authentication);
 
     SubmissionResponse submitDeliverables(UUID teamId, UUID roundId,
                                           SubmitDeliverablesRequest request,
@@ -40,6 +45,9 @@ public interface SubmissionService {
     SubmissionDetailResponse getSubmissionById(UUID submissionId,
                                                Authentication authentication);
 
+    List<SubmissionAttemptResponse> getSubmissionAttempts(UUID submissionId,
+                                                          Authentication authentication);
+
     SubmissionDetailResponse getSubmissionForAdmin(UUID submissionId,
                                                    Authentication authentication);
 
@@ -52,16 +60,29 @@ public interface SubmissionService {
                                           Authentication authentication);
 
     SubmissionLinkResponse updateSubmissionLink(UUID linkId,
-                                                SubmissionLinkRequest request,
-                                                Authentication authentication);
+                                                 SubmissionLinkRequest request,
+                                                 Authentication authentication);
+
+    SubmissionLinkResponse updateSubmissionLinkMetadata(UUID linkId,
+                                                         UpdateSubmissionLinkMetadataRequest request,
+                                                         Authentication authentication);
 
     void deleteSubmissionLink(UUID linkId, Authentication authentication);
 
     FileDownloadUrlResponse createSubmissionFileDownloadUrl(UUID linkId,
                                                             Authentication authentication);
 
+    FileDownloadUrlResponse createSubmissionAttemptFileDownloadUrl(
+            UUID submissionId,
+            UUID evidenceId,
+            Authentication authentication
+    );
+
     SubmissionResponse submitExistingSubmission(UUID submissionId,
                                                 Authentication authentication);
+
+    SubmissionResponse beginSubmissionResubmission(UUID submissionId,
+                                                   Authentication authentication);
 
     PageResponse<CoordinatorSubmissionSummaryResponse> getEventSubmissions(UUID eventId, UUID roundId,
                                                                            UUID trackId, String status,

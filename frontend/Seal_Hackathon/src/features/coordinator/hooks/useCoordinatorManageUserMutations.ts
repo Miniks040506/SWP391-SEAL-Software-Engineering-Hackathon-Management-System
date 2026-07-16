@@ -75,7 +75,10 @@ export function useCoordinatorActivateUserMutation() {
 }
 
 export function useCreateGuestJudgeMutation() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateGuestJudgeRequest) => userApi.createGuestJudge(payload),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: [COORDINATOR_USERS_KEY] }),
   });
 }

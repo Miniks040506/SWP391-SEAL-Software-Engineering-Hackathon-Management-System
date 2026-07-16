@@ -1,7 +1,9 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.config.SubmissionProperties;
 import com.t7.seal.dto.UploadedSubmissionFile;
 import com.t7.seal.exception.BadRequestException;
+import com.t7.seal.exception.SubmissionUploadException;
 import com.t7.seal.service.SubmissionFileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,9 +13,11 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -23,7 +27,6 @@ import java.io.IOException;
 import java.text.Normalizer;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -49,20 +52,7 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
     @Value("${aws.s3.secret-key:}")
     private String secretKey;
 
-    @Value("${app.submission.upload.max-size-mb:25}")
-    private long maxSizeMb;
-
-    @Value("${app.submission.upload.allowed-content-types:" +
-            "application/pdf," +
-            "application/zip," +
-            "application/x-zip-compressed," +
-            "application/vnd.ms-powerpoint," +
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation," +
-            "video/mp4," +
-            "image/png," +
-            "image/jpeg," +
-            "text/plain}")
-    private String allowedContentTypes;
+    private final SubmissionProperties submissionProperties;
 
     @Override
     public UploadedSubmissionFile uploadSubmissionFile(
@@ -90,7 +80,10 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                     file.getSize()
             ));
         } catch (IOException e) {
-            throw new BadRequestException("Cannot read uploaded submission file.");
+            throw SubmissionUploadException.badRequest(
+                    "SUBMISSION_FILE_UNREADABLE",
+                    "Cannot read uploaded submission file."
+            );
         }
 
         return new UploadedSubmissionFile(
@@ -127,36 +120,80 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
         }
     }
 
+    @Override
+    public void deleteSubmissionFile(String objectKey) {
+        validateConfiguration();
+
+        if (isBlank(objectKey)) {
+            throw SubmissionUploadException.badRequest(
+                    "SUBMISSION_FILE_OBJECT_KEY_MISSING",
+                    "Submission file object key is missing."
+            );
+        }
+
+        try (S3Client s3Client = buildClient()) {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(objectKey)
+                    .build());
+        } catch (SdkException ex) {
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_FILE_DELETE_FAILED",
+                    "Stored submission file could not be deleted. Retry after checking object storage access."
+            );
+        }
+    }
+
     private void validateConfiguration() {
         if (!"AWS_S3".equalsIgnoreCase(storageProvider)) {
-            throw new BadRequestException("Submission file upload is disabled. " +
-                    "Set app.submission.storage.provider=AWS_S3 to enable it.");
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_STORAGE_UNAVAILABLE",
+                    "Submission file upload is disabled. Set app.submission.storage.provider=AWS_S3 to enable it."
+            );
         }
         if (isBlank(region) || isBlank(bucket)) {
-            throw new BadRequestException("AWS S3 submission storage is not configured. " +
-                    "Missing aws.s3.region or aws.s3.bucket.");
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_STORAGE_UNAVAILABLE",
+                    "AWS S3 submission storage is not configured. Missing aws.s3.region or aws.s3.bucket."
+            );
         }
     }
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new BadRequestException("Submission file is required.");
+            throw SubmissionUploadException.badRequest(
+                    "SUBMISSION_FILE_REQUIRED",
+                    "Submission file is required."
+            );
         }
 
-        long maxBytes = maxSizeMb * 1024L * 1024L;
+        SubmissionProperties.Upload uploadPolicy = submissionProperties.getUpload();
+        long maxBytes = uploadPolicy.getMaxSizeBytes();
         if (file.getSize() > maxBytes) {
-            throw new BadRequestException("Submission file exceeds max size of " + maxBytes + "MB.");
+            throw SubmissionUploadException.tooLarge(
+                    "Submission file exceeds max size of " + uploadPolicy.getMaxSizeMb() + " MB."
+            );
         }
 
         String contentType = file.getContentType();
-        if (!isBlank(allowedContentTypes) && !isBlank(contentType)) {
-            boolean allowed = Arrays.stream(allowedContentTypes.split(","))
-                    .map(String::trim)
+        if (!uploadPolicy.getAllowedContentTypes().isEmpty() && !isBlank(contentType)) {
+            boolean allowed = uploadPolicy.getAllowedContentTypes().stream()
                     .anyMatch(contentType::equalsIgnoreCase);
 
             if (!allowed) {
-                throw new BadRequestException("Unsupported file type: " + contentType);
+                throw SubmissionUploadException.unsupported("Unsupported file type: " + contentType);
             }
+        }
+
+        String originalFileName = file.getOriginalFilename();
+        String extension = fileExtension(originalFileName);
+        boolean extensionAllowed = uploadPolicy.getAllowedExtensions().stream()
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .anyMatch(extension::equals);
+        if (!extensionAllowed) {
+            throw SubmissionUploadException.unsupported(
+                    "Unsupported file extension: " + (extension.isEmpty() ? "none" : extension)
+            );
         }
     }
 
@@ -213,6 +250,17 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                 .toLowerCase(Locale.ROOT);
 
         return value.isBlank() ? fallback : value;
+    }
+
+    private String fileExtension(String fileName) {
+        if (isBlank(fileName)) {
+            return "";
+        }
+        int extensionStart = fileName.lastIndexOf('.');
+        if (extensionStart < 0 || extensionStart == fileName.length() - 1) {
+            return "";
+        }
+        return fileName.substring(extensionStart).toLowerCase(Locale.ROOT);
     }
 
     private boolean isBlank(String value) {

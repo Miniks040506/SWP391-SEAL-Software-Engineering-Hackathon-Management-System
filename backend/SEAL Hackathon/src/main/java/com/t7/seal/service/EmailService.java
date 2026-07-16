@@ -17,6 +17,14 @@ public interface EmailService {
             String setupPath
     );
 
+    void sendUserAccountSetupEmail(
+            String to,
+            String fullName,
+            String code,
+            LocalDateTime expiresAt,
+            String setupPath
+    );
+
     void sendOAuthLoginSuccessEmail(String to, String fullName, String providerName);
 
     void sendTeamInvitationSent(
@@ -104,4 +112,3 @@ public interface EmailService {
             String html
     );
 }
-

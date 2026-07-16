@@ -41,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenGenerator tokenGenerator;
     private final EmailService emailService;
     private final PasswordHistoryService passwordHistoryService;
+    private final LoginAttemptPersistenceService loginAttemptPersistenceService;
 
     @Value("${app.email-verification-expiration-minutes:1440}")
     private int emailVerificationExpirationMinutes;
@@ -135,15 +136,13 @@ public class AuthServiceImpl implements AuthService {
         user.verifyEmail();
         user.setEmailVerificationExpiresAt(null);
 
-//        user.setStatus(UserStatus.ACTIVE);
-
         userRepository.save(user);
 
         return new VerifyEmailResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getStatus().name(),
-                "Email verified successfully. Your account is waiting for coordinator approval."
+                "Email verified successfully. Your account is now active."
         );
     }
 
@@ -152,21 +151,27 @@ public class AuthServiceImpl implements AuthService {
     public AuthMessageResponse resendVerification(EmailRequest request) {
         String email = normalizeEmail(request.email());
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BadRequestException("Account not found."));
+        userRepository.findByEmail(email)
+                .filter(User::isUnverified)
+                .ifPresent(user -> {
+                    String code = tokenGenerator.generateSixDigitCode();
+                    user.setEmailVerificationToken(code);
+                    user.setEmailVerificationExpiresAt(
+                            LocalDateTime.now().plusMinutes(emailVerificationExpirationMinutes)
+                    );
 
-        if (!user.isUnverified()) {
-            throw new BadRequestException("This account does not need email verification.");
-        }
+                    userRepository.save(user);
+                    emailService.sendVerificationCode(
+                            user.getEmail(),
+                            user.getFullName(),
+                            code,
+                            emailVerificationExpirationMinutes
+                    );
+                });
 
-        String code = tokenGenerator.generateSixDigitCode();
-        user.setEmailVerificationToken(code);
-        user.setEmailVerificationExpiresAt(LocalDateTime.now().plusMinutes(emailVerificationExpirationMinutes));
-
-        userRepository.save(user);
-        emailService.sendVerificationCode(user.getEmail(), user.getFullName(), code, emailVerificationExpirationMinutes);
-
-        return new AuthMessageResponse("A new verification code has been sent.");
+        return new AuthMessageResponse(
+                "If the account requires verification, a new code has been sent."
+        );
     }
 
     @Override
@@ -174,31 +179,30 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest request) {
         String email = normalizeEmail(request.email());
 
+        loginAttemptPersistenceService.clearExpiredLock(email);
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password."));
-
-        boolean hadExpiredLock = user.hasExpiredLock();
-        user.clearExpiredLockIfNecessary();
-
-        if (hadExpiredLock) {
-            userRepository.save(user);
-        }
 
         if (user.isLocked()) {
             throwAccountLocked(user);
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            user.recordFailedLogin(maxFailedLoginAttempts, loginLockDurationMinutes);
-            userRepository.save(user);
+            LoginAttemptPersistenceService.LoginFailureState failureState =
+                    loginAttemptPersistenceService.recordFailure(
+                            user.getId(),
+                            maxFailedLoginAttempts,
+                            loginLockDurationMinutes
+                    );
 
-            if (user.isLocked()) {
-                throwAccountLocked(user);
+            if (failureState.locked()) {
+                throwAccountLocked(failureState);
             }
 
             int remainingAttempts = Math.max(
                     0,
-                    maxFailedLoginAttempts - user.getFailedLoginCount()
+                    maxFailedLoginAttempts - failureState.failedLoginCount()
             );
 
             throw new UnauthorizedException(
@@ -210,12 +214,14 @@ public class AuthServiceImpl implements AuthService {
         // A correct password breaks the consecutive-failure chain even if the
         // account is still not allowed to log in because of business status.
         if (user.getFailedLoginCount() != null && user.getFailedLoginCount() > 0) {
-            user.clearFailedLoginAttempts();
-            userRepository.save(user);
+            loginAttemptPersistenceService.clearFailures(user.getId());
         }
 
         if (user.isUnverified()) {
-            throw new UnauthorizedException("Please verify your email before logging in.");
+            throw new UnauthorizedException(
+                    "ACCOUNT_UNVERIFIED",
+                    "Please verify your account before logging in."
+            );
         }
 
         if (user.isPendingApproval()) {
@@ -306,16 +312,19 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthMessageResponse resetPassword(ResetPasswordRequest request) {
         if (!request.newPassword().equals(request.confirmPassword())) {
-            throw new BadRequestException("Password confirmation does not match.");
+            throw new BadRequestException(
+                    "PASSWORD_CONFIRMATION_MISMATCH",
+                    "Password confirmation does not match."
+            );
         }
 
         String email = normalizeEmail(request.email());
 
         User user = userRepository.findByEmailAndPasswordResetToken(email, request.code())
-                .orElseThrow(() -> new BadRequestException("Invalid or expired reset code."));
+                .orElseThrow(() -> invalidResetCode());
 
         if (!user.isPasswordResetTokenValid(request.code())) {
-            throw new BadRequestException("Invalid or expired reset code.");
+            throw invalidResetCode();
         }
 
         passwordHistoryService.validateNotReused(user, request.newPassword());
@@ -331,12 +340,29 @@ public class AuthServiceImpl implements AuthService {
         return new AuthMessageResponse("Password has been reset successfully.");
     }
 
+    private BadRequestException invalidResetCode() {
+        return new BadRequestException(
+                "RESET_CODE_INVALID_OR_EXPIRED",
+                "Invalid or expired reset code."
+        );
+    }
+
     private void throwAccountLocked(User user) {
         throw new AccountLockedException(
                 "Too many failed login attempts. Your account is temporarily locked for "
                         + loginLockDurationMinutes + " minutes.",
                 user.getLockedUntil(),
                 user.getRemainingLockSeconds(),
+                maxFailedLoginAttempts
+        );
+    }
+
+    private void throwAccountLocked(LoginAttemptPersistenceService.LoginFailureState failureState) {
+        throw new AccountLockedException(
+                "Too many failed login attempts. Your account is temporarily locked for "
+                        + loginLockDurationMinutes + " minutes.",
+                failureState.lockedUntil(),
+                failureState.remainingLockSeconds(),
                 maxFailedLoginAttempts
         );
     }

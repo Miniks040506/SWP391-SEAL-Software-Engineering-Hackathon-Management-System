@@ -6,17 +6,26 @@ import type {
   FileDownloadUrlResponse,
   GetEventSubmissionsParams,
   SaveSubmissionDraftRequest,
+  SubmissionAttemptResponse,
   SubmissionDetailResponse,
   SubmissionLinkResponse,
+  SubmissionRequirementsResponse,
   SubmissionResponse,
   SubmissionSummaryResponse,
   SubmitDeliverablesRequest,
   TeamDetailedScoreResponse,
   UpdateSubmissionLinkRequest,
+  UpdateSubmissionLinkMetadataRequest,
   UpdateSubmissionRequest,
 } from "@/types/submission.types";
 
 export const submissionApi = {
+  getSubmissionRequirements(teamId: UUID, roundId: UUID) {
+    return apiRequest.get<SubmissionRequirementsResponse>(
+      `/teams/${teamId}/rounds/${roundId}/submission-requirements`,
+    );
+  },
+
   saveSubmissionDraft(teamId: UUID, roundId: UUID, payload: SaveSubmissionDraftRequest) {
     return apiRequest.post<SubmissionResponse>(
       `/teams/${teamId}/rounds/${roundId}/submission/draft`,
@@ -55,6 +64,12 @@ export const submissionApi = {
     return apiRequest.get<SubmissionDetailResponse>(`/submissions/${submissionId}`);
   },
 
+  getSubmissionAttempts(submissionId: UUID) {
+    return apiRequest.get<SubmissionAttemptResponse[]>(
+      `/submissions/${submissionId}/attempts`,
+    );
+  },
+
   getMentorTeamSubmissions(teamId: UUID) {
     return apiRequest.get<SubmissionSummaryResponse[]>(
       `/mentor/teams/${teamId}/submissions`,
@@ -78,6 +93,10 @@ export const submissionApi = {
     return apiRequest.post<SubmissionResponse>(`/submissions/${submissionId}/submit`);
   },
 
+  beginSubmissionResubmission(submissionId: UUID) {
+    return apiRequest.post<SubmissionResponse>(`/submissions/${submissionId}/resubmit`);
+  },
+
   addSubmissionLink(submissionId: UUID, payload: CreateSubmissionLinkRequest) {
     return apiRequest.post<SubmissionResponse>(
       `/submissions/${submissionId}/links`,
@@ -88,6 +107,16 @@ export const submissionApi = {
   updateSubmissionLink(linkId: UUID, payload: UpdateSubmissionLinkRequest) {
     return apiRequest.patch<SubmissionLinkResponse>(
       `/submission-links/${linkId}`,
+      payload,
+    );
+  },
+
+  updateSubmissionLinkMetadata(
+    linkId: UUID,
+    payload: UpdateSubmissionLinkMetadataRequest,
+  ) {
+    return apiRequest.patch<SubmissionLinkResponse>(
+      `/submission-links/${linkId}/metadata`,
       payload,
     );
   },
@@ -105,6 +134,12 @@ export const submissionApi = {
   getMyTeamDetailedScores(submissionId: UUID) {
     return apiRequest.get<TeamDetailedScoreResponse>(
       `/submissions/${submissionId}/scores/me`,
+    );
+  },
+
+  createSubmissionAttemptFileDownloadUrl(submissionId: UUID, evidenceId: UUID) {
+    return apiRequest.get<FileDownloadUrlResponse>(
+      `/submissions/${submissionId}/attempts/evidence/${evidenceId}/download-url`,
     );
   },
 

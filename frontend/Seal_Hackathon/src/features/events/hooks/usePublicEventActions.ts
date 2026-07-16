@@ -31,7 +31,7 @@ export function usePublicEventActions() {
   };
 
   const viewResults = (eventId: UUID) => {
-    navigate(`/standings?eventId=${eventId}`);
+    navigate(`/events/${eventId}/leaderboard`);
   };
 
   return {

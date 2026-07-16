@@ -23,6 +23,25 @@ export type SubmissionStorageProvider =
   | "AWS_S3"
   | string;
 
+export type SubmissionInputSource =
+  | "URL"
+  | "LOCAL_FILE"
+  | "GOOGLE_DRIVE"
+  | "GITHUB";
+
+export type SubmissionBlockedReason =
+  | "NONE"
+  | "NOT_TEAM_LEADER"
+  | "TRACK_NOT_ASSIGNED"
+  | "TEAM_REGISTRATION_NOT_APPROVED"
+  | "TEAM_ELIMINATED"
+  | "TEAM_STATUS_NOT_ELIGIBLE"
+  | "SUBMISSION_RESUBMISSION_REQUIRED"
+  | "MISSING_REQUIRED_TYPES"
+  | "ROUND_NOT_OPEN"
+  | "ROUND_SUBMISSION_LOCKED"
+  | "ROUND_SUBMISSION_DEADLINE_EXCEEDED";
+
 export type RepositoryMetadata = {
   platform?: string;
   repoName?: string;
@@ -65,6 +84,13 @@ export type UpdateSubmissionRequest = {
 export type UpdateSubmissionLinkRequest = {
   linkType?: SubmissionLinkType | string;
   url?: string;
+  label?: string;
+  isPrimary?: boolean;
+  displayOrder?: number;
+};
+
+export type UpdateSubmissionLinkMetadataRequest = {
+  linkType?: SubmissionLinkType;
   label?: string;
   isPrimary?: boolean;
   displayOrder?: number;
@@ -123,6 +149,33 @@ export type SubmissionLinkResponse = {
   updatedAt?: ISODateTime | null;
 };
 
+export type SubmissionAttemptEvidenceResponse = {
+  id: UUID;
+  sourceLinkId?: UUID | null;
+  linkType: SubmissionLinkType | string;
+  url?: string | null;
+  label?: string | null;
+  storageProvider: SubmissionStorageProvider;
+  originalFileName?: string | null;
+  contentType?: string | null;
+  fileSizeBytes?: number | null;
+  repoMetadata?: RepositoryMetadata | null;
+  isPrimary: boolean;
+  displayOrder: number;
+  createdAt?: ISODateTime | null;
+};
+
+export type SubmissionAttemptResponse = {
+  id: UUID;
+  submissionId: UUID;
+  attemptNumber: number;
+  note?: string | null;
+  status: SubmissionStatus;
+  submittedAt: ISODateTime;
+  createdAt?: ISODateTime | null;
+  evidence: SubmissionAttemptEvidenceResponse[];
+};
+
 export type SubmissionDetailResponse = {
   id: UUID;
   eventId?: UUID | null;
@@ -143,6 +196,57 @@ export type SubmissionDetailResponse = {
   roundSubmissionLocked?: boolean | null;
   roundSubmissionLockedAt?: ISODateTime | null;
   links: SubmissionLinkResponse[];
+};
+
+export type SubmissionRequirementItemResponse = {
+  type: SubmissionLinkType;
+  label: string;
+  required: boolean;
+  allowedSources: SubmissionInputSource[];
+  primary: boolean;
+  displayOrder: number;
+  satisfied: boolean;
+  satisfiedByLinkIds: UUID[];
+};
+
+export type SubmissionUploadPolicyResponse = {
+  acceptedMimeTypes: string[];
+  acceptedExtensions: string[];
+  maximumFileSizeBytes: number;
+  maximumFiles: number;
+};
+
+export type SubmissionProviderAvailabilityResponse = {
+  source: SubmissionInputSource;
+  available: boolean;
+  message?: string | null;
+};
+
+export type SubmissionRequirementsResponse = {
+  eventId?: UUID | null;
+  eventName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  teamId: UUID;
+  teamName: string;
+  roundId: UUID;
+  roundName: string;
+  roundInstructions?: string | null;
+  roundStatus: string;
+  submissionDeadline?: ISODateTime | null;
+  submissionLocked: boolean;
+  submissionLockedAt?: ISODateTime | null;
+  canView: boolean;
+  canEdit: boolean;
+  canSubmit: boolean;
+  blockedReason: SubmissionBlockedReason;
+  blockedMessage?: string | null;
+  requirements: SubmissionRequirementItemResponse[];
+  uploadPolicy: SubmissionUploadPolicyResponse;
+  providerAvailability: SubmissionProviderAvailabilityResponse[];
+  currentSubmission?: SubmissionResponse | null;
+  satisfiedTypes: SubmissionLinkType[];
+  missingRequiredTypes: SubmissionLinkType[];
 };
 
 export type FileDownloadUrlResponse = {
@@ -209,16 +313,6 @@ export type TeamDetailedScoreResponse = {
   judgeCount: number;
   publishedAt?: ISODateTime | null;
   criteriaScores: CriterionAverageScoreResponse[];
-};
-
-// Added more
-export type SubmissionHistoryEntry = {
-  id: string;
-  submissionNumber: number;
-  status: string;
-  submittedAt: string | null;
-  linkCount: number;
-  note?: string;
 };
 
 export type RequiredLinkConfig = {

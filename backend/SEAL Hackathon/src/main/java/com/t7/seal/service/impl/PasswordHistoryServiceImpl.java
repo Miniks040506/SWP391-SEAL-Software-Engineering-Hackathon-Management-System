@@ -27,7 +27,10 @@ public class PasswordHistoryServiceImpl implements PasswordHistoryService {
     @Transactional(readOnly = true)
     public void validateNotReused(User user, String rawPassword) {
         if (passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
-            throw new BadRequestException("New password must be different from the current password.");
+            throw new BadRequestException(
+                    "PASSWORD_REUSED",
+                    "New password must be different from the current password."
+            );
         }
 
         List<PasswordHistory> histories = passwordHistoryRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
@@ -36,7 +39,10 @@ public class PasswordHistoryServiceImpl implements PasswordHistoryService {
                 .anyMatch(history -> passwordEncoder.matches(rawPassword, history.getPasswordHash()));
 
         if (reused) {
-            throw new BadRequestException("New password must not match any of your previous passwords.");
+            throw new BadRequestException(
+                    "PASSWORD_REUSED",
+                    "New password must not match any of your previous passwords."
+            );
         }
     }
 

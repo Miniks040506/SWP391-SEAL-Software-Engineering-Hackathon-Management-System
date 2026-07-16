@@ -23,6 +23,7 @@ export type ApiErrorResponse = {
   success: boolean;
   status: number;
   error: string;
+  code?: string | null;
   message: string;
   path: string;
   timestamp: ISODateTime;

@@ -79,6 +79,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,
                                 API + "/auth/register",
                                 API + "/auth/verify-email",
+                                API + "/auth/resend-verification",
                                 API + "/auth/login",
                                 API + "/auth/refresh-token",
                                 API + "/auth/forgot-password",
@@ -89,6 +90,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 API + "/auth/oauth2/authorization/**",
                                 API + "/auth/oauth2/callback/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                API + "/integrations/google-drive/callback"
                         ).permitAll()
 
                         // Public Read

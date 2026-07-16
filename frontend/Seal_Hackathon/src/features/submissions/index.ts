@@ -7,6 +7,7 @@ export * from "./components/SubmissionDetailDrawer";
 export * from "./components/SubmissionLinksPreview";
 export * from "./components/SubmissionStatusBadge";
 export * from "./components/RequiredLinkTypeChecklist";
+export * from "./components/SubmissionRequirementsPanel";
 export * from "./components/SubmissionHistoryTable";
 export * from "./components/SubmissionLinkFields";
 export * from "./hooks/useCoordinatorSubmissionQueries";

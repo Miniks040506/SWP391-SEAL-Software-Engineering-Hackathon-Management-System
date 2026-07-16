@@ -13,6 +13,8 @@ import type { EventCompetitionRoundResponse } from "@/types/team.types";
 
 import { useTeamAdvancementStatusQuery } from "@/features/advancement/hooks/useAdvancementQueries";
 import { TeamAdvancementStatusBanner } from "@/features/advancement/components/TeamAdvancementStatusBanner";
+import { SubmissionRequirementsPanel } from "@/features/submissions/components/SubmissionRequirementsPanel";
+import { useSubmissionRequirementsQuery } from "@/features/submissions/hooks/useParticipantSubmissionQueries";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "Not set";
@@ -105,6 +107,11 @@ export function EventCompetitionPage() {
     );
   }, [competition, selectedRoundId]);
 
+  const requirementsQuery = useSubmissionRequirementsQuery(
+    competition?.teamId,
+    selectedRound?.roundId,
+  );
+
   if (competitionQuery.isLoading) {
     return (
       <div className="flex justify-center py-24">
@@ -140,8 +147,11 @@ export function EventCompetitionPage() {
     );
   }
 
-  const canOpenSubmission =
-    selectedRound?.canSubmit && competition.teamStatus !== "ELIMINATED";
+  const canOpenSubmission = Boolean(
+    requirementsQuery.data?.canView &&
+      !requirementsQuery.isLoading &&
+      !requirementsQuery.isError,
+  );
 
   return (
     <div className="space-y-7 animate-in slide-in-from-bottom-4 duration-500">
@@ -257,7 +267,7 @@ export function EventCompetitionPage() {
                     {roundStateLabel(round)}
                   </p>
                   <p className="mt-1 text-xs font-semibold text-gray-500 dark:text-slate-400">
-                    {formatDateTime(round.startAt)} â†’{" "}
+                    {formatDateTime(round.startAt)} →{" "}
                     {formatDateTime(round.endAt)}
                   </p>
                 </div>
@@ -297,7 +307,7 @@ export function EventCompetitionPage() {
                     {selectedRound.roundName}
                   </h2>
                   <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
-                    Round period: {formatDateTime(selectedRound.startAt)} â†’{" "}
+                    Round period: {formatDateTime(selectedRound.startAt)} →{" "}
                     {formatDateTime(selectedRound.endAt)}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
@@ -335,6 +345,35 @@ export function EventCompetitionPage() {
                 </p>
               </div>
 
+              {requirementsQuery.isLoading && (
+                <div className="flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-5 py-10 text-sm font-bold text-gray-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                  <CircularProgress size={20} />
+                  Loading submission requirements…
+                </div>
+              )}
+
+              {requirementsQuery.isError && (
+                <Alert
+                  severity="error"
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => requirementsQuery.refetch()}
+                      className="rounded px-2 py-1 text-xs font-black uppercase"
+                    >
+                      Retry
+                    </button>
+                  }
+                >
+                  Submission requirements could not be loaded. The submission
+                  page remains disabled until the server contract is available.
+                </Alert>
+              )}
+
+              {requirementsQuery.data && (
+                <SubmissionRequirementsPanel requirements={requirementsQuery.data} />
+              )}
+
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950">
                   <p className="text-xs font-black uppercase text-gray-400">
@@ -361,20 +400,6 @@ export function EventCompetitionPage() {
                   </p>
                 </div>
               </div>
-
-              {!competition.leader && (
-                <Alert severity="info">
-                  Only the team leader can submit or update deliverables. You
-                  can still view round status and instructions here.
-                </Alert>
-              )}
-
-              {selectedRound.submissionLocked && (
-                <Alert severity="warning">
-                  Submission is locked for this round. Your team can view
-                  previous submissions but cannot update them.
-                </Alert>
-              )}
 
               <div className="flex flex-wrap gap-3 pt-2">
                 <button

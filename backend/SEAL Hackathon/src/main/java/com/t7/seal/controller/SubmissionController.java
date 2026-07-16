@@ -4,6 +4,7 @@ import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
+import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
 import com.t7.seal.request.results.DisqualifySubmissionRequest;
 import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.PageResponse;
@@ -44,6 +45,58 @@ public class SubmissionController {
     private final SubmissionService submissionService;
     private final RankingService rankingService;
     private final DisqualificationService disqualificationService;
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get Submission Requirements",
+            description = "Returns the authoritative submission requirements, server upload limits, provider availability, current draft state, and current-user permissions for a team and round.",
+            operationId = "submissionGetRequirements",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Submission requirements returned successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "The round does not belong to the team's event.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The current user is not allowed to view this team's submission requirements.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The team or round was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "An unexpected server error occurred.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @GetMapping("/teams/{teamId}/rounds/{roundId}/submission-requirements")
+    public ResponseEntity<SubmissionRequirementsResponse> getSubmissionRequirements(
+            @Parameter(description = "Unique team identifier.", required = true)
+            @PathVariable UUID teamId,
+            @Parameter(description = "Unique round identifier.", required = true)
+            @PathVariable UUID roundId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                submissionService.getSubmissionRequirements(teamId, roundId, authentication)
+        );
+    }
 
     @PreAuthorize("isAuthenticated()")
     @Operation(
@@ -428,6 +481,46 @@ public class SubmissionController {
                 getSubmissionById(submissionId, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get Submission Attempt History",
+            description = "Returns immutable finalized attempts newest-first for users authorized to view the submission.",
+            operationId = "submissionGetSubmissionAttempts",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Submission attempt history returned successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user cannot view this submission.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The submission was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @GetMapping("/submissions/{submissionId}/attempts")
+    public ResponseEntity<List<SubmissionAttemptResponse>> getSubmissionAttempts(
+            @Parameter(description = "Unique submission identifier.", required = true)
+            @PathVariable UUID submissionId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                submissionService.getSubmissionAttempts(submissionId, authentication)
+        );
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
     @Operation(
             summary = "Get Submission Admin View",
@@ -587,6 +680,51 @@ public class SubmissionController {
 
     @PreAuthorize("isAuthenticated()")
     @Operation(
+            summary = "Begin Submission Resubmission",
+            description = "Reopens a finalized submission as the next draft attempt while preserving its immutable history.",
+            operationId = "submissionBeginResubmission",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "The next draft attempt is ready for editing.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Only the team leader can begin a resubmission.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The submission was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The submission, round, lock, or deadline state prevents resubmission.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @PostMapping("/submissions/{submissionId}/resubmit")
+    public ResponseEntity<SubmissionResponse> beginSubmissionResubmission(
+            @Parameter(description = "Unique submission identifier.", required = true)
+            @PathVariable UUID submissionId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                submissionService.beginSubmissionResubmission(submissionId, authentication)
+        );
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
             summary = "Add Submission Links",
             description = "Add Submission Links through POST /api/v1/submissions/{submissionId}/links. Successful execution returns HTTP 201 with SubmissionResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submissions/**; @PreAuthorize(\"isAuthenticated()\"). Requires a SubmissionLinkRequest request body validated with Jakarta Bean Validation.",
             operationId = "submissionAddSubmissionLinks",
@@ -692,6 +830,57 @@ public class SubmissionController {
             @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.updateSubmissionLink(linkId, request, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Update Submission Evidence Metadata",
+            description = "Updates type, label, primary flag, or display order without changing the evidence URL or storage identity.",
+            operationId = "submissionUpdateSubmissionLinkMetadata",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Submission evidence metadata updated successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "No metadata was provided or a metadata value is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Only the team leader may edit this evidence.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Submission evidence was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The round is closed, locked, or past its submission deadline.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @PatchMapping("/submission-links/{linkId}/metadata")
+    public ResponseEntity<SubmissionLinkResponse> updateSubmissionLinkMetadata(
+            @Parameter(description = "Unique submission evidence identifier.", required = true)
+            @PathVariable UUID linkId,
+            @Valid @RequestBody UpdateSubmissionLinkMetadataRequest request,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                submissionService.updateSubmissionLinkMetadata(linkId, request, authentication)
+        );
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -1093,6 +1282,55 @@ public class SubmissionController {
             @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(submissionService.createSubmissionFileDownloadUrl(linkId, authentication));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Create Submission Attempt File Download URL",
+            description = "Creates a short-lived download URL for authorized immutable attempt evidence.",
+            operationId = "submissionCreateAttemptFileDownloadUrl",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Short-lived attempt evidence download URL created successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "The evidence is not a downloadable uploaded file.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user cannot view this submission.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The submission or attempt evidence was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @GetMapping("/submissions/{submissionId}/attempts/evidence/{evidenceId}/download-url")
+    public ResponseEntity<FileDownloadUrlResponse> createSubmissionAttemptFileDownloadUrl(
+            @Parameter(description = "Unique submission identifier.", required = true)
+            @PathVariable UUID submissionId,
+            @Parameter(description = "Immutable attempt-evidence identifier.", required = true)
+            @PathVariable UUID evidenceId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(submissionService.createSubmissionAttemptFileDownloadUrl(
+                submissionId,
+                evidenceId,
+                authentication
+        ));
     }
 
     @PreAuthorize("isAuthenticated()")

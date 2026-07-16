@@ -65,6 +65,16 @@ public record SubmissionLinkResponse(
                 accessMode = Schema.AccessMode.READ_ONLY
         )
         Long fileSizeBytes,
+        @Schema(description = "Stable file identifier assigned by the source provider.", accessMode = Schema.AccessMode.READ_ONLY)
+        String providerResourceId,
+        @Schema(description = "Provider checksum captured when the file was imported.", accessMode = Schema.AccessMode.READ_ONLY)
+        String providerChecksum,
+        @Schema(
+                description = "Provider modification time captured when the file was imported.",
+                format = "date-time",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        LocalDateTime providerModifiedAt,
         @Schema(
                 description = "API-returned value for repo metadata.",
                 accessMode = Schema.AccessMode.READ_ONLY

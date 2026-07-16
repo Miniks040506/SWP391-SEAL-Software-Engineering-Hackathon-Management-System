@@ -10,5 +10,7 @@ public interface SubmissionFileStorageService {
     UploadedSubmissionFile uploadSubmissionFile(UUID eventId, UUID teamId, UUID roundId, MultipartFile file);
 
     String createDownloadUrl(String objectKey, Duration ttl);
+
+    void deleteSubmissionFile(String objectKey);
 }
 

@@ -1,10 +1,58 @@
+import { useState } from "react";
+import { Button } from "@mui/material";
+import { submissionApi } from "@/api/submission.api";
 import type { SubmissionLinkResponse } from "@/types/submission.types";
 
 type Props = {
   links: SubmissionLinkResponse[];
+  canDelete?: boolean;
+  canEdit?: boolean;
+  deletingLinkId?: string | null;
+  onDelete?: (link: SubmissionLinkResponse) => void;
+  onEdit?: (link: SubmissionLinkResponse) => void;
 };
 
-export function SubmissionLinksPreview({ links }: Props) {
+const formatBytes = (bytes?: number | null) => {
+  if (bytes == null) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+export function SubmissionLinksPreview({
+  links,
+  canDelete = false,
+  canEdit = false,
+  deletingLinkId,
+  onDelete,
+  onEdit,
+}: Props) {
+  const [openingLinkId, setOpeningLinkId] = useState<string | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
+
+  const openStoredFile = async (link: SubmissionLinkResponse) => {
+    setOpeningLinkId(link.id);
+    setOpenError(null);
+    try {
+      const result = await submissionApi.createSubmissionFileDownloadUrl(link.id);
+      const url = new URL(result.downloadUrl);
+      if (url.protocol !== "https:" && url.protocol !== "http:") {
+        throw new Error("The storage provider returned an unsafe download URL.");
+      }
+      const anchor = document.createElement("a");
+      anchor.href = url.toString();
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    } catch (error) {
+      setOpenError((error as { message?: string })?.message || "Evidence could not be opened.");
+    } finally {
+      setOpeningLinkId(null);
+    }
+  };
+
   if (!links || links.length === 0) {
     return <p className="text-sm text-slate-500 dark:text-slate-400 italic">No links provided for this submission.</p>;
   }
@@ -26,14 +74,59 @@ export function SubmissionLinksPreview({ links }: Props) {
               {link.linkType}
             </span>
           </div>
-          <a
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline truncate"
-          >
-            {link.url}
-          </a>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+            {link.originalFileName || link.url}
+          </p>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+            {link.storageProvider && <span>{link.storageProvider.replaceAll("_", " ")}</span>}
+            {link.contentType && <span>{link.contentType}</span>}
+            {formatBytes(link.fileSizeBytes) && <span>{formatBytes(link.fileSizeBytes)}</span>}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {link.storageProvider === "AWS_S3" || link.objectKey ? (
+              <Button
+                size="small"
+                variant="outlined"
+                disabled={openingLinkId === link.id}
+                onClick={() => openStoredFile(link)}
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                {openingLinkId === link.id ? "Opening..." : "Open file"}
+              </Button>
+            ) : (
+              <Button
+                size="small"
+                variant="outlined"
+                component="a"
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Open link
+              </Button>
+            )}
+            {canEdit && onEdit && (
+              <Button
+                size="small"
+                onClick={() => onEdit(link)}
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Edit metadata
+              </Button>
+            )}
+            {canDelete && onDelete && (
+              <Button
+                size="small"
+                color="error"
+                disabled={deletingLinkId === link.id}
+                onClick={() => onDelete(link)}
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Delete
+              </Button>
+            )}
+          </div>
           {link.repoMetadata !== null &&
             typeof link.repoMetadata === "object" &&
             (() => {
@@ -59,6 +152,7 @@ export function SubmissionLinksPreview({ links }: Props) {
           }
         </li>
       ))}
+      {openError && <li className="text-sm text-rose-600 dark:text-rose-400">{openError}</li>}
     </ul>
   );
 }

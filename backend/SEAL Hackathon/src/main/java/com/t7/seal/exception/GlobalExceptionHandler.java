@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
             UnauthorizedException ex,
             HttpServletRequest request
     ) {
-        return error(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        return error(HttpStatus.UNAUTHORIZED, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(ForbiddenException.class)
@@ -69,7 +69,7 @@ public class GlobalExceptionHandler {
             BadRequestException ex,
             HttpServletRequest request
     ) {
-        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return error(HttpStatus.BAD_REQUEST, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(ConflictException.class)
@@ -77,7 +77,7 @@ public class GlobalExceptionHandler {
             ConflictException ex,
             HttpServletRequest request
     ) {
-        return error(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return error(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(ExternalServiceException.class)
@@ -87,6 +87,23 @@ public class GlobalExceptionHandler {
     ) {
         log.error("External service failure for {}", request.getRequestURI(), ex);
         return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ProviderIntegrationException.class)
+    public ResponseEntity<ApiErrorResponse> handleProviderIntegration(
+            ProviderIntegrationException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Provider integration failure. path={} code={}", request.getRequestURI(), ex.getCode());
+        return error(ex.getStatus(), ex.getCode(), ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SubmissionUploadException.class)
+    public ResponseEntity<ApiErrorResponse> handleSubmissionUpload(
+            SubmissionUploadException ex,
+            HttpServletRequest request
+    ) {
+        return error(ex.getStatus(), ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -112,6 +129,7 @@ public class GlobalExceptionHandler {
                 false,
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "VALIDATION_FAILED",
                 "Validation failed.",
                 request.getRequestURI(),
                 java.time.Instant.now(),
@@ -316,6 +334,7 @@ public class GlobalExceptionHandler {
                 false,
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "VALIDATION_FAILED",
                 "Validation failed.",
                 request.getRequestURI(),
                 java.time.Instant.now(),
@@ -338,10 +357,20 @@ public class GlobalExceptionHandler {
             String message,
             HttpServletRequest request
     ) {
+        return error(status, null, message, request);
+    }
+
+    private ResponseEntity<ApiErrorResponse> error(
+            HttpStatus status,
+            String code,
+            String message,
+            HttpServletRequest request
+    ) {
         return ResponseEntity.status(status).body(
                 ApiErrorResponse.of(
                         status.value(),
                         status.getReasonPhrase(),
+                        code,
                         message,
                         request.getRequestURI()
                 )
