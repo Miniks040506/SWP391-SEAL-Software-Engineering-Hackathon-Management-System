@@ -115,7 +115,19 @@ app:
       provider: ${SUBMISSION_STORAGE_PROVIDER:AWS_S3}
     upload:
       max-size-mb: ${SUBMISSION_UPLOAD_MAX_SIZE_MB:25}
+      max-files: ${SUBMISSION_UPLOAD_MAX_FILES:10}
       allowed-content-types: ${SUBMISSION_UPLOAD_ALLOWED_CONTENT_TYPES:application/pdf,application/zip,application/x-zip-compressed,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,image/png,image/jpeg,image/png,text/plain}
+      allowed-extensions: ${SUBMISSION_UPLOAD_ALLOWED_EXTENSIONS:.pdf,.zip,.ppt,.pptx,.mp4,.png,.jpg,.jpeg,.txt}
+    providers:
+      local-file:
+        enabled: ${SUBMISSION_LOCAL_FILE_ENABLED:false}
+        unavailable-message: ${SUBMISSION_LOCAL_FILE_UNAVAILABLE_MESSAGE:Local file upload is disabled. Configure object storage and set SUBMISSION_LOCAL_FILE_ENABLED=true.}
+      google-drive:
+        enabled: ${SUBMISSION_GOOGLE_DRIVE_ENABLED:false}
+        unavailable-message: ${SUBMISSION_GOOGLE_DRIVE_UNAVAILABLE_MESSAGE:Google Drive is not configured. Ask an administrator to configure the Drive OAuth application.}
+      github:
+        enabled: ${SUBMISSION_GITHUB_ENABLED:false}
+        unavailable-message: ${SUBMISSION_GITHUB_UNAVAILABLE_MESSAGE:GitHub repository connection is not configured. Ask an administrator to configure the GitHub OAuth application.}
     repo-metadata:
       enabled: ${REPO_METADATA_ENABLED:true}
 
