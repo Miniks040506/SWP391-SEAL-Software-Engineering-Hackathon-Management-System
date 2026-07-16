@@ -75,6 +75,14 @@ export type SaveSubmissionDraftRequest = {
   links?: CreateSubmissionLinkRequest[];
 };
 
+export type ImportGoogleDriveFileRequest = {
+  fileId: string;
+  linkType: SubmissionLinkType;
+  label?: string;
+  isPrimary?: boolean;
+  displayOrder?: number;
+};
+
 export type UpdateSubmissionRequest = {
   note?: string;
   status?: SubmissionStatus | string;
@@ -142,6 +150,9 @@ export type SubmissionLinkResponse = {
   originalFileName?: string | null;
   contentType?: string | null;
   fileSizeBytes?: number | null;
+  providerResourceId?: string | null;
+  providerChecksum?: string | null;
+  providerModifiedAt?: ISODateTime | null;
   repoMetadata?: RepositoryMetadata | null;
   isPrimary?: boolean;
   displayOrder?: number | null;
@@ -159,6 +170,9 @@ export type SubmissionAttemptEvidenceResponse = {
   originalFileName?: string | null;
   contentType?: string | null;
   fileSizeBytes?: number | null;
+  providerResourceId?: string | null;
+  providerChecksum?: string | null;
+  providerModifiedAt?: ISODateTime | null;
   repoMetadata?: RepositoryMetadata | null;
   isPrimary: boolean;
   displayOrder: number;
