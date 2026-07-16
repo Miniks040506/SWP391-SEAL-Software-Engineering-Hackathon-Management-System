@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.Normalizer;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -61,37 +62,72 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
             UUID roundId,
             MultipartFile file
     ) {
-        validateConfiguration();
-        validateFile(file);
+        if (file == null || file.isEmpty()) {
+            throw SubmissionUploadException.badRequest(
+                    "SUBMISSION_FILE_REQUIRED",
+                    "Submission file is required."
+            );
+        }
 
-        String originalFilename = safeFileName(file.getOriginalFilename());
-        String objectKey = buildObjectKey(eventId, teamId, roundId, originalFilename);
-
-        try (S3Client s3Client = buildClient()) {
-            PutObjectRequest request = PutObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(objectKey)
-                    .contentType(file.getContentType())
-                    .contentLength(file.getSize())
-                    .build();
-
-            s3Client.putObject(request, RequestBody.fromInputStream(
-                    file.getInputStream(),
-                    file.getSize()
-            ));
+        try (InputStream content = file.getInputStream()) {
+            return uploadSubmissionFile(
+                    eventId,
+                    teamId,
+                    roundId,
+                    file.getOriginalFilename(),
+                    file.getContentType(),
+                    file.getSize(),
+                    content
+            );
         } catch (IOException e) {
             throw SubmissionUploadException.badRequest(
                     "SUBMISSION_FILE_UNREADABLE",
                     "Cannot read uploaded submission file."
             );
         }
+    }
+
+    @Override
+    public UploadedSubmissionFile uploadSubmissionFile(
+            UUID eventId,
+            UUID teamId,
+            UUID roundId,
+            String originalFileName,
+            String contentType,
+            long fileSizeBytes,
+            InputStream content
+    ) {
+        validateConfiguration();
+        validateFile(originalFileName, contentType, fileSizeBytes, content);
+
+        String safeOriginalFileName = safeFileName(originalFileName);
+        String objectKey = buildObjectKey(eventId, teamId, roundId, safeOriginalFileName);
+
+        try (S3Client s3Client = buildClient()) {
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(objectKey)
+                    .contentType(contentType)
+                    .contentLength(fileSizeBytes)
+                    .build();
+
+            s3Client.putObject(
+                    request,
+                    RequestBody.fromInputStream(content, fileSizeBytes)
+            );
+        } catch (SdkException exception) {
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_FILE_UPLOAD_FAILED",
+                    "Submission file could not be stored. Check object storage access and retry."
+            );
+        }
 
         return new UploadedSubmissionFile(
                 buildFileUrl(objectKey),
                 objectKey,
-                originalFilename,
-                file.getContentType(),
-                file.getSize()
+                safeOriginalFileName,
+                contentType,
+                fileSizeBytes
         );
     }
 
@@ -159,8 +195,13 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
         }
     }
 
-    private void validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
+    private void validateFile(
+            String originalFileName,
+            String contentType,
+            long fileSizeBytes,
+            InputStream content
+    ) {
+        if (content == null || fileSizeBytes <= 0) {
             throw SubmissionUploadException.badRequest(
                     "SUBMISSION_FILE_REQUIRED",
                     "Submission file is required."
@@ -169,13 +210,12 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
 
         SubmissionProperties.Upload uploadPolicy = submissionProperties.getUpload();
         long maxBytes = uploadPolicy.getMaxSizeBytes();
-        if (file.getSize() > maxBytes) {
+        if (fileSizeBytes > maxBytes) {
             throw SubmissionUploadException.tooLarge(
                     "Submission file exceeds max size of " + uploadPolicy.getMaxSizeMb() + " MB."
             );
         }
 
-        String contentType = file.getContentType();
         if (!uploadPolicy.getAllowedContentTypes().isEmpty() && !isBlank(contentType)) {
             boolean allowed = uploadPolicy.getAllowedContentTypes().stream()
                     .anyMatch(contentType::equalsIgnoreCase);
@@ -185,7 +225,6 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
             }
         }
 
-        String originalFileName = file.getOriginalFilename();
         String extension = fileExtension(originalFileName);
         boolean extensionAllowed = uploadPolicy.getAllowedExtensions().stream()
                 .map(value -> value.toLowerCase(Locale.ROOT))
