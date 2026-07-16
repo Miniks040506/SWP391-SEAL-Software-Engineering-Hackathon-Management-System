@@ -77,7 +77,7 @@ public class GlobalExceptionHandler {
             ConflictException ex,
             HttpServletRequest request
     ) {
-        return error(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return error(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(ExternalServiceException.class)

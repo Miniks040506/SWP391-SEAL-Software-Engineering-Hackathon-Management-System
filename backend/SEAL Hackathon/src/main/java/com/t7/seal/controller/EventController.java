@@ -439,7 +439,7 @@ public class EventController {
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @Operation(
             summary = "Delete Event",
-            description = "Delete Event through DELETE /api/v1/events/{eventId}. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events/*; @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId, authentication)\").",
+            description = "Permanently delete an event only while it is in DRAFT status through DELETE /api/v1/events/{eventId}. Returns HTTP 409 when the event is not a draft or has dependent records. Successful execution returns HTTP 204 without a response body. Access: SecurityConfig role COORDINATOR via matcher /api/v1/events/*; @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId, authentication)\").",
             operationId = "eventDeleteEvent",
             security = @SecurityRequirement(name = "bearerAuth")
     )
@@ -467,7 +467,7 @@ public class EventController {
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "The operation conflicts with the current resource or workflow state.",
+                    description = "Event deletion requires DRAFT status and no dependent records.",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             ),
             @ApiResponse(
