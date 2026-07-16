@@ -171,6 +171,51 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
+    public void sendUserAccountSetupEmail(
+            String to,
+            String fullName,
+            String code,
+            LocalDateTime expiresAt,
+            String setupPath
+    ) {
+        String safeName = escapeHtml(displayName(fullName));
+        String safeCode = escapeHtml(code);
+        String safeExpiresAt = escapeHtml(expiresAt.format(
+                DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+        ));
+        String setupUrl = setupPath.startsWith("http")
+                ? setupPath
+                : frontendUrl + setupPath;
+
+        String html = buildBaseTemplate(
+                "SEAL Account Setup",
+                "Set your password to activate access",
+                """
+                        <p style="margin:0 0 16px;color:#475569;font-size:15px;line-height:1.7;">
+                            Hello <strong>%s</strong>,
+                        </p>
+                        <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.7;">
+                            A SEAL administrator created an account for you. Use the one-time code below to set your password before <strong>%s</strong>.
+                        </p>
+                        <div style="margin:26px 0;text-align:center;">
+                            <div style="display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:18px;padding:18px 30px;">
+                                <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;color:#2563eb;text-transform:uppercase;margin-bottom:8px;">Setup Code</div>
+                                <div style="font-size:30px;font-weight:900;letter-spacing:0.2em;color:#0f172a;">%s</div>
+                            </div>
+                        </div>
+                        <div style="text-align:center;margin-top:28px;">
+                            <a href="%s" style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;padding:13px 24px;border-radius:12px;">Set password</a>
+                        </div>
+                        <p style="margin:22px 0 0;color:#64748b;font-size:13px;line-height:1.6;">
+                            This code is single-use. If you were not expecting this account, contact the SEAL support team.
+                        </p>
+                        """.formatted(safeName, safeExpiresAt, safeCode, escapeHtml(setupUrl))
+        );
+
+        sendHtml(to, appName + " - Account Setup", html);
+    }
+
+    @Override
     public void sendOAuthLoginSuccessEmail(
             String to,
             String fullName,

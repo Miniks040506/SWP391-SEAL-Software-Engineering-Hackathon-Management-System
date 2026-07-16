@@ -96,6 +96,8 @@ app:
   password-reset-expiration-minutes: 15
   password-history:
     limit: 5
+  user-account:
+    setup-expiration-hours: ${USER_ACCOUNT_SETUP_EXPIRATION_HOURS:24}
   guest-judge:
     deactivation-delay-hours: 24
     deactivation-initial-delay-ms: 60000

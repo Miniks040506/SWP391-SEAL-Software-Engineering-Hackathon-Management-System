@@ -267,7 +267,7 @@ public class UserController {
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @Operation(
             summary = "Create User",
-            description = "Create User through POST /api/v1/users. Successful execution returns HTTP 201 with UserDetailResponse. Access: SecurityConfig roles ADMIN, COORDINATOR via matcher /api/v1/users; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\"). Requires a CreateUserRequest request body validated with Jakarta Bean Validation.",
+            description = "Create a non-student user and send a single-use password setup code. Coordinators may create only JUDGE or MENTOR accounts. No credential is returned or logged.",
             operationId = "userCreateUser",
             security = @SecurityRequirement(name = "bearerAuth")
     )
