@@ -1,5 +1,7 @@
+import { useState } from "react";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import EventIcon from "@mui/icons-material/Event";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import { PublicStatusBadge } from "@/features/events/components/PublicStatusBadge";
 import {
@@ -21,6 +23,14 @@ export function EventCard({
   onGoCompeting,
   canCompete = false,
 }: EventCardProps) {
+  const [bannerFailed, setBannerFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
+
+  const bannerSrc =
+    event.bannerUrl && !bannerFailed
+      ? event.bannerUrl
+      : `https://picsum.photos/seed/seal-event-${event.id}/640/280`;
+
   const competitionPeriod = `${formatShortDate(
     event.competitionStartAt,
   )} - ${formatShortDate(event.competitionEndAt)}`;
@@ -30,8 +40,32 @@ export function EventCard({
       <button
         type="button"
         onClick={() => onClick(event)}
-        className="flex flex-1 flex-col p-7 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500"
+        className="flex flex-1 flex-col text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500"
       >
+        <div className="relative h-36 w-full overflow-hidden">
+          {!fallbackFailed ? (
+            <img
+              src={bannerSrc}
+              alt={`${event.name} banner`}
+              loading="lazy"
+              onError={() =>
+                bannerSrc === event.bannerUrl
+                  ? setBannerFailed(true)
+                  : setFallbackFailed(true)
+              }
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:group-hover:scale-100"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-blue-50 via-white to-sky-50 dark:from-blue-500/15 dark:via-slate-900 dark:to-slate-900">
+              <ImageOutlinedIcon
+                className="text-blue-200 dark:text-blue-500/30"
+                style={{ fontSize: 40 }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-1 flex-col p-7">
         <div className="mb-5 flex items-center justify-between gap-3">
           <PublicStatusBadge status={event.status} />
           <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
@@ -49,6 +83,7 @@ export function EventCard({
         <p className="mt-4 text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">
           Competition: {competitionPeriod}
         </p>
+        </div>
       </button>
 
       <footer className="mx-7 flex items-center justify-between border-t border-gray-100 py-5 text-xs font-semibold text-gray-400 dark:border-slate-800">
