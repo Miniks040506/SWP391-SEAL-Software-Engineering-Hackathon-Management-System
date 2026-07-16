@@ -43,16 +43,13 @@ export function EventCriteriaStep({ onBack, isSubmitting }: EventCriteriaStepPro
         </h2>
 
         <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-          Add optional scoring criteria before creating the event. You can also skip this step and manage event criteria later.
+          Choose scoring templates or define custom criteria. You can also skip
+          this step and manage criteria after creating the event.
         </p>
       </div>
 
       <div className="space-y-5 px-7 py-6">
         {arrayErrorMessage && <Alert severity="error">{arrayErrorMessage}</Alert>}
-
-        <Alert severity="info">
-          Backend creates event criteria with <b>POST /events/:eventId/criteria</b>. Template-based criteria use a global <b>criteriaId</b>; custom criteria require <b>nameOverride</b> and <b>isTechnicalOverride</b>.
-        </Alert>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

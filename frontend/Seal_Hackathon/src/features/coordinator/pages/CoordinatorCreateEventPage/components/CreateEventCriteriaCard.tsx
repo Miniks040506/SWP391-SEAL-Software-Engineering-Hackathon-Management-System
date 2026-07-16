@@ -45,12 +45,17 @@ export function CreateEventCriteriaCard({
                     </p>
                     <Chip
                         size="small"
-                        label={isCustom ? "Custom" : " Template"}
+                        label={isCustom ? "Custom" : "Template"}
                         sx={{ fontWeight: 800 }}
                     />
                 </div>
                 
-                <IconButton color="error" onClick={() => onRemove(index)}>
+                <IconButton
+                    type="button"
+                    color="error"
+                    onClick={() => onRemove(index)}
+                    aria-label={`Remove criteria ${index + 1}`}
+                >
                     <DeleteOutlineOutlinedIcon />
                 </IconButton>
             </div>
@@ -114,7 +119,7 @@ export function CreateEventCriteriaCard({
                 
                 {(isCustom || item?.nameOverride) && (
                     <TextField
-                        label={isCustom ? " Custom criteria name" : "Name override"}
+                        label={isCustom ? "Custom criteria name" : "Name override"}
                         error={Boolean(fieldErrors?.nameOverride)}
                         helperText={fieldErrors?.nameOverride?.message}
                         size="small"
