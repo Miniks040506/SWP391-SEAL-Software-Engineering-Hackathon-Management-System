@@ -8,8 +8,10 @@ import com.t7.seal.exception.ProviderIntegrationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -18,6 +20,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -97,6 +100,65 @@ public class GoogleDriveOAuthHttpClient implements GoogleDriveOAuthClient {
         );
     }
 
+    @Override
+    public DriveFile fetchFile(String accessToken, String fileId) {
+        ProviderOAuthProperties.GoogleDrive google = configuredGoogle();
+        String encodedFileId = encodedFileId(fileId);
+        URI uri = URI.create(trimRight(google.getApiBaseUrl())
+                + "/drive/v3/files/" + encodedFileId
+                + "?supportsAllDrives=true&fields=id,name,mimeType,size,webViewLink,"
+                + "modifiedTime,md5Checksum,trashed,capabilities(canDownload)");
+        JsonNode file = responseJson(send(authorizedGet(uri, accessToken)));
+        if (file.path("trashed").asBoolean(false)) {
+            throw ProviderIntegrationException.fileNotFound();
+        }
+
+        String returnedId = text(file, "id");
+        String name = text(file, "name");
+        String mimeType = text(file, "mimeType");
+        if (returnedId == null || name == null || mimeType == null) {
+            throw ProviderIntegrationException.invalidResponse();
+        }
+        return new DriveFile(
+                returnedId,
+                name,
+                mimeType,
+                longValue(file, "size"),
+                uriValue(file, "webViewLink"),
+                text(file, "md5Checksum"),
+                instantValue(file, "modifiedTime"),
+                file.path("capabilities").path("canDownload").asBoolean(false)
+        );
+    }
+
+    @Override
+    public InputStream downloadFile(String accessToken, String fileId) {
+        ProviderOAuthProperties.GoogleDrive google = configuredGoogle();
+        URI uri = URI.create(trimRight(google.getApiBaseUrl())
+                + "/drive/v3/files/" + encodedFileId(fileId)
+                + "?alt=media&supportsAllDrives=true");
+        try {
+            HttpResponse<InputStream> response = httpClient.send(
+                    authorizedGet(uri, accessToken),
+                    HttpResponse.BodyHandlers.ofInputStream()
+            );
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                try (InputStream body = response.body()) {
+                    throw providerError(
+                            response.statusCode(),
+                            new String(body.readAllBytes(), StandardCharsets.UTF_8)
+                    );
+                }
+            }
+            return response.body();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw ProviderIntegrationException.unavailable("Google Drive download was interrupted. Try again.");
+        } catch (IOException exception) {
+            throw ProviderIntegrationException.unavailable("Google Drive file download failed. Try again.");
+        }
+    }
+
     private TokenGrant requestToken(
             ProviderOAuthProperties.GoogleDrive google,
             Map<String, String> form
@@ -158,6 +220,9 @@ public class GoogleDriveOAuthHttpClient implements GoogleDriveOAuthClient {
         if (status == 403) {
             return ProviderIntegrationException.forbidden();
         }
+        if (status == 404 || status == 410) {
+            return ProviderIntegrationException.fileNotFound();
+        }
         return ProviderIntegrationException.unavailable("Google Drive returned an unavailable-provider response.");
     }
 
@@ -194,6 +259,53 @@ public class GoogleDriveOAuthHttpClient implements GoogleDriveOAuthClient {
 
     private String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private HttpRequest authorizedGet(URI uri, String accessToken) {
+        return HttpRequest.newBuilder(uri)
+                .timeout(REQUEST_TIMEOUT)
+                .header("Accept", "application/json")
+                .header("Authorization", "Bearer " + required(accessToken, "Access token"))
+                .GET()
+                .build();
+    }
+
+    private String encodedFileId(String fileId) {
+        String value = required(fileId, "Google Drive file ID").trim();
+        if (value.length() > 255 || !value.matches("[A-Za-z0-9_-]+")) {
+            throw new IllegalArgumentException("Google Drive file ID is invalid.");
+        }
+        return UriUtils.encodePathSegment(value, StandardCharsets.UTF_8);
+    }
+
+    private Long longValue(JsonNode node, String field) {
+        String value = text(node, field);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException exception) {
+            throw ProviderIntegrationException.invalidResponse();
+        }
+    }
+
+    private URI uriValue(JsonNode node, String field) {
+        String value = text(node, field);
+        try {
+            return value == null ? null : URI.create(value);
+        } catch (IllegalArgumentException exception) {
+            throw ProviderIntegrationException.invalidResponse();
+        }
+    }
+
+    private Instant instantValue(JsonNode node, String field) {
+        String value = text(node, field);
+        try {
+            return value == null ? null : Instant.parse(value);
+        } catch (DateTimeParseException exception) {
+            throw ProviderIntegrationException.invalidResponse();
+        }
     }
 
     private ProviderOAuthProperties.GoogleDrive configuredGoogle() {
