@@ -89,6 +89,15 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(ProviderIntegrationException.class)
+    public ResponseEntity<ApiErrorResponse> handleProviderIntegration(
+            ProviderIntegrationException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Provider integration failure. path={} code={}", request.getRequestURI(), ex.getCode());
+        return error(ex.getStatus(), ex.getCode(), ex.getMessage(), request);
+    }
+
     @ExceptionHandler(SubmissionUploadException.class)
     public ResponseEntity<ApiErrorResponse> handleSubmissionUpload(
             SubmissionUploadException ex,
