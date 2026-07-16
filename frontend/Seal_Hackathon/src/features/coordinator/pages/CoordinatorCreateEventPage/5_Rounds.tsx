@@ -15,7 +15,7 @@ import {
   MenuItem,
   TextField,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import type { CreateAdvanceRuleRequest } from "@/types/round.types";
@@ -82,8 +82,8 @@ function AdvanceRuleModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (rule: any) => void;
-  tracks: any[];
+  onSave: (rule: CreateAdvanceRuleRequest) => void;
+  tracks: TrackFormValues[];
 }) {
   const [ruleType, setRuleType] = useState<string>("TOP_N");
   const [trackId, setTrackId] = useState<string>("");
@@ -174,9 +174,9 @@ function AdvanceRuleModal({
           <MenuItem value="">
             <em>Global (All Tracks)</em>
           </MenuItem>
-          {tracks.map((t: any) => (
-            <MenuItem key={t.id} value={t.id}>
-              {t.trackName || "Unnamed track"}
+          {tracks.map((track) => (
+            <MenuItem key={track.id} value={track.id}>
+              {track.trackName || "Unnamed track"}
             </MenuItem>
           ))}
         </TextField>
@@ -260,23 +260,47 @@ const getXButtonStyle = (ruleType: string) => {
   }
 };
 
-function AdvanceRulesSection({ roundIndex, tracks, register }: any) {
+type AdvanceRulesSectionProps = {
+  roundIndex: number;
+  tracks: TrackFormValues[];
+  isFinal: boolean;
+};
+
+function AdvanceRulesSection({
+  roundIndex,
+  tracks,
+  isFinal,
+}: AdvanceRulesSectionProps) {
   const { control } = useFormContext<CreateEventFormValues>();
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray<
+    CreateEventFormValues,
+    `rounds.${number}.advanceRules`,
+    "fieldId"
+  >({
     control,
-    name: `rounds.${roundIndex}.advanceRules` as any,
+    name: `rounds.${roundIndex}.advanceRules`,
     keyName: "fieldId",
   });
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
-    <div className="col-span-1 md:col-span-2 mt-2 border-t border-slate-200 pt-4 dark:border-slate-700">
-      <div className="flex items-center justify-between mb-4">
+    <div className="col-span-1 mt-2 border-t border-slate-200 pt-4 md:col-span-2 dark:border-slate-700">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <FormControlLabel
-          control={<Checkbox {...register(`rounds.${roundIndex}.isFinal`)} />}
+          control={
+            <Checkbox
+              checked={Boolean(isFinal)}
+              disabled
+              slotProps={{
+                input: {
+                  "aria-label": "Final round is assigned automatically",
+                },
+              }}
+            />
+          }
           label={
             <span className="font-semibold text-slate-800 dark:text-slate-200">
-              Final round
+              Final round (automatic)
             </span>
           }
         />
@@ -296,10 +320,10 @@ function AdvanceRulesSection({ roundIndex, tracks, register }: any) {
           No advance rules configured for this round.
         </p>
       ) : (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {fields.map((field: any, index: number) => {
+        <div className="mt-3 flex flex-wrap gap-3">
+          {fields.map((field, index) => {
             const trackName = field.trackId
-              ? tracks.find((t: any) => t.id === field.trackId)?.trackName ||
+              ? tracks.find((track) => track.id === field.trackId)?.trackName ||
                 "Unknown track"
               : "Global";
             const val =
@@ -312,22 +336,24 @@ function AdvanceRulesSection({ roundIndex, tracks, register }: any) {
             return (
               <div
                 key={field.fieldId}
-                className={`relative inline-flex group items-center gap-2 px-3.5 py-1.5 rounded-full border font-medium text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default ${getRuleChipStyle(field.ruleType)}`}
+                className={`group relative inline-flex max-w-full cursor-default items-center gap-2 rounded-full border py-1.5 pr-7 pl-3.5 text-sm font-medium shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${getRuleChipStyle(field.ruleType)}`}
               >
                 <span>
-                  {field.ruleType} ┬╖ {val}
+                  {field.ruleType} · {val}
                 </span>
                 {field.trackId && (
                   <span className="text-xs opacity-70">({trackName})</span>
                 )}
                 <button
+                  type="button"
+                  aria-label={`Remove ${field.ruleType} advance rule`}
                   className={`absolute -top-2 -right-2 w-5 h-5 rounded-full items-center justify-center hidden group-hover:flex transition-all duration-150 shadow-sm font-bold text-xs ${getXButtonStyle(field.ruleType)}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     remove(index);
                   }}
                 >
-                  ├ù
+                  ×
                 </button>
               </div>
             );
@@ -339,7 +365,7 @@ function AdvanceRulesSection({ roundIndex, tracks, register }: any) {
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           tracks={tracks}
-          onSave={(rule: any) => append(rule)}
+          onSave={(rule) => append(rule)}
         />
       )}
     </div>
@@ -350,6 +376,7 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
   const {
     control,
     register,
+    setValue,
     formState: { errors },
   } = useFormContext<CreateEventFormValues>();
 
@@ -360,6 +387,12 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
     name: "rounds",
     keyName: "fieldId",
   });
+
+  useEffect(() => {
+    fields.forEach((_field, index) => {
+      setValue(`rounds.${index}.orderIndex`, index + 1);
+    });
+  }, [fields, setValue]);
 
   const arrayErrorMessage = getArrayErrorMessage(errors.rounds);
 
@@ -447,13 +480,13 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                   />
 
                   <TextField
-                    label="Order index"
+                    label="Round order"
                     type="number"
                     fullWidth
+                    value={index + 1}
                     sx={textFieldSx}
-                    error={Boolean(roundErrors?.orderIndex)}
-                    helperText={roundErrors?.orderIndex?.message}
-                    {...register(`rounds.${index}.orderIndex`)}
+                    helperText="Automatically follows this round's position."
+                    slotProps={{ input: { readOnly: true } }}
                   />
 
                   <TextField
@@ -504,7 +537,7 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                   <AdvanceRulesSection
                     roundIndex={index}
                     tracks={tracks}
-                    register={register}
+                    isFinal={index === fields.length - 1}
                   />
                 </div>
               </div>
@@ -515,7 +548,7 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
             type="button"
             variant="outlined"
             startIcon={<AddOutlinedIcon />}
-            onClick={() => append(createEmptyRound(fields.length))}
+            onClick={() => append(createEmptyRound(fields.length + 1))}
             sx={{
               borderRadius: "12px",
               textTransform: "none",
@@ -578,7 +611,7 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                         </div>
                       </div>
                       <p className="mt-1 text-xs font-medium text-slate-500">
-                        Period: {formatRoundTime(round.startAt)} â†’{" "}
+                        Period: {formatRoundTime(round.startAt)} →{" "}
                         {formatRoundTime(round.endAt)}
                       </p>
                       <p className="mt-1 text-xs font-medium text-slate-500">
