@@ -481,6 +481,46 @@ public class SubmissionController {
                 getSubmissionById(submissionId, authentication));
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get Submission Attempt History",
+            description = "Returns immutable finalized attempts newest-first for users authorized to view the submission.",
+            operationId = "submissionGetSubmissionAttempts",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Submission attempt history returned successfully.",
+                    useReturnTypeSchema = true
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required or the access token is invalid.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "The authenticated user cannot view this submission.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "The submission was not found.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            )
+    })
+    @GetMapping("/submissions/{submissionId}/attempts")
+    public ResponseEntity<List<SubmissionAttemptResponse>> getSubmissionAttempts(
+            @Parameter(description = "Unique submission identifier.", required = true)
+            @PathVariable UUID submissionId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                submissionService.getSubmissionAttempts(submissionId, authentication)
+        );
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN','COORDINATOR')")
     @Operation(
             summary = "Get Submission Admin View",

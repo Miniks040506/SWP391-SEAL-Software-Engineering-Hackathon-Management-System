@@ -51,6 +51,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private final SubmissionRepository submissionRepository;
     private final SubmissionLinkRepository submissionLinkRepository;
+    private final SubmissionAttemptRepository submissionAttemptRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
     private final RoundRepository roundRepository;
@@ -330,6 +331,22 @@ public class SubmissionServiceImpl implements SubmissionService {
         ensureCanViewSubmission(submission, authentication);
 
         return toSubmissionDetailResponse(submission);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SubmissionAttemptResponse> getSubmissionAttempts(
+            UUID submissionId,
+            Authentication authentication
+    ) {
+        Submission submission = getSubmission(submissionId);
+        ensureCanViewSubmission(submission, authentication);
+
+        return submissionAttemptRepository
+                .findBySubmissionIdOrderByAttemptNumberDesc(submissionId)
+                .stream()
+                .map(this::toSubmissionAttemptResponse)
+                .toList();
     }
 
     @Override
@@ -1187,6 +1204,51 @@ public class SubmissionServiceImpl implements SubmissionService {
                 link.getDisplayOrder(),
                 link.getCreatedAt(),
                 link.getUpdatedAt()
+        );
+    }
+
+    private SubmissionAttemptResponse toSubmissionAttemptResponse(SubmissionAttempt attempt) {
+        List<SubmissionAttemptEvidenceResponse> evidence = attempt.getLinks()
+                .stream()
+                .map(this::toSubmissionAttemptEvidenceResponse)
+                .toList();
+
+        return new SubmissionAttemptResponse(
+                attempt.getId(),
+                attempt.getSubmission().getId(),
+                attempt.getAttemptNumber(),
+                attempt.getNote(),
+                attempt.getStatus().name(),
+                attempt.getSubmittedAt(),
+                attempt.getCreatedAt(),
+                evidence
+        );
+    }
+
+    private SubmissionAttemptEvidenceResponse toSubmissionAttemptEvidenceResponse(
+            SubmissionAttemptLink evidence
+    ) {
+        SubmissionStorageProvider provider = evidence.getStorageProvider() == null
+                ? SubmissionStorageProvider.EXTERNAL_URL
+                : evidence.getStorageProvider();
+        String safeUrl = provider == SubmissionStorageProvider.AWS_S3
+                ? null
+                : evidence.getUrl();
+
+        return new SubmissionAttemptEvidenceResponse(
+                evidence.getId(),
+                evidence.getSourceLinkId(),
+                evidence.getLinkType().name(),
+                safeUrl,
+                evidence.getLabel(),
+                provider.name(),
+                evidence.getOriginalFileName(),
+                evidence.getContentType(),
+                evidence.getFileSizeBytes(),
+                evidence.getRepoMetadata(),
+                evidence.getIsPrimary(),
+                evidence.getDisplayOrder(),
+                evidence.getCreatedAt()
         );
     }
 
