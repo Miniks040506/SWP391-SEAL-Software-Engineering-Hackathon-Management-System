@@ -59,7 +59,7 @@ public class ProviderOAuthConnection {
     private LocalDateTime tokenExpiresAt;
 
     @CreationTimestamp
-    @Column(name = "connected_at", nullable = false, updatable = false)
+    @Column(name = "connected_at", nullable = false)
     private LocalDateTime connectedAt;
 
     @UpdateTimestamp
