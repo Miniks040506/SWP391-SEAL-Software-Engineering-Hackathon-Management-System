@@ -66,6 +66,15 @@ public class SubmissionAttemptLink {
     @Column(name = "file_size_bytes", updatable = false)
     private Long fileSizeBytes;
 
+    @Column(name = "provider_resource_id", length = 255, updatable = false)
+    private String providerResourceId;
+
+    @Column(name = "provider_checksum", length = 128, updatable = false)
+    private String providerChecksum;
+
+    @Column(name = "provider_modified_at", updatable = false)
+    private LocalDateTime providerModifiedAt;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "repo_metadata", columnDefinition = "jsonb", updatable = false)
     private RepositoryMetadata repoMetadata;
