@@ -93,7 +93,8 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(
                                 HttpMethod.GET,
-                                API + "/integrations/google-drive/callback"
+                                API + "/integrations/google-drive/callback",
+                                API + "/integrations/github/callback"
                         ).permitAll()
 
                         // Public Read
