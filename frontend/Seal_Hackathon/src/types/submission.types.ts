@@ -314,16 +314,6 @@ export type TeamDetailedScoreResponse = {
   criteriaScores: CriterionAverageScoreResponse[];
 };
 
-// Added more
-export type SubmissionHistoryEntry = {
-  id: string;
-  submissionNumber: number;
-  status: string;
-  submittedAt: string | null;
-  linkCount: number;
-  note?: string;
-};
-
 export type RequiredLinkConfig = {
   linkType: string;
   label: string;
