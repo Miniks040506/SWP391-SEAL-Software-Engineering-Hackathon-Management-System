@@ -62,4 +62,20 @@ public class ProviderIntegrationException extends RuntimeException {
                 "Connect Google Drive before choosing a file."
         );
     }
+
+    public static ProviderIntegrationException fileNotFound() {
+        return new ProviderIntegrationException(
+                HttpStatus.NOT_FOUND,
+                "GOOGLE_DRIVE_FILE_NOT_FOUND",
+                "The selected Google Drive file no longer exists or is not accessible."
+        );
+    }
+
+    public static ProviderIntegrationException fileNotDownloadable() {
+        return new ProviderIntegrationException(
+                HttpStatus.CONFLICT,
+                "GOOGLE_DRIVE_FILE_NOT_DOWNLOADABLE",
+                "The selected Google Drive file cannot be downloaded. Choose a regular downloadable file."
+        );
+    }
 }
