@@ -1,6 +1,7 @@
 package com.t7.seal.service;
 
 import com.t7.seal.config.SubmissionProperties;
+import com.t7.seal.config.ProviderOAuthProperties;
 import com.t7.seal.domain.SubmissionInputSource;
 import com.t7.seal.domain.SubmissionLinkType;
 import com.t7.seal.entities.SubmissionLink;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class SubmissionRequirementCatalog {
 
     private final SubmissionProperties properties;
+    private final ProviderOAuthProperties providerOAuthProperties;
 
     public Evaluation evaluate(
             Collection<SubmissionLinkType> configuredRequiredTypes,
@@ -98,16 +100,42 @@ public class SubmissionRequirementCatalog {
                         localFileAvailable ? "Local file upload is available."
                                 : localFile.getUnavailableMessage()
                 ),
-                unavailableIntegration(
-                        SubmissionInputSource.GOOGLE_DRIVE,
-                        providers.getGoogleDrive(),
-                        "Google Drive"
-                ),
+                googleDriveAvailability(providers.getGoogleDrive()),
                 unavailableIntegration(
                         SubmissionInputSource.GITHUB,
                         providers.getGithub(),
                         "GitHub"
                 )
+        );
+    }
+
+    public boolean supportsSource(
+            SubmissionLinkType type,
+            SubmissionInputSource source
+    ) {
+        return type != null
+                && source != null
+                && allowedSources(type).contains(source.name());
+    }
+
+    private SubmissionProviderAvailabilityResponse googleDriveAvailability(
+            SubmissionProperties.ProviderAvailability configuration
+    ) {
+        if (!configuration.isEnabled()) {
+            return new SubmissionProviderAvailabilityResponse(
+                    SubmissionInputSource.GOOGLE_DRIVE.name(),
+                    false,
+                    configuration.getUnavailableMessage()
+            );
+        }
+
+        boolean available = providerOAuthProperties.isGoogleDriveConfigured();
+        return new SubmissionProviderAvailabilityResponse(
+                SubmissionInputSource.GOOGLE_DRIVE.name(),
+                available,
+                available
+                        ? "Google Drive file selection and snapshot import are available."
+                        : providerOAuthProperties.googleDriveConfigurationMessage()
         );
     }
 
