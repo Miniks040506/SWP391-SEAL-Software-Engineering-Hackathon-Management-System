@@ -155,7 +155,7 @@ export function SubmissionFormPage() {
   const [items, setItems] = useState<StorageItem[]>([]);
   const [currentPath, setCurrentPath] = useState("/");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<"icon" | "list" | "tree">("icon");
+  const [viewMode, setViewMode] = useState<"icon" | "list">("icon");
 
   const [links, setLinks] = useState<ResourceLinkDraft[]>(() => [
     createResourceLinkDraft(),
@@ -713,68 +713,6 @@ export function SubmissionFormPage() {
     [submission],
   );
 
-  const renderTree = (path: string, depth: number = 0) => {
-    const children = items.filter((i) => i.path === path);
-    if (children.length === 0) return null;
-
-    return (
-      <ul className={`${depth > 0 ? "pl-6 relative mt-1.5" : "space-y-2"}`}>
-        {depth > 0 && (
-          <div className="absolute left-2.25 top-0 bottom-4 w-px border-l border-dotted border-slate-300 dark:border-slate-600"></div>
-        )}
-        {children.map((item) => {
-          const itemPath =
-            path === "/" ? `/${item.name}` : `${path}/${item.name}`;
-          return (
-            <li key={item.id} className="relative group flex flex-col">
-              {depth > 0 && (
-                <div className="absolute -left-2.75 top-3 w-3 border-t border-dotted border-slate-300 dark:border-slate-600"></div>
-              )}
-              <div className="flex items-center gap-2.5 py-1">
-                {item.type === "folder" ? (
-                  <svg
-                    className="w-4.5 h-4.5 text-slate-800 dark:text-slate-200 shrink-0"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-                  </svg>
-                ) : (
-                  <svg
-                    className="w-4.5 h-4.5 text-slate-500 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M7 3v18h10V8l-5-5H7z" />
-                    <path d="M12 3v5h5" />
-                  </svg>
-                )}
-                <span
-                  onClick={() =>
-                    item.type === "folder"
-                      ? navigateToFolder(item.name)
-                      : openEditModal(item)
-                  }
-                  className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer text-[13px] truncate"
-                >
-                  {item.name}
-                </span>
-                {item.type === "file" && (
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {submissionTypeLabel(item.linkType)}
-                  </span>
-                )}
-              </div>
-              {item.type === "folder" && renderTree(itemPath, depth + 1)}
-            </li>
-          );
-        })}
-      </ul>
-    );
-  };
-
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -968,55 +906,40 @@ export function SubmissionFormPage() {
                           <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
                         </svg>
                       </button>
-                      <button
-                        onClick={() => setViewMode("tree")}
-                        className={`w-8 h-8 flex items-center justify-center border rounded-lg transition-colors ${viewMode === "tree" ? "bg-slate-200 border-slate-300 dark:bg-slate-600 dark:border-slate-500 text-blue-600 dark:text-blue-400" : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"}`}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M3 3h6v6H3zm2 2v2h2V5zM15 3h6v6h-6zm2 2v2h2V5zM9 15h6v6H9zm2 2v2h2v-2zM5 11v8h2v-8zM11 5h2v2h-2zM11 17h-2v-2h2z" />
-                        </svg>
-                      </button>
                     </div>
                   </div>
 
-                  {viewMode !== "tree" && (
-                    <div className="bg-white dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 p-2 flex items-center flex-wrap gap-2 text-sm">
-                      <div
-                        className="flex items-center gap-1.5 cursor-pointer text-blue-600 dark:text-blue-400 hover:underline"
-                        onClick={() => setCurrentPath("/")}
+                  <div className="bg-white dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 p-2 flex items-center flex-wrap gap-2 text-sm">
+                    <div
+                      className="flex items-center gap-1.5 cursor-pointer text-blue-600 dark:text-blue-400 hover:underline"
+                      onClick={() => setCurrentPath("/")}
+                    >
+                      <svg
+                        className="w-5 h-5 text-slate-800 dark:text-slate-300"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
                       >
-                        <svg
-                          className="w-5 h-5 text-slate-800 dark:text-slate-300"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-                        </svg>
-                        <span className="font-semibold">Files</span>
-                      </div>
-                      {currentPath
-                        .split("/")
-                        .filter(Boolean)
-                        .map((part, idx, arr) => {
-                          const path = "/" + arr.slice(0, idx + 1).join("/");
-                          return (
-                            <div
-                              key={path}
-                              className="flex items-center gap-1.5 cursor-pointer text-blue-600 dark:text-blue-400 hover:underline"
-                              onClick={() => setCurrentPath(path)}
-                            >
-                              <span className="text-slate-400">/</span>
-                              <span className="font-semibold">{part}</span>
-                            </div>
-                          );
-                        })}
+                        <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+                      </svg>
+                      <span className="font-semibold">Files</span>
                     </div>
-                  )}
+                    {currentPath
+                      .split("/")
+                      .filter(Boolean)
+                      .map((part, idx, arr) => {
+                        const path = "/" + arr.slice(0, idx + 1).join("/");
+                        return (
+                          <div
+                            key={path}
+                            className="flex items-center gap-1.5 cursor-pointer text-blue-600 dark:text-blue-400 hover:underline"
+                            onClick={() => setCurrentPath(path)}
+                          >
+                            <span className="text-slate-400">/</span>
+                            <span className="font-semibold">{part}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
 
                   <div
                     className={`flex-1 relative ${dragActive ? "bg-blue-50 dark:bg-blue-900/20" : "bg-transparent"} overflow-auto cursor-pointer p-4`}
@@ -1028,7 +951,7 @@ export function SubmissionFormPage() {
                       if (canEdit && currentItems.length === 0) openPicker();
                     }}
                   >
-                    {currentItems.length === 0 && viewMode !== "tree" ? (
+                    {currentItems.length === 0 ? (
                       <div className="absolute inset-4 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 rounded-xl bg-white/50 dark:bg-slate-800/20 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
                         <div className="w-14 h-14 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center mb-4 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800">
                           <svg
@@ -1212,9 +1135,6 @@ export function SubmissionFormPage() {
                           </table>
                         )}
 
-                        {viewMode === "tree" && (
-                          <div className="p-4">{renderTree("/")}</div>
-                        )}
                       </div>
                     )}
                   </div>
