@@ -80,6 +80,8 @@ export const TeamDetailPage = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
+  const [transferCandidate, setTransferCandidate] =
+    useState<TeamMemberResponse | null>(null);
 
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
@@ -206,8 +208,23 @@ export const TeamDetailPage = () => {
   };
 
   const handleTransferLeader = (member: TeamMemberResponse) => {
-    if (!window.confirm(`Transfer leadership to ${member.fullName}?`)) return;
-    transferLeaderMutation.mutate({ newLeaderUserId: member.userId });
+    transferLeaderMutation.reset();
+    setTransferCandidate(member);
+  };
+
+  const handleCloseTransferDialog = () => {
+    if (transferLeaderMutation.isPending) return;
+    setTransferCandidate(null);
+    transferLeaderMutation.reset();
+  };
+
+  const handleConfirmTransfer = () => {
+    if (!transferCandidate || isTeamRegistered) return;
+
+    transferLeaderMutation.mutate(
+      { newLeaderUserId: transferCandidate.userId },
+      { onSuccess: () => setTransferCandidate(null) },
+    );
   };
 
   const handleLeaveTeam = async () => {
@@ -845,6 +862,63 @@ export const TeamDetailPage = () => {
             </Button>
           </DialogActions>
         </form>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(transferCandidate)}
+        onClose={handleCloseTransferDialog}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby="transfer-leader-dialog-title"
+      >
+        <DialogTitle id="transfer-leader-dialog-title" sx={{ fontWeight: 900 }}>
+          Transfer Team Leadership
+        </DialogTitle>
+        <DialogContent dividers className="space-y-4">
+          <Alert severity="warning">
+            The new leader will receive all team-management permissions. You
+            will remain on the team as a regular member.
+          </Alert>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <InfoItem label="Current leader" value={team.leaderName} />
+            <InfoItem
+              label="New leader"
+              value={transferCandidate?.fullName ?? "Not selected"}
+            />
+          </div>
+
+          {transferLeaderMutation.isError && (
+            <Alert severity="error">
+              Leadership could not be transferred. Confirm the selected user
+              is still an active member and the team is still forming.
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            variant="outlined"
+            disabled={transferLeaderMutation.isPending}
+            onClick={handleCloseTransferDialog}
+            sx={{ fontWeight: 800, textTransform: "none" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={
+              transferLeaderMutation.isPending ||
+              !transferCandidate ||
+              isTeamRegistered
+            }
+            onClick={handleConfirmTransfer}
+            sx={{ fontWeight: 800, textTransform: "none" }}
+          >
+            {transferLeaderMutation.isPending
+              ? "Transferring..."
+              : "Confirm Transfer"}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Dialog

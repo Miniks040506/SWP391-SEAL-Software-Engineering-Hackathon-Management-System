@@ -37,16 +37,6 @@ import {
 } from "../hooks/useParticipantTeams";
 import type { TeamJoinCodePreviewResponse } from "@/types/team.types";
 
-type TeamSummaryView = {
-  id: string;
-  name: string;
-  projectTitle?: string;
-  status: string;
-  registrationStatus?: string | null;
-  roleInTeam: string;
-  memberCount?: number;
-};
-
 export const MyTeamsPage = () => {
   const navigate = useNavigate();
 
@@ -66,7 +56,7 @@ export const MyTeamsPage = () => {
   const previewMutation = usePreviewJoinCodeMutation();
   const joinMutation = useJoinTeamByCodeMutation();
 
-  const teams = (myTeamsQuery.data ?? []) as TeamSummaryView[];
+  const teams = myTeamsQuery.data ?? [];
   const invitations = ((invitationsQuery.data ?? []) as any[]).filter(
     (inv) => inv.status === "PENDING",
   );
