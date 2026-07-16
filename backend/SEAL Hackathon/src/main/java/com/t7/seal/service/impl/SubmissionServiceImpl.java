@@ -583,6 +583,30 @@ public class SubmissionServiceImpl implements SubmissionService {
         return toSubmissionResponse(saved);
     }
 
+    @Transactional
+    @Override
+    public SubmissionResponse beginSubmissionResubmission(
+            UUID submissionId,
+            Authentication authentication
+    ) {
+        Submission submission = submissionRepository.findByIdForUpdate(submissionId)
+                .orElseThrow(() -> new NotFoundException("Submission not found."));
+        ensureTeamLeader(submission.getTeam(), authentication);
+
+        if (submission.isDraft()) {
+            return toSubmissionResponse(submission);
+        }
+        if (!submission.isScorable()) {
+            throw new ConflictException(
+                    "SUBMISSION_NOT_RESUBMITTABLE: Only submitted or late submissions can be resubmitted.");
+        }
+
+        ensureRoundCanAcceptSubmission(submission.getRound());
+        attemptSnapshotService.createSnapshot(submission);
+        submission.beginResubmission();
+        return toSubmissionResponse(submissionRepository.save(submission));
+    }
+
     @Override
     @Transactional(readOnly = true)
     public PageResponse<CoordinatorSubmissionSummaryResponse> getEventSubmissions(
