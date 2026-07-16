@@ -19,6 +19,7 @@ import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RepositoryMetadataService;
 import com.t7.seal.service.SubmissionFileStorageService;
+import com.t7.seal.service.SubmissionAttemptSnapshotService;
 import com.t7.seal.service.SubmissionMutationPolicy;
 import com.t7.seal.service.SubmissionRequirementCatalog;
 import com.t7.seal.service.SubmissionService;
@@ -60,6 +61,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final NotificationService notificationService;
     private final SubmissionRequirementCatalog requirementCatalog;
     private final SubmissionMutationPolicy mutationPolicy;
+    private final SubmissionAttemptSnapshotService attemptSnapshotService;
 
     @Override
     @Transactional(readOnly = true)
@@ -165,6 +167,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission saved = submissionRepository.save(submission);
         replaceLinks(saved, request.links());
         saved = getSubmission(saved.getId());
+        attemptSnapshotService.createSnapshot(saved);
         notifySubmissionChange(saved, wasSubmittedBefore);
 
         return toSubmissionResponse(saved);
@@ -260,6 +263,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             }
             markSubmittedBeforeDeadline(refreshed, refreshed.getRound());
             saved = submissionRepository.save(refreshed);
+            attemptSnapshotService.createSnapshot(saved);
             notifySubmissionChange(saved, wasSubmittedBefore);
         }
 
@@ -293,8 +297,9 @@ public class SubmissionServiceImpl implements SubmissionService {
                 refreshed.increaseSubmissionNumber();
             }
             markSubmittedBeforeDeadline(refreshed, refreshed.getRound());
-            submissionRepository.save(refreshed);
-            notifySubmissionChange(refreshed, wasSubmittedBefore);
+            Submission saved = submissionRepository.save(refreshed);
+            attemptSnapshotService.createSnapshot(saved);
+            notifySubmissionChange(saved, wasSubmittedBefore);
         }
 
         return toSubmissionResponse(getSubmission(submissionId));
@@ -377,6 +382,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         Submission saved = submissionRepository.save(submission);
         if (notifySubmitOrUpdate) {
+            attemptSnapshotService.createSnapshot(saved);
             notifySubmissionChange(saved, wasSubmittedBefore);
         }
         return toSubmissionResponse(getSubmission(saved.getId()));
@@ -511,6 +517,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         ensureTeamLeader(submission.getTeam(), authentication);
 
         if (submission.isScorable()) {
+            attemptSnapshotService.createSnapshot(submission);
             return toSubmissionResponse(submission);
         }
 
@@ -525,6 +532,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         markSubmittedBeforeDeadline(submission, submission.getRound());
 
         Submission saved = submissionRepository.save(submission);
+        attemptSnapshotService.createSnapshot(saved);
         notifySubmissionChange(saved, false);
         return toSubmissionResponse(saved);
     }
