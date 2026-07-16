@@ -798,7 +798,9 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     private void replaceLinks(Submission submission, List<SubmissionLinkRequest> links) {
-        submissionLinkRepository.deleteBySubmissionId(submission.getId());
+        // Uploaded and imported evidence owns provider metadata that cannot be
+        // reconstructed from a URL-only draft request. Replace only editable URLs.
+        submissionLinkRepository.deleteBySubmissionIdAndObjectKeyIsNull(submission.getId());
         List<SubmissionLink> entities = links.stream()
                 .map(link -> toLinkEntity(submission, link))
                 .toList();
