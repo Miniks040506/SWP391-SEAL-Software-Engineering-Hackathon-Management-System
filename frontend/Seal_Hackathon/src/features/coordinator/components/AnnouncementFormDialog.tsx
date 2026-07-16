@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -32,7 +32,10 @@ type AnnouncementFormDialogProps = {
   initialAnnouncement: AnnouncementResponse | null;
   isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: (values: AnnouncementFormValues, action: AnnouncementAction) => void;
+  onSubmit: (
+    values: AnnouncementFormValues,
+    action: AnnouncementAction,
+  ) => void | Promise<void>;
 };
 
 const targetScopeLabels: Record<string, string> = {
@@ -56,6 +59,9 @@ export const AnnouncementFormDialog = ({
   onSubmit,
 }: AnnouncementFormDialogProps) => {
   const isEditMode = Boolean(initialAnnouncement);
+  const [activeAction, setActiveAction] = useState<AnnouncementAction | null>(
+    null,
+  );
 
   const methods = useForm<AnnouncementFormValues>({
     resolver: zodResolver(announcementFormSchema) as Resolver<AnnouncementFormValues>,
@@ -142,18 +148,39 @@ export const AnnouncementFormDialog = ({
   };
 
   const handleActionSubmit = (action: AnnouncementAction) => {
-    if (action === "SCHEDULE") {
-      setValue("scheduleMode", "SCHEDULE_LATER", {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-    }
+    if (isSubmitting) return;
 
-    handleSubmit((values) => onSubmit(values, action))();
+    const nextScheduleMode =
+      action === "SCHEDULE" ? "SCHEDULE_LATER" : "SEND_NOW";
+
+    setValue("scheduleMode", nextScheduleMode, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    setActiveAction(action);
+
+    void handleSubmit(
+      async (values) => {
+        try {
+          await onSubmit(
+            { ...values, scheduleMode: nextScheduleMode },
+            action,
+          );
+        } finally {
+          setActiveAction(null);
+        }
+      },
+      () => setActiveAction(null),
+    )();
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+    <Dialog
+      open={open}
+      onClose={isSubmitting ? undefined : onClose}
+      fullWidth
+      maxWidth="md"
+    >
       <DialogTitle sx={{ fontWeight: 900 }}>
         {isEditMode ? "Edit Announcement" : "Create Announcement"}
       </DialogTitle>
@@ -418,7 +445,9 @@ export const AnnouncementFormDialog = ({
             disabled={isSubmitting}
             sx={{ fontWeight: 800 }}
           >
-            Save Draft
+            {isSubmitting && activeAction === "DRAFT"
+              ? "Saving..."
+              : "Save Draft"}
           </Button>
 
           <Button
@@ -427,7 +456,9 @@ export const AnnouncementFormDialog = ({
             disabled={isSubmitting}
             sx={{ fontWeight: 800 }}
           >
-            Schedule
+            {isSubmitting && activeAction === "SCHEDULE"
+              ? "Scheduling..."
+              : "Schedule"}
           </Button>
 
           <Button
@@ -442,7 +473,9 @@ export const AnnouncementFormDialog = ({
               },
             }}
           >
-            Publish Now
+            {isSubmitting && activeAction === "PUBLISH"
+              ? "Publishing..."
+              : "Publish Now"}
           </Button>
         </DialogActions>
       </FormProvider>

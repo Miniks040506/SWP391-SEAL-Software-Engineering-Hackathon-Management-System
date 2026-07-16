@@ -46,6 +46,18 @@ function toLocalDateTime(value?: string) {
   return value.length === 16 ? `${value}:00` : value;
 }
 
+function getRequestErrorMessage(error: unknown, fallback: string) {
+  const responseMessage = (
+    error as { response?: { data?: { message?: unknown } } }
+  )?.response?.data?.message;
+
+  if (typeof responseMessage === "string" && responseMessage.trim()) {
+    return responseMessage;
+  }
+
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 function mapCreatePayload(
   values: AnnouncementFormValues,
   action: AnnouncementAction,
@@ -155,7 +167,7 @@ export function useCoordinatorAnnouncements(initialEventId?: string) {
       const messageMap: Record<AnnouncementAction, string> = {
         DRAFT: "Announcement saved as draft.",
         PUBLISH: "Announcement published successfully.",
-        SCHEDULE: "Announcement created successfully.",
+        SCHEDULE: "Announcement scheduled successfully.",
       };
 
       enqueueSnackbar(messageMap[variables.action], {
@@ -163,8 +175,8 @@ export function useCoordinatorAnnouncements(initialEventId?: string) {
       });
     },
 
-    onError: () => {
-      enqueueSnackbar("Failed to create announcement.", {
+    onError: (error) => {
+      enqueueSnackbar(getRequestErrorMessage(error, "Failed to create announcement."), {
         variant: "error",
       });
     },
@@ -185,16 +197,21 @@ export function useCoordinatorAnnouncements(initialEventId?: string) {
         mapUpdatePayload(values, action),
       ),
 
-    onSuccess: async () => {
+    onSuccess: async (_, variables) => {
+      if (variables.action === "PUBLISH") return;
+
       await invalidateAnnouncements();
 
-      enqueueSnackbar("Announcement updated successfully.", {
-        variant: "success",
-      });
+      enqueueSnackbar(
+        variables.action === "SCHEDULE"
+          ? "Announcement scheduled successfully."
+          : "Announcement updated successfully.",
+        { variant: "success" },
+      );
     },
 
-    onError: () => {
-      enqueueSnackbar("Failed to update announcement.", {
+    onError: (error) => {
+      enqueueSnackbar(getRequestErrorMessage(error, "Failed to update announcement."), {
         variant: "error",
       });
     },
@@ -227,8 +244,8 @@ export function useCoordinatorAnnouncements(initialEventId?: string) {
         variant: "success",
       });
     },
-    onError: () => {
-      enqueueSnackbar("Failed to publish announcement.", {
+    onError: (error) => {
+      enqueueSnackbar(getRequestErrorMessage(error, "Failed to publish announcement."), {
         variant: "error",
       });
     },
@@ -357,31 +374,6 @@ export function useCoordinatorAnnouncements(initialEventId?: string) {
       if (action === "PUBLISH") {
         await publishMutation.mutateAsync(editingAnnouncement.id);
       }
-
-      if (action === "SCHEDULE") {
-        await scheduleMutation.mutateAsync({
-          announcementId: editingAnnouncement.id,
-          values,
-        });
-      }
-
-      closeDialog();
-      return;
-    }
-
-    if (action === "SCHEDULE") {
-      const createdAnnouncement = await createMutation.mutateAsync({
-        values: {
-          ...values,
-          scheduledAt: "",
-        },
-        action: "DRAFT",
-      });
-
-      await scheduleMutation.mutateAsync({
-        announcementId: createdAnnouncement.id,
-        values,
-      });
 
       closeDialog();
       return;
