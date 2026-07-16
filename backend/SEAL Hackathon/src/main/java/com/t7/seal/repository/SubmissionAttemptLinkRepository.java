@@ -9,4 +9,6 @@ import java.util.UUID;
 @Repository
 public interface SubmissionAttemptLinkRepository
         extends JpaRepository<SubmissionAttemptLink, UUID> {
+
+    boolean existsByObjectKey(String objectKey);
 }

@@ -52,6 +52,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionRepository submissionRepository;
     private final SubmissionLinkRepository submissionLinkRepository;
     private final SubmissionAttemptRepository submissionAttemptRepository;
+    private final SubmissionAttemptLinkRepository submissionAttemptLinkRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
     private final RoundRepository roundRepository;
@@ -501,7 +502,9 @@ public class SubmissionServiceImpl implements SubmissionService {
         submissionLinkRepository.delete(link);
         submissionLinkRepository.flush();
 
-        if (link.getStorageProvider() == SubmissionStorageProvider.AWS_S3) {
+        boolean retainedByAttempt = link.getObjectKey() != null
+                && submissionAttemptLinkRepository.existsByObjectKey(link.getObjectKey());
+        if (link.getStorageProvider() == SubmissionStorageProvider.AWS_S3 && !retainedByAttempt) {
             submissionFileStorageService.deleteSubmissionFile(link.getObjectKey());
         }
     }
@@ -522,6 +525,32 @@ public class SubmissionServiceImpl implements SubmissionService {
         String url = submissionFileStorageService.createDownloadUrl(
                 link.getObjectKey(), Duration.ofMinutes(10));
 
+        return new FileDownloadUrlResponse(url, LocalDateTime.now().plusMinutes(10));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public FileDownloadUrlResponse createSubmissionAttemptFileDownloadUrl(
+            UUID submissionId,
+            UUID evidenceId,
+            Authentication authentication
+    ) {
+        Submission submission = getSubmission(submissionId);
+        ensureCanViewSubmission(submission, authentication);
+
+        SubmissionAttemptLink evidence = submissionAttemptLinkRepository.findById(evidenceId)
+                .filter(link -> submissionId.equals(link.getAttempt().getSubmission().getId()))
+                .orElseThrow(() -> new NotFoundException("Submission attempt evidence not found."));
+
+        if (evidence.getStorageProvider() != SubmissionStorageProvider.AWS_S3) {
+            throw new BadRequestException("This attempt evidence is not an uploaded file.");
+        }
+        if (evidence.getObjectKey() == null || evidence.getObjectKey().isBlank()) {
+            throw new BadRequestException("Submission attempt file object key is missing.");
+        }
+
+        String url = submissionFileStorageService.createDownloadUrl(
+                evidence.getObjectKey(), Duration.ofMinutes(10));
         return new FileDownloadUrlResponse(url, LocalDateTime.now().plusMinutes(10));
     }
 
