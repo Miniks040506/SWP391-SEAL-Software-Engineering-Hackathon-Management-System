@@ -10,6 +10,7 @@ import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.SubmissionUploadException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
+import com.t7.seal.request.submission.ImportGoogleDriveFileRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
@@ -17,6 +18,8 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.NotificationService;
+import com.t7.seal.service.CurrentUserService;
+import com.t7.seal.service.GoogleDriveConnectionService;
 import com.t7.seal.service.RepositoryMetadataService;
 import com.t7.seal.service.SubmissionFileStorageService;
 import com.t7.seal.service.SubmissionAttemptSnapshotService;
@@ -37,8 +40,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,6 +65,8 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final MentorAssignmentRepository mentorAssignmentRepository;
     private final RepositoryMetadataService repositoryMetadataService;
     private final SubmissionFileStorageService submissionFileStorageService;
+    private final GoogleDriveConnectionService googleDriveConnectionService;
+    private final CurrentUserService currentUserService;
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final NotificationService notificationService;
     private final SubmissionRequirementCatalog requirementCatalog;
@@ -267,6 +275,101 @@ public class SubmissionServiceImpl implements SubmissionService {
                 label, isPrimary, displayOrder, file);
 
         return toSubmissionResponse(getSubmission(saved.getId()));
+    }
+
+    @Override
+    @Transactional
+    public SubmissionResponse importGoogleDriveFile(
+            UUID teamId,
+            UUID roundId,
+            ImportGoogleDriveFileRequest request,
+            Authentication authentication
+    ) {
+        Team team = getTeamForSubmissionMutation(teamId);
+        Round round = getRound(roundId);
+
+        ensureRoundBelongsToTeamEvent(team, round);
+        ensureTeamLeader(team, authentication);
+        ensureTeamCanSubmit(team);
+        ensureRoundCanAcceptSubmission(round);
+
+        SubmissionLinkType linkType = parseLinkType(request.linkType());
+        if (!requirementCatalog.supportsSource(
+                linkType,
+                SubmissionInputSource.GOOGLE_DRIVE
+        )) {
+            throw new BadRequestException(
+                    "Google Drive is not allowed for submission type " + linkType + "."
+            );
+        }
+
+        Submission submission = submissionRepository.findByTeamIdAndRoundId(teamId, roundId)
+                .orElseGet(() -> Submission.builder()
+                        .team(team)
+                        .round(round)
+                        .status(SubmissionStatus.DRAFT)
+                        .submissionNumber(1)
+                        .submissionLinks(new ArrayList<>())
+                        .build());
+        ensureDraftSubmission(submission);
+        Submission savedSubmission = submissionRepository.save(submission);
+        ensureAdditionalFileAllowed(savedSubmission);
+
+        GoogleDriveConnectionService.SelectedDriveFile selected =
+                googleDriveConnectionService.openSelectedFile(
+                        currentUserService.getCurrentUser(authentication),
+                        request.fileId()
+                );
+        UploadedSubmissionFile uploaded = null;
+        try (InputStream content = selected.content()) {
+            UUID eventId = round.getEvent() == null ? null : round.getEvent().getId();
+            uploaded = submissionFileStorageService.uploadSubmissionFile(
+                    eventId,
+                    teamId,
+                    roundId,
+                    selected.name(),
+                    selected.mimeType(),
+                    selected.sizeBytes(),
+                    content
+            );
+
+            String label = blankToNull(request.label());
+            if (label == null) {
+                label = selected.name().length() > 200
+                        ? selected.name().substring(0, 200)
+                        : selected.name();
+            }
+            SubmissionLink link = SubmissionLink.builder()
+                    .submission(savedSubmission)
+                    .linkType(linkType)
+                    .url(selected.viewUri().toString())
+                    .label(label)
+                    .storageProvider(SubmissionStorageProvider.GOOGLE_DRIVE)
+                    .objectKey(uploaded.objectKey())
+                    .originalFileName(uploaded.originalFileName())
+                    .contentType(uploaded.contentType())
+                    .fileSizeBytes(uploaded.fileSizeBytes())
+                    .providerResourceId(selected.fileId())
+                    .providerChecksum(selected.checksum())
+                    .providerModifiedAt(selected.modifiedAt() == null
+                            ? null
+                            : LocalDateTime.ofInstant(selected.modifiedAt(), ZoneOffset.UTC))
+                    .isPrimary(Boolean.TRUE.equals(request.isPrimary()))
+                    .displayOrder(request.displayOrder() == null ? 0 : request.displayOrder())
+                    .build();
+            submissionLinkRepository.save(link);
+        } catch (IOException | RuntimeException exception) {
+            deleteFailedSnapshot(uploaded);
+            if (exception instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw SubmissionUploadException.conflict(
+                    "GOOGLE_DRIVE_FILE_READ_FAILED",
+                    "The selected Google Drive file could not be read. Choose it again and retry."
+            );
+        }
+
+        return toSubmissionResponse(getSubmission(savedSubmission.getId()));
     }
 
     @Override
@@ -955,15 +1058,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             String label, Boolean isPrimary,
             Integer displayOrder, MultipartFile file
     ) {
-        int maximumFiles = requirementCatalog.uploadPolicy().maximumFiles();
-        long persistedFiles = submissionLinkRepository
-                .countBySubmissionIdAndObjectKeyIsNotNull(submission.getId());
-        if (persistedFiles >= maximumFiles) {
-            throw SubmissionUploadException.conflict(
-                    "SUBMISSION_FILE_LIMIT_REACHED",
-                    "A submission can contain at most " + maximumFiles + " files."
-            );
-        }
+        ensureAdditionalFileAllowed(submission);
 
         UUID eventId = submission.getRound().getEvent() == null
                 ? null : submission.getRound().getEvent().getId();
@@ -992,6 +1087,32 @@ public class SubmissionServiceImpl implements SubmissionService {
         submissionLinkRepository.save(link);
     }
 
+    private void ensureAdditionalFileAllowed(Submission submission) {
+        int maximumFiles = requirementCatalog.uploadPolicy().maximumFiles();
+        long persistedFiles = submissionLinkRepository
+                .countBySubmissionIdAndObjectKeyIsNotNull(submission.getId());
+        if (persistedFiles >= maximumFiles) {
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_FILE_LIMIT_REACHED",
+                    "A submission can contain at most " + maximumFiles + " files."
+            );
+        }
+    }
+
+    private void deleteFailedSnapshot(UploadedSubmissionFile uploaded) {
+        if (uploaded == null || uploaded.objectKey() == null) {
+            return;
+        }
+        try {
+            submissionFileStorageService.deleteSubmissionFile(uploaded.objectKey());
+        } catch (RuntimeException cleanupException) {
+            log.warn(
+                    "Failed to clean up Google Drive snapshot after import failure. objectKey={}",
+                    uploaded.objectKey(),
+                    cleanupException
+            );
+        }
+    }
 
     private SubmissionStorageProvider detectStorageProvider(SubmissionLinkType linkType, String url) {
         if (url == null) {

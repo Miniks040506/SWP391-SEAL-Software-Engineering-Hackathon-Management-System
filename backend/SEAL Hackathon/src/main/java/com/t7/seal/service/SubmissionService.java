@@ -1,6 +1,7 @@
 package com.t7.seal.service;
 
 import com.t7.seal.request.submission.SubmissionLinkRequest;
+import com.t7.seal.request.submission.ImportGoogleDriveFileRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
@@ -32,6 +33,13 @@ public interface SubmissionService {
                                             Integer displayOrder, Boolean submitNow,
                                             MultipartFile file,
                                             Authentication authentication);
+
+    SubmissionResponse importGoogleDriveFile(
+            UUID teamId,
+            UUID roundId,
+            ImportGoogleDriveFileRequest request,
+            Authentication authentication
+    );
 
     SubmissionResponse uploadFileToSubmission(UUID submissionId, String linkType,
                                               String label, Boolean isPrimary,
