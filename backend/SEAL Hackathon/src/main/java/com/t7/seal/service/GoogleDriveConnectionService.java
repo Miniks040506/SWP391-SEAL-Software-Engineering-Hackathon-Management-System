@@ -13,6 +13,8 @@ public interface GoogleDriveConnectionService {
 
     ConnectionStatus status(User user);
 
+    PickerSession pickerSession(User user);
+
     void disconnect(User user);
 
     record BeginConnection(
@@ -35,6 +37,14 @@ public interface GoogleDriveConnectionService {
             String accountEmail,
             Instant connectedAt,
             Instant tokenExpiresAt
+    ) {
+    }
+
+    record PickerSession(
+            String accessToken,
+            Instant expiresAt,
+            String pickerApiKey,
+            String appId
     ) {
     }
 }

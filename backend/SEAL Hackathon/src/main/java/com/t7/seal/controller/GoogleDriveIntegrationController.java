@@ -9,6 +9,7 @@ import com.t7.seal.response.ApiErrorResponse;
 import com.t7.seal.response.auth.AuthMessageResponse;
 import com.t7.seal.response.integration.GoogleDriveConnectionStatusResponse;
 import com.t7.seal.response.integration.GoogleDriveOAuthStartResponse;
+import com.t7.seal.response.integration.GoogleDrivePickerSessionResponse;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.GoogleDriveConnectionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -105,6 +107,36 @@ public class GoogleDriveIntegrationController {
                 .body(new GoogleDriveOAuthStartResponse(
                         connection.authorizationUri().toString(),
                         connection.expiresAt()
+                ));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Create a Google Picker session",
+            description = "Returns a short-lived access token for Picker. Refresh credentials remain server-side.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Picker session returned.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "401", description = "Drive authorization was revoked.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Drive is not connected.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "429", description = "Google rate limit reached.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "503", description = "Drive is unavailable or not configured.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/picker-session")
+    public ResponseEntity<GoogleDrivePickerSessionResponse> pickerSession(
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        GoogleDriveConnectionService.PickerSession session = connectionService.pickerSession(
+                currentUserService.getCurrentUser(authentication)
+        );
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(new GoogleDrivePickerSessionResponse(
+                        session.accessToken(),
+                        session.expiresAt(),
+                        session.pickerApiKey(),
+                        session.appId()
                 ));
     }
 
