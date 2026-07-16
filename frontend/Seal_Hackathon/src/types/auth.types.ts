@@ -96,6 +96,16 @@ export type AuthLockoutErrorResponse = {
   maxFailedAttempts?: number;
 };
 
+export type AuthErrorResponse = {
+  success: false;
+  status: number;
+  error: string;
+  code?: string | null;
+  message: string;
+  path?: string;
+  timestamp?: string;
+};
+
 export type ForgotPasswordRequest = {
   email: string;
 };

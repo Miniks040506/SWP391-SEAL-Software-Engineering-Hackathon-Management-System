@@ -276,7 +276,7 @@ public class User {
     }
 
 
-    // Marks email as verified and moves the account to pending approval.
+    // Marks email as verified and activates a normal self-registered account.
     public void verifyEmail() {
         this.emailVerifiedAt = LocalDateTime.now();
         this.emailVerificationToken = null;

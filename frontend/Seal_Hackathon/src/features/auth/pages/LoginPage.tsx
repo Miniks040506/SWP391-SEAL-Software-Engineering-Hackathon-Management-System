@@ -13,7 +13,10 @@ import {
   type LoginFormValues,
 } from "@/features/auth/schemas/auth.schema";
 import { useAuthStore } from "@/stores/authStore";
-import type { AuthLockoutErrorResponse } from "@/types/auth.types";
+import type {
+  AuthErrorResponse,
+  AuthLockoutErrorResponse,
+} from "@/types/auth.types";
 import { getRoleRedirectPath } from "@/utils/roleRedirect";
 
 
@@ -140,9 +143,11 @@ export function LoginPage() {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    const normalizedEmail = values.email.trim().toLowerCase();
+
     try {
       await loginMutation.mutateAsync({
-        email: values.email.trim().toLowerCase(),
+        email: normalizedEmail,
         password: values.password,
       });
 
@@ -162,7 +167,18 @@ export function LoginPage() {
       });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      const errorPayload = error?.response?.data;
+      const errorPayload = error?.response?.data as AuthErrorResponse | undefined;
+
+      if (errorPayload?.code === "ACCOUNT_UNVERIFIED") {
+        setLockout(null);
+        enqueueSnackbar("Please verify your account. You can resend the code below.", {
+          variant: "warning",
+        });
+        navigate(
+          `/verify-email?email=${encodeURIComponent(normalizedEmail)}&mode=login`,
+        );
+        return;
+      }
 
       if (error?.response?.status === 423 && isLockoutErrorPayload(errorPayload)) {
         const remainingSeconds = errorPayload.remainingSeconds ?? 15 * 60;

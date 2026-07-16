@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
             UnauthorizedException ex,
             HttpServletRequest request
     ) {
-        return error(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        return error(HttpStatus.UNAUTHORIZED, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(ForbiddenException.class)

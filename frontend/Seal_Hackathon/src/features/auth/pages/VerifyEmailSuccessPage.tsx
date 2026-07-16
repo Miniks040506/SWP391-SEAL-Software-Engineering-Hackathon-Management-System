@@ -31,7 +31,7 @@ export function VerifyEmailSuccessPage() {
         </p>
 
         <p className="mx-auto mt-1 max-w-107.5 text-base leading-7 text-slate-600">
-          Your account is now waiting for coordinator approval.
+          Your account is active. You can log in now.
         </p>
 
         <Button
