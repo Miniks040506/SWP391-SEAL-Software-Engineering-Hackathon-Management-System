@@ -150,9 +150,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "â€”";
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "â€”";
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -163,7 +163,7 @@ function formatDate(value?: string | null) {
 function formatCompetitionPeriod(event: EventSummaryResponse) {
   const start = formatDate(event.competitionStartAt);
   const end = formatDate(event.competitionEndAt);
-  if (start === "â€”" && end === "â€”") return "â€”";
+  if (start === "—" && end === "—") return "—";
   return `${start} - ${end}`;
 }
 
@@ -259,7 +259,7 @@ function EventManagementCard({
 
         <div className="my-5 h-px bg-slate-100 dark:bg-slate-800" />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Button
             variant="outlined"
             startIcon={<EditOutlinedIcon />}
