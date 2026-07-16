@@ -1,21 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { roundApi } from "@/api/round.api";
 import { submissionApi } from "@/api/submission.api";
 import { teamApi } from "@/api/team.api";
 import type { UUID } from "@/types/common.types";
-import type { RoundDetailResponse } from "@/types/round.types";
 import type {
   SaveSubmissionDraftRequest,
   SubmissionDetailResponse,
   SubmissionResponse,
-  SubmissionSummaryResponse,
   SubmitDeliverablesRequest,
   UpdateSubmissionRequest,
 } from "@/types/submission.types";
-import type { TeamSummaryResponse } from "@/types/team.types";
 
 export const participantSubmissionKeys = {
+  context: (teamId?: UUID, roundId?: UUID) =>
+    ["participant-submission-context", teamId, roundId] as const,
   teamSubmissions: (teamId?: UUID) => ["participant-team-submissions", teamId] as const,
   submissionDetail: (submissionId?: UUID) => ["participant-submission-detail", submissionId] as const,
   roundDetail: (roundId?: UUID) => ["participant-round-detail", roundId] as const,
@@ -24,61 +22,67 @@ export const participantSubmissionKeys = {
 };
 
 export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
-  const [submission, setSubmission] = useState<SubmissionDetailResponse | null>(null);
-  const [teamInfo, setTeamInfo] = useState<TeamSummaryResponse | null>(null);
-  const [round, setRound] = useState<RoundDetailResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const fetch = useCallback(async () => {
-    if (!teamId || !roundId) return;
-    setLoading(true);
-    try {
-      const [teams, summaries, roundDetail] = await Promise.all([
+  const query = useQuery({
+    queryKey: participantSubmissionKeys.context(teamId, roundId),
+    queryFn: async () => {
+      const [teams, summaries, round] = await Promise.all([
         teamApi.getMyTeams(),
-        submissionApi.getTeamSubmissions(teamId),
-        roundApi.getRoundById(roundId),
+        submissionApi.getTeamSubmissions(teamId!),
+        roundApi.getRoundById(roundId!),
       ]);
-
-      setRound(roundDetail);
-
-      const currentTeam = teams.find((t) => t.id === teamId);
-      if (currentTeam) setTeamInfo(currentTeam);
-
       const roundSub = summaries.find((s) => s.roundId === roundId);
-      if (roundSub) {
-        const detail = await submissionApi.getSubmissionById(roundSub.id);
-        setSubmission(detail);
-      } else {
-        setSubmission(null);
-      }
-    } catch (err) {
-      console.error("Failed to fetch submission data", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [teamId, roundId]);
+      const submission = roundSub
+        ? await submissionApi.getSubmissionById(roundSub.id)
+        : null;
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
+      return {
+        submission,
+        teamInfo: teams.find((team) => team.id === teamId) ?? null,
+        round,
+      };
+    },
+    enabled: Boolean(teamId && roundId),
+  });
 
-  return { submission, teamInfo, round, loading, refetch: fetch };
+  return {
+    submission: query.data?.submission ?? null,
+    teamInfo: query.data?.teamInfo ?? null,
+    round: query.data?.round ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 };
 
-function invalidateParticipantSubmission(
+async function invalidateParticipantSubmission(
   queryClient: ReturnType<typeof useQueryClient>,
   result: SubmissionResponse | SubmissionDetailResponse | null | undefined,
   teamId?: UUID,
   roundId?: UUID,
 ) {
-  queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.teamSubmissions(teamId) });
-  queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.roundDetail(roundId) });
-  queryClient.invalidateQueries({
-    queryKey: participantSubmissionKeys.requirements(teamId, roundId),
-  });
+  const invalidations = [
+    queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.context(teamId, roundId) }),
+    queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.teamSubmissions(teamId) }),
+    queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.roundDetail(roundId) }),
+    queryClient.invalidateQueries({
+      queryKey: participantSubmissionKeys.requirements(teamId, roundId),
+    }),
+    queryClient.invalidateQueries({ queryKey: ["mentor-team-submissions", teamId] }),
+    queryClient.invalidateQueries({ queryKey: ["mentor-submission-detail"] }),
+    queryClient.invalidateQueries({ queryKey: ["coord-dashboard-submissions"] }),
+    queryClient.invalidateQueries({ queryKey: ["judge"] }),
+    queryClient.invalidateQueries({ queryKey: ["judge-submission-summary"] }),
+    queryClient.invalidateQueries({ queryKey: ["grading", "submission"] }),
+    queryClient.invalidateQueries({ queryKey: ["round", roundId, "submissions"] }),
+  ];
   if (result?.id) {
-    queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.submissionDetail(result.id) });
+    invalidations.push(
+      queryClient.invalidateQueries({
+        queryKey: participantSubmissionKeys.submissionDetail(result.id),
+      }),
+    );
   }
+  await Promise.all(invalidations);
 }
 
 export const useSaveSubmissionDraftMutation = (teamId?: UUID, roundId?: UUID) => {
@@ -137,24 +141,16 @@ export const useSubmissionRequirementsQuery = (teamId?: UUID, roundId?: UUID) =>
 };
 
 export const useTeamSubmissionsQuery = (teamId?: UUID) => {
-  const [submissions, setSubmissions] = useState<SubmissionSummaryResponse[]>([]);
-  const [loading, setLoading] = useState(false);
+  const query = useQuery({
+    queryKey: participantSubmissionKeys.teamSubmissions(teamId),
+    queryFn: () => submissionApi.getTeamSubmissions(teamId!),
+    enabled: Boolean(teamId),
+  });
 
-  useEffect(() => {
-    if (!teamId) return;
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        const res = await submissionApi.getTeamSubmissions(teamId);
-        setSubmissions(res);
-      } catch (err) {
-        console.error("Failed to fetch team submissions", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
-  }, [teamId]);
-
-  return { submissions, loading };
+  return {
+    submissions: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 };
