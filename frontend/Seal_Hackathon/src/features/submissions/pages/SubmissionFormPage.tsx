@@ -53,6 +53,12 @@ type DeleteTarget =
   | { kind: "staged"; id: string | "selected" }
   | { kind: "persisted"; link: SubmissionLinkResponse };
 
+type UploadProgress = {
+  current: number;
+  total: number;
+  fileName: string;
+};
+
 function createResourceLinkDraft(): ResourceLinkDraft {
   return {
     clientId: crypto.randomUUID(),
@@ -158,6 +164,7 @@ export function SubmissionFormPage() {
 
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"form" | "history">("form");
@@ -522,6 +529,44 @@ export function SubmissionFormPage() {
     return true;
   };
 
+  const uploadStagedFiles = async (submissionId: string) => {
+    const stagedFiles = items.filter(
+      (item): item is StorageItem & { file: File; linkType: SubmissionLinkType } =>
+        item.type === "file" && Boolean(item.file && item.linkType),
+    );
+    let uploadedCount = 0;
+
+    try {
+      for (const [index, item] of stagedFiles.entries()) {
+        setUploadProgress({
+          current: index + 1,
+          total: stagedFiles.length,
+          fileName: item.name,
+        });
+
+        const formData = new FormData();
+        formData.append("file", item.file);
+        formData.append("linkType", item.linkType);
+        formData.append("label", item.name);
+        formData.append("isPrimary", "false");
+
+        await submissionApi.uploadFileToSubmission(submissionId, formData);
+        uploadedCount += 1;
+        setItems((current) => current.filter((candidate) => candidate.id !== item.id));
+      }
+    } catch (error) {
+      await Promise.all([refetch(), requirementsQuery.refetch()]);
+      const remainingCount = stagedFiles.length - uploadedCount;
+      const detail = (error as { message?: string })?.message || "File upload failed.";
+      throw new Error(
+        `${uploadedCount} of ${stagedFiles.length} files uploaded; ${remainingCount} remain staged. ${detail}`,
+        { cause: error },
+      );
+    } finally {
+      setUploadProgress(null);
+    }
+  };
+
   const handleSaveDraft = async () => {
     if (!teamId || !roundId) return;
     if (!canEdit) {
@@ -541,22 +586,10 @@ export function SubmissionFormPage() {
       });
       const currentSubId = savedDraft.id;
 
-      const newFiles = items.filter((i) => i.type === "file" && i.file);
-      for (const item of newFiles) {
-        if (!item.file || !item.linkType) continue;
-        const formData = new FormData();
-        formData.append("file", item.file);
-        formData.append("linkType", item.linkType);
-        formData.append("label", item.name);
-        formData.append("isPrimary", "false");
-
-        await submissionApi.uploadFileToSubmission(currentSubId, formData);
-      }
-
-      setItems((prev) => prev.filter((i) => !i.file));
-      setSuccessMsg("Draft saved successfully.");
+      await uploadStagedFiles(currentSubId);
       userHasEdited.current = false;
-      refetch();
+      await Promise.all([refetch(), requirementsQuery.refetch()]);
+      setSuccessMsg("Draft saved successfully.");
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message;
       setErrorMsg(
@@ -600,19 +633,7 @@ export function SubmissionFormPage() {
       });
       const currentSubId = savedDraft.id;
 
-      const newFiles = items.filter((i) => i.type === "file" && i.file);
-      for (const item of newFiles) {
-        if (!item.file || !item.linkType) continue;
-        const formData = new FormData();
-        formData.append("file", item.file);
-        formData.append("linkType", item.linkType);
-        formData.append("label", item.name);
-        formData.append("isPrimary", "false");
-
-        await submissionApi.uploadFileToSubmission(currentSubId, formData);
-      }
-
-      setItems((prev) => prev.filter((i) => !i.file));
+      await uploadStagedFiles(currentSubId);
       const finalized = await submitExistingSubmissionMutation.mutateAsync(currentSubId);
       if (finalized.status !== "SUBMITTED" && finalized.status !== "LATE") {
         throw new Error("The server did not persist a final submission status.");
@@ -839,6 +860,16 @@ export function SubmissionFormPage() {
                       }
                       onDelete={confirmPersistedDelete}
                     />
+                  </div>
+                )}
+
+                {uploadProgress && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
+                  >
+                    Uploading {uploadProgress.current} of {uploadProgress.total}: {uploadProgress.fileName}
                   </div>
                 )}
 
