@@ -54,4 +54,12 @@ public class ProviderIntegrationException extends RuntimeException {
                 "Google Drive returned an incomplete response. Try connecting again."
         );
     }
+
+    public static ProviderIntegrationException notConnected() {
+        return new ProviderIntegrationException(
+                HttpStatus.CONFLICT,
+                "GOOGLE_DRIVE_NOT_CONNECTED",
+                "Connect Google Drive before choosing a file."
+        );
+    }
 }

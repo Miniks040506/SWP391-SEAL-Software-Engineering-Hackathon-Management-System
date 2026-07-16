@@ -23,6 +23,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +35,7 @@ public class GoogleDriveConnectionServiceImpl implements GoogleDriveConnectionSe
 
     private static final ExternalProvider PROVIDER = ExternalProvider.GOOGLE_DRIVE;
     private static final String TARGET_TABLE = "provider_oauth_connections";
+    private static final long TOKEN_EXPIRY_SKEW_SECONDS = 60;
 
     private final ProviderOAuthProperties oauthProperties;
     private final SubmissionProperties submissionProperties;
@@ -112,9 +114,85 @@ public class GoogleDriveConnectionServiceImpl implements GoogleDriveConnectionSe
     }
 
     @Override
+    public PickerSession pickerSession(User user) {
+        requireUser(user);
+        ensureAvailable();
+        ProviderOAuthConnection current = activeConnection(user);
+        if (tokenIsUsable(current)) {
+            return pickerSession(
+                    credentialCipher.decrypt(user.getId(), PROVIDER, current.getEncryptedAccessToken()),
+                    toInstant(current.getTokenExpiresAt())
+            );
+        }
+
+        String refreshToken = credentialCipher.decrypt(
+                user.getId(),
+                PROVIDER,
+                current.getEncryptedRefreshToken()
+        );
+        GoogleDriveOAuthClient.TokenGrant refreshed;
+        try {
+            refreshed = googleClient.refreshAccessToken(refreshToken);
+        } catch (ProviderIntegrationException exception) {
+            if ("GOOGLE_DRIVE_AUTHORIZATION_INVALID".equals(exception.getCode())) {
+                transactionTemplate.executeWithoutResult(status -> disconnectLocked(user));
+            }
+            throw exception;
+        }
+
+        return transactionTemplate.execute(status -> rotateAccessToken(user, refreshed));
+    }
+
+    @Override
     @Transactional
     public void disconnect(User user) {
         requireUser(user);
+        disconnectLocked(user);
+    }
+
+    private PickerSession rotateAccessToken(
+            User user,
+            GoogleDriveOAuthClient.TokenGrant refreshed
+    ) {
+        ProviderOAuthConnection connection = connectionRepository
+                .findForUpdateByUserIdAndProvider(user.getId(), PROVIDER)
+                .filter(ProviderOAuthConnection::isConnected)
+                .orElseThrow(ProviderIntegrationException::notConnected);
+        if (tokenIsUsable(connection)) {
+            return pickerSession(
+                    credentialCipher.decrypt(
+                            user.getId(),
+                            PROVIDER,
+                            connection.getEncryptedAccessToken()
+                    ),
+                    toInstant(connection.getTokenExpiresAt())
+            );
+        }
+
+        connection.setEncryptedAccessToken(credentialCipher.encrypt(
+                user.getId(),
+                PROVIDER,
+                refreshed.accessToken()
+        ));
+        if (refreshed.refreshToken() != null) {
+            connection.setEncryptedRefreshToken(credentialCipher.encrypt(
+                    user.getId(),
+                    PROVIDER,
+                    refreshed.refreshToken()
+            ));
+        }
+        if (refreshed.grantedScopes() != null) {
+            connection.setGrantedScopes(refreshed.grantedScopes());
+        }
+        connection.setTokenExpiresAt(LocalDateTime.ofInstant(
+                refreshed.expiresAt(),
+                ZoneOffset.UTC
+        ));
+        connectionRepository.save(connection);
+        return pickerSession(refreshed.accessToken(), refreshed.expiresAt());
+    }
+
+    private void disconnectLocked(User user) {
         connectionRepository.findForUpdateByUserIdAndProvider(user.getId(), PROVIDER)
                 .filter(ProviderOAuthConnection::isConnected)
                 .ifPresent(connection -> {
@@ -131,6 +209,28 @@ public class GoogleDriveConnectionServiceImpl implements GoogleDriveConnectionSe
                             Map.of("provider", PROVIDER.name())
                     );
                 });
+    }
+
+    private ProviderOAuthConnection activeConnection(User user) {
+        return connectionRepository.findByUserIdAndProvider(user.getId(), PROVIDER)
+                .filter(ProviderOAuthConnection::isConnected)
+                .orElseThrow(ProviderIntegrationException::notConnected);
+    }
+
+    private boolean tokenIsUsable(ProviderOAuthConnection connection) {
+        Instant expiresAt = toInstant(connection.getTokenExpiresAt());
+        return expiresAt != null
+                && Instant.now().plus(TOKEN_EXPIRY_SKEW_SECONDS, ChronoUnit.SECONDS).isBefore(expiresAt);
+    }
+
+    private PickerSession pickerSession(String accessToken, Instant expiresAt) {
+        ProviderOAuthProperties.GoogleDrive google = oauthProperties.getGoogleDrive();
+        return new PickerSession(
+                accessToken,
+                expiresAt,
+                google.getPickerApiKey(),
+                google.getAppId()
+        );
     }
 
     private void persistConnection(
