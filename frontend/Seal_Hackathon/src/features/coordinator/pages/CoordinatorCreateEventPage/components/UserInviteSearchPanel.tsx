@@ -98,7 +98,7 @@ export const UserInviteSearchPanel = ({
 
         <div className="space-y-3">
           {users.map((user) => {
-            const invited = selectedUserIds.includes(user.userId);
+            const assigned = selectedUserIds.includes(user.userId);
             const key = user.role === "JUDGE" ? user.judgeId || user.userId : user.userId;
 
             return (
@@ -116,14 +116,14 @@ export const UserInviteSearchPanel = ({
 
                 <Button
                   type="button"
-                  variant={invited ? "outlined" : "contained"}
+                  variant={assigned ? "outlined" : "contained"}
                   size="small"
-                  disabled={invited || (user.role === "JUDGE" && !user.judgeId)}
+                  disabled={assigned || (user.role === "JUDGE" && !user.judgeId)}
                   startIcon={<PersonAddAltOutlinedIcon />}
                   onClick={() => onSelect(user)}
                   sx={{ whiteSpace: "nowrap", fontWeight: 800 }}
                 >
-                  {invited ? "Invited" : "Invite"}
+                  {assigned ? "Assigned" : "Assign"}
                 </Button>
               </div>
             );
