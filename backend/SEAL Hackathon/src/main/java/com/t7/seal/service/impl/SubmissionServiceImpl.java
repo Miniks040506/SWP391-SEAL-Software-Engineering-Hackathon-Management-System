@@ -436,6 +436,11 @@ public class SubmissionServiceImpl implements SubmissionService {
         ensureRoundCanAcceptSubmission(submission.getRound());
 
         submissionLinkRepository.delete(link);
+        submissionLinkRepository.flush();
+
+        if (link.getStorageProvider() == SubmissionStorageProvider.AWS_S3) {
+            submissionFileStorageService.deleteSubmissionFile(link.getObjectKey());
+        }
     }
 
     @Transactional

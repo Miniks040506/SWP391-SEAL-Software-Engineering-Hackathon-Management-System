@@ -13,9 +13,11 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -115,6 +117,30 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
             return presigner.presignGetObject(presignRequest)
                     .url()
                     .toString();
+        }
+    }
+
+    @Override
+    public void deleteSubmissionFile(String objectKey) {
+        validateConfiguration();
+
+        if (isBlank(objectKey)) {
+            throw SubmissionUploadException.badRequest(
+                    "SUBMISSION_FILE_OBJECT_KEY_MISSING",
+                    "Submission file object key is missing."
+            );
+        }
+
+        try (S3Client s3Client = buildClient()) {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(objectKey)
+                    .build());
+        } catch (SdkException ex) {
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_FILE_DELETE_FAILED",
+                    "Stored submission file could not be deleted. Retry after checking object storage access."
+            );
         }
     }
 
