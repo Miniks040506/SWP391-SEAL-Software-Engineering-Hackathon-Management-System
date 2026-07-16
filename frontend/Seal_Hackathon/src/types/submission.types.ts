@@ -148,6 +148,33 @@ export type SubmissionLinkResponse = {
   updatedAt?: ISODateTime | null;
 };
 
+export type SubmissionAttemptEvidenceResponse = {
+  id: UUID;
+  sourceLinkId?: UUID | null;
+  linkType: SubmissionLinkType | string;
+  url?: string | null;
+  label?: string | null;
+  storageProvider: SubmissionStorageProvider;
+  originalFileName?: string | null;
+  contentType?: string | null;
+  fileSizeBytes?: number | null;
+  repoMetadata?: RepositoryMetadata | null;
+  isPrimary: boolean;
+  displayOrder: number;
+  createdAt?: ISODateTime | null;
+};
+
+export type SubmissionAttemptResponse = {
+  id: UUID;
+  submissionId: UUID;
+  attemptNumber: number;
+  note?: string | null;
+  status: SubmissionStatus;
+  submittedAt: ISODateTime;
+  createdAt?: ISODateTime | null;
+  evidence: SubmissionAttemptEvidenceResponse[];
+};
+
 export type SubmissionDetailResponse = {
   id: UUID;
   eventId?: UUID | null;

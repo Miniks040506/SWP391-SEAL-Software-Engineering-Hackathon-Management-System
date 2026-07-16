@@ -16,6 +16,7 @@ export const participantSubmissionKeys = {
     ["participant-submission-context", teamId, roundId] as const,
   teamSubmissions: (teamId?: UUID) => ["participant-team-submissions", teamId] as const,
   submissionDetail: (submissionId?: UUID) => ["participant-submission-detail", submissionId] as const,
+  attempts: (submissionId?: UUID) => ["participant-submission-attempts", submissionId] as const,
   roundDetail: (roundId?: UUID) => ["participant-round-detail", roundId] as const,
   requirements: (teamId?: UUID, roundId?: UUID) =>
     ["participant-submission-requirements", teamId, roundId] as const,
@@ -80,6 +81,9 @@ async function invalidateParticipantSubmission(
       queryClient.invalidateQueries({
         queryKey: participantSubmissionKeys.submissionDetail(result.id),
       }),
+      queryClient.invalidateQueries({
+        queryKey: participantSubmissionKeys.attempts(result.id),
+      }),
     );
   }
   await Promise.all(invalidations);
@@ -137,6 +141,14 @@ export const useSubmissionRequirementsQuery = (teamId?: UUID, roundId?: UUID) =>
     queryFn: () => submissionApi.getSubmissionRequirements(teamId!, roundId!),
     enabled: Boolean(teamId && roundId),
     staleTime: 30_000,
+  });
+};
+
+export const useSubmissionAttemptsQuery = (submissionId?: UUID) => {
+  return useQuery({
+    queryKey: participantSubmissionKeys.attempts(submissionId),
+    queryFn: () => submissionApi.getSubmissionAttempts(submissionId!),
+    enabled: Boolean(submissionId),
   });
 };
 
