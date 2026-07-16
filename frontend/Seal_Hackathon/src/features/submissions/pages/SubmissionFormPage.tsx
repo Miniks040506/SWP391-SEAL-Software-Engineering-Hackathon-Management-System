@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { submissionApi } from "@/api/submission.api";
 import {
+  useBeginSubmissionResubmissionMutation,
   useParticipantSubmissionData,
   useSaveSubmissionDraftMutation,
   useSubmissionAttemptsQuery,
@@ -147,6 +148,7 @@ export function SubmissionFormPage() {
   const requirementsQuery = useSubmissionRequirementsQuery(teamId, roundId);
   const attemptsQuery = useSubmissionAttemptsQuery(submission?.id);
   const saveDraftMutation = useSaveSubmissionDraftMutation(teamId, roundId);
+  const beginResubmissionMutation = useBeginSubmissionResubmissionMutation();
 
   const submitExistingSubmissionMutation =
     useSubmitExistingSubmissionMutation();
@@ -219,6 +221,8 @@ export function SubmissionFormPage() {
 
   const canEdit = requirementsQuery.data?.canEdit ?? false;
   const canSubmit = requirementsQuery.data?.canSubmit ?? false;
+  const canBeginResubmission =
+    requirementsQuery.data?.blockedReason === "SUBMISSION_RESUBMISSION_REQUIRED";
   const blockedReason = requirementsQuery.isError
     ? "Submission requirements could not be loaded. Retry before making changes."
     : requirementsQuery.data?.blockedMessage;
@@ -554,6 +558,21 @@ export function SubmissionFormPage() {
     }
   };
 
+  const handleBeginResubmission = async () => {
+    if (!submission || !canBeginResubmission) return;
+    setSuccessMsg(null);
+    setErrorMsg(null);
+    try {
+      await beginResubmissionMutation.mutateAsync(submission.id);
+      await Promise.all([refetch(), requirementsQuery.refetch()]);
+      setSuccessMsg(`Attempt #${submission.submissionNumber + 1} is ready as a draft.`);
+    } catch (error) {
+      setErrorMsg(
+        (error as { message?: string })?.message || "Could not begin the resubmission.",
+      );
+    }
+  };
+
   const handleSaveDraft = async () => {
     if (!teamId || !roundId) return;
     if (!canEdit) {
@@ -680,7 +699,22 @@ export function SubmissionFormPage() {
                 Manage deliverables for your team.
               </p>
             </div>
-            {submission && <SubmissionStatusBadge status={submission.status} />}
+            {submission && (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <SubmissionStatusBadge status={submission.status} />
+                {canBeginResubmission && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={beginResubmissionMutation.isPending || saving || submitting}
+                    onClick={handleBeginResubmission}
+                    sx={{ textTransform: "none", fontWeight: 700 }}
+                  >
+                    {beginResubmissionMutation.isPending ? "Preparing..." : "Resubmit"}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

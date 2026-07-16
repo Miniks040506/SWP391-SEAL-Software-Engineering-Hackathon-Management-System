@@ -135,6 +135,16 @@ export const useSubmitExistingSubmissionMutation = () => {
   });
 };
 
+export const useBeginSubmissionResubmissionMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (submissionId: UUID) => submissionApi.beginSubmissionResubmission(submissionId),
+    onSuccess: (result) =>
+      invalidateParticipantSubmission(queryClient, result, result.teamId, result.roundId),
+  });
+};
+
 export const useSubmissionRequirementsQuery = (teamId?: UUID, roundId?: UUID) => {
   return useQuery({
     queryKey: participantSubmissionKeys.requirements(teamId, roundId),

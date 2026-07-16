@@ -93,6 +93,10 @@ export const submissionApi = {
     return apiRequest.post<SubmissionResponse>(`/submissions/${submissionId}/submit`);
   },
 
+  beginSubmissionResubmission(submissionId: UUID) {
+    return apiRequest.post<SubmissionResponse>(`/submissions/${submissionId}/resubmit`);
+  },
+
   addSubmissionLink(submissionId: UUID, payload: CreateSubmissionLinkRequest) {
     return apiRequest.post<SubmissionResponse>(
       `/submissions/${submissionId}/links`,
