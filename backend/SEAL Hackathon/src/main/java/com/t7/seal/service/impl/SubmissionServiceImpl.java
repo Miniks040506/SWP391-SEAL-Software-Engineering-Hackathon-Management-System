@@ -2,6 +2,7 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.*;
 import com.t7.seal.dto.UploadedSubmissionFile;
+import com.t7.seal.dto.RepositoryMetadata;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
@@ -11,6 +12,7 @@ import com.t7.seal.exception.SubmissionUploadException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.ImportGoogleDriveFileRequest;
+import com.t7.seal.request.submission.SelectGithubRepositoryRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
@@ -20,6 +22,7 @@ import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.GoogleDriveConnectionService;
+import com.t7.seal.service.GithubConnectionService;
 import com.t7.seal.service.RepositoryMetadataService;
 import com.t7.seal.service.SubmissionFileStorageService;
 import com.t7.seal.service.SubmissionAttemptSnapshotService;
@@ -66,6 +69,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final RepositoryMetadataService repositoryMetadataService;
     private final SubmissionFileStorageService submissionFileStorageService;
     private final GoogleDriveConnectionService googleDriveConnectionService;
+    private final GithubConnectionService githubConnectionService;
     private final CurrentUserService currentUserService;
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final NotificationService notificationService;
@@ -368,6 +372,87 @@ public class SubmissionServiceImpl implements SubmissionService {
                     "The selected Google Drive file could not be read. Choose it again and retry."
             );
         }
+
+        return toSubmissionResponse(getSubmission(savedSubmission.getId()));
+    }
+
+    @Override
+    @Transactional
+    public SubmissionResponse selectGithubRepository(
+            UUID teamId,
+            UUID roundId,
+            SelectGithubRepositoryRequest request,
+            Authentication authentication
+    ) {
+        Team team = getTeamForSubmissionMutation(teamId);
+        Round round = getRound(roundId);
+        ensureRoundBelongsToTeamEvent(team, round);
+        ensureTeamLeader(team, authentication);
+        ensureTeamCanSubmit(team);
+        ensureRoundCanAcceptSubmission(round);
+        if (!requirementCatalog.supportsSource(
+                SubmissionLinkType.REPOSITORY, SubmissionInputSource.GITHUB
+        )) {
+            throw new BadRequestException("GitHub is not allowed for repository evidence.");
+        }
+
+        Submission submission = submissionRepository.findByTeamIdAndRoundId(teamId, roundId)
+                .orElseGet(() -> Submission.builder()
+                        .team(team)
+                        .round(round)
+                        .status(SubmissionStatus.DRAFT)
+                        .submissionNumber(1)
+                        .submissionLinks(new ArrayList<>())
+                        .build());
+        ensureDraftSubmission(submission);
+        Submission savedSubmission = submissionRepository.save(submission);
+
+        var snapshot = githubConnectionService.snapshot(
+                currentUserService.getCurrentUser(authentication),
+                request.owner(), request.repository(), request.reference()
+        );
+        var repository = snapshot.repository();
+        LocalDateTime synchronizedAt = LocalDateTime.ofInstant(
+                snapshot.synchronizedAt(), ZoneOffset.UTC
+        );
+        RepositoryMetadata metadata = RepositoryMetadata.builder()
+                .platform("GITHUB")
+                .repoName(repository.fullName())
+                .owner(repository.owner())
+                .repository(repository.name())
+                .selectedReference(snapshot.selectedReference())
+                .referenceType(request.referenceType().toUpperCase(Locale.ROOT))
+                .commitSha(snapshot.commitSha())
+                .commitUrl(snapshot.commitUri().toString())
+                .defaultBranch(repository.defaultBranch())
+                .visibility(repository.visibility())
+                .primaryLanguage(repository.primaryLanguage())
+                .lastPushAt(toUtc(repository.pushedAt()))
+                .committedAt(toUtc(snapshot.committedAt()))
+                .lastSynchronizedAt(synchronizedAt)
+                .isPrivate(repository.privateRepository())
+                .build();
+
+        List<SubmissionLink> links = submissionLinkRepository
+                .findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(savedSubmission.getId());
+        SubmissionLink link = links.stream()
+                .filter(this::isManagedGithubSnapshot)
+                .findFirst()
+                .orElseGet(() -> SubmissionLink.builder()
+                        .submission(savedSubmission)
+                        .linkType(SubmissionLinkType.REPOSITORY)
+                        .build());
+        link.setUrl(repository.htmlUri().toString());
+        link.setLabel(Optional.ofNullable(blankToNull(request.label()))
+                .orElse(repository.fullName()));
+        link.setStorageProvider(SubmissionStorageProvider.GITHUB);
+        link.setProviderResourceId(repository.fullName());
+        link.setProviderChecksum(snapshot.commitSha());
+        link.setProviderModifiedAt(synchronizedAt);
+        link.setRepoMetadata(metadata);
+        link.setIsPrimary(request.isPrimary() == null || request.isPrimary());
+        link.setDisplayOrder(request.displayOrder() == null ? 0 : request.displayOrder());
+        submissionLinkRepository.save(link);
 
         return toSubmissionResponse(getSubmission(savedSubmission.getId()));
     }
@@ -1030,11 +1115,25 @@ public class SubmissionServiceImpl implements SubmissionService {
     private void replaceLinks(Submission submission, List<SubmissionLinkRequest> links) {
         // Uploaded and imported evidence owns provider metadata that cannot be
         // reconstructed from a URL-only draft request. Replace only editable URLs.
-        submissionLinkRepository.deleteBySubmissionIdAndObjectKeyIsNull(submission.getId());
+        submissionLinkRepository
+                .deleteBySubmissionIdAndObjectKeyIsNullAndProviderResourceIdIsNull(
+                        submission.getId()
+                );
         List<SubmissionLink> entities = links.stream()
                 .map(link -> toLinkEntity(submission, link))
                 .toList();
         submissionLinkRepository.saveAll(entities);
+    }
+
+    private boolean isManagedGithubSnapshot(SubmissionLink link) {
+        return link.getStorageProvider() == SubmissionStorageProvider.GITHUB
+                && link.getProviderResourceId() != null
+                && link.getRepoMetadata() != null
+                && link.getRepoMetadata().getCommitSha() != null;
+    }
+
+    private LocalDateTime toUtc(java.time.Instant value) {
+        return value == null ? null : LocalDateTime.ofInstant(value, ZoneOffset.UTC);
     }
 
     private SubmissionLink toLinkEntity(Submission submission, SubmissionLinkRequest request) {

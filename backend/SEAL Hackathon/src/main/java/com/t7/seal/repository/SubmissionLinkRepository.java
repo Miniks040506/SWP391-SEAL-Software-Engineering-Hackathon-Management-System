@@ -14,5 +14,5 @@ public interface SubmissionLinkRepository extends JpaRepository<SubmissionLink, 
 
     long countBySubmissionIdAndObjectKeyIsNotNull(UUID submissionId);
 
-    void deleteBySubmissionIdAndObjectKeyIsNull(UUID submissionId);
+    void deleteBySubmissionIdAndObjectKeyIsNullAndProviderResourceIdIsNull(UUID submissionId);
 }

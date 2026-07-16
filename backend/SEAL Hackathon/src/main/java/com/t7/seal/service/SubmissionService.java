@@ -2,6 +2,7 @@ package com.t7.seal.service;
 
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.ImportGoogleDriveFileRequest;
+import com.t7.seal.request.submission.SelectGithubRepositoryRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
@@ -38,6 +39,13 @@ public interface SubmissionService {
             UUID teamId,
             UUID roundId,
             ImportGoogleDriveFileRequest request,
+            Authentication authentication
+    );
+
+    SubmissionResponse selectGithubRepository(
+            UUID teamId,
+            UUID roundId,
+            SelectGithubRepositoryRequest request,
             Authentication authentication
     );
 
