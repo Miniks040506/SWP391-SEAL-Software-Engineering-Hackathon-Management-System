@@ -88,6 +88,13 @@ export type UpdateSubmissionLinkRequest = {
   displayOrder?: number;
 };
 
+export type UpdateSubmissionLinkMetadataRequest = {
+  linkType?: SubmissionLinkType;
+  label?: string;
+  isPrimary?: boolean;
+  displayOrder?: number;
+};
+
 export type SubmissionResponse = {
   id: UUID;
   teamId: UUID;
