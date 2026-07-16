@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { roundApi } from "@/api/round.api";
 import { submissionApi } from "@/api/submission.api";
 import { teamApi } from "@/api/team.api";
-import { apiRequest } from "@/api/apiRequest";
 import type { UUID } from "@/types/common.types";
 import type { RoundDetailResponse } from "@/types/round.types";
 import type {
-  RequiredLinkConfig,
   SaveSubmissionDraftRequest,
   SubmissionDetailResponse,
   SubmissionResponse,
@@ -21,6 +19,8 @@ export const participantSubmissionKeys = {
   teamSubmissions: (teamId?: UUID) => ["participant-team-submissions", teamId] as const,
   submissionDetail: (submissionId?: UUID) => ["participant-submission-detail", submissionId] as const,
   roundDetail: (roundId?: UUID) => ["participant-round-detail", roundId] as const,
+  requirements: (teamId?: UUID, roundId?: UUID) =>
+    ["participant-submission-requirements", teamId, roundId] as const,
 };
 
 export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
@@ -73,6 +73,9 @@ function invalidateParticipantSubmission(
 ) {
   queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.teamSubmissions(teamId) });
   queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.roundDetail(roundId) });
+  queryClient.invalidateQueries({
+    queryKey: participantSubmissionKeys.requirements(teamId, roundId),
+  });
   if (result?.id) {
     queryClient.invalidateQueries({ queryKey: participantSubmissionKeys.submissionDetail(result.id) });
   }
@@ -124,29 +127,13 @@ export const useSubmitExistingSubmissionMutation = () => {
   });
 };
 
-export const useRequiredLinkConfigQuery = (roundId?: UUID) => {
-  const [configs, setConfigs] = useState<RequiredLinkConfig[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!roundId) return;
-    const fetchConfigs = async () => {
-      setLoading(true);
-      try {
-        const res = await apiRequest.get<RequiredLinkConfig[]>(
-          `/rounds/${roundId}/required-links`,
-        );
-        setConfigs(res);
-      } catch {
-        console.error("Failed to fetch required link config");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchConfigs();
-  }, [roundId]);
-
-  return { configs, loading };
+export const useSubmissionRequirementsQuery = (teamId?: UUID, roundId?: UUID) => {
+  return useQuery({
+    queryKey: participantSubmissionKeys.requirements(teamId, roundId),
+    queryFn: () => submissionApi.getSubmissionRequirements(teamId!, roundId!),
+    enabled: Boolean(teamId && roundId),
+    staleTime: 30_000,
+  });
 };
 
 export const useTeamSubmissionsQuery = (teamId?: UUID) => {

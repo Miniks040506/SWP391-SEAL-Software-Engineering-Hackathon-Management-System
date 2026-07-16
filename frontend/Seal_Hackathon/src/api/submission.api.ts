@@ -8,6 +8,7 @@ import type {
   SaveSubmissionDraftRequest,
   SubmissionDetailResponse,
   SubmissionLinkResponse,
+  SubmissionRequirementsResponse,
   SubmissionResponse,
   SubmissionSummaryResponse,
   SubmitDeliverablesRequest,
@@ -17,6 +18,12 @@ import type {
 } from "@/types/submission.types";
 
 export const submissionApi = {
+  getSubmissionRequirements(teamId: UUID, roundId: UUID) {
+    return apiRequest.get<SubmissionRequirementsResponse>(
+      `/teams/${teamId}/rounds/${roundId}/submission-requirements`,
+    );
+  },
+
   saveSubmissionDraft(teamId: UUID, roundId: UUID, payload: SaveSubmissionDraftRequest) {
     return apiRequest.post<SubmissionResponse>(
       `/teams/${teamId}/rounds/${roundId}/submission/draft`,
