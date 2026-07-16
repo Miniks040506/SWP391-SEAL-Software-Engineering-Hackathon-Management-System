@@ -7,6 +7,7 @@ import type {
   GetEventSubmissionsParams,
   ImportGoogleDriveFileRequest,
   SaveSubmissionDraftRequest,
+  SelectGithubRepositoryRequest,
   SubmissionAttemptResponse,
   SubmissionDetailResponse,
   SubmissionLinkResponse,
@@ -72,6 +73,17 @@ export const submissionApi = {
   ) {
     return apiRequest.post<SubmissionResponse>(
       `/teams/${teamId}/rounds/${roundId}/submission/google-drive`,
+      payload,
+    );
+  },
+
+  selectGithubRepository(
+    teamId: UUID,
+    roundId: UUID,
+    payload: SelectGithubRepositoryRequest,
+  ) {
+    return apiRequest.post<SubmissionResponse>(
+      `/teams/${teamId}/rounds/${roundId}/submission/github`,
       payload,
     );
   },

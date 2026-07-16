@@ -46,9 +46,20 @@ export type RepositoryMetadata = {
   platform?: string;
   repoName?: string;
   owner?: string;
+  repository?: string;
+  selectedReference?: string;
+  referenceType?: "BRANCH" | "TAG" | "COMMIT" | string;
+  commitSha?: string;
+  commitUrl?: string;
   defaultBranch?: string;
+  visibility?: "public" | "private" | "internal" | string;
   primaryLanguage?: string;
   lastPushAt?: ISODateTime;
+  committedAt?: ISODateTime;
+  lastSynchronizedAt?: ISODateTime;
+  accessError?: string;
+  commitCount?: number;
+  contributorCount?: number;
   stars?: number;
   forks?: number;
   isPrivate?: boolean;
@@ -78,6 +89,16 @@ export type SaveSubmissionDraftRequest = {
 export type ImportGoogleDriveFileRequest = {
   fileId: string;
   linkType: SubmissionLinkType;
+  label?: string;
+  isPrimary?: boolean;
+  displayOrder?: number;
+};
+
+export type SelectGithubRepositoryRequest = {
+  owner: string;
+  repository: string;
+  reference: string;
+  referenceType: "BRANCH" | "TAG" | "COMMIT";
   label?: string;
   isPrimary?: boolean;
   displayOrder?: number;
