@@ -112,6 +112,7 @@ app:
     failure-path: /login
   integrations:
     credential-encryption-key: ${PROVIDER_CREDENTIAL_ENCRYPTION_KEY:}
+    cookie-secure: ${PROVIDER_OAUTH_COOKIE_SECURE:false}
     google-drive:
       client-id: ${GOOGLE_DRIVE_CLIENT_ID:}
       client-secret: ${GOOGLE_DRIVE_CLIENT_SECRET:}

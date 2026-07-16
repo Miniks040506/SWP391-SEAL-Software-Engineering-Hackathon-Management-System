@@ -90,6 +90,10 @@ public class SecurityConfig {
                                 API + "/auth/oauth2/authorization/**",
                                 API + "/auth/oauth2/callback/**"
                         ).permitAll()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                API + "/integrations/google-drive/callback"
+                        ).permitAll()
 
                         // Public Read
                         .requestMatchers(HttpMethod.GET,
