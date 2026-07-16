@@ -3,6 +3,7 @@ package com.t7.seal.controller;
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.ImportGoogleDriveFileRequest;
+import com.t7.seal.request.submission.SelectGithubRepositoryRequest;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
@@ -341,6 +342,39 @@ public class SubmissionController {
                         roundId,
                         request,
                         authentication
+                ));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Select or synchronize GitHub repository evidence",
+            description = "Resolves the selected ref with the current user's GitHub connection and persists an immutable commit SHA in the draft.",
+            operationId = "submissionSelectGithubRepository",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Repository snapshot persisted in the draft.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "Repository or ref input is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication or GitHub authorization is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "The user cannot mutate this team or access the repository.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Team, round, repository, or ref was not found.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Draft, round, or provider state conflicts with synchronization.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "429", description = "GitHub rate limit reached.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "503", description = "GitHub is disabled, unconfigured, or unavailable.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping(
+            value = "/teams/{teamId}/rounds/{roundId}/submission/github",
+            consumes = "application/json"
+    )
+    public ResponseEntity<SubmissionResponse> selectGithubRepository(
+            @PathVariable UUID teamId,
+            @PathVariable UUID roundId,
+            @Valid @RequestBody SelectGithubRepositoryRequest request,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(submissionService.selectGithubRepository(
+                        teamId, roundId, request, authentication
                 ));
     }
 
