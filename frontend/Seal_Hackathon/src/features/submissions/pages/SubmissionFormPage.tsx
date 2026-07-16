@@ -38,8 +38,6 @@ type StorageItem = {
   file?: File;
   size: number;
   lastModified: number;
-  author: string;
-  license: string;
   path: string;
   linkType?: SubmissionLinkType;
 };
@@ -146,7 +144,7 @@ export function SubmissionFormPage() {
   const { teamId, roundId } = useParams<{ teamId: string; roundId: string }>();
   const navigate = useNavigate();
 
-  const { submission, teamInfo, loading, refetch } =
+  const { submission, loading, refetch } =
     useParticipantSubmissionData(teamId, roundId);
   const requirementsQuery = useSubmissionRequirementsQuery(teamId, roundId);
   const saveDraftMutation = useSaveSubmissionDraftMutation(teamId, roundId);
@@ -177,16 +175,12 @@ export function SubmissionFormPage() {
   const [tempFile, setTempFile] = useState<File | null>(null);
   const [tempLinkType, setTempLinkType] = useState<SubmissionLinkType | "">("");
   const [tempSaveAs, setTempSaveAs] = useState("");
-  const [tempAuthor, setTempAuthor] = useState("");
-  const [tempLicense, setTempLicense] = useState("All rights reserved");
   const pickerFileInputRef = useRef<HTMLInputElement>(null);
   const userHasEdited = useRef(false);
   const submitInFlight = useRef(false);
 
   const [editItem, setEditItem] = useState<StorageItem | null>(null);
   const [editName, setEditName] = useState("");
-  const [editAuthor, setEditAuthor] = useState("");
-  const [editLicense, setEditLicense] = useState("");
   const [editPath, setEditPath] = useState("");
   const [editLinkType, setEditLinkType] = useState<SubmissionLinkType | "">("");
 
@@ -321,8 +315,6 @@ export function SubmissionFormPage() {
         file: f,
         size: f.size,
         lastModified: f.lastModified,
-        author: teamInfo?.name || "Participant",
-        license: "All rights reserved",
         path: currentPath,
       }));
       setItems((prev) => [...prev, ...newItems]);
@@ -335,11 +327,9 @@ export function SubmissionFormPage() {
       setErrorMsg(localFileAvailability?.message || "Local file upload is unavailable.");
       return;
     }
-    setTempAuthor(teamInfo?.name || "Participant");
     setTempSaveAs("");
     setTempFile(null);
     setTempLinkType("");
-    setTempLicense("All rights reserved");
     setIsPickerOpen(true);
   };
 
@@ -367,8 +357,6 @@ export function SubmissionFormPage() {
         file: fileToSave,
         size: fileToSave.size,
         lastModified: fileToSave.lastModified,
-        author: tempAuthor,
-        license: tempLicense,
         path: currentPath,
         linkType: tempLinkType,
       };
@@ -392,8 +380,6 @@ export function SubmissionFormPage() {
         name: newFolderName.trim(),
         size: 0,
         lastModified: Date.now(),
-        author: teamInfo?.name || "Participant",
-        license: "All rights reserved",
         path: currentPath,
       };
       setItems((prev) => [...prev, newFolder]);
@@ -406,8 +392,6 @@ export function SubmissionFormPage() {
     if (!canEdit) return;
     setEditItem(item);
     setEditName(item.name);
-    setEditAuthor(item.author);
-    setEditLicense(item.license);
     setEditPath(item.path);
     setEditLinkType(item.linkType ?? "");
   };
@@ -424,8 +408,6 @@ export function SubmissionFormPage() {
             ? {
                 ...i,
                 name: editName,
-                author: editAuthor,
-                license: editLicense,
                 path: editPath,
                 linkType: editItem.type === "file" ? editLinkType || undefined : undefined,
               }
@@ -1640,36 +1622,6 @@ export function SubmissionFormPage() {
                     ))}
                   </TextField>
 
-                  <div className="flex flex-col gap-1.5 w-full">
-                    <label className="text-sm font-semibold text-slate-800 dark:text-slate-300">
-                      Author
-                    </label>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={tempAuthor}
-                      onChange={(e) => setTempAuthor(e.target.value)}
-                      sx={filterTextFieldSx}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5 w-full">
-                    <label className="text-sm font-semibold text-slate-800 dark:text-slate-300">
-                      Choose licence
-                    </label>
-                    <select
-                      className="w-full px-3 py-2.5 text-sm border border-slate-300 dark:border-slate-700 rounded-xl bg-[#f8fafc] dark:bg-[#1e293b] text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                      value={tempLicense}
-                      onChange={(e) => setTempLicense(e.target.value)}
-                    >
-                      <option value="All rights reserved">
-                        All rights reserved
-                      </option>
-                      <option value="Public domain">Public domain</option>
-                      <option value="Creative Commons">Creative Commons</option>
-                    </select>
-                  </div>
-
                   <div className="mt-4 flex justify-end">
                     <Button
                       variant="contained"
@@ -1868,41 +1820,6 @@ export function SubmissionFormPage() {
                       </MenuItem>
                     ))}
                   </TextField>
-                  <div className="flex flex-col gap-1.5 w-full">
-                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      Author
-                    </label>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={editAuthor}
-                      onChange={(e) => setEditAuthor(e.target.value)}
-                      sx={filterTextFieldSx}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5 w-full">
-                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                      Choose licence
-                      <svg
-                        className="w-4 h-4 text-blue-500"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-                      </svg>
-                    </label>
-                    <select
-                      className="w-full px-3 py-2.5 text-sm border border-slate-300 dark:border-slate-700 rounded-xl bg-[#f8fafc] dark:bg-[#1e293b] text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                      value={editLicense}
-                      onChange={(e) => setEditLicense(e.target.value)}
-                    >
-                      <option value="All rights reserved">
-                        All rights reserved
-                      </option>
-                      <option value="Public domain">Public domain</option>
-                      <option value="Creative Commons">Creative Commons</option>
-                    </select>
-                  </div>
                 </>
               )}
 
