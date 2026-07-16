@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Button } from "@mui/material";
 import { submissionApi } from "@/api/submission.api";
-import type { SubmissionLinkResponse } from "@/types/submission.types";
+import type {
+  RepositoryMetadata,
+  SubmissionLinkResponse,
+} from "@/types/submission.types";
 
 type Props = {
   links: SubmissionLinkResponse[];
@@ -18,6 +21,96 @@ const formatBytes = (bytes?: number | null) => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
+
+const formatRepositoryDate = (value?: string) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+};
+
+const safeExternalUrl = (value?: string) => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+function RepositoryEvidence({ metadata }: { metadata: RepositoryMetadata }) {
+  const repositoryName = metadata.repoName ||
+    [metadata.owner, metadata.repository].filter(Boolean).join("/") ||
+    "Repository";
+  const commitUrl = safeExternalUrl(metadata.commitUrl);
+  const rows = [
+    ["Repository", repositoryName],
+    [
+      "Selected ref",
+      metadata.selectedReference
+        ? `${metadata.referenceType || "REF"}: ${metadata.selectedReference}`
+        : null,
+    ],
+    ["Commit", metadata.commitSha ? metadata.commitSha.slice(0, 12) : null],
+    ["Default branch", metadata.defaultBranch],
+    ["Visibility", metadata.visibility || (metadata.isPrivate ? "private" : null)],
+    ["Language", metadata.primaryLanguage],
+    ["Last pushed", formatRepositoryDate(metadata.lastPushAt)],
+    ["Committed", formatRepositoryDate(metadata.committedAt)],
+    ["Synchronized", formatRepositoryDate(metadata.lastSynchronizedAt)],
+  ].filter((row): row is [string, string] => Boolean(row[1]));
+
+  return (
+    <div className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-700">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          Repository evidence
+        </p>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+          metadata.commitSha
+            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+            : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+        }`}>
+          {metadata.commitSha ? "Immutable commit snapshot" : "Public metadata fallback"}
+        </span>
+      </div>
+
+      <dl className="grid grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-1.5">
+        {rows.map(([label, value]) => (
+          <div key={label} className="contents">
+            <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              {label}
+            </dt>
+            <dd className="truncate text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {metadata.accessError && (
+        <p className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+          Access issue: {metadata.accessError}
+        </p>
+      )}
+
+      {commitUrl && (
+        <Button
+          size="small"
+          component="a"
+          href={commitUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          sx={{ mt: 1.5, textTransform: "none", fontWeight: 700 }}
+        >
+          Open frozen commit
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export function SubmissionLinksPreview({
   links,
@@ -127,29 +220,9 @@ export function SubmissionLinksPreview({
               </Button>
             )}
           </div>
-          {link.repoMetadata !== null &&
-            typeof link.repoMetadata === "object" &&
-            (() => {
-              const meta = link.repoMetadata as Record<string, unknown>;
-              return (
-                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                    Repository Metadata
-                  </p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    {Object.entries(meta).map(([key, value]) => (
-                      <div key={key} className="contents">
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{key}</span>
-                        <span className="text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
-                          {String(value)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()
-          }
+          {link.repoMetadata !== null && typeof link.repoMetadata === "object" && (
+            <RepositoryEvidence metadata={link.repoMetadata} />
+          )}
         </li>
       ))}
       {openError && <li className="text-sm text-rose-600 dark:text-rose-400">{openError}</li>}
