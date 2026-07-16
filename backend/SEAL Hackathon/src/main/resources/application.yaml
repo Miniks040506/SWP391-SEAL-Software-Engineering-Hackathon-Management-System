@@ -125,6 +125,15 @@ app:
       token-uri: https://oauth2.googleapis.com/token
       api-base-url: https://www.googleapis.com
       scopes: openid,email,https://www.googleapis.com/auth/drive.file
+    github:
+      client-id: ${GITHUB_SUBMISSION_CLIENT_ID:}
+      client-secret: ${GITHUB_SUBMISSION_CLIENT_SECRET:}
+      redirect-uri: ${GITHUB_SUBMISSION_REDIRECT_URI:}
+      authorization-uri: https://github.com/login/oauth/authorize
+      token-uri: https://github.com/login/oauth/access_token
+      api-base-url: https://api.github.com
+      api-version: 2026-03-10
+      private-repository-scopes: repo
   submission:
     storage:
       provider: ${SUBMISSION_STORAGE_PROVIDER:AWS_S3}
