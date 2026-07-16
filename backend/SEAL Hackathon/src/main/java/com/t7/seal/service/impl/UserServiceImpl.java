@@ -1,6 +1,7 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.JudgeType;
+import com.t7.seal.domain.AuditActionType;
 import com.t7.seal.domain.UserRole;
 import com.t7.seal.domain.UserStatus;
 import com.t7.seal.entities.Judge;
@@ -16,6 +17,7 @@ import com.t7.seal.request.user.*;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.user.*;
 import com.t7.seal.service.CloudinaryStorageService;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.EmailService;
 import com.t7.seal.service.PasswordHistoryService;
@@ -23,6 +25,7 @@ import com.t7.seal.service.TokenGenerator;
 import com.t7.seal.service.TokenBlacklistService;
 import com.t7.seal.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -40,6 +43,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -58,6 +62,10 @@ public class UserServiceImpl implements UserService {
     private final TokenGenerator tokenGenerator;
     private final EmailService emailService;
     private final PasswordHistoryService passwordHistoryService;
+    private final AuditLogService auditLogService;
+
+    @Value("${app.user-account.setup-expiration-hours:24}")
+    private int userSetupExpirationHours;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -208,10 +216,12 @@ public class UserServiceImpl implements UserService {
         UserRole role = parseEnum(UserRole.class, request.role(), "role");
         UserStatus status = parseEnum(UserStatus.class, request.status(), "status");
 
-        validateAdminCreateRole(role);
+        validateCreateRole(actor, role);
 
         String temporaryPassword = generateRandomToken();
-        String setupToken = generateRandomToken();
+        String setupCode = tokenGenerator.generateSixDigitCode();
+        LocalDateTime setupExpiresAt = LocalDateTime.now()
+                .plusHours(Math.max(userSetupExpirationHours, 1));
 
         User user = new User();
         user.setEmail(email);
@@ -220,14 +230,39 @@ public class UserServiceImpl implements UserService {
         user.setRole(role);
         user.setStatus(status);
         user.setPasswordHash(passwordEncoder.encode(temporaryPassword));
-        user.setPasswordResetToken(setupToken);
-        user.setPasswordResetExpiresAt(LocalDateTime.now().plusHours(24));
+        user.setPasswordResetToken(setupCode);
+        user.setPasswordResetExpiresAt(setupExpiresAt);
 
         if (status == UserStatus.ACTIVE) {
             user.setEmailVerifiedAt(LocalDateTime.now());
         }
 
         User saved = userRepository.save(user);
+
+        String setupPath = "/reset-password?email=" + encodeUrl(saved.getEmail())
+                + "&code=" + encodeUrl(setupCode);
+
+        emailService.sendUserAccountSetupEmail(
+                saved.getEmail(),
+                saved.getFullName(),
+                setupCode,
+                setupExpiresAt,
+                setupPath
+        );
+
+        auditLogService.record(
+                actor,
+                AuditActionType.USER_CREATED,
+                "users",
+                saved.getId(),
+                null,
+                Map.of(
+                        "email", saved.getEmail(),
+                        "role", saved.getRole().name(),
+                        "status", saved.getStatus().name()
+                ),
+                Map.of("setupExpiresAt", setupExpiresAt.toString())
+        );
 
         return toUserDetailResponse(saved, resolveRoleProfile(saved));
     }
@@ -632,10 +667,16 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private void validateAdminCreateRole(UserRole role) {
+    private void validateCreateRole(User actor, UserRole role) {
         if (role == UserRole.STUDENT) {
             throw new BadRequestException(
                     "Create student accounts through register flow to ensure StudentProfile is created.");
+        }
+
+        if (actor.getRole() == UserRole.COORDINATOR
+                && role != UserRole.JUDGE
+                && role != UserRole.MENTOR) {
+            throw new BadRequestException("Coordinators can create only JUDGE or MENTOR accounts.");
         }
     }
 
