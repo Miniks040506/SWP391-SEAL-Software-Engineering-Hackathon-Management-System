@@ -23,12 +23,31 @@ public class ProviderCredentialCipher {
     private static final String VERSION_PREFIX = "v1.";
     private static final int IV_LENGTH_BYTES = 12;
     private static final int TAG_LENGTH_BITS = 128;
+    private static final byte[] OAUTH_STATE_CONTEXT =
+            "seal:provider-oauth-state:v1".getBytes(StandardCharsets.UTF_8);
 
     private final ProviderOAuthProperties properties;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public String encrypt(UUID userId, ExternalProvider provider, String plaintext) {
         requireContext(userId, provider);
+        return encrypt(plaintext, context(userId, provider));
+    }
+
+    public String decrypt(UUID userId, ExternalProvider provider, String encryptedValue) {
+        requireContext(userId, provider);
+        return decrypt(encryptedValue, context(userId, provider));
+    }
+
+    public String encryptOAuthState(String plaintext) {
+        return encrypt(plaintext, OAUTH_STATE_CONTEXT);
+    }
+
+    public String decryptOAuthState(String encryptedValue) {
+        return decrypt(encryptedValue, OAUTH_STATE_CONTEXT);
+    }
+
+    private String encrypt(String plaintext, byte[] associatedData) {
         if (plaintext == null || plaintext.isBlank()) {
             throw new IllegalArgumentException("Provider credential cannot be blank.");
         }
@@ -38,7 +57,7 @@ public class ProviderCredentialCipher {
         try {
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             cipher.init(Cipher.ENCRYPT_MODE, encryptionKey(), new GCMParameterSpec(TAG_LENGTH_BITS, iv));
-            cipher.updateAAD(context(userId, provider));
+            cipher.updateAAD(associatedData);
             byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
             byte[] payload = ByteBuffer.allocate(iv.length + ciphertext.length)
                     .put(iv)
@@ -50,8 +69,7 @@ public class ProviderCredentialCipher {
         }
     }
 
-    public String decrypt(UUID userId, ExternalProvider provider, String encryptedValue) {
-        requireContext(userId, provider);
+    private String decrypt(String encryptedValue, byte[] associatedData) {
         if (encryptedValue == null || !encryptedValue.startsWith(VERSION_PREFIX)) {
             throw new IllegalArgumentException("Unsupported provider credential format.");
         }
@@ -71,7 +89,7 @@ public class ProviderCredentialCipher {
 
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             cipher.init(Cipher.DECRYPT_MODE, encryptionKey(), new GCMParameterSpec(TAG_LENGTH_BITS, iv));
-            cipher.updateAAD(context(userId, provider));
+            cipher.updateAAD(associatedData);
             return new String(cipher.doFinal(ciphertext), StandardCharsets.UTF_8);
         } catch (GeneralSecurityException | IllegalArgumentException exception) {
             throw new IllegalStateException("Provider credential decryption failed.", exception);
