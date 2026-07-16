@@ -1,5 +1,6 @@
 package com.t7.seal.service.impl;
 
+import com.t7.seal.config.SubmissionProperties;
 import com.t7.seal.dto.UploadedSubmissionFile;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.service.SubmissionFileStorageService;
@@ -23,7 +24,6 @@ import java.io.IOException;
 import java.text.Normalizer;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -49,20 +49,7 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
     @Value("${aws.s3.secret-key:}")
     private String secretKey;
 
-    @Value("${app.submission.upload.max-size-mb:25}")
-    private long maxSizeMb;
-
-    @Value("${app.submission.upload.allowed-content-types:" +
-            "application/pdf," +
-            "application/zip," +
-            "application/x-zip-compressed," +
-            "application/vnd.ms-powerpoint," +
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation," +
-            "video/mp4," +
-            "image/png," +
-            "image/jpeg," +
-            "text/plain}")
-    private String allowedContentTypes;
+    private final SubmissionProperties submissionProperties;
 
     @Override
     public UploadedSubmissionFile uploadSubmissionFile(
@@ -143,20 +130,33 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
             throw new BadRequestException("Submission file is required.");
         }
 
-        long maxBytes = maxSizeMb * 1024L * 1024L;
+        SubmissionProperties.Upload uploadPolicy = submissionProperties.getUpload();
+        long maxBytes = uploadPolicy.getMaxSizeBytes();
         if (file.getSize() > maxBytes) {
-            throw new BadRequestException("Submission file exceeds max size of " + maxBytes + "MB.");
+            throw new BadRequestException(
+                    "Submission file exceeds max size of " + uploadPolicy.getMaxSizeMb() + " MB."
+            );
         }
 
         String contentType = file.getContentType();
-        if (!isBlank(allowedContentTypes) && !isBlank(contentType)) {
-            boolean allowed = Arrays.stream(allowedContentTypes.split(","))
-                    .map(String::trim)
+        if (!uploadPolicy.getAllowedContentTypes().isEmpty() && !isBlank(contentType)) {
+            boolean allowed = uploadPolicy.getAllowedContentTypes().stream()
                     .anyMatch(contentType::equalsIgnoreCase);
 
             if (!allowed) {
                 throw new BadRequestException("Unsupported file type: " + contentType);
             }
+        }
+
+        String originalFileName = file.getOriginalFilename();
+        String extension = fileExtension(originalFileName);
+        boolean extensionAllowed = uploadPolicy.getAllowedExtensions().stream()
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .anyMatch(extension::equals);
+        if (!extensionAllowed) {
+            throw new BadRequestException(
+                    "Unsupported file extension: " + (extension.isEmpty() ? "none" : extension)
+            );
         }
     }
 
@@ -213,6 +213,17 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
                 .toLowerCase(Locale.ROOT);
 
         return value.isBlank() ? fallback : value;
+    }
+
+    private String fileExtension(String fileName) {
+        if (isBlank(fileName)) {
+            return "";
+        }
+        int extensionStart = fileName.lastIndexOf('.');
+        if (extensionStart < 0 || extensionStart == fileName.length() - 1) {
+            return "";
+        }
+        return fileName.substring(extensionStart).toLowerCase(Locale.ROOT);
     }
 
     private boolean isBlank(String value) {
