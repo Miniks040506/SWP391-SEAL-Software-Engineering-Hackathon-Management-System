@@ -153,7 +153,7 @@ export function SubmissionFormPage() {
     useSubmitExistingSubmissionMutation();
 
   const [items, setItems] = useState<StorageItem[]>([]);
-  const [currentPath, setCurrentPath] = useState("/");
+  const currentPath = "/";
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"icon" | "list">("icon");
 
@@ -511,12 +511,6 @@ export function SubmissionFormPage() {
     if (newSet.has(id)) newSet.delete(id);
     else newSet.add(id);
     setSelectedIds(newSet);
-  };
-
-  const navigateToFolder = (folderName: string) => {
-    setCurrentPath(
-      currentPath === "/" ? `/${folderName}` : `${currentPath}/${folderName}`,
-    );
   };
 
   const buildLinks = (): CreateSubmissionLinkRequest[] => {
@@ -910,10 +904,7 @@ export function SubmissionFormPage() {
                   </div>
 
                   <div className="bg-white dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 p-2 flex items-center flex-wrap gap-2 text-sm">
-                    <div
-                      className="flex items-center gap-1.5 cursor-pointer text-blue-600 dark:text-blue-400 hover:underline"
-                      onClick={() => setCurrentPath("/")}
-                    >
+                    <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
                       <svg
                         className="w-5 h-5 text-slate-800 dark:text-slate-300"
                         viewBox="0 0 24 24"
@@ -923,22 +914,6 @@ export function SubmissionFormPage() {
                       </svg>
                       <span className="font-semibold">Files</span>
                     </div>
-                    {currentPath
-                      .split("/")
-                      .filter(Boolean)
-                      .map((part, idx, arr) => {
-                        const path = "/" + arr.slice(0, idx + 1).join("/");
-                        return (
-                          <div
-                            key={path}
-                            className="flex items-center gap-1.5 cursor-pointer text-blue-600 dark:text-blue-400 hover:underline"
-                            onClick={() => setCurrentPath(path)}
-                          >
-                            <span className="text-slate-400">/</span>
-                            <span className="font-semibold">{part}</span>
-                          </div>
-                        );
-                      })}
                   </div>
 
                   <div
@@ -979,63 +954,24 @@ export function SubmissionFormPage() {
                                 key={item.id}
                                 className="w-24 flex flex-col items-center group relative"
                               >
-                                {item.type === "folder" ? (
-                                  <div
-                                    className="relative w-16 h-16 flex items-center justify-center cursor-pointer mb-2"
-                                    onClick={() => navigateToFolder(item.name)}
-                                  >
-                                    <svg
-                                      className="w-16 h-16 text-slate-800 dark:text-slate-300"
-                                      viewBox="0 0 24 24"
-                                      fill="currentColor"
-                                    >
-                                      <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-                                    </svg>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openEditModal(item);
-                                      }}
-                                      className="absolute -bottom-1 -right-1 w-7 h-7 bg-white dark:bg-slate-700 rounded-full border border-slate-200 dark:border-slate-600 flex items-center justify-center shadow-sm hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                      <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="currentColor"
-                                      >
-                                        <circle cx="12" cy="5" r="2" />
-                                        <circle cx="12" cy="12" r="2" />
-                                        <circle cx="12" cy="19" r="2" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div
-                                    onClick={() => openEditModal(item)}
-                                    className="relative w-18 h-20 border border-slate-300 dark:border-slate-600 rounded-lg flex items-center justify-center bg-white dark:bg-slate-800 transition-transform hover:scale-105 cursor-pointer mb-2 shadow-sm"
-                                  >
-                                    <div className="absolute top-0 right-0 w-4.5 h-4.5 border-l border-b border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-bl-md"></div>
-                                    <span className="text-[13px] font-black text-slate-700 dark:text-slate-300 mt-2">
-                                      {getExt(item.name)}
-                                    </span>
-                                  </div>
-                                )}
+                                <div
+                                  onClick={() => openEditModal(item)}
+                                  className="relative w-18 h-20 border border-slate-300 dark:border-slate-600 rounded-lg flex items-center justify-center bg-white dark:bg-slate-800 transition-transform hover:scale-105 cursor-pointer mb-2 shadow-sm"
+                                >
+                                  <div className="absolute top-0 right-0 w-4.5 h-4.5 border-l border-b border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-bl-md"></div>
+                                  <span className="text-[13px] font-black text-slate-700 dark:text-slate-300 mt-2">
+                                    {getExt(item.name)}
+                                  </span>
+                                </div>
                                 <span
                                   className="text-xs font-semibold w-full text-center truncate text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-                                  onClick={() =>
-                                    item.type === "folder"
-                                      ? navigateToFolder(item.name)
-                                      : openEditModal(item)
-                                  }
+                                  onClick={() => openEditModal(item)}
                                 >
                                   {item.name}
                                 </span>
-                                {item.type === "file" && (
-                                  <span className="mt-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                                    {submissionTypeLabel(item.linkType)}
-                                  </span>
-                                )}
+                                <span className="mt-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                                  {submissionTypeLabel(item.linkType)}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -1088,32 +1024,18 @@ export function SubmissionFormPage() {
                                   </td>
                                   <td
                                     className="p-3 flex items-center gap-3"
-                                    onClick={() =>
-                                      item.type === "folder"
-                                        ? navigateToFolder(item.name)
-                                        : openEditModal(item)
-                                    }
+                                    onClick={() => openEditModal(item)}
                                   >
-                                    {item.type === "folder" ? (
-                                      <svg
-                                        className="w-5 h-5 text-slate-800 dark:text-slate-300"
-                                        viewBox="0 0 24 24"
-                                        fill="currentColor"
-                                      >
-                                        <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-                                      </svg>
-                                    ) : (
-                                      <svg
-                                        className="w-5 h-5 text-slate-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path d="M7 3v18h10V8l-5-5H7z" />
-                                        <path d="M12 3v5h5" />
-                                      </svg>
-                                    )}
+                                    <svg
+                                      className="w-5 h-5 text-slate-400"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path d="M7 3v18h10V8l-5-5H7z" />
+                                      <path d="M12 3v5h5" />
+                                    </svg>
                                     <span className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer truncate max-w-50">
                                       {item.name}
                                     </span>
@@ -1125,9 +1047,7 @@ export function SubmissionFormPage() {
                                     {formatSize(item.size)}
                                   </td>
                                   <td className="p-3 text-slate-500 dark:text-slate-400 text-xs">
-                                    {item.type === "folder"
-                                      ? "Folder"
-                                      : submissionTypeLabel(item.linkType)}
+                                    {submissionTypeLabel(item.linkType)}
                                   </td>
                                 </tr>
                               ))}
