@@ -680,12 +680,12 @@ function RoundOperationPanel({
   return (
     <div className="col-span-1 md:col-span-2 mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex-1 min-w-[280px]">
+        <div className="min-w-0 flex-1 sm:min-w-[280px]">
           <p className="text-sm font-black text-slate-900 dark:text-white">
             Operation status: {status.roundStatus}
           </p>
           <p className="mt-1 text-xs font-semibold text-slate-500">
-            Period: {formatRoundTime(status.startAt)} â†’{" "}
+            Period: {formatRoundTime(status.startAt)} →{" "}
             {formatRoundTime(status.endAt)}
           </p>
           <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -1368,7 +1368,7 @@ export function RoundsTab({
                           </div>
                         </div>
                         <p className="mt-1 text-xs font-medium text-slate-500">
-                          Period: {formatRoundTime(raw.startAt)} â†’{" "}
+                          Period: {formatRoundTime(raw.startAt)} →{" "}
                           {formatRoundTime(raw.endAt)}
                         </p>
                         <p className="mt-1 text-xs font-medium text-slate-500">

@@ -90,9 +90,9 @@ function Stat({ icon, value, label }: { icon: React.ReactNode; value: CountValue
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "â€”";
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "â€”";
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -103,7 +103,7 @@ function formatDate(value?: string | null) {
 function formatCompetitionPeriod(event: EventSummaryResponse) {
   const start = formatDate(event.competitionStartAt);
   const end = formatDate(event.competitionEndAt);
-  if (start === "â€”" && end === "â€”") return "â€”";
+  if (start === "—" && end === "—") return "—";
   return `${start} - ${end}`;
 }
 
@@ -131,7 +131,7 @@ export function CoordinatorEventCard({ event, trackCount, registeredTeams, onEdi
         <Stat icon={<GroupsOutlinedIcon sx={{ fontSize: 16 }} />} value={registeredTeams ?? "—"} label="Registered Teams" />
       </div>
 
-      <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
+      <div className="mt-auto grid grid-cols-1 gap-2 pt-5 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => onEdit(event.id)}
