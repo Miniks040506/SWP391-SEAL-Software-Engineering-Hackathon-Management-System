@@ -17,6 +17,8 @@ import com.t7.seal.security.guard.CurrentUser;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RepositoryMetadataService;
 import com.t7.seal.service.SubmissionFileStorageService;
+import com.t7.seal.service.SubmissionMutationPolicy;
+import com.t7.seal.service.SubmissionRequirementCatalog;
 import com.t7.seal.service.SubmissionService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,75 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionFileStorageService submissionFileStorageService;
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final NotificationService notificationService;
+    private final SubmissionRequirementCatalog requirementCatalog;
+    private final SubmissionMutationPolicy mutationPolicy;
+
+    @Override
+    @Transactional(readOnly = true)
+    public SubmissionRequirementsResponse getSubmissionRequirements(
+            UUID teamId,
+            UUID roundId,
+            Authentication authentication
+    ) {
+        Team team = getTeam(teamId);
+        Round round = getRound(roundId);
+        Optional<Submission> currentSubmission = submissionRepository.findByTeamIdAndRoundId(teamId, roundId);
+
+        if (team.getTrack() != null) {
+            ensureRoundBelongsToTeamEvent(team, round);
+        }
+        ensureCanViewRequirements(team, currentSubmission.orElse(null), authentication);
+
+        List<SubmissionLink> currentLinks = currentSubmission
+                .map(submission -> submissionLinkRepository
+                        .findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(submission.getId()))
+                .orElseGet(List::of);
+        List<SubmissionLinkType> requiredTypes = team.getTrack() == null
+                || team.getTrack().getRequiredLinkTypes() == null
+                ? List.of()
+                : team.getTrack().getRequiredLinkTypes();
+        SubmissionRequirementCatalog.Evaluation requirements = requirementCatalog.evaluate(
+                requiredTypes,
+                currentLinks
+        );
+        SubmissionMutationPolicy.Evaluation permissions = mutationPolicy.evaluate(
+                team,
+                round,
+                CurrentUser.id(authentication),
+                requirements.missingRequiredTypes(),
+                LocalDateTime.now()
+        );
+
+        HackathonEvent event = round.getEvent();
+        Track track = team.getTrack();
+
+        return new SubmissionRequirementsResponse(
+                event == null ? null : event.getId(),
+                event == null ? null : event.getName(),
+                track == null ? null : track.getId(),
+                track == null ? null : track.getName(),
+                team.getId(),
+                team.getName(),
+                round.getId(),
+                round.getName(),
+                round.getDescription(),
+                round.getStatus().name(),
+                round.getSubmissionDeadline(),
+                round.isSubmissionLocked(),
+                round.getSubmissionLockedAt(),
+                true,
+                permissions.canEdit(),
+                permissions.canSubmit(),
+                permissions.blockedReason().name(),
+                permissions.blockedMessage(),
+                requirements.requirements(),
+                requirementCatalog.uploadPolicy(),
+                requirementCatalog.providerAvailability(),
+                currentSubmission.map(this::toSubmissionResponse).orElse(null),
+                requirements.satisfiedTypes(),
+                requirements.missingRequiredTypes()
+        );
+    }
 
     @Override
     @Transactional
@@ -544,6 +615,34 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (trackEventId == null || roundEventId == null || !trackEventId.equals(roundEventId)) {
             throw new BadRequestException("Round does not belong to the team's event.");
         }
+    }
+
+    private void ensureCanViewRequirements(
+            Team team,
+            Submission currentSubmission,
+            Authentication authentication
+    ) {
+        if (CurrentUser.isAdminOrCoordinator(authentication)) {
+            return;
+        }
+
+        UUID userId = CurrentUser.id(authentication);
+        if (team.getLeader() != null && userId.equals(team.getLeader().getId())) {
+            return;
+        }
+        if (teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(team.getId(), userId)) {
+            return;
+        }
+        if (isMentorAssignedToTeam(team, userId)) {
+            return;
+        }
+        if (currentSubmission != null
+                && currentSubmission.isScorable()
+                && isJudgeAssignedToSubmission(currentSubmission, userId)) {
+            return;
+        }
+
+        throw new ForbiddenException("You do not have access to this team's submission requirements.");
     }
 
     private void ensureTeamCanSubmit(Team team) {
