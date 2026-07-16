@@ -23,6 +23,24 @@ export type SubmissionStorageProvider =
   | "AWS_S3"
   | string;
 
+export type SubmissionInputSource =
+  | "URL"
+  | "LOCAL_FILE"
+  | "GOOGLE_DRIVE"
+  | "GITHUB";
+
+export type SubmissionBlockedReason =
+  | "NONE"
+  | "NOT_TEAM_LEADER"
+  | "TRACK_NOT_ASSIGNED"
+  | "TEAM_REGISTRATION_NOT_APPROVED"
+  | "TEAM_ELIMINATED"
+  | "TEAM_STATUS_NOT_ELIGIBLE"
+  | "MISSING_REQUIRED_TYPES"
+  | "ROUND_NOT_OPEN"
+  | "ROUND_SUBMISSION_LOCKED"
+  | "ROUND_SUBMISSION_DEADLINE_EXCEEDED";
+
 export type RepositoryMetadata = {
   platform?: string;
   repoName?: string;
@@ -143,6 +161,57 @@ export type SubmissionDetailResponse = {
   roundSubmissionLocked?: boolean | null;
   roundSubmissionLockedAt?: ISODateTime | null;
   links: SubmissionLinkResponse[];
+};
+
+export type SubmissionRequirementItemResponse = {
+  type: SubmissionLinkType;
+  label: string;
+  required: boolean;
+  allowedSources: SubmissionInputSource[];
+  primary: boolean;
+  displayOrder: number;
+  satisfied: boolean;
+  satisfiedByLinkIds: UUID[];
+};
+
+export type SubmissionUploadPolicyResponse = {
+  acceptedMimeTypes: string[];
+  acceptedExtensions: string[];
+  maximumFileSizeBytes: number;
+  maximumFiles: number;
+};
+
+export type SubmissionProviderAvailabilityResponse = {
+  source: SubmissionInputSource;
+  available: boolean;
+  message?: string | null;
+};
+
+export type SubmissionRequirementsResponse = {
+  eventId?: UUID | null;
+  eventName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  teamId: UUID;
+  teamName: string;
+  roundId: UUID;
+  roundName: string;
+  roundInstructions?: string | null;
+  roundStatus: string;
+  submissionDeadline?: ISODateTime | null;
+  submissionLocked: boolean;
+  submissionLockedAt?: ISODateTime | null;
+  canView: boolean;
+  canEdit: boolean;
+  canSubmit: boolean;
+  blockedReason: SubmissionBlockedReason;
+  blockedMessage?: string | null;
+  requirements: SubmissionRequirementItemResponse[];
+  uploadPolicy: SubmissionUploadPolicyResponse;
+  providerAvailability: SubmissionProviderAvailabilityResponse[];
+  currentSubmission?: SubmissionResponse | null;
+  satisfiedTypes: SubmissionLinkType[];
+  missingRequiredTypes: SubmissionLinkType[];
 };
 
 export type FileDownloadUrlResponse = {
