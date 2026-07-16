@@ -344,6 +344,87 @@ The backend reads configuration from environment variables (sensible dev default
 </details>
 
 <details>
+<summary><b>Submission providers and object storage</b></summary>
+
+Copy the tracked root `.env.example` to `.env` for local setup. Keep `.env`
+untracked and leave each provider feature flag `false` until all of that
+provider's credentials are configured. The API reports an actionable
+unavailable reason when a provider is disabled or incomplete.
+
+### Credential encryption
+
+`PROVIDER_CREDENTIAL_ENCRYPTION_KEY` must be a Base64-encoded 32-byte key. It
+encrypts OAuth access and refresh tokens before persistence. Generate a local
+key with:
+
+```bash
+openssl rand -base64 32
+```
+
+Never reuse this value as the JWT secret, expose it through a `VITE_*`
+variable, or commit it. Rotating it requires a controlled credential migration
+or reconnecting provider accounts. Production defaults provider OAuth cookies
+to `Secure`; local HTTP development may set
+`PROVIDER_OAUTH_COOKIE_SECURE=false`.
+
+### Google Drive
+
+Drive submission authorization is separate from Google sign-in. The login
+client does not grant Drive access and its tokens are never reused for
+submissions.
+
+1. In a dedicated Google Cloud project, enable the Google Drive API and Google
+   Picker API.
+2. Configure the OAuth consent screen and add the test accounts used for local
+   acceptance testing.
+3. Create a Web application OAuth client with this authorized redirect URI:
+   `http://localhost:8080/api/v1/integrations/google-drive/callback`.
+4. Create a browser API key restricted to the Picker API and the frontend
+   origins, and note the numeric Cloud project/App ID.
+5. Set `GOOGLE_DRIVE_CLIENT_ID`, `GOOGLE_DRIVE_CLIENT_SECRET`,
+   `GOOGLE_DRIVE_REDIRECT_URI`, `GOOGLE_DRIVE_PICKER_API_KEY`,
+   `GOOGLE_DRIVE_APP_ID`, and `PROVIDER_CREDENTIAL_ENCRYPTION_KEY`.
+6. Configure internal object storage, then set
+   `SUBMISSION_GOOGLE_DRIVE_ENABLED=true`.
+
+The provider requests `drive.file`, plus identity scopes used to label the
+connection. Google Picker grants the application access only to files selected
+by the user. Refresh tokens stay encrypted on the backend; the browser receives
+only a short-lived Picker access token. Selected evidence is imported into the
+configured submission object store so a later Drive permission change does not
+remove evidence already snapshotted for judging.
+
+For a deployed environment, replace the local callback with the public backend
+HTTPS URL in both Google Console and `GOOGLE_DRIVE_REDIRECT_URI`. The values
+must match exactly.
+
+### GitHub
+
+`GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` currently configure social login.
+They do not authorize repository submission access. `GITHUB_TOKEN` is an
+optional server identity for limited public-repository metadata lookup only; it
+must never be treated as the submitting student's identity or used to imply
+private-repository access. Keep `SUBMISSION_GITHUB_ENABLED=false` until the
+separate authenticated repository connection is configured.
+
+### Object storage
+
+Local uploads and imported provider evidence use the configured internal
+submission store. For AWS S3, set `AWS_REGION`, `AWS_S3_BUCKET`,
+`AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY`. `AWS_S3_PUBLIC_BASE_URL` is
+optional and must refer only to the intended bucket/CDN. Grant the runtime
+identity access to the submission prefix only; do not make private evidence
+public. Set `SUBMISSION_LOCAL_FILE_ENABLED=true` only after an upload and
+download smoke test succeeds.
+
+The server owns the limits exposed to the frontend through the submission
+requirements contract. Defaults are 25 MB per file and 10 files per
+submission; override them with `SUBMISSION_UPLOAD_MAX_SIZE_MB` and
+`SUBMISSION_UPLOAD_MAX_FILES`.
+
+</details>
+
+<details>
 <summary><b>AI assistant variables (<code>seal.ai.*</code>)</b></summary>
 
 The assistant runs out of the box in `RULE_BASED` mode with no credentials. To enable a real model:
