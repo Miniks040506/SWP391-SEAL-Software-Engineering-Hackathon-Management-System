@@ -69,7 +69,7 @@ public class GlobalExceptionHandler {
             BadRequestException ex,
             HttpServletRequest request
     ) {
-        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return error(HttpStatus.BAD_REQUEST, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(ConflictException.class)

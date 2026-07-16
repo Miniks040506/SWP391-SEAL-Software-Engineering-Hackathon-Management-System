@@ -312,16 +312,19 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthMessageResponse resetPassword(ResetPasswordRequest request) {
         if (!request.newPassword().equals(request.confirmPassword())) {
-            throw new BadRequestException("Password confirmation does not match.");
+            throw new BadRequestException(
+                    "PASSWORD_CONFIRMATION_MISMATCH",
+                    "Password confirmation does not match."
+            );
         }
 
         String email = normalizeEmail(request.email());
 
         User user = userRepository.findByEmailAndPasswordResetToken(email, request.code())
-                .orElseThrow(() -> new BadRequestException("Invalid or expired reset code."));
+                .orElseThrow(() -> invalidResetCode());
 
         if (!user.isPasswordResetTokenValid(request.code())) {
-            throw new BadRequestException("Invalid or expired reset code.");
+            throw invalidResetCode();
         }
 
         passwordHistoryService.validateNotReused(user, request.newPassword());
@@ -335,6 +338,13 @@ public class AuthServiceImpl implements AuthService {
         passwordHistoryService.recordPassword(user, previousPasswordHash);
 
         return new AuthMessageResponse("Password has been reset successfully.");
+    }
+
+    private BadRequestException invalidResetCode() {
+        return new BadRequestException(
+                "RESET_CODE_INVALID_OR_EXPIRED",
+                "Invalid or expired reset code."
+        );
     }
 
     private void throwAccountLocked(User user) {

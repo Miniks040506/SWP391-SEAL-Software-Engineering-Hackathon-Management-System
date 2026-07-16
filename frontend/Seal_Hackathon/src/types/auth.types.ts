@@ -104,6 +104,10 @@ export type AuthErrorResponse = {
   message: string;
   path?: string;
   timestamp?: string;
+  fieldErrors?: Array<{
+    field: string;
+    message: string;
+  }>;
 };
 
 export type ForgotPasswordRequest = {

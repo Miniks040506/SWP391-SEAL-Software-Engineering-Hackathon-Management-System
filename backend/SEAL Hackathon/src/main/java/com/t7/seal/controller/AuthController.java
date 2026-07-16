@@ -294,7 +294,7 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Request syntax, parameter conversion, or validation failed.",
+                    description = "Validation failed. Business codes include RESET_CODE_INVALID_OR_EXPIRED, PASSWORD_REUSED, and PASSWORD_CONFIRMATION_MISMATCH.",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             ),
             @ApiResponse(
