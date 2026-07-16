@@ -166,10 +166,12 @@ export const createUserSchema = z.object({
     .min(2, "Full name must be at least 2 characters.")
     .max(200, "Full name must be less than 200 characters."),
   email: z.string().trim().min(1, "Email is required.").email("Invalid email."),
-  password: passwordSchema,
   phone: z.string().trim().max(20).optional().or(z.literal("")),
   role: z.enum(CREATE_ROLES, { message: "Role is required." }),
-  status: z.enum(CREATE_STATUSES, { message: "Status is required." }),
+  judgeType: z.enum(["INTERNAL", "GUEST"]),
+  affiliation: z.string().trim().max(200).optional().or(z.literal("")),
+  expertise: z.string().trim().max(500).optional().or(z.literal("")),
+  temporaryAccountExpiresAt: z.string().optional().or(z.literal("")),
 });
 
 export type CreateUserFormInput = z.input<typeof createUserSchema>;

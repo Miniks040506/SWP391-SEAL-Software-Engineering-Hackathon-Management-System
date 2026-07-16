@@ -23,7 +23,7 @@ export function CoordinatorUserCreateDialog({
   const createGuestJudgeMutation = useCreateGuestJudgeMutation();
 
   const handleCreateUser = async (payload: BaseCreateUserPayload) => {
-    await createMutation.mutateAsync(payload as any);
+    await createMutation.mutateAsync(payload);
   };
 
   const handleCreateGuestJudge = async (payload: CreateGuestJudgePayload) => {
