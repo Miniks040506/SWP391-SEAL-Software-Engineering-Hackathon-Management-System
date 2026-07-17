@@ -38,6 +38,7 @@ public class RankingServiceImpl implements RankingService {
     private final EventAnnouncementRepository eventAnnouncementRepository;
     private final RoundRepository roundRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final MentorAssignmentRepository mentorAssignmentRepository;
     private final ScoreRepository scoreRepository;
     private final EventCriteriaRepository eventCriteriaRepository;
     private final SubmissionRepository submissionRepository;
@@ -446,7 +447,11 @@ public class RankingServiceImpl implements RankingService {
         if (viewer.isStudent() && teamMemberRepository.existsByTeamIdAndUserIdAndLeftAtIsNull(teamId, viewer.getId())) {
             return;
         }
-        throw new ForbiddenException("You can only view your own team's published scores.");
+        if (viewer.isMentor() && viewer.isActive()
+                && mentorAssignmentRepository.existsByTeamIdAndUserId(teamId, viewer.getId())) {
+            return;
+        }
+        throw new ForbiddenException("You can only view published scores for your own or assigned team.");
     }
 
     private UUID createResultAnnouncement(HackathonEvent event,

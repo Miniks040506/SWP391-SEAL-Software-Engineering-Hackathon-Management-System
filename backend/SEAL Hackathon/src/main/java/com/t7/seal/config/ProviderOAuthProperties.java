@@ -17,6 +17,7 @@ public class ProviderOAuthProperties {
     private String credentialEncryptionKey = "";
     private boolean cookieSecure;
     private GoogleDrive googleDrive = new GoogleDrive();
+    private Github github = new Github();
 
     public boolean hasValidEncryptionKey() {
         if (credentialEncryptionKey == null || credentialEncryptionKey.isBlank()) {
@@ -45,6 +46,22 @@ public class ProviderOAuthProperties {
         return "Google Drive OAuth is configured.";
     }
 
+    public boolean isGithubConfigured() {
+        return hasValidEncryptionKey()
+                && github.hasRequiredCredentials();
+    }
+
+    public String githubConfigurationMessage() {
+        if (!hasValidEncryptionKey()) {
+            return "Set PROVIDER_CREDENTIAL_ENCRYPTION_KEY to a Base64-encoded 32-byte key.";
+        }
+        if (!github.hasRequiredCredentials()) {
+            return "Set GITHUB_SUBMISSION_CLIENT_ID, GITHUB_SUBMISSION_CLIENT_SECRET, "
+                    + "and GITHUB_SUBMISSION_REDIRECT_URI.";
+        }
+        return "GitHub repository OAuth is configured.";
+    }
+
     @Getter
     @Setter
     public static class GoogleDrive {
@@ -68,6 +85,29 @@ public class ProviderOAuthProperties {
                     && hasText(redirectUri)
                     && hasText(pickerApiKey)
                     && hasText(appId);
+        }
+
+        private boolean hasText(String value) {
+            return value != null && !value.isBlank();
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class Github {
+        private String clientId = "";
+        private String clientSecret = "";
+        private String redirectUri = "";
+        private String authorizationUri = "https://github.com/login/oauth/authorize";
+        private String tokenUri = "https://github.com/login/oauth/access_token";
+        private String apiBaseUrl = "https://api.github.com";
+        private String apiVersion = "2026-03-10";
+        private List<String> privateRepositoryScopes = new ArrayList<>(List.of("repo"));
+
+        public boolean hasRequiredCredentials() {
+            return hasText(clientId)
+                    && hasText(clientSecret)
+                    && hasText(redirectUri);
         }
 
         private boolean hasText(String value) {

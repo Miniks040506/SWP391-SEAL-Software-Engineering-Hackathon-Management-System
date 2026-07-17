@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Pagination } from "@mui/material";
+import { Alert, Pagination } from "@mui/material";
 import { eventApi } from "@/api/event.api";
 import { roundApi } from "@/api/round.api";
 import { trackApi } from "@/api/track.api";
-import { teamApi } from "@/api/team.api";
-import type { UUID } from "@/types/common.types";
 import { useCoordinatorSubmissionsQuery } from "../hooks/useCoordinatorSubmissionQueries";
 import { SubmissionFilterBar } from "../components/SubmissionFilterBar";
 import { SubmissionTable } from "../components/SubmissionTable";
@@ -77,54 +75,31 @@ export function CoordinatorSubmissionsPage() {
     fetchFilterOptions();
   }, []);
 
-  const { data, loading, refetch } = useCoordinatorSubmissionsQuery(filters);
-
-  const [projectTitles, setProjectTitles] = useState<Record<UUID, string>>({});
-
-  useEffect(() => {
-    if (!data?.content || data.content.length === 0) {
-      setProjectTitles({});
-      return;
-    }
-
-    const fetchTitles = async () => {
-      try {
-        const uniqueTeamIds = Array.from(new Set(data.content.map((s) => s.teamId)));
-        
-        const promises = uniqueTeamIds.map(id => teamApi.getTeamById(id));
-        const results = await Promise.all(promises);
-
-        const newMap: Record<UUID, string> = {};
-        results.forEach((team) => {
-          if (team.projectTitle) {
-            newMap[team.id] = team.projectTitle;
-          }
-        });
-
-        setProjectTitles(newMap);
-      } catch (error) {
-        console.error("Failed to fetch project titles:", error);
-      }
-    };
-
-    fetchTitles();
-  }, [data?.content]);
+  const { data, loading, error, refetch } = useCoordinatorSubmissionsQuery(filters);
 
   const handleCloseDrawer = () => {
     navigate("/coordinator/submissions");
   };
 
-  const items = data?.content ?? [];
+  const items = useMemo(() => data?.content ?? [], [data?.content]);
   const total = data?.totalElements ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
   const progressSummary = useMemo(() => {
-    const stats = { pending: 0, draft: 0, submitted: 0, locked: 0, total: items.length };
-    items.forEach((sub: any) => {
-      if (sub.roundSubmissionLocked) stats.locked++;
-      else if (sub.gradingStatus === "GRADED") stats.submitted++;
-      else if (sub.gradingStatus === "READY") stats.draft++;
-      else stats.pending++;
+    const stats = {
+      draft: 0,
+      submitted: 0,
+      late: 0,
+      disqualified: 0,
+      locked: 0,
+      total: items.length,
+    };
+    items.forEach((sub) => {
+      if (sub.roundSubmissionLocked) stats.locked += 1;
+      if (sub.status === "DRAFT") stats.draft += 1;
+      if (sub.status === "SUBMITTED") stats.submitted += 1;
+      if (sub.status === "LATE") stats.late += 1;
+      if (sub.status === "DISQUALIFIED") stats.disqualified += 1;
     });
     return stats;
   }, [items]);
@@ -143,17 +118,24 @@ export function CoordinatorSubmissionsPage() {
         </div>
       </div>
 
+      {error && (
+        <Alert severity="error" className="mb-6">
+          Unable to load submissions. Check the selected event, track, and round.
+        </Alert>
+      )}
+
       {items.length > 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 mb-6">
           <div className="flex items-center gap-2 pr-4 sm:border-r border-slate-200 dark:border-slate-700">
-            <span className="text-sm font-bold text-slate-500">Progress:</span>
-            <span className="text-xl font-extrabold text-slate-900 dark:text-white">{progressSummary.submitted} / {progressSummary.total}</span>
+            <span className="text-sm font-bold text-slate-500">Finalized:</span>
+            <span className="text-xl font-extrabold text-slate-900 dark:text-white">{progressSummary.submitted + progressSummary.late} / {progressSummary.total}</span>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
-            <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400"><span className="h-2.5 w-2.5 rounded-full bg-orange-500"></span>{progressSummary.pending} Pending</span>
             <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400"><span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>{progressSummary.draft} Draft Saved</span>
             <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400"><span className="h-2.5 w-2.5 rounded-full bg-green-500"></span>{progressSummary.submitted} Submitted</span>
-            <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400"><span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>{progressSummary.locked} Locked</span>
+            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400"><span className="h-2.5 w-2.5 rounded-full bg-amber-500"></span>{progressSummary.late} Late</span>
+            <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400"><span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>{progressSummary.disqualified} Disqualified</span>
+            <span className="text-slate-500 dark:text-slate-400">{progressSummary.locked} in locked rounds</span>
           </div>
         </div>
       )}
@@ -170,7 +152,6 @@ export function CoordinatorSubmissionsPage() {
         <SubmissionTable 
           submissions={items} 
           loading={loading} 
-          projectTitles={projectTitles} 
         />
 
         {totalPages > 1 && (

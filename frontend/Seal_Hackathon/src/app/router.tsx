@@ -426,6 +426,11 @@ export const router = createBrowserRouter([
       { path: "dashboard", element: <MentorDashboardPage /> },
       { path: "teams", element: <MentorTeamsPage /> },
       { path: "teams/:teamId", element: <MentorTeamDetailPage /> },
+      { path: "teams/:teamId/scores", element: <TeamPublishedScoresPage /> },
+      {
+        path: "teams/:teamId/rounds/:roundId/scores",
+        element: <TeamDetailedScorePage />,
+      },
       { path: "submissions", element: <MentorSubmissionPage /> },
       {
         path: "submissions/:submissionId",

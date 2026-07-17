@@ -2,6 +2,8 @@ package com.t7.seal.controller;
 
 import com.t7.seal.config.ApiPaths;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
+import com.t7.seal.request.submission.ImportGoogleDriveFileRequest;
+import com.t7.seal.request.submission.SelectGithubRepositoryRequest;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
@@ -300,6 +302,79 @@ public class SubmissionController {
                         note, label, isPrimary,
                         displayOrder, submitNow,
                         file, authentication
+                ));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Import Google Drive evidence",
+            description = "Validates a Google Picker selection and snapshots it into internal submission storage without exposing refresh credentials.",
+            operationId = "submissionImportGoogleDriveFile",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Drive evidence imported into the draft.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "Invalid file ID, evidence type, or request.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication or Drive authorization is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "The user cannot mutate this team or Drive denied access.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Team, round, or selected Drive file was not found.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Draft, round, file-count, provider, or storage state conflicts with import.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "413", description = "Selected file exceeds the configured maximum size.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "415", description = "Selected file MIME type or extension is unsupported.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "429", description = "Google Drive rate limit reached.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "503", description = "Google Drive or internal storage is unavailable.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping(
+            value = "/teams/{teamId}/rounds/{roundId}/submission/google-drive",
+            consumes = "application/json"
+    )
+    public ResponseEntity<SubmissionResponse> importGoogleDriveFile(
+            @Parameter(description = "Unique team identifier.", required = true)
+            @PathVariable UUID teamId,
+            @Parameter(description = "Unique round identifier.", required = true)
+            @PathVariable UUID roundId,
+            @Valid @RequestBody ImportGoogleDriveFileRequest request,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(submissionService.importGoogleDriveFile(
+                        teamId,
+                        roundId,
+                        request,
+                        authentication
+                ));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Select or synchronize GitHub repository evidence",
+            description = "Resolves the selected ref with the current user's GitHub connection and persists an immutable commit SHA in the draft.",
+            operationId = "submissionSelectGithubRepository",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Repository snapshot persisted in the draft.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "Repository or ref input is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication or GitHub authorization is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "The user cannot mutate this team or access the repository.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Team, round, repository, or ref was not found.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Draft, round, or provider state conflicts with synchronization.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "429", description = "GitHub rate limit reached.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "503", description = "GitHub is disabled, unconfigured, or unavailable.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping(
+            value = "/teams/{teamId}/rounds/{roundId}/submission/github",
+            consumes = "application/json"
+    )
+    public ResponseEntity<SubmissionResponse> selectGithubRepository(
+            @PathVariable UUID teamId,
+            @PathVariable UUID roundId,
+            @Valid @RequestBody SelectGithubRepositoryRequest request,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(submissionService.selectGithubRepository(
+                        teamId, roundId, request, authentication
                 ));
     }
 
@@ -1239,7 +1314,7 @@ public class SubmissionController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Create Submission File Download Url",
-            description = "Create Submission File Download Url through GET /api/v1/submission-links/{linkId}/download-url. Successful execution returns HTTP 200 with FileDownloadUrlResponse. Access: SecurityConfig roles STUDENT, COORDINATOR via matcher /api/v1/submission-links/**; @PreAuthorize(\"isAuthenticated()\").",
+            description = "Create Submission File Download Url through GET /api/v1/submission-links/{linkId}/download-url. Successful execution returns HTTP 200 with FileDownloadUrlResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submission-links/**; service authorization enforces team membership or assigned mentor/judge scope; @PreAuthorize(\"isAuthenticated()\").",
             operationId = "submissionCreateSubmissionFileDownloadUrl",
             security = @SecurityRequirement(name = "bearerAuth")
     )

@@ -22,6 +22,19 @@ public interface MentorAssignmentRepository extends JpaRepository<MentorAssignme
             SELECT COUNT(ma) > 0
             FROM MentorAssignment ma
             JOIN ma.track t
+            JOIN t.teams team
+            WHERE ma.user.id = :userId
+              AND team.id = :teamId
+            """)
+    boolean existsByTeamIdAndUserId(
+            @Param("teamId") UUID teamId,
+            @Param("userId") UUID mentorUserId
+    );
+
+    @Query("""
+            SELECT COUNT(ma) > 0
+            FROM MentorAssignment ma
+            JOIN ma.track t
             JOIN t.event e
             WHERE ma.user.id = :userId
               AND e.id = :eventId

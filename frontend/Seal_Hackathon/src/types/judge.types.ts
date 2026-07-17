@@ -11,9 +11,11 @@ export type JudgeAssignmentListItem = {
   totalToScore?: number | null;
 };
 
+export type JudgeEligibleSubmissionStatus = "SUBMITTED" | "LATE";
+
 export type GetJudgeSubmissionsParams = PageParams & {
   roundId?: UUID;
-  status?: string;
+  status?: JudgeEligibleSubmissionStatus;
   search?: string;
 };
 

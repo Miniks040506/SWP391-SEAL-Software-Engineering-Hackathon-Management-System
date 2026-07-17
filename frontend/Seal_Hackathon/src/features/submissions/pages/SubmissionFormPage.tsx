@@ -24,6 +24,8 @@ import { SubmissionRequirementsPanel } from "../components/SubmissionRequirement
 import { SubmissionStatusBadge } from "../components/SubmissionStatusBadge";
 import { SubmissionHistoryTable } from "../components/SubmissionHistoryTable";
 import { SubmissionLinksPreview } from "../components/SubmissionLinksPreview";
+import { GoogleDriveAttachmentPanel } from "../components/GoogleDriveAttachmentPanel";
+import { GithubRepositoryPanel } from "../components/GithubRepositoryPanel";
 import { filterTextFieldSx } from "../schemas/submissions.schema";
 import type {
   CreateSubmissionLinkRequest,
@@ -139,6 +141,32 @@ function getFilePolicyError(
   return null;
 }
 
+function googleDriveCallbackError(code: string | null) {
+  if (code === "GOOGLE_DRIVE_AUTHORIZATION_CANCELLED") {
+    return "Google Drive connection was cancelled.";
+  }
+  if (code === "GOOGLE_DRIVE_OAUTH_STATE_INVALID") {
+    return "Google Drive connection expired or could not be verified. Start again.";
+  }
+  if (code === "GOOGLE_DRIVE_AUTHORIZATION_INVALID") {
+    return "Google Drive authorization is no longer valid. Connect again.";
+  }
+  return "Google Drive could not be connected. Check provider setup and retry.";
+}
+
+function githubCallbackError(code: string | null) {
+  if (code === "GITHUB_AUTHORIZATION_CANCELLED") {
+    return "GitHub connection was cancelled.";
+  }
+  if (code === "GITHUB_OAUTH_STATE_INVALID") {
+    return "GitHub connection expired or could not be verified. Start again.";
+  }
+  if (code === "GITHUB_AUTHORIZATION_INVALID") {
+    return "GitHub authorization is no longer valid. Connect again.";
+  }
+  return "GitHub could not be connected. Check provider setup and retry.";
+}
+
 export function SubmissionFormPage() {
   const { teamId, roundId } = useParams<{ teamId: string; roundId: string }>();
   const navigate = useNavigate();
@@ -172,6 +200,9 @@ export function SubmissionFormPage() {
   const [dragActive, setDragActive] = useState(false);
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [attachmentSource, setAttachmentSource] = useState<
+    "LOCAL_FILE" | "GOOGLE_DRIVE" | "GITHUB"
+  >("LOCAL_FILE");
   const [tempFile, setTempFile] = useState<File | null>(null);
   const [tempLinkType, setTempLinkType] = useState<SubmissionLinkType | "">("");
   const [tempSaveAs, setTempSaveAs] = useState("");
@@ -195,11 +226,51 @@ export function SubmissionFormPage() {
   const [savingEvidenceMetadata, setSavingEvidenceMetadata] = useState(false);
 
   useEffect(() => {
+    const callbackUrl = new URL(window.location.href);
+    const driveResult = callbackUrl.searchParams.get("googleDrive");
+    const githubResult = callbackUrl.searchParams.get("github");
+    if (!driveResult && !githubResult) return;
+
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      if (driveResult === "connected") {
+        setSuccessMsg(
+          "Google Drive connected. Open Add Attachment to choose a file.",
+        );
+      } else if (driveResult) {
+        setErrorMsg(
+          googleDriveCallbackError(callbackUrl.searchParams.get("code")),
+        );
+      } else if (githubResult === "connected") {
+        const privateAccess = callbackUrl.searchParams.get("privateRepositories") === "true";
+        setSuccessMsg(
+          `GitHub connected${privateAccess ? " with private repository access" : " for public repositories"}. Open Add Attachment to choose a repository.`,
+        );
+      } else {
+        setErrorMsg(githubCallbackError(callbackUrl.searchParams.get("code")));
+      }
+    });
+    callbackUrl.searchParams.delete("googleDrive");
+    callbackUrl.searchParams.delete("github");
+    callbackUrl.searchParams.delete("code");
+    callbackUrl.searchParams.delete("privateRepositories");
+    window.history.replaceState(
+      null,
+      "",
+      `${callbackUrl.pathname}${callbackUrl.search}${callbackUrl.hash}`,
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled || userHasEdited.current) return;
       const urlLinks = (submission?.links ?? []).filter(
-        (link) => link.storageProvider !== "AWS_S3",
+        (link) => !link.objectKey && !link.providerResourceId,
       );
       setLinks(
         urlLinks.length > 0
@@ -237,7 +308,20 @@ export function SubmissionFormPage() {
   const driveAvailability = requirementsQuery.data?.providerAvailability.find(
     (provider) => provider.source === "GOOGLE_DRIVE",
   );
+  const githubAvailability = requirementsQuery.data?.providerAvailability.find(
+    (provider) => provider.source === "GITHUB",
+  );
   const canUploadLocalFile = canEdit && localFileAvailability?.available === true;
+  const canOpenAttachmentDialog =
+    canEdit &&
+    (localFileAvailability?.available === true ||
+      driveAvailability?.available === true ||
+      githubAvailability?.available === true);
+  const managedGithubLink = (submission?.links ?? []).find(
+    (link) =>
+      link.storageProvider === "GITHUB" &&
+      Boolean(link.providerResourceId && link.repoMetadata?.commitSha),
+  );
   const uploadAccept = uploadPolicy
     ? [...uploadPolicy.acceptedMimeTypes, ...uploadPolicy.acceptedExtensions].join(",")
     : undefined;
@@ -316,10 +400,20 @@ export function SubmissionFormPage() {
 
   const openPicker = () => {
     if (!canEdit) return;
-    if (!localFileAvailability?.available) {
-      setErrorMsg(localFileAvailability?.message || "Local file upload is unavailable.");
+    if (!canOpenAttachmentDialog) {
+      setErrorMsg(
+        localFileAvailability?.message ||
+          driveAvailability?.message ||
+          githubAvailability?.message ||
+          "File providers are unavailable.",
+      );
       return;
     }
+    setAttachmentSource(localFileAvailability?.available
+      ? "LOCAL_FILE"
+      : driveAvailability?.available
+        ? "GOOGLE_DRIVE"
+        : "GITHUB");
     setTempSaveAs("");
     setTempFile(null);
     setTempLinkType("");
@@ -618,10 +712,10 @@ export function SubmissionFormPage() {
 
     const actualFiles = items;
     const validLinks = links.filter((l) => l.url.trim() !== "");
-    const existingUploadedFiles = (submission?.links ?? []).filter(
-      (l) => l.storageProvider === "AWS_S3"
+    const existingProviderEvidence = (submission?.links ?? []).filter((l) =>
+      Boolean(l.objectKey || l.providerResourceId),
     );
-    if (validLinks.length === 0 && actualFiles.length === 0 && existingUploadedFiles.length === 0) {
+    if (validLinks.length === 0 && actualFiles.length === 0 && existingProviderEvidence.length === 0) {
       setErrorMsg("Please provide at least a link or upload a file.");
       return;
     }
@@ -806,9 +900,16 @@ export function SubmissionFormPage() {
                     <div className="flex gap-1.5">
                       <button
                         onClick={openPicker}
-                        disabled={!canUploadLocalFile}
+                        disabled={!canOpenAttachmentDialog}
                         className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
-                        title={localFileAvailability?.message || "Add file"}
+                        title={
+                          canOpenAttachmentDialog
+                            ? "Add attachment"
+                            : localFileAvailability?.message ||
+                              driveAvailability?.message ||
+                              githubAvailability?.message ||
+                              "Attachment providers are unavailable"
+                        }
                       >
                         <svg
                           width="14"
@@ -1275,30 +1376,79 @@ export function SubmissionFormPage() {
                 </button>
               </div>
               <div className="flex px-6 gap-6">
-                <span className="-mb-px border-b-2 border-blue-600 pb-3 text-sm font-semibold text-blue-600 dark:text-blue-400">
-                  Upload a file
-                </span>
                 <button
                   type="button"
-                  disabled
-                  title={driveAvailability?.message || "Google Drive is not configured."}
-                  className="-mb-px cursor-not-allowed border-b-2 border-transparent pb-3 text-sm font-semibold text-slate-400 opacity-70"
+                  disabled={!canUploadLocalFile}
+                  onClick={() => setAttachmentSource("LOCAL_FILE")}
+                  title={localFileAvailability?.message || "Upload a local file"}
+                  className={`-mb-px border-b-2 pb-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${
+                    attachmentSource === "LOCAL_FILE"
+                      ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-slate-500"
+                  }`}
                 >
-                  Google Drive unavailable
+                  Upload a file
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttachmentSource("GOOGLE_DRIVE")}
+                  title={driveAvailability?.message || "Choose from Google Drive"}
+                  className={`-mb-px border-b-2 pb-3 text-sm font-semibold ${
+                    attachmentSource === "GOOGLE_DRIVE"
+                      ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-slate-500"
+                  }`}
+                >
+                  Google Drive
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttachmentSource("GITHUB")}
+                  title={githubAvailability?.message || "Choose a GitHub repository"}
+                  className={`-mb-px border-b-2 pb-3 text-sm font-semibold ${
+                    attachmentSource === "GITHUB"
+                      ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-slate-500"
+                  }`}
+                >
+                  GitHub
                 </button>
               </div>
             </div>
 
             <div className="p-6 overflow-y-auto">
-              <div className="flex flex-col gap-5">
-                <div
-                  role="note"
-                  className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
-                >
-                  <span className="font-bold">Google Drive is disabled.</span>{" "}
-                  {driveAvailability?.message ||
-                    "Configure the Google Drive provider before selecting Drive evidence."}
-                </div>
+              {attachmentSource === "GITHUB" ? (
+                <GithubRepositoryPanel
+                  teamId={teamId}
+                  roundId={roundId}
+                  canEdit={canEdit}
+                  availability={githubAvailability}
+                  existingLink={managedGithubLink}
+                  onError={setErrorMsg}
+                  onSaved={async () => {
+                    await Promise.all([refetch(), requirementsQuery.refetch()]);
+                    setSuccessMsg("GitHub repository snapshot saved.");
+                    setIsPickerOpen(false);
+                  }}
+                />
+              ) : attachmentSource === "GOOGLE_DRIVE" ? (
+                <GoogleDriveAttachmentPanel
+                  teamId={teamId}
+                  roundId={roundId}
+                  canEdit={canEdit}
+                  availability={driveAvailability}
+                  requirements={linkTypeOptions}
+                  uploadPolicy={uploadPolicy}
+                  persistedFileCount={persistedFileCount}
+                  onError={setErrorMsg}
+                  onImported={async () => {
+                    await Promise.all([refetch(), requirementsQuery.refetch()]);
+                    setSuccessMsg("Google Drive evidence imported and snapshotted.");
+                    setIsPickerOpen(false);
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col gap-5">
                   <div className="flex flex-col gap-1.5 w-full">
                     <label className="text-sm font-semibold text-slate-800 dark:text-slate-300">
                       File Attachment
@@ -1396,7 +1546,8 @@ export function SubmissionFormPage() {
                       Upload this file
                     </Button>
                   </div>
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

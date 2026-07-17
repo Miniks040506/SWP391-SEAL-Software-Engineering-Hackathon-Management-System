@@ -14,14 +14,6 @@ servers:
 tags:
 - name: Audit Logs
   description: Query append-only audit activity and supported action types.
-- name: Awards
-  description: "Award prizes, clear awards, and derive winners from ranking."
-- name: Event Exports
-  description: "Create event ranking, score, and team-list exports."
-- name: Exports
-  description: "Create, inspect, download, retry, and delete export jobs."
-- name: Event Competition
-  description: Participant competition view for an event.
 - name: Notifications
   description: "Notification inbox, dispatch, recipient resolution, and email testing."
 - name: Submissions
@@ -30,51 +22,27 @@ tags:
   description: Participant join requests and leader decisions.
 - name: Teams
   description: "Team formation, invitations, join requests, and registration"
+- name: Google Drive Integration
+  description: Separate least-privilege Drive OAuth connection.
 - name: Authentication
   description: "Registration, login, verification, and password recovery"
-- name: Reminders
-  description: Manual and generated event deadline reminders.
-- name: Tracks
-  description: Competition tracks and mentor assignments
 - name: Ranking Queries
   description: Filtered rankings and team ranking history.
 - name: Mentors
   description: "Mentor tracks, team progress, submissions, and feedback."
-- name: Criteria
-  description: Scoring criteria and event overrides
-- name: System
-  description: System configuration and health information.
 - name: Tracks
   description: "Track configuration, mentor assignment, availability, and registration."
-- name: AI Administration
-  description: "Manage AI knowledge, embeddings, and safety logs."
-- name: Team Invitations
-  description: Invitation inbox and token-based invitation actions.
 - name: Authentication
   description: "Registration, verification, login, token, logout, and password recovery."
 - name: Disqualifications
   description: "Disqualification, appeal, overturn, and active-case lookup."
-- name: Results
-  description: "Ranking, advancement, disqualification, prizes, and publication"
 - name: Teams
   description: "Team lifecycle, membership, invitations, join codes, and advancement\
     \ status."
-- name: Rounds
-  description: "Round lifecycle, locking, and advancement"
-- name: Coordinator Grading
-  description: Coordinator grading progress and score-sheet reopening.
 - name: Grading
   description: "Judge assignment, scoring, calibration, and progress"
 - name: Audit
   description: Append-only audit history
-- name: Calibration
-  description: "Calibration rounds, benchmark scoring, and score distributions."
-- name: Announcements
-  description: Manage and publish event announcements.
-- name: Exports
-  description: "Export job creation, status, and downloads"
-- name: AI Assistant
-  description: "Assistant chat, RAG knowledge, and safety administration"
 - name: Export Jobs
   description: Compatibility endpoints for export status and downloads.
 - name: Users
@@ -83,30 +51,66 @@ tags:
   description: Profiles and user administration
 - name: Rounds
   description: "Round lifecycle, advance rules, assignments, locks, and progress."
-- name: System
-  description: System configuration and health
 - name: Grading
   description: "Judge score-sheet retrieval, draft save, and final submission."
-- name: Coordinator Teams
-  description: "Coordinator team search, review, and registration decisions."
 - name: Forming Teams
   description: Discover teams currently accepting participants.
 - name: Results and Rankings
   description: "Ranking calculation, leaderboards, advancement, and result publication."
-- name: Notifications
-  description: "Announcements, notifications, reminders, and email delivery"
 - name: Events
   description: Event lifecycle and public discovery
-- name: Prizes
-  description: Prize CRUD and event prize lookup.
 - name: Judges
   description: Judge assignments and assigned-submission queues.
-- name: AI Assistant
-  description: Role-aware bilingual assistant conversations and RAG responses.
 - name: Submissions
   description: "Deliverables, links, files, and repository metadata"
 - name: Scoring Criteria
   description: Reusable criteria and event-specific criteria configuration.
+- name: Awards
+  description: "Award prizes, clear awards, and derive winners from ranking."
+- name: Event Exports
+  description: "Create event ranking, score, and team-list exports."
+- name: Exports
+  description: "Create, inspect, download, retry, and delete export jobs."
+- name: Event Competition
+  description: Participant competition view for an event.
+- name: Reminders
+  description: Manual and generated event deadline reminders.
+- name: Tracks
+  description: Competition tracks and mentor assignments
+- name: Criteria
+  description: Scoring criteria and event overrides
+- name: System
+  description: System configuration and health information.
+- name: AI Administration
+  description: "Manage AI knowledge, embeddings, and safety logs."
+- name: Team Invitations
+  description: Invitation inbox and token-based invitation actions.
+- name: Results
+  description: "Ranking, advancement, disqualification, prizes, and publication"
+- name: Rounds
+  description: "Round lifecycle, locking, and advancement"
+- name: Coordinator Grading
+  description: Coordinator grading progress and score-sheet reopening.
+- name: GitHub Integration
+  description: Authenticated repository selection and snapshots.
+- name: Calibration
+  description: "Calibration rounds, benchmark scoring, and score distributions."
+- name: Announcements
+  description: Manage and publish event announcements.
+- name: Exports
+  description: "Export job creation, status, and downloads"
+- name: AI Assistant
+  description: "Assistant chat, RAG knowledge, and safety administration"
+- name: System
+  description: System configuration and health
+- name: Coordinator Teams
+  description: "Coordinator team search, review, and registration decisions."
+- name: Notifications
+  description: "Announcements, notifications, reminders, and email delivery"
+- name: Prizes
+  description: Prize CRUD and event prize lookup.
+- name: AI Assistant
+  description: Role-aware bilingual assistant conversations and RAG responses.
 - name: Events
   description: "Event lifecycle, public discovery, result publication, and RBL entry\
     \ points."
@@ -314,10 +318,9 @@ paths:
       tags:
       - Users
       summary: Create User
-      description: "Create User through POST /api/v1/users. Successful execution returns\
-        \ HTTP 201 with UserDetailResponse. Access: SecurityConfig roles ADMIN, COORDINATOR\
-        \ via matcher /api/v1/users; @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\"\
-        ). Requires a CreateUserRequest request body validated with Jakarta Bean Validation."
+      description: Create a non-student user and send a single-use password setup
+        code. Coordinators may create only JUDGE or MENTOR accounts. No credential
+        is returned or logged.
       operationId: userCreateUser
       requestBody:
         content:
@@ -1482,6 +1485,177 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           description: An unexpected server error occurred.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/teams/{teamId}/rounds/{roundId}/submission/google-drive:
+    post:
+      tags:
+      - Submissions
+      summary: Import Google Drive evidence
+      description: Validates a Google Picker selection and snapshots it into internal
+        submission storage without exposing refresh credentials.
+      operationId: submissionImportGoogleDriveFile
+      parameters:
+      - name: teamId
+        in: path
+        description: Unique team identifier.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: roundId
+        in: path
+        description: Unique round identifier.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportGoogleDriveFileRequest"
+        required: true
+      responses:
+        "201":
+          description: Drive evidence imported into the draft.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SubmissionResponse"
+        "400":
+          description: "Invalid file ID, evidence type, or request."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication or Drive authorization is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: The user cannot mutate this team or Drive denied access.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: "Team, round, or selected Drive file was not found."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: "Draft, round, file-count, provider, or storage state conflicts\
+            \ with import."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "413":
+          description: Selected file exceeds the configured maximum size.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "415":
+          description: Selected file MIME type or extension is unsupported.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          description: Google Drive rate limit reached.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: Google Drive or internal storage is unavailable.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/teams/{teamId}/rounds/{roundId}/submission/github:
+    post:
+      tags:
+      - Submissions
+      summary: Select or synchronize GitHub repository evidence
+      description: Resolves the selected ref with the current user's GitHub connection
+        and persists an immutable commit SHA in the draft.
+      operationId: submissionSelectGithubRepository
+      parameters:
+      - name: teamId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: roundId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectGithubRepositoryRequest"
+        required: true
+      responses:
+        "201":
+          description: Repository snapshot persisted in the draft.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SubmissionResponse"
+        "400":
+          description: Repository or ref input is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication or GitHub authorization is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: The user cannot mutate this team or access the repository.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: "Team, round, repository, or ref was not found."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: "Draft, round, or provider state conflicts with synchronization."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          description: GitHub rate limit reached.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: "GitHub is disabled, unconfigured, or unavailable."
           content:
             '*/*':
               schema:
@@ -2738,6 +2912,55 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           description: An unexpected server error occurred.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/submissions/{submissionId}/resubmit:
+    post:
+      tags:
+      - Submissions
+      summary: Begin Submission Resubmission
+      description: Reopens a finalized submission as the next draft attempt while
+        preserving its immutable history.
+      operationId: submissionBeginResubmission
+      parameters:
+      - name: submissionId
+        in: path
+        description: Unique submission identifier.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: The next draft attempt is ready for editing.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SubmissionResponse"
+        "401":
+          description: Authentication is required or the access token is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: Only the team leader can begin a resubmission.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: The submission was not found.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: "The submission, round, lock, or deadline state prevents resubmission."
           content:
             '*/*':
               schema:
@@ -5389,6 +5612,95 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           description: An unexpected server error occurred.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/integrations/google-drive/connect:
+    post:
+      tags:
+      - Google Drive Integration
+      summary: Start Google Drive authorization
+      description: Creates encrypted state and PKCE values. The refresh token is never
+        exposed.
+      operationId: googleDriveStartConnection
+      parameters:
+      - name: returnPath
+        in: query
+        required: false
+        schema:
+          type: string
+          default: /events
+      responses:
+        "200":
+          description: Authorization flow created.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoogleDriveOAuthStartResponse"
+        "400":
+          description: The requested return path is unsafe.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: Drive is disabled or not configured.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/integrations/github/connect:
+    post:
+      tags:
+      - GitHub Integration
+      summary: Start GitHub repository authorization
+      description: Private repository access is optional and explicitly requested.
+      operationId: githubStartConnection
+      parameters:
+      - name: returnPath
+        in: query
+        required: false
+        schema:
+          type: string
+          default: /events
+      - name: includePrivateRepositories
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: Authorization flow created.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GithubOAuthStartResponse"
+        "400":
+          description: The requested return path is unsafe.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: GitHub is disabled or not configured.
           content:
             '*/*':
               schema:
@@ -8279,7 +8591,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthMessageResponse"
         "400":
-          description: "Request syntax, parameter conversion, or validation failed."
+          description: "Validation failed. Business codes include RESET_CODE_INVALID_OR_EXPIRED,\
+            \ PASSWORD_REUSED, and PASSWORD_CONFIRMATION_MISMATCH."
           content:
             '*/*':
               schema:
@@ -8302,10 +8615,8 @@ paths:
       tags:
       - Authentication
       summary: Resend Verification
-      description: "Resend Verification through POST /api/v1/auth/resend-verification.\
-        \ Successful execution returns HTTP 200 with AuthMessageResponse. Access:\
-        \ Authenticated via SecurityConfig matcher anyRequest(). Requires an EmailRequest\
-        \ request body validated with Jakarta Bean Validation."
+      description: "Request another email verification code. The response is intentionally\
+        \ identical when the email is unknown or already verified. Access: Public."
       operationId: authResendVerification
       requestBody:
         content:
@@ -8326,12 +8637,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
-        "401":
-          description: Authentication is required or the access token is invalid.
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ApiErrorResponse"
         "409":
           description: The operation conflicts with the current resource or workflow
             state.
@@ -8345,8 +8650,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
-      security:
-      - bearerAuth: []
   /api/v1/auth/register:
     post:
       tags:
@@ -8505,6 +8808,19 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Credentials are invalid or the account is unverified. Unverified
+            accounts return code ACCOUNT_UNVERIFIED.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "423":
+          description: The account is temporarily locked after repeated failed attempts.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LoginLockoutResponse"
         "409":
           description: The operation conflicts with the current resource or workflow
             state.
@@ -10269,6 +10585,67 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
       security:
       - bearerAuth: []
+  /api/v1/submission-links/{linkId}/metadata:
+    patch:
+      tags:
+      - Submissions
+      summary: Update Submission Evidence Metadata
+      description: "Updates type, label, primary flag, or display order without changing\
+        \ the evidence URL or storage identity."
+      operationId: submissionUpdateSubmissionLinkMetadata
+      parameters:
+      - name: linkId
+        in: path
+        description: Unique submission evidence identifier.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubmissionLinkMetadataRequest"
+        required: true
+      responses:
+        "200":
+          description: Submission evidence metadata updated successfully.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SubmissionLinkResponse"
+        "400":
+          description: No metadata was provided or a metadata value is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication is required or the access token is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: Only the team leader may edit this evidence.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Submission evidence was not found.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: "The round is closed, locked, or past its submission deadline."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
   /api/v1/rounds/{roundId}:
     get:
       tags:
@@ -10995,9 +11372,11 @@ paths:
       tags:
       - Events
       summary: Delete Event
-      description: "Delete Event through DELETE /api/v1/events/{eventId}. Successful\
-        \ execution returns HTTP 204 without a response body. Access: SecurityConfig\
-        \ role COORDINATOR via matcher /api/v1/events/*; @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId,\
+      description: "Permanently delete an event only while it is in DRAFT status through\
+        \ DELETE /api/v1/events/{eventId}. Returns HTTP 409 when the event is not\
+        \ a draft or has dependent records. Successful execution returns HTTP 204\
+        \ without a response body. Access: SecurityConfig role COORDINATOR via matcher\
+        \ /api/v1/events/*; @PreAuthorize(\"@eventSecurity.canManageEvent(#eventId,\
         \ authentication)\")."
       operationId: eventDeleteEvent
       parameters:
@@ -11037,8 +11416,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "409":
-          description: The operation conflicts with the current resource or workflow
-            state.
+          description: Event deletion requires DRAFT status and no dependent records.
           content:
             '*/*':
               schema:
@@ -12661,10 +13039,8 @@ paths:
       tags:
       - Teams
       summary: Get Team Published Scores
-      description: "Get Team Published Scores through GET /api/v1/teams/{teamId}/scores.\
-        \ Successful execution returns HTTP 200 with List<TeamDetailedScoreResponse>.\
-        \ Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"\
-        isAuthenticated()\")."
+      description: "Returns published team scores to team members, assigned-track\
+        \ mentors, coordinators, and admins. Judge identities are excluded."
       operationId: teamGetTeamPublishedScores
       parameters:
       - name: teamId
@@ -12716,15 +13092,77 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
       security:
       - bearerAuth: []
+  /api/v1/teams/{teamId}/rounds/{roundId}/submission-requirements:
+    get:
+      tags:
+      - Submissions
+      summary: Get Submission Requirements
+      description: "Returns the authoritative submission requirements, server upload\
+        \ limits, provider availability, current draft state, and current-user permissions\
+        \ for a team and round."
+      operationId: submissionGetRequirements
+      parameters:
+      - name: teamId
+        in: path
+        description: Unique team identifier.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: roundId
+        in: path
+        description: Unique round identifier.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Submission requirements returned successfully.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SubmissionRequirementsResponse"
+        "400":
+          description: The round does not belong to the team's event.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication is required or the access token is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: The current user is not allowed to view this team's submission
+            requirements.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: The team or round was not found.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          description: An unexpected server error occurred.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
   /api/v1/teams/{teamId}/rounds/{roundId}/scores:
     get:
       tags:
       - Teams
       summary: Get Team Published Round Score
-      description: "Get Team Published Round Score through GET /api/v1/teams/{teamId}/rounds/{roundId}/scores.\
-        \ Successful execution returns HTTP 200 with TeamDetailedScoreResponse. Access:\
-        \ Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"\
-        isAuthenticated()\")."
+      description: "Returns a published round score to team members, assigned-track\
+        \ mentors, coordinators, and admins. Judge identities are excluded."
       operationId: teamGetTeamPublishedRoundScore
       parameters:
       - name: teamId
@@ -13624,6 +14062,107 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
       security:
       - bearerAuth: []
+  /api/v1/submissions/{submissionId}/attempts:
+    get:
+      tags:
+      - Submissions
+      summary: Get Submission Attempt History
+      description: Returns immutable finalized attempts newest-first for users authorized
+        to view the submission.
+      operationId: submissionGetSubmissionAttempts
+      parameters:
+      - name: submissionId
+        in: path
+        description: Unique submission identifier.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Submission attempt history returned successfully.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubmissionAttemptResponse"
+        "401":
+          description: Authentication is required or the access token is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: The authenticated user cannot view this submission.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: The submission was not found.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/submissions/{submissionId}/attempts/evidence/{evidenceId}/download-url:
+    get:
+      tags:
+      - Submissions
+      summary: Create Submission Attempt File Download URL
+      description: Creates a short-lived download URL for authorized immutable attempt
+        evidence.
+      operationId: submissionCreateAttemptFileDownloadUrl
+      parameters:
+      - name: submissionId
+        in: path
+        description: Unique submission identifier.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: evidenceId
+        in: path
+        description: Immutable attempt-evidence identifier.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Short-lived attempt evidence download URL created successfully.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FileDownloadUrlResponse"
+        "400":
+          description: The evidence is not a downloadable uploaded file.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication is required or the access token is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: The authenticated user cannot view this submission.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: The submission or attempt evidence was not found.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
   /api/v1/submissions/{submissionId}/admin-view:
     get:
       tags:
@@ -13689,8 +14228,9 @@ paths:
       summary: Create Submission File Download Url
       description: "Create Submission File Download Url through GET /api/v1/submission-links/{linkId}/download-url.\
         \ Successful execution returns HTTP 200 with FileDownloadUrlResponse. Access:\
-        \ SecurityConfig roles STUDENT, COORDINATOR via matcher /api/v1/submission-links/**;\
-        \ @PreAuthorize(\"isAuthenticated()\")."
+        \ SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submission-links/**;\
+        \ service authorization enforces team membership or assigned mentor/judge\
+        \ scope; @PreAuthorize(\"isAuthenticated()\")."
       operationId: submissionCreateSubmissionFileDownloadUrl
       parameters:
       - name: linkId
@@ -14993,6 +15533,90 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
       security:
       - bearerAuth: []
+  /api/v1/mentor/submissions:
+    get:
+      tags:
+      - Mentors
+      summary: List submissions in assigned mentor tracks
+      description: Authoritative server-filtered mentor submission source. Drafts
+        are never returned.
+      operationId: mentorGetAssignedSubmissions
+      parameters:
+      - name: eventId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: trackId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: teamId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: roundId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          description: Assigned-track submissions returned.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MentorSubmissionPageResponse"
+        "400":
+          description: A status or filter value is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: The mentor is not assigned to the requested track.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
   /api/v1/mentor/submissions/{submissionId}:
     get:
       tags:
@@ -15270,6 +15894,12 @@ paths:
         required: false
         schema:
           type: string
+      - name: search
+        in: query
+        description: "Optional team, project, track, or round search. (optional)"
+        required: false
+        schema:
+          type: string
       - name: page
         in: query
         description: "Zero-based result page index. (default: 0, optional)"
@@ -15343,6 +15973,12 @@ paths:
       - name: status
         in: query
         description: Optional status filter. (optional)
+        required: false
+        schema:
+          type: string
+      - name: search
+        in: query
+        description: "Optional team, project, track, or round search. (optional)"
         required: false
         schema:
           type: string
@@ -15540,6 +16176,12 @@ paths:
         required: false
         schema:
           type: string
+      - name: search
+        in: query
+        description: "Optional team, project, track, or round search. (optional)"
+        required: false
+        schema:
+          type: string
       - name: page
         in: query
         description: "Zero-based result page index. (default: 0, optional)"
@@ -15619,6 +16261,12 @@ paths:
       - name: status
         in: query
         description: Optional status filter. (optional)
+        required: false
+        schema:
+          type: string
+      - name: search
+        in: query
+        description: "Optional team, project, track, or round search. (optional)"
         required: false
         schema:
           type: string
@@ -15898,6 +16546,379 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
       security:
       - bearerAuth: []
+  /api/v1/integrations/google-drive/status:
+    get:
+      tags:
+      - Google Drive Integration
+      summary: Get Google Drive connection status
+      operationId: googleDriveGetConnectionStatus
+      responses:
+        "200":
+          description: Status returned.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoogleDriveConnectionStatusResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/integrations/google-drive/picker-session:
+    get:
+      tags:
+      - Google Drive Integration
+      summary: Create a Google Picker session
+      description: Returns a short-lived access token for Picker. Refresh credentials
+        remain server-side.
+      operationId: googleDriveCreatePickerSession
+      responses:
+        "200":
+          description: Picker session returned.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoogleDrivePickerSessionResponse"
+        "401":
+          description: Drive authorization was revoked.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Drive is not connected.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          description: Google rate limit reached.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: Drive is unavailable or not configured.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/integrations/google-drive/callback:
+    get:
+      tags:
+      - Google Drive Integration
+      summary: Complete Google Drive authorization
+      description: "Public Google callback protected by encrypted state, PKCE, and\
+        \ browser binding."
+      operationId: googleDriveCompleteConnection
+      parameters:
+      - name: code
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: error
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: seal_google_drive_oauth
+        in: cookie
+        required: false
+        schema:
+          type: string
+      responses:
+        "302":
+          description: "Redirects to the verified frontend return path with connected,\
+            \ cancellation, provider-error, or invalid-state result parameters."
+  /api/v1/integrations/github/status:
+    get:
+      tags:
+      - GitHub Integration
+      summary: Get GitHub connection status
+      operationId: githubGetConnectionStatus
+      responses:
+        "200":
+          description: Status returned.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GithubConnectionStatusResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/integrations/github/repositories:
+    get:
+      tags:
+      - GitHub Integration
+      summary: List repositories accessible to the connected GitHub user
+      operationId: githubListRepositories
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      responses:
+        "200":
+          description: Repositories returned.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GithubRepositoryResponse"
+        "401":
+          description: GitHub authorization was revoked.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: GitHub is not connected.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          description: GitHub rate limit reached.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: GitHub is unavailable or not configured.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/integrations/github/repositories/{owner}/{repository}/tags:
+    get:
+      tags:
+      - GitHub Integration
+      summary: List tags for an accessible repository
+      operationId: githubListTags
+      parameters:
+      - name: owner
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: repository
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 100
+      responses:
+        "200":
+          description: Accessible tags returned.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GithubReferenceResponse"
+        "400":
+          description: "Owner, repository, page, or size is invalid."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication or GitHub authorization is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: The connected account cannot access the repository.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Repository was not found or is not visible.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: GitHub is not connected.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          description: GitHub rate limit reached.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: GitHub is unavailable or not configured.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/integrations/github/repositories/{owner}/{repository}/branches:
+    get:
+      tags:
+      - GitHub Integration
+      summary: List branches for an accessible repository
+      operationId: githubListBranches
+      parameters:
+      - name: owner
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: repository
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 100
+      responses:
+        "200":
+          description: Accessible branches returned.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GithubReferenceResponse"
+        "400":
+          description: "Owner, repository, page, or size is invalid."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Authentication or GitHub authorization is invalid.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: The connected account cannot access the repository.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Repository was not found or is not visible.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: GitHub is not connected.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          description: GitHub rate limit reached.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: GitHub is unavailable or not configured.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/integrations/github/callback:
+    get:
+      tags:
+      - GitHub Integration
+      summary: Complete GitHub repository authorization
+      description: "Public GitHub callback protected by encrypted state, PKCE, and\
+        \ browser binding."
+      operationId: githubCompleteConnection
+      parameters:
+      - name: code
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: error
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: seal_github_oauth
+        in: cookie
+        required: false
+        schema:
+          type: string
+      responses:
+        "302":
+          description: "Redirects to the verified frontend return path with connected,\
+            \ cancellation, provider-error, or invalid-state result parameters."
   /api/v1/grading/submissions/{submissionId}:
     get:
       tags:
@@ -19091,6 +20112,51 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
       security:
       - bearerAuth: []
+  /api/v1/integrations/google-drive/connection:
+    delete:
+      tags:
+      - Google Drive Integration
+      summary: Disconnect Google Drive
+      description: Clears stored provider credentials without deleting imported submission
+        evidence.
+      operationId: googleDriveDisconnect
+      responses:
+        "200":
+          description: Drive disconnected.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuthMessageResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/integrations/github/connection:
+    delete:
+      tags:
+      - GitHub Integration
+      summary: Disconnect GitHub
+      description: Clears credentials without deleting snapshotted submission metadata.
+      operationId: githubDisconnect
+      responses:
+        "200":
+          description: GitHub disconnected.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuthMessageResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
 components:
   schemas:
     SystemConfigItemRequest:
@@ -19163,6 +20229,13 @@ components:
           type: string
           description: HTTP error reason phrase.
           example: Bad Request
+          readOnly: true
+        code:
+          type:
+          - string
+          - "null"
+          description: Stable machine-readable business error code when available.
+          example: SUBMISSION_FILE_TOO_LARGE
           readOnly: true
         message:
           type: string
@@ -19716,6 +20789,22 @@ components:
           type: string
         repoName:
           type: string
+        owner:
+          type: string
+        repository:
+          type: string
+        selectedReference:
+          type: string
+        referenceType:
+          type: string
+        commitSha:
+          type: string
+        commitUrl:
+          type: string
+        defaultBranch:
+          type: string
+        visibility:
+          type: string
         commitCount:
           type: integer
           format: int32
@@ -19725,6 +20814,14 @@ components:
         lastPushAt:
           type: string
           format: date-time
+        committedAt:
+          type: string
+          format: date-time
+        lastSynchronizedAt:
+          type: string
+          format: date-time
+        accessError:
+          type: string
         primaryLanguage:
           type: string
         isPrivate:
@@ -19792,6 +20889,19 @@ components:
           format: int64
           description: File size in bytes.
           example: 2048
+          readOnly: true
+        providerResourceId:
+          type: string
+          description: Stable file identifier assigned by the source provider.
+          readOnly: true
+        providerChecksum:
+          type: string
+          description: Provider checksum captured when the file was imported.
+          readOnly: true
+        providerModifiedAt:
+          type: string
+          format: date-time
+          description: Provider modification time captured when the file was imported.
           readOnly: true
         repoMetadata:
           $ref: "#/components/schemas/RepositoryMetadata"
@@ -19993,6 +21103,91 @@ components:
           minItems: 1
       required:
       - links
+    ImportGoogleDriveFileRequest:
+      type: object
+      description: Imports a Google Picker selection into immutable submission object
+        storage.
+      properties:
+        fileId:
+          type: string
+          description: Stable Google Drive file identifier returned by Picker.
+          example: 1AbCdEfGhIjKlMnOpQrStUvWxYz
+          minLength: 1
+          pattern: "^[A-Za-z0-9_-]{10,200}$"
+        linkType:
+          type: string
+          description: Submission evidence type.
+          enum:
+          - REPOSITORY
+          - DEMO
+          - SLIDE
+          - REPORT
+          - VIDEO
+          - OTHER
+          example: REPORT
+          minLength: 1
+        label:
+          type: string
+          description: Optional display label.
+          example: Technical report
+          maxLength: 200
+          minLength: 0
+        isPrimary:
+          type: boolean
+          description: Whether this is the primary evidence for its type.
+          example: true
+        displayOrder:
+          type: integer
+          format: int32
+          description: Zero-based evidence display order.
+          example: 0
+      required:
+      - fileId
+      - linkType
+    SelectGithubRepositoryRequest:
+      type: object
+      description: Selects or synchronizes an authenticated GitHub repository snapshot.
+      properties:
+        owner:
+          type: string
+          example: seal-team
+          minLength: 1
+          pattern: "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$"
+        repository:
+          type: string
+          example: hackathon-project
+          minLength: 1
+          pattern: "^[A-Za-z0-9._-]{1,100}$"
+        reference:
+          type: string
+          description: "Branch, tag, or commit to resolve."
+          example: main
+          maxLength: 255
+          minLength: 0
+        referenceType:
+          type: string
+          enum:
+          - BRANCH
+          - TAG
+          - COMMIT
+          example: BRANCH
+          minLength: 1
+          pattern: ^(BRANCH|TAG|COMMIT)$
+        label:
+          type: string
+          example: Final repository
+          maxLength: 200
+          minLength: 0
+        isPrimary:
+          type: boolean
+        displayOrder:
+          type: integer
+          format: int32
+      required:
+      - owner
+      - reference
+      - referenceType
+      - repository
     RejectTeamRegistrationRequest:
       type: object
       description: Request payload for reject team registration.
@@ -22006,6 +23201,32 @@ components:
           type: boolean
           description: Client-supplied value for visible to team.
           example: true
+    GoogleDriveOAuthStartResponse:
+      type: object
+      description: Google Drive authorization flow created for the current user.
+      properties:
+        authorizationUrl:
+          type: string
+          format: uri
+          description: Google authorization URL to open in the browser.
+          readOnly: true
+        expiresAt:
+          type: string
+          format: date-time
+          description: Expiration time of the encrypted OAuth state.
+          readOnly: true
+    GithubOAuthStartResponse:
+      type: object
+      description: GitHub repository authorization flow created for the current user.
+      properties:
+        authorizationUrl:
+          type: string
+          format: uri
+          description: GitHub authorization URL to open.
+        expiresAt:
+          type: string
+          format: date-time
+          description: Expiration time of the encrypted OAuth state.
     SaveScoreSheetRequest:
       type: object
       description: Request payload for save score sheet.
@@ -22044,6 +23265,13 @@ components:
           type: string
           description: Reviewer comment.
           example: Detailed reviewer comment.
+          maxLength: 2000
+          minLength: 0
+        expectedVersion:
+          type: integer
+          format: int64
+          description: Last score version observed by the client. Omit for a new score.
+          example: 3
       required:
       - eventCriteriaId
       - value
@@ -22095,6 +23323,18 @@ components:
           type: string
           format: date-time
           description: Timestamp for scored.
+          example: 2027-08-25T08:00:00
+          readOnly: true
+        version:
+          type: integer
+          format: int64
+          description: Optimistic concurrency version.
+          example: 3
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of the latest score update.
           example: 2027-08-25T08:00:00
           readOnly: true
     ScoreSheetResponse:
@@ -23697,6 +24937,60 @@ components:
       required:
       - email
       - password
+    LoginLockoutResponse:
+      type: object
+      description: Response payload for login lockout.
+      properties:
+        success:
+          type: boolean
+          description: Whether the request completed successfully.
+          example: true
+          readOnly: true
+        status:
+          type: integer
+          format: int32
+          description: Current lifecycle status of the resource.
+          example: 10
+          readOnly: true
+        error:
+          type: string
+          description: HTTP error reason phrase.
+          example: Bad Request
+          readOnly: true
+        message:
+          type: string
+          description: Client-safe response message.
+          example: Request validation failed
+          readOnly: true
+        path:
+          type: string
+          description: Request path that produced the response.
+          example: /api/v1/events
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the response was produced.
+          example: 2027-08-25T01:00:00Z
+          readOnly: true
+        lockedUntil:
+          type: string
+          format: date-time
+          description: API-returned value for locked until.
+          example: 2027-08-25T08:00:00
+          readOnly: true
+        remainingSeconds:
+          type: integer
+          format: int64
+          description: API-returned value for remaining seconds.
+          example: 10
+          readOnly: true
+        maxFailedAttempts:
+          type: integer
+          format: int32
+          description: API-returned value for max failed attempts.
+          example: 1
+          readOnly: true
     LoginResponse:
       type: object
       description: Response payload for login.
@@ -24275,6 +25569,37 @@ components:
           example: true
       required:
       - enabled
+    UpdateSubmissionLinkMetadataRequest:
+      type: object
+      description: Editable submission evidence metadata. Storage identity and URL
+        cannot be changed.
+      properties:
+        linkType:
+          type: string
+          description: Submission evidence type.
+          enum:
+          - REPOSITORY
+          - DEMO
+          - SLIDE
+          - REPORT
+          - VIDEO
+          - OTHER
+          example: REPORT
+        label:
+          type: string
+          description: Display label. Send an empty value to clear it.
+          example: Technical report
+          maxLength: 200
+          minLength: 0
+        isPrimary:
+          type: boolean
+          description: Whether this is the primary evidence for its type.
+          example: true
+        displayOrder:
+          type: integer
+          format: int32
+          description: Zero-based display order.
+          example: 0
     UpdateRoundRequest:
       type: object
       description: Request payload for update round.
@@ -24412,6 +25737,13 @@ components:
           type: string
           description: Reviewer comment.
           example: Detailed reviewer comment.
+          maxLength: 2000
+          minLength: 0
+        expectedVersion:
+          type: integer
+          format: int64
+          description: Last score version observed by the client.
+          example: 3
       required:
       - value
     UpdateEventRequest:
@@ -25169,6 +26501,252 @@ components:
           description: Number of judge.
           example: 1
           readOnly: true
+    SubmissionProviderAvailabilityResponse:
+      type: object
+      description: Availability of a submission input source.
+      properties:
+        source:
+          type: string
+          description: Submission input source.
+          enum:
+          - URL
+          - LOCAL_FILE
+          - GOOGLE_DRIVE
+          - GITHUB
+          example: LOCAL_FILE
+          readOnly: true
+        available:
+          type: boolean
+          description: Whether the source is currently configured and usable.
+          readOnly: true
+        message:
+          type: string
+          description: Actionable setup or availability explanation.
+          readOnly: true
+    SubmissionRequirementItemResponse:
+      type: object
+      description: Effective configuration and completion state for one submission
+        type.
+      properties:
+        type:
+          type: string
+          description: Submission type.
+          enum:
+          - REPOSITORY
+          - DEMO
+          - SLIDE
+          - REPORT
+          - VIDEO
+          - OTHER
+          example: REPOSITORY
+          readOnly: true
+        label:
+          type: string
+          description: User-facing submission type label.
+          example: Source repository
+          readOnly: true
+        required:
+          type: boolean
+          description: Whether this type must be satisfied before final submission.
+          readOnly: true
+        allowedSources:
+          type: array
+          description: Supported input sources for this type. Availability is reported
+            separately.
+          enum:
+          - URL
+          - LOCAL_FILE
+          - GOOGLE_DRIVE
+          - GITHUB
+          items:
+            type: string
+          readOnly: true
+        primary:
+          type: boolean
+          description: Whether this type is the default primary deliverable.
+          readOnly: true
+        displayOrder:
+          type: integer
+          format: int32
+          description: Stable display order.
+          example: 1
+          readOnly: true
+        satisfied:
+          type: boolean
+          description: Whether the current draft already contains this type.
+          readOnly: true
+        satisfiedByLinkIds:
+          type: array
+          description: Current submission-link IDs satisfying this type.
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+    SubmissionRequirementsResponse:
+      type: object
+      description: "Authoritative submission requirements and current-user permissions\
+        \ for an event, track, and round."
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Event UUID.
+          readOnly: true
+        eventName:
+          type: string
+          description: Event name.
+          readOnly: true
+        trackId:
+          type: string
+          format: uuid
+          description: Track UUID.
+          readOnly: true
+        trackName:
+          type: string
+          description: Track name.
+          readOnly: true
+        teamId:
+          type: string
+          format: uuid
+          description: Team UUID.
+          readOnly: true
+        teamName:
+          type: string
+          description: Team name.
+          readOnly: true
+        roundId:
+          type: string
+          format: uuid
+          description: Round UUID.
+          readOnly: true
+        roundName:
+          type: string
+          description: Round name.
+          readOnly: true
+        roundInstructions:
+          type: string
+          description: Round submission instructions.
+          readOnly: true
+        roundStatus:
+          type: string
+          description: Current round status.
+          enum:
+          - UPCOMING
+          - OPEN
+          - PENDING_LOCK
+          - CLOSED
+          - JUDGING
+          - RESULTS_READY
+          readOnly: true
+        submissionDeadline:
+          type: string
+          format: date-time
+          description: Submission deadline.
+          readOnly: true
+        submissionLocked:
+          type: boolean
+          description: Whether submissions are locked for the round.
+          readOnly: true
+        submissionLockedAt:
+          type: string
+          format: date-time
+          description: "Submission lock timestamp, when locked."
+          readOnly: true
+        canView:
+          type: boolean
+          description: Whether the current user may view these requirements and the
+            current submission.
+          readOnly: true
+        canEdit:
+          type: boolean
+          description: Whether the current user may modify the current submission.
+          readOnly: true
+        canSubmit:
+          type: boolean
+          description: Whether the current user may finalize a valid submission now.
+          readOnly: true
+        blockedReason:
+          type: string
+          description: Machine-readable primary reason editing and submission are
+            blocked.
+          enum:
+          - NONE
+          - NOT_TEAM_LEADER
+          - TRACK_NOT_ASSIGNED
+          - TEAM_REGISTRATION_NOT_APPROVED
+          - TEAM_ELIMINATED
+          - TEAM_STATUS_NOT_ELIGIBLE
+          - MISSING_REQUIRED_TYPES
+          - ROUND_NOT_OPEN
+          - ROUND_SUBMISSION_LOCKED
+          - ROUND_SUBMISSION_DEADLINE_EXCEEDED
+          readOnly: true
+        blockedMessage:
+          type: string
+          description: User-facing explanation corresponding to blockedReason.
+          readOnly: true
+        requirements:
+          type: array
+          description: All supported submission types in stable display order.
+          items:
+            $ref: "#/components/schemas/SubmissionRequirementItemResponse"
+          readOnly: true
+        uploadPolicy:
+          $ref: "#/components/schemas/SubmissionUploadPolicyResponse"
+          description: Server-authoritative upload policy.
+          readOnly: true
+        providerAvailability:
+          type: array
+          description: Availability of every supported input source.
+          items:
+            $ref: "#/components/schemas/SubmissionProviderAvailabilityResponse"
+          readOnly: true
+        currentSubmission:
+          $ref: "#/components/schemas/SubmissionResponse"
+          description: "Current draft or submitted state for the team and round, or\
+            \ null when none exists."
+          readOnly: true
+        satisfiedTypes:
+          type: array
+          description: Submission types already present in the current draft/submission.
+          items:
+            type: string
+          readOnly: true
+        missingRequiredTypes:
+          type: array
+          description: Required submission types not yet present.
+          items:
+            type: string
+          readOnly: true
+    SubmissionUploadPolicyResponse:
+      type: object
+      description: Server-authoritative file upload limits.
+      properties:
+        acceptedMimeTypes:
+          type: array
+          description: Accepted MIME types.
+          items:
+            type: string
+          readOnly: true
+        acceptedExtensions:
+          type: array
+          description: Accepted lowercase file extensions including the leading dot.
+          items:
+            type: string
+          readOnly: true
+        maximumFileSizeBytes:
+          type: integer
+          format: int64
+          description: Maximum size of one file in bytes.
+          example: 26214400
+          readOnly: true
+        maximumFiles:
+          type: integer
+          format: int32
+          description: Maximum number of uploaded or imported files in the current
+            submission.
+          example: 10
+          readOnly: true
     TeamAdvancementStatusResponse:
       type: object
       description: Response payload for team advancement status.
@@ -25329,6 +26907,13 @@ components:
           type: string
           description: API-returned value for role in team.
           example: role in team example
+          readOnly: true
+        memberCount:
+          type: integer
+          format: int32
+          description: "Current number of active team memberships, including the leader."
+          example: 4
+          minimum: 1
           readOnly: true
     TeamJoinCodePreviewResponse:
       type: object
@@ -25615,6 +27200,142 @@ components:
           description: Collection of links.
           items:
             $ref: "#/components/schemas/SubmissionLinkResponse"
+          readOnly: true
+    SubmissionAttemptEvidenceResponse:
+      type: object
+      description: Immutable evidence captured when a submission attempt was finalized.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Immutable attempt-evidence identifier.
+          readOnly: true
+        sourceLinkId:
+          type: string
+          format: uuid
+          description: "Original mutable submission-link identifier, when still available."
+          readOnly: true
+        linkType:
+          type: string
+          description: Submission requirement type satisfied by this evidence.
+          enum:
+          - REPOSITORY
+          - DEMO
+          - SLIDE
+          - REPORT
+          - VIDEO
+          - OTHER
+          readOnly: true
+        url:
+          type: string
+          description: "External or provider URL. Null for private uploads, which\
+            \ require the authorized download endpoint."
+          readOnly: true
+        label:
+          type: string
+          description: User-facing evidence label.
+          readOnly: true
+        storageProvider:
+          type: string
+          description: Provider from which the evidence was captured.
+          enum:
+          - EXTERNAL_URL
+          - GOOGLE_DRIVE
+          - AWS_S3
+          - GITHUB
+          - GITLAB
+          readOnly: true
+        originalFileName:
+          type: string
+          description: Original uploaded or imported file name.
+          readOnly: true
+        contentType:
+          type: string
+          description: Captured file MIME type.
+          readOnly: true
+        fileSizeBytes:
+          type: integer
+          format: int64
+          description: Captured file size in bytes.
+          readOnly: true
+        providerResourceId:
+          type: string
+          description: Stable provider file identifier frozen with the attempt.
+          readOnly: true
+        providerChecksum:
+          type: string
+          description: Provider checksum frozen with the attempt.
+          readOnly: true
+        providerModifiedAt:
+          type: string
+          format: date-time
+          description: Provider modification time frozen with the attempt.
+          readOnly: true
+        repoMetadata:
+          $ref: "#/components/schemas/RepositoryMetadata"
+          description: Repository metadata frozen with the attempt.
+          readOnly: true
+        isPrimary:
+          type: boolean
+          description: Whether this was the primary evidence of its type.
+          readOnly: true
+        displayOrder:
+          type: integer
+          format: int32
+          description: Captured evidence display order.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the immutable evidence record was created.
+          readOnly: true
+    SubmissionAttemptResponse:
+      type: object
+      description: Immutable submission state and evidence captured at finalization.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Immutable attempt identifier.
+          readOnly: true
+        submissionId:
+          type: string
+          format: uuid
+          description: Submission whose finalized state was captured.
+          readOnly: true
+        attemptNumber:
+          type: integer
+          format: int32
+          description: Monotonically increasing attempt number.
+          minimum: 1
+          readOnly: true
+        note:
+          type: string
+          description: Note captured at finalization.
+          readOnly: true
+        status:
+          type: string
+          description: Finalized status captured for this attempt.
+          enum:
+          - SUBMITTED
+          - LATE
+          - DISQUALIFIED
+          readOnly: true
+        submittedAt:
+          type: string
+          format: date-time
+          description: Business submission timestamp captured for the attempt.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the immutable attempt record was created.
+          readOnly: true
+        evidence:
+          type: array
+          description: Evidence frozen with this attempt.
+          items:
+            $ref: "#/components/schemas/SubmissionAttemptEvidenceResponse"
           readOnly: true
     FileDownloadUrlResponse:
       type: object
@@ -26656,6 +28377,88 @@ components:
           description: Timestamp for joined.
           example: 2027-08-25T08:00:00
           readOnly: true
+    MentorSubmissionPageResponse:
+      type: object
+      description: Authoritative mentor submission page and empty-state classification.
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/MentorSubmissionSummaryResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        last:
+          type: boolean
+        assignedTeamCount:
+          type: integer
+          format: int64
+        submittedTeamCount:
+          type: integer
+          format: int64
+        emptyReason:
+          type: string
+          enum:
+          - NONE
+          - NO_ASSIGNED_TEAMS
+          - NO_SUBMISSIONS
+          - NO_FILTER_MATCHES
+    MentorSubmissionSummaryResponse:
+      type: object
+      description: Submitted evidence visible through a mentor's track assignment.
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        eventName:
+          type: string
+        trackId:
+          type: string
+          format: uuid
+        trackName:
+          type: string
+        teamId:
+          type: string
+          format: uuid
+        teamName:
+          type: string
+        roundId:
+          type: string
+          format: uuid
+        roundName:
+          type: string
+        status:
+          type: string
+          enum:
+          - SUBMITTED
+          - LATE
+          - DISQUALIFIED
+        submissionNumber:
+          type: integer
+          format: int32
+        submittedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        linkCount:
+          type: integer
+          format: int64
+        late:
+          type: boolean
     GradingSubmissionDetailResponse:
       type: object
       description: Response payload for grading submission detail.
@@ -26727,6 +28530,128 @@ components:
           description: API-returned value for locked.
           example: 10
           readOnly: true
+    GoogleDriveConnectionStatusResponse:
+      type: object
+      description: Current user's Google Drive integration status without provider
+        credentials.
+      properties:
+        available:
+          type: boolean
+          description: Whether Drive is configured and enabled.
+          readOnly: true
+        availabilityMessage:
+          type: string
+          description: Actionable provider availability explanation.
+          readOnly: true
+        connected:
+          type: boolean
+          description: Whether the user has an active Drive connection.
+          readOnly: true
+        accountEmail:
+          type: string
+          description: "Connected Google account e-mail, when available."
+          readOnly: true
+        connectedAt:
+          type: string
+          format: date-time
+          description: Most recent successful connection time.
+          readOnly: true
+        tokenExpiresAt:
+          type: string
+          format: date-time
+          description: Current access-token expiry; the token itself is never returned.
+          readOnly: true
+    GoogleDrivePickerSessionResponse:
+      type: object
+      description: Short-lived credentials and public configuration for Google Picker.
+      properties:
+        accessToken:
+          type: string
+          description: Short-lived Drive access token. A refresh token is never returned.
+          readOnly: true
+        expiresAt:
+          type: string
+          format: date-time
+          description: Access-token expiry.
+          readOnly: true
+        pickerApiKey:
+          type: string
+          description: Public Google Picker API key.
+          readOnly: true
+        appId:
+          type: string
+          description: Google Cloud project number used by Picker.
+          readOnly: true
+    GithubConnectionStatusResponse:
+      type: object
+      description: Current user's GitHub repository connection without provider credentials.
+      properties:
+        available:
+          type: boolean
+          description: Whether GitHub submission OAuth is configured and enabled.
+        availabilityMessage:
+          type: string
+          description: Actionable provider availability explanation.
+        connected:
+          type: boolean
+          description: Whether the user has an active GitHub connection.
+        accountId:
+          type: string
+          description: "Stable GitHub account identifier, when connected."
+        accountEmail:
+          type: string
+          description: GitHub account e-mail when GitHub exposes it.
+        privateRepositoriesGranted:
+          type: boolean
+          description: Whether the connection granted access to private repositories.
+        connectedAt:
+          type: string
+          format: date-time
+          description: Most recent successful connection time.
+    GithubRepositoryResponse:
+      type: object
+      description: Repository accessible to the connected GitHub user.
+      properties:
+        owner:
+          type: string
+        name:
+          type: string
+        fullName:
+          type: string
+        htmlUrl:
+          type: string
+          format: uri
+        defaultBranch:
+          type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+        primaryLanguage:
+          type: string
+        pushedAt:
+          type: string
+          format: date-time
+        privateRepository:
+          type: boolean
+        archived:
+          type: boolean
+        disabled:
+          type: boolean
+    GithubReferenceResponse:
+      type: object
+      description: GitHub branch or tag and its current commit.
+      properties:
+        name:
+          type: string
+        commitSha:
+          type: string
+          description: Current immutable commit SHA.
+        protectedBranch:
+          type: boolean
+          description: True only for a protected branch.
     ExportDownloadResponse:
       type: object
       description: Response payload for export download.

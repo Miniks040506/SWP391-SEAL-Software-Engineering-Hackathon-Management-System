@@ -5,7 +5,11 @@ import type {
   CreateSubmissionLinkRequest,
   FileDownloadUrlResponse,
   GetEventSubmissionsParams,
+  GetMentorSubmissionsParams,
+  ImportGoogleDriveFileRequest,
+  MentorSubmissionPageResponse,
   SaveSubmissionDraftRequest,
+  SelectGithubRepositoryRequest,
   SubmissionAttemptResponse,
   SubmissionDetailResponse,
   SubmissionLinkResponse,
@@ -64,6 +68,28 @@ export const submissionApi = {
     return apiRequest.get<SubmissionDetailResponse>(`/submissions/${submissionId}`);
   },
 
+  importGoogleDriveFile(
+    teamId: UUID,
+    roundId: UUID,
+    payload: ImportGoogleDriveFileRequest,
+  ) {
+    return apiRequest.post<SubmissionResponse>(
+      `/teams/${teamId}/rounds/${roundId}/submission/google-drive`,
+      payload,
+    );
+  },
+
+  selectGithubRepository(
+    teamId: UUID,
+    roundId: UUID,
+    payload: SelectGithubRepositoryRequest,
+  ) {
+    return apiRequest.post<SubmissionResponse>(
+      `/teams/${teamId}/rounds/${roundId}/submission/github`,
+      payload,
+    );
+  },
+
   getSubmissionAttempts(submissionId: UUID) {
     return apiRequest.get<SubmissionAttemptResponse[]>(
       `/submissions/${submissionId}/attempts`,
@@ -87,6 +113,12 @@ export const submissionApi = {
       `/submissions/${submissionId}`,
       payload,
     );
+  },
+
+  getMentorSubmissions(params: GetMentorSubmissionsParams) {
+    return apiRequest.get<MentorSubmissionPageResponse>("/mentor/submissions", {
+      params,
+    });
   },
 
   submitExistingSubmission(submissionId: UUID) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import Select from "@mui/material/Select";
+import type { SelectChangeEvent } from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Button from "@mui/material/Button";
@@ -9,7 +10,10 @@ import SearchIcon from "@mui/icons-material/Search";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 
 import { judgeSubmissionFilterSchema } from "../../schemas/judgeGrading.schema";
-import type { GetJudgeSubmissionsParams } from "@/types/judge.types";
+import type {
+  GetJudgeSubmissionsParams,
+  JudgeEligibleSubmissionStatus,
+} from "@/types/judge.types";
 
 type Props = {
   filters: GetJudgeSubmissionsParams;
@@ -22,10 +26,6 @@ export function JudgeSubmissionFilterBar({ filters, onChange }: Props) {
   const [localSearch, setLocalSearch] = useState(filters.search ?? "");
 
   useEffect(() => {
-    setLocalSearch(filters.search ?? "");
-  }, [filters.search]);
-
-  useEffect(() => {
     const trimmed = localSearch.trim();
     const timer = setTimeout(() => {
       if ((filters.search ?? "") === trimmed) return;
@@ -35,8 +35,12 @@ export function JudgeSubmissionFilterBar({ filters, onChange }: Props) {
     return () => clearTimeout(timer);
   }, [filters, localSearch, onChange]);
 
-  const handleStatusChange = (e: any) => {
-    onChange({ ...filters, status: e.target.value || undefined, page: 0 });
+  const handleStatusChange = (e: SelectChangeEvent<string>) => {
+    onChange({
+      ...filters,
+      status: (e.target.value || undefined) as JudgeEligibleSubmissionStatus | undefined,
+      page: 0,
+    });
   };
 
   const handleClear = () => {

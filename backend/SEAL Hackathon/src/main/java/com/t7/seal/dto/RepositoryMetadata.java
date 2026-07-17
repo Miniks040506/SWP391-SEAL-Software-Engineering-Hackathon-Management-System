@@ -15,11 +15,33 @@ public class RepositoryMetadata {
 
     private String repoName;
 
+    private String owner;
+
+    private String repository;
+
+    private String selectedReference;
+
+    private String referenceType;
+
+    private String commitSha;
+
+    private String commitUrl;
+
+    private String defaultBranch;
+
+    private String visibility;
+
     private Integer commitCount;
 
     private Integer contributorCount;
 
     private LocalDateTime lastPushAt;
+
+    private LocalDateTime committedAt;
+
+    private LocalDateTime lastSynchronizedAt;
+
+    private String accessError;
 
     private String primaryLanguage;
 

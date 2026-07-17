@@ -19,7 +19,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.http.HttpStatus;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -28,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +39,7 @@ public class GoogleDriveConnectionServiceImpl implements GoogleDriveConnectionSe
     private static final ExternalProvider PROVIDER = ExternalProvider.GOOGLE_DRIVE;
     private static final String TARGET_TABLE = "provider_oauth_connections";
     private static final long TOKEN_EXPIRY_SKEW_SECONDS = 60;
+    private static final Pattern DRIVE_FILE_ID = Pattern.compile("^[A-Za-z0-9_-]{10,200}$");
 
     private final ProviderOAuthProperties oauthProperties;
     private final SubmissionProperties submissionProperties;
@@ -83,6 +87,11 @@ public class GoogleDriveConnectionServiceImpl implements GoogleDriveConnectionSe
                 persistConnection(verified.userId(), grant, account)
         );
         return new CompletedConnection(verified.returnPath(), account.email());
+    }
+
+    @Override
+    public String validateCallbackState(String state, String browserNonce) {
+        return stateCodec.verify(state, browserNonce, PROVIDER).returnPath();
     }
 
     @Override
@@ -141,6 +150,57 @@ public class GoogleDriveConnectionServiceImpl implements GoogleDriveConnectionSe
         }
 
         return transactionTemplate.execute(status -> rotateAccessToken(user, refreshed));
+    }
+
+    @Override
+    public SelectedDriveFile openSelectedFile(User user, String fileId) {
+        requireUser(user);
+        String normalizedFileId = fileId == null ? "" : fileId.trim();
+        if (!DRIVE_FILE_ID.matcher(normalizedFileId).matches()) {
+            throw new ProviderIntegrationException(
+                    HttpStatus.BAD_REQUEST,
+                    "GOOGLE_DRIVE_FILE_ID_INVALID",
+                    "Choose a valid Google Drive file."
+            );
+        }
+
+        PickerSession session = pickerSession(user);
+        GoogleDriveOAuthClient.DriveFile file = googleClient.fetchFile(
+                session.accessToken(),
+                normalizedFileId
+        );
+        if (file == null
+                || file.name() == null
+                || file.name().isBlank()
+                || file.mimeType() == null
+                || file.mimeType().isBlank()
+                || file.sizeBytes() == null
+                || file.sizeBytes() <= 0
+                || file.viewUri() == null) {
+            throw ProviderIntegrationException.invalidResponse();
+        }
+        if (!file.downloadAllowed()) {
+            throw ProviderIntegrationException.fileNotDownloadable();
+        }
+
+        InputStream content = googleClient.downloadFile(
+                session.accessToken(),
+                normalizedFileId
+        );
+        if (content == null) {
+            throw ProviderIntegrationException.invalidResponse();
+        }
+
+        return new SelectedDriveFile(
+                file.fileId(),
+                file.name(),
+                file.mimeType(),
+                file.sizeBytes(),
+                file.viewUri(),
+                file.checksum(),
+                file.modifiedAt(),
+                content
+        );
     }
 
     @Override

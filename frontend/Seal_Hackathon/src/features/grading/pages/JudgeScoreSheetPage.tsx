@@ -31,6 +31,7 @@ import { ScoreSheetHeader } from "../components/ScoreSheetHeader";
 import { SubmissionEvidencePanel } from "../components/SubmissionEvidencePanel";
 import { CriteriaScoreCard } from "../components/CriteriaScoreCard";
 import { ScoreDraftBar } from "../components/ScoreDraftBar";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 export const JudgeScoreSheetPage = () => {
   const { submissionId } = useParams();
@@ -77,16 +78,6 @@ export const JudgeScoreSheetPage = () => {
       reset({ scores: defaultScores, comments: defaultComments });
     }
   }, [scoreSheet, reset]);
-
-  useEffect(() => {
-    if (navigationBlocker.state !== "blocked") return;
-
-    if (window.confirm("You have unsaved score changes. Leave this page?")) {
-      navigationBlocker.proceed();
-    } else {
-      navigationBlocker.reset();
-    }
-  }, [navigationBlocker]);
 
   useEffect(() => {
     if (!isDirty || !canEdit) return;
@@ -174,12 +165,16 @@ export const JudgeScoreSheetPage = () => {
     (isFinalSubmitted ? "SUBMITTED" : "PENDING");
 
   const preparePayload = (data: JudgeScoreFormValues) => {
+    const versionsByCriteria = new Map(
+      scoreSheet.scores.map((score) => [score.eventCriteriaId, score.version]),
+    );
     const scoreItems = Object.entries(data.scores || {})
       .filter((entry): entry is [string, number] => Number.isFinite(entry[1]))
       .map(([criteriaId, value]) => ({
         eventCriteriaId: criteriaId,
         value,
         comment: data.comments?.[criteriaId] || undefined,
+        expectedVersion: versionsByCriteria.get(criteriaId),
       }));
     return { scores: scoreItems };
   };
@@ -420,6 +415,19 @@ export const JudgeScoreSheetPage = () => {
           </div>
         </div>
       </div>
+      <ActionConfirmDialog
+        open={navigationBlocker.state === "blocked"}
+        title="Discard unsaved score changes?"
+        description="Your unsaved scores and comments will be lost if you leave this page."
+        confirmLabel="Discard and leave"
+        severity="error"
+        onClose={() => {
+          if (navigationBlocker.state === "blocked") navigationBlocker.reset();
+        }}
+        onConfirm={() => {
+          if (navigationBlocker.state === "blocked") navigationBlocker.proceed();
+        }}
+      />
     </div>
   );
 };

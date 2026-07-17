@@ -43,6 +43,13 @@ public record TeamSummaryResponse(
                 example = "role in team example",
                 accessMode = Schema.AccessMode.READ_ONLY
         )
-        String roleInTeam
+        String roleInTeam,
+        @Schema(
+                description = "Current number of active team memberships, including the leader.",
+                example = "4",
+                minimum = "1",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        int memberCount
 ) {
 }

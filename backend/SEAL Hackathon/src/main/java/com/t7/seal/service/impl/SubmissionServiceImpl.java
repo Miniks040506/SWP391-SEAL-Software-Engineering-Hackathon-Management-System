@@ -2,6 +2,7 @@ package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.*;
 import com.t7.seal.dto.UploadedSubmissionFile;
+import com.t7.seal.dto.RepositoryMetadata;
 import com.t7.seal.entities.*;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ConflictException;
@@ -10,13 +11,19 @@ import com.t7.seal.exception.ForbiddenException;
 import com.t7.seal.exception.SubmissionUploadException;
 import com.t7.seal.repository.*;
 import com.t7.seal.request.submission.SubmissionLinkRequest;
+import com.t7.seal.request.submission.ImportGoogleDriveFileRequest;
+import com.t7.seal.request.submission.SelectGithubRepositoryRequest;
 import com.t7.seal.request.submission.SubmitDeliverablesRequest;
 import com.t7.seal.request.submission.UpdateSubmissionRequest;
 import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import com.t7.seal.security.guard.CurrentUser;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.NotificationService;
+import com.t7.seal.service.CurrentUserService;
+import com.t7.seal.service.GoogleDriveConnectionService;
+import com.t7.seal.service.GithubConnectionService;
 import com.t7.seal.service.RepositoryMetadataService;
 import com.t7.seal.service.SubmissionFileStorageService;
 import com.t7.seal.service.SubmissionAttemptSnapshotService;
@@ -37,8 +44,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -48,6 +58,11 @@ import java.util.stream.Collectors;
 public class SubmissionServiceImpl implements SubmissionService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final Set<SubmissionStatus> MENTOR_VISIBLE_STATUSES = EnumSet.of(
+            SubmissionStatus.SUBMITTED,
+            SubmissionStatus.LATE,
+            SubmissionStatus.DISQUALIFIED
+    );
 
     private final SubmissionRepository submissionRepository;
     private final SubmissionLinkRepository submissionLinkRepository;
@@ -55,15 +70,20 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionAttemptLinkRepository submissionAttemptLinkRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
+    private final TrackRepository trackRepository;
     private final RoundRepository roundRepository;
     private final MentorAssignmentRepository mentorAssignmentRepository;
     private final RepositoryMetadataService repositoryMetadataService;
     private final SubmissionFileStorageService submissionFileStorageService;
+    private final GoogleDriveConnectionService googleDriveConnectionService;
+    private final GithubConnectionService githubConnectionService;
+    private final CurrentUserService currentUserService;
     private final RoundJudgeAssignmentRepository roundJudgeAssignmentRepository;
     private final NotificationService notificationService;
     private final SubmissionRequirementCatalog requirementCatalog;
     private final SubmissionMutationPolicy mutationPolicy;
     private final SubmissionAttemptSnapshotService attemptSnapshotService;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional(readOnly = true)
@@ -271,6 +291,182 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     @Override
     @Transactional
+    public SubmissionResponse importGoogleDriveFile(
+            UUID teamId,
+            UUID roundId,
+            ImportGoogleDriveFileRequest request,
+            Authentication authentication
+    ) {
+        Team team = getTeamForSubmissionMutation(teamId);
+        Round round = getRound(roundId);
+
+        ensureRoundBelongsToTeamEvent(team, round);
+        ensureTeamLeader(team, authentication);
+        ensureTeamCanSubmit(team);
+        ensureRoundCanAcceptSubmission(round);
+
+        SubmissionLinkType linkType = parseLinkType(request.linkType());
+        if (!requirementCatalog.supportsSource(
+                linkType,
+                SubmissionInputSource.GOOGLE_DRIVE
+        )) {
+            throw new BadRequestException(
+                    "Google Drive is not allowed for submission type " + linkType + "."
+            );
+        }
+
+        Submission submission = submissionRepository.findByTeamIdAndRoundId(teamId, roundId)
+                .orElseGet(() -> Submission.builder()
+                        .team(team)
+                        .round(round)
+                        .status(SubmissionStatus.DRAFT)
+                        .submissionNumber(1)
+                        .submissionLinks(new ArrayList<>())
+                        .build());
+        ensureDraftSubmission(submission);
+        Submission savedSubmission = submissionRepository.save(submission);
+        ensureAdditionalFileAllowed(savedSubmission);
+
+        GoogleDriveConnectionService.SelectedDriveFile selected =
+                googleDriveConnectionService.openSelectedFile(
+                        currentUserService.getCurrentUser(authentication),
+                        request.fileId()
+                );
+        UploadedSubmissionFile uploaded = null;
+        try (InputStream content = selected.content()) {
+            UUID eventId = round.getEvent() == null ? null : round.getEvent().getId();
+            uploaded = submissionFileStorageService.uploadSubmissionFile(
+                    eventId,
+                    teamId,
+                    roundId,
+                    selected.name(),
+                    selected.mimeType(),
+                    selected.sizeBytes(),
+                    content
+            );
+
+            String label = blankToNull(request.label());
+            if (label == null) {
+                label = selected.name().length() > 200
+                        ? selected.name().substring(0, 200)
+                        : selected.name();
+            }
+            SubmissionLink link = SubmissionLink.builder()
+                    .submission(savedSubmission)
+                    .linkType(linkType)
+                    .url(selected.viewUri().toString())
+                    .label(label)
+                    .storageProvider(SubmissionStorageProvider.GOOGLE_DRIVE)
+                    .objectKey(uploaded.objectKey())
+                    .originalFileName(uploaded.originalFileName())
+                    .contentType(uploaded.contentType())
+                    .fileSizeBytes(uploaded.fileSizeBytes())
+                    .providerResourceId(selected.fileId())
+                    .providerChecksum(selected.checksum())
+                    .providerModifiedAt(selected.modifiedAt() == null
+                            ? null
+                            : LocalDateTime.ofInstant(selected.modifiedAt(), ZoneOffset.UTC))
+                    .isPrimary(Boolean.TRUE.equals(request.isPrimary()))
+                    .displayOrder(request.displayOrder() == null ? 0 : request.displayOrder())
+                    .build();
+            submissionLinkRepository.save(link);
+        } catch (IOException | RuntimeException exception) {
+            deleteFailedSnapshot(uploaded);
+            if (exception instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw SubmissionUploadException.conflict(
+                    "GOOGLE_DRIVE_FILE_READ_FAILED",
+                    "The selected Google Drive file could not be read. Choose it again and retry."
+            );
+        }
+
+        return toSubmissionResponse(getSubmission(savedSubmission.getId()));
+    }
+
+    @Override
+    @Transactional
+    public SubmissionResponse selectGithubRepository(
+            UUID teamId,
+            UUID roundId,
+            SelectGithubRepositoryRequest request,
+            Authentication authentication
+    ) {
+        Team team = getTeamForSubmissionMutation(teamId);
+        Round round = getRound(roundId);
+        ensureRoundBelongsToTeamEvent(team, round);
+        ensureTeamLeader(team, authentication);
+        ensureTeamCanSubmit(team);
+        ensureRoundCanAcceptSubmission(round);
+        if (!requirementCatalog.supportsSource(
+                SubmissionLinkType.REPOSITORY, SubmissionInputSource.GITHUB
+        )) {
+            throw new BadRequestException("GitHub is not allowed for repository evidence.");
+        }
+
+        Submission submission = submissionRepository.findByTeamIdAndRoundId(teamId, roundId)
+                .orElseGet(() -> Submission.builder()
+                        .team(team)
+                        .round(round)
+                        .status(SubmissionStatus.DRAFT)
+                        .submissionNumber(1)
+                        .submissionLinks(new ArrayList<>())
+                        .build());
+        ensureDraftSubmission(submission);
+        Submission savedSubmission = submissionRepository.save(submission);
+
+        var snapshot = githubConnectionService.snapshot(
+                currentUserService.getCurrentUser(authentication),
+                request.owner(), request.repository(), request.reference()
+        );
+        var repository = snapshot.repository();
+        LocalDateTime synchronizedAt = LocalDateTime.ofInstant(
+                snapshot.synchronizedAt(), ZoneOffset.UTC
+        );
+        RepositoryMetadata metadata = RepositoryMetadata.builder()
+                .platform("GITHUB")
+                .repoName(repository.fullName())
+                .owner(repository.owner())
+                .repository(repository.name())
+                .selectedReference(snapshot.selectedReference())
+                .referenceType(request.referenceType().toUpperCase(Locale.ROOT))
+                .commitSha(snapshot.commitSha())
+                .commitUrl(snapshot.commitUri().toString())
+                .defaultBranch(repository.defaultBranch())
+                .visibility(repository.visibility())
+                .primaryLanguage(repository.primaryLanguage())
+                .lastPushAt(toUtc(repository.pushedAt()))
+                .committedAt(toUtc(snapshot.committedAt()))
+                .lastSynchronizedAt(synchronizedAt)
+                .isPrivate(repository.privateRepository())
+                .build();
+
+        List<SubmissionLink> links = submissionLinkRepository
+                .findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(savedSubmission.getId());
+        SubmissionLink link = links.stream()
+                .filter(this::isManagedGithubSnapshot)
+                .findFirst()
+                .orElseGet(() -> SubmissionLink.builder()
+                        .submission(savedSubmission)
+                        .linkType(SubmissionLinkType.REPOSITORY)
+                        .build());
+        link.setUrl(repository.htmlUri().toString());
+        link.setLabel(Optional.ofNullable(blankToNull(request.label()))
+                .orElse(repository.fullName()));
+        link.setStorageProvider(SubmissionStorageProvider.GITHUB);
+        link.setProviderResourceId(repository.fullName());
+        link.setProviderChecksum(snapshot.commitSha());
+        link.setProviderModifiedAt(synchronizedAt);
+        link.setRepoMetadata(metadata);
+        link.setIsPrimary(request.isPrimary() == null || request.isPrimary());
+        link.setDisplayOrder(request.displayOrder() == null ? 0 : request.displayOrder());
+        submissionLinkRepository.save(link);
+
+        return toSubmissionResponse(getSubmission(savedSubmission.getId()));
+    }
+
+    @Override
+    @Transactional
     public SubmissionResponse uploadFileToSubmission(
             UUID submissionId, String linkType,
             String label, Boolean isPrimary,
@@ -306,6 +502,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         return submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(teamId)
                 .stream()
+                .filter(submission -> MENTOR_VISIBLE_STATUSES.contains(submission.getStatus()))
                 .map(this::toSubmissionSummaryResponse)
                 .toList();
     }
@@ -540,6 +737,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission submission = submissionRepository.findByIdForUpdate(submissionId)
                 .orElseThrow(() -> new NotFoundException("Submission not found."));
 
+        User actor = currentUserService.getCurrentUser(authentication);
         ensureTeamLeader(submission.getTeam(), authentication);
 
         if (submission.isScorable()) {
@@ -555,10 +753,21 @@ public class SubmissionServiceImpl implements SubmissionService {
         ensureRoundCanAcceptSubmission(submission.getRound());
         validateRequiredLinksFromEntity(submission);
 
+        Map<String, Object> beforeState = submissionAuditState(submission);
         markSubmittedBeforeDeadline(submission, submission.getRound());
 
         Submission saved = submissionRepository.save(submission);
         attemptSnapshotService.createSnapshot(saved);
+        auditLogService.record(
+                actor,
+                saved.isLate() ? AuditActionType.SUBMISSION_LATE
+                        : AuditActionType.SUBMISSION_SUBMITTED,
+                "submissions",
+                saved.getId(),
+                beforeState,
+                submissionAuditState(saved),
+                submissionAuditContext(saved)
+        );
         notifySubmissionChange(saved, false);
         return toSubmissionResponse(saved);
     }
@@ -571,6 +780,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     ) {
         Submission submission = submissionRepository.findByIdForUpdate(submissionId)
                 .orElseThrow(() -> new NotFoundException("Submission not found."));
+        User actor = currentUserService.getCurrentUser(authentication);
         ensureTeamLeader(submission.getTeam(), authentication);
 
         if (submission.isDraft()) {
@@ -582,9 +792,41 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         ensureRoundCanAcceptSubmission(submission.getRound());
+        Map<String, Object> beforeState = submissionAuditState(submission);
         attemptSnapshotService.createSnapshot(submission);
         submission.beginResubmission();
-        return toSubmissionResponse(submissionRepository.save(submission));
+        Submission saved = submissionRepository.save(submission);
+        auditLogService.record(
+                actor,
+                AuditActionType.SUBMISSION_RESUBMITTED,
+                "submissions",
+                saved.getId(),
+                beforeState,
+                submissionAuditState(saved),
+                submissionAuditContext(saved)
+        );
+        return toSubmissionResponse(saved);
+    }
+
+    private Map<String, Object> submissionAuditState(Submission submission) {
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("status", submission.getStatus().name());
+        state.put("submissionNumber", submission.getSubmissionNumber());
+        if (submission.getSubmittedAt() != null) {
+            state.put("submittedAt", submission.getSubmittedAt().toString());
+        }
+        return state;
+    }
+
+    private Map<String, Object> submissionAuditContext(Submission submission) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("submissionId", submission.getId().toString());
+        context.put("teamId", submission.getTeam().getId().toString());
+        context.put("roundId", submission.getRound().getId().toString());
+        if (submission.getRound().getEvent() != null) {
+            context.put("eventId", submission.getRound().getEvent().getId().toString());
+        }
+        return context;
     }
 
     @Override
@@ -597,6 +839,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             Authentication authentication
     ) {
         ensureCoordinator(authentication);
+        validateCoordinatorSubmissionFilters(eventId, roundId, trackId);
 
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
@@ -693,6 +936,9 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission submission = getSubmission(submissionId);
 
         ensureMentorAssignedToTeam(submission.getTeam(), authentication);
+        if (!MENTOR_VISIBLE_STATUSES.contains(submission.getStatus())) {
+            throw new NotFoundException("Submission not found.");
+        }
 
         return toSubmissionDetailResponse(submission);
     }
@@ -905,8 +1151,10 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .toList();
 
         if (!missing.isEmpty()) {
-            throw new BadRequestException("Missing required link types: " +
-                    String.join(", ", missing));
+            throw new BadRequestException(
+                    "MISSING_REQUIRED_TYPES",
+                    "Missing required link types: " + String.join(", ", missing)
+            );
         }
     }
 
@@ -927,11 +1175,25 @@ public class SubmissionServiceImpl implements SubmissionService {
     private void replaceLinks(Submission submission, List<SubmissionLinkRequest> links) {
         // Uploaded and imported evidence owns provider metadata that cannot be
         // reconstructed from a URL-only draft request. Replace only editable URLs.
-        submissionLinkRepository.deleteBySubmissionIdAndObjectKeyIsNull(submission.getId());
+        submissionLinkRepository
+                .deleteBySubmissionIdAndObjectKeyIsNullAndProviderResourceIdIsNull(
+                        submission.getId()
+                );
         List<SubmissionLink> entities = links.stream()
                 .map(link -> toLinkEntity(submission, link))
                 .toList();
         submissionLinkRepository.saveAll(entities);
+    }
+
+    private boolean isManagedGithubSnapshot(SubmissionLink link) {
+        return link.getStorageProvider() == SubmissionStorageProvider.GITHUB
+                && link.getProviderResourceId() != null
+                && link.getRepoMetadata() != null
+                && link.getRepoMetadata().getCommitSha() != null;
+    }
+
+    private LocalDateTime toUtc(java.time.Instant value) {
+        return value == null ? null : LocalDateTime.ofInstant(value, ZoneOffset.UTC);
     }
 
     private SubmissionLink toLinkEntity(Submission submission, SubmissionLinkRequest request) {
@@ -955,15 +1217,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             String label, Boolean isPrimary,
             Integer displayOrder, MultipartFile file
     ) {
-        int maximumFiles = requirementCatalog.uploadPolicy().maximumFiles();
-        long persistedFiles = submissionLinkRepository
-                .countBySubmissionIdAndObjectKeyIsNotNull(submission.getId());
-        if (persistedFiles >= maximumFiles) {
-            throw SubmissionUploadException.conflict(
-                    "SUBMISSION_FILE_LIMIT_REACHED",
-                    "A submission can contain at most " + maximumFiles + " files."
-            );
-        }
+        ensureAdditionalFileAllowed(submission);
 
         UUID eventId = submission.getRound().getEvent() == null
                 ? null : submission.getRound().getEvent().getId();
@@ -975,23 +1229,54 @@ public class SubmissionServiceImpl implements SubmissionService {
                 file
         );
 
-        SubmissionLink link = SubmissionLink.builder()
-                .submission(submission)
-                .linkType(linkType)
-                .url(uploaded.url())
-                .label(blankToNull(label))
-                .storageProvider(SubmissionStorageProvider.AWS_S3)
-                .objectKey(uploaded.objectKey())
-                .originalFileName(uploaded.originalFileName())
-                .contentType(uploaded.contentType())
-                .fileSizeBytes(uploaded.fileSizeBytes())
-                .isPrimary(Boolean.TRUE.equals(isPrimary))
-                .displayOrder(displayOrder == null ? 0 : displayOrder)
-                .build();
+        try {
+            SubmissionLink link = SubmissionLink.builder()
+                    .submission(submission)
+                    .linkType(linkType)
+                    .url(uploaded.url())
+                    .label(blankToNull(label))
+                    .storageProvider(SubmissionStorageProvider.AWS_S3)
+                    .objectKey(uploaded.objectKey())
+                    .originalFileName(uploaded.originalFileName())
+                    .contentType(uploaded.contentType())
+                    .fileSizeBytes(uploaded.fileSizeBytes())
+                    .isPrimary(Boolean.TRUE.equals(isPrimary))
+                    .displayOrder(displayOrder == null ? 0 : displayOrder)
+                    .build();
 
-        submissionLinkRepository.save(link);
+            submissionLinkRepository.saveAndFlush(link);
+        } catch (RuntimeException exception) {
+            deleteFailedSnapshot(uploaded);
+            throw exception;
+        }
     }
 
+    private void ensureAdditionalFileAllowed(Submission submission) {
+        int maximumFiles = requirementCatalog.uploadPolicy().maximumFiles();
+        long persistedFiles = submissionLinkRepository
+                .countBySubmissionIdAndObjectKeyIsNotNull(submission.getId());
+        if (persistedFiles >= maximumFiles) {
+            throw SubmissionUploadException.conflict(
+                    "SUBMISSION_FILE_LIMIT_REACHED",
+                    "A submission can contain at most " + maximumFiles + " files."
+            );
+        }
+    }
+
+    private void deleteFailedSnapshot(UploadedSubmissionFile uploaded) {
+        if (uploaded == null || uploaded.objectKey() == null) {
+            return;
+        }
+        try {
+            submissionFileStorageService.deleteSubmissionFile(uploaded.objectKey());
+        } catch (RuntimeException cleanupException) {
+            log.warn(
+                    "Failed to clean up submission snapshot after persistence failure. objectKey={}",
+                    uploaded.objectKey(),
+                    cleanupException
+            );
+        }
+    }
 
     private SubmissionStorageProvider detectStorageProvider(SubmissionLinkType linkType, String url) {
         if (url == null) {
@@ -1012,7 +1297,10 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private String normalizeHttpUrl(String rawUrl) {
         if (rawUrl == null || rawUrl.isBlank()) {
-            throw new BadRequestException("Submission link URL is required.");
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_URL_REQUIRED",
+                    "Submission link URL is required."
+            );
         }
 
         String trimmedUrl = rawUrl.trim();
@@ -1020,7 +1308,10 @@ public class SubmissionServiceImpl implements SubmissionService {
         try {
             uri = new URI(trimmedUrl);
         } catch (URISyntaxException ex) {
-            throw new BadRequestException("Submission link URL must be a valid HTTP or HTTPS URL.");
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_URL_INVALID",
+                    "Submission link URL must be a valid HTTP or HTTPS URL."
+            );
         }
 
         String scheme = uri.getScheme();
@@ -1028,7 +1319,10 @@ public class SubmissionServiceImpl implements SubmissionService {
                 || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
                 || uri.getHost() == null
                 || uri.getHost().isBlank()) {
-            throw new BadRequestException("Submission link URL must start with http:// or https://.");
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_URL_INVALID",
+                    "Submission link URL must start with http:// or https://."
+            );
         }
 
         return trimmedUrl;
@@ -1036,12 +1330,18 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private SubmissionLinkType parseLinkType(String value) {
         if (value == null || value.isBlank()) {
-            throw new BadRequestException("Submission link type is required.");
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_TYPE_REQUIRED",
+                    "Submission link type is required."
+            );
         }
         try {
             return SubmissionLinkType.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Unsupported submission link type: " + value);
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_TYPE_UNSUPPORTED",
+                    "Unsupported submission link type: " + value
+            );
         }
     }
 
@@ -1184,6 +1484,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 event == null ? null : event.getName(),
                 submission.getTeam().getId(),
                 submission.getTeam().getName(),
+                submission.getTeam().getProjectTitle(),
                 submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getId(),
                 submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getName(),
                 submission.getRound().getId(),
@@ -1197,6 +1498,49 @@ public class SubmissionServiceImpl implements SubmissionService {
                 links.size(),
                 submission.isLate()
         );
+    }
+
+    private void validateCoordinatorSubmissionFilters(
+            UUID eventId,
+            UUID roundId,
+            UUID trackId
+    ) {
+        UUID trackEventId = null;
+        if (trackId != null) {
+            Track track = trackRepository.findById(trackId)
+                    .orElseThrow(() -> new NotFoundException("Track not found."));
+            trackEventId = track.getEvent().getId();
+            requireMatchingFilterEvent(eventId, trackEventId, "track");
+        }
+
+        UUID roundEventId = null;
+        if (roundId != null) {
+            Round round = roundRepository.findById(roundId)
+                    .orElseThrow(() -> new NotFoundException("Round not found."));
+            roundEventId = round.getEvent().getId();
+            requireMatchingFilterEvent(eventId, roundEventId, "round");
+        }
+
+        if (trackEventId != null && roundEventId != null
+                && !trackEventId.equals(roundEventId)) {
+            throw new BadRequestException(
+                    "SUBMISSION_FILTER_RELATIONSHIP_INVALID",
+                    "The selected track and round belong to different events."
+            );
+        }
+    }
+
+    private void requireMatchingFilterEvent(
+            UUID selectedEventId,
+            UUID resourceEventId,
+            String resourceName
+    ) {
+        if (selectedEventId != null && !selectedEventId.equals(resourceEventId)) {
+            throw new BadRequestException(
+                    "SUBMISSION_FILTER_RELATIONSHIP_INVALID",
+                    "The selected " + resourceName + " does not belong to the selected event."
+            );
+        }
     }
 
     private SubmissionDetailResponse toSubmissionDetailResponse(Submission submission) {

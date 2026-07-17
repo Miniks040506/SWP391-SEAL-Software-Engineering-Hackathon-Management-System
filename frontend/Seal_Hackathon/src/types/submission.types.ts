@@ -46,9 +46,20 @@ export type RepositoryMetadata = {
   platform?: string;
   repoName?: string;
   owner?: string;
+  repository?: string;
+  selectedReference?: string;
+  referenceType?: "BRANCH" | "TAG" | "COMMIT" | string;
+  commitSha?: string;
+  commitUrl?: string;
   defaultBranch?: string;
+  visibility?: "public" | "private" | "internal" | string;
   primaryLanguage?: string;
   lastPushAt?: ISODateTime;
+  committedAt?: ISODateTime;
+  lastSynchronizedAt?: ISODateTime;
+  accessError?: string;
+  commitCount?: number;
+  contributorCount?: number;
   stars?: number;
   forks?: number;
   isPrivate?: boolean;
@@ -73,6 +84,24 @@ export type SubmitDeliverablesRequest = {
 export type SaveSubmissionDraftRequest = {
   note?: string;
   links?: CreateSubmissionLinkRequest[];
+};
+
+export type ImportGoogleDriveFileRequest = {
+  fileId: string;
+  linkType: SubmissionLinkType;
+  label?: string;
+  isPrimary?: boolean;
+  displayOrder?: number;
+};
+
+export type SelectGithubRepositoryRequest = {
+  owner: string;
+  repository: string;
+  reference: string;
+  referenceType: "BRANCH" | "TAG" | "COMMIT";
+  label?: string;
+  isPrimary?: boolean;
+  displayOrder?: number;
 };
 
 export type UpdateSubmissionRequest = {
@@ -142,6 +171,9 @@ export type SubmissionLinkResponse = {
   originalFileName?: string | null;
   contentType?: string | null;
   fileSizeBytes?: number | null;
+  providerResourceId?: string | null;
+  providerChecksum?: string | null;
+  providerModifiedAt?: ISODateTime | null;
   repoMetadata?: RepositoryMetadata | null;
   isPrimary?: boolean;
   displayOrder?: number | null;
@@ -159,6 +191,9 @@ export type SubmissionAttemptEvidenceResponse = {
   originalFileName?: string | null;
   contentType?: string | null;
   fileSizeBytes?: number | null;
+  providerResourceId?: string | null;
+  providerChecksum?: string | null;
+  providerModifiedAt?: ISODateTime | null;
   repoMetadata?: RepositoryMetadata | null;
   isPrimary: boolean;
   displayOrder: number;
@@ -260,6 +295,7 @@ export type CoordinatorSubmissionSummaryResponse = {
   eventName?: string | null;
   teamId: UUID;
   teamName?: string | null;
+  projectTitle?: string | null;
   trackId?: UUID | null;
   trackName?: string | null;
   roundId: UUID;
@@ -281,6 +317,55 @@ export type GetEventSubmissionsParams = {
   roundId?: UUID;
   trackId?: UUID;
   status?: SubmissionStatus | string;
+  search?: string;
+  page?: number;
+  size?: number;
+};
+
+export type MentorSubmissionStatus = "SUBMITTED" | "LATE" | "DISQUALIFIED";
+
+export type MentorSubmissionEmptyReason =
+  | "NONE"
+  | "NO_ASSIGNED_TEAMS"
+  | "NO_SUBMISSIONS"
+  | "NO_FILTER_MATCHES";
+
+export type MentorSubmissionSummaryResponse = {
+  id: UUID;
+  eventId?: UUID | null;
+  eventName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  teamId?: UUID | null;
+  teamName?: string | null;
+  roundId?: UUID | null;
+  roundName?: string | null;
+  status: MentorSubmissionStatus;
+  submissionNumber: number;
+  submittedAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
+  linkCount: number;
+  late: boolean;
+};
+
+export type MentorSubmissionPageResponse = {
+  content: MentorSubmissionSummaryResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+  assignedTeamCount: number;
+  submittedTeamCount: number;
+  emptyReason: MentorSubmissionEmptyReason;
+};
+
+export type GetMentorSubmissionsParams = {
+  eventId?: UUID;
+  trackId?: UUID;
+  teamId?: UUID;
+  roundId?: UUID;
+  status?: MentorSubmissionStatus;
   search?: string;
   page?: number;
   size?: number;

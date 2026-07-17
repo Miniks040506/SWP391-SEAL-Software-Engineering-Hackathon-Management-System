@@ -5,13 +5,11 @@ import { getSubmissionStatusColor } from "../schemas/submissions.schema";
 type Props = {
   submissions: CoordinatorSubmissionSummary[];
   loading: boolean;
-  projectTitles?: Record<string, string>;
 };
 
 export function SubmissionTable({
   submissions,
   loading,
-  projectTitles,
 }: Props) {
   const navigate = useNavigate();
 
@@ -74,15 +72,12 @@ export function SubmissionTable({
                 <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   {sub.teamName}
                 </div>
-                {(projectTitles?.[sub.teamId] || (sub as any).projectTitle) && (
+                {sub.projectTitle && (
                   <div
                     className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[250px]"
-                    title={
-                      projectTitles?.[sub.teamId] || (sub as any).projectTitle
-                    }
+                    title={sub.projectTitle}
                   >
-                    Project:{" "}
-                    {projectTitles?.[sub.teamId] || (sub as any).projectTitle}
+                    Project: {sub.projectTitle}
                   </div>
                 )}
                 <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-mono">

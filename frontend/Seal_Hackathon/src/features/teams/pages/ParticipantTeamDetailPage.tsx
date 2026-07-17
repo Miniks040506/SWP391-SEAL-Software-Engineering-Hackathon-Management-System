@@ -37,6 +37,7 @@ import { useActiveTeamDisqualificationsQuery } from "@/features/disqualification
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
 import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
 import { TeamJoinRequestsPanel } from "../components/TeamJoinRequestsPanel";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 import {
   inviteMemberSchema,
@@ -60,6 +61,10 @@ import {
 } from "../hooks/useParticipantTeams";
 
 type TeamDetailTab = "overview" | "members" | "track-registration";
+type TeamConfirmAction =
+  | { type: "cancel-invitation"; invitationId: UUID }
+  | { type: "remove-member"; member: TeamMemberResponse }
+  | { type: "leave-team" };
 
 function formatDateTime(value?: string | null) {
   if (!value) return "N/A";
@@ -80,6 +85,9 @@ export const TeamDetailPage = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
+  const [transferCandidate, setTransferCandidate] =
+    useState<TeamMemberResponse | null>(null);
+  const [confirmAction, setConfirmAction] = useState<TeamConfirmAction | null>(null);
 
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
@@ -193,28 +201,85 @@ export const TeamDetailPage = () => {
   };
 
   const handleCancelInvitation = (invitationId: UUID) => {
-    if (!window.confirm("Cancel this invitation?")) return;
-    cancelInvitationMutation.mutate(invitationId);
+    setConfirmAction({ type: "cancel-invitation", invitationId });
   };
 
   const handleRemoveMember = (member: TeamMemberResponse) => {
-    if (!window.confirm(`Remove ${member.fullName} from this team?`)) return;
-    removeMemberMutation.mutate({
-      memberId: member.memberId,
-      payload: { reason: "Removed by team leader" },
-    });
+    setConfirmAction({ type: "remove-member", member });
   };
 
   const handleTransferLeader = (member: TeamMemberResponse) => {
-    if (!window.confirm(`Transfer leadership to ${member.fullName}?`)) return;
-    transferLeaderMutation.mutate({ newLeaderUserId: member.userId });
+    transferLeaderMutation.reset();
+    setTransferCandidate(member);
   };
 
-  const handleLeaveTeam = async () => {
-    if (!window.confirm("Are you sure you want to leave this team?")) return;
-    await leaveTeamMutation.mutateAsync({ reason: "Left by participant" });
-    navigate("/participant/teams");
+  const handleCloseTransferDialog = () => {
+    if (transferLeaderMutation.isPending) return;
+    setTransferCandidate(null);
+    transferLeaderMutation.reset();
   };
+
+  const handleConfirmTransfer = () => {
+    if (!transferCandidate || isTeamRegistered) return;
+
+    transferLeaderMutation.mutate(
+      { newLeaderUserId: transferCandidate.userId },
+      { onSuccess: () => setTransferCandidate(null) },
+    );
+  };
+
+  const handleLeaveTeam = () => setConfirmAction({ type: "leave-team" });
+
+  const confirmTeamAction = () => {
+    if (!confirmAction) return;
+    if (confirmAction.type === "cancel-invitation") {
+      cancelInvitationMutation.mutate(confirmAction.invitationId, {
+        onSuccess: () => setConfirmAction(null),
+      });
+      return;
+    }
+    if (confirmAction.type === "remove-member") {
+      removeMemberMutation.mutate(
+        {
+          memberId: confirmAction.member.memberId,
+          payload: { reason: "Removed by team leader" },
+        },
+        { onSuccess: () => setConfirmAction(null) },
+      );
+      return;
+    }
+    leaveTeamMutation.mutate(
+      { reason: "Left by participant" },
+      {
+        onSuccess: () => {
+          setConfirmAction(null);
+          navigate("/participant/teams");
+        },
+      },
+    );
+  };
+
+  const confirmActionPending =
+    cancelInvitationMutation.isPending ||
+    removeMemberMutation.isPending ||
+    leaveTeamMutation.isPending;
+  const confirmActionContent = confirmAction?.type === "cancel-invitation"
+    ? {
+        title: "Cancel invitation?",
+        description: "The pending invitation will no longer be usable.",
+        label: "Cancel invitation",
+      }
+    : confirmAction?.type === "remove-member"
+      ? {
+          title: "Remove team member?",
+          description: `${confirmAction.member.fullName} will lose access to this team and its participant workflows.`,
+          label: "Remove member",
+        }
+      : {
+          title: "Leave this team?",
+          description: "Your active membership and access to this team will be removed.",
+          label: "Leave team",
+        };
 
   const handleDeleteTeam = async () => {
     await deleteTeamMutation.mutateAsync({
@@ -848,6 +913,63 @@ export const TeamDetailPage = () => {
       </Dialog>
 
       <Dialog
+        open={Boolean(transferCandidate)}
+        onClose={handleCloseTransferDialog}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby="transfer-leader-dialog-title"
+      >
+        <DialogTitle id="transfer-leader-dialog-title" sx={{ fontWeight: 900 }}>
+          Transfer Team Leadership
+        </DialogTitle>
+        <DialogContent dividers className="space-y-4">
+          <Alert severity="warning">
+            The new leader will receive all team-management permissions. You
+            will remain on the team as a regular member.
+          </Alert>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <InfoItem label="Current leader" value={team.leaderName} />
+            <InfoItem
+              label="New leader"
+              value={transferCandidate?.fullName ?? "Not selected"}
+            />
+          </div>
+
+          {transferLeaderMutation.isError && (
+            <Alert severity="error">
+              Leadership could not be transferred. Confirm the selected user
+              is still an active member and the team is still forming.
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            variant="outlined"
+            disabled={transferLeaderMutation.isPending}
+            onClick={handleCloseTransferDialog}
+            sx={{ fontWeight: 800, textTransform: "none" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={
+              transferLeaderMutation.isPending ||
+              !transferCandidate ||
+              isTeamRegistered
+            }
+            onClick={handleConfirmTransfer}
+            sx={{ fontWeight: 800, textTransform: "none" }}
+          >
+            {transferLeaderMutation.isPending
+              ? "Transferring..."
+              : "Confirm Transfer"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
         open={deleteDialogOpen}
         onClose={() => {
           if (!deleteTeamMutation.isPending) {
@@ -895,6 +1017,16 @@ export const TeamDetailPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <ActionConfirmDialog
+        open={confirmAction !== null}
+        title={confirmActionContent.title}
+        description={confirmActionContent.description}
+        confirmLabel={confirmActionContent.label}
+        severity="error"
+        onClose={() => setConfirmAction(null)}
+        onConfirm={confirmTeamAction}
+        isPending={confirmActionPending}
+      />
     </div>
   );
 };

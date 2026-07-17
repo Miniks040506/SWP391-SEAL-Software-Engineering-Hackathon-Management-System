@@ -3,9 +3,9 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import Chip from "@mui/material/Chip";
 
+import { SubmissionLinksPreview } from "@/features/submissions/components/SubmissionLinksPreview";
 import { useJudgeSubmissionDetailQuery } from "../hooks/useJudge";
 
 export const JudgeSubmissionDetailPage = () => {
@@ -52,14 +52,7 @@ export const JudgeSubmissionDetailPage = () => {
           <div className="mt-8">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Submitted Links/Files</h3>
             {detail.links && detail.links.length > 0 ? (
-              <div className="flex gap-4 flex-wrap">
-                {detail.links.map((link) => (
-                  <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-3 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/50">
-                    <AttachFileOutlinedIcon fontSize="small" className="text-gray-400" />
-                    <span className="font-semibold text-blue-600 dark:text-blue-400">{link.label || link.linkType}</span>
-                  </a>
-                ))}
-              </div>
+              <SubmissionLinksPreview links={detail.links} />
             ) : (
               <p className="text-sm text-gray-500">No files attached.</p>
             )}

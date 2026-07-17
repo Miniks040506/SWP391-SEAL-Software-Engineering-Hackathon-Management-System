@@ -9,6 +9,7 @@ import com.t7.seal.response.mentor.MentorFeedbackResponse;
 import com.t7.seal.response.mentor.MentorTeamDetailResponse;
 import com.t7.seal.response.mentor.MentorTeamProgressResponse;
 import com.t7.seal.response.mentor.MentorTrackResponse;
+import com.t7.seal.response.mentor.MentorSubmissionPageResponse;
 import com.t7.seal.service.MentorFeedbackService;
 import com.t7.seal.service.MentorTeamService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,6 +42,37 @@ public class MentorController {
 
     private final MentorFeedbackService mentorFeedbackService;
     private final MentorTeamService mentorTeamService;
+
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
+    @Operation(
+            summary = "List submissions in assigned mentor tracks",
+            description = "Authoritative server-filtered mentor submission source. Drafts are never returned.",
+            operationId = "mentorGetAssignedSubmissions",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Assigned-track submissions returned.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "A status or filter value is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "The mentor is not assigned to the requested track.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/mentor/submissions")
+    public ResponseEntity<MentorSubmissionPageResponse> getAssignedSubmissions(
+            @RequestParam(required = false) UUID eventId,
+            @RequestParam(required = false) UUID trackId,
+            @RequestParam(required = false) UUID teamId,
+            @RequestParam(required = false) UUID roundId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(mentorTeamService.getSubmissions(
+                eventId, trackId, teamId, roundId, status, search,
+                page, size, authentication
+        ));
+    }
 
     @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN', 'COORDINATOR')")
     @Operation(

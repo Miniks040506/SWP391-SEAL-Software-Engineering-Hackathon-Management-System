@@ -84,7 +84,12 @@ public class GradingServiceImpl implements GradingService {
             Authentication authentication
     ) {
         Judge judge = currentJudge(authentication);
-        Submission submission = getSubmission(submissionId);
+        Submission submission = getSubmissionForUpdate(submissionId);
+
+        ensureJudgeCanView(judge, submission);
+        if (isScoreSheetConfirmed(submission, judge)) {
+            return toScoreSheetResponse(submission, judge);
+        }
 
         ensureJudgeCanMutate(submission, judge, true);
 
@@ -104,7 +109,13 @@ public class GradingServiceImpl implements GradingService {
             Authentication authentication
     ) {
         Judge judge = currentJudge(authentication);
-        Submission submission = getSubmission(submissionId);
+        Submission submission = getSubmissionForUpdate(submissionId);
+
+        ensureJudgeCanView(judge, submission);
+        if (isScoreSheetConfirmed(submission, judge)) {
+            return toScoreSheetResponse(submission, judge);
+        }
+
         ensureJudgeCanMutate(submission, judge, true);
 
         List<EventCriteria> activeCriteria = activeCriteriaFor(submission);
@@ -157,6 +168,7 @@ public class GradingServiceImpl implements GradingService {
             throw new ConflictException("Final submitted score cannot be edited.");
         }
 
+        verifyExpectedVersion(score, request.expectedVersion());
         validateScoreValue(score.getEventCriteria(), request.value());
 
         score.setValue(request.value().floatValue());
@@ -249,7 +261,7 @@ public class GradingServiceImpl implements GradingService {
         RoundJudgeAssignment judgeAssignment = roundJudgeAssignmentRepository.findById(judgeAssignmentId)
                 .orElseThrow(() -> new NotFoundException("Judge assignment not found."));
 
-        return buildJudgeAssignmentProgress(judgeAssignment, countCriteriaForRound(judgeAssignment.getRound()));
+        return buildJudgeAssignmentProgress(judgeAssignment, activeCriteriaIdsForRound(judgeAssignment.getRound()));
     }
 
     @Transactional
@@ -282,7 +294,11 @@ public class GradingServiceImpl implements GradingService {
 
         List<Score> scores = scoreRepository
                 .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(submission.getId(), judge.getId());
-        long confirmedCount = scores.stream().filter(Score::isConfirmed).count();
+        Set<UUID> activeCriteriaIds = activeCriteriaIdsForRound(round);
+        long confirmedCount = scores.stream()
+                .filter(score -> activeCriteriaIds.contains(score.getEventCriteria().getId()))
+                .filter(Score::isConfirmed)
+                .count();
 
         if (confirmedCount == 0) {
             throw new ConflictException("Score sheet is not final submitted.");
@@ -296,7 +312,7 @@ public class GradingServiceImpl implements GradingService {
                 "confirmedScoreCount", confirmedCount
         ));
 
-        return buildSubmissionGradingProgress(submission, judge, countCriteriaForRound(round));
+        return buildSubmissionGradingProgress(submission, judge, activeCriteriaIds);
     }
 
     //HELPERS
@@ -320,6 +336,11 @@ public class GradingServiceImpl implements GradingService {
 
     private Submission getSubmission(UUID submissionId) {
         return submissionRepository.findDetailById(submissionId)
+                .orElseThrow(() -> new BadRequestException("Submission not found."));
+    }
+
+    private Submission getSubmissionForUpdate(UUID submissionId) {
+        return submissionRepository.findByIdForUpdate(submissionId)
                 .orElseThrow(() -> new BadRequestException("Submission not found."));
     }
 
@@ -453,9 +474,17 @@ public class GradingServiceImpl implements GradingService {
                 .map(this::toScoreResponse)
                 .toList();
 
-        long criteriaCount = activeCriteriaFor(submission).size();
-        long confirmedCount = scores.stream().filter(s -> Boolean.FALSE.equals(s.isDraft())).count();
-        boolean confirmed = criteriaCount > 0 && confirmedCount >= criteriaCount;
+        Set<UUID> activeCriteriaIds = activeCriteriaFor(submission).stream()
+                .map(EventCriteria::getId)
+                .collect(Collectors.toSet());
+        Set<UUID> confirmedCriteriaIds = scores.stream()
+                .filter(score -> Boolean.FALSE.equals(score.isDraft()))
+                .map(ScoreResponse::eventCriteriaId)
+                .filter(activeCriteriaIds::contains)
+                .collect(Collectors.toSet());
+        long criteriaCount = activeCriteriaIds.size();
+        boolean confirmed = criteriaCount > 0
+                && confirmedCriteriaIds.containsAll(activeCriteriaIds);
         boolean submissionLocked = submission.getRound().getSubmissionLockedAt() != null;
         boolean gradingLocked = submission.getRound().getGradingLockedAt() != null;
         boolean calibrationCompleted = hasCompletedMandatoryCalibration(submission, judge);
@@ -486,7 +515,9 @@ public class GradingServiceImpl implements GradingService {
                 score.getValue() == null ? null : score.getValue().doubleValue(),
                 score.getComment(),
                 score.getIsDraft(),
-                score.getScoredAt()
+                score.getScoredAt(),
+                score.getVersion(),
+                score.getUpdatedAt()
         );
     }
 
@@ -530,8 +561,9 @@ public class GradingServiceImpl implements GradingService {
                 throw new ConflictException("Final submitted score cannot be edited.");
             }
 
+            verifyExpectedVersion(score, scoreItem.expectedVersion());
             score.setValue(scoreItem.value().floatValue());
-            score.setComment(scoreItem.comment());
+            score.setComment(trimToNull(scoreItem.comment()));
             score.setIsDraft(draft);
             scoreRepository.save(score);
         }
@@ -542,6 +574,37 @@ public class GradingServiceImpl implements GradingService {
             if (confirmedCount < expectedCount) {
                 throw new BadRequestException("All active criteria must be scored before final submission.");
             }
+        }
+    }
+
+    private boolean isScoreSheetConfirmed(Submission submission, Judge judge) {
+        List<EventCriteria> activeCriteria = activeCriteriaFor(submission);
+        if (activeCriteria.isEmpty()) {
+            return false;
+        }
+
+        Set<UUID> activeCriteriaIds = activeCriteria.stream()
+                .map(EventCriteria::getId)
+                .collect(Collectors.toSet());
+        Set<UUID> confirmedCriteriaIds = scoreRepository
+                .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(
+                        submission.getId(), judge.getId()
+                )
+                .stream()
+                .filter(Score::isConfirmed)
+                .map(score -> score.getEventCriteria().getId())
+                .filter(activeCriteriaIds::contains)
+                .collect(Collectors.toSet());
+        return confirmedCriteriaIds.containsAll(activeCriteriaIds);
+    }
+
+    private void verifyExpectedVersion(Score score, Long expectedVersion) {
+        if (score.getId() != null && expectedVersion != null
+                && !Objects.equals(score.getVersion(), expectedVersion)) {
+            throw new ConflictException(
+                    "SCORE_VERSION_CONFLICT",
+                    "A newer score version exists. Refresh the score sheet and try again."
+            );
         }
     }
 
@@ -581,10 +644,11 @@ public class GradingServiceImpl implements GradingService {
 
         List<RoundJudgeAssignment> assignments = roundJudgeAssignmentRepository
                 .findByRoundIdWithJudgeAndTrack(round.getId());
-        long criteriaCount = countCriteriaForRound(round);
+        Set<UUID> activeCriteriaIds = activeCriteriaIdsForRound(round);
+        long criteriaCount = activeCriteriaIds.size();
 
         List<JudgeAssignmentProgressResponse> assignmentProgress = assignments.stream()
-                .map(a -> buildJudgeAssignmentProgress(a, criteriaCount))
+                .map(a -> buildJudgeAssignmentProgress(a, activeCriteriaIds))
                 .toList();
 
         int totalAssigned = assignmentProgress.stream()
@@ -666,15 +730,16 @@ public class GradingServiceImpl implements GradingService {
 
     private JudgeAssignmentProgressResponse buildJudgeAssignmentProgress(
             RoundJudgeAssignment assignment,
-            Long criteriaCount
+            Set<UUID> activeCriteriaIds
     ) {
+        long criteriaCount = activeCriteriaIds.size();
         UUID trackId = assignment.getTrack() == null ? null : assignment.getTrack().getId();
 
         List<Submission> submissions = submissionRepository
                 .findSubmittedOrLateByRoundAndTrackNullable(assignment.getRound().getId(), trackId);
 
         List<SubmissionGradingProgressResponse> submissionProgress = submissions.stream()
-                .map(s -> buildSubmissionGradingProgress(s, assignment.getJudge(), criteriaCount))
+                .map(s -> buildSubmissionGradingProgress(s, assignment.getJudge(), activeCriteriaIds))
                 .toList();
 
         User judgeUser = assignment.getJudge().getUser();
@@ -733,33 +798,43 @@ public class GradingServiceImpl implements GradingService {
     }
 
     private long countCriteriaForRound(Round round) {
+        return activeCriteriaIdsForRound(round).size();
+    }
+
+    private Set<UUID> activeCriteriaIdsForRound(Round round) {
         if (round == null || round.getEvent() == null) {
-            return 0;
+            return Set.of();
         }
 
         return eventCriteriaRepository.findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
                 .stream()
                 .filter(c -> c.appliesToRound(round.getId()))
-                .count();
+                .map(EventCriteria::getId)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private SubmissionGradingProgressResponse buildSubmissionGradingProgress(
             Submission submission,
             Judge judge,
-            long criteriaCount
+            Set<UUID> activeCriteriaIds
     ) {
-        long draftCount = scoreRepository
-                .countBySubmissionIdAndJudgeIdAndIsDraftTrue(submission.getId(), judge.getId());
-        long confirmedCount = scoreRepository
-                .countBySubmissionIdAndJudgeIdAndIsDraftFalse(submission.getId(), judge.getId());
-        boolean completed = criteriaCount > 0 && confirmedCount >= criteriaCount;
+        List<Score> activeScores = scoreRepository
+                .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(
+                        submission.getId(), judge.getId())
+                .stream()
+                .filter(score -> activeCriteriaIds.contains(score.getEventCriteria().getId()))
+                .toList();
+        long criteriaCount = activeCriteriaIds.size();
+        long draftCount = activeScores.stream().filter(Score::isDraftScore).count();
+        long confirmedCount = activeScores.stream().filter(Score::isConfirmed).count();
+        boolean completed = criteriaCount > 0 && confirmedCount == criteriaCount;
         boolean locked = submission.getRound().getGradingLockedAt() != null;
 
         String gradingStatus;
         if (locked) {
             gradingStatus = "LOCKED";
         } else if (completed) {
-            gradingStatus = "COMPLETED";
+            gradingStatus = "SUBMITTED";
         } else if (draftCount > 0 || confirmedCount > 0) {
             gradingStatus = "DRAFT_SAVED";
         } else {

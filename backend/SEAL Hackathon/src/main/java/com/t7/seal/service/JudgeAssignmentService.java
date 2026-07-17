@@ -27,6 +27,7 @@ public interface JudgeAssignmentService {
     PageResponse<JudgeSubmissionAssignmentResponse> getMySubmissionQueue(
             UUID roundId,
             String status,
+            String search,
             int page,
             int size,
             Authentication authentication
