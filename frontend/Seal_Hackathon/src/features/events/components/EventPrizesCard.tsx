@@ -25,15 +25,19 @@ function getRankColors(rank: string) {
   const runnerUp = key.includes("2") || key.includes("runner") || key.includes("second");
 
   return {
-    dotColor: champion ? "bg-amber-400" : runnerUp ? "bg-slate-400" : "bg-orange-400",
-    rankColor: champion ? "text-amber-600" : runnerUp ? "text-slate-500" : "text-orange-600",
+    dotColor: champion ? "bg-amber-400" : runnerUp ? "bg-slate-400" : "bg-orange-500",
+    rankColor: champion
+      ? "text-amber-600 dark:text-amber-400"
+      : runnerUp
+        ? "text-slate-500 dark:text-slate-400"
+        : "text-orange-600 dark:text-orange-400",
     isChampion: champion,
   };
 }
 
 function PrizePerks({ isChampion }: { isChampion: boolean }) {
   return (
-    <div className="space-y-2.5 rounded-lg border border-gray-100 bg-white p-3 text-xs font-normal text-gray-600">
+    <div className="space-y-2.5 rounded-lg border border-gray-100 bg-white p-3 text-xs font-normal text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
       <div className="flex items-center gap-2">
         <div className="h-1 w-1 rounded-full bg-blue-500" />
         <span>Includes official SEAL certificate and award recognition.</span>
@@ -48,7 +52,7 @@ function PrizePerks({ isChampion }: { isChampion: boolean }) {
         <div className="flex items-center gap-2 pt-0.5">
           <CardGiftcardIcon style={{ fontSize: 13 }} className="text-emerald-500" />
 
-          <span className="font-semibold text-emerald-700">
+          <span className="font-semibold text-emerald-700 dark:text-emerald-400">
             Bonus sponsor package may be included.
           </span>
         </div>
@@ -59,7 +63,7 @@ function PrizePerks({ isChampion }: { isChampion: boolean }) {
 
 function PrizeAwards() {
   return (
-    <div className="flex items-center gap-4 border-t border-gray-100/80 pt-3.5 text-xs font-normal text-gray-600">
+    <div className="flex items-center gap-4 border-t border-gray-100/80 pt-3.5 text-xs font-normal text-gray-600 dark:border-slate-800 dark:text-slate-400">
       <div className="flex items-center gap-1.5">
         <WorkspacePremiumIcon style={{ fontSize: 14 }} className="text-blue-500/80" />
         <span>Certificate</span>
@@ -88,8 +92,8 @@ function PrizeRow({ prize, expanded, onToggle }: PrizeRowProps) {
       className={[
         "group flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition-all duration-300",
         expanded
-          ? "border-blue-500 bg-blue-50/10 shadow-sm"
-          : "border-gray-100 bg-gray-50/30 hover:border-gray-200 hover:bg-white hover:shadow-md",
+          ? "border-blue-500 bg-blue-50/10 shadow-sm dark:border-blue-500/60 dark:bg-blue-500/5"
+          : "border-gray-100 bg-gray-50/30 hover:border-gray-200 hover:bg-white hover:shadow-md dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-slate-700 dark:hover:bg-slate-800",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-4">
@@ -102,17 +106,17 @@ function PrizeRow({ prize, expanded, onToggle }: PrizeRowProps) {
             </span>
           </div>
 
-          <div className="text-base font-bold tracking-tight text-gray-900 tabular-nums">
+          <div className="text-base font-bold tracking-tight text-gray-900 tabular-nums dark:text-slate-100">
             {prize.value}
           </div>
         </div>
 
         <div
           className={[
-            "flex items-center justify-center rounded-lg border bg-white p-1 text-gray-400 transition-all duration-300",
+            "flex items-center justify-center rounded-lg border bg-white p-1 text-gray-400 transition-all duration-300 dark:bg-slate-800 dark:text-slate-500",
             expanded
-              ? "rotate-180 border-blue-200 text-blue-500 shadow-sm"
-              : "border-gray-100 group-hover:border-gray-200",
+              ? "rotate-180 border-blue-200 text-blue-500 shadow-sm dark:border-blue-500/40 dark:text-blue-400"
+              : "border-gray-100 group-hover:border-gray-200 dark:border-slate-700 dark:group-hover:border-slate-600",
           ].join(" ")}
         >
           <KeyboardArrowDownIcon style={{ fontSize: 14 }} />
@@ -138,7 +142,7 @@ function PrizeRowFull({ prize }: { prize: PublicPrizeView }) {
   const { dotColor, rankColor, isChampion } = getRankColors(prize.rank);
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+    <div className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="space-y-1.5">
         <div className="flex items-center gap-2.5">
           <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} />
@@ -148,12 +152,12 @@ function PrizeRowFull({ prize }: { prize: PublicPrizeView }) {
           </span>
         </div>
 
-        <div className="text-2xl font-bold tracking-tight text-gray-950 tabular-nums">
+        <div className="text-2xl font-bold tracking-tight text-gray-950 tabular-nums dark:text-slate-100">
           {prize.value}
         </div>
 
         {prize.description && (
-          <p className="text-sm leading-6 text-gray-500">{prize.description}</p>
+          <p className="text-sm leading-6 text-gray-500 dark:text-slate-400">{prize.description}</p>
         )}
       </div>
 
@@ -237,13 +241,14 @@ export function EventPrizesCard({
 
   if (groups.length === 0) {
     return (
-      <section className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-900">
-          <EmojiEventsIcon style={{ fontSize: 16 }} className="text-blue-500" />
+      <section className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 pt-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-amber-400 to-orange-400" />
+        <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-900 dark:text-slate-200">
+          <EmojiEventsIcon style={{ fontSize: 16 }} className="text-amber-500" />
           Prize Structure
         </h3>
 
-        <p className="py-6 text-center text-sm italic text-gray-500">
+        <p className="py-6 text-center text-sm italic text-gray-500 dark:text-slate-500">
           Prize information has not been published yet.
         </p>
       </section>
@@ -252,14 +257,15 @@ export function EventPrizesCard({
 
   return (
     <>
-      <section className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <section className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 pt-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-amber-400 to-orange-400" />
         <div className="mb-6 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-900">
-            <EmojiEventsIcon style={{ fontSize: 16 }} className="text-blue-500" />
+          <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-900 dark:text-slate-200">
+            <EmojiEventsIcon style={{ fontSize: 16 }} className="text-amber-500" />
             Prize Structure
           </h3>
 
-          <span className="rounded-full border border-amber-100 bg-amber-50 px-2.5 py-0.5 text-xs font-bold tabular-nums text-amber-600">
+          <span className="rounded-full border border-amber-100 bg-amber-50 px-2.5 py-0.5 text-xs font-bold tabular-nums text-amber-600 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
             {totalPrizes}
           </span>
         </div>
@@ -268,7 +274,7 @@ export function EventPrizesCard({
           {previewGroups.map((group) => (
             <div key={group.id} className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between px-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">
                   {group.name}
                 </span>
               </div>
@@ -293,7 +299,7 @@ export function EventPrizesCard({
           <button
             type="button"
             onClick={() => setShowAllModal(true)}
-            className="group flex w-full items-center justify-center gap-1.5 py-2.5 text-xs font-bold text-blue-500 transition-colors hover:text-blue-700"
+            className="group flex w-full cursor-pointer items-center justify-center gap-1.5 py-2.5 text-xs font-bold text-blue-500 transition-colors hover:text-blue-700 dark:hover:text-blue-400"
           >
             View all {groups.length} groups
             <ChevronRightIcon
@@ -306,7 +312,7 @@ export function EventPrizesCard({
             <button
               type="button"
               onClick={onViewAllPage}
-              className="text-xs font-black text-gray-400 transition-colors hover:text-blue-500"
+              className="cursor-pointer text-xs font-black text-gray-400 transition-colors hover:text-blue-500 dark:text-slate-500"
             >
               Open prize page
             </button>
@@ -320,13 +326,13 @@ export function EventPrizesCard({
           onClick={() => setShowAllModal(false)}
         >
           <div
-            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-150"
+            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-150 dark:border dark:border-slate-800 dark:bg-slate-900"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="relative z-20 flex items-center justify-between border-b border-gray-100 bg-white p-5">
+            <div className="relative z-20 flex items-center justify-between border-b border-gray-100 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center gap-2.5">
                 <EmojiEventsIcon className="text-blue-500" />
-                <h3 className="text-lg font-bold tracking-tight text-gray-900">
+                <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-slate-100">
                   Prize Distribution
                 </h3>
               </div>
@@ -334,19 +340,19 @@ export function EventPrizesCard({
               <button
                 type="button"
                 onClick={() => setShowAllModal(false)}
-                className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
               >
                 <CloseIcon style={{ fontSize: 20 }} />
               </button>
             </div>
 
-            <div className="relative z-10 flex w-full items-center border-b border-gray-100 bg-gray-50/50">
+            <div className="relative z-10 flex w-full items-center border-b border-gray-100 bg-gray-50/50 dark:border-slate-800 dark:bg-slate-950/50">
               {canScrollLeft && (
-                <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 flex items-center bg-linear-to-r from-gray-50 via-gray-50 to-transparent pl-4 pr-8">
+                <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 flex items-center bg-linear-to-r from-gray-50 via-gray-50 to-transparent pl-4 pr-8 dark:from-slate-950 dark:via-slate-950">
                   <button
                     type="button"
                     onClick={() => scrollTabs("left")}
-                    className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-md transition-all hover:border-blue-200 hover:text-blue-600 hover:shadow-lg active:scale-95"
+                    className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-md transition-all hover:border-blue-200 hover:text-blue-600 hover:shadow-lg active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                   >
                     <ChevronLeftIcon style={{ fontSize: 20 }} />
                   </button>
@@ -364,11 +370,11 @@ export function EventPrizesCard({
                     type="button"
                     onClick={() => setActiveTrackIndex(index)}
                     className={[
-                      "group flex shrink-0 snap-start items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5",
+                      "group flex shrink-0 cursor-pointer snap-start items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5",
                       "text-xs font-bold uppercase tracking-wider transition-all",
                       activeTrackIndex === index
-                        ? "bg-blue-100 text-blue-800 shadow-sm"
-                        : "bg-transparent text-gray-500 hover:bg-gray-200/60 hover:text-gray-700",
+                        ? "bg-blue-100 text-blue-800 shadow-sm dark:bg-blue-500/20 dark:text-blue-300"
+                        : "bg-transparent text-gray-500 hover:bg-gray-200/60 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200",
                     ].join(" ")}
                   >
                     <span>{group.name}</span>
@@ -377,8 +383,8 @@ export function EventPrizesCard({
                       className={[
                         "shrink-0 rounded-full px-2 py-0.5 text-[10px] tabular-nums transition-colors",
                         activeTrackIndex === index
-                          ? "bg-blue-200 text-blue-900"
-                          : "bg-gray-200 text-gray-500 group-hover:bg-gray-300 group-hover:text-gray-600",
+                          ? "bg-blue-200 text-blue-900 dark:bg-blue-500/30 dark:text-blue-200"
+                          : "bg-gray-200 text-gray-500 group-hover:bg-gray-300 group-hover:text-gray-600 dark:bg-slate-800 dark:text-slate-400",
                       ].join(" ")}
                     >
                       {group.prizes.length}
@@ -388,11 +394,11 @@ export function EventPrizesCard({
               </div>
 
               {canScrollRight && (
-                <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 flex items-center bg-linear-to-l from-gray-50 via-gray-50 to-transparent pl-8 pr-4">
+                <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 flex items-center bg-linear-to-l from-gray-50 via-gray-50 to-transparent pl-8 pr-4 dark:from-slate-950 dark:via-slate-950">
                   <button
                     type="button"
                     onClick={() => scrollTabs("right")}
-                    className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-md transition-all hover:border-blue-200 hover:text-blue-600 hover:shadow-lg active:scale-95"
+                    className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-md transition-all hover:border-blue-200 hover:text-blue-600 hover:shadow-lg active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                   >
                     <ChevronRightIcon style={{ fontSize: 20 }} />
                   </button>
@@ -400,7 +406,7 @@ export function EventPrizesCard({
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-gray-50/30 p-6 [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden">
+            <div className="flex-1 overflow-y-auto bg-gray-50/30 p-6 [-ms-overflow-style:none] scrollbar-none dark:bg-slate-950/30 [&::-webkit-scrollbar]:hidden">
               <div className="space-y-4">
                 {(groups[activeTrackIndex] as PublicPrizeGroup | undefined)?.prizes.map(
                   (prize) => (
