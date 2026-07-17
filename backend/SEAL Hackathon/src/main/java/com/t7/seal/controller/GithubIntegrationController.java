@@ -64,7 +64,12 @@ public class GithubIntegrationController {
 
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get GitHub connection status",
+            operationId = "githubGetConnectionStatus",
             security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status returned.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/status")
     public GithubConnectionStatusResponse status(
             @Parameter(hidden = true) Authentication authentication
@@ -80,9 +85,14 @@ public class GithubIntegrationController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Start GitHub repository authorization",
             description = "Private repository access is optional and explicitly requested.",
+            operationId = "githubStartConnection",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Authorization flow created."),
+            @ApiResponse(responseCode = "400", description = "The requested return path is unsafe.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication is required.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
             @ApiResponse(responseCode = "503", description = "GitHub is disabled or not configured.",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
@@ -104,7 +114,10 @@ public class GithubIntegrationController {
     }
 
     @Operation(summary = "Complete GitHub repository authorization",
-            description = "Public GitHub callback protected by encrypted state, PKCE, and browser binding.")
+            description = "Public GitHub callback protected by encrypted state, PKCE, and browser binding.",
+            operationId = "githubCompleteConnection")
+    @ApiResponse(responseCode = "302",
+            description = "Redirects to the verified frontend return path with connected, cancellation, provider-error, or invalid-state result parameters.")
     @GetMapping("/callback")
     public ResponseEntity<Void> callback(
             @RequestParam(required = false) String code,
@@ -154,7 +167,13 @@ public class GithubIntegrationController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Disconnect GitHub",
             description = "Clears credentials without deleting snapshotted submission metadata.",
+            operationId = "githubDisconnect",
             security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "GitHub disconnected."),
+            @ApiResponse(responseCode = "401", description = "Authentication is required.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @DeleteMapping("/connection")
     public AuthMessageResponse disconnect(
             @Parameter(hidden = true) Authentication authentication
@@ -165,6 +184,7 @@ public class GithubIntegrationController {
 
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "List repositories accessible to the connected GitHub user",
+            operationId = "githubListRepositories",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Repositories returned."),
@@ -173,6 +193,8 @@ public class GithubIntegrationController {
             @ApiResponse(responseCode = "409", description = "GitHub is not connected.",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
             @ApiResponse(responseCode = "429", description = "GitHub rate limit reached.",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "503", description = "GitHub is unavailable or not configured.",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @GetMapping("/repositories")
@@ -190,7 +212,18 @@ public class GithubIntegrationController {
 
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "List branches for an accessible repository",
+            operationId = "githubListBranches",
             security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Accessible branches returned."),
+            @ApiResponse(responseCode = "400", description = "Owner, repository, page, or size is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication or GitHub authorization is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "The connected account cannot access the repository.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Repository was not found or is not visible.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "GitHub is not connected.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "429", description = "GitHub rate limit reached.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "503", description = "GitHub is unavailable or not configured.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/repositories/{owner}/{repository}/branches")
     public ResponseEntity<List<GithubReferenceResponse>> branches(
             @PathVariable String owner,
@@ -206,7 +239,18 @@ public class GithubIntegrationController {
 
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "List tags for an accessible repository",
+            operationId = "githubListTags",
             security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Accessible tags returned."),
+            @ApiResponse(responseCode = "400", description = "Owner, repository, page, or size is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication or GitHub authorization is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "The connected account cannot access the repository.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Repository was not found or is not visible.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "GitHub is not connected.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "429", description = "GitHub rate limit reached.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "503", description = "GitHub is unavailable or not configured.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/repositories/{owner}/{repository}/tags")
     public ResponseEntity<List<GithubReferenceResponse>> tags(
             @PathVariable String owner,
