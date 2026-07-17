@@ -1297,7 +1297,10 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private String normalizeHttpUrl(String rawUrl) {
         if (rawUrl == null || rawUrl.isBlank()) {
-            throw new BadRequestException("Submission link URL is required.");
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_URL_REQUIRED",
+                    "Submission link URL is required."
+            );
         }
 
         String trimmedUrl = rawUrl.trim();
@@ -1305,7 +1308,10 @@ public class SubmissionServiceImpl implements SubmissionService {
         try {
             uri = new URI(trimmedUrl);
         } catch (URISyntaxException ex) {
-            throw new BadRequestException("Submission link URL must be a valid HTTP or HTTPS URL.");
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_URL_INVALID",
+                    "Submission link URL must be a valid HTTP or HTTPS URL."
+            );
         }
 
         String scheme = uri.getScheme();
@@ -1313,7 +1319,10 @@ public class SubmissionServiceImpl implements SubmissionService {
                 || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
                 || uri.getHost() == null
                 || uri.getHost().isBlank()) {
-            throw new BadRequestException("Submission link URL must start with http:// or https://.");
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_URL_INVALID",
+                    "Submission link URL must start with http:// or https://."
+            );
         }
 
         return trimmedUrl;
@@ -1321,12 +1330,18 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private SubmissionLinkType parseLinkType(String value) {
         if (value == null || value.isBlank()) {
-            throw new BadRequestException("Submission link type is required.");
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_TYPE_REQUIRED",
+                    "Submission link type is required."
+            );
         }
         try {
             return SubmissionLinkType.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Unsupported submission link type: " + value);
+            throw new BadRequestException(
+                    "SUBMISSION_LINK_TYPE_UNSUPPORTED",
+                    "Unsupported submission link type: " + value
+            );
         }
     }
 
