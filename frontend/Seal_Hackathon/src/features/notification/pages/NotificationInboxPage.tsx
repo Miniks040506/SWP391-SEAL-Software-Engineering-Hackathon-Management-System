@@ -15,6 +15,7 @@ import {
 } from "@/features/notification/hooks/useNotificationMutations";
 import { useNotificationsQuery } from "@/features/notification/hooks/useNotificationQueries";
 import type { NotificationFilter, NotificationResponse } from "@/types/notification.types";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 const PAGE_SIZE = 10;
 
@@ -30,13 +31,17 @@ export function NotificationInboxPage() {
   const [page, setPage] = useState(0);
   const [selectedNotification, setSelectedNotification] =
     useState<NotificationResponse | null>(null);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const query = useNotificationsQuery({ read: filterToRead(filter), page, size: PAGE_SIZE });
   const markReadMutation = useMarkNotificationReadMutation();
   const markAllReadMutation = useMarkAllNotificationsReadMutation();
   const deleteMutation = useDeleteNotificationMutation();
   const clearMutation = useClearNotificationsMutation();
 
-  const notifications = query.data?.content ?? [];
+  const notifications = useMemo(
+    () => query.data?.content ?? [],
+    [query.data?.content],
+  );
   const totalPages = query.data?.totalPages ?? 1;
 
   const unreadOnPage = useMemo(
@@ -65,8 +70,13 @@ export function NotificationInboxPage() {
   };
 
   const clearCurrentFilter = () => {
-    if (!window.confirm("Clean notifications in the current filter?")) return;
-    clearMutation.mutate(filterToRead(filter));
+    setClearConfirmOpen(true);
+  };
+
+  const confirmClearCurrentFilter = () => {
+    clearMutation.mutate(filterToRead(filter), {
+      onSuccess: () => setClearConfirmOpen(false),
+    });
   };
 
   const setFilterAndReset = (next: NotificationFilter) => {
@@ -174,6 +184,16 @@ export function NotificationInboxPage() {
         onOpenTarget={openTarget}
         markReadLoading={markReadMutation.isPending}
         deleteLoading={deleteMutation.isPending}
+      />
+      <ActionConfirmDialog
+        open={clearConfirmOpen}
+        title="Clean notifications?"
+        description={`All notifications in the ${filter.toLowerCase()} filter will be permanently removed.`}
+        confirmLabel="Clean notifications"
+        severity="error"
+        onClose={() => setClearConfirmOpen(false)}
+        onConfirm={confirmClearCurrentFilter}
+        isPending={clearMutation.isPending}
       />
 
       <div className="flex items-center justify-between pt-2">

@@ -22,8 +22,9 @@ import {
   useDeleteAdvanceRuleMutation,
   useUpdateAdvanceRuleMutation,
 } from "../hooks/useAdvancementMutations";
-import type { AdvanceRuleType } from "@/types/round.types";
+import type { AdvanceRuleResponse, AdvanceRuleType } from "@/types/round.types";
 import type { TrackResponse } from "@/types/track.types";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 interface AdvanceRulePanelProps {
   roundId: string;
@@ -58,7 +59,7 @@ const ruleSchema = z.object({
 
 type RuleFormData = z.infer<typeof ruleSchema>;
 
-const getRuleValue = (rule: any) => {
+const getRuleValue = (rule: AdvanceRuleResponse) => {
   switch (rule.ruleType) {
     case "TOP_N":
       return rule.topN;
@@ -92,6 +93,7 @@ export function AdvanceRulePanel({
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [ruleToDelete, setRuleToDelete] = useState<string | null>(null);
 
   const {
     control,
@@ -133,7 +135,7 @@ export function AdvanceRulePanel({
     reset();
   };
 
-  const handleEdit = (rule: any) => {
+  const handleEdit = (rule: AdvanceRuleResponse) => {
     setEditingRuleId(rule.id);
     setIsAdding(true);
     reset({
@@ -144,10 +146,12 @@ export function AdvanceRulePanel({
     });
   };
 
-  const handleDelete = async (ruleId: string) => {
-    if (window.confirm("Are you sure you want to delete this rule?")) {
-      await deleteMutation.mutateAsync({ ruleId, roundId });
-    }
+  const handleDelete = (ruleId: string) => setRuleToDelete(ruleId);
+
+  const confirmDelete = async () => {
+    if (!ruleToDelete) return;
+    await deleteMutation.mutateAsync({ ruleId: ruleToDelete, roundId });
+    setRuleToDelete(null);
   };
 
   return (
@@ -223,16 +227,6 @@ export function AdvanceRulePanel({
                       className="text-slate-400 dark:text-slate-500 italic"
                     >
                       {ruleHelperText[rule.ruleType]}
-                    </Typography>
-                  )}
-                  {(rule as any).createdAt && (
-                    <Typography variant="caption" className="text-slate-400 ml-2">
-                      Created: {new Date((rule as any).createdAt).toLocaleString()}
-                    </Typography>
-                  )}
-                  {(rule as any).updatedAt && (
-                    <Typography variant="caption" className="text-slate-400 ml-2">
-                      Updated: {new Date((rule as any).updatedAt).toLocaleString()}
                     </Typography>
                   )}
                 </div>
@@ -383,6 +377,16 @@ export function AdvanceRulePanel({
           </Card>
         )}
       </div>
+      <ActionConfirmDialog
+        open={ruleToDelete !== null}
+        title="Delete advance rule?"
+        description="This rule will no longer be used when calculating which teams advance."
+        confirmLabel="Delete rule"
+        severity="error"
+        onClose={() => setRuleToDelete(null)}
+        onConfirm={confirmDelete}
+        isPending={deleteMutation.isPending}
+      />
     </div>
   );
 }

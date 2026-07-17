@@ -4,6 +4,7 @@ import { useSnackbar } from "notistack";
 import { Button, CircularProgress } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import { isAxiosError } from "axios";
 
 import type { UUID } from "@/types/common.types";
 import type { CalibrationRoundResponse } from "@/types/calibration.types";
@@ -15,6 +16,7 @@ import {
     usePublishCalibrationDistributionMutation,
 } from "@/features/calibration/hooks/useCalibrationMutations";
 import { CalibrationRoundTable } from "@/features/calibration/components/CoordinatorCalibration/CalibrationRoundTable";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 export const CoordinatorCalibrationPage = () => {
     const { eventId } = useParams<{ eventId: string }>();
@@ -31,20 +33,24 @@ export const CoordinatorCalibrationPage = () => {
 
     const publishMutation = usePublishCalibrationDistributionMutation();
     const [publishingId, setPublishingId] = useState<string | null>(null);
+    const [publishCandidateId, setPublishCandidateId] = useState<string | null>(null);
 
-    const handlePublish = async (id: string) => {
-        if (!window.confirm("Are you sure you want to publish the distribution? This action cannot be undone and will prevent further edits.")) {
-            return;
-        }
+    const handlePublish = (id: string) => setPublishCandidateId(id);
 
-        setPublishingId(id);
-        publishMutation.mutate(id as UUID, {
+    const confirmPublish = () => {
+        if (!publishCandidateId) return;
+        setPublishingId(publishCandidateId);
+        publishMutation.mutate(publishCandidateId as UUID, {
             onSuccess: () => {
+                setPublishCandidateId(null);
                 enqueueSnackbar("Distribution published successfully", { variant: "success" });
             },
-            onError: (error: any) => {
+            onError: (error: unknown) => {
+                const message = isAxiosError<{ message?: string }>(error)
+                    ? error.response?.data?.message
+                    : undefined;
                 enqueueSnackbar(
-                    error?.response?.data?.message || "Failed to publish distribution",
+                    message || "Failed to publish distribution",
                     { variant: "error" }
                 );
             },
@@ -156,6 +162,15 @@ export const CoordinatorCalibrationPage = () => {
                     />
                 )}
             </div>
+            <ActionConfirmDialog
+                open={publishCandidateId !== null}
+                title="Publish calibration distribution?"
+                description="Publishing is irreversible and prevents further edits to this distribution."
+                confirmLabel="Publish distribution"
+                onClose={() => setPublishCandidateId(null)}
+                onConfirm={confirmPublish}
+                isPending={publishMutation.isPending}
+            />
         </div>
     );
 };
