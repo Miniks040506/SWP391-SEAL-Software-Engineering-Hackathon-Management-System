@@ -62,9 +62,13 @@ public class GoogleDriveIntegrationController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get Google Drive connection status",
+            operationId = "googleDriveGetConnectionStatus",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    @ApiResponse(responseCode = "200", description = "Status returned.", useReturnTypeSchema = true)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status returned.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/status")
     public GoogleDriveConnectionStatusResponse status(
             @Parameter(hidden = true) Authentication authentication
@@ -86,10 +90,13 @@ public class GoogleDriveIntegrationController {
     @Operation(
             summary = "Start Google Drive authorization",
             description = "Creates encrypted state and PKCE values. The refresh token is never exposed.",
+            operationId = "googleDriveStartConnection",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Authorization flow created.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "The requested return path is unsafe.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
             @ApiResponse(responseCode = "503", description = "Drive is disabled or not configured.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @PostMapping("/connect")
@@ -114,6 +121,7 @@ public class GoogleDriveIntegrationController {
     @Operation(
             summary = "Create a Google Picker session",
             description = "Returns a short-lived access token for Picker. Refresh credentials remain server-side.",
+            operationId = "googleDriveCreatePickerSession",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
@@ -142,7 +150,12 @@ public class GoogleDriveIntegrationController {
 
     @Operation(
             summary = "Complete Google Drive authorization",
-            description = "Public Google callback protected by encrypted state, PKCE, and browser binding."
+            description = "Public Google callback protected by encrypted state, PKCE, and browser binding.",
+            operationId = "googleDriveCompleteConnection"
+    )
+    @ApiResponse(
+            responseCode = "302",
+            description = "Redirects to the verified frontend return path with connected, cancellation, provider-error, or invalid-state result parameters."
     )
     @GetMapping("/callback")
     public ResponseEntity<Void> callback(
@@ -197,9 +210,13 @@ public class GoogleDriveIntegrationController {
     @Operation(
             summary = "Disconnect Google Drive",
             description = "Clears stored provider credentials without deleting imported submission evidence.",
+            operationId = "googleDriveDisconnect",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    @ApiResponse(responseCode = "200", description = "Drive disconnected.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Drive disconnected."),
+            @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @DeleteMapping("/connection")
     public AuthMessageResponse disconnect(
             @Parameter(hidden = true) Authentication authentication
