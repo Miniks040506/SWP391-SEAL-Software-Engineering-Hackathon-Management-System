@@ -28,7 +28,7 @@ export function ProgressTimeline({
 
   if (steps.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-100 bg-white p-5 text-sm font-semibold text-gray-400">
+      <div className="rounded-xl border border-gray-100 bg-white p-5 text-sm font-semibold text-gray-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500">
         No rounds have been published yet.
       </div>
     );
