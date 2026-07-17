@@ -426,6 +426,7 @@ public class TeamServiceImpl implements TeamService {
     @Override
     public TeamResponse transferLeader(UUID teamId, TransferLeaderRequest request, Authentication authentication) {
         Team team = getTeam(teamId);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         ensureTeamLeader(team, authentication);
         ensureTeamEditable(team);
@@ -443,7 +444,17 @@ public class TeamServiceImpl implements TeamService {
         team.setUpdatedAt(LocalDateTime.now());
         team.setLeader(newLeader.getUser());
 
-        return toTeamResponse(teamRepository.save(team));
+        Team saved = teamRepository.save(team);
+        auditLogRepository.save(AuditLog.builder()
+                .actor(actor)
+                .actionType(AuditActionType.TEAM_LEADER_TRANSFERRED)
+                .targetTable("teams")
+                .targetId(saved.getId())
+                .beforeState(Map.of("leaderUserId", oldLeader.getUser().getId().toString()))
+                .afterState(Map.of("leaderUserId", newLeader.getUser().getId().toString()))
+                .context(Map.of("teamId", saved.getId().toString()))
+                .build());
+        return toTeamResponse(saved);
     }
 
     @Transactional
