@@ -36,6 +36,14 @@ export function MentorTeamDetailPage() {
             Team Details
           </h1>
         </div>
+        <button
+          type="button"
+          onClick={() => navigate(`/mentor/teams/${teamId}/scores`)}
+          disabled={!teamId}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          View published scores
+        </button>
       </div>
 
       <div className="bg-white dark:bg-slate-900 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">

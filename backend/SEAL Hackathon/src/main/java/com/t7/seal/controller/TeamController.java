@@ -211,7 +211,7 @@ public class TeamController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get Team Published Scores",
-            description = "Get Team Published Scores through GET /api/v1/teams/{teamId}/scores. Successful execution returns HTTP 200 with List<TeamDetailedScoreResponse>. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\").",
+            description = "Returns published team scores to team members, assigned-track mentors, coordinators, and admins. Judge identities are excluded.",
             operationId = "teamGetTeamPublishedScores",
             security = @SecurityRequirement(name = "bearerAuth")
     )
@@ -259,7 +259,7 @@ public class TeamController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get Team Published Round Score",
-            description = "Get Team Published Round Score through GET /api/v1/teams/{teamId}/rounds/{roundId}/scores. Successful execution returns HTTP 200 with TeamDetailedScoreResponse. Access: Authenticated via SecurityConfig matcher /api/v1/teams/**; @PreAuthorize(\"isAuthenticated()\").",
+            description = "Returns a published round score to team members, assigned-track mentors, coordinators, and admins. Judge identities are excluded.",
             operationId = "teamGetTeamPublishedRoundScore",
             security = @SecurityRequirement(name = "bearerAuth")
     )
