@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { teamApi } from "@/api/team.api";
 import { JudgeAnonymityNotice } from "../components/JudgeAnonymityNotice";
 
@@ -26,6 +26,10 @@ const formatPublishedAt = (value?: string | null) => {
 export const TeamPublishedScoresPage = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const teamRoute = location.pathname.startsWith("/mentor/")
+    ? `/mentor/teams/${teamId}`
+    : `/participant/teams/${teamId}`;
 
   const { data: scores = [], isLoading, isError, error } = useQuery({
     queryKey: ["teamPublishedScores", teamId],
@@ -132,7 +136,7 @@ export const TeamPublishedScoresPage = () => {
                   <Box>
                     <Button
                       variant="contained"
-                      onClick={() => navigate(`/participant/teams/${teamId}/rounds/${score.roundId}/scores`)}
+                      onClick={() => navigate(`${teamRoute}/rounds/${score.roundId}/scores`)}
                       sx={{ borderRadius: "10px", fontWeight: 800, textTransform: "none" }}
                     >
                       View score details
