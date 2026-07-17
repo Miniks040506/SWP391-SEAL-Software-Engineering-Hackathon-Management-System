@@ -16,6 +16,7 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import MarkEmailReadOutlinedIcon from "@mui/icons-material/MarkEmailReadOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 export type NotificationResponse = {
   id: string;
@@ -52,6 +53,7 @@ export const NotificationDropdown = ({
   const open = Boolean(anchorEl);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewingNotif, setViewingNotif] = useState<NotificationResponse | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const isAllSelected = notifications.length > 0 && selectedIds.length === notifications.length;
@@ -67,10 +69,13 @@ export const NotificationDropdown = ({
   };
 
   const handleBulkDelete = () => {
-    if (window.confirm(`Delete ${selectedIds.length} selected notifications?`)) {
-      onDeleteMulti?.(selectedIds);
-      setSelectedIds([]); 
-    }
+    if (selectedIds.length > 0) setBulkDeleteOpen(true);
+  };
+
+  const confirmBulkDelete = () => {
+    onDeleteMulti?.(selectedIds);
+    setSelectedIds([]);
+    setBulkDeleteOpen(false);
   };
 
   const handleBulkMarkRead = () => {
@@ -254,6 +259,16 @@ export const NotificationDropdown = ({
           )}
         </DialogContent>
       </Dialog>
+      <ActionConfirmDialog
+        open={bulkDeleteOpen}
+        title="Delete selected notifications?"
+        description={`${selectedIds.length} selected notification${selectedIds.length === 1 ? "" : "s"} will be permanently removed.`}
+        confirmLabel="Delete notifications"
+        severity="error"
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={confirmBulkDelete}
+        isPending={isProcessing}
+      />
     </>
   );
 };
