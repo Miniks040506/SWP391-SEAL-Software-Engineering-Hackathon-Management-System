@@ -1391,7 +1391,7 @@ public class RoundServiceImpl implements RoundService {
                     targetId,
                     null,
                     NotificationChannel.BOTH,
-                    null
+                    LocalDateTime.now()
             );
         } catch (RuntimeException ex) {
             log.warn(
