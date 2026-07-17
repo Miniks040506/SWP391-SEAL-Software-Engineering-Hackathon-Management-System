@@ -19,6 +19,7 @@ import com.t7.seal.request.submission.UpdateSubmissionLinkMetadataRequest;
 import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.submission.*;
 import com.t7.seal.security.guard.CurrentUser;
+import com.t7.seal.service.AuditLogService;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.GoogleDriveConnectionService;
@@ -82,6 +83,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionRequirementCatalog requirementCatalog;
     private final SubmissionMutationPolicy mutationPolicy;
     private final SubmissionAttemptSnapshotService attemptSnapshotService;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional(readOnly = true)
@@ -735,6 +737,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission submission = submissionRepository.findByIdForUpdate(submissionId)
                 .orElseThrow(() -> new NotFoundException("Submission not found."));
 
+        User actor = currentUserService.getCurrentUser(authentication);
         ensureTeamLeader(submission.getTeam(), authentication);
 
         if (submission.isScorable()) {
@@ -750,10 +753,21 @@ public class SubmissionServiceImpl implements SubmissionService {
         ensureRoundCanAcceptSubmission(submission.getRound());
         validateRequiredLinksFromEntity(submission);
 
+        Map<String, Object> beforeState = submissionAuditState(submission);
         markSubmittedBeforeDeadline(submission, submission.getRound());
 
         Submission saved = submissionRepository.save(submission);
         attemptSnapshotService.createSnapshot(saved);
+        auditLogService.record(
+                actor,
+                saved.isLate() ? AuditActionType.SUBMISSION_LATE
+                        : AuditActionType.SUBMISSION_SUBMITTED,
+                "submissions",
+                saved.getId(),
+                beforeState,
+                submissionAuditState(saved),
+                submissionAuditContext(saved)
+        );
         notifySubmissionChange(saved, false);
         return toSubmissionResponse(saved);
     }
@@ -766,6 +780,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     ) {
         Submission submission = submissionRepository.findByIdForUpdate(submissionId)
                 .orElseThrow(() -> new NotFoundException("Submission not found."));
+        User actor = currentUserService.getCurrentUser(authentication);
         ensureTeamLeader(submission.getTeam(), authentication);
 
         if (submission.isDraft()) {
@@ -777,9 +792,41 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         ensureRoundCanAcceptSubmission(submission.getRound());
+        Map<String, Object> beforeState = submissionAuditState(submission);
         attemptSnapshotService.createSnapshot(submission);
         submission.beginResubmission();
-        return toSubmissionResponse(submissionRepository.save(submission));
+        Submission saved = submissionRepository.save(submission);
+        auditLogService.record(
+                actor,
+                AuditActionType.SUBMISSION_RESUBMITTED,
+                "submissions",
+                saved.getId(),
+                beforeState,
+                submissionAuditState(saved),
+                submissionAuditContext(saved)
+        );
+        return toSubmissionResponse(saved);
+    }
+
+    private Map<String, Object> submissionAuditState(Submission submission) {
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("status", submission.getStatus().name());
+        state.put("submissionNumber", submission.getSubmissionNumber());
+        if (submission.getSubmittedAt() != null) {
+            state.put("submittedAt", submission.getSubmittedAt().toString());
+        }
+        return state;
+    }
+
+    private Map<String, Object> submissionAuditContext(Submission submission) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("submissionId", submission.getId().toString());
+        context.put("teamId", submission.getTeam().getId().toString());
+        context.put("roundId", submission.getRound().getId().toString());
+        if (submission.getRound().getEvent() != null) {
+            context.put("eventId", submission.getRound().getEvent().getId().toString());
+        }
+        return context;
     }
 
     @Override

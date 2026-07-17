@@ -266,10 +266,15 @@ public class EventServiceImpl implements EventService {
     @Transactional
     @Override
     public EventDetailResponse cancelEvent(UUID eventId, Authentication authentication) {
-        currentUserService.getCurrentUser(authentication);
+        User actor = currentUserService.getCurrentUser(authentication);
 
         HackathonEvent event = hackathonEventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+
+        Map<String, Object> beforeState = Map.of(
+                "name", event.getName(),
+                "status", event.getStatus().name()
+        );
 
         RegistrationStatus deletedStatus = teamRepository.existsByEventId(eventId)
                 ? RegistrationStatus.ARCHIVED
@@ -280,6 +285,15 @@ public class EventServiceImpl implements EventService {
 
         HackathonEvent saved = hackathonEventRepository.save(event);
         roundDeadlineReminderService.cancelEventSubmissionDeadlineReminders(saved.getId());
+        auditLogService.record(
+                actor,
+                AuditActionType.EVENT_CANCELLED,
+                "hackathon_events",
+                saved.getId(),
+                beforeState,
+                Map.of("name", saved.getName(), "status", saved.getStatus().name()),
+                null
+        );
         return buildEventDetailResponse(saved, true);
     }
 
