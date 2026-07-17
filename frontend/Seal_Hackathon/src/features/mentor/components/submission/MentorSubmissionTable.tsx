@@ -12,17 +12,40 @@ import TableRow from "@mui/material/TableRow";
 
 import FolderOffOutlinedIcon from "@mui/icons-material/FolderOffOutlined";
 
-import type { SubmissionSummaryResponse } from "@/types/submission.types";
+import type {
+  MentorSubmissionEmptyReason,
+  MentorSubmissionSummaryResponse,
+} from "@/types/submission.types";
 
 type MentorSubmissionsTableProps = {
-  submissions: SubmissionSummaryResponse[];
+  submissions: MentorSubmissionSummaryResponse[];
   isLoading: boolean;
+  emptyReason?: MentorSubmissionEmptyReason;
   onRowClick: (submissionId: string) => void;
+};
+
+const EMPTY_MESSAGES: Record<
+  Exclude<MentorSubmissionEmptyReason, "NONE">,
+  { title: string; body: string }
+> = {
+  NO_ASSIGNED_TEAMS: {
+    title: "No Assigned Teams",
+    body: "You do not currently have teams in your assigned tracks.",
+  },
+  NO_SUBMISSIONS: {
+    title: "Teams Have Not Submitted",
+    body: "Assigned teams exist, but none has submitted eligible deliverables yet.",
+  },
+  NO_FILTER_MATCHES: {
+    title: "No Matching Submissions",
+    body: "No submitted deliverables match the current filters.",
+  },
 };
 
 export const MentorSubmissionTable = ({
   submissions,
   isLoading,
+  emptyReason = "NO_SUBMISSIONS",
   onRowClick,
 }: MentorSubmissionsTableProps) => {
   if (isLoading) {
@@ -36,14 +59,17 @@ export const MentorSubmissionTable = ({
   }
 
   if (!submissions || submissions.length === 0) {
+    const message = emptyReason === "NONE"
+      ? EMPTY_MESSAGES.NO_FILTER_MATCHES
+      : EMPTY_MESSAGES[emptyReason];
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-slate-50 p-12 text-center dark:border-slate-700 dark:bg-slate-900/40">
         <FolderOffOutlinedIcon className="mb-4 text-4xl text-gray-400" />
         <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
-          No Submissions Found
+          {message.title}
         </h3>
         <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-slate-400">
-          There are currently no deliverables submitted by teams in your track.
+          {message.body}
         </p>
       </div>
     );
@@ -59,6 +85,7 @@ export const MentorSubmissionTable = ({
         <TableHead className="bg-slate-50 dark:bg-slate-800/50">
           <TableRow>
             <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Team Name</TableCell>
+            <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Track</TableCell>
             <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Round</TableCell>
             <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Submission</TableCell>
             <TableCell className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</TableCell>
@@ -76,6 +103,9 @@ export const MentorSubmissionTable = ({
             >
               <TableCell className="font-extrabold text-gray-900 dark:text-white">
                 {row.teamName || "Unknown Team"}
+              </TableCell>
+              <TableCell className="font-semibold text-gray-700 dark:text-slate-300">
+                {row.trackName || "Unknown Track"}
               </TableCell>
               <TableCell className="font-semibold text-gray-700 dark:text-slate-300">
                 {row.roundName}

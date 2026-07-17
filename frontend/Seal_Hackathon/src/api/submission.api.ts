@@ -5,7 +5,9 @@ import type {
   CreateSubmissionLinkRequest,
   FileDownloadUrlResponse,
   GetEventSubmissionsParams,
+  GetMentorSubmissionsParams,
   ImportGoogleDriveFileRequest,
+  MentorSubmissionPageResponse,
   SaveSubmissionDraftRequest,
   SelectGithubRepositoryRequest,
   SubmissionAttemptResponse,
@@ -111,6 +113,12 @@ export const submissionApi = {
       `/submissions/${submissionId}`,
       payload,
     );
+  },
+
+  getMentorSubmissions(params: GetMentorSubmissionsParams) {
+    return apiRequest.get<MentorSubmissionPageResponse>("/mentor/submissions", {
+      params,
+    });
   },
 
   submitExistingSubmission(submissionId: UUID) {

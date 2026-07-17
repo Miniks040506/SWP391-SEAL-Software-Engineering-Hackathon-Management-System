@@ -8,10 +8,11 @@ import Button from "@mui/material/Button";
 
 import SearchIcon from "@mui/icons-material/Search";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
+import type { MentorSubmissionStatus } from "@/types/submission.types";
 
 export type MentorSubmissionFilters = {
   search?: string;
-  status?: string;
+  status?: MentorSubmissionStatus;
   roundId?: string;
 };
 
@@ -21,7 +22,11 @@ type Props = {
   rounds?: { id: string; name: string }[];
 };
 
-const SUBMISSION_STATUSES = ["DRAFT", "SUBMITTED", "LATE", "DISQUALIFIED"];
+const SUBMISSION_STATUSES: MentorSubmissionStatus[] = [
+  "SUBMITTED",
+  "LATE",
+  "DISQUALIFIED",
+];
 
 const filterInputSx = {
   "& .MuiOutlinedInput-root": {
@@ -57,7 +62,10 @@ export const MentorSubmissionFilterBar = ({ filters, onChange, rounds = [] }: Pr
   };
 
   const handleStatusChange = (e: SelectChangeEvent<string>) => {
-    onChange({ ...filters, status: e.target.value || undefined });
+    onChange({
+      ...filters,
+      status: (e.target.value || undefined) as MentorSubmissionStatus | undefined,
+    });
   };
 
   const handleRoundChange = (e: SelectChangeEvent<string>) => {
@@ -151,6 +159,7 @@ export const MentorSubmissionFilterBar = ({ filters, onChange, rounds = [] }: Pr
                 whiteSpace: "nowrap",
               }}
             >
+              Clear
             </Button>
           )}
         </div>

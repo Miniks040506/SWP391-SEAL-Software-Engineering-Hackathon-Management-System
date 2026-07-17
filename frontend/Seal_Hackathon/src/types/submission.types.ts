@@ -321,6 +321,55 @@ export type GetEventSubmissionsParams = {
   size?: number;
 };
 
+export type MentorSubmissionStatus = "SUBMITTED" | "LATE" | "DISQUALIFIED";
+
+export type MentorSubmissionEmptyReason =
+  | "NONE"
+  | "NO_ASSIGNED_TEAMS"
+  | "NO_SUBMISSIONS"
+  | "NO_FILTER_MATCHES";
+
+export type MentorSubmissionSummaryResponse = {
+  id: UUID;
+  eventId?: UUID | null;
+  eventName?: string | null;
+  trackId?: UUID | null;
+  trackName?: string | null;
+  teamId?: UUID | null;
+  teamName?: string | null;
+  roundId?: UUID | null;
+  roundName?: string | null;
+  status: MentorSubmissionStatus;
+  submissionNumber: number;
+  submittedAt?: ISODateTime | null;
+  updatedAt?: ISODateTime | null;
+  linkCount: number;
+  late: boolean;
+};
+
+export type MentorSubmissionPageResponse = {
+  content: MentorSubmissionSummaryResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+  assignedTeamCount: number;
+  submittedTeamCount: number;
+  emptyReason: MentorSubmissionEmptyReason;
+};
+
+export type GetMentorSubmissionsParams = {
+  eventId?: UUID;
+  trackId?: UUID;
+  teamId?: UUID;
+  roundId?: UUID;
+  status?: MentorSubmissionStatus;
+  search?: string;
+  page?: number;
+  size?: number;
+};
+
 export type CriterionAverageScoreResponse = {
   eventCriteriaId: UUID;
   criteriaName: string;
