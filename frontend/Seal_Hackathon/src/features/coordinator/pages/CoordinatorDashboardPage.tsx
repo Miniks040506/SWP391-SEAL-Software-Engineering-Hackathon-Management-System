@@ -83,11 +83,6 @@ function getEmbeddedCount(value?: unknown[] | null) {
   return Array.isArray(value) ? value.length : "—";
 }
 
-function getRegisteredTeamCount(event?: DashboardEvent | null) {
-  if (!event) return "—";
-  return event.approvedTeamCount ?? event.approvedTeams ?? event.teamCount ?? "—";
-}
-
 export const CoordinatorDashboardPage = () => {
   const navigate = useNavigate();
 
