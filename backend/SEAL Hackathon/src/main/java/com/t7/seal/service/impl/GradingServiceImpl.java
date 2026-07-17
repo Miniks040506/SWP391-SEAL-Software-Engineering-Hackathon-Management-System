@@ -135,7 +135,7 @@ public class GradingServiceImpl implements GradingService {
                 throw new BadRequestException("All active criteria must be scored before final submission.");
             }
 
-            validateScoreValue(criterion, score.getValue().doubleValue());
+            validateScoreValue(criterion, normalizedScoreValue(score.getValue()));
             score.confirm();
         }
 
@@ -175,7 +175,7 @@ public class GradingServiceImpl implements GradingService {
         score.setComment(trimToNull(request.comment()));
         score.markAsDraft();
 
-        Score saved = scoreRepository.save(score);
+        Score saved = scoreRepository.saveAndFlush(score);
         recordAuditLog(judge.getUser(), AuditActionType.SCORE_UPDATE, score.getSubmission(), Map.of(
                 "scoreId", score.getId().toString(),
                 "eventCriteriaId", score.getEventCriteria().getId().toString()
@@ -479,6 +479,11 @@ public class GradingServiceImpl implements GradingService {
         return Math.abs(scaled - Math.rint(scaled)) > 0.0000001d;
     }
 
+    private Double normalizedScoreValue(Float value) {
+        return value == null ? null
+                : Math.round(value.doubleValue() * 10.0d) / 10.0d;
+    }
+
     private ScoreSheetResponse toScoreSheetResponse(Submission submission, Judge judge) {
         List<ScoreResponse> scores = scoreRepository
                 .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(submission.getId(), judge.getId())
@@ -524,8 +529,7 @@ public class GradingServiceImpl implements GradingService {
                 score.getSubmission().getId(),
                 score.getJudge().getId(),
                 score.getEventCriteria().getId(),
-                score.getValue() == null ? null
-                        : Math.round(score.getValue().doubleValue() * 10.0d) / 10.0d,
+                normalizedScoreValue(score.getValue()),
                 score.getComment(),
                 score.getIsDraft(),
                 score.getScoredAt(),
