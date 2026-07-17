@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { differenceInCalendarDays, isValid, parseISO } from "date-fns";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import LoginIcon from "@mui/icons-material/Login";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
-import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import ScheduleOutlinedIcon from "@mui/icons-material/ScheduleOutlined";
 import { CircularProgress } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { teamApi } from "@/api/team.api";
@@ -25,11 +28,26 @@ import { useAuthStore } from "@/stores/authStore";
 import { getPrimaryRole } from "@/utils/roleRedirect";
 import {
   getEventDescription,
+  getSeasonLabel,
   isCompletedEvent,
   isRegistrationOpen,
   toAnnouncementViews,
   type PublicAnnouncementView,
 } from "@/features/events/utils/publicEventView";
+
+function getRegistrationCountdown(registrationEndAt?: string | null) {
+  if (!registrationEndAt) return null;
+
+  const end = parseISO(registrationEndAt);
+  if (!isValid(end)) return null;
+
+  const days = differenceInCalendarDays(end, new Date());
+  if (days < 0) return null;
+  if (days === 0) return "Registration closes today";
+  if (days === 1) return "Registration closes tomorrow";
+
+  return `Registration closes in ${days} days`;
+}
 
 export function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -47,6 +65,8 @@ export function EventDetailPage() {
   >(null);
   const [showAnnouncementsList, setShowAnnouncementsList] = useState(false);
   const [cameFromList, setCameFromList] = useState(false);
+  const [bannerFailed, setBannerFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
 
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -99,6 +119,15 @@ export function EventDetailPage() {
   const event = eventQuery.data;
   const registrationOpen = isRegistrationOpen(event.status);
   const completed = isCompletedEvent(event.status);
+  const countdown = registrationOpen
+    ? getRegistrationCountdown(event.registrationEndAt)
+    : null;
+
+  const bannerSrc =
+    event.bannerUrl && !bannerFailed
+      ? event.bannerUrl
+      : `https://picsum.photos/seed/seal-event-${event.id}/1440/560`;
+
   const activeCompetition = (competitionsQuery.data ?? []).find(
     (competition) =>
       competition.eventId === event.id &&
@@ -138,7 +167,7 @@ export function EventDetailPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
       {selectedAnnouncement && selectedAnnouncementIndex !== null && (
         <AnnouncementModal
           announcement={selectedAnnouncement}
@@ -164,96 +193,145 @@ export function EventDetailPage() {
       <button
         type="button"
         onClick={() => navigate(backPath)}
-        className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-gray-400 transition-colors hover:text-blue-500"
+        className="flex cursor-pointer items-center gap-2 text-sm font-bold uppercase tracking-widest text-gray-400 transition-colors hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400"
       >
         <ArrowBackIcon style={{ fontSize: 15 }} />
         Back to events
       </button>
 
+      {/* ---------------------------------------------------------------- */}
+      {/* Hero banner                                                       */}
+      {/* ---------------------------------------------------------------- */}
+      <section className="relative overflow-hidden rounded-3xl border border-gray-200 bg-slate-900 shadow-xl dark:border-slate-800">
+        <div className="absolute inset-0">
+          {!fallbackFailed ? (
+            <img
+              src={bannerSrc}
+              alt={`${event.name} banner`}
+              onError={() =>
+                bannerSrc === event.bannerUrl
+                  ? setBannerFailed(true)
+                  : setFallbackFailed(true)
+              }
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-linear-to-br from-blue-600 via-indigo-700 to-slate-900" />
+          )}
+
+          {/* Bottom-only scrim keeps the banner image clearly visible */}
+          <div className="absolute inset-x-0 bottom-0 h-4/5 bg-linear-to-t from-slate-950/90 via-slate-950/45 to-transparent" />
+        </div>
+
+        <div className="relative flex min-h-90 flex-col justify-end gap-4 p-8 md:p-12">
+          <div className="flex flex-wrap items-center gap-3">
+            <PublicStatusBadge status={event.status} />
+
+            <span className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-3 py-1 text-xs font-black uppercase tracking-widest text-cyan-200 backdrop-blur-sm">
+              {getSeasonLabel(event.season, event.year)}
+            </span>
+
+            {countdown && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/15 px-3 py-1 text-xs font-black uppercase tracking-widest text-emerald-200 backdrop-blur-sm">
+                <ScheduleOutlinedIcon style={{ fontSize: 14 }} />
+                {countdown}
+              </span>
+            )}
+
+            {completed && event.resultPublishedAt && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-400/15 px-3 py-1 text-xs font-black uppercase tracking-widest text-amber-200 backdrop-blur-sm">
+                <EmojiEventsOutlinedIcon style={{ fontSize: 14 }} />
+                Results published
+              </span>
+            )}
+          </div>
+
+          <h1 className="max-w-3xl text-4xl font-black leading-tight tracking-tight text-white drop-shadow-md md:text-5xl">
+            {event.name}
+          </h1>
+
+          <p className="max-w-2xl text-base leading-relaxed text-slate-200 drop-shadow-sm">
+            {getEventDescription(event)}
+          </p>
+
+          <div className="mt-2 flex flex-wrap items-center gap-4">
+            {showCompetingButton ? (
+              <button
+                type="button"
+                onClick={() => navigate(`/events/${event.id}/competing`)}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-blue-500 to-indigo-500 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/40 transition-all hover:from-blue-600 hover:to-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 active:scale-95"
+              >
+                <RocketLaunchIcon style={{ fontSize: 17 }} />
+                Go to event competing
+              </button>
+            ) : (
+              registrationOpen && (
+                <button
+                  type="button"
+                  onClick={() => joinEvent()}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-blue-500 to-indigo-500 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/40 transition-all hover:from-blue-600 hover:to-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 active:scale-95"
+                >
+                  <LoginIcon style={{ fontSize: 17 }} />
+                  Join now
+                </button>
+              )
+            )}
+
+            {completed && (
+              <button
+                type="button"
+                onClick={() => viewResults(event.id)}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-7 py-3 text-sm font-bold text-white backdrop-blur-sm transition-all hover:border-white/50 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 active:scale-95"
+              >
+                <LeaderboardIcon style={{ fontSize: 17 }} />
+                View Results
+              </button>
+            )}
+
+            {userRole === "COORDINATOR" && (
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(`/coordinator/events/${event.id}/grading-progress`)
+                }
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-indigo-500 to-violet-500 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/40 transition-all hover:from-indigo-600 hover:to-violet-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 active:scale-95"
+              >
+                <AssessmentOutlinedIcon style={{ fontSize: 17 }} />
+                View Grading Progress
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Brand gradient accent along the hero base */}
+        <div className="absolute inset-x-0 bottom-0 h-1.5 bg-linear-to-r from-blue-500 via-cyan-400 to-indigo-500" />
+      </section>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Key facts                                                         */}
+      {/* ---------------------------------------------------------------- */}
+      <EventMetaGrid event={event} />
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Content grid                                                      */}
+      {/* ---------------------------------------------------------------- */}
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
         <div className="flex flex-col gap-8 lg:col-span-8">
-          <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm md:p-10 dark:bg-slate-800 dark:border-slate-700">
-            <div className="flex flex-wrap items-center gap-3">
-              <PublicStatusBadge status={event.status} />
-
-              <span
-                className={[
-                  "rounded-full border px-3 py-1 text-xs font-bold uppercase",
-                  registrationOpen
-                    ? "border-emerald-100 bg-emerald-50 text-emerald-600"
-                    : "border-gray-100 bg-gray-50 text-gray-400",
-                ].join(" ")}
-              >
-                {registrationOpen ? "Registration Open" : "Registration Closed"}
-              </span>
-            </div>
-
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-slate-300">
-              {event.name}
-            </h1>
-
-            <p className="text-base leading-relaxed text-gray-600 dark:text-slate-400">
-              {getEventDescription(event)}
-            </p>
-
-            <EventMetaGrid event={event} />
-
-            <div className="flex flex-wrap gap-3 pt-2">
-              {showCompetingButton ? (
-                <button
-                  type="button"
-                  onClick={() => navigate(`/events/${event.id}/competing`)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:scale-95 dark:shadow-none"
-                >
-                  <RocketLaunchIcon style={{ fontSize: 16 }} />
-                  Go to event competing
-                </button>
-              ) : (
-                registrationOpen && (
-                  <button
-                    type="button"
-                    onClick={() => joinEvent()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:scale-95 dark:shadow-none"
-                  >
-                    <LoginIcon style={{ fontSize: 16 }} />
-                    Join now
-                  </button>
-                )
-              )}
-
-              {completed && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => viewResults(event.id)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-6 py-2.5 text-sm font-bold text-gray-600 shadow-sm transition-all hover:border-blue-400 hover:text-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-                  >
-                    <LeaderboardIcon style={{ fontSize: 16 }} />
-                    View Results
-                  </button>
-                </>
-              )}
-
-              {userRole === "COORDINATOR" && (
-                <button
-                  type="button"
-                  onClick={() => navigate(`/coordinator/events/${event.id}/grading-progress`)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-100 transition-all hover:bg-indigo-600 active:scale-95 dark:shadow-none"
-                >
-                  <AssessmentOutlinedIcon style={{ fontSize: 16 }} />
-                  View Grading Progress
-                </button>
-              )}
-            </div>
-          </section>
-
           <EventTracksSection event={event} />
 
           {completed && (
-            <div className="mt-8 space-y-4">
-              <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-300">Awards</h2>
+            <section className="space-y-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-blue-500">
+                  Final results
+                </p>
+                <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-gray-900 dark:text-slate-100">
+                  Awards
+                </h2>
+              </div>
+
               <PublicEventAwardsSection eventId={event.id} />
-            </div>
+            </section>
           )}
         </div>
 
