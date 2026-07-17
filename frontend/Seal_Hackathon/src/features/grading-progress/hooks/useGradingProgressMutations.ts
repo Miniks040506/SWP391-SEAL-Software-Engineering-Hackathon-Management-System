@@ -35,16 +35,22 @@ export const useReopenScoreSheetMutation = () => {
     return useMutation({
         mutationFn: ({ roundId, submissionId, judgeId }: ReopenScoreSheetVariables) =>
             gradingApi.reopenScoreSheet(roundId, submissionId, judgeId),
-        onSuccess: (_data, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: gradingProgressQueryKeys.roundProgress(variables.roundId),
-            });
-            queryClient.invalidateQueries({
-                queryKey: gradingProgressQueryKeys.judgeAssignmentProgress(variables.assignmentId),
-            });
-            queryClient.invalidateQueries({
-                queryKey: gradingProgressQueryKeys.events(),
-            });
+        onSuccess: async (_data, variables) => {
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: gradingProgressQueryKeys.roundProgress(variables.roundId),
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: gradingProgressQueryKeys.judgeAssignmentProgress(variables.assignmentId),
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: gradingProgressQueryKeys.events(),
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["grading", "scoreSheet", variables.submissionId],
+                }),
+                queryClient.invalidateQueries({ queryKey: ["judge", "submissions"] }),
+            ]);
         },
     });
 };

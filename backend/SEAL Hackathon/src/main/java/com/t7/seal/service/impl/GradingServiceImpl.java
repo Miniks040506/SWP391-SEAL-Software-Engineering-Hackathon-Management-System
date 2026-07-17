@@ -261,7 +261,7 @@ public class GradingServiceImpl implements GradingService {
         RoundJudgeAssignment judgeAssignment = roundJudgeAssignmentRepository.findById(judgeAssignmentId)
                 .orElseThrow(() -> new NotFoundException("Judge assignment not found."));
 
-        return buildJudgeAssignmentProgress(judgeAssignment, countCriteriaForRound(judgeAssignment.getRound()));
+        return buildJudgeAssignmentProgress(judgeAssignment, activeCriteriaIdsForRound(judgeAssignment.getRound()));
     }
 
     @Transactional
@@ -294,7 +294,11 @@ public class GradingServiceImpl implements GradingService {
 
         List<Score> scores = scoreRepository
                 .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(submission.getId(), judge.getId());
-        long confirmedCount = scores.stream().filter(Score::isConfirmed).count();
+        Set<UUID> activeCriteriaIds = activeCriteriaIdsForRound(round);
+        long confirmedCount = scores.stream()
+                .filter(score -> activeCriteriaIds.contains(score.getEventCriteria().getId()))
+                .filter(Score::isConfirmed)
+                .count();
 
         if (confirmedCount == 0) {
             throw new ConflictException("Score sheet is not final submitted.");
@@ -308,7 +312,7 @@ public class GradingServiceImpl implements GradingService {
                 "confirmedScoreCount", confirmedCount
         ));
 
-        return buildSubmissionGradingProgress(submission, judge, countCriteriaForRound(round));
+        return buildSubmissionGradingProgress(submission, judge, activeCriteriaIds);
     }
 
     //HELPERS
@@ -640,10 +644,11 @@ public class GradingServiceImpl implements GradingService {
 
         List<RoundJudgeAssignment> assignments = roundJudgeAssignmentRepository
                 .findByRoundIdWithJudgeAndTrack(round.getId());
-        long criteriaCount = countCriteriaForRound(round);
+        Set<UUID> activeCriteriaIds = activeCriteriaIdsForRound(round);
+        long criteriaCount = activeCriteriaIds.size();
 
         List<JudgeAssignmentProgressResponse> assignmentProgress = assignments.stream()
-                .map(a -> buildJudgeAssignmentProgress(a, criteriaCount))
+                .map(a -> buildJudgeAssignmentProgress(a, activeCriteriaIds))
                 .toList();
 
         int totalAssigned = assignmentProgress.stream()
@@ -725,15 +730,16 @@ public class GradingServiceImpl implements GradingService {
 
     private JudgeAssignmentProgressResponse buildJudgeAssignmentProgress(
             RoundJudgeAssignment assignment,
-            Long criteriaCount
+            Set<UUID> activeCriteriaIds
     ) {
+        long criteriaCount = activeCriteriaIds.size();
         UUID trackId = assignment.getTrack() == null ? null : assignment.getTrack().getId();
 
         List<Submission> submissions = submissionRepository
                 .findSubmittedOrLateByRoundAndTrackNullable(assignment.getRound().getId(), trackId);
 
         List<SubmissionGradingProgressResponse> submissionProgress = submissions.stream()
-                .map(s -> buildSubmissionGradingProgress(s, assignment.getJudge(), criteriaCount))
+                .map(s -> buildSubmissionGradingProgress(s, assignment.getJudge(), activeCriteriaIds))
                 .toList();
 
         User judgeUser = assignment.getJudge().getUser();
@@ -792,33 +798,43 @@ public class GradingServiceImpl implements GradingService {
     }
 
     private long countCriteriaForRound(Round round) {
+        return activeCriteriaIdsForRound(round).size();
+    }
+
+    private Set<UUID> activeCriteriaIdsForRound(Round round) {
         if (round == null || round.getEvent() == null) {
-            return 0;
+            return Set.of();
         }
 
         return eventCriteriaRepository.findByEventIdAndIsActiveTrueOrderByDisplayOrderAsc(round.getEvent().getId())
                 .stream()
                 .filter(c -> c.appliesToRound(round.getId()))
-                .count();
+                .map(EventCriteria::getId)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private SubmissionGradingProgressResponse buildSubmissionGradingProgress(
             Submission submission,
             Judge judge,
-            long criteriaCount
+            Set<UUID> activeCriteriaIds
     ) {
-        long draftCount = scoreRepository
-                .countBySubmissionIdAndJudgeIdAndIsDraftTrue(submission.getId(), judge.getId());
-        long confirmedCount = scoreRepository
-                .countBySubmissionIdAndJudgeIdAndIsDraftFalse(submission.getId(), judge.getId());
-        boolean completed = criteriaCount > 0 && confirmedCount >= criteriaCount;
+        List<Score> activeScores = scoreRepository
+                .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(
+                        submission.getId(), judge.getId())
+                .stream()
+                .filter(score -> activeCriteriaIds.contains(score.getEventCriteria().getId()))
+                .toList();
+        long criteriaCount = activeCriteriaIds.size();
+        long draftCount = activeScores.stream().filter(Score::isDraftScore).count();
+        long confirmedCount = activeScores.stream().filter(Score::isConfirmed).count();
+        boolean completed = criteriaCount > 0 && confirmedCount == criteriaCount;
         boolean locked = submission.getRound().getGradingLockedAt() != null;
 
         String gradingStatus;
         if (locked) {
             gradingStatus = "LOCKED";
         } else if (completed) {
-            gradingStatus = "COMPLETED";
+            gradingStatus = "SUBMITTED";
         } else if (draftCount > 0 || confirmedCount > 0) {
             gradingStatus = "DRAFT_SAVED";
         } else {
