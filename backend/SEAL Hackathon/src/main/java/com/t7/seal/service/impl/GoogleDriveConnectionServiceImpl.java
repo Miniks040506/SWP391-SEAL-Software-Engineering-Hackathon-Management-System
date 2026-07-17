@@ -90,6 +90,11 @@ public class GoogleDriveConnectionServiceImpl implements GoogleDriveConnectionSe
     }
 
     @Override
+    public String validateCallbackState(String state, String browserNonce) {
+        return stateCodec.verify(state, browserNonce, PROVIDER).returnPath();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public ConnectionStatus status(User user) {
         requireUser(user);

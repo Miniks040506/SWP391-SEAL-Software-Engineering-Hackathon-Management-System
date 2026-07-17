@@ -13,6 +13,8 @@ public interface GithubConnectionService {
 
     CompletedConnection complete(String state, String browserNonce, String code);
 
+    String validateCallbackState(String state, String browserNonce);
+
     ConnectionStatus status(User user);
 
     List<GithubSubmissionClient.RepositorySummary> repositories(

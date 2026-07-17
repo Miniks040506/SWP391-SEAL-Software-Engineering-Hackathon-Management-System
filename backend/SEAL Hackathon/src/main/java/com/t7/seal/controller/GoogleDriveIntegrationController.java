@@ -153,10 +153,19 @@ public class GoogleDriveIntegrationController {
     ) {
         URI redirect;
         if (error != null) {
-            String resultCode = "access_denied".equals(error)
-                    ? "GOOGLE_DRIVE_AUTHORIZATION_CANCELLED"
-                    : "GOOGLE_DRIVE_AUTHORIZATION_FAILED";
-            redirect = frontendRedirect(DEFAULT_RETURN_PATH, "error", resultCode);
+            try {
+                String returnPath = connectionService.validateCallbackState(state, browserNonce);
+                String resultCode = "access_denied".equals(error)
+                        ? "GOOGLE_DRIVE_AUTHORIZATION_CANCELLED"
+                        : "GOOGLE_DRIVE_AUTHORIZATION_FAILED";
+                redirect = frontendRedirect(returnPath, "error", resultCode);
+            } catch (IllegalArgumentException exception) {
+                redirect = frontendRedirect(
+                        DEFAULT_RETURN_PATH,
+                        "error",
+                        "GOOGLE_DRIVE_OAUTH_STATE_INVALID"
+                );
+            }
         } else {
             try {
                 GoogleDriveConnectionService.CompletedConnection completed = connectionService.complete(
