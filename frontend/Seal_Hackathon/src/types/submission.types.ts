@@ -295,6 +295,7 @@ export type CoordinatorSubmissionSummaryResponse = {
   eventName?: string | null;
   teamId: UUID;
   teamName?: string | null;
+  projectTitle?: string | null;
   trackId?: UUID | null;
   trackName?: string | null;
   roundId: UUID;
