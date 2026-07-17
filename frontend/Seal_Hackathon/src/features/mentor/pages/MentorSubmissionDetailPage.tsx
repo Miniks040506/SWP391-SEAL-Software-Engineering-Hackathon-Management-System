@@ -22,6 +22,7 @@ import {
 import type { MentorFeedbackFormValues } from "../schemas/mentorFeedback.schema";
 import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
 import type { UUID } from "@/types/common.types";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 export const MentorSubmissionDetailPage = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -32,11 +33,13 @@ export const MentorSubmissionDetailPage = () => {
     isLoading: isSubLoading,
     isError,
   } = submissionDetailQuery;
-  const submission = (subResponse as any)?.data || subResponse;
+  const submission = subResponse;
 
   const { data: fbResponse, isLoading: isFbLoading } =
     useMentorTeamFeedbackQuery(submission?.teamId);
-  const allFeedbacks = (fbResponse as any)?.data?.content || (fbResponse as any)?.data || fbResponse || [];
+  const allFeedbacks = Array.isArray(fbResponse)
+    ? fbResponse
+    : fbResponse?.data ?? [];
 
   const submissionFeedbacks = allFeedbacks.filter(
     (fb: MentorFeedbackResponse) => fb.submissionId === submission?.id,
@@ -56,6 +59,7 @@ export const MentorSubmissionDetailPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFeedback, setEditingFeedback] =
     useState<MentorFeedbackResponse | null>(null);
+  const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
 
   const handleOpenCreate = () => {
     setEditingFeedback(null);
@@ -122,15 +126,18 @@ export const MentorSubmissionDetailPage = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this draft?")) {
-      deleteMutation.mutate(id as UUID, {
-        onSuccess: () =>
-          enqueueSnackbar("Feedback deleted", { variant: "info" }),
-        onError: () =>
-          enqueueSnackbar("Failed to delete feedback", { variant: "error" }),
-      });
-    }
+  const handleDelete = (id: string) => setFeedbackToDelete(id);
+
+  const confirmDelete = () => {
+    if (!feedbackToDelete) return;
+    deleteMutation.mutate(feedbackToDelete as UUID, {
+      onSuccess: () => {
+        setFeedbackToDelete(null);
+        enqueueSnackbar("Feedback deleted", { variant: "info" });
+      },
+      onError: () =>
+        enqueueSnackbar("Failed to delete feedback", { variant: "error" }),
+    });
   };
 
   const handlePublish = (id: string) => {
@@ -243,6 +250,16 @@ export const MentorSubmissionDetailPage = () => {
             />
           )}
         </div>
+        <ActionConfirmDialog
+          open={feedbackToDelete !== null}
+          title="Delete draft feedback?"
+          description="This draft feedback will be permanently removed and cannot be published later."
+          confirmLabel="Delete feedback"
+          severity="error"
+          onClose={() => setFeedbackToDelete(null)}
+          onConfirm={confirmDelete}
+          isPending={deleteMutation.isPending}
+        />
       </div>
     </div>
   );
