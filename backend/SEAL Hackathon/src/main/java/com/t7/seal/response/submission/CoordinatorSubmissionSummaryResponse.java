@@ -41,6 +41,12 @@ public record CoordinatorSubmissionSummaryResponse(
         )
         String teamName,
         @Schema(
+                description = "Team project title.",
+                example = "Accessible Campus Navigation",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String projectTitle,
+        @Schema(
                 description = "Track UUID.",
                 example = "18000000-0000-4000-8000-000000000403",
                 format = "uuid",

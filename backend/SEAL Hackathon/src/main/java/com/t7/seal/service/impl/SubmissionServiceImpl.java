@@ -69,6 +69,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionAttemptLinkRepository submissionAttemptLinkRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
+    private final TrackRepository trackRepository;
     private final RoundRepository roundRepository;
     private final MentorAssignmentRepository mentorAssignmentRepository;
     private final RepositoryMetadataService repositoryMetadataService;
@@ -791,6 +792,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             Authentication authentication
     ) {
         ensureCoordinator(authentication);
+        validateCoordinatorSubmissionFilters(eventId, roundId, trackId);
 
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
@@ -1413,6 +1415,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 event == null ? null : event.getName(),
                 submission.getTeam().getId(),
                 submission.getTeam().getName(),
+                submission.getTeam().getProjectTitle(),
                 submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getId(),
                 submission.getTeam().getTrack() == null ? null : submission.getTeam().getTrack().getName(),
                 submission.getRound().getId(),
@@ -1426,6 +1429,49 @@ public class SubmissionServiceImpl implements SubmissionService {
                 links.size(),
                 submission.isLate()
         );
+    }
+
+    private void validateCoordinatorSubmissionFilters(
+            UUID eventId,
+            UUID roundId,
+            UUID trackId
+    ) {
+        UUID trackEventId = null;
+        if (trackId != null) {
+            Track track = trackRepository.findById(trackId)
+                    .orElseThrow(() -> new NotFoundException("Track not found."));
+            trackEventId = track.getEvent().getId();
+            requireMatchingFilterEvent(eventId, trackEventId, "track");
+        }
+
+        UUID roundEventId = null;
+        if (roundId != null) {
+            Round round = roundRepository.findById(roundId)
+                    .orElseThrow(() -> new NotFoundException("Round not found."));
+            roundEventId = round.getEvent().getId();
+            requireMatchingFilterEvent(eventId, roundEventId, "round");
+        }
+
+        if (trackEventId != null && roundEventId != null
+                && !trackEventId.equals(roundEventId)) {
+            throw new BadRequestException(
+                    "SUBMISSION_FILTER_RELATIONSHIP_INVALID",
+                    "The selected track and round belong to different events."
+            );
+        }
+    }
+
+    private void requireMatchingFilterEvent(
+            UUID selectedEventId,
+            UUID resourceEventId,
+            String resourceName
+    ) {
+        if (selectedEventId != null && !selectedEventId.equals(resourceEventId)) {
+            throw new BadRequestException(
+                    "SUBMISSION_FILTER_RELATIONSHIP_INVALID",
+                    "The selected " + resourceName + " does not belong to the selected event."
+            );
+        }
     }
 
     private SubmissionDetailResponse toSubmissionDetailResponse(Submission submission) {
