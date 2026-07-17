@@ -57,6 +57,11 @@ import java.util.stream.Collectors;
 public class SubmissionServiceImpl implements SubmissionService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final Set<SubmissionStatus> MENTOR_VISIBLE_STATUSES = EnumSet.of(
+            SubmissionStatus.SUBMITTED,
+            SubmissionStatus.LATE,
+            SubmissionStatus.DISQUALIFIED
+    );
 
     private final SubmissionRepository submissionRepository;
     private final SubmissionLinkRepository submissionLinkRepository;
@@ -494,6 +499,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         return submissionRepository.findByTeamIdOrderByRoundOrderIndexAsc(teamId)
                 .stream()
+                .filter(submission -> MENTOR_VISIBLE_STATUSES.contains(submission.getStatus()))
                 .map(this::toSubmissionSummaryResponse)
                 .toList();
     }
@@ -881,6 +887,9 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission submission = getSubmission(submissionId);
 
         ensureMentorAssignedToTeam(submission.getTeam(), authentication);
+        if (!MENTOR_VISIBLE_STATUSES.contains(submission.getStatus())) {
+            throw new NotFoundException("Submission not found.");
+        }
 
         return toSubmissionDetailResponse(submission);
     }

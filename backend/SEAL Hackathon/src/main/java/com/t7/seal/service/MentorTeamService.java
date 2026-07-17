@@ -4,6 +4,7 @@ import com.t7.seal.response.PageResponse;
 import com.t7.seal.response.mentor.MentorTeamDetailResponse;
 import com.t7.seal.response.mentor.MentorTeamProgressResponse;
 import com.t7.seal.response.mentor.MentorTrackResponse;
+import com.t7.seal.response.mentor.MentorSubmissionPageResponse;
 import org.springframework.security.core.Authentication;
 
 import java.util.List;
@@ -22,4 +23,16 @@ public interface MentorTeamService {
     );
 
     MentorTeamDetailResponse getAssignedTeamDetails(UUID teamId, Authentication authentication);
+
+    MentorSubmissionPageResponse getSubmissions(
+            UUID eventId,
+            UUID trackId,
+            UUID teamId,
+            UUID roundId,
+            String status,
+            String search,
+            int page,
+            int size,
+            Authentication authentication
+    );
 }

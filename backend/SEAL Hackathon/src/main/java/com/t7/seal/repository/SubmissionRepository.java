@@ -13,10 +13,22 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Collection;
 import java.util.UUID;
 
 @Repository
 public interface SubmissionRepository extends JpaRepository<Submission, UUID>, JpaSpecificationExecutor<Submission> {
+
+    @Query("""
+            SELECT COUNT(DISTINCT s.team.id)
+            FROM Submission s
+            WHERE s.team.track.id IN :trackIds
+              AND s.status IN :statuses
+            """)
+    long countDistinctSubmittedTeamsByTrackIds(
+            @Param("trackIds") Collection<UUID> trackIds,
+            @Param("statuses") Collection<SubmissionStatus> statuses
+    );
 
     Optional<Submission> findByTeamIdAndRoundId(UUID teamId, UUID roundId);
 
