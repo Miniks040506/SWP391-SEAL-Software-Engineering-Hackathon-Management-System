@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button, CircularProgress, Typography } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
@@ -7,14 +8,18 @@ import { useReopenScoreSheetMutation } from "../hooks/useGradingProgressMutation
 import { GradingProgressSummaryCards } from "../components/GradingProgressSummaryCards";
 import { SubmissionGradingProgressTable } from "../components/SubmissionGradingProgressTable";
 import { useSnackbar } from "notistack";
+import { isAxiosError } from "axios";
 import type { UUID } from "@/types/common.types";
 import type { SubmissionGradingProgressResponse } from "@/types/grading.types";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 export const CoordinatorJudgeAssignmentProgressPage = () => {
     const { assignmentId } = useParams<{ assignmentId: string }>();
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
     const reopenMutation = useReopenScoreSheetMutation();
+    const [scoreSheetToReopen, setScoreSheetToReopen] =
+        useState<SubmissionGradingProgressResponse | null>(null);
 
     const {
         data: assignmentProgress,
@@ -47,23 +52,28 @@ export const CoordinatorJudgeAssignmentProgressPage = () => {
             return;
         }
 
-        if (!window.confirm(`Reopen ${submission.teamName || "this team's"} scorecard for editing?`)) {
-            return;
-        }
+        setScoreSheetToReopen(submission);
+    };
+
+    const confirmReopenScoreSheet = () => {
+        if (!scoreSheetToReopen?.roundId) return;
 
         reopenMutation.mutate(
             {
-                roundId: submission.roundId,
-                submissionId: submission.submissionId,
+                roundId: scoreSheetToReopen.roundId,
+                submissionId: scoreSheetToReopen.submissionId,
                 judgeId: assignmentProgress.judgeId,
                 assignmentId: assignmentProgress.assignmentId,
             },
             {
                 onSuccess: () => {
+                    setScoreSheetToReopen(null);
                     enqueueSnackbar("Scorecard reopened for judge editing.", { variant: "success" });
                 },
-                onError: (err: any) => {
-                    const msg = err?.response?.data?.message || "Failed to reopen scorecard.";
+                onError: (error: unknown) => {
+                    const msg = isAxiosError<{ message?: string }>(error) && error.response?.data?.message
+                        ? error.response.data.message
+                        : "Failed to reopen scorecard.";
                     enqueueSnackbar(msg, { variant: "error" });
                 },
             },
@@ -129,6 +139,15 @@ export const CoordinatorJudgeAssignmentProgressPage = () => {
                     }
                 />
             </section>
+            <ActionConfirmDialog
+                open={scoreSheetToReopen !== null}
+                title="Reopen finalized scorecard?"
+                description={`The finalized scores for ${scoreSheetToReopen?.teamName || "this team"} will become an editable draft for the assigned judge.`}
+                confirmLabel="Reopen scorecard"
+                onClose={() => setScoreSheetToReopen(null)}
+                onConfirm={confirmReopenScoreSheet}
+                isPending={reopenMutation.isPending}
+            />
         </div>
     );
 };

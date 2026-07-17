@@ -40,17 +40,21 @@ export function useScoreMutations(submissionId: string) {
   const { enqueueSnackbar } = useSnackbar();
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["grading", "scoreSheet", submissionId] });
-    queryClient.invalidateQueries({ queryKey: ["judge", "submissions"] });
-  };
+  const invalidate = () =>
+    Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["grading", "scoreSheet", submissionId],
+      }),
+      queryClient.invalidateQueries({ queryKey: ["judge", "submissions"] }),
+      queryClient.invalidateQueries({ queryKey: ["grading-progress"] }),
+    ]);
 
   const saveDraft = useMutation({
     mutationFn: (payload: SaveScoreSheetRequest) =>
       gradingApi.saveDraftScores(submissionId, payload),
-    onSuccess: () => {
+    onSuccess: async () => {
       setLastSavedAt(new Date());
-      invalidate();
+      await invalidate();
       enqueueSnackbar("Draft scores saved.", { variant: "success" });
     },
     onError: (error) => {
@@ -61,8 +65,8 @@ export function useScoreMutations(submissionId: string) {
   const finalSubmit = useMutation({
     mutationFn: (payload: SaveScoreSheetRequest) =>
       gradingApi.submitFinalScores(submissionId, payload),
-    onSuccess: () => {
-      invalidate();
+    onSuccess: async () => {
+      await invalidate();
       enqueueSnackbar("Scores submitted successfully.", { variant: "success" });
     },
     onError: (error) => {
