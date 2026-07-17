@@ -174,12 +174,16 @@ export const JudgeScoreSheetPage = () => {
     (isFinalSubmitted ? "SUBMITTED" : "PENDING");
 
   const preparePayload = (data: JudgeScoreFormValues) => {
+    const versionsByCriteria = new Map(
+      scoreSheet.scores.map((score) => [score.eventCriteriaId, score.version]),
+    );
     const scoreItems = Object.entries(data.scores || {})
       .filter((entry): entry is [string, number] => Number.isFinite(entry[1]))
       .map(([criteriaId, value]) => ({
         eventCriteriaId: criteriaId,
         value,
         comment: data.comments?.[criteriaId] || undefined,
+        expectedVersion: versionsByCriteria.get(criteriaId),
       }));
     return { scores: scoreItems };
   };

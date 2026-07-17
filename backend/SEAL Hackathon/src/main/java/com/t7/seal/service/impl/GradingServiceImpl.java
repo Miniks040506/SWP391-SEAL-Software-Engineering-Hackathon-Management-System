@@ -84,7 +84,12 @@ public class GradingServiceImpl implements GradingService {
             Authentication authentication
     ) {
         Judge judge = currentJudge(authentication);
-        Submission submission = getSubmission(submissionId);
+        Submission submission = getSubmissionForUpdate(submissionId);
+
+        ensureJudgeCanView(judge, submission);
+        if (isScoreSheetConfirmed(submission, judge)) {
+            return toScoreSheetResponse(submission, judge);
+        }
 
         ensureJudgeCanMutate(submission, judge, true);
 
@@ -104,7 +109,13 @@ public class GradingServiceImpl implements GradingService {
             Authentication authentication
     ) {
         Judge judge = currentJudge(authentication);
-        Submission submission = getSubmission(submissionId);
+        Submission submission = getSubmissionForUpdate(submissionId);
+
+        ensureJudgeCanView(judge, submission);
+        if (isScoreSheetConfirmed(submission, judge)) {
+            return toScoreSheetResponse(submission, judge);
+        }
+
         ensureJudgeCanMutate(submission, judge, true);
 
         List<EventCriteria> activeCriteria = activeCriteriaFor(submission);
@@ -157,6 +168,7 @@ public class GradingServiceImpl implements GradingService {
             throw new ConflictException("Final submitted score cannot be edited.");
         }
 
+        verifyExpectedVersion(score, request.expectedVersion());
         validateScoreValue(score.getEventCriteria(), request.value());
 
         score.setValue(request.value().floatValue());
@@ -323,6 +335,11 @@ public class GradingServiceImpl implements GradingService {
                 .orElseThrow(() -> new BadRequestException("Submission not found."));
     }
 
+    private Submission getSubmissionForUpdate(UUID submissionId) {
+        return submissionRepository.findByIdForUpdate(submissionId)
+                .orElseThrow(() -> new BadRequestException("Submission not found."));
+    }
+
     private Score getScore(UUID scoreId) {
         return scoreRepository.findByIdWithSubmissionRoundJudgeCriteria(scoreId)
                 .orElseThrow(() -> new BadRequestException("Score not found."));
@@ -453,9 +470,17 @@ public class GradingServiceImpl implements GradingService {
                 .map(this::toScoreResponse)
                 .toList();
 
-        long criteriaCount = activeCriteriaFor(submission).size();
-        long confirmedCount = scores.stream().filter(s -> Boolean.FALSE.equals(s.isDraft())).count();
-        boolean confirmed = criteriaCount > 0 && confirmedCount >= criteriaCount;
+        Set<UUID> activeCriteriaIds = activeCriteriaFor(submission).stream()
+                .map(EventCriteria::getId)
+                .collect(Collectors.toSet());
+        Set<UUID> confirmedCriteriaIds = scores.stream()
+                .filter(score -> Boolean.FALSE.equals(score.isDraft()))
+                .map(ScoreResponse::eventCriteriaId)
+                .filter(activeCriteriaIds::contains)
+                .collect(Collectors.toSet());
+        long criteriaCount = activeCriteriaIds.size();
+        boolean confirmed = criteriaCount > 0
+                && confirmedCriteriaIds.containsAll(activeCriteriaIds);
         boolean submissionLocked = submission.getRound().getSubmissionLockedAt() != null;
         boolean gradingLocked = submission.getRound().getGradingLockedAt() != null;
         boolean calibrationCompleted = hasCompletedMandatoryCalibration(submission, judge);
@@ -486,7 +511,9 @@ public class GradingServiceImpl implements GradingService {
                 score.getValue() == null ? null : score.getValue().doubleValue(),
                 score.getComment(),
                 score.getIsDraft(),
-                score.getScoredAt()
+                score.getScoredAt(),
+                score.getVersion(),
+                score.getUpdatedAt()
         );
     }
 
@@ -530,8 +557,9 @@ public class GradingServiceImpl implements GradingService {
                 throw new ConflictException("Final submitted score cannot be edited.");
             }
 
+            verifyExpectedVersion(score, scoreItem.expectedVersion());
             score.setValue(scoreItem.value().floatValue());
-            score.setComment(scoreItem.comment());
+            score.setComment(trimToNull(scoreItem.comment()));
             score.setIsDraft(draft);
             scoreRepository.save(score);
         }
@@ -542,6 +570,37 @@ public class GradingServiceImpl implements GradingService {
             if (confirmedCount < expectedCount) {
                 throw new BadRequestException("All active criteria must be scored before final submission.");
             }
+        }
+    }
+
+    private boolean isScoreSheetConfirmed(Submission submission, Judge judge) {
+        List<EventCriteria> activeCriteria = activeCriteriaFor(submission);
+        if (activeCriteria.isEmpty()) {
+            return false;
+        }
+
+        Set<UUID> activeCriteriaIds = activeCriteria.stream()
+                .map(EventCriteria::getId)
+                .collect(Collectors.toSet());
+        Set<UUID> confirmedCriteriaIds = scoreRepository
+                .findBySubmissionIdAndJudgeIdOrderByEventCriteriaDisplayOrderAsc(
+                        submission.getId(), judge.getId()
+                )
+                .stream()
+                .filter(Score::isConfirmed)
+                .map(score -> score.getEventCriteria().getId())
+                .filter(activeCriteriaIds::contains)
+                .collect(Collectors.toSet());
+        return confirmedCriteriaIds.containsAll(activeCriteriaIds);
+    }
+
+    private void verifyExpectedVersion(Score score, Long expectedVersion) {
+        if (score.getId() != null && expectedVersion != null
+                && !Objects.equals(score.getVersion(), expectedVersion)) {
+            throw new ConflictException(
+                    "SCORE_VERSION_CONFLICT",
+                    "A newer score version exists. Refresh the score sheet and try again."
+            );
         }
     }
 

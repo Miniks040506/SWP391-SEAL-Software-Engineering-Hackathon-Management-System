@@ -286,7 +286,12 @@ public class GlobalExceptionHandler {
             OptimisticLockingFailureException ex,
             HttpServletRequest request
     ) {
-        return error(HttpStatus.CONFLICT, "Resource was updated by another request. Please refresh and try again.", request);
+        return error(
+                HttpStatus.CONFLICT,
+                "OPTIMISTIC_LOCK_CONFLICT",
+                "Resource was updated by another request. Please refresh and try again.",
+                request
+        );
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
