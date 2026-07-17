@@ -3,7 +3,6 @@ package com.t7.seal.entities;
 import com.t7.seal.domain.SubmissionStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.yaml.snakeyaml.error.Mark;
 
@@ -54,7 +53,6 @@ public class Submission {
      * For draft submissions, this can be treated as the draft creation time.
      * When the leader submits or resubmits, the service may update this value.
      */
-    @CreationTimestamp
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
@@ -130,6 +128,10 @@ public class Submission {
 
         if (submissionNumber == null || submissionNumber < 1) {
             submissionNumber = 1;
+        }
+
+        if (submittedAt == null) {
+            submittedAt = LocalDateTime.now();
         }
     }
 
