@@ -112,13 +112,17 @@ public class JudgeController {
             @RequestParam(required = false) UUID roundId,
             @Parameter(description = "Optional status filter. (optional)", required = false)
             @RequestParam(required = false) String status,
+            @Parameter(description = "Optional team, project, track, or round search. (optional)", required = false)
+            @RequestParam(required = false) String search,
             @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Maximum number of items returned in one page. (default: 20, optional)", required = false)
             @RequestParam(defaultValue = "20") int size,
             @Parameter(hidden = true) Authentication authentication
     ) {
-        return ResponseEntity.ok(judgeAssignmentService.getMySubmissionQueue(roundId, status, page, size, authentication));
+        return ResponseEntity.ok(judgeAssignmentService.getMySubmissionQueue(
+                roundId, status, search, page, size, authentication
+        ));
     }
 
     @PreAuthorize("hasRole('JUDGE')")
@@ -165,13 +169,17 @@ public class JudgeController {
             @PathVariable UUID roundId,
             @Parameter(description = "Optional status filter. (optional)", required = false)
             @RequestParam(required = false) String status,
+            @Parameter(description = "Optional team, project, track, or round search. (optional)", required = false)
+            @RequestParam(required = false) String search,
             @Parameter(description = "Zero-based result page index. (default: 0, optional)", required = false)
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Maximum number of items returned in one page. (default: 20, optional)", required = false)
             @RequestParam(defaultValue = "20") int size,
             @Parameter(hidden = true) Authentication authentication
     ) {
-        return ResponseEntity.ok(judgeAssignmentService.getMySubmissionQueue(roundId, status, page, size, authentication));
+        return ResponseEntity.ok(judgeAssignmentService.getMySubmissionQueue(
+                roundId, status, search, page, size, authentication
+        ));
     }
 
     @PreAuthorize("hasRole('JUDGE')")

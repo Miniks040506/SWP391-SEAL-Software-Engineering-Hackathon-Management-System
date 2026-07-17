@@ -2,11 +2,13 @@ import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
+import Pagination from "@mui/material/Pagination";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 
 import { JudgeSubmissionTable } from "../components/submission/JudgeSubmissionTable";
 import { JudgeSubmissionFilterBar } from "../components/submission/JudgeSubmissionFilterBar";
 import { useJudgeRoundSubmissionsQuery, useJudgeSubmissionsQuery } from "../hooks/useJudge";
+import { useJudgeSubmissionSummaryQuery } from "../hooks/useJudgeGradingQueries";
 import type { GetJudgeSubmissionsParams } from "@/types/judge.types";
 
 export const JudgeSubmissionsPage = () => {
@@ -14,47 +16,20 @@ export const JudgeSubmissionsPage = () => {
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState<GetJudgeSubmissionsParams>({ page: 0, size: 10 });
-  const apiFilters = useMemo(() => {
-    const { search: _search, ...params } = filters;
-    return params;
-  }, [filters]);
-  const roundFilters = useMemo(() => {
-    const { roundId: _roundId, ...params } = apiFilters;
-    return params;
-  }, [apiFilters]);
-
-  const roundQuery = useJudgeRoundSubmissionsQuery(roundId, roundFilters);
-  const allQuery = useJudgeSubmissionsQuery(apiFilters);
+  const roundQuery = useJudgeRoundSubmissionsQuery(roundId, filters);
+  const allQuery = useJudgeSubmissionsQuery(filters);
+  const summaryQuery = useJudgeSubmissionSummaryQuery(roundId);
 
   const query = roundId ? roundQuery : allQuery;
-  const submissions = useMemo(() => {
-    const content = query.data?.content ?? [];
-    const searchText = filters.search?.trim().toLowerCase();
-
-    if (!searchText) return content;
-
-    return content.filter((submission) =>
-      [
-        submission.teamName,
-        submission.projectTitle,
-        submission.trackName,
-        submission.roundName,
-      ]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(searchText)),
-    );
-  }, [filters.search, query.data?.content]);
-
-  const progressSummary = useMemo(() => {
-    const stats = { pending: 0, draft: 0, submitted: 0, locked: 0, total: submissions.length };
-    submissions.forEach((sub) => {
-      if (sub.roundSubmissionLocked) stats.locked++;
-      else if (sub.gradingStatus === "GRADED") stats.submitted++;
-      else if (sub.gradingStatus === "READY") stats.draft++;
-      else stats.pending++;
-    });
-    return stats;
-  }, [submissions]);
+  const submissions = useMemo(() => query.data?.content ?? [], [query.data?.content]);
+  const progressSummary = summaryQuery.data ?? {
+    totalAssigned: 0,
+    pending: 0,
+    draftSaved: 0,
+    submitted: 0,
+    locked: 0,
+  };
+  const hasActiveFilters = Boolean(filters.search || filters.status);
 
   return (
     <div className="space-y-6 p-6 animate-in slide-in-from-bottom-4 duration-500">
@@ -79,11 +54,11 @@ export const JudgeSubmissionsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="flex items-center gap-2 pr-4 sm:border-r border-gray-200 dark:border-slate-700">
           <span className="text-sm font-bold text-gray-500">Progress:</span>
-          <span className="text-xl font-extrabold text-gray-900 dark:text-white">{progressSummary.submitted} / {progressSummary.total}</span>
+          <span className="text-xl font-extrabold text-gray-900 dark:text-white">{progressSummary.submitted} / {progressSummary.totalAssigned}</span>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
           <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400"><span className="h-2.5 w-2.5 rounded-full bg-orange-500"></span>{progressSummary.pending} Pending</span>
-          <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400"><span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>{progressSummary.draft} Draft Saved</span>
+          <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400"><span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>{progressSummary.draftSaved} Draft Saved</span>
           <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400"><span className="h-2.5 w-2.5 rounded-full bg-green-500"></span>{progressSummary.submitted} Submitted</span>
           <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400"><span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>{progressSummary.locked} Locked</span>
         </div>
@@ -96,7 +71,22 @@ export const JudgeSubmissionsPage = () => {
       ) : query.isLoading ? (
         <div className="flex justify-center py-24"><CircularProgress /></div>
       ) : (
-        <JudgeSubmissionTable submissions={submissions} />
+        <>
+          <JudgeSubmissionTable submissions={submissions} filtered={hasActiveFilters} />
+          {query.data && query.data.totalPages > 1 && (
+            <div className="flex justify-center">
+              <Pagination
+                page={(filters.page ?? 0) + 1}
+                count={query.data.totalPages}
+                onChange={(_, nextPage) => setFilters((current) => ({
+                  ...current,
+                  page: nextPage - 1,
+                }))}
+                color="primary"
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

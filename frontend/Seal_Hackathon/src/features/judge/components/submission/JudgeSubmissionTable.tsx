@@ -6,15 +6,21 @@ import { JudgeSubmissionProgressCell } from "../JudgeSubmissionProgressCell";
 
 interface JudgeSubmissionTableProps {
   submissions: JudgeSubmissionAssignmentResponse[];
+  filtered?: boolean;
 }
 
-export const JudgeSubmissionTable = ({ submissions }: JudgeSubmissionTableProps) => {
+export const JudgeSubmissionTable = ({
+  submissions,
+  filtered = false,
+}: JudgeSubmissionTableProps) => {
   const navigate = useNavigate();
 
   if (submissions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-slate-50 p-12 text-center">
-        <p className="text-gray-500 font-medium">No assigned submissions yet.</p>
+        <p className="text-gray-500 font-medium">
+          {filtered ? "No assigned submissions match these filters." : "No assigned submissions yet."}
+        </p>
       </div>
     );
   }

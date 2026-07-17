@@ -56,6 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -186,23 +187,25 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
     public PageResponse<JudgeSubmissionAssignmentResponse> getMySubmissionQueue(
             UUID roundId,
             String status,
+            String search,
             int page,
             int size,
             Authentication authentication
     ) {
         Judge judge = currentJudge(authentication);
+        SubmissionStatus parsedStatus = parseSubmissionStatus(status);
+        String keyword = normalizeSearch(search);
         List<RoundJudgeAssignment> assignments = findMyAssignments(judge, roundId);
 
         if (assignments.isEmpty()) {
             return emptyPage(page, normalizeSize(size));
         }
 
-        SubmissionStatus parsedStatus = parseSubmissionStatus(status);
         int safePage = Math.max(page, 0);
         int safeSize = normalizeSize(size);
 
         Page<Submission> result = submissionRepository.findAll(
-                assignedSubmissionSpec(assignments, parsedStatus),
+                assignedSubmissionSpec(assignments, parsedStatus, keyword),
                 PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "submittedAt"))
         );
 
@@ -231,7 +234,7 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         }
 
         List<String> statuses = submissionRepository
-                .findAll(assignedSubmissionSpec(assignments, null))
+                .findAll(assignedSubmissionSpec(assignments, null, null))
                 .stream()
                 .map(submission -> toJudgeSubmissionResponse(submission, judge).gradingStatus())
                 .toList();
@@ -254,7 +257,9 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
             int size,
             Authentication authentication
     ) {
-        PageResponse<JudgeSubmissionAssignmentResponse> queue = getMySubmissionQueue(roundId, status, page, size, authentication);
+        PageResponse<JudgeSubmissionAssignmentResponse> queue = getMySubmissionQueue(
+                roundId, status, null, page, size, authentication
+        );
 
         return new PageResponse<>(
                 queue.content().stream()
@@ -343,7 +348,11 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         return assignmentRepository.findByJudgeIdAndRoundIdWithRoundAndTrack(judge.getId(), roundId);
     }
 
-    private Specification<Submission> assignedSubmissionSpec(List<RoundJudgeAssignment> assignments, SubmissionStatus status) {
+    private Specification<Submission> assignedSubmissionSpec(
+            List<RoundJudgeAssignment> assignments,
+            SubmissionStatus status,
+            String keyword
+    ) {
         return (root, query, cb) -> {
             if (query != null) {
                 query.distinct(true);
@@ -371,7 +380,18 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                     ? root.get("status").in(SubmissionStatus.SUBMITTED, SubmissionStatus.LATE)
                     : cb.equal(root.get("status"), status);
 
-            return cb.and(assignmentScope, statusScope);
+            if (keyword == null) {
+                return cb.and(assignmentScope, statusScope);
+            }
+
+            String pattern = "%" + keyword + "%";
+            Predicate searchScope = cb.or(
+                    cb.like(cb.lower(teamJoin.get("name")), pattern),
+                    cb.like(cb.lower(teamJoin.get("projectTitle")), pattern),
+                    cb.like(cb.lower(trackJoin.get("name")), pattern),
+                    cb.like(cb.lower(roundJoin.get("name")), pattern)
+            );
+            return cb.and(assignmentScope, statusScope, searchScope);
         };
     }
 
@@ -380,10 +400,27 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
             return null;
         }
         try {
-            return SubmissionStatus.valueOf(status.trim().toUpperCase());
+            SubmissionStatus parsed = SubmissionStatus.valueOf(
+                    status.trim().toUpperCase(Locale.ROOT)
+            );
+            if (parsed != SubmissionStatus.SUBMITTED && parsed != SubmissionStatus.LATE) {
+                throw new BadRequestException(
+                        "JUDGE_SUBMISSION_STATUS_INELIGIBLE",
+                        "Judges can filter only submitted or late submissions."
+                );
+            }
+            return parsed;
         } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Invalid submission status: " + status);
+            throw new BadRequestException(
+                    "JUDGE_SUBMISSION_STATUS_INVALID",
+                    "Invalid submission status: " + status
+            );
         }
+    }
+
+    private String normalizeSearch(String search) {
+        return search == null || search.isBlank()
+                ? null : search.trim().toLowerCase(Locale.ROOT);
     }
 
     private int normalizeSize(int size) {
