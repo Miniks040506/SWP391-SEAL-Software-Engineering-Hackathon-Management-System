@@ -1314,7 +1314,7 @@ public class SubmissionController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Create Submission File Download Url",
-            description = "Create Submission File Download Url through GET /api/v1/submission-links/{linkId}/download-url. Successful execution returns HTTP 200 with FileDownloadUrlResponse. Access: SecurityConfig roles STUDENT, COORDINATOR via matcher /api/v1/submission-links/**; @PreAuthorize(\"isAuthenticated()\").",
+            description = "Create Submission File Download Url through GET /api/v1/submission-links/{linkId}/download-url. Successful execution returns HTTP 200 with FileDownloadUrlResponse. Access: SecurityConfig roles STUDENT, JUDGE, MENTOR, COORDINATOR via matcher /api/v1/submission-links/**; service authorization enforces team membership or assigned mentor/judge scope; @PreAuthorize(\"isAuthenticated()\").",
             operationId = "submissionCreateSubmissionFileDownloadUrl",
             security = @SecurityRequirement(name = "bearerAuth")
     )
