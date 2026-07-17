@@ -399,7 +399,7 @@ public class S3SubmissionFileStorageService implements SubmissionFileStorageServ
         if (!isBlank(publicBaseUrl)) {
             return publicBaseUrl.replaceAll("/+$", "") + "/" + objectKey;
         }
-        return "s3://" + bucket + "/" + objectKey;
+        return "https://s3." + region + ".amazonaws.com/" + bucket + "/" + objectKey;
     }
 
     private String safeFileName(String originalFilename) {

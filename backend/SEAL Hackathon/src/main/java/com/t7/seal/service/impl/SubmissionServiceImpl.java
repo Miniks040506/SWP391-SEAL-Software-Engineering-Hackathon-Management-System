@@ -1229,21 +1229,26 @@ public class SubmissionServiceImpl implements SubmissionService {
                 file
         );
 
-        SubmissionLink link = SubmissionLink.builder()
-                .submission(submission)
-                .linkType(linkType)
-                .url(uploaded.url())
-                .label(blankToNull(label))
-                .storageProvider(SubmissionStorageProvider.AWS_S3)
-                .objectKey(uploaded.objectKey())
-                .originalFileName(uploaded.originalFileName())
-                .contentType(uploaded.contentType())
-                .fileSizeBytes(uploaded.fileSizeBytes())
-                .isPrimary(Boolean.TRUE.equals(isPrimary))
-                .displayOrder(displayOrder == null ? 0 : displayOrder)
-                .build();
+        try {
+            SubmissionLink link = SubmissionLink.builder()
+                    .submission(submission)
+                    .linkType(linkType)
+                    .url(uploaded.url())
+                    .label(blankToNull(label))
+                    .storageProvider(SubmissionStorageProvider.AWS_S3)
+                    .objectKey(uploaded.objectKey())
+                    .originalFileName(uploaded.originalFileName())
+                    .contentType(uploaded.contentType())
+                    .fileSizeBytes(uploaded.fileSizeBytes())
+                    .isPrimary(Boolean.TRUE.equals(isPrimary))
+                    .displayOrder(displayOrder == null ? 0 : displayOrder)
+                    .build();
 
-        submissionLinkRepository.save(link);
+            submissionLinkRepository.saveAndFlush(link);
+        } catch (RuntimeException exception) {
+            deleteFailedSnapshot(uploaded);
+            throw exception;
+        }
     }
 
     private void ensureAdditionalFileAllowed(Submission submission) {
@@ -1266,7 +1271,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             submissionFileStorageService.deleteSubmissionFile(uploaded.objectKey());
         } catch (RuntimeException cleanupException) {
             log.warn(
-                    "Failed to clean up Google Drive snapshot after import failure. objectKey={}",
+                    "Failed to clean up submission snapshot after persistence failure. objectKey={}",
                     uploaded.objectKey(),
                     cleanupException
             );
