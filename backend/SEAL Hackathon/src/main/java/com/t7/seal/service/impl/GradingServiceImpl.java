@@ -445,20 +445,32 @@ public class GradingServiceImpl implements GradingService {
     private void validateScoreValue(EventCriteria criterion, Double value) {
 
         if (value == null) {
-            throw new BadRequestException("Score value cannot be null.");
+            throw new BadRequestException(
+                    "SCORE_VALUE_REQUIRED",
+                    "Score value cannot be null."
+            );
         }
 
         if (value < 0) {
-            throw new BadRequestException("Score value must be greater than or equal to 0.");
+            throw new BadRequestException(
+                    "SCORE_VALUE_BELOW_MINIMUM",
+                    "Score value must be greater than or equal to 0."
+            );
         }
 
         if (hasMoreThanOneDecimalPlace(value)) {
-            throw new BadRequestException("Score value can include at most one decimal place.");
+            throw new BadRequestException(
+                    "SCORE_VALUE_PRECISION_INVALID",
+                    "Score value can include at most one decimal place."
+            );
         }
 
         Float max = criterion.getEffectiveMaxScore();
         if (max != null && value > max) {
-            throw new BadRequestException("Score value must be less than or equal to the max score.");
+            throw new BadRequestException(
+                    "SCORE_VALUE_ABOVE_MAXIMUM",
+                    "Score value must be less than or equal to the max score."
+            );
         }
     }
 
@@ -512,7 +524,8 @@ public class GradingServiceImpl implements GradingService {
                 score.getSubmission().getId(),
                 score.getJudge().getId(),
                 score.getEventCriteria().getId(),
-                score.getValue() == null ? null : score.getValue().doubleValue(),
+                score.getValue() == null ? null
+                        : Math.round(score.getValue().doubleValue() * 10.0d) / 10.0d,
                 score.getComment(),
                 score.getIsDraft(),
                 score.getScoredAt(),
@@ -524,7 +537,10 @@ public class GradingServiceImpl implements GradingService {
     private void upsertScore(Submission submission, Judge judge, SaveScoreSheetRequest request,
                              boolean draft, boolean requiredAllCriteria) {
         if (request == null || request.scores() == null || request.scores().isEmpty()) {
-            throw new BadRequestException("Score sheet must contain at least one score.");
+            throw new BadRequestException(
+                    "SCORE_SHEET_REQUIRED",
+                    "Score sheet must contain at least one score."
+            );
         }
 
         List<EventCriteria> activeCriteria = activeCriteriaFor(submission);
@@ -533,18 +549,27 @@ public class GradingServiceImpl implements GradingService {
         Set<UUID> seenCriteria = new HashSet<>();
 
         if (requiredAllCriteria && request.scores().size() < activeCriteria.size()) {
-            throw new BadRequestException("All active must be score before final submission.");
+            throw new BadRequestException(
+                    "SCORE_SHEET_INCOMPLETE",
+                    "All active criteria must be scored before final submission."
+            );
         }
 
         for (ScoreItemRequest scoreItem : request.scores()) {
             if (!seenCriteria.add(scoreItem.eventCriteriaId())) {
-                throw new BadRequestException("Duplicate score item for criteria.");
+                throw new BadRequestException(
+                        "SCORE_CRITERION_DUPLICATE",
+                        "Duplicate score item for criterion."
+                );
             }
 
             EventCriteria criterion = criteriaById.get(scoreItem.eventCriteriaId());
             if (criterion == null) {
-                throw new BadRequestException("Criteria is inactive or not available for this round: "
-                        + scoreItem.eventCriteriaId());
+                throw new BadRequestException(
+                        "SCORE_CRITERION_UNAVAILABLE",
+                        "Criterion is inactive or not available for this round: "
+                                + scoreItem.eventCriteriaId()
+                );
             }
 
             validateScoreValue(criterion, scoreItem.value());
@@ -572,7 +597,10 @@ public class GradingServiceImpl implements GradingService {
             long confirmedCount = scoreRepository.countBySubmissionIdAndJudgeIdAndIsDraftFalse(submission.getId(), judge.getId());
             long expectedCount = activeCriteria.size();
             if (confirmedCount < expectedCount) {
-                throw new BadRequestException("All active criteria must be scored before final submission.");
+                throw new BadRequestException(
+                        "SCORE_SHEET_INCOMPLETE",
+                        "All active criteria must be scored before final submission."
+                );
             }
         }
     }
