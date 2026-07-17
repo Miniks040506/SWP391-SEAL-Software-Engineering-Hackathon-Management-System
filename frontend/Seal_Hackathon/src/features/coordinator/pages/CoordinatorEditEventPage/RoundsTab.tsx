@@ -38,8 +38,13 @@ import {
 } from "@/features/coordinator/hooks/useCoordinatorEventMutations";
 import type { UUID } from "@/types/common.types";
 import type { EventDetailResponse } from "@/types/event.types";
-import type { AdvanceRuleResponse, RoundResponse } from "@/types/round.types";
+import type {
+  AdvanceRuleResponse,
+  CreateAdvanceRuleRequest,
+  RoundResponse,
+} from "@/types/round.types";
 import type { TrackResponse } from "@/types/track.types";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 type EditableRound = RoundResponse & {
   id: UUID;
@@ -292,7 +297,21 @@ const getXButtonStyle = (ruleType: string) => {
   }
 };
 
-function AdvanceRuleModal({ open, onClose, onSave, tracks, initialData }: any) {
+type AdvanceRuleModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onSave: (payload: CreateAdvanceRuleRequest) => void | Promise<void>;
+  tracks: TrackResponse[];
+  initialData?: AdvanceRuleResponse | null;
+};
+
+function AdvanceRuleModal({
+  open,
+  onClose,
+  onSave,
+  tracks,
+  initialData,
+}: AdvanceRuleModalProps) {
   const [ruleType, setRuleType] = useState<string>(
     initialData?.ruleType || "TOP_N",
   );
@@ -348,7 +367,7 @@ function AdvanceRuleModal({ open, onClose, onSave, tracks, initialData }: any) {
 
   const handleSave = () => {
     if (!isValid) return;
-    const rule: any = {
+    const rule: CreateAdvanceRuleRequest = {
       ruleType,
       trackId: trackId || null,
       priority: Number(priority),
@@ -401,9 +420,9 @@ function AdvanceRuleModal({ open, onClose, onSave, tracks, initialData }: any) {
           <MenuItem value="">
             <em>Global (All Tracks)</em>
           </MenuItem>
-          {tracks.map((t: any) => (
-            <MenuItem key={t.id ?? t.trackId} value={t.id ?? t.trackId}>
-              {t.name || t.trackName || "Unnamed track"}
+          {tracks.map((track) => (
+            <MenuItem key={track.id} value={track.id}>
+              {track.name || "Unnamed track"}
             </MenuItem>
           ))}
         </TextField>
@@ -465,20 +484,21 @@ function RoundAdvanceRules({
 }: {
   eventId: UUID;
   roundId: UUID;
-  tracks: any[];
+  tracks: TrackResponse[];
   canEdit: boolean;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AdvanceRuleResponse | null>(
     null,
   );
+  const [ruleToDelete, setRuleToDelete] = useState<UUID | null>(null);
   const rulesQuery = useAdvanceRulesQuery(roundId);
   const createRuleMutation = useCreateAdvanceRuleMutation(eventId);
   const updateRuleMutation = useUpdateAdvanceRuleMutation(eventId);
   const deleteRuleMutation = useDeleteAdvanceRuleMutation(eventId);
   const rules = (rulesQuery.data ?? []) as AdvanceRuleResponse[];
 
-  const handleCreate = async (payload: any) => {
+  const handleCreate = async (payload: CreateAdvanceRuleRequest) => {
     try {
       await createRuleMutation.mutateAsync({ roundId, payload });
       enqueueSnackbar("Rule created.", { variant: "success" });
@@ -488,7 +508,10 @@ function RoundAdvanceRules({
     }
   };
 
-  const handleUpdate = async (ruleId: UUID, payload: any) => {
+  const handleUpdate = async (
+    ruleId: UUID,
+    payload: CreateAdvanceRuleRequest,
+  ) => {
     try {
       await updateRuleMutation.mutateAsync({ roundId, ruleId, payload });
       enqueueSnackbar("Rule updated.", { variant: "success" });
@@ -498,11 +521,14 @@ function RoundAdvanceRules({
     }
   };
 
-  const handleDelete = async (ruleId: UUID) => {
-    if (!window.confirm("Delete this advance rule?")) return;
+  const handleDelete = (ruleId: UUID) => setRuleToDelete(ruleId);
+
+  const confirmDelete = async () => {
+    if (!ruleToDelete) return;
     try {
-      await deleteRuleMutation.mutateAsync({ roundId, ruleId });
+      await deleteRuleMutation.mutateAsync({ roundId, ruleId: ruleToDelete });
       enqueueSnackbar("Rule deleted.", { variant: "success" });
+      setRuleToDelete(null);
     } catch {
       enqueueSnackbar("Failed to delete rule.", { variant: "error" });
     }
@@ -542,10 +568,7 @@ function RoundAdvanceRules({
         <div className="flex flex-wrap gap-2 mt-3">
           {rules.map((rule) => {
             const trackName = rule.trackId
-              ? tracks.find((t: any) => (t.id ?? t.trackId) === rule.trackId)
-                  ?.name ||
-                tracks.find((t: any) => (t.id ?? t.trackId) === rule.trackId)
-                  ?.trackName ||
+              ? tracks.find((track) => track.id === rule.trackId)?.name ||
                 "Unknown track"
               : "Global";
             const val =
@@ -599,9 +622,19 @@ function RoundAdvanceRules({
           onClose={() => setEditingRule(null)}
           tracks={tracks}
           initialData={editingRule}
-          onSave={(payload: any) => handleUpdate(editingRule.id, payload)}
+          onSave={(payload) => handleUpdate(editingRule.id, payload)}
         />
       )}
+      <ActionConfirmDialog
+        open={ruleToDelete !== null}
+        title="Delete advance rule?"
+        description="This rule will no longer be used when calculating round advancement."
+        confirmLabel="Delete rule"
+        severity="error"
+        onClose={() => setRuleToDelete(null)}
+        onConfirm={confirmDelete}
+        isPending={deleteRuleMutation.isPending}
+      />
     </div>
   );
 }
@@ -621,6 +654,7 @@ function RoundOperationPanel({
   const openRoundMutation = useOpenRoundMutation(eventId);
   const closeRoundMutation = useCloseRoundMutation(eventId);
   const lockSubmissionsMutation = useLockSubmissionsMutation(eventId);
+  const [lockConfirmOpen, setLockConfirmOpen] = useState(false);
   const status = statusQuery.data;
   const operating =
     openRoundMutation.isPending ||
@@ -646,15 +680,10 @@ function RoundOperationPanel({
   };
 
   const handleLock = async () => {
-    if (
-      !window.confirm("Lock submissions for this round? This cannot be undone.")
-    ) {
-      return;
-    }
-
     try {
       await lockSubmissionsMutation.mutateAsync(roundId);
       enqueueSnackbar("Submissions locked.", { variant: "success" });
+      setLockConfirmOpen(false);
     } catch {
       enqueueSnackbar("Failed to lock submissions.", { variant: "error" });
     }
@@ -783,7 +812,7 @@ function RoundOperationPanel({
             color="warning"
             startIcon={<LockOutlinedIcon />}
             disabled={!canEdit || !status.canLockSubmissions || operating}
-            onClick={handleLock}
+            onClick={() => setLockConfirmOpen(true)}
             sx={{
               borderRadius: "10px",
               textTransform: "none",
@@ -795,6 +824,15 @@ function RoundOperationPanel({
           </Button>
         </div>
       </div>
+      <ActionConfirmDialog
+        open={lockConfirmOpen}
+        title="Lock submissions for this round?"
+        description="This permanently closes participant submission changes for the round."
+        confirmLabel="Lock submissions"
+        onClose={() => setLockConfirmOpen(false)}
+        onConfirm={handleLock}
+        isPending={lockSubmissionsMutation.isPending}
+      />
     </div>
   );
 }
