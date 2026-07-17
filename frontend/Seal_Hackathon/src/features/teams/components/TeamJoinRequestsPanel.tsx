@@ -1,6 +1,12 @@
+import { useState } from "react";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import TextField from "@mui/material/TextField";
 
 import type { UUID } from "@/types/common.types";
 import {
@@ -15,10 +21,29 @@ export function TeamJoinRequestsPanel({ teamId }: { teamId: UUID }) {
   const acceptMutation = useAcceptJoinRequestMutation(teamId);
   const rejectMutation = useRejectJoinRequestMutation(teamId);
   const requests = requestsQuery.data ?? [];
+  const [rejectRequestId, setRejectRequestId] = useState<UUID | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
-  const reject = (requestId: UUID) => {
-    const reason = window.prompt("Optional reason for rejecting this request:") ?? undefined;
-    rejectMutation.mutate({ requestId, reason: reason?.trim() || undefined });
+  const openRejectDialog = (requestId: UUID) => {
+    setRejectRequestId(requestId);
+    setRejectReason("");
+  };
+
+  const closeRejectDialog = () => {
+    if (rejectMutation.isPending) return;
+    setRejectRequestId(null);
+    setRejectReason("");
+  };
+
+  const confirmReject = () => {
+    if (!rejectRequestId) return;
+    rejectMutation.mutate(
+      {
+        requestId: rejectRequestId,
+        reason: rejectReason.trim() || undefined,
+      },
+      { onSuccess: closeRejectDialog },
+    );
   };
 
   return (
@@ -62,7 +87,7 @@ export function TeamJoinRequestsPanel({ teamId }: { teamId: UUID }) {
                     variant="outlined"
                     color="error"
                     disabled={mutating}
-                    onClick={() => reject(request.id)}
+                    onClick={() => openRejectDialog(request.id)}
                     sx={{ fontWeight: 800, textTransform: "none" }}
                   >
                     Reject
@@ -82,6 +107,41 @@ export function TeamJoinRequestsPanel({ teamId }: { teamId: UUID }) {
           </div>
         );
       })}
+      <Dialog
+        open={rejectRequestId !== null}
+        onClose={rejectMutation.isPending ? undefined : closeRejectDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ fontWeight: 900 }}>Reject join request?</DialogTitle>
+        <DialogContent dividers className="space-y-4">
+          <Alert severity="warning">
+            The requester will not be added to this team.
+          </Alert>
+          <TextField
+            label="Reason (optional)"
+            value={rejectReason}
+            onChange={(event) => setRejectReason(event.target.value)}
+            disabled={rejectMutation.isPending}
+            multiline
+            minRows={3}
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={closeRejectDialog} disabled={rejectMutation.isPending}>
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmReject}
+            disabled={rejectMutation.isPending}
+            color="error"
+            variant="contained"
+          >
+            {rejectMutation.isPending ? "Rejecting..." : "Reject request"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </section>
   );
 }

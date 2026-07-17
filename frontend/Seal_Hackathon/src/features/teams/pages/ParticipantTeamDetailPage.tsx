@@ -37,6 +37,7 @@ import { useActiveTeamDisqualificationsQuery } from "@/features/disqualification
 import { TeamStatusBadge } from "../components/TeamStatusBagde";
 import { TeamRegisterTrackPanel } from "../components/TeamRegisterTrackPanel";
 import { TeamJoinRequestsPanel } from "../components/TeamJoinRequestsPanel";
+import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 import {
   inviteMemberSchema,
@@ -60,6 +61,10 @@ import {
 } from "../hooks/useParticipantTeams";
 
 type TeamDetailTab = "overview" | "members" | "track-registration";
+type TeamConfirmAction =
+  | { type: "cancel-invitation"; invitationId: UUID }
+  | { type: "remove-member"; member: TeamMemberResponse }
+  | { type: "leave-team" };
 
 function formatDateTime(value?: string | null) {
   if (!value) return "N/A";
@@ -82,6 +87,7 @@ export const TeamDetailPage = () => {
   const [deleteReason, setDeleteReason] = useState("");
   const [transferCandidate, setTransferCandidate] =
     useState<TeamMemberResponse | null>(null);
+  const [confirmAction, setConfirmAction] = useState<TeamConfirmAction | null>(null);
 
   const teamQuery = useTeamDetailQuery(teamId);
   const myTeamsQuery = useMyTeamsQuery();
@@ -195,16 +201,11 @@ export const TeamDetailPage = () => {
   };
 
   const handleCancelInvitation = (invitationId: UUID) => {
-    if (!window.confirm("Cancel this invitation?")) return;
-    cancelInvitationMutation.mutate(invitationId);
+    setConfirmAction({ type: "cancel-invitation", invitationId });
   };
 
   const handleRemoveMember = (member: TeamMemberResponse) => {
-    if (!window.confirm(`Remove ${member.fullName} from this team?`)) return;
-    removeMemberMutation.mutate({
-      memberId: member.memberId,
-      payload: { reason: "Removed by team leader" },
-    });
+    setConfirmAction({ type: "remove-member", member });
   };
 
   const handleTransferLeader = (member: TeamMemberResponse) => {
@@ -227,11 +228,58 @@ export const TeamDetailPage = () => {
     );
   };
 
-  const handleLeaveTeam = async () => {
-    if (!window.confirm("Are you sure you want to leave this team?")) return;
-    await leaveTeamMutation.mutateAsync({ reason: "Left by participant" });
-    navigate("/participant/teams");
+  const handleLeaveTeam = () => setConfirmAction({ type: "leave-team" });
+
+  const confirmTeamAction = () => {
+    if (!confirmAction) return;
+    if (confirmAction.type === "cancel-invitation") {
+      cancelInvitationMutation.mutate(confirmAction.invitationId, {
+        onSuccess: () => setConfirmAction(null),
+      });
+      return;
+    }
+    if (confirmAction.type === "remove-member") {
+      removeMemberMutation.mutate(
+        {
+          memberId: confirmAction.member.memberId,
+          payload: { reason: "Removed by team leader" },
+        },
+        { onSuccess: () => setConfirmAction(null) },
+      );
+      return;
+    }
+    leaveTeamMutation.mutate(
+      { reason: "Left by participant" },
+      {
+        onSuccess: () => {
+          setConfirmAction(null);
+          navigate("/participant/teams");
+        },
+      },
+    );
   };
+
+  const confirmActionPending =
+    cancelInvitationMutation.isPending ||
+    removeMemberMutation.isPending ||
+    leaveTeamMutation.isPending;
+  const confirmActionContent = confirmAction?.type === "cancel-invitation"
+    ? {
+        title: "Cancel invitation?",
+        description: "The pending invitation will no longer be usable.",
+        label: "Cancel invitation",
+      }
+    : confirmAction?.type === "remove-member"
+      ? {
+          title: "Remove team member?",
+          description: `${confirmAction.member.fullName} will lose access to this team and its participant workflows.`,
+          label: "Remove member",
+        }
+      : {
+          title: "Leave this team?",
+          description: "Your active membership and access to this team will be removed.",
+          label: "Leave team",
+        };
 
   const handleDeleteTeam = async () => {
     await deleteTeamMutation.mutateAsync({
@@ -969,6 +1017,16 @@ export const TeamDetailPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <ActionConfirmDialog
+        open={confirmAction !== null}
+        title={confirmActionContent.title}
+        description={confirmActionContent.description}
+        confirmLabel={confirmActionContent.label}
+        severity="error"
+        onClose={() => setConfirmAction(null)}
+        onConfirm={confirmTeamAction}
+        isPending={confirmActionPending}
+      />
     </div>
   );
 };
