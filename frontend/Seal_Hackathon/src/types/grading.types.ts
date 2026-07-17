@@ -69,6 +69,7 @@ export type ScoreItemRequest = {
   eventCriteriaId: UUID;
   value: number;
   comment?: string;
+  expectedVersion?: number;
 };
 
 export type SaveScoreSheetRequest = {
@@ -89,6 +90,7 @@ export type ConfirmScoreSheetRequest = {
 export type UpdateScoreRequest = {
   value: number;
   comment?: string;
+  expectedVersion?: number;
 };
 
 export type ScoreResponse = {
@@ -100,6 +102,8 @@ export type ScoreResponse = {
   comment?: string | null;
   isDraft: boolean;
   scoredAt?: ISODateTime | null;
+  version: number;
+  updatedAt?: ISODateTime | null;
 };
 
 export type ScoreSheetResponse = {

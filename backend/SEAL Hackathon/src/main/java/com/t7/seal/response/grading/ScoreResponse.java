@@ -59,6 +59,19 @@ public record ScoreResponse(
                 format = "date-time",
                 accessMode = Schema.AccessMode.READ_ONLY
         )
-        LocalDateTime scoredAt
+        LocalDateTime scoredAt,
+        @Schema(
+                description = "Optimistic concurrency version.",
+                example = "3",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        Long version,
+        @Schema(
+                description = "Timestamp of the latest score update.",
+                example = "2027-08-25T08:00:00",
+                format = "date-time",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        LocalDateTime updatedAt
 ) {
 }

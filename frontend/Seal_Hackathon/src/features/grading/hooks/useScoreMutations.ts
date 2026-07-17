@@ -6,8 +6,15 @@ import { gradingApi } from "@/api/grading.api";
 import type { SaveScoreSheetRequest } from "@/types/grading.types";
 
 const getMutationErrorMessage = (error: unknown) => {
-  if (!isAxiosError<{ message?: string }>(error)) {
+  if (!isAxiosError<{ code?: string; message?: string }>(error)) {
     return "Could not save scores. Please try again.";
+  }
+
+  if (
+    error.response?.data?.code === "SCORE_VERSION_CONFLICT" ||
+    error.response?.data?.code === "OPTIMISTIC_LOCK_CONFLICT"
+  ) {
+    return "Scores changed in another session. Refresh the score sheet and try again.";
   }
 
   if (error.response?.data?.message) {

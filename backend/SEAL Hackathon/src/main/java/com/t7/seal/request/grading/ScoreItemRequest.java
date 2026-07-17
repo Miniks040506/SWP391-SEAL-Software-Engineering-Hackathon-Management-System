@@ -2,6 +2,7 @@ package com.t7.seal.request.grading;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
@@ -24,5 +25,10 @@ public record ScoreItemRequest(
                 description = "Reviewer comment.",
                 example = "Detailed reviewer comment."
         )
-        String comment
+        @Size(max = 2000) String comment,
+        @Schema(
+                description = "Last score version observed by the client. Omit for a new score.",
+                example = "3"
+        )
+        Long expectedVersion
 ) {}
