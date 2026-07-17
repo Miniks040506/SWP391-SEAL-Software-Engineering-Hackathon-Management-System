@@ -1,15 +1,198 @@
 import { CircularProgress } from "@mui/material";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import MilitaryTechOutlinedIcon from "@mui/icons-material/MilitaryTechOutlined";
+import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
-import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
-import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
+import { format, isValid, parseISO } from "date-fns";
 
-import { usePublicEventAwardsQuery, usePublicEventDetailQuery } from "../hooks/usePublicEventQueries";
+import {
+  usePublicEventAwardsQuery,
+  usePublicEventDetailQuery,
+} from "../hooks/usePublicEventQueries";
 import type { PrizeResponse } from "@/types/prize.types";
 
+type RankTier = {
+  label: string;
+  band: string;
+  medallion: string;
+  medallionRing: string;
+  rankText: string;
+  cardBorder: string;
+  glow: string;
+};
+
+const TIERS: Record<"gold" | "silver" | "bronze" | "other", RankTier> = {
+  gold: {
+    label: "Champion",
+    band: "bg-linear-to-r from-amber-400 via-yellow-400 to-amber-500",
+    medallion: "bg-linear-to-br from-amber-300 to-amber-500 text-amber-900",
+    medallionRing: "ring-amber-200 dark:ring-amber-500/30",
+    rankText: "text-amber-600 dark:text-amber-400",
+    cardBorder:
+      "border-amber-200 hover:border-amber-300 dark:border-amber-500/30 dark:hover:border-amber-500/50",
+    glow: "shadow-lg shadow-amber-500/10",
+  },
+  silver: {
+    label: "Runner-up",
+    band: "bg-linear-to-r from-slate-300 via-slate-200 to-slate-400",
+    medallion: "bg-linear-to-br from-slate-200 to-slate-400 text-slate-700",
+    medallionRing: "ring-slate-200 dark:ring-slate-500/30",
+    rankText: "text-slate-500 dark:text-slate-400",
+    cardBorder:
+      "border-slate-300 hover:border-slate-400 dark:border-slate-600/50 dark:hover:border-slate-500",
+    glow: "shadow-lg shadow-slate-500/10",
+  },
+  bronze: {
+    label: "Third Place",
+    band: "bg-linear-to-r from-orange-500 via-orange-400 to-orange-600",
+    medallion: "bg-linear-to-br from-orange-400 to-orange-600 text-orange-50",
+    medallionRing: "ring-orange-200 dark:ring-orange-500/30",
+    rankText: "text-orange-600 dark:text-orange-400",
+    cardBorder:
+      "border-orange-200 hover:border-orange-300 dark:border-orange-500/30 dark:hover:border-orange-500/50",
+    glow: "shadow-lg shadow-orange-500/10",
+  },
+  other: {
+    label: "Awarded",
+    band: "bg-linear-to-r from-blue-500 via-cyan-400 to-blue-500",
+    medallion: "bg-linear-to-br from-blue-400 to-blue-600 text-blue-50",
+    medallionRing: "ring-blue-200 dark:ring-blue-500/30",
+    rankText: "text-blue-600 dark:text-blue-400",
+    cardBorder:
+      "border-blue-200 hover:border-blue-300 dark:border-blue-500/30 dark:hover:border-blue-500/50",
+    glow: "shadow-lg shadow-blue-500/10",
+  },
+};
+
+function getTier(rankPosition?: number): RankTier {
+  if (rankPosition === 1) return TIERS.gold;
+  if (rankPosition === 2) return TIERS.silver;
+  if (rankPosition === 3) return TIERS.bronze;
+  return TIERS.other;
+}
+
+function formatAwardedDate(value?: string) {
+  if (!value) return null;
+
+  const date = parseISO(value);
+  if (!isValid(date)) return null;
+
+  return format(date, "dd MMM yyyy");
+}
+
+function AwardCard({ prize }: { prize: PrizeResponse }) {
+  const tier = getTier(prize.rankPosition);
+  const awardedDate = formatAwardedDate(prize.awardedAt);
+
+  return (
+    <article
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-white transition-all hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 dark:bg-slate-900 ${tier.cardBorder} ${tier.glow}`}
+    >
+      {/* Tier band */}
+      <div className={`h-1.5 ${tier.band}`} />
+
+      <div className="flex flex-1 flex-col p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div
+            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-4 ${tier.medallion} ${tier.medallionRing}`}
+          >
+            <EmojiEventsIcon style={{ fontSize: 28 }} />
+          </div>
+
+          <div className="flex flex-col items-end gap-1.5 text-right">
+            <span
+              className={`text-xs font-black uppercase tracking-widest ${tier.rankText}`}
+            >
+              Rank {prize.rankPosition ?? "—"} · {tier.label}
+            </span>
+
+            <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-[11px] font-bold text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+              {prize.trackName ?? "Overall"}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">
+            Winner
+          </p>
+
+          <h3 className="mt-1 flex items-center gap-2 text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+            <span className="line-clamp-2">
+              {prize.awardedTeamName || "Unknown Team"}
+            </span>
+            <VerifiedOutlinedIcon
+              style={{ fontSize: 18 }}
+              className="shrink-0 text-blue-500"
+            />
+          </h3>
+
+          {prize.title && (
+            <p className="mt-1 text-sm font-medium text-gray-500 dark:text-slate-400">
+              {prize.title}
+            </p>
+          )}
+        </div>
+
+        {prize.value !== undefined && (
+          <div className="mt-5 rounded-xl bg-gray-50 px-4 py-3 dark:bg-slate-950/50">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">
+              Prize value
+            </p>
+            <p className="mt-0.5 text-2xl font-black tabular-nums tracking-tight text-gray-900 dark:text-white">
+              {prize.value.toLocaleString()}
+              <span className="ml-1.5 text-sm font-bold text-gray-400 dark:text-slate-500">
+                {prize.currency || "VND"}
+              </span>
+            </p>
+          </div>
+        )}
+
+        <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-4 dark:border-slate-800 [&:not(:first-child)]:mt-5">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-slate-400">
+            <WorkspacePremiumOutlinedIcon
+              style={{ fontSize: 15 }}
+              className="text-blue-500/80"
+            />
+            Certificate
+          </span>
+
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-slate-400">
+            <MilitaryTechOutlinedIcon
+              style={{ fontSize: 15 }}
+              className="text-purple-500/80"
+            />
+            Medal
+          </span>
+
+          {prize.sponsorName && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-slate-400">
+              <GroupsOutlinedIcon
+                style={{ fontSize: 15 }}
+                className="text-emerald-500/80"
+              />
+              {prize.sponsorName}
+            </span>
+          )}
+
+          {awardedDate && (
+            <span className="ml-auto text-xs font-medium text-gray-400 dark:text-slate-500">
+              {awardedDate}
+            </span>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export const PublicEventAwardsSection = ({ eventId }: { eventId: string }) => {
-  const { data: event, isLoading: isLoadingEvent } = usePublicEventDetailQuery(eventId);
-  const { data: awards = [], isLoading: isLoadingAwards } = usePublicEventAwardsQuery(eventId);
+  const { data: event, isLoading: isLoadingEvent } =
+    usePublicEventDetailQuery(eventId);
+  const { data: awards = [], isLoading: isLoadingAwards } =
+    usePublicEventAwardsQuery(eventId);
 
   if (isLoadingEvent || isLoadingAwards) {
     return (
@@ -54,78 +237,15 @@ export const PublicEventAwardsSection = ({ eventId }: { eventId: string }) => {
     );
   }
 
+  const sorted = [...awards].sort(
+    (a, b) => (a.rankPosition ?? 99) - (b.rankPosition ?? 99),
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {awards.map((prize: PrizeResponse) => (
-          <div
-            key={prize.id}
-            className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-950"
-          >
-            <div className="absolute -right-4 -top-4 opacity-5 transition-transform group-hover:scale-110 dark:opacity-10">
-              <EmojiEventsOutlinedIcon sx={{ fontSize: 120 }} />
-            </div>
-
-            <div className="relative z-10">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                    {prize.trackName ? `Track: ${prize.trackName}` : "Overall"}
-                  </div>
-                  <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-white line-clamp-2">
-                    {prize.title}
-                  </h3>
-                  <div className="mt-1 text-sm font-medium text-amber-600 dark:text-amber-500">
-                    Rank {prize.rankPosition}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
-                    <GroupOutlinedIcon fontSize="small" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Winner</p>
-                    <p className="font-bold text-slate-900 dark:text-white">
-                      {prize.awardedTeamName || "Unknown Team"}
-                    </p>
-                  </div>
-                </div>
-
-                {(prize.value !== undefined || prize.sponsorName) && (
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
-                      {prize.value !== undefined ? (
-                        <AttachMoneyOutlinedIcon fontSize="small" />
-                      ) : (
-                        <WorkspacePremiumOutlinedIcon fontSize="small" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                        {prize.value !== undefined ? "Value" : "Sponsor"}
-                      </p>
-                      <p className="font-semibold text-slate-700 dark:text-slate-200">
-                        {prize.value !== undefined
-                          ? `${prize.value.toLocaleString()} ${prize.currency || ""}`
-                          : prize.sponsorName}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {prize.awardedAt && (
-                <div className="mt-4 text-xs font-medium text-slate-400 dark:text-slate-500">
-                  Awarded on {new Date(prize.awardedAt).toLocaleDateString()}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="grid gap-6 sm:grid-cols-2">
+      {sorted.map((prize) => (
+        <AwardCard key={prize.id} prize={prize} />
+      ))}
     </div>
   );
 };
