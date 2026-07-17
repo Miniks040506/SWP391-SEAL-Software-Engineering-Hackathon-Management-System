@@ -12,6 +12,8 @@ public interface GoogleDriveConnectionService {
 
     CompletedConnection complete(String state, String browserNonce, String code);
 
+    String validateCallbackState(String state, String browserNonce);
+
     ConnectionStatus status(User user);
 
     PickerSession pickerSession(User user);

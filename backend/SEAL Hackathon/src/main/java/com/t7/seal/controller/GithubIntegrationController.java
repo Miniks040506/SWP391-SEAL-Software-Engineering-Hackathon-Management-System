@@ -114,9 +114,16 @@ public class GithubIntegrationController {
     ) {
         URI redirect;
         if (error != null) {
-            String resultCode = "access_denied".equals(error)
-                    ? "GITHUB_AUTHORIZATION_CANCELLED" : "GITHUB_AUTHORIZATION_FAILED";
-            redirect = frontendRedirect(DEFAULT_RETURN_PATH, "error", resultCode, false);
+            try {
+                String returnPath = connectionService.validateCallbackState(state, browserNonce);
+                String resultCode = "access_denied".equals(error)
+                        ? "GITHUB_AUTHORIZATION_CANCELLED" : "GITHUB_AUTHORIZATION_FAILED";
+                redirect = frontendRedirect(returnPath, "error", resultCode, false);
+            } catch (IllegalArgumentException exception) {
+                redirect = frontendRedirect(
+                        DEFAULT_RETURN_PATH, "error", "GITHUB_OAUTH_STATE_INVALID", false
+                );
+            }
         } else {
             try {
                 GithubConnectionService.CompletedConnection completed = connectionService.complete(
