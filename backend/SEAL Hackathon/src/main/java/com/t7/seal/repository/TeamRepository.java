@@ -15,11 +15,14 @@ import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface TeamRepository extends JpaRepository<Team, UUID> {
+    long countByTrackIdIn(Collection<UUID> trackIds);
+
     Optional<Team> findByJoinCode(String joinCode);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

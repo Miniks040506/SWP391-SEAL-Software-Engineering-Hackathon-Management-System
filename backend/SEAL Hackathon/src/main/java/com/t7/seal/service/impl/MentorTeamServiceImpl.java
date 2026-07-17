@@ -15,6 +15,8 @@ import com.t7.seal.service.MentorTeamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import jakarta.persistence.criteria.Predicate;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +35,11 @@ public class MentorTeamServiceImpl implements MentorTeamService {
     private static final Set<SubmissionStatus> SUBMITTED_STATUSES = EnumSet.of(
             SubmissionStatus.SUBMITTED,
             SubmissionStatus.LATE
+    );
+    private static final Set<SubmissionStatus> SUBMITTED_STATUSES_WITH_DISQUALIFIED = EnumSet.of(
+            SubmissionStatus.SUBMITTED,
+            SubmissionStatus.LATE,
+            SubmissionStatus.DISQUALIFIED
     );
 
     private final CurrentUserService currentUserService;
@@ -188,6 +196,77 @@ public class MentorTeamServiceImpl implements MentorTeamService {
         throw new ForbiddenException("You are not authorized to view this track.");
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public MentorSubmissionPageResponse getSubmissions(
+            UUID eventId,
+            UUID trackId,
+            UUID teamId,
+            UUID roundId,
+            String status,
+            String search,
+            int page,
+            int size,
+            Authentication authentication
+    ) {
+        User user = currentUserService.getCurrentUser(authentication);
+        ensureMentorOrManager(user);
+        Set<UUID> assignedTrackIds = assignedTrackIds(user);
+        if (trackId != null && !assignedTrackIds.contains(trackId)) {
+            throw new ForbiddenException("Mentor is not assigned to the requested track.");
+        }
+
+        long assignedTeamCount = assignedTrackIds.isEmpty()
+                ? 0 : teamRepository.countByTrackIdIn(assignedTrackIds);
+        long submittedTeamCount = assignedTrackIds.isEmpty()
+                ? 0 : submissionRepository.countDistinctSubmittedTeamsByTrackIds(
+                        assignedTrackIds, SUBMITTED_STATUSES_WITH_DISQUALIFIED
+                );
+        SubmissionStatus parsedStatus = parseVisibleSubmissionStatus(status);
+        String keyword = normalizeSearch(search);
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+
+        Specification<Submission> specification = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(root.get("team").get("track").get("id").in(assignedTrackIds));
+            predicates.add(parsedStatus == null
+                    ? root.get("status").in(SUBMITTED_STATUSES_WITH_DISQUALIFIED)
+                    : cb.equal(root.get("status"), parsedStatus));
+            if (eventId != null) {
+                predicates.add(cb.equal(root.get("round").get("event").get("id"), eventId));
+            }
+            if (trackId != null) predicates.add(cb.equal(root.get("team").get("track").get("id"), trackId));
+            if (teamId != null) predicates.add(cb.equal(root.get("team").get("id"), teamId));
+            if (roundId != null) predicates.add(cb.equal(root.get("round").get("id"), roundId));
+            if (keyword != null) {
+                String pattern = "%" + keyword.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("team").get("name")), pattern),
+                        cb.like(cb.lower(root.get("team").get("projectTitle")), pattern),
+                        cb.like(cb.lower(root.get("round").get("name")), pattern),
+                        cb.like(cb.lower(root.get("team").get("track").get("name")), pattern)
+                ));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Submission> result = submissionRepository.findAll(
+                specification,
+                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "submittedAt"))
+        );
+        String emptyReason = result.hasContent() ? "NONE"
+                : assignedTeamCount == 0 ? "NO_ASSIGNED_TEAMS"
+                : submittedTeamCount == 0 ? "NO_SUBMISSIONS"
+                : "NO_FILTER_MATCHES";
+        return new MentorSubmissionPageResponse(
+                result.getContent().stream().map(this::toMentorSubmissionSummary).toList(),
+                result.getNumber(), result.getSize(), result.getTotalElements(),
+                result.getTotalPages(), result.isLast(), assignedTeamCount,
+                submittedTeamCount, emptyReason
+        );
+    }
+
     private TeamStatus parseTeamStatus(String status) {
         if (status == null || status.isBlank()) {
             return null;
@@ -196,6 +275,37 @@ public class MentorTeamServiceImpl implements MentorTeamService {
             return TeamStatus.valueOf(status.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Invalid team status: " + status);
+        }
+    }
+
+    private Set<UUID> assignedTrackIds(User user) {
+        if (user.getRole() == UserRole.COORDINATOR || user.getRole() == UserRole.ADMIN) {
+            return trackRepository.findAll().stream()
+                    .map(Track::getId)
+                    .collect(Collectors.toSet());
+        }
+        return mentorAssignmentRepository.findAssignedTracksByUserId(user.getId(), null)
+                .stream()
+                .map(MentorAssignment::getTrack)
+                .filter(Objects::nonNull)
+                .map(Track::getId)
+                .collect(Collectors.toSet());
+    }
+
+    private SubmissionStatus parseVisibleSubmissionStatus(String status) {
+        if (status == null || status.isBlank()) return null;
+        try {
+            SubmissionStatus parsed = SubmissionStatus.valueOf(
+                    status.trim().toUpperCase(Locale.ROOT)
+            );
+            if (!SUBMITTED_STATUSES_WITH_DISQUALIFIED.contains(parsed)) {
+                throw new BadRequestException(
+                        "Mentors can filter only SUBMITTED, LATE, or DISQUALIFIED submissions."
+                );
+            }
+            return parsed;
+        } catch (IllegalArgumentException exception) {
+            throw new BadRequestException("Invalid submission status: " + status);
         }
     }
 
@@ -232,6 +342,32 @@ public class MentorTeamServiceImpl implements MentorTeamService {
                 team.getCreatedAt(),
                 team.getUpdatedAt(),
                 buildRoundProgress(team, submissions)
+        );
+    }
+
+    private MentorSubmissionSummaryResponse toMentorSubmissionSummary(Submission submission) {
+        Team team = submission.getTeam();
+        Track track = team == null ? null : team.getTrack();
+        HackathonEvent event = submission.getRound() == null
+                ? null : submission.getRound().getEvent();
+        int linkCount = submission.getSubmissionLinks() == null
+                ? 0 : submission.getSubmissionLinks().size();
+        return new MentorSubmissionSummaryResponse(
+                submission.getId(),
+                event == null ? null : event.getId(),
+                event == null ? null : event.getName(),
+                track == null ? null : track.getId(),
+                track == null ? null : track.getName(),
+                team == null ? null : team.getId(),
+                team == null ? null : team.getName(),
+                submission.getRound() == null ? null : submission.getRound().getId(),
+                submission.getRound() == null ? null : submission.getRound().getName(),
+                enumName(submission.getStatus()),
+                submission.getSubmissionNumber(),
+                submission.getSubmittedAt(),
+                submission.getUpdatedAt(),
+                linkCount,
+                submission.getStatus() == SubmissionStatus.LATE
         );
     }
 
