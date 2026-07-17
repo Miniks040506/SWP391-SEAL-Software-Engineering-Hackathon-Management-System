@@ -1151,8 +1151,10 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .toList();
 
         if (!missing.isEmpty()) {
-            throw new BadRequestException("Missing required link types: " +
-                    String.join(", ", missing));
+            throw new BadRequestException(
+                    "MISSING_REQUIRED_TYPES",
+                    "Missing required link types: " + String.join(", ", missing)
+            );
         }
     }
 
