@@ -10,7 +10,7 @@ import type {
   JudgeSubmissionDetailResponse,
 } from "@/types/judge.types";
 
-type JudgeSubmissionApiParams = Omit<GetJudgeSubmissionsParams, "search">;
+type JudgeSubmissionApiParams = GetJudgeSubmissionsParams;
 
 export const judgeApi = {
   getMyAssignments() {
