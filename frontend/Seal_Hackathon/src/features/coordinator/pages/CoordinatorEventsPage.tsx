@@ -23,7 +23,7 @@ type EventStatusFilter =
   | "REGISTRATION"
   | "DRAFT"
   | "COMPLETED"
-  | "ENDED"
+  | "JUDGING"
   | "CANCELLED"
   | "ARCHIVED";
 
@@ -50,8 +50,8 @@ const statusTabs: Array<{ label: string; value: EventStatusFilter }> = [
   { label: "Ongoing", value: "ONGOING" },
   { label: "Registration", value: "REGISTRATION" },
   { label: "Draft", value: "DRAFT" },
+  { label: "Judging", value: "JUDGING" },
   { label: "Completed", value: "COMPLETED" },
-  { label: "Ended", value: "ENDED" },
   { label: "Cancelled", value: "CANCELLED" },
   { label: "Archived", value: "ARCHIVED" },
 ];
@@ -129,13 +129,15 @@ function StatusBadge({ status }: { status: string }) {
         ? "border-emerald-200 bg-emerald-50 text-emerald-600"
         : status === "DRAFT"
           ? "border-amber-200 bg-amber-50 text-amber-600"
-          : status === "COMPLETED"
-            ? "border-indigo-200 bg-indigo-50 text-indigo-600"
-            : status === "CANCELLED"
-              ? "border-rose-200 bg-rose-50 text-rose-600"
-              : status === "ARCHIVED"
-                ? "border-slate-200 bg-slate-50 text-slate-500"
-              : "border-slate-200 bg-slate-50 text-slate-500";
+          : status === "JUDGING"
+            ? "border-orange-200 bg-orange-50 text-orange-600"
+            : status === "COMPLETED"
+              ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+              : status === "CANCELLED"
+                ? "border-rose-200 bg-rose-50 text-rose-600"
+                : status === "ARCHIVED"
+                  ? "border-slate-200 bg-slate-50 text-slate-500"
+                  : "border-slate-200 bg-slate-50 text-slate-500";
 
   return (
     <span
@@ -350,11 +352,6 @@ export function CoordinatorEventsPage() {
 
     return apiEvents.filter((event) => {
       const status = getEventStatus(event);
-
-      if (activeFilter === "ENDED") {
-        return status === "ENDED" || status === "COMPLETED";
-      }
-
       return status === activeFilter;
     });
   }, [activeFilter, apiEvents]);
