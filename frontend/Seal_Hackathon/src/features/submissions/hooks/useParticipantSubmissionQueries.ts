@@ -26,18 +26,14 @@ export const useParticipantSubmissionData = (teamId?: UUID, roundId?: UUID) => {
   const query = useQuery({
     queryKey: participantSubmissionKeys.context(teamId, roundId),
     queryFn: async () => {
-      const [teams, summaries, round] = await Promise.all([
+      const [teams, requirements, round] = await Promise.all([
         teamApi.getMyTeams(),
-        submissionApi.getTeamSubmissions(teamId!),
+        submissionApi.getSubmissionRequirements(teamId!, roundId!),
         roundApi.getRoundById(roundId!),
       ]);
-      const roundSub = summaries.find((s) => s.roundId === roundId);
-      const submission = roundSub
-        ? await submissionApi.getSubmissionById(roundSub.id)
-        : null;
 
       return {
-        submission,
+        submission: requirements.currentSubmission ?? null,
         teamInfo: teams.find((team) => team.id === teamId) ?? null,
         round,
       };

@@ -40,6 +40,34 @@ const safeExternalUrl = (value?: string) => {
   }
 };
 
+function GoogleDriveSourceLink({
+  link,
+}: {
+  link: SubmissionLinkResponse;
+}) {
+  if (link.storageProvider !== "GOOGLE_DRIVE") {
+    return null;
+  }
+
+  const sourceUrl = safeExternalUrl(link.url);
+  if (!sourceUrl) {
+    return null;
+  }
+
+  return (
+    <Button
+      size="small"
+      component="a"
+      href={sourceUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      sx={{ textTransform: "none", fontWeight: 700 }}
+    >
+      View source in Google Drive
+    </Button>
+  );
+}
+
 function RepositoryEvidence({ metadata }: { metadata: RepositoryMetadata }) {
   const repositoryName = metadata.repoName ||
     [metadata.owner, metadata.repository].filter(Boolean).join("/") ||
@@ -176,7 +204,7 @@ export function SubmissionLinksPreview({
             {formatBytes(link.fileSizeBytes) && <span>{formatBytes(link.fileSizeBytes)}</span>}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {link.storageProvider === "AWS_S3" || link.objectKey ? (
+            {link.storageProvider === "AWS_S3" ? (
               <Button
                 size="small"
                 variant="outlined"
@@ -186,7 +214,7 @@ export function SubmissionLinksPreview({
               >
                 {openingLinkId === link.id ? "Opening..." : "Open file"}
               </Button>
-            ) : (
+            ) : link.storageProvider === "GOOGLE_DRIVE" ? null : (
               <Button
                 size="small"
                 variant="outlined"
@@ -196,9 +224,12 @@ export function SubmissionLinksPreview({
                 rel="noopener noreferrer"
                 sx={{ textTransform: "none", fontWeight: 700 }}
               >
-                Open link
+                {link.storageProvider === "GITHUB"
+                  ? "View repository on GitHub"
+                  : "Open link"}
               </Button>
             )}
+            <GoogleDriveSourceLink link={link} />
             {canEdit && onEdit && (
               <Button
                 size="small"

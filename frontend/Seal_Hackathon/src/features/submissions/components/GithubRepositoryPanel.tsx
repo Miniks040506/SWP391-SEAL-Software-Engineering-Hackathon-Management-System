@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { isAxiosError } from "axios";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -33,6 +34,9 @@ type Props = {
 };
 
 function requestMessage(error: unknown, fallback: string) {
+  if (isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message || error.message || fallback;
+  }
   return error instanceof Error && error.message ? error.message : fallback;
 }
 

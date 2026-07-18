@@ -14,6 +14,7 @@ import type { EventCompetitionRoundResponse } from "@/types/team.types";
 import { useTeamAdvancementStatusQuery } from "@/features/advancement/hooks/useAdvancementQueries";
 import { TeamAdvancementStatusBanner } from "@/features/advancement/components/TeamAdvancementStatusBanner";
 import { SubmissionRequirementsPanel } from "@/features/submissions/components/SubmissionRequirementsPanel";
+import { SubmissionLinksPreview } from "@/features/submissions/components/SubmissionLinksPreview";
 import { useSubmissionRequirementsQuery } from "@/features/submissions/hooks/useParticipantSubmissionQueries";
 
 function formatDateTime(value?: string | null) {
@@ -373,6 +374,36 @@ export function EventCompetitionPage() {
               {requirementsQuery.data && (
                 <SubmissionRequirementsPanel requirements={requirementsQuery.data} />
               )}
+
+              {requirementsQuery.data?.currentSubmission?.links &&
+                requirementsQuery.data.currentSubmission.links.length > 0 && (
+                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 dark:border-slate-700 dark:bg-slate-950">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-black text-gray-900 dark:text-white">
+                          Saved submission evidence
+                        </h3>
+                        <p className="mt-1 text-xs font-semibold text-gray-500 dark:text-slate-400">
+                          View persisted files, Drive resources, repositories, and frozen commits.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            `/participant/teams/${competition.teamId}/rounds/${selectedRound.roundId}/submission`,
+                          )
+                        }
+                        className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-600 transition hover:border-blue-400 hover:bg-blue-50 dark:border-blue-500/40 dark:bg-slate-900 dark:text-blue-300"
+                      >
+                        Manage evidence
+                      </button>
+                    </div>
+                    <SubmissionLinksPreview
+                      links={requirementsQuery.data.currentSubmission.links}
+                    />
+                  </div>
+                )}
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950">
