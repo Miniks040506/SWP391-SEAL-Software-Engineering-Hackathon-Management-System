@@ -101,11 +101,7 @@ public class SubmissionRequirementCatalog {
                                 : localFile.getUnavailableMessage()
                 ),
                 googleDriveAvailability(providers.getGoogleDrive()),
-                unavailableIntegration(
-                        SubmissionInputSource.GITHUB,
-                        providers.getGithub(),
-                        "GitHub"
-                )
+                githubAvailability(providers.getGithub())
         );
     }
 
@@ -139,15 +135,25 @@ public class SubmissionRequirementCatalog {
         );
     }
 
-    private SubmissionProviderAvailabilityResponse unavailableIntegration(
-            SubmissionInputSource source,
-            SubmissionProperties.ProviderAvailability configuration,
-            String providerName
+    private SubmissionProviderAvailabilityResponse githubAvailability(
+            SubmissionProperties.ProviderAvailability configuration
     ) {
-        String message = configuration.isEnabled()
-                ? providerName + " submission integration is enabled in configuration but is not available in this build."
-                : configuration.getUnavailableMessage();
-        return new SubmissionProviderAvailabilityResponse(source.name(), false, message);
+        if (!configuration.isEnabled()) {
+            return new SubmissionProviderAvailabilityResponse(
+                    SubmissionInputSource.GITHUB.name(),
+                    false,
+                    configuration.getUnavailableMessage()
+            );
+        }
+
+        boolean available = providerOAuthProperties.isGithubConfigured();
+        return new SubmissionProviderAvailabilityResponse(
+                SubmissionInputSource.GITHUB.name(),
+                available,
+                available
+                        ? "GitHub repository selection and commit snapshots are available."
+                        : providerOAuthProperties.githubConfigurationMessage()
+        );
     }
 
     private List<String> allowedSources(SubmissionLinkType type) {

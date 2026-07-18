@@ -856,7 +856,7 @@ export function SubmissionFormPage() {
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between items-end">
                   <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                    File submissions
+                    Submission evidence
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
                     {uploadPolicy
@@ -868,7 +868,7 @@ export function SubmissionFormPage() {
                 {submission?.links && submission.links.length > 0 && (
                   <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/30">
                     <h2 className="mb-3 text-sm font-bold text-slate-800 dark:text-slate-200">
-                      Saved evidence
+                      Saved submission items
                     </h2>
                     <SubmissionLinksPreview
                       links={submission.links}

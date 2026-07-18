@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isAxiosError } from "axios";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
@@ -34,6 +35,9 @@ type Props = {
 };
 
 function requestMessage(error: unknown, fallback: string) {
+  if (isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message || error.message || fallback;
+  }
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
@@ -116,7 +120,20 @@ export function GoogleDriveAttachmentPanel({
     setAction("choose");
     try {
       const session = await googleDriveApi.getPickerSession();
-      const selection = await chooseGoogleDriveFile(session);
+      const selection = await chooseGoogleDriveFile(
+        session,
+        uploadPolicy?.acceptedMimeTypes ?? [],
+      );
+      if (
+        selection?.sizeBytes != null &&
+        uploadPolicy &&
+        selection.sizeBytes > uploadPolicy.maximumFileSizeBytes
+      ) {
+        onError(
+          `The selected file exceeds the ${(uploadPolicy.maximumFileSizeBytes / 1024 / 1024).toFixed(0)} MB limit.`,
+        );
+        return;
+      }
       if (selection) {
         setSelectedFile(selection);
         setLabel(selection.name.slice(0, 200));

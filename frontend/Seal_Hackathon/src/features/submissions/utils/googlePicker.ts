@@ -12,6 +12,7 @@ type PickerData = Record<string, unknown>;
 type DocsView = {
   setIncludeFolders(value: boolean): DocsView;
   setSelectFolderEnabled(value: boolean): DocsView;
+  setMimeTypes(value: string): DocsView;
 };
 
 type PickerBuilder = {
@@ -115,11 +116,15 @@ async function loadPicker(): Promise<PickerNamespace> {
 
 export async function chooseGoogleDriveFile(
   session: GoogleDrivePickerSession,
+  acceptedMimeTypes: string[] = [],
 ): Promise<GooglePickerFile | null> {
   const picker = await loadPicker();
   const view = new picker.DocsView(picker.ViewId.DOCS)
     .setIncludeFolders(false)
     .setSelectFolderEnabled(false);
+  if (acceptedMimeTypes.length > 0) {
+    view.setMimeTypes(acceptedMimeTypes.join(","));
+  }
 
   return new Promise((resolve) => {
     new picker.PickerBuilder()
