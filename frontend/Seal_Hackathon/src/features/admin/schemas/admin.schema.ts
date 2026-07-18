@@ -185,7 +185,6 @@ export const editUserSchema = z.object({
     .max(200, "Full name must be less than 200 characters."),
   phone: z.string().trim().max(20).optional().or(z.literal("")),
   role: z.enum(ALL_ROLES, { message: "Role is required." }),
-  status: z.enum(ALL_STATUSES, { message: "Status is required." }),
 });
 
 export type EditUserFormInput = z.input<typeof editUserSchema>;

@@ -18,7 +18,6 @@ import {
   type EditUserFormInput,
   type EditUserFormValues,
   ALL_ROLES,
-  ALL_STATUSES,
   textFieldSx,
   selectSx,
   menuPropsDark,
@@ -28,14 +27,15 @@ import {
   useUpdateUserMutation,
 } from "@/features/admin/hooks/useAdminMutations";
 import type { UserRole } from "@/types/auth.types";
-import type { UserStatus } from "@/types/user.types";
 
 export function UserEditDialog({
   userId,
   onClose,
+  availableRoles,
 }: {
   userId: string | null;
   onClose: () => void;
+  availableRoles?: readonly string[];
 }) {
   const updateMutation = useUpdateUserMutation();
   const { data: user, isLoading } = useAdminUserQuery(userId);
@@ -44,6 +44,7 @@ export function UserEditDialog({
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<EditUserFormInput, unknown, EditUserFormValues>({
     resolver: zodResolver(editUserSchema),
@@ -51,14 +52,12 @@ export function UserEditDialog({
       fullName: "",
       phone: "",
       role: "STUDENT" as UserRole,
-      status: "UNVERIFIED" as UserStatus,
     },
     values: user
       ? {
           fullName: user.fullName,
           phone: user.phone ?? "",
           role: user.role as UserRole,
-          status: user.status as UserStatus,
         }
       : undefined,
   });
@@ -79,6 +78,13 @@ export function UserEditDialog({
       );
     }
   };
+
+  const currentRole = watch("role");
+  const isRestrictedRole = Boolean(
+    availableRoles !== undefined &&
+    currentRole &&
+    !availableRoles.includes(currentRole)
+  );
 
   return (
     <Dialog 
@@ -113,6 +119,7 @@ export function UserEditDialog({
                 {...register("fullName")}
                 error={Boolean(errors.fullName)}
                 helperText={errors.fullName?.message}
+                disabled={isRestrictedRole}
                 sx={textFieldSx}
               />
               <TextField
@@ -120,6 +127,7 @@ export function UserEditDialog({
                 size="small"
                 label="Phone"
                 {...register("phone")}
+                disabled={isRestrictedRole}
                 sx={textFieldSx}
               />
             </div>
@@ -128,52 +136,37 @@ export function UserEditDialog({
               <Controller
                 control={control}
                 name="role"
-                render={({ field }) => (
-                  <div>
-                    <div className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-300">
-                      Role
+                render={({ field }) => {
+                  const displayRoles = isRestrictedRole ? [field.value] : (availableRoles || ALL_ROLES);
+
+                  return (
+                    <div>
+                      <div className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-300">
+                        Role
+                      </div>
+                      <Select
+                        {...field}
+                        value={field.value || ""}
+                        size="small"
+                        fullWidth
+                        sx={selectSx}
+                        MenuProps={menuPropsDark}
+                        disabled={isRestrictedRole}
+                      >
+                        {displayRoles.map((r) => (
+                          <MenuItem key={r} value={r}>
+                            {r}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {isRestrictedRole && (
+                        <p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
+                          Role editing restricted
+                        </p>
+                      )}
                     </div>
-                    <Select
-                      {...field}
-                      value={field.value || ""}
-                      size="small"
-                      fullWidth
-                      sx={selectSx}
-                      MenuProps={menuPropsDark}
-                    >
-                      {ALL_ROLES.map((r) => (
-                        <MenuItem key={r} value={r}>
-                          {r}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </div>
-                )}
-              />
-              <Controller
-                control={control}
-                name="status"
-                render={({ field }) => (
-                  <div>
-                    <div className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-300">
-                      Status
-                    </div>
-                    <Select
-                      {...field}
-                      value={field.value || ""}
-                      size="small"
-                      fullWidth
-                      sx={selectSx}
-                      MenuProps={menuPropsDark}
-                    >
-                      {ALL_STATUSES.map((s) => (
-                        <MenuItem key={s} value={s}>
-                          {s}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </div>
-                )}
+                  );
+                }}
               />
             </div>
           </DialogContent>
@@ -185,7 +178,7 @@ export function UserEditDialog({
             <Button
               type="submit"
               variant="contained"
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || isRestrictedRole}
               sx={{
                 textTransform: "none",
                 fontWeight: 700,

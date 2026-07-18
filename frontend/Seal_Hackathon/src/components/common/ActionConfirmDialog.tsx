@@ -8,13 +8,28 @@ import Typography from "@mui/material/Typography";
 
 type Props = {
   open: boolean;
-  title: string;
-  description: string;
+  title: React.ReactNode;
+  description: React.ReactNode;
   confirmLabel: string;
   onClose: () => void;
   onConfirm: () => void;
   isPending?: boolean;
   severity?: "info" | "warning" | "error";
+  alertText?: React.ReactNode;
+  
+  maxWidth?: "xs" | "sm" | "md" | "lg" | "xl";
+  dialogClasses?: any;
+  dialogSx?: any;
+  titleClassName?: string;
+  titleSx?: any;
+  noDividers?: boolean;
+  contentClassName?: string;
+  actionsClassName?: string;
+  cancelButtonSx?: any;
+  confirmButtonSx?: any;
+  confirmButtonColor?: "primary" | "error" | "warning" | "success" | "info" | "inherit";
+  TransitionProps?: any;
+  paperSx?: any;
 };
 
 export const ActionConfirmDialog = ({
@@ -26,30 +41,56 @@ export const ActionConfirmDialog = ({
   onConfirm,
   isPending = false,
   severity = "warning",
+  alertText = "This action affects persisted grading state.",
+  maxWidth = "sm",
+  dialogClasses,
+  dialogSx,
+  titleClassName,
+  titleSx = { fontWeight: 800 },
+  noDividers = false,
+  contentClassName,
+  actionsClassName,
+  cancelButtonSx,
+  confirmButtonSx,
+  confirmButtonColor,
+  TransitionProps,
+  paperSx,
 }: Props) => (
   <Dialog
     open={open}
     onClose={isPending ? undefined : onClose}
-    maxWidth="sm"
+    maxWidth={maxWidth}
     fullWidth
-    slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+    classes={dialogClasses}
+    sx={dialogSx}
+    slotProps={{
+      transition: TransitionProps,
+      paper: { sx: { borderRadius: 3, ...paperSx } },
+    }}
   >
-    <DialogTitle sx={{ fontWeight: 800 }}>{title}</DialogTitle>
-    <DialogContent dividers>
-      <Alert severity={severity} sx={{ mb: 2 }}>
-        This action affects persisted grading state.
-      </Alert>
-      <Typography color="text.secondary">{description}</Typography>
+    <DialogTitle sx={titleSx} className={titleClassName}>{title}</DialogTitle>
+    <DialogContent dividers={!noDividers} className={contentClassName}>
+      {alertText && (
+        <Alert severity={severity} sx={{ mb: 2 }}>
+          {alertText}
+        </Alert>
+      )}
+      {typeof description === "string" ? (
+        <Typography color="text.secondary">{description}</Typography>
+      ) : (
+        description
+      )}
     </DialogContent>
-    <DialogActions sx={{ p: 2, px: 3, gap: 1 }}>
-      <Button onClick={onClose} disabled={isPending} color="inherit">
+    <DialogActions sx={{ p: 2, px: 3, gap: 1 }} className={actionsClassName}>
+      <Button onClick={onClose} disabled={isPending} color="inherit" sx={cancelButtonSx}>
         Cancel
       </Button>
       <Button
         onClick={onConfirm}
         disabled={isPending}
         variant="contained"
-        color={severity === "error" ? "error" : "warning"}
+        color={confirmButtonColor || (severity === "error" ? "error" : "warning")}
+        sx={confirmButtonSx}
       >
         {isPending ? "Working..." : confirmLabel}
       </Button>
