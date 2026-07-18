@@ -1,22 +1,21 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import EmailIcon from "@mui/icons-material/Email";
-import LockResetIcon from "@mui/icons-material/LockReset";
-import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
-import PasswordIcon from "@mui/icons-material/Password";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import ReplayIcon from "@mui/icons-material/Replay";
-import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred";
-import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import { Button, CircularProgress, TextField } from "@mui/material";
 import { isAxiosError } from "axios";
 import { enqueueSnackbar } from "notistack";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AuthCard } from "@/features/auth/components/AuthCard";
+import { authTextFieldSx } from "@/features/auth/components/authFieldStyles";
 import { CodeInput } from "@/features/auth/components/CodeInput";
 import { PasswordField } from "@/features/auth/components/PasswordField";
-import { StepProgress } from "@/features/auth/components/StepProgress";
+import { PasswordStrengthMeter } from "@/features/auth/components/PasswordStrengthMeter";
+import { ResetPasswordShell } from "@/features/auth/components/ResetPasswordShell";
+import { PASSWORD_RULES } from "@/features/auth/utils/password";
 import {
   forgotPasswordSchema,
   resetPasswordCodeSchema,
@@ -30,13 +29,6 @@ import {
 } from "@/features/auth/hooks/useAuthMutations";
 import type { AuthErrorResponse } from "@/types/auth.types";
 
-const resetSteps = [
-  { label: "Email" },
-  { label: "Verify" },
-  { label: "New Password" },
-  { label: "Success" },
-];
-
 type ResetStep = 1 | 2 | 3 | 4;
 type ResetCodeStatus = "input" | "error";
 
@@ -44,49 +36,58 @@ function getAuthErrorPayload(error: unknown) {
   return isAxiosError<AuthErrorResponse>(error) ? error.response?.data : undefined;
 }
 
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "12px",".dark & fieldset": {
-      borderColor: "#334155",
-    },
-    ".dark &:hover fieldset": {
-      borderColor: "#475569",
-    },
-    ".dark &.Mui-focused fieldset": {
-      borderColor: "#3b82f6",
-    },
+const gradientButtonSx = {
+  height: 50,
+  borderRadius: "12px",
+  textTransform: "none",
+  fontWeight: 800,
+  fontSize: 16,
+  background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
+  boxShadow: "0 10px 24px rgba(59,130,246,0.35)",
+  transition: "box-shadow 200ms ease, transform 200ms ease",
+  "&:hover": {
+    background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
+    boxShadow: "0 12px 28px rgba(59,130,246,0.45)",
   },
-  "& .MuiInputLabel-root": {
-    ".dark &": {
-      color: "#94a3b8",
-    },
-    ".dark &.Mui-focused": {
-      color: "#3b82f6",
-    },
+  "&:active": {
+    transform: "translateY(1px)",
+    boxShadow: "0 6px 16px rgba(59,130,246,0.3)",
   },
-  "& .MuiInputBase-input": {
-    ".dark &": {
-      color: "#f8fafc",
-    },
-    ".dark &::placeholder": {
-      color: "#64748b",
-      opacity: 1,
-    },
-  },
-  "& .MuiIconButton-root": {
-    ".dark &": {
-      color: "#94a3b8",
-    },
-  },
-  "& .MuiFormHelperText-root": {
-    ".dark &": {
-      color: "#94a3b8",
-    },
-    ".dark &.Mui-error": {
-      color: "#f43f5e",
-    },
+  "&.Mui-disabled": {
+    background: "#93c5fd",
+    color: "#ffffff",
   },
 };
+
+const outlinedButtonSx = {
+  height: 50,
+  borderRadius: "12px",
+  textTransform: "none",
+  fontWeight: 700,
+  fontSize: 15,
+  borderColor: "#e2e8f0",
+  color: "#475569",
+  "&:hover": {
+    borderColor: "#cbd5e1",
+    backgroundColor: "#f8fafc",
+  },
+  ".dark &": {
+    borderColor: "#334155",
+    color: "#cbd5e1",
+  },
+  ".dark &:hover": {
+    borderColor: "#475569",
+    backgroundColor: "rgba(15,23,42,0.55)",
+  },
+};
+
+function StepBadge({ children }: { children: string }) {
+  return (
+    <span className="inline-block rounded-full bg-blue-50 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+      {children}
+    </span>
+  );
+}
 
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -127,50 +128,7 @@ export function ForgotPasswordPage() {
     },
   });
 
-  const isStepCenter = currentStep === 2 || currentStep === 4;
-
-  const pageState = useMemo(() => {
-    if (currentStep === 1) {
-      return {
-        title: "Forgot Password",
-        description:
-          "Enter your email address and we will send a 6-digit reset code.",
-        icon: <EmailIcon sx={{ fontSize: 30 }} />,
-      };
-    }
-
-    if (currentStep === 2) {
-      if (codeStatus === "error") {
-        return {
-          title: "Verification Error",
-          description: "Invalid reset code. Please try again.",
-          icon: <ReportGmailerrorredIcon sx={{ fontSize: 30 }} />,
-        };
-      }
-
-      return {
-        title: "Verify Reset Code",
-        description:
-          "Please check your inbox and enter the reset code below to continue.",
-        icon: <MarkEmailReadIcon sx={{ fontSize: 30 }} />,
-      };
-    }
-
-    if (currentStep === 3) {
-      return {
-        title: "Create New Password",
-        description: "Set a new password for your SEAL account.",
-        icon: <PasswordIcon sx={{ fontSize: 30 }} />,
-      };
-    }
-
-    return {
-      title: "Password Reset Successfully",
-      description:
-        "Your password has been updated. You can now log in with your new password.",
-      icon: <TaskAltIcon sx={{ fontSize: 30 }} />,
-    };
-  }, [currentStep, codeStatus]);
+  const newPasswordValue = passwordForm.watch("newPassword") ?? "";
 
   const handleEmailSubmit = async (values: ForgotPasswordFormValues) => {
     try {
@@ -320,36 +278,32 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-155 py-16">
-      <StepProgress
-        title="Reset Password Progress"
-        currentStep={currentStep}
-        steps={resetSteps}
-      />
+    <ResetPasswordShell currentStep={currentStep}>
+      {currentStep === 1 && (
+        <>
+          <StepBadge>Step 1 of 4</StepBadge>
 
-      <AuthCard
-        title={pageState.title}
-        description={currentStep === 2 ? undefined : pageState.description}
-        className={isStepCenter ? "text-center" : ""}
-      >
-        <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500 text-white shadow-[0_12px_24px_rgba(59,130,246,0.25)]">
-          {pageState.icon}
-        </div>
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+            Forgot your password?
+          </h2>
+          <p className="mt-2 text-base leading-7 text-slate-500 dark:text-slate-400">
+            No worries — enter the email linked to your SEAL account and we
+            will send you a 6-digit reset code.
+          </p>
 
-        {currentStep === 1 && (
           <form
             onSubmit={emailForm.handleSubmit(handleEmailSubmit)}
-            className="space-y-5"
+            className="mt-8 space-y-5"
           >
             <TextField
               fullWidth
-              size="small"
               label="Email"
               placeholder="alex.n@fpt.edu.vn"
+              autoComplete="email"
               {...emailForm.register("email")}
               error={Boolean(emailForm.formState.errors.email)}
               helperText={emailForm.formState.errors.email?.message}
-              sx={textFieldSx}
+              sx={authTextFieldSx}
             />
 
             <Button
@@ -359,108 +313,166 @@ export function ForgotPasswordPage() {
               disabled={forgotPasswordMutation.isPending}
               startIcon={
                 forgotPasswordMutation.isPending ? (
-                  <CircularProgress size={14} color="inherit" />
-                ) : (
-                  <LockResetIcon />
-                )
+                  <CircularProgress size={16} color="inherit" />
+                ) : undefined
               }
-              sx={{
-                height: 46,
-                borderRadius: "10px",
-                textTransform: "none",
-                fontWeight: 900,
-                boxShadow: "none",
-              }}
+              sx={gradientButtonSx}
             >
               {forgotPasswordMutation.isPending
                 ? "Sending code..."
                 : "Send reset code"}
             </Button>
 
-            <div className="text-center">
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+              Remembered it?{" "}
               <Link
-                className="inline-flex items-center gap-2 text-sm font-bold text-blue-500 hover:underline"
+                className="font-bold text-blue-500 transition-colors hover:text-blue-600 hover:underline"
                 to="/login"
               >
-                <ArrowBackIcon sx={{ fontSize: 18 }} />
-                Back to login
+                Back to sign in
               </Link>
-            </div>
+            </p>
           </form>
-        )}
+        </>
+      )}
 
-        {currentStep === 2 && (
-          <>
-            <p className="mx-auto max-w-107.5 text-base leading-7 text-slate-600">
-              A reset code has been sent to{" "}
-              <span className="font-semibold text-blue-500">
-                {email || "your email"}
-              </span>
+      {currentStep === 2 && (
+        <>
+          <StepBadge>Step 2 of 4</StepBadge>
+
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+            {codeStatus === "error" ? "Invalid reset code" : "Check your inbox"}
+          </h2>
+          <p className="mt-2 text-base leading-7 text-slate-500 dark:text-slate-400">
+            We sent a 6-digit reset code to{" "}
+            <span className="font-semibold text-blue-500">
+              {email || "your email"}
+            </span>
+            . Enter it below to continue.
+          </p>
+
+          <div className="mt-8">
+            <CodeInput
+              value={code}
+              onChange={handleCodeChange}
+              error={codeStatus === "error"}
+              disabled={forgotPasswordMutation.isPending}
+            />
+          </div>
+
+          {codeStatus === "error" && codeError && (
+            <p className="mt-4 text-center text-sm font-semibold text-rose-500">
+              {codeError}
             </p>
+          )}
 
-            <p
-              className={[
-                "mx-auto mt-2 max-w-107.5 text-base leading-7",
-                codeStatus === "error"
-                  ? "font-semibold text-rose-500"
-                  : "text-slate-600",
-              ].join(" ")}
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            <Button
+              type="button"
+              variant="outlined"
+              startIcon={<ArrowBackIcon />}
+              onClick={() => {
+                setCode("");
+                setCodeError("");
+                setCodeStatus("input");
+                setCurrentStep(1);
+              }}
+              sx={outlinedButtonSx}
             >
-              {codeError || pageState.description}
-            </p>
+              Change email
+            </Button>
 
-            <div className="mt-8">
-              <CodeInput
-                value={code}
-                onChange={handleCodeChange}
-                error={codeStatus === "error"}
-                disabled={forgotPasswordMutation.isPending}
-              />
-            </div>
+            <Button
+              type="button"
+              variant="outlined"
+              startIcon={<ReplayIcon />}
+              disabled={forgotPasswordMutation.isPending}
+              onClick={handleResendCode}
+              sx={outlinedButtonSx}
+            >
+              {forgotPasswordMutation.isPending ? "Resending..." : "Resend code"}
+            </Button>
+          </div>
+        </>
+      )}
 
-            <div className="mt-8 text-sm font-extrabold text-slate-600">
-              Enter the 6-digit code from your email.
-            </div>
-          </>
-        )}
+      {currentStep === 3 && (
+        <>
+          <StepBadge>Step 3 of 4</StepBadge>
 
-        {currentStep === 3 && (
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+            Create a new password
+          </h2>
+          <p className="mt-2 text-base leading-7 text-slate-500 dark:text-slate-400">
+            Almost there. Choose a strong password you have not used before on
+            SEAL.
+          </p>
+
           <form
             onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)}
-            className="space-y-5"
+            className="mt-8 space-y-5"
           >
-            <PasswordField
-              fullWidth
-              size="small"
-              label="New Password"
-              {...passwordForm.register("newPassword")}
-              error={Boolean(passwordForm.formState.errors.newPassword)}
-              helperText={passwordForm.formState.errors.newPassword?.message}
-              sx={textFieldSx}
-            />
+            <div>
+              <PasswordField
+                fullWidth
+                label="New Password"
+                autoComplete="new-password"
+                {...passwordForm.register("newPassword")}
+                error={Boolean(passwordForm.formState.errors.newPassword)}
+                helperText={passwordForm.formState.errors.newPassword?.message}
+                sx={authTextFieldSx}
+              />
+
+              <PasswordStrengthMeter password={newPasswordValue} />
+            </div>
 
             <PasswordField
               fullWidth
-              size="small"
               label="Confirm Password"
+              autoComplete="new-password"
               {...passwordForm.register("confirmPassword")}
               error={Boolean(passwordForm.formState.errors.confirmPassword)}
               helperText={passwordForm.formState.errors.confirmPassword?.message}
-              sx={textFieldSx}
+              sx={authTextFieldSx}
             />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 dark:border-slate-700 dark:bg-slate-900/40">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                Password must contain
+              </p>
+              <ul className="mt-2.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                {PASSWORD_RULES.map((rule) => {
+                  const passed = rule.test(newPasswordValue);
+
+                  return (
+                    <li
+                      key={rule.label}
+                      className={[
+                        "flex items-center gap-2 text-sm transition-colors",
+                        passed
+                          ? "font-semibold text-emerald-600 dark:text-emerald-400"
+                          : "text-slate-500 dark:text-slate-400",
+                      ].join(" ")}
+                    >
+                      {passed ? (
+                        <CheckCircleOutlinedIcon sx={{ fontSize: 16 }} />
+                      ) : (
+                        <RadioButtonUncheckedIcon sx={{ fontSize: 16 }} />
+                      )}
+                      {rule.label}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-[1fr_2fr] gap-3">
               <Button
                 type="button"
                 variant="outlined"
                 onClick={() => setCurrentStep(2)}
                 startIcon={<ArrowBackIcon />}
-                sx={{
-                  height: 42,
-                  borderRadius: 999,
-                  textTransform: "none",
-                  fontWeight: 900,
-                }}
+                sx={outlinedButtonSx}
               >
                 Back
               </Button>
@@ -469,13 +481,12 @@ export function ForgotPasswordPage() {
                 type="submit"
                 variant="contained"
                 disabled={resetPasswordMutation.isPending}
-                sx={{
-                  height: 42,
-                  borderRadius: 999,
-                  textTransform: "none",
-                  fontWeight: 900,
-                  boxShadow: "none",
-                }}
+                startIcon={
+                  resetPasswordMutation.isPending ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : undefined
+                }
+                sx={gradientButtonSx}
               >
                 {resetPasswordMutation.isPending
                   ? "Resetting..."
@@ -483,74 +494,48 @@ export function ForgotPasswordPage() {
               </Button>
             </div>
           </form>
-        )}
+        </>
+      )}
 
-        {currentStep === 4 && (
-          <div className="space-y-6 text-center">
-            <p className="text-base leading-7 text-slate-600">
-              Your password has been reset successfully.
-            </p>
-
-            <Button
-              type="button"
-              fullWidth
-              variant="contained"
-              onClick={() => navigate("/login")}
-              sx={{
-                height: 46,
-                borderRadius: "10px",
-                textTransform: "none",
-                fontWeight: 900,
-                boxShadow: "none",
-              }}
-            >
-              Go to Log In
-            </Button>
+      {currentStep === 4 && (
+        <div className="text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-500/30">
+            <CheckCircleIcon sx={{ fontSize: 44 }} />
           </div>
-        )}
-      </AuthCard>
 
-      {currentStep === 2 && (
-        <div className="mx-auto mt-8 flex w-full max-w-155 items-center justify-center gap-4">
-          <Button
-            type="button"
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={() => {
-              setCode("");
-              setCodeError("");
-              setCodeStatus("input");
-              setCurrentStep(1);
-            }}
-            sx={{
-              width: 220,
-              height: 42,
-              borderRadius: 999,
-              textTransform: "none",
-              fontWeight: 900,
-            }}
-          >
-            Change email
-          </Button>
+          <div className="mt-6">
+            <StepBadge>Step 4 of 4</StepBadge>
+          </div>
+
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+            Password reset successfully
+          </h2>
+          <p className="mx-auto mt-2 max-w-95 text-base leading-7 text-slate-500 dark:text-slate-400">
+            Your password has been updated. Sign in with your new password to
+            get back to your team.
+          </p>
 
           <Button
             type="button"
-            variant="outlined"
-            startIcon={<ReplayIcon />}
-            disabled={forgotPasswordMutation.isPending}
-            onClick={handleResendCode}
-            sx={{
-              width: 220,
-              height: 42,
-              borderRadius: 999,
-              textTransform: "none",
-              fontWeight: 900,
-            }}
+            fullWidth
+            variant="contained"
+            onClick={() => navigate("/login")}
+            sx={{ ...gradientButtonSx, mt: 4 }}
           >
-            {forgotPasswordMutation.isPending ? "Resending..." : "Resend code"}
+            Go to Log In
           </Button>
+
+          <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">
+            Or head back to the{" "}
+            <Link
+              className="font-bold text-blue-500 transition-colors hover:text-blue-600 hover:underline"
+              to="/"
+            >
+              home page
+            </Link>
+          </p>
         </div>
       )}
-    </div>
+    </ResetPasswordShell>
   );
 }

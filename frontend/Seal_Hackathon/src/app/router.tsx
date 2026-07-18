@@ -173,12 +173,22 @@ export const router = createBrowserRouter([
   },
 
   {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+    errorElement: <RouteErrorPage />,
+  },
+
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+    errorElement: <RouteErrorPage />,
+  },
+
+  {
     element: <AuthLayout />,
     errorElement: <RouteErrorPage />,
     children: [
       { path: "/oauth/callback", element: <OAuthCallbackPage /> },
-      { path: "/forgot-password", element: <ForgotPasswordPage /> },
-      { path: "/reset-password", element: <ResetPasswordPage /> },
       { path: "/personal", element: <PersonalProfilePage /> },
     ],
   },
