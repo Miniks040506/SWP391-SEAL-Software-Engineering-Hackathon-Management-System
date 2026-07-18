@@ -1,26 +1,49 @@
-import { useMemo, useState } from "react";
-import { Button, CircularProgress } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import EmailIcon from "@mui/icons-material/Email";
+import MarkEmailUnreadOutlinedIcon from "@mui/icons-material/MarkEmailUnreadOutlined";
 import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button, CircularProgress } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
-import { AuthCard } from "@/features/auth/components/AuthCard";
-import { StepProgress } from "@/features/auth/components/StepProgress";
+import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { CodeInput } from "@/features/auth/components/CodeInput";
+import { RegistrationShell } from "@/features/auth/components/RegistrationShell";
 import {
   useResendVerificationMutation,
   useVerifyEmailMutation,
 } from "@/features/auth/hooks/useAuthMutations";
 
-const steps = [
-  { label: "Registration" },
-  { label: "Verification" },
-  { label: "Success" },
-];
-
 type VerifyStatus = "input" | "error";
+
+const secondaryButtonSx = {
+  height: 46,
+  borderRadius: "12px",
+  textTransform: "none",
+  fontWeight: 750,
+  color: "#334155",
+  borderColor: "#dbe3ef",
+  backgroundColor: "#ffffff",
+  boxShadow: "none",
+  ".dark &": {
+    color: "#e2e8f0",
+    borderColor: "#334155",
+    backgroundColor: "rgba(15,23,42,0.55)",
+  },
+  "&:hover": {
+    color: "#2563eb",
+    borderColor: "#3b82f6",
+    backgroundColor: "#eff6ff",
+    ".dark &": {
+      backgroundColor: "rgba(30,58,138,0.25)",
+    },
+  },
+  "&.Mui-disabled": {
+    ".dark &": {
+      color: "#64748b",
+      borderColor: "#1e293b",
+    },
+  },
+};
 
 export function VerifyEmailPage() {
   const navigate = useNavigate();
@@ -41,15 +64,19 @@ export function VerifyEmailPage() {
       return {
         title: "Verification Error",
         description: "Invalid verification code. Please try again.",
-        icon: <ReportGmailerrorredIcon sx={{ fontSize: 30 }} />,
+        icon: <ReportGmailerrorredIcon sx={{ fontSize: 34 }} />,
+        iconClass:
+          "bg-gradient-to-br from-rose-500 to-red-600 shadow-[0_16px_32px_rgba(244,63,94,0.35)]",
       };
     }
 
     return {
-      title: "Email Verification",
+      title: "Check your inbox",
       description:
         "Please check your inbox and enter the verification code below to verify your email address.",
-      icon: <EmailIcon sx={{ fontSize: 30 }} />,
+      icon: <MarkEmailUnreadOutlinedIcon sx={{ fontSize: 34 }} />,
+      iconClass:
+        "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-[0_16px_32px_rgba(59,130,246,0.35)]",
     };
   }, [status]);
 
@@ -78,6 +105,7 @@ export function VerifyEmailPage() {
       });
 
       navigate("/verify-email/success");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       setStatus("error");
 
@@ -120,6 +148,7 @@ export function VerifyEmailPage() {
       enqueueSnackbar("Verification code sent again.", {
         variant: "success",
       });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       enqueueSnackbar(error?.response?.data?.message || "Cannot resend verification code.", {
         variant: "error",
@@ -128,29 +157,38 @@ export function VerifyEmailPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-155 py-16">
-      <StepProgress
-        title="Registration Progress"
-        currentStep={2}
-        steps={steps}
-      />
+    <RegistrationShell currentStep={2}>
+      <div className="text-center">
+        <span className="inline-block rounded-full bg-blue-50 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+          Step 2 of 3
+        </span>
 
-      <AuthCard title={pageState.title} className="text-center">
-        <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500 text-white shadow-[0_12px_24px_rgba(59,130,246,0.25)]">
+        <div
+          className={[
+            "mx-auto mt-8 flex h-20 w-20 items-center justify-center rounded-2xl text-white transition-colors",
+            pageState.iconClass,
+          ].join(" ")}
+        >
           {pageState.icon}
         </div>
 
-        <p className="mx-auto max-w-107.5 text-base leading-7 text-slate-600">
+        <h2 className="mt-6 text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+          {pageState.title}
+        </h2>
+
+        <p className="mx-auto mt-3 max-w-105 text-base leading-7 text-slate-500 dark:text-slate-400">
           A verification code has been sent to{" "}
-          <span className="font-semibold text-blue-500">
+          <span className="font-bold text-blue-500">
             {email || "your email"}
           </span>
         </p>
 
         <p
           className={[
-            "mx-auto mt-2 max-w-107.5 text-base leading-7",
-            status === "error" ? "font-semibold text-rose-500" : "text-slate-600",
+            "mx-auto mt-1 max-w-105 text-base leading-7",
+            status === "error"
+              ? "font-semibold text-rose-500"
+              : "text-slate-500 dark:text-slate-400",
           ].join(" ")}
         >
           {pageState.description}
@@ -161,10 +199,11 @@ export function VerifyEmailPage() {
             value={code}
             onChange={handleCodeChange}
             error={status === "error"}
+            disabled={verifyMutation.isPending}
           />
         </div>
 
-        <div className="mt-8 text-sm font-extrabold text-slate-600">
+        <div className="mt-6 text-sm font-bold text-slate-500 dark:text-slate-400">
           {verifyMutation.isPending ? (
             <span className="inline-flex items-center justify-center gap-2">
               <CircularProgress size={14} />
@@ -174,42 +213,30 @@ export function VerifyEmailPage() {
             "Enter the 6-digit code from your email."
           )}
         </div>
-      </AuthCard>
 
-      <div className="mx-auto mt-8 flex w-full max-w-155 items-center justify-center gap-4">
-        <Button
-          type="button"
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/register")}
-          sx={{
-            width: 220,
-            height: 42,
-            borderRadius: 999,
-            textTransform: "none",
-            fontWeight: 900,
-          }}
-        >
-          Change email
-        </Button>
+        <div className="mt-10 grid grid-cols-2 gap-4">
+          <Button
+            type="button"
+            variant="outlined"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate("/register")}
+            sx={secondaryButtonSx}
+          >
+            Change email
+          </Button>
 
-        <Button
-          type="button"
-          variant="outlined"
-          startIcon={<RestartAltIcon />}
-          disabled={isLoading}
-          onClick={handleResend}
-          sx={{
-            width: 250,
-            height: 42,
-            borderRadius: 999,
-            textTransform: "none",
-            fontWeight: 900,
-          }}
-        >
-          {resendMutation.isPending ? "Resending..." : "Resend verification code"}
-        </Button>
+          <Button
+            type="button"
+            variant="outlined"
+            startIcon={<RestartAltIcon />}
+            disabled={isLoading}
+            onClick={handleResend}
+            sx={secondaryButtonSx}
+          >
+            {resendMutation.isPending ? "Resending..." : "Resend code"}
+          </Button>
+        </div>
       </div>
-    </div>
+    </RegistrationShell>
   );
 }
