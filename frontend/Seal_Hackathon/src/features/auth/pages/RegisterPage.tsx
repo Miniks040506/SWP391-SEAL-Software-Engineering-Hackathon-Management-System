@@ -6,10 +6,12 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { Button, IconButton, InputAdornment, TextField } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { authTextFieldSx } from "@/features/auth/components/authFieldStyles";
+import { PasswordRequirementChips } from "@/features/auth/components/PasswordRequirementChips";
+import { PasswordStrengthMeter } from "@/features/auth/components/PasswordStrengthMeter";
 import { RegistrationShell } from "@/features/auth/components/RegistrationShell";
 import { useRegisterMutation } from "@/features/auth/hooks/useAuthMutations";
 import {
@@ -17,67 +19,6 @@ import {
   type RegisterFormInput,
   type RegisterFormValues,
 } from "@/features/auth/schemas/auth.schema";
-
-function getPasswordStrength(password: string) {
-  const hasMinLength8 = password.length >= 8;
-  const hasMinLength16 = password.length >= 16;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasLowercase = /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
-  const normalizedPassword = password.toLowerCase();
-
-  const commonPasswords = [
-    "password",
-    "12345678",
-    "123456789",
-    "qwerty",
-    "abcdef",
-    "abc123",
-    "admin",
-  ];
-
-  const isCommonPassword = commonPasswords.some((common) =>
-    normalizedPassword.includes(common),
-  );
-
-  const hasRepeatedChars = /(.)\1{3,}/.test(password);
-
-  const typeCount = [
-    hasUppercase,
-    hasLowercase,
-    hasNumber,
-    hasSpecialChar,
-  ].filter(Boolean).length;
-
-  if (!password) return { label: "", segments: 0, color: "#D9D9D9" };
-
-  if (
-    !hasMinLength8 ||
-    typeCount <= 1 ||
-    isCommonPassword ||
-    hasRepeatedChars
-  ) {
-    return { label: "Weak", segments: 1, color: "#FF4D4F" };
-  }
-
-  if (hasMinLength8 && (!hasUppercase || typeCount < 4)) {
-    return { label: "Medium", segments: 2, color: "#FFA940" };
-  }
-
-  if (
-    hasMinLength8 &&
-    hasUppercase &&
-    hasLowercase &&
-    hasNumber &&
-    hasSpecialChar &&
-    !hasMinLength16
-  ) {
-    return { label: "Strong", segments: 3, color: "#73D13D" };
-  }
-
-  return { label: "Very Strong", segments: 4, color: "#008000" };
-}
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -119,11 +60,6 @@ export function RegisterPage() {
 
   const studentType = watch("studentType");
   const password = watch("password") ?? "";
-
-  const passwordStrength = useMemo(
-    () => getPasswordStrength(password),
-    [password],
-  );
 
   const onSubmit = async (values: RegisterFormValues) => {
     try {
@@ -251,32 +187,9 @@ export function RegisterPage() {
             }}
           />
 
-          {password && (
-            <div className="mt-2">
-              <div className="grid grid-cols-4 gap-2">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-1.5 rounded-full transition-all duration-300"
-                    style={{
-                      backgroundColor:
-                        index < passwordStrength.segments
-                          ? passwordStrength.color
-                          : "#D9D9D9",
-                    }}
-                  />
-                ))}
-              </div>
+          <PasswordStrengthMeter password={password} />
 
-              <div className="mt-1 flex justify-between text-[10px] font-bold uppercase tracking-wide">
-                <span style={{ color: passwordStrength.color }}>
-                  Strength: {passwordStrength.label}
-                </span>
-
-                <span className="text-slate-400">8+ characters</span>
-              </div>
-            </div>
-          )}
+          <PasswordRequirementChips password={password} />
         </div>
 
         <SectionLabel>Academic profile</SectionLabel>
