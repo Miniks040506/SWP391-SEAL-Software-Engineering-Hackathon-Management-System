@@ -9,6 +9,7 @@ import {
 } from "@/features/coordinator/hooks/useCoordinatorManageUserMutations";
 import { useUserFilters } from "@/features/admin/hooks/useUserFilters";
 import { paginationSx } from "@/features/admin/schemas/admin.schema";
+import { CREATE_ROLES } from "@/features/coordinator/schemas/coordinator.schema";
 
 import { UserStatCards } from "@/features/admin/components/ManageUserPage/UserStatCards";
 import { UserFilterBar } from "@/features/admin/components/ManageUserPage/UserFilterBar";
@@ -134,6 +135,7 @@ export function CoordinatorUsersPage() {
           onEdit={setEditUserId}
           onResetPassword={setResetUser}
           onToggleStatus={handleToggleStatus}
+          restrictedRoles={CREATE_ROLES}
         />
 
         {totalPages > 1 && (
@@ -165,7 +167,11 @@ export function CoordinatorUsersPage() {
         open={showCreate}
         onClose={() => setShowCreate(false)}
       />
-      <UserEditDialog userId={editUserId} onClose={() => setEditUserId(null)} />
+      <UserEditDialog 
+        userId={editUserId} 
+        onClose={() => setEditUserId(null)} 
+        availableRoles={CREATE_ROLES}
+      />
       <UserResetPasswordDialog
         user={resetUser}
         onClose={() => setResetUser(null)}
