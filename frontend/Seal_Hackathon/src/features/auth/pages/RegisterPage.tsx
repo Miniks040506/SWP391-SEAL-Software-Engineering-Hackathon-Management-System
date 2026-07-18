@@ -1,71 +1,22 @@
-import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, IconButton, InputAdornment, TextField } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import { Button, IconButton, InputAdornment, TextField } from "@mui/material";
+import { enqueueSnackbar } from "notistack";
+import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { enqueueSnackbar } from "notistack";
-import { AuthCard } from "@/features/auth/components/AuthCard";
-import { StepProgress } from "@/features/auth/components/StepProgress";
+import { authTextFieldSx } from "@/features/auth/components/authFieldStyles";
+import { RegistrationShell } from "@/features/auth/components/RegistrationShell";
+import { useRegisterMutation } from "@/features/auth/hooks/useAuthMutations";
 import {
   registerSchema,
   type RegisterFormInput,
   type RegisterFormValues,
 } from "@/features/auth/schemas/auth.schema";
-import { useRegisterMutation } from "@/features/auth/hooks/useAuthMutations";
-
-const steps = [
-  { label: "Registration" },
-  { label: "Verification" },
-  { label: "Success" },
-];
-
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "12px",
-    ".dark & fieldset": {
-      borderColor: "#334155",
-    },
-    ".dark &:hover fieldset": {
-      borderColor: "#475569",
-    },
-    ".dark &.Mui-focused fieldset": {
-      borderColor: "#3b82f6",
-    },
-  },
-  "& .MuiInputLabel-root": {
-    ".dark &": {
-      color: "#94a3b8",
-    },
-    ".dark &.Mui-focused": {
-      color: "#3b82f6",
-    },
-  },
-  "& .MuiInputBase-input": {
-    ".dark &": {
-      color: "#f8fafc",
-    },
-    ".dark &::placeholder": {
-      color: "#64748b",
-      opacity: 1,
-    },
-  },
-  "& .MuiIconButton-root": {
-    ".dark &": {
-      color: "#94a3b8",
-    },
-  },
-  "& .MuiFormHelperText-root": {
-    ".dark &": {
-      color: "#94a3b8",
-    },
-    ".dark &.Mui-error": {
-      color: "#f43f5e",
-    },
-  },
-};
 
 function getPasswordStrength(password: string) {
   const hasMinLength8 = password.length >= 8;
@@ -126,6 +77,17 @@ function getPasswordStrength(password: string) {
   }
 
   return { label: "Very Strong", segments: 4, color: "#008000" };
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        {children}
+      </span>
+      <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+    </div>
+  );
 }
 
 export function RegisterPage() {
@@ -189,6 +151,7 @@ export function RegisterPage() {
       navigate(
         `/verify-email?email=${encodeURIComponent(normalizedEmail)}&mode=register`,
       );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       enqueueSnackbar(
         error?.response?.data?.message || "Registration failed.",
@@ -199,312 +162,334 @@ export function RegisterPage() {
     }
   };
 
+  const affiliationCardClass = (selected: boolean) =>
+    [
+      "cursor-pointer rounded-2xl border p-4 text-left transition-all duration-200",
+      selected
+        ? "border-blue-500 bg-blue-50 shadow-[0_0_0_1px_rgba(59,130,246,0.25)] dark:bg-blue-900/20 dark:shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
+        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:bg-slate-800",
+    ].join(" ");
+
   return (
-    <div className="mx-auto w-full max-w-155 py-10">
-      <StepProgress
-        title="Registration Progress"
-        currentStep={1}
-        steps={steps}
-      />
+    <RegistrationShell currentStep={1}>
+      <span className="inline-block rounded-full bg-blue-50 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+        Step 1 of 3
+      </span>
 
-      <AuthCard
-        title="Create Account"
-        description="Initialize your developer profile to start competing in the upcoming FPT Hackathon cycles."
-      >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+        Create your account
+      </h2>
+      <p className="mt-2 text-base leading-7 text-slate-500 dark:text-slate-400">
+        Initialize your developer profile to start competing in the upcoming
+        FPT Hackathon cycles.
+      </p>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
+        <SectionLabel>Account details</SectionLabel>
+
+        <TextField
+          fullWidth
+          label="Full Name"
+          placeholder="e.g. Alex Nguyen"
+          {...register("fullName")}
+          error={Boolean(errors.fullName)}
+          helperText={errors.fullName?.message}
+          sx={authTextFieldSx}
+        />
+
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <TextField
             fullWidth
-            size="small"
-            label="Full Name"
-            placeholder="e.g. Alex Nguyen"
-            {...register("fullName")}
-            error={Boolean(errors.fullName)}
-            helperText={errors.fullName?.message}
-            sx={textFieldSx}
-          />
-
-          <TextField
-            fullWidth
-            size="small"
             label="Email"
             placeholder="alex.n@fpt.edu.vn"
             {...register("email")}
             error={Boolean(errors.email)}
             helperText={errors.email?.message}
-            sx={textFieldSx}
+            sx={authTextFieldSx}
           />
 
           <TextField
             fullWidth
-            size="small"
             label="Phone"
             placeholder="Optional"
             {...register("phone")}
             error={Boolean(errors.phone)}
             helperText={errors.phone?.message}
-            sx={textFieldSx}
+            sx={authTextFieldSx}
           />
+        </div>
 
-          <div>
-            <TextField
-              fullWidth
-              size="small"
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              {...register("password")}
-              error={Boolean(errors.password)}
-              helperText={errors.password?.message}
-              sx={textFieldSx}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        type="button"
-                        edge="end"
-                        onClick={() => setShowPassword((current) => !current)}
-                      >
-                        {showPassword ? (
-                          <VisibilityOffIcon fontSize="small" />
-                        ) : (
-                          <VisibilityIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-
-            {password && (
-              <div className="mt-2">
-                <div className="grid grid-cols-4 gap-2">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="h-1.5 rounded-full transition-all duration-300"
-                      style={{
-                        backgroundColor:
-                          index < passwordStrength.segments
-                            ? passwordStrength.color
-                            : "#D9D9D9",
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-1 flex justify-between text-[10px] font-bold uppercase tracking-wide">
-                  <span style={{ color: passwordStrength.color }}>
-                    Strength: {passwordStrength.label}
-                  </span>
-
-                  <span className="text-slate-400">8+ characters</span>
-                </div>
-              </div>
-            )}
-          </div>
-
+        <div>
           <TextField
             fullWidth
-            size="small"
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            {...register("password")}
+            error={Boolean(errors.password)}
+            helperText={errors.password?.message}
+            sx={authTextFieldSx}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      type="button"
+                      edge="end"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowPassword((current) => !current)}
+                    >
+                      {showPassword ? (
+                        <VisibilityOffIcon fontSize="small" />
+                      ) : (
+                        <VisibilityIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          {password && (
+            <div className="mt-2">
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-1.5 rounded-full transition-all duration-300"
+                    style={{
+                      backgroundColor:
+                        index < passwordStrength.segments
+                          ? passwordStrength.color
+                          : "#D9D9D9",
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-1 flex justify-between text-[10px] font-bold uppercase tracking-wide">
+                <span style={{ color: passwordStrength.color }}>
+                  Strength: {passwordStrength.label}
+                </span>
+
+                <span className="text-slate-400">8+ characters</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <SectionLabel>Academic profile</SectionLabel>
+
+        <Controller
+          control={control}
+          name="studentType"
+          render={({ field }) => (
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  field.onChange("FPT");
+                  setValue("universityName", "FPT University", {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }}
+                className={affiliationCardClass(field.value === "FPT")}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className={[
+                      "flex h-9 w-9 items-center justify-center rounded-lg",
+                      field.value === "FPT"
+                        ? "bg-blue-500 text-white"
+                        : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300",
+                    ].join(" ")}
+                  >
+                    <SchoolOutlinedIcon sx={{ fontSize: 20 }} />
+                  </span>
+
+                  {field.value === "FPT" && (
+                    <CheckCircleIcon fontSize="small" className="text-blue-500" />
+                  )}
+                </div>
+
+                <div className="mt-3 font-extrabold text-slate-800 dark:text-slate-200">
+                  FPT University
+                </div>
+                <div className="mt-0.5 text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                  Internal
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  field.onChange("EXTERNAL");
+                  setValue("universityName", "", {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }}
+                className={affiliationCardClass(field.value === "EXTERNAL")}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className={[
+                      "flex h-9 w-9 items-center justify-center rounded-lg",
+                      field.value === "EXTERNAL"
+                        ? "bg-blue-500 text-white"
+                        : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300",
+                    ].join(" ")}
+                  >
+                    <PublicOutlinedIcon sx={{ fontSize: 20 }} />
+                  </span>
+
+                  {field.value === "EXTERNAL" && (
+                    <CheckCircleIcon fontSize="small" className="text-blue-500" />
+                  )}
+                </div>
+
+                <div className="mt-3 font-extrabold text-slate-800 dark:text-slate-200">
+                  External
+                </div>
+                <div className="mt-0.5 text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                  Global Talent
+                </div>
+              </button>
+            </div>
+          )}
+        />
+
+        <TextField
+          fullWidth
+          label="University Name"
+          placeholder={
+            studentType === "EXTERNAL"
+              ? "e.g. University of Science"
+              : "FPT University"
+          }
+          {...register("universityName")}
+          error={Boolean(errors.universityName)}
+          helperText={errors.universityName?.message}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "12px",
+              backgroundColor: studentType === "FPT" ? "#F1F5F9" : "#f8fafc",
+
+              "& fieldset": {
+                borderColor: studentType === "FPT" ? "#CBD5E1" : "#e2e8f0",
+              },
+
+              ".dark &": {
+                backgroundColor:
+                  studentType === "FPT" ? "#0f172a" : "rgba(15,23,42,0.55)",
+              },
+              ".dark & fieldset": {
+                borderColor: studentType === "FPT" ? "#1e293b" : "#334155",
+              },
+              ".dark &:hover fieldset": {
+                borderColor: studentType === "FPT" ? "#1e293b" : "#475569",
+              },
+            },
+            "& .MuiInputBase-input": {
+              color: "#334155",
+              WebkitTextFillColor: "#334155",
+              fontWeight: studentType === "FPT" ? 700 : 400,
+              cursor: studentType === "FPT" ? "default" : "text",
+              ".dark &": {
+                color: "#f8fafc",
+                WebkitTextFillColor: "#f8fafc",
+              },
+            },
+            "& .MuiInputLabel-root": {
+              ".dark &": {
+                color: "#94a3b8",
+              },
+            },
+          }}
+          slotProps={{
+            input: {
+              readOnly: studentType === "FPT",
+            },
+          }}
+        />
+
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <TextField
+            fullWidth
             label="Student Code"
             placeholder={studentType === "FPT" ? "SE123456" : "Your student ID"}
             {...register("studentCode")}
             error={Boolean(errors.studentCode)}
             helperText={errors.studentCode?.message}
-            sx={textFieldSx}
-          />
-
-          <Controller
-            control={control}
-            name="studentType"
-            render={({ field }) => (
-              <div>
-                <div className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-slate-600">
-                  Student Affiliation
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      field.onChange("FPT");
-                      setValue("universityName", "FPT University", {
-                        shouldValidate: true,
-                        shouldDirty: true,
-                      });
-                    }}
-                    className={[
-                      "min-h-24 rounded-2xl border p-5 text-left transition",
-                      field.value === "FPT"
-                        ? "border-blue-500 bg-blue-50 shadow-[0_0_0_1px_rgba(59,130,246,0.25)] dark:bg-blue-900/20 dark:shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
-                        : "border-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:hover:bg-slate-800",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-lg font-extrabold text-slate-800 dark:text-slate-200">
-                        FPT University
-                      </div>
-
-                      {field.value === "FPT" && (
-                        <CheckCircleIcon
-                          fontSize="small"
-                          className="text-blue-500"
-                        />
-                      )}
-                    </div>
-
-                    <div className="mt-3 text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                      Internal
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      field.onChange("EXTERNAL");
-                      setValue("universityName", "", {
-                        shouldValidate: true,
-                        shouldDirty: true,
-                      });
-                    }}
-                    className={[
-                      "min-h-24 rounded-2xl border p-5 text-left transition",
-                      field.value === "EXTERNAL"
-                        ? "border-blue-500 bg-blue-50 shadow-[0_0_0_1px_rgba(59,130,246,0.25)] dark:bg-blue-900/20 dark:shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
-                        : "border-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:hover:bg-slate-800",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-lg font-extrabold text-slate-800 dark:text-slate-200">
-                        External
-                      </div>
-
-                      {field.value === "EXTERNAL" && (
-                        <CheckCircleIcon
-                          fontSize="small"
-                          className="text-blue-500"
-                        />
-                      )}
-                    </div>
-
-                    <div className="mt-3 text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                      Global Talent
-                    </div>
-                  </button>
-                </div>
-              </div>
-            )}
+            sx={authTextFieldSx}
           />
 
           <TextField
             fullWidth
-            size="small"
-            label="University Name"
-            placeholder={
-              studentType === "EXTERNAL"
-                ? "e.g. University of Science"
-                : "FPT University"
-            }
-            {...register("universityName")}
-            error={Boolean(errors.universityName)}
-            helperText={errors.universityName?.message}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "12px",
-                backgroundColor: studentType === "FPT" ? "#F8FAFC" : "#FFFFFF",
-
-                "& fieldset": {
-                  borderColor: studentType === "FPT" ? "#CBD5E1" : undefined,
-                },
-
-                ".dark &": {
-                  backgroundColor:
-                    studentType === "FPT" ? "#0f172a" : "transparent",
-                },
-                ".dark & fieldset": {
-                  borderColor: studentType === "FPT" ? "#1e293b" : "#334155",
-                },
-                ".dark &:hover fieldset": {
-                  borderColor: studentType === "FPT" ? "#1e293b" : "#475569",
-                },
-              },
-              "& .MuiInputBase-input": {
-                color: "#334155",
-                WebkitTextFillColor: "#334155",
-                fontWeight: studentType === "FPT" ? 700 : 400,
-                cursor: studentType === "FPT" ? "default" : "text",
-                ".dark &": {
-                  color: "#f8fafc",
-                  WebkitTextFillColor: "#f8fafc",
-                },
-              },
-              "& .MuiInputLabel-root": {
-                ".dark &": {
-                  color: "#94a3b8",
-                },
-              },
-            }}
-            slotProps={{
-              input: {
-                readOnly: studentType === "FPT",
-              },
-            }}
+            label="Graduation Year"
+            placeholder="2027"
+            {...register("graduationYear")}
+            error={Boolean(errors.graduationYear)}
+            helperText={errors.graduationYear?.message}
+            sx={authTextFieldSx}
           />
+        </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <TextField
-              fullWidth
-              size="small"
-              label="Major"
-              {...register("major")}
-              error={Boolean(errors.major)}
-              helperText={errors.major?.message}
-              sx={textFieldSx}
-            />
+        <TextField
+          fullWidth
+          label="Major"
+          placeholder="e.g. Software Engineering"
+          {...register("major")}
+          error={Boolean(errors.major)}
+          helperText={errors.major?.message}
+          sx={authTextFieldSx}
+        />
 
-            <TextField
-              fullWidth
-              size="small"
-              label="Graduation Year"
-              placeholder="2027"
-              {...register("graduationYear")}
-              error={Boolean(errors.graduationYear)}
-              helperText={errors.graduationYear?.message}
-              sx={textFieldSx}
-            />
-          </div>
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          disabled={registerMutation.isPending}
+          sx={{
+            height: 50,
+            borderRadius: "12px",
+            textTransform: "none",
+            fontWeight: 800,
+            fontSize: 16,
+            background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
+            boxShadow: "0 10px 24px rgba(59,130,246,0.35)",
+            transition: "box-shadow 200ms ease, transform 200ms ease",
+            "&:hover": {
+              background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
+              boxShadow: "0 12px 28px rgba(59,130,246,0.45)",
+            },
+            "&:active": {
+              transform: "translateY(1px)",
+              boxShadow: "0 6px 16px rgba(59,130,246,0.3)",
+            },
+            "&.Mui-disabled": {
+              background: "#93c5fd",
+              color: "#ffffff",
+            },
+          }}
+        >
+          {registerMutation.isPending
+            ? "Creating account..."
+            : "Create account"}
+        </Button>
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={registerMutation.isPending}
-            sx={{
-              height: 46,
-              borderRadius: "10px",
-              textTransform: "none",
-              fontWeight: 900,
-              boxShadow: "none",
-            }}
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+          You already have an account?{" "}
+          <Link
+            className="font-bold text-blue-500 transition-colors hover:text-blue-600 hover:underline"
+            to="/login"
           >
-            {registerMutation.isPending
-              ? "Creating account..."
-              : "Create account"}
-          </Button>
-
-          <p className="text-center text-xs text-slate-500">
-            You already have account?{" "}
-            <Link
-              className="font-semibold text-blue-500 hover:underline"
-              to="/login"
-            >
-              Go to log in
-            </Link>
-          </p>
-        </form>
-      </AuthCard>
-    </div>
+            Go to log in
+          </Link>
+        </p>
+      </form>
+    </RegistrationShell>
   );
 }
