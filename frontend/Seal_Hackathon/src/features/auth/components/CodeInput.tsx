@@ -120,12 +120,12 @@ export function CodeInput({
             }
           }}
           className={[
-            "h-13 w-13.5 rounded-xl border bg-white text-center",
+            "h-14 w-13.5 rounded-xl border-2 bg-slate-50 text-center dark:bg-slate-900/60",
             "text-[22px] font-extrabold outline-none transition",
             "disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-600",
             error
               ? "border-rose-500 text-rose-500 focus:border-rose-500 focus:ring-4 focus:ring-rose-100 dark:focus:ring-rose-900/40"
-              : "border-slate-400 text-slate-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/40",
+              : "border-slate-200 text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:text-slate-100 dark:focus:ring-blue-900/40",
           ].join(" ")}
         />
       ))}

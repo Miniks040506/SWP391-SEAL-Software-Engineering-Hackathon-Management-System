@@ -149,13 +149,33 @@ export const router = createBrowserRouter([
   },
 
   {
+    path: "/login",
+    element: <LoginPage />,
+    errorElement: <RouteErrorPage />,
+  },
+
+  {
+    path: "/register",
+    element: <RegisterPage />,
+    errorElement: <RouteErrorPage />,
+  },
+
+  {
+    path: "/verify-email",
+    element: <VerifyEmailPage />,
+    errorElement: <RouteErrorPage />,
+  },
+
+  {
+    path: "/verify-email/success",
+    element: <VerifyEmailSuccessPage />,
+    errorElement: <RouteErrorPage />,
+  },
+
+  {
     element: <AuthLayout />,
     errorElement: <RouteErrorPage />,
     children: [
-      { path: "/register", element: <RegisterPage /> },
-      { path: "/verify-email", element: <VerifyEmailPage /> },
-      { path: "/verify-email/success", element: <VerifyEmailSuccessPage /> },
-      { path: "/login", element: <LoginPage /> },
       { path: "/oauth/callback", element: <OAuthCallbackPage /> },
       { path: "/forgot-password", element: <ForgotPasswordPage /> },
       { path: "/reset-password", element: <ResetPasswordPage /> },
