@@ -21,6 +21,13 @@ import {
   chooseGoogleDriveFile,
   type GooglePickerFile,
 } from "../utils/googlePicker";
+import {
+  INTEGRATION_CALLBACK_PATH,
+  PopupBlockedError,
+  PopupClosedError,
+  googleDriveCallbackError,
+  openIntegrationOAuthPopup,
+} from "../utils/integrationOAuthPopup";
 
 type Props = {
   teamId?: string;
@@ -93,10 +100,37 @@ export function GoogleDriveAttachmentPanel({
   const handleConnect = async () => {
     setAction("connect");
     try {
-      const start = await googleDriveApi.connect(window.location.pathname);
-      window.location.assign(start.authorizationUrl);
+      // Return to the popup callback route, not this page: staying mounted is
+      // what keeps the dialog and any unsaved drafts alive.
+      const start = await googleDriveApi.connect(INTEGRATION_CALLBACK_PATH);
+
+      try {
+        const outcome = await openIntegrationOAuthPopup(
+          start.authorizationUrl,
+          "googleDrive",
+        );
+        if (outcome.result !== "connected") {
+          onError(googleDriveCallbackError(outcome.code));
+          return;
+        }
+        setStatus(await googleDriveApi.getStatus());
+      } catch (popupError) {
+        if (popupError instanceof PopupBlockedError) {
+          // No popup available — fall back to the old full-page redirect so the
+          // user can still connect, accepting the reload.
+          const sameTab = await googleDriveApi.connect(window.location.pathname);
+          window.location.assign(sameTab.authorizationUrl);
+          return;
+        }
+        if (popupError instanceof PopupClosedError) {
+          onError("Google Drive connection was cancelled.");
+          return;
+        }
+        throw popupError;
+      }
     } catch (error) {
       onError(requestMessage(error, "Google Drive connection could not start."));
+    } finally {
       setAction(null);
     }
   };

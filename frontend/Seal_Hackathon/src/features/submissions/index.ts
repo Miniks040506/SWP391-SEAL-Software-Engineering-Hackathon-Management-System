@@ -1,6 +1,7 @@
 export * from "./pages/CoordinatorSubmissionsPage";
 export * from "./pages/ParticipantSubmissionsPage";
 export * from "./pages/SubmissionFormPage";
+export * from "./pages/IntegrationOAuthCallbackPage";
 export * from "./components/SubmissionFilterBar";
 export * from "./components/SubmissionTable";
 export * from "./components/SubmissionDetailDrawer";
