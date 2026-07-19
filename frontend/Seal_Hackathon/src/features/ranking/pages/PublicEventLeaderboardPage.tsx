@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Tooltip } from "@mui/material";
 
@@ -67,6 +68,38 @@ function StatusText({ status }: { status: RowStatus }) {
 /* Results head: champion strip, asymmetric 6/3/3                       */
 /* ------------------------------------------------------------------ */
 
+/** Optical gap between the visible cup and the card corner, in px. */
+const TROPHY_CORNER_GAP = 10;
+
+/**
+ * Faint trophy tucked into the lower-right corner of a podium card.
+ *
+ * The icon's painted glyph fills only 18 of its 24 viewBox units, so an eighth
+ * of the rendered size is transparent padding on each side. Positioning by the
+ * icon box therefore pushed the cup ~25px inward and made it look like it was
+ * drifting toward the middle. Offsetting by that padding lands the *glyph* a
+ * consistent distance from the corner at any size, and stays non-clipping
+ * because the offset never exceeds the padding itself.
+ */
+function TrophyWatermark({
+  size,
+  tone,
+}: {
+  size: number;
+  tone: string;
+}) {
+  const glyphPadding = size / 8; // 3 of 24 viewBox units
+  const offset = TROPHY_CORNER_GAP - glyphPadding;
+
+  return (
+    <EmojiEventsRoundedIcon
+      aria-hidden
+      className={`pointer-events-none absolute select-none ${tone}`}
+      style={{ fontSize: size, right: offset, bottom: offset }}
+    />
+  );
+}
+
 function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
   // Rankings are per track/round, so rank positions repeat. Keep each
   // team's best score and order by score.
@@ -93,12 +126,15 @@ function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
       label: "2nd place",
       span: "md:col-span-4",
       border: "border-t-2 border-slate-400 dark:border-slate-500",
+      surface: "bg-slate-100/70 dark:bg-slate-400/8",
       medal:
         "h-7 w-7 bg-linear-to-br from-slate-200 to-slate-400 text-slate-800 shadow-sm shadow-slate-400/40",
       labelColor: "text-slate-500 dark:text-slate-400",
       nameSize: "text-2xl",
       scoreSize: "text-5xl",
       scoreColor: "text-slate-500 dark:text-slate-300",
+      trophySize: 120,
+      trophyTone: "text-slate-400/30 dark:text-slate-400/18",
     },
     third && {
       row: third,
@@ -106,12 +142,15 @@ function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
       label: "3rd place",
       span: "md:col-span-3",
       border: "border-t border-orange-600/60 dark:border-orange-500/50",
+      surface: "bg-orange-50/70 dark:bg-orange-500/8",
       medal:
         "h-6 w-6 bg-linear-to-br from-orange-500 to-orange-700 text-orange-50 shadow-sm shadow-orange-700/40",
       labelColor: "text-orange-700 dark:text-orange-500",
       nameSize: "text-lg",
       scoreSize: "text-3xl",
       scoreColor: "text-orange-700 dark:text-orange-500",
+      trophySize: 96,
+      trophyTone: "text-orange-600/25 dark:text-orange-500/18",
     },
   ].filter(Boolean) as Array<{
     row: RankingResponse;
@@ -119,34 +158,43 @@ function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
     label: string;
     span: string;
     border: string;
+    surface: string;
     medal: string;
     labelColor: string;
     nameSize: string;
     scoreSize: string;
     scoreColor: string;
+    trophySize: number;
+    trophyTone: string;
   }>;
 
   return (
     <div className="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-12 md:items-end">
-      <div className="space-y-3 border-t-2 border-blue-600 pt-5 md:col-span-5 dark:border-blue-500">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-amber-300 to-amber-500 text-sm font-extrabold text-amber-950 shadow-sm shadow-amber-500/40">
-            1
-          </span>
-          <p className="text-sm font-bold text-amber-500 dark:text-amber-400">
-            Champion
+      <div className="relative overflow-hidden rounded-b-2xl border-t-2 border-amber-500 bg-amber-50/70 px-5 pt-5 pb-6 md:col-span-5 dark:border-amber-400 dark:bg-amber-400/8">
+        <TrophyWatermark
+          size={148}
+          tone="text-amber-500/22 dark:text-amber-400/16"
+        />
+        <div className="relative space-y-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-amber-300 to-amber-500 text-sm font-extrabold text-amber-950 shadow-sm shadow-amber-500/40">
+              1
+            </span>
+            <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
+              Champion
+            </p>
+          </div>
+          <p className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white md:text-4xl">
+            {first.teamName}
+          </p>
+          <p className="text-sm font-medium text-gray-500 dark:text-slate-400">
+            {first.trackName || "General"}
+            {first.projectTitle ? ` · ${first.projectTitle}` : ""}
+          </p>
+          <p className="text-6xl font-extrabold tracking-tight tabular-nums text-amber-500 md:text-7xl dark:text-amber-400">
+            {Number(first.totalScore).toFixed(2)}
           </p>
         </div>
-        <p className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white md:text-4xl">
-          {first.teamName}
-        </p>
-        <p className="text-sm font-medium text-gray-500 dark:text-slate-400">
-          {first.trackName || "General"}
-          {first.projectTitle ? ` · ${first.projectTitle}` : ""}
-        </p>
-        <p className="text-6xl font-extrabold tabular-nums tracking-tight text-amber-500 dark:text-amber-400 md:text-7xl">
-          {Number(first.totalScore).toFixed(2)}
-        </p>
       </div>
 
       {runnerUps.map(
@@ -156,34 +204,43 @@ function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
           label,
           span,
           border,
+          surface,
           medal,
           labelColor,
           nameSize,
           scoreSize,
           scoreColor,
+          trophySize,
+          trophyTone,
         }) => (
-          <div key={row.id} className={`space-y-3 pt-5 ${span} ${border}`}>
-            <div className="flex items-center gap-2.5">
-              <span
-                className={`flex items-center justify-center rounded-lg text-sm font-extrabold ${medal}`}
+          <div
+            key={row.id}
+            className={`relative overflow-hidden rounded-b-2xl px-5 pt-5 pb-6 ${span} ${border} ${surface}`}
+          >
+            <TrophyWatermark size={trophySize} tone={trophyTone} />
+            <div className="relative space-y-3">
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={`flex items-center justify-center rounded-lg text-sm font-extrabold ${medal}`}
+                >
+                  {rank}
+                </span>
+                <p className={`text-sm font-bold ${labelColor}`}>{label}</p>
+              </div>
+              <p
+                className={`font-bold tracking-tight text-gray-900 dark:text-white ${nameSize}`}
               >
-                {rank}
-              </span>
-              <p className={`text-sm font-bold ${labelColor}`}>{label}</p>
+                {row.teamName}
+              </p>
+              <p className="text-sm font-medium text-gray-500 dark:text-slate-400">
+                {row.trackName || "General"}
+              </p>
+              <p
+                className={`font-extrabold tracking-tight tabular-nums ${scoreSize} ${scoreColor}`}
+              >
+                {Number(row.totalScore).toFixed(2)}
+              </p>
             </div>
-            <p
-              className={`font-bold tracking-tight text-gray-900 dark:text-white ${nameSize}`}
-            >
-              {row.teamName}
-            </p>
-            <p className="text-sm font-medium text-gray-500 dark:text-slate-400">
-              {row.trackName || "General"}
-            </p>
-            <p
-              className={`font-extrabold tabular-nums tracking-tight ${scoreSize} ${scoreColor}`}
-            >
-              {Number(row.totalScore).toFixed(2)}
-            </p>
           </div>
         ),
       )}

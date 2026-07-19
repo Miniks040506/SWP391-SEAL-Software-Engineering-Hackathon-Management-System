@@ -8,6 +8,9 @@ export const filterTextFieldSx = {
   },
   "& .MuiInputBase-input": { color: "#0f172a" },
   "& .MuiInputLabel-root": { color: "#64748b" },
+  // Without this, helper text keeps MUI's default rgba(0,0,0,0.6) and drops to
+  // ~1.1:1 against the dark surface — effectively invisible.
+  "& .MuiFormHelperText-root": { color: "#64748b" },
   "& .MuiOutlinedInput-notchedOutline": { borderColor: "#e2e8f0" },
   "&:hover .MuiOutlinedInput-root:not(.Mui-disabled)": { backgroundColor: "#f1f5f9" },
   "&:hover .MuiOutlinedInput-root:not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": { borderColor: "#cbd5e1" },
@@ -37,6 +40,7 @@ export const filterTextFieldSx = {
   ".dark & .MuiOutlinedInput-root": { backgroundColor: "#1e293b" },
   ".dark & .MuiInputBase-input": { color: "#f8fafc" },
   ".dark & .MuiInputLabel-root": { color: "#94a3b8" },
+  ".dark & .MuiFormHelperText-root": { color: "#94a3b8" },
   ".dark & .MuiOutlinedInput-notchedOutline": { borderColor: "#334155" },
   ".dark &:hover .MuiOutlinedInput-root:not(.Mui-disabled)": { backgroundColor: "#0f172a" },
   ".dark &:hover .MuiOutlinedInput-root:not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": { borderColor: "#475569" },

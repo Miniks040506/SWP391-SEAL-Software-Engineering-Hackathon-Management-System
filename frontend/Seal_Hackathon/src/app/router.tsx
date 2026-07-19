@@ -101,6 +101,7 @@ import { CoordinatorTeamsPage } from "@/features/teams";
 import { ParticipantSubmissionsPage } from "@/features/submissions/pages/ParticipantSubmissionsPage";
 import { NotificationInboxPage } from "@/features/notification";
 import { SubmissionFormPage } from "@/features/submissions/pages/SubmissionFormPage";
+import { IntegrationOAuthCallbackPage } from "@/features/submissions/pages/IntegrationOAuthCallbackPage";
 
 import {
   CoordinatorCalibrationPage,
@@ -191,6 +192,14 @@ export const router = createBrowserRouter([
       { path: "/oauth/callback", element: <OAuthCallbackPage /> },
       { path: "/personal", element: <PersonalProfilePage /> },
     ],
+  },
+
+  // Provider OAuth lands here inside a popup and closes itself, so it renders
+  // bare — no layout chrome.
+  {
+    path: "/oauth/integration-callback",
+    element: <IntegrationOAuthCallbackPage />,
+    errorElement: <RouteErrorPage />,
   },
 
   {

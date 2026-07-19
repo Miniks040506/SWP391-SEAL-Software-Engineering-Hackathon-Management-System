@@ -1,5 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import CloudOutlinedIcon from "@mui/icons-material/CloudOutlined";
+import GitHubIcon from "@mui/icons-material/GitHub";
+import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import {
   TextField,
   Button,
@@ -27,6 +31,10 @@ import { SubmissionLinksPreview } from "../components/SubmissionLinksPreview";
 import { GoogleDriveAttachmentPanel } from "../components/GoogleDriveAttachmentPanel";
 import { GithubRepositoryPanel } from "../components/GithubRepositoryPanel";
 import { filterTextFieldSx } from "../schemas/submissions.schema";
+import {
+  githubCallbackError,
+  googleDriveCallbackError,
+} from "../utils/integrationOAuthPopup";
 import type {
   CreateSubmissionLinkRequest,
   SubmissionLinkType,
@@ -141,31 +149,6 @@ function getFilePolicyError(
   return null;
 }
 
-function googleDriveCallbackError(code: string | null) {
-  if (code === "GOOGLE_DRIVE_AUTHORIZATION_CANCELLED") {
-    return "Google Drive connection was cancelled.";
-  }
-  if (code === "GOOGLE_DRIVE_OAUTH_STATE_INVALID") {
-    return "Google Drive connection expired or could not be verified. Start again.";
-  }
-  if (code === "GOOGLE_DRIVE_AUTHORIZATION_INVALID") {
-    return "Google Drive authorization is no longer valid. Connect again.";
-  }
-  return "Google Drive could not be connected. Check provider setup and retry.";
-}
-
-function githubCallbackError(code: string | null) {
-  if (code === "GITHUB_AUTHORIZATION_CANCELLED") {
-    return "GitHub connection was cancelled.";
-  }
-  if (code === "GITHUB_OAUTH_STATE_INVALID") {
-    return "GitHub connection expired or could not be verified. Start again.";
-  }
-  if (code === "GITHUB_AUTHORIZATION_INVALID") {
-    return "GitHub authorization is no longer valid. Connect again.";
-  }
-  return "GitHub could not be connected. Check provider setup and retry.";
-}
 
 export function SubmissionFormPage() {
   const { teamId, roundId } = useParams<{ teamId: string; roundId: string }>();
@@ -312,6 +295,40 @@ export function SubmissionFormPage() {
     (provider) => provider.source === "GITHUB",
   );
   const canUploadLocalFile = canEdit && localFileAvailability?.available === true;
+
+  // The dialog had no keyboard dismissal; Escape is the expected escape route.
+  useEffect(() => {
+    if (!isPickerOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsPickerOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isPickerOpen]);
+
+  const attachmentTabs = [
+    {
+      id: "LOCAL_FILE" as const,
+      label: "Upload a file",
+      icon: <UploadFileOutlinedIcon style={{ fontSize: 18 }} />,
+      disabled: !canUploadLocalFile,
+      hint: localFileAvailability?.message || "Upload a local file",
+    },
+    {
+      id: "GOOGLE_DRIVE" as const,
+      label: "Google Drive",
+      icon: <CloudOutlinedIcon style={{ fontSize: 18 }} />,
+      disabled: false,
+      hint: driveAvailability?.message || "Choose from Google Drive",
+    },
+    {
+      id: "GITHUB" as const,
+      label: "GitHub",
+      icon: <GitHubIcon style={{ fontSize: 18 }} />,
+      disabled: false,
+      hint: githubAvailability?.message || "Choose a GitHub repository",
+    },
+  ];
   const canOpenAttachmentDialog =
     canEdit &&
     (localFileAvailability?.available === true ||
@@ -1348,71 +1365,69 @@ export function SubmissionFormPage() {
       {isPickerOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            aria-hidden
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
             onClick={() => setIsPickerOpen(false)}
           />
-          <div className="relative border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-full max-w-2xl rounded-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
-            <div className="flex flex-col border-b border-slate-100 dark:border-slate-700 bg-transparent">
-              <div className="flex items-center justify-between px-6 py-4">
-                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                  Add Attachment
-                </h2>
-                <button
-                  onClick={() => setIsPickerOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="attachment-dialog-title"
+            className="relative flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-200 dark:border-slate-700 dark:bg-slate-900"
+          >
+            <div className="flex flex-col gap-4 border-b border-gray-100 px-6 pt-5 pb-4 dark:border-slate-800">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2
+                    id="attachment-dialog-title"
+                    className="text-lg font-bold tracking-tight text-gray-900 dark:text-white"
                   >
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
+                    Add evidence
+                  </h2>
+                  <p className="mt-0.5 text-sm text-gray-500 dark:text-slate-400">
+                    Attach a file, or pull it straight from a connected account.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close dialog"
+                  onClick={() => setIsPickerOpen(false)}
+                  className="-mt-1 -mr-2 flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                >
+                  <CloseRoundedIcon style={{ fontSize: 20 }} />
                 </button>
               </div>
-              <div className="flex px-6 gap-6">
-                <button
-                  type="button"
-                  disabled={!canUploadLocalFile}
-                  onClick={() => setAttachmentSource("LOCAL_FILE")}
-                  title={localFileAvailability?.message || "Upload a local file"}
-                  className={`-mb-px border-b-2 pb-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${
-                    attachmentSource === "LOCAL_FILE"
-                      ? "border-blue-600 text-blue-600 dark:text-blue-400"
-                      : "border-transparent text-slate-500"
-                  }`}
-                >
-                  Upload a file
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAttachmentSource("GOOGLE_DRIVE")}
-                  title={driveAvailability?.message || "Choose from Google Drive"}
-                  className={`-mb-px border-b-2 pb-3 text-sm font-semibold ${
-                    attachmentSource === "GOOGLE_DRIVE"
-                      ? "border-blue-600 text-blue-600 dark:text-blue-400"
-                      : "border-transparent text-slate-500"
-                  }`}
-                >
-                  Google Drive
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAttachmentSource("GITHUB")}
-                  title={githubAvailability?.message || "Choose a GitHub repository"}
-                  className={`-mb-px border-b-2 pb-3 text-sm font-semibold ${
-                    attachmentSource === "GITHUB"
-                      ? "border-blue-600 text-blue-600 dark:text-blue-400"
-                      : "border-transparent text-slate-500"
-                  }`}
-                >
-                  GitHub
-                </button>
+
+              {/* Segmented control reads as one grouped choice, unlike three
+                  detached underlines. */}
+              <div
+                role="tablist"
+                aria-label="Evidence source"
+                className="grid grid-cols-3 gap-1 rounded-xl bg-gray-100 p-1 dark:bg-slate-800"
+              >
+                {attachmentTabs.map((tab) => {
+                  const active = attachmentSource === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      disabled={tab.disabled}
+                      onClick={() => setAttachmentSource(tab.id)}
+                      title={tab.hint}
+                      className={[
+                        "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45",
+                        active
+                          ? "bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300"
+                          : "text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-100",
+                      ].join(" ")}
+                    >
+                      {tab.icon}
+                      <span className="truncate">{tab.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1449,33 +1464,52 @@ export function SubmissionFormPage() {
                 />
               ) : (
                 <div className="flex flex-col gap-5">
-                  <div className="flex flex-col gap-1.5 w-full">
-                    <label className="text-sm font-semibold text-slate-800 dark:text-slate-300">
-                      File Attachment
-                    </label>
-                    <div className="flex items-center gap-3 w-full mt-1">
-                      <Button
-                        variant="outlined"
-                        onClick={() => pickerFileInputRef.current?.click()}
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 600,
-                          borderRadius: "10px",
-                          borderColor: "#e2e8f0",
-                          color: "#0f172a",
-                          height: 40,
-                          ".dark &": {
-                            borderColor: "#334155",
-                            color: "#f8fafc",
-                          },
-                        }}
+                  <div className="flex w-full flex-col gap-1.5">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-slate-200">
+                      File
+                    </span>
+                    {/* A drop target reads as the primary action here, where the
+                        old bare "Choose File" button gave no affordance. */}
+                    <button
+                      type="button"
+                      onClick={() => pickerFileInputRef.current?.click()}
+                      className={[
+                        "mt-1 flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none",
+                        tempFile
+                          ? "border-blue-400 bg-blue-50/60 dark:border-blue-500/60 dark:bg-blue-500/10"
+                          : "border-gray-300 hover:border-blue-400 hover:bg-gray-50 dark:border-slate-700 dark:hover:border-blue-500/60 dark:hover:bg-slate-800/60",
+                      ].join(" ")}
+                    >
+                      <span
+                        className={[
+                          "flex size-11 items-center justify-center rounded-full",
+                          tempFile
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"
+                            : "bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400",
+                        ].join(" ")}
                       >
-                        Choose File
-                      </Button>
-                      <span className="text-[13px] text-slate-500 dark:text-slate-400 truncate">
-                        {tempFile ? tempFile.name : "No file chosen"}
+                        <UploadFileOutlinedIcon style={{ fontSize: 22 }} />
                       </span>
-                    </div>
+                      {tempFile ? (
+                        <>
+                          <span className="max-w-full truncate text-sm font-semibold text-gray-900 dark:text-white">
+                            {tempFile.name}
+                          </span>
+                          <span className="text-xs font-medium text-gray-500 tabular-nums dark:text-slate-400">
+                            {formatSize(tempFile.size)} · choose a different file
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            Choose a file
+                          </span>
+                          <span className="text-xs font-medium text-gray-500 dark:text-slate-400">
+                            Up to {uploadPolicy ? formatSize(uploadPolicy.maximumFileSizeBytes) : "the round limit"}
+                          </span>
+                        </>
+                      )}
+                    </button>
                     <input
                       type="file"
                       accept={uploadAccept}

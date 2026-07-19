@@ -13,6 +13,13 @@ import {
   type GithubReference,
   type GithubRepository,
 } from "@/api/github.api";
+import {
+  INTEGRATION_CALLBACK_PATH,
+  PopupBlockedError,
+  PopupClosedError,
+  githubCallbackError,
+  openIntegrationOAuthPopup,
+} from "../utils/integrationOAuthPopup";
 import { submissionApi } from "@/api/submission.api";
 import type {
   RepositoryMetadata,
@@ -166,10 +173,43 @@ export function GithubRepositoryPanel({
   const handleConnect = async () => {
     setAction("connect");
     try {
-      const start = await githubApi.connect(window.location.pathname, includePrivate);
-      window.location.assign(start.authorizationUrl);
+      // Return to the popup callback route, not this page: staying mounted is
+      // what keeps the dialog and any unsaved drafts alive.
+      const start = await githubApi.connect(
+        INTEGRATION_CALLBACK_PATH,
+        includePrivate,
+      );
+
+      try {
+        const outcome = await openIntegrationOAuthPopup(
+          start.authorizationUrl,
+          "github",
+        );
+        if (outcome.result !== "connected") {
+          onError(githubCallbackError(outcome.code));
+          return;
+        }
+        setStatus(await githubApi.getStatus());
+      } catch (popupError) {
+        if (popupError instanceof PopupBlockedError) {
+          // No popup available — fall back to the old full-page redirect so the
+          // user can still connect, accepting the reload.
+          const sameTab = await githubApi.connect(
+            window.location.pathname,
+            includePrivate,
+          );
+          window.location.assign(sameTab.authorizationUrl);
+          return;
+        }
+        if (popupError instanceof PopupClosedError) {
+          onError("GitHub connection was cancelled.");
+          return;
+        }
+        throw popupError;
+      }
     } catch (error) {
       onError(requestMessage(error, "GitHub connection could not start."));
+    } finally {
       setAction(null);
     }
   };
