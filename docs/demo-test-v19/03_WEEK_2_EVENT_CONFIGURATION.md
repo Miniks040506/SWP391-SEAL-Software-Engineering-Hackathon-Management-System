@@ -1,146 +1,268 @@
-# Week 2 — Event and competition configuration
+# Module 2 — Event và Competition Configuration
 
-## Goal and safe fixtures
+> Baseline: SEAL V24.  
+> Mục tiêu: coordinator cấu hình một cuộc thi từ draft tới trạng thái sẵn sàng vận hành mà không phá dữ liệu demo lõi.
 
-Coordinator configures an event from draft to a runnable competition: information, tracks, criteria, rounds, advancement rules, judge/mentor assignments, prizes and announcements. Use `coordinator@seal.test`; use `coordinator2@seal.test` only for V18 disposable events.
+## 1. Chuẩn bị
 
-Read-only anchors: `SEAL Summer 2026`, `SEAL Spring 2025`, `SEAL Fall 2024 Archive`. Mutation anchors: `SEAL Fall 2026`, `SEAL Fall 2027 (Delete Me)`, `SEAL Spring 2027 (Cancel Me)`, `Throwaway Track`, `Deprecated Sample Criterion`.
+### Actor và fixture
 
-## W2-S01 — Public discovery and event detail
+| Mục đích | Actor/fixture | Quy tắc |
+|---|---|---|
+| Coordinator chính | `coordinator@seal.test` | cấu hình và mutation disposable |
+| Coordinator phụ | `coordinator2@seal.test` | cancel/delete event disposable |
+| Main live event | `SEAL Summer 2026` | không xóa |
+| Historical event | `SEAL Spring 2025` | read-only |
+| Draft config | `SEAL Fall 2026` | chỉ dùng children disposable |
+| Archived snapshot | `SEAL Fall 2024 Archive` | read-only |
+| Delete target | `SEAL Fall 2027 (Delete Me)` | xóa cuối module |
+| Cancel target | `SEAL Spring 2027 (Cancel Me)` | cancel cuối module |
+| Track target | `Throwaway Track` | update/delete |
+| Criterion target | `Draft Custom Criterion` | update/delete |
+| Template target | `Deprecated Sample Criterion` | activate/deactivate/delete |
+| Prize target | `Consolation Prize (Disposable)` | update/delete sau evidence |
+| Rule target | V18 disposable WILDCARD | update/delete |
+| Round target | `Expired Open Round` | deadline transition |
 
-1. Logout and open `/events`; filter/browse public events.
-2. Open `SEAL Summer 2026`; verify description, lifecycle status, registration/competition dates, tracks, rounds and awards links.
-3. Open `/explore`; confirm it resolves to the event list.
-4. Open `SEAL Spring 2025`; verify completed/published historical information.
-5. Open `SEAL Fall 2024 Archive`; confirm the `ARCHIVED` state can be queried but cannot be mutated by Guest.
+Mật khẩu: `Password@123`.
 
-Failure: call public detail with an unknown UUID (404), invalid season/status filter (400), and a coordinator mutation endpoint without token (401).
+### Nguyên tắc
 
-## W2-S02 — Create a draft event through the wizard
+- Dùng một event mới có tên chứa `Disposable` cho create wizard.
+- Không delete Summer 2026, Spring 2025 hoặc event có team/submission.
+- Mutation phải có audit; assignment/announcement có notification khi flow yêu cầu.
+- Date phải giữ đúng thứ tự parent-child.
 
-1. Login as coordinator; sidebar → **Events** → create-event action (`/coordinator/events/create`).
-2. In Event Details enter a unique **Event name**, season/year, registration window, competition window, status `DRAFT`, and description.
-3. Add at least two tracks. For each set **Track name**, required link types, min members 3, max members 5, maximum teams and description.
-4. Select default scoring criteria and add a custom event-only criterion if needed; ensure active weights form the intended total.
-5. Add rounds with unique order, **Round name**, start/end, submission deadline and judging deadline. Mark only the last round final.
-6. Assign mentors by track and judges by round/track; optionally create a guest judge.
-7. Add prizes with unique scope/rank.
-8. Review and submit. Expect event detail/edit page and all children persisted.
+## 2. Danh sách scenario
 
-**Failure checks before success**
+| ID | Scenario | Mode |
+|---|---|---|
+| W2-S01 | Public discovery/detail | UI + API |
+| W2-S02 | Create event wizard | UI |
+| W2-S03 | Event update/lifecycle/cancel | UI + API |
+| W2-S04 | Track CRUD/capacity | UI + API |
+| W2-S05 | Scoring criteria template | UI + API |
+| W2-S06 | Event/round criteria | UI + API |
+| W2-S07 | Round CRUD/deadline transition | UI + API + Scheduler |
+| W2-S08 | Advance rules | UI + API |
+| W2-S09 | Mentor/judge assignment | UI + API |
+| W2-S10 | Prize | UI + API |
+| W2-S11 | Announcement lifecycle | UI + API |
+| W2-S12 | Safe event delete | UI + API |
 
-- Duplicate season/year or slug: 409.
-- Registration close before open; competition end before start: 400.
-- Track min > max, zero/negative limits, or duplicate track name/order: 400/409.
-- Round start outside event, deadline after round end, judging before submission, duplicate order: 400/409.
-- Duplicate prize rank in the same event/track scope: 409.
+## W2-S01 — Public discovery và event detail
 
-## W2-S03 — Edit event information and lifecycle
+1. Logout; mở `/events` và `/explore`.
+2. Filter/browse public events.
+3. Mở Summer 2026; kiểm tra description, status, registration/competition window, tracks, rounds và awards.
+4. Mở Spring 2025; kiểm tra published historical data.
+5. Mở Fall 2024 Archive; xác nhận ARCHIVED query được nhưng Guest không mutation.
 
-1. **Events** → open `SEAL Spring 2027 (Cancel Me)` → edit.
-2. In the Info tab change a harmless description/date that remains valid, save, refresh and confirm.
-3. Advance lifecycle only through permitted transitions. Capture previous/new status and relevant timestamp.
-4. At the end, use the cancel action and confirm status `CANCELLED`.
+### Negative
 
-**Failure checks**
+- Unknown event ID: 404.
+- Invalid season/status: 400.
+- Coordinator mutation endpoint không token: 401.
+- Public detail không lộ unpublished ranking/private submission.
 
-- Skip an unsupported lifecycle transition or move a terminal event backward: 409.
-- Change season/year to a pair already used: 409.
+## W2-S02 — Create draft event qua wizard
+
+1. Coordinator mở `/coordinator/events/create`.
+2. Event info:
+   - unique name/slug/season/year;
+   - status `DRAFT`;
+   - registration open < close;
+   - competition start < end;
+   - description.
+3. Thêm ít nhất hai tracks:
+   - unique name/display order;
+   - required link types;
+   - min 3, max 5;
+   - max teams.
+4. Thêm criteria template và một custom event criterion.
+5. Thêm rounds:
+   - unique order;
+   - start/end;
+   - submission deadline;
+   - judging deadline;
+   - chỉ round cuối `isFinal=true`.
+6. Assign mentor theo track và judge theo round/optional track.
+7. Thêm prize unique scope/rank.
+8. Review và submit.
+
+### Expected
+
+Event và toàn bộ children persist; detail/edit page tải đúng sau refresh; không có half-created child nếu wizard thất bại.
+
+### Negative
+
+- Duplicate season-year/slug: 409.
+- Date đảo hoặc child outside parent window: 400.
+- Track min > max, limit ≤ 0, duplicate name/order: 400/409.
+- Round judging trước submission hoặc deadline sau end: 400.
+- Duplicate prize rank trong cùng scope: 409.
+
+## W2-S03 — Event update, transition và cancel
+
+1. Mở `SEAL Spring 2027 (Cancel Me)`.
+2. Update description/date hợp lệ; Save và refresh.
+3. Gọi forward lifecycle transition được cho phép.
+4. Ghi previous/new status và timestamp.
+5. Cuối scenario, cancel event.
+
+### Negative
+
+- Skip transition bị cấm hoặc terminal → earlier state.
+- Duplicate season/year.
 - Student/Judge mutation: 403.
-- Cancel twice: 409.
+- Cancel lần hai: 409.
 
-## W2-S04 — Track CRUD and capacity rules
+### Chú ý kiểm thử trạng thái
 
-1. Open edit for `SEAL Fall 2026` → Tracks tab.
-2. Create a fresh track with min 3/max 5 and required `REPOSITORY` + `DEMO`; verify list/detail.
-3. Edit **Throwaway Track**, change name/description/capacity, save and refresh.
-4. Assign/remove a mentor on a track with the disposable `mentor3` assignment.
-5. Delete only **Throwaway Track** at the end; confirm it disappears.
+Source hiện vẫn có semantics ARCHIVED khá rộng. Ghi defect nếu UI/API cho archive từ state không phù hợp với SRS thay vì tự sửa dữ liệu demo.
 
-Failures: event/track mismatch, invalid min/max, delete a track containing teams/assignments, duplicate mentor assignment, assign non-mentor user, unauthorized role.
+## W2-S04 — Track CRUD và capacity
+
+1. `SEAL Fall 2026` → Edit → Tracks.
+2. Create một track disposable với required `REPOSITORY` + `DEMO`, min 3/max 5.
+3. Update `Throwaway Track`.
+4. Assign/remove mentor3 trên disposable assignment nếu chưa dùng ở Module 3.
+5. Delete Throwaway Track sau khi đủ evidence.
+
+### Negative
+
+- Event/track mismatch.
+- Invalid min/max/capacity.
+- Duplicate track/mentor assignment.
+- Assign non-mentor.
+- Delete track có team/assignment/dependency.
+- Wrong role.
 
 ## W2-S05 — Scoring criteria templates
 
-1. Coordinator/Admin sidebar → **Criteria**.
-2. Create a disposable template: name, category, max score, default weight, technical/default/active flags, rubric and description.
-3. Edit it and save; deactivate then activate and observe filters.
-4. For V18 `Deprecated Sample Criterion`, exercise activate → deactivate → delete, in that order and only after evidence.
+1. Mở Criteria.
+2. Create disposable template gồm name, category, max score, default weight, technical/default/active flags, rubric và description.
+3. Update, deactivate và activate.
+4. Với `Deprecated Sample Criterion`: activate → deactivate → delete đúng thứ tự.
 
-Failures: blank/duplicate name, max score ≤ 0, negative weight, invalid category, deleting a template referenced by event criteria, wrong role.
+### Negative
 
-## W2-S06 — Event criteria and round-scoped criteria
+Blank/duplicate name, max score ≤ 0, negative weight, invalid category, delete referenced template và wrong role.
 
-1. **Events** → `SEAL Fall 2026` → edit → criteria, or route `/coordinator/events/{eventId}/criteria`.
-2. Add a template-backed criterion; override description/rubric/weight/max score if needed.
-3. Add one **Create custom event-only criteria** row.
-4. Scope a criterion to selected rounds and verify `/coordinator/rounds/{roundId}/criteria` shows only applicable active criteria.
-5. Edit then delete only V18 `Draft Custom Criterion`.
+## W2-S06 — Event criteria và round scope
 
-Failures: criterion from another event, non-existent round ID, duplicate template use, invalid override values, total effective weights invalid for business rule, wrong role.
+1. `SEAL Fall 2026` → event criteria.
+2. Add template-backed criterion.
+3. Override description/rubric/weight/max score nếu cần.
+4. Add custom event-only criterion.
+5. Scope một criterion vào selected rounds.
+6. Mở `/coordinator/rounds/{roundId}/criteria` và xác nhận chỉ criteria applicable/active.
+7. Update/delete `Draft Custom Criterion`.
 
-## W2-S07 — Round CRUD, windows and state transitions
+### Negative
 
-1. Edit `SEAL Fall 2026` → Rounds tab.
-2. Create a disposable upcoming round with valid start/end/submission/judging order.
-3. Edit its name/instructions/dates while status allows.
-4. Inspect V18 `Expired Open Round`: it is `OPEN` with submission deadline in the past and is reserved for deadline-transition/close testing.
-5. Inspect V19 archived rounds to verify filters for `PENDING_LOCK` and `CLOSED`.
-6. Trigger the supported close/lock transition on the disposable expired round, refresh and capture status/timestamps.
-7. Delete only an unused upcoming disposable round.
+- Template hoặc round thuộc event khác.
+- Duplicate template use.
+- Invalid override/weight/max score.
+- Delete criterion đã có score/dependency.
 
-Failures: open before competition, close twice, delete a round with submissions/scores, deadline ordering violation, edit locked terminal round, event mismatch, wrong role.
+## W2-S07 — Round CRUD và scheduler transition
 
-## W2-S08 — Advance-rule configuration and preview
+### CRUD
 
-1. Open a round → advancement/advance-rules page.
-2. Create rules covering `TOP_N`, `TOP_PERCENT`, `MIN_SCORE` and `WILDCARD` as supported; set scope, value, priority and description.
-3. Update V18 disposable `WILDCARD` rule and run preview/suggestions without confirming.
-4. Delete only the disposable rule; retain the real `TOP_N` final rule.
+1. Tạo upcoming round disposable trong Fall 2026.
+2. Sửa name/instruction/dates khi chưa locked.
+3. Delete khi chưa có submission/score.
 
-Failures: negative/zero impossible values, percentage > 100, duplicate priority/scope where rejected, track outside round event, preview without rankings, edit after advancement confirmation.
+### Deadline transition
 
-## W2-S09 — Assign mentors and judges
+1. Mở `Expired Open Round` ID `18000000-0000-4000-8000-000000000601`.
+2. Xác nhận ban đầu OPEN nhưng deadline đã qua.
+3. Chờ/invoke local deadline scheduler.
+4. Refresh trạng thái và lock timestamps.
 
-1. From event creation/edit assignment section, select an active mentor and a track; save and verify mentor dashboard scope.
-2. Select active judge, round and optional track; save and verify judge dashboard queue.
-3. Use `judge5` mobile final assignment as the remove/unassign target after queue evidence.
-4. Use `mentor3` Spring backend assignment as the remove target after mentor evidence.
+### Expected
 
-Failures: duplicate assignment, expired `judge4`, user with wrong role, round/track from different events, removing assignment that owns locked scores, wrong actor.
+Scheduler chỉ transition fixture hết hạn, không đổi live Final Demo Round. Re-run không tạo transition/audit trùng bất hợp lý.
+
+### Negative
+
+Open trước competition, close twice, edit/delete locked round, delete round có submission/score, event mismatch và wrong role.
+
+## W2-S08 — Advance-rule configuration
+
+1. Mở round advancement/advance-rules.
+2. Create rule cho `TOP_N`, `TOP_PERCENT`, `MIN_SCORE`, `WILDCARD` theo supported scope.
+3. Update disposable WILDCARD.
+4. Chạy preview/suggestions nhưng chưa confirm.
+5. Delete disposable rule; giữ real TOP_N.
+
+### Negative
+
+Value ≤ 0, percentage > 100, duplicate priority/scope, track ngoài event, preview khi chưa có ranking và edit sau confirm.
+
+## W2-S09 — Mentor và judge assignments
+
+1. Assign active mentor vào track; mở mentor dashboard để xác nhận scope.
+2. Assign active judge vào round + optional track; mở judge queue.
+3. Dùng judge5 mobile assignment làm remove target sau khi đã chụp queue evidence.
+4. Dùng mentor3 assignment làm remove target sau mentor evidence.
+
+### Negative
+
+- Duplicate assignment.
+- Expired judge4.
+- User wrong role.
+- Round và track thuộc event khác.
+- Remove assignment đang sở hữu score/locked obligation.
 
 ## W2-S10 — Prize configuration
 
-1. Navigate through **Awards** to a selected event, then prize setup.
-2. Create a unique overall or track prize; fill rank, title, value, currency, sponsor and description.
-3. Update and inspect V18 `Consolation Prize (Disposable)`.
-4. Delete that disposable rank-4 prize only after Week 5 award-negative evidence if the Week 5 run needs it.
+1. Coordinator mở Awards/Prize setup.
+2. Create unique overall hoặc track prize: rank, title, value, currency, sponsor, description.
+3. Update `Consolation Prize (Disposable)`.
+4. Chỉ delete sau khi Module 5 đã dùng negative award evidence.
 
-Failures: duplicate event/track/rank, negative value, track from another event, delete already-awarded prize, unauthorized actor.
+### Negative
+
+Duplicate event/track/rank, negative value, track khác event, delete awarded prize và wrong role.
 
 ## W2-S11 — Announcement lifecycle
 
-1. Sidebar → **Announcement**; select `SEAL Summer 2026`.
-2. Create a draft with event, title, content, target scope/roles/tracks and delivery switches.
-3. Edit draft, schedule for a future time, then inspect scheduled state.
-4. Use another disposable draft for **Send now**/publish.
-5. Pin, unpin, mark as result announcement and unpublish only where state permits.
-6. Delete/cancel only the dedicated draft/scheduled fixture.
+1. Mở Announcement và chọn Summer 2026.
+2. Create draft với title/content/target scope/roles/tracks/delivery switches.
+3. Edit draft.
+4. Schedule tương lai và kiểm tra SCHEDULED.
+5. Dùng draft khác cho Send now/Publish.
+6. Pin/unpin/mark-result/unpublish theo state được phép.
+7. Delete/cancel chỉ dedicated draft/scheduled fixture.
 
-Failures: blank title/content, past schedule, target ID from another event, publish twice, edit/delete published row where forbidden, student/judge mutation.
+### Negative
 
-## W2-S12 — Delete event safely
+Blank title/content, past schedule, target khác event, publish twice, forbidden edit/delete terminal row và wrong role.
 
-1. Login as `coordinator2@seal.test`.
-2. Open **Events** → `SEAL Fall 2027 (Delete Me)`.
-3. Verify it is `DRAFT` and has no dependent teams/submissions.
-4. Use delete, confirm once, refresh the list and confirm 404 by ID.
+## W2-S12 — Delete event an toàn
 
-Failure: attempt to delete Summer 2026 or any event with dependent business data; expect conflict and no cascade loss.
+1. Login `coordinator2@seal.test`.
+2. Mở `SEAL Fall 2027 (Delete Me)` ID `18000000-0000-4000-8000-000000000701`.
+3. Xác nhận DRAFT và không có team/submission dependency.
+4. Delete; refresh list và gọi detail ID.
 
-## Week 2 completion checkpoint
+### Expected
 
-- Event and child validation boundaries captured.
-- Every lifecycle state, including V19 `ARCHIVED`, `PENDING_LOCK`, `CLOSED`, is queryable.
-- Mutations use only disposable rows.
-- Assignment, prize and announcement state failures captured.
-- Event delete/cancel tests did not damage Summer 2026 or Spring 2025.
+Delete thành công, detail trả 404. Thử delete Summer 2026 phải conflict và không cascade data.
+
+## 3. Checkpoint Module 2
+
+- [ ] Public event data đúng và publication-safe.
+- [ ] Event wizard persist đầy đủ children.
+- [ ] Validation date/capacity/unique được chứng minh.
+- [ ] Track/criteria/round/rule CRUD chỉ dùng disposable rows.
+- [ ] Scheduler transition idempotent.
+- [ ] Judge/mentor assignment đúng scope.
+- [ ] Prize/announcement lifecycle đúng.
+- [ ] Delete/cancel không làm hỏng core event.
+
+## 4. Cleanup
+
+Thứ tự: announcement draft → dependency-free assignments → disposable rule/criterion/track → cancel event → delete event. Không xóa Summer 2026, Spring 2025 hoặc archive snapshot.

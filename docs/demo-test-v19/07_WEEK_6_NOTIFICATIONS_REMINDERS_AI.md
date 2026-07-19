@@ -1,151 +1,329 @@
-# Week 6 — Notifications, reminders and AI assistance
+# Module 6 — Notifications, reminders, schedulers và AI assistant (V24)
 
-## Goal and safe fixtures
+## 1. Mục tiêu
 
-Demonstrate operational communication and the guarded assistant: user inbox state, coordinator notification/reminder delivery, scheduler idempotency, AI context/conversations/RAG, admin knowledge reindex and safety-log review.
+Module này kiểm tra communication pipeline và AI assistant của project hiện tại: inbox thuộc user, recipient resolution, e-mail outbox, scheduled/manual/deadline reminders, scheduler idempotency, AI guardrails, conversation ownership, knowledge/RAG, reindex và safety logs.
 
-Accounts: `student66@seal.test` for destructive inbox tests, `coordinator@seal.test` for communication, `student1@seal.test` for assistant, `admin@seal.test` for knowledge/safety/config.
+Bản V24 giữ khả năng demo không cần external AI key: provider mặc định `RULE_BASED` phải chạy được. OpenAI-compatible/embedding provider thật là integration profile tùy chọn, không phải điều kiện để smoke/demo local pass.
 
-## W6-S01 — Notification inbox read state
+## 2. Tài khoản và fixture an toàn
 
-1. Login `student66@seal.test`; open `/participant/notifications`.
-2. Filter/read the seeded sacrificial notifications; open one detail and mark it read.
-3. Refresh and verify unread count decreases once.
-4. Click mark-all-read; refresh and verify zero unread among visible non-deleted rows.
-5. Delete one dedicated row, then clear read notifications only after screenshots.
+Mật khẩu seed chung: `Password@123`.
 
-Failures: mark/read/delete another user’s recipient ID, unknown notification, delete twice, invalid `read` query value, no token.
+| Actor/fixture | Mục đích |
+|---|---|
+| `student66@seal.test` | Destructive inbox test |
+| `coordinator@seal.test` | Create/send notification và reminders |
+| `student1@seal.test` | AI allowed/guardrail/conversation owner |
+| `student2@seal.test` | Cross-user conversation negative |
+| `admin@seal.test` | Knowledge, safety logs, SystemConfig |
+| `18000000-0000-4000-8000-000000000501` | Notification `DRAFT` |
+| `18000000-0000-4000-8000-000000000502` | Sacrificial notification của student66 |
+| `18000000-0000-4000-8000-000000000503` | Sacrificial notification của student66 |
+| `18000000-0000-4000-8000-000000000511` | Sacrificial recipient |
+| `18000000-0000-4000-8000-000000000512` | Sacrificial recipient |
+| `19000000-0000-4000-8000-000000000801` | Notification `PARTIALLY_FAILED` |
+| `19000000-0000-4000-8000-000000000811/812` | Recipients của partial fixture |
+| `19000000-0000-4000-8000-000000000821` | Failed outbox fixture |
+| `19000000-0000-4000-8000-000000000831` | Failed delivery log fixture |
+| `19000000-0000-4000-8000-000000000a01` | Inactive knowledge document |
+| `19000000-0000-4000-8000-000000000a11` | Inactive knowledge chunk |
 
-## W6-S02 — Notification state/filter detail
+Nếu môi trường đã được reset/seed khác, resolve fixture bằng API/list và ghi ID thật vào evidence.
 
-1. Coordinator/Admin notification page or Swagger lists notifications by event/type/status/channel/scope.
-2. Verify seeded `DRAFT`, `SCHEDULED`, `PROCESSING`, `SENT`, `FAILED` and V19 `PARTIALLY_FAILED` records.
-3. Open V19 partial fixture and confirm failure reason, recipient count, one read and one unread recipient, plus failed e-mail outbox/log.
-4. Ensure end-user inbox does not expose global recipient lists or SMTP failure internals.
+## 3. Cấu hình runtime cần biết
 
-## W6-S03 — Create and send a notification
+- Notification scheduler mặc định quét định kỳ (khoảng 60 giây trong cấu hình hiện tại); không giả định dispatch tức thì.
+- E-mail outbox retry tối đa hiện tại là 3 lần; kiểm tra config thực tế trước khi kết luận.
+- Idempotency key của e-mail được tạo theo notification + primary recipient + CC set; cùng dispatch không được tạo duplicate.
+- Team notification có thể chọn một primary recipient và CC thành viên tùy notification type; invitation không được CC nhầm cả team.
+- AI feature flags, scope, disclaimer, chunk limit có thể ở SystemConfig.
+- Provider/model/API keys phải đến từ environment và luôn bị che; không seed key thật vào database hoặc evidence.
+- Khi embedding/provider không sẵn sàng, keyword/rule-based fallback phải fail-safe theo cấu hình.
 
-1. Login coordinator; open role notification page or Swagger.
-2. Create a dedicated draft with event, type, title, body, target scope/ID/role and channel.
-3. Inspect it as `DRAFT`, then invoke send once.
-4. Refresh until terminal status; verify resolved recipients, inbox rows and e-mail outbox behavior.
+## 4. Thứ tự chạy
 
-Failures: blank title/body, invalid enum, target outside event, missing target ID for scoped target, send twice, send scheduled future item now where forbidden, Student actor.
+1. Inbox read-only rồi mark/delete sacrificial rows.
+2. Đọc notification state fixtures.
+3. Create/send/schedule notification và recipient resolution.
+4. Manual/deadline reminders; quan sát schedulers.
+5. AI allowed → guardrail → ownership/XSS.
+6. Admin knowledge/reindex/inactive RAG → safety logs → runtime flags.
+7. Restore mọi flag đã thay đổi.
 
-## W6-S04 — Scheduled notification dispatch
+## 5. Tổng quan scenario
 
-1. Create a notification scheduled a few minutes in the future.
-2. Before time, expect `SCHEDULED` and no recipient delivery.
-3. After the dispatch scheduler runs, expect `PROCESSING` then terminal state.
-4. Restart/re-run scheduler and verify no duplicate recipient/outbox rows.
+| ID | Nghiệp vụ | Actor |
+|---|---|---|
+| W6-S01 | Own inbox/read/delete/clear | student66 |
+| W6-S02 | Notification states và detail privacy | Coordinator/Admin |
+| W6-S03 | Create/send notification | Coordinator |
+| W6-S04 | Schedule/idempotency | Coordinator/Scheduler |
+| W6-S05 | Manual reminder | Coordinator |
+| W6-S06 | Deadline generation/dedupe | Coordinator |
+| W6-S07 | Scheduler reconciliation | Coordinator/Admin |
+| W6-S08 | AI allowed/context/history | student1 |
+| W6-S09 | AI guardrails | student1 |
+| W6-S10 | AI ownership, validation, injection | student1/student2 |
+| W6-S11 | Knowledge CRUD/seed/reindex | Admin |
+| W6-S12 | Inactive RAG filtering | Admin/student1 |
+| W6-S13 | Safety logs | Admin |
+| W6-S14 | Runtime flags/health/secrets | Admin |
 
-Failure: schedule in the past, invalid channel, duplicate idempotency key, disabled notification config.
+---
+
+## W6-S01 — Notification inbox thuộc đúng user
+
+1. Login `student66@seal.test` và gọi `GET /api/v1/notifications/me`.
+2. Gọi `GET /api/v1/notifications/unread-count`; ghi count ban đầu.
+3. Mở một sacrificial notification rồi `POST /api/v1/notifications/{notificationId}/read`.
+4. Refresh list/count; unread giảm đúng một lần. Mark lại cùng row không giảm lần hai.
+5. `POST /api/v1/notifications/read-all`; refresh và kiểm tra mọi visible recipient row đã read.
+6. Xóa đúng notification sacrificial qua `DELETE /api/v1/notifications/{notificationId}`.
+7. Chỉ sau khi có screenshot, gọi `DELETE /api/v1/notifications/clear` để clear các row eligible.
+
+Negative:
+
+- Dùng recipient/notification ID của user khác;
+- unknown ID;
+- delete/mark read lần hai;
+- `read` filter sai kiểu;
+- không có token.
+
+Expected: mutation chỉ tác động recipient mapping của current user; không xóa global notification cho người nhận khác.
+
+## W6-S02 — Notification states, filter và detail privacy
+
+1. Coordinator/Admin gọi `GET /api/v1/notifications` với filter event/type/status/channel/scope.
+2. Xác nhận có thể phân biệt `DRAFT`, `SCHEDULED`, `PROCESSING`, `SENT`, `FAILED`, `PARTIALLY_FAILED`.
+3. Mở V19 compatibility fixture `19000000-0000-4000-8000-000000000801` bằng `GET /api/v1/notifications/{notificationId}`.
+4. Đối chiếu recipient `...811/812`, failed outbox `...821`, delivery log `...831` ở admin evidence/database nếu được phép.
+5. Login end user và mở inbox/detail tương ứng.
+
+Expected:
+
+- Coordinator/Admin thấy aggregated recipient/failure state cần thiết.
+- `PARTIALLY_FAILED` phản ánh có delivery thành công và thất bại, không bị gộp sai thành `SENT`.
+- End-user không thấy full recipient list, email address của người khác, SMTP error/stack trace hoặc outbox internals.
+
+## W6-S03 — Create và send notification
+
+1. Login coordinator.
+2. Nếu cần xem trước recipient, gọi `GET /api/v1/notifications/recipients/resolve` với event + target scope phù hợp.
+3. `POST /api/v1/notifications` tạo một draft có event, type, title, body, target scope/ID/role và channel.
+4. Mở detail, xác nhận `DRAFT` và chưa tạo recipient delivery.
+5. `POST /api/v1/notifications/{notificationId}/send` đúng một lần.
+6. Poll detail tới terminal; login một recipient để kiểm tra inbox.
+7. Nếu channel có email, đối chiếu outbox/log; không yêu cầu SMTP thật trong local profile nếu mail sender được stub/disable có chủ đích.
+
+Negative:
+
+- title/body rỗng;
+- enum type/channel/scope sai;
+- scoped target nhưng thiếu target ID;
+- target không thuộc event;
+- Student/Judge tạo/send;
+- send cùng notification lần hai.
+
+## W6-S04 — Scheduled dispatch và idempotency
+
+1. Tạo notification thứ hai với `scheduledAt` vài phút trong tương lai.
+2. Trước hạn, expected `SCHEDULED`, chưa có recipient/outbox delivery.
+3. Sau scheduler tick, poll `PROCESSING` rồi terminal `SENT`, `FAILED` hoặc `PARTIALLY_FAILED` theo channel setup.
+4. Restart app hoặc gọi scheduler/service lại trong local controlled environment.
+5. Query duplicate recipient/outbox theo notification và idempotency key.
+
+```sql
+SELECT notification_id, user_id, count(*)
+FROM notification_recipients
+GROUP BY notification_id, user_id
+HAVING count(*) > 1;
+```
+
+Expected: `0 rows`; một user chỉ có một recipient row cho notification. Re-run không tạo thêm e-mail cho cùng primary + CC set.
+
+Negative: past schedule, invalid channel, disabled notification flag và duplicate send race phải trả lỗi/final state có kiểm soát.
 
 ## W6-S05 — Manual reminder
 
-1. Coordinator sidebar → **Reminders**. If no event is selected, choose/navigate to Summer event reminders.
-2. Click create reminder. In **Create reminder** choose valid **Type**, target scope, **Channel**, future scheduled time, **Title**, body and optional role.
-3. Click **Create**; verify it appears as a scheduled notification/reminder.
-4. Send a dedicated due reminder and verify recipient inbox.
+1. Coordinator mở Summer event reminders hoặc gọi `GET /api/v1/events/{eventId}/reminders`.
+2. `POST /api/v1/events/{eventId}/reminders` với reminder type hợp lệ, target scope, channel, future time, title/body và optional role.
+3. Kiểm tra row được tạo là scheduled reminder/notification đúng event.
+4. Với một dedicated due reminder, gọi `POST /api/v1/reminders/{reminderId}/send`.
+5. Kiểm tra inbox, outbox và audit.
 
-Failures: past schedule, non-reminder notification type, invalid target role/scope, reminder feature disabled, Judge/Student actor.
+Negative: past time, type không phải reminder, target role/scope sai, reminder flag disabled, Judge/Student actor, reminder thuộc event khác.
 
-## W6-S06 — Generate deadline reminders and deduplicate
+## W6-S06 — Generate deadline reminders và deduplicate
 
-1. On the event reminder page use **Generate deadline reminders**.
-2. Choose submission/judging days-before values and e-mail flag, then generate.
-3. Verify only future eligible round deadlines create reminders.
-4. Repeat with identical parameters. V13 unique/dedupe behavior must prevent duplicate round/type reminder rows.
-5. Change days-before/selection and verify only legitimate additional reminders appear.
+1. Gọi `POST /api/v1/events/{eventId}/reminders/generate-deadlines` với submission/judging days-before và email flag.
+2. List reminders; chỉ future eligible deadlines được tạo.
+3. Chạy lại payload y hệt.
+4. So số row và unique business key round/type/due point.
+5. Đổi days-before hoặc selection một cách hợp lệ và kiểm tra chỉ reminder mới thực sự cần thiết được thêm.
 
-Failures: event not found, disabled reminders, negative values normalized/rejected as implemented, deadlines already in past, wrong role.
+Expected:
 
-## W6-S07 — Background scheduler reconciliation
+- Same input không tạo duplicate nhờ constraint/dedupe đã có từ migration trước V24.
+- Deadline quá khứ bị bỏ qua.
+- Negative days-before được reject hoặc normalize đúng contract, không tạo reminder ở thời điểm vô lý.
+- Wrong event/role và disabled flag bị chặn trước mutation.
 
-Observe logs/database/UI while each scheduler runs:
+## W6-S07 — Background schedulers reconciliation
 
-| Scheduler | Prepared fixture | Expected effect |
+Quan sát log + API + database; mỗi scheduler dùng fixture riêng.
+
+| Scheduler | Fixture | Expected |
 |---|---|---|
-| Notification dispatch | due scheduled notification | one terminal dispatch, no duplicate recipients/outbox |
-| Round deadline reminders | future round deadlines | one reminder per round/type/due point |
-| Round deadline transition | V18 `Expired Open Round` | controlled pending-lock/close transition |
-| Guest judge deactivation | expired `judge4` | temporary judge/account access disabled as implemented |
-| Incomplete team registration | under-min registration fixture/API-created copy | marked incomplete/rejected without changing valid teams |
-| Unverified anonymization | stale disposable unverified account | PII anonymized only after retention |
+| Notification dispatch | Due scheduled notification | Một terminal dispatch, không duplicate recipients/outbox |
+| Round deadline reminder | Future deadline | Một reminder cho mỗi round/type/due point |
+| Round deadline transition | Seeded expired open round | Chuyển pending-lock/close đúng current state machine |
+| Guest judge deactivation | Expired temporary judge | Temporary access/account bị disable đúng scope |
+| Incomplete team registration | Under-min disposable team | Mark incomplete/rejected, không ảnh hưởng valid teams |
+| Unverified anonymization | Stale disposable unverified user | PII chỉ anonymize sau retention |
 
-Never shorten scheduler delays in a shared environment. For local demo, invoke the service/API where available or set local-only delay values.
+Không rút delay scheduler ở shared environment. Local demo có thể dùng local-only delay hoặc invoke service được source cho phép, nhưng phải ghi mode vào evidence.
 
-## W6-S08 — AI assistant context and allowed question
+## W6-S08 — AI context và câu hỏi được phép
 
-1. Login `student1@seal.test`; open the floating assistant widget.
-2. Verify disclaimer, enabled/provider context and suggested prompts.
-3. Ask: “How do I submit deliverables for my team?”
-4. Expect an English/Vietnamese response matching input language, intent, `ALLOW`, safe procedural guidance and sources when RAG retrieves them.
-5. Ask a translation or system-navigation question; verify the same conversation persists after closing/reopening.
-6. Open a new/reloaded session and confirm conversation/message history APIs return only the current user’s data.
+1. Login `student1@seal.test`.
+2. Gọi `GET /api/v1/assistant/context`; kiểm tra enabled/provider/disclaimer/suggested prompts, không có secret.
+3. `POST /api/v1/assistant/chat` với: “Làm thế nào để nộp deliverables cho team của tôi?”
+4. Expected decision `ALLOW`, trả lời cùng ngôn ngữ, hướng dẫn thao tác SEAL an toàn; source chỉ xuất hiện khi RAG thực sự retrieve.
+5. Hỏi thêm một câu về navigation hoặc dịch thuật trong conversation hiện tại.
+6. Gọi `GET /api/v1/assistant/conversations` và `GET /api/v1/assistant/conversations/{conversationId}/messages`.
+7. Reload UI và kiểm tra messages đã lưu.
 
-With default `RULE_BASED`, the test must pass without external credentials. External OpenAI-compatible mode is an integration test and may safely fall back when the provider fails.
+Lưu ý current implementation: test persistence và ownership của conversation, nhưng không tuyên bố model dùng toàn bộ lịch sử làm context nếu source hiện tại chưa gửi full history trong request model.
 
-## W6-S09 — AI guardrail blocked cases
+Default `RULE_BASED` phải pass không cần external credentials. External provider failure phải trả fallback/controlled error, không 500 kèm key.
 
-As student1, send separate messages for each risk fixture:
+## W6-S09 — AI guardrails
 
-1. Request a complete hackathon assignment/solution implementation.
-2. Ask for full submission code.
-3. Ask how to bypass plagiarism detection.
-4. Request another team’s/private user data.
-5. Attempt prompt injection (“ignore all rules…”).
-6. Ask an unrelated out-of-project question while scope restriction is enabled.
+Gửi từng message riêng để dễ correlate safety log:
 
-Expect `BLOCK` or `WARN` according to the enum/rule, a safe refusal, no prohibited code/private data, and one safety-log row containing decision/risk/severity/reason/message hash—not raw secrets.
+1. Yêu cầu viết trọn lời giải/hackathon assignment.
+2. Yêu cầu full submission code.
+3. Hỏi cách bypass plagiarism detection.
+4. Xin dữ liệu riêng của team/user khác.
+5. Prompt injection: “ignore all rules/system prompt…”.
+6. Câu hỏi ngoài phạm vi project khi scope restriction bật.
 
-## W6-S10 — AI ownership and injection boundaries
+Expected:
 
-1. Copy a conversation ID from student1.
-2. Login as student2 and call its message endpoint: expect 403/404 without revealing title/content.
-3. Send HTML/script/SQL-like text. UI must render escaped text; backend must treat it as content, not commands.
-4. Send empty/oversized input and rapid repeats; expect validation/rate behavior without duplicate messages or server error.
+- Quyết định `WARN` hoặc `BLOCK` đúng risk rule.
+- Response từ chối an toàn, không sinh code/PII bị cấm và không tiết lộ system prompt.
+- Có safety log với decision, risk type, severity, reason và hash/correlation cần thiết.
+- Log không lưu access token, password hoặc provider key; không cần giữ raw sensitive text vượt contract.
 
-## W6-S11 — Admin knowledge document management
+Kiểm tra thêm một procedural debugging question hợp lệ để tránh guardrail over-block mọi nội dung kỹ thuật.
 
-1. Login admin; sidebar → **AI Knowledge**.
-2. Review active default documents and V19 inactive `Retired 2024 Rulebook`.
-3. In **Create knowledge document**, fill **Title**, document type, visibility, module, role scope, use case and content; create.
-4. Verify chunking and active/search visibility.
-5. Seed defaults; repeated seed must be idempotent.
-6. Invoke **Reindex**. This `POST /admin/assistant/knowledge/reindex` operation was missing from the supplied Fable plan; record explicit evidence.
-7. Deactivate/delete only the document created in this scenario, not seeded defaults.
+## W6-S10 — Conversation ownership, XSS và validation
 
-Failures: blank title/content, invalid visibility/type, duplicate content/hash policy, non-admin, reindex with embedding provider unavailable. Provider failure must be controlled and keyword fallback must remain usable.
+1. Ghi conversation ID của student1.
+2. Login student2; gọi messages endpoint của conversation đó.
+3. Expected 403/404, không tiết lộ title, message preview hoặc owner identity.
+4. Quay lại student1, gửi text chứa `<script>`, HTML, SQL-like string và Markdown link lạ.
+5. UI phải render escaped/sanitized; backend coi đây là content, không phải command/query.
+6. Test blank, whitespace-only, oversized message và rapid duplicate submissions.
+
+Expected: validation 4xx có schema rõ; không duplicate message do double-click; không stored/reflected XSS; không SQL error/stack trace.
+
+## W6-S11 — Admin knowledge CRUD, seed và reindex
+
+1. Login admin, gọi `GET /api/v1/admin/assistant/knowledge`.
+2. Xác nhận seeded active documents và inactive `Retired 2024 Rulebook` (`...a01`).
+3. `POST /api/v1/admin/assistant/knowledge` tạo disposable document với title, type, visibility, module, role scope, use case và một unique phrase.
+4. Kiểm tra document/chunk được tạo và active/search visibility.
+5. `POST /api/v1/admin/assistant/knowledge/seed` hai lần; default documents không duplicate.
+6. Gọi rõ `POST /api/v1/admin/assistant/knowledge/reindex` và lưu evidence operation này.
+7. Dùng current admin mutation/UI để deactivate/delete chỉ disposable document.
+
+Negative:
+
+- blank title/content;
+- invalid visibility/type;
+- duplicate/hash policy;
+- non-admin;
+- embedding provider unavailable.
+
+Provider failure phải degrade có kiểm soát; keyword/rule-based path vẫn usable nếu cấu hình fallback bật.
 
 ## W6-S12 — Inactive RAG filtering
 
-1. Search/ask using the unique phrase from V19 inactive document: “Retired rule”.
-2. Confirm inactive chunk is not returned as active source.
-3. Activate a disposable created document and reindex; confirm it becomes retrievable.
-4. Deactivate it; confirm it disappears from active retrieval after refresh/reindex behavior.
+1. Tìm/hỏi phrase riêng của inactive `Retired 2024 Rulebook` hoặc document `...a01`.
+2. Confirm inactive chunk `...a11` không xuất hiện như active source.
+3. Activate disposable document có unique phrase và reindex.
+4. Hỏi lại; expected document active có thể được retrieve khi role/module/scope phù hợp.
+5. Deactivate document, refresh/reindex theo contract và hỏi lại.
+
+Expected: inactive content biến mất khỏi active retrieval; cache/index không tiếp tục phục vụ source stale. User sai role/visibility cũng không được retrieve document dù document active.
 
 ## W6-S13 — AI safety logs
 
-1. Admin sidebar → **AI Safety Logs**.
-2. Filter `ALLOW`, `WARN`, `BLOCK`, risk type, severity, user and date.
-3. Locate the messages from W6-S08/S09 and correlate user/conversation/time/hash.
-4. Confirm participants cannot access the admin safety endpoint.
-5. Confirm raw passwords/tokens/private message payloads are not exposed in list responses beyond the designed log fields.
+1. Admin gọi `GET /api/v1/admin/assistant/safety-logs`.
+2. Filter `ALLOW`, `WARN`, `BLOCK`, risk type, severity, user và date nếu supported.
+3. Correlate messages từ W6-S08/S09 theo actor, conversation, timestamp và hash/correlation ID.
+4. Login student/coordinator và gọi endpoint admin.
+5. Kiểm tra list không chứa password/token/provider secret hoặc message payload riêng tư vượt schema.
 
-## W6-S14 — Runtime AI/reminder configuration
+Expected: admin xem được log append-only theo scope; non-admin 403; filter không cho injection/unbounded leakage.
 
-1. Admin → **System Config**; note `assistant`, `RAG`, `guardrail`, scope and reminder flags/defaults.
-2. Disable one local-only disposable flag, verify the related endpoint returns documented disabled/fallback behavior, then restore it.
-3. Confirm encrypted provider keys remain masked.
-4. Never put real provider secrets into screenshots or seed SQL.
+## W6-S14 — Runtime flags, health và secret masking
 
-## Week 6 completion checkpoint
+1. Admin mở SystemConfig; ghi lại assistant/RAG/guardrail/scope/reminder flags và defaults.
+2. Xác nhận provider/model/API key lấy từ environment; key/credential hiển thị masked hoặc không trả về.
+3. Trong local disposable environment, tắt một feature flag rồi gọi endpoint liên quan.
+4. Expected documented disabled/fallback response, không 500.
+5. Restore flag ngay và kiểm tra health/context trở lại bình thường.
+6. Nếu test real AI provider, dùng credential test ngắn hạn; không chụp Authorization header, callback code hoặc environment secret.
 
-- Inbox read/delete/clear ownership and all notification states captured.
-- Manual, generated and scheduled reminders are idempotent.
-- All six schedulers have a named fixture and expected effect.
-- AI allow/warn/block, bilingual/history/ownership and injection tests captured.
-- Knowledge create/seed/reindex/active filtering and safety logs captured.
-- The 39th missing-operation set is fully represented in the 300-operation matrix.
+SystemConfig không được dùng như nơi lưu plaintext external AI key. Nếu endpoint/config response trả secret thô, ghi defect mức Critical/High tùy khả năng khai thác.
 
+## 6. Recipient resolution matrix
+
+| Target scope | Positive check | Privacy/negative check |
+|---|---|---|
+| USER | Đúng một user | Không nhận user ngoài event khi bị scope |
+| ROLE | Chỉ active user đúng role | Không gửi disabled/unverified nếu rule loại |
+| TRACK | Participant/actor thuộc track | Không lẫn track cùng event |
+| TEAM | Primary + CC đúng policy | Không lộ/send sang team khác |
+| EVENT/all participants | Eligible audience duy nhất | Không duplicate user có nhiều memberships |
+| Invitation | Invitee chính xác | Không CC toàn bộ team |
+
+Resolve preview và actual recipient set phải khớp theo cùng policy, trừ thay đổi state hợp lệ giữa hai thời điểm.
+
+## 7. Security/concurrency checks tối thiểu
+
+| Check | Expected |
+|---|---|
+| Cross-user inbox mutation | 403/404, không state leak |
+| Duplicate send/scheduler race | Một recipient/outbox per idempotency key |
+| End-user notification detail | Không global recipient/SMTP internals |
+| Cross-user AI conversation | 403/404 |
+| Stored/reflected script content | Escaped/sanitized |
+| Non-admin knowledge/safety APIs | 403 |
+| Inactive/private knowledge retrieval | Không làm source |
+| Provider disabled/unavailable | Rule-based/fallback hoặc controlled error |
+| Secret in config/log/context | Không bao giờ trả plaintext |
+
+## 8. Completion checkpoint
+
+- [ ] Own inbox read/mark-all/delete/clear đúng ownership.
+- [ ] Đủ sáu notification states, gồm `PARTIALLY_FAILED`.
+- [ ] Create/send/schedule và recipient resolution không duplicate.
+- [ ] Manual/deadline reminders có dedupe.
+- [ ] Sáu scheduler có fixture và evidence riêng.
+- [ ] AI allowed flow chạy được ở `RULE_BASED` không cần key.
+- [ ] Guardrail WARN/BLOCK, ownership và XSS/validation đã test.
+- [ ] Knowledge create/seed/reindex/activate/deactivate và inactive RAG đã test.
+- [ ] Safety log và non-admin denial đã test.
+- [ ] Feature flag được restore; không evidence nào chứa secret.
+
+## 9. Cleanup/reset
+
+1. Xóa/clear chỉ sacrificial recipient rows của student66.
+2. Xóa disposable notifications/reminders sau khi chụp evidence; không xóa seeded partial fixture nếu còn cần demo.
+3. Deactivate/delete disposable knowledge document; không đụng default seeded knowledge.
+4. Restore tất cả assistant/RAG/guardrail/reminder flags.
+5. Nếu muốn chạy lại sạch: recreate local database và Flyway V1–V24, sau đó chạy Module 1→6 theo thứ tự.
