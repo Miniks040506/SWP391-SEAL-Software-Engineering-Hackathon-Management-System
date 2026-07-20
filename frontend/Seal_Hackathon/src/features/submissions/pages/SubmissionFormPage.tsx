@@ -4,6 +4,12 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import CloudOutlinedIcon from "@mui/icons-material/CloudOutlined";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
+import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
 import {
   TextField,
   Button,
@@ -166,7 +172,6 @@ export function SubmissionFormPage() {
 
   const [items, setItems] = useState<StorageItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<"icon" | "list">("icon");
 
   const [links, setLinks] = useState<ResourceLinkDraft[]>(() => [
     createResourceLinkDraft(),
@@ -869,24 +874,53 @@ export function SubmissionFormPage() {
           />
         ) : (
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm p-6 space-y-8">
-              <div className="flex flex-col gap-3">
-                <div className="flex justify-between items-end">
-                  <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                    Submission evidence
-                  </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
-                    {uploadPolicy
-                      ? `Max size: ${formatSize(uploadPolicy.maximumFileSizeBytes)}, max files: ${uploadPolicy.maximumFiles}`
-                      : "Loading upload limits..."}
-                  </div>
+            {/* Evidence — what the team has filed, and how to add more */}
+            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 p-5 dark:border-slate-800 sm:p-6">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                    Evidence &amp; files
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Attach the deliverables that satisfy each required type above.
+                  </p>
                 </div>
+                <div className="flex flex-col items-end gap-2">
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={openPicker}
+                      disabled={!canOpenAttachmentDialog}
+                      title={
+                        canOpenAttachmentDialog
+                          ? "Add attachment"
+                          : localFileAvailability?.message ||
+                            driveAvailability?.message ||
+                            githubAvailability?.message ||
+                            "Attachment providers are unavailable"
+                      }
+                      className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-slate-900"
+                    >
+                      <AddRoundedIcon style={{ fontSize: 18 }} />
+                      Add evidence
+                    </button>
+                  )}
+                  {canEdit && (
+                    <span className="text-xs font-medium text-slate-500 tabular-nums dark:text-slate-400">
+                      {uploadPolicy
+                        ? `Up to ${formatSize(uploadPolicy.maximumFileSizeBytes)} · ${persistedFileCount}/${uploadPolicy.maximumFiles} files`
+                        : "Loading upload limits…"}
+                    </span>
+                  )}
+                </div>
+              </div>
 
+              <div className="space-y-5 p-5 sm:p-6">
                 {submission?.links && submission.links.length > 0 && (
-                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/30">
-                    <h2 className="mb-3 text-sm font-bold text-slate-800 dark:text-slate-200">
+                  <div>
+                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Saved submission items
-                    </h2>
+                    </h3>
                     <SubmissionLinksPreview
                       links={submission.links}
                       canDelete={canEdit}
@@ -906,336 +940,231 @@ export function SubmissionFormPage() {
                   <div
                     role="status"
                     aria-live="polite"
-                    className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
+                    className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
                   >
-                    Uploading {uploadProgress.current} of {uploadProgress.total}: {uploadProgress.fileName}
+                    <CloudUploadOutlinedIcon style={{ fontSize: 18 }} />
+                    <span className="tabular-nums">
+                      Uploading {uploadProgress.current} of {uploadProgress.total}:
+                    </span>
+                    <span className="truncate">{uploadProgress.fileName}</span>
                   </div>
                 )}
 
-                <div className="w-full border border-slate-200 dark:border-slate-700 rounded-xl bg-[#f8fafc] dark:bg-[#1e293b] flex flex-col min-h-85 overflow-hidden">
-                  <div className="bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 p-2 flex justify-between items-center">
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={openPicker}
-                        disabled={!canOpenAttachmentDialog}
-                        className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
-                        title={
-                          canOpenAttachmentDialog
-                            ? "Add attachment"
-                            : localFileAvailability?.message ||
-                              driveAvailability?.message ||
-                              githubAvailability?.message ||
-                              "Attachment providers are unavailable"
-                        }
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                        </svg>
-                      </button>
-                      {selectedIds.size > 0 && canEdit && (
-                        <button
-                          onClick={() => confirmDelete("selected")}
-                          className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/50 transition-colors ml-1"
-                          title="Delete"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => setViewMode("icon")}
-                        className={`w-8 h-8 flex items-center justify-center border rounded-lg transition-colors ${viewMode === "icon" ? "bg-slate-200 border-slate-300 dark:bg-slate-600 dark:border-slate-500 text-blue-600 dark:text-blue-400" : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"}`}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => setViewMode("list")}
-                        className={`w-8 h-8 flex items-center justify-center border rounded-lg transition-colors ${viewMode === "list" ? "bg-slate-200 border-slate-300 dark:bg-slate-600 dark:border-slate-500 text-blue-600 dark:text-blue-400" : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"}`}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="bg-white dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 p-2 flex items-center flex-wrap gap-2 text-sm">
-                    <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-                      <svg
-                        className="w-5 h-5 text-slate-800 dark:text-slate-300"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-                      </svg>
-                      <span className="font-semibold">Files</span>
-                    </div>
-                  </div>
-
+                {canEdit ? (
                   <div
-                    className={`flex-1 relative ${dragActive ? "bg-blue-50 dark:bg-blue-900/20" : "bg-transparent"} overflow-auto cursor-pointer p-4`}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
                     onClick={() => {
-                      if (canEdit && currentItems.length === 0) openPicker();
+                      if (currentItems.length === 0) openPicker();
                     }}
+                    className={[
+                      "rounded-xl border-2 border-dashed transition-colors",
+                      dragActive
+                        ? "border-blue-400 bg-blue-50/70 dark:border-blue-500/70 dark:bg-blue-500/10"
+                        : "border-slate-300 dark:border-slate-700",
+                      currentItems.length === 0
+                        ? "cursor-pointer hover:border-blue-400 hover:bg-slate-50 dark:hover:border-blue-500/60 dark:hover:bg-slate-800/50"
+                        : "bg-slate-50/50 dark:bg-slate-900/40",
+                    ].join(" ")}
                   >
                     {currentItems.length === 0 ? (
-                      <div className="absolute inset-4 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 rounded-xl bg-white/50 dark:bg-slate-800/20 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                        <div className="w-14 h-14 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center mb-4 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800">
-                          <svg
-                            width="24"
-                            height="24"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M11 5v11.17l-4.88-4.88c-.39-.39-1.03-.39-1.42 0-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0l6.59-6.59c.39-.39.39-1.02 0-1.41-.39-.39-1.03-.39-1.42 0L13 16.17V5c0-.55-.45-1-1-1s-1 .45-1 1z" />
-                          </svg>
+                      <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+                        <span className="flex size-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
+                          <CloudUploadOutlinedIcon style={{ fontSize: 24 }} />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            Drag &amp; drop files here
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                            or click to choose a file, Google Drive, or GitHub source
+                          </p>
                         </div>
-                        <p className="text-sm font-semibold">
-                          You can drag and drop files here to add them.
-                        </p>
                       </div>
                     ) : (
-                      <div
-                        className="w-full h-full"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {viewMode === "icon" && (
-                          <div className="flex flex-wrap gap-6">
-                            {currentItems.map((item) => (
-                              <div
-                                key={item.id}
-                                className="w-24 flex flex-col items-center group relative"
+                      <div className="p-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="mb-2 flex items-center justify-between px-1">
+                          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <input
+                              type="checkbox"
+                              checked={
+                                selectedIds.size === currentItems.length &&
+                                currentItems.length > 0
+                              }
+                              onChange={() =>
+                                toggleSelectAll(currentItems.map((i) => i.id))
+                              }
+                              className="cursor-pointer rounded border-slate-300 bg-transparent text-blue-600 focus:ring-blue-500 dark:border-slate-600"
+                            />
+                            <span className="tabular-nums">
+                              {currentItems.length} file
+                              {currentItems.length > 1 ? "s" : ""} ready to upload
+                            </span>
+                          </label>
+                          {selectedIds.size > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => confirmDelete("selected")}
+                              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                            >
+                              <DeleteOutlineRoundedIcon style={{ fontSize: 16 }} />
+                              Remove selected
+                            </button>
+                          )}
+                        </div>
+                        <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+                          {currentItems.map((item) => (
+                            <li
+                              key={item.id}
+                              className={`flex items-center gap-3 p-3 transition-colors ${selectedIds.has(item.id) ? "bg-blue-50/60 dark:bg-blue-500/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(item.id)}
+                                onChange={() => toggleSelect(item.id)}
+                                className="cursor-pointer rounded border-slate-300 bg-transparent text-blue-600 focus:ring-blue-500 dark:border-slate-600"
+                              />
+                              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                <InsertDriveFileOutlinedIcon style={{ fontSize: 18 }} />
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(item)}
+                                className="min-w-0 flex-1 text-left"
                               >
-                                <div
-                                  onClick={() => openEditModal(item)}
-                                  className="relative w-18 h-20 border border-slate-300 dark:border-slate-600 rounded-lg flex items-center justify-center bg-white dark:bg-slate-800 transition-transform hover:scale-105 cursor-pointer mb-2 shadow-sm"
-                                >
-                                  <div className="absolute top-0 right-0 w-4.5 h-4.5 border-l border-b border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-bl-md"></div>
-                                  <span className="text-[13px] font-black text-slate-700 dark:text-slate-300 mt-2">
-                                    {getExt(item.name)}
-                                  </span>
-                                </div>
-                                <span
-                                  className="text-xs font-semibold w-full text-center truncate text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-                                  onClick={() => openEditModal(item)}
-                                >
+                                <span className="block truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
                                   {item.name}
                                 </span>
-                                <span className="mt-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                                  {submissionTypeLabel(item.linkType)}
+                                <span className="mt-0.5 block text-xs text-slate-500 tabular-nums dark:text-slate-400">
+                                  {formatSize(item.size)} · {submissionTypeLabel(item.linkType)}
                                 </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {viewMode === "list" && (
-                          <table className="w-full text-left border-collapse text-sm">
-                            <thead>
-                              <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 bg-transparent">
-                                <th className="p-3 w-12 text-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={
-                                      selectedIds.size ===
-                                        currentItems.length &&
-                                      currentItems.length > 0
-                                    }
-                                    onChange={() =>
-                                      toggleSelectAll(
-                                        currentItems.map((i) => i.id),
-                                      )
-                                    }
-                                    className="cursor-pointer rounded border-slate-300 dark:border-slate-600 bg-transparent text-blue-600 focus:ring-blue-500"
-                                  />
-                                </th>
-                                <th className="p-3 font-semibold">Name</th>
-                                <th className="p-3 font-semibold">
-                                  Last modified
-                                </th>
-                                <th className="p-3 font-semibold">Size</th>
-                                <th className="p-3 font-semibold">Type</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {currentItems.map((item) => (
-                                <tr
-                                  key={item.id}
-                                  className={`border-b border-slate-100 dark:border-slate-700/50 transition-colors ${selectedIds.has(item.id) ? "bg-blue-50/50 dark:bg-blue-900/20" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
-                                >
-                                  <td className="p-3 text-center">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedIds.has(item.id)}
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        toggleSelect(item.id);
-                                      }}
-                                      className="cursor-pointer rounded border-slate-300 dark:border-slate-600 bg-transparent text-blue-600 focus:ring-blue-500"
-                                    />
-                                  </td>
-                                  <td
-                                    className="p-3 flex items-center gap-3"
-                                    onClick={() => openEditModal(item)}
-                                  >
-                                    <svg
-                                      className="w-5 h-5 text-slate-400"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path d="M7 3v18h10V8l-5-5H7z" />
-                                      <path d="M12 3v5h5" />
-                                    </svg>
-                                    <span className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer truncate max-w-50">
-                                      {item.name}
-                                    </span>
-                                  </td>
-                                  <td className="p-3 text-slate-500 dark:text-slate-400 text-xs">
-                                    {formatDate(item.lastModified)}
-                                  </td>
-                                  <td className="p-3 text-slate-500 dark:text-slate-400 text-xs">
-                                    {formatSize(item.size)}
-                                  </td>
-                                  <td className="p-3 text-slate-500 dark:text-slate-400 text-xs">
-                                    {submissionTypeLabel(item.linkType)}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => confirmDelete(item.id)}
+                                aria-label={`Remove ${item.name}`}
+                                className="flex size-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:text-slate-500 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
+                              >
+                                <DeleteOutlineRoundedIcon style={{ fontSize: 18 }} />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="mt-2 px-1 text-xs text-slate-400 dark:text-slate-500">
+                          Drop more files here, or use “Add evidence”.
+                        </p>
                       </div>
                     )}
                   </div>
-                </div>
+                ) : (
+                  (!submission?.links || submission.links.length === 0) && (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-400">
+                      No evidence was attached to this submission.
+                    </div>
+                  )
+                )}
               </div>
+            </section>
 
-              <div className="flex flex-col gap-3">
-                <div className="flex justify-between items-end">
-                  <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                    Resource Links
-                  </div>
-                </div>
-                {links.map((link, idx) => (
-                  <div
-                    key={link.clientId}
-                    className="flex flex-col sm:flex-row gap-3 items-start"
-                  >
-                    <TextField
-                      select
-                      size="small"
-                      label="Submission type"
-                      disabled={!canEdit}
-                      value={linkTypeOptions.length > 0 ? link.linkType : ""}
-                      onChange={(e) => {
-                        userHasEdited.current = true;
-                        const newLinks = [...links];
-                        newLinks[idx].linkType = e.target.value as SubmissionLinkType;
-                        setLinks(newLinks);
-                      }}
-                      sx={{ ...filterTextFieldSx, minWidth: 180 }}
+            {/* Resource links — an editing surface; saved URLs appear above */}
+            {canEdit && (
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  Resource links
+                </h2>
+                <p className="mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
+                  Add external URLs — a repository, deployed demo, or shared document.
+                </p>
+                <div className="flex flex-col gap-3">
+                  {links.map((link, idx) => (
+                    <div
+                      key={link.clientId}
+                      className="flex flex-col gap-3 sm:flex-row sm:items-start"
                     >
-                      {linkTypeOptions.map((option) => (
-                        <MenuItem key={option.type} value={option.type}>
-                          {option.label}{option.required ? " (Required)" : ""}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      type="url"
-                      disabled={!canEdit}
-                      value={link.url}
-                      onChange={(e) => {
-                        userHasEdited.current = true;
-                        const newLinks = [...links];
-                        newLinks[idx].url = e.target.value;
-                        setLinks(newLinks);
-                      }}
-                      placeholder="https://github.com/... or any external link"
-                      error={Boolean(linkUrlErrors[idx])}
-                      helperText={
-                        linkUrlErrors[idx] ??
-                        "Only http:// and https:// links are accepted."
-                      }
-                      sx={filterTextFieldSx}
-                    />
-                    <TextField
-                      size="small"
-                      disabled={!canEdit}
-                      value={link.label}
-                      onChange={(e) => {
-                        userHasEdited.current = true;
-                        const newLinks = [...links];
-                        newLinks[idx].label = e.target.value;
-                        setLinks(newLinks);
-                      }}
-                      placeholder="Label (e.g. GitHub Repo)"
-                      sx={{ ...filterTextFieldSx, minWidth: 200 }}
-                    />
-                    {links.length > 1 && canEdit && (
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        onClick={() => {
+                      <TextField
+                        select
+                        size="small"
+                        label="Submission type"
+                        disabled={!canEdit}
+                        value={linkTypeOptions.length > 0 ? link.linkType : ""}
+                        onChange={(e) => {
                           userHasEdited.current = true;
-                          setLinks(links.filter((_, i) => i !== idx));
+                          const newLinks = [...links];
+                          newLinks[idx].linkType = e.target.value as SubmissionLinkType;
+                          setLinks(newLinks);
                         }}
-                        sx={{
-                          height: 40,
-                          minWidth: 40,
-                          padding: 0,
-                          borderRadius: "10px",
-                        }}
+                        sx={{ ...filterTextFieldSx, minWidth: 180 }}
                       >
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
+                        {linkTypeOptions.map((option) => (
+                          <MenuItem key={option.type} value={option.type}>
+                            {option.label}{option.required ? " (Required)" : ""}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        type="url"
+                        disabled={!canEdit}
+                        value={link.url}
+                        onChange={(e) => {
+                          userHasEdited.current = true;
+                          const newLinks = [...links];
+                          newLinks[idx].url = e.target.value;
+                          setLinks(newLinks);
+                        }}
+                        placeholder="https://github.com/... or any external link"
+                        error={Boolean(linkUrlErrors[idx])}
+                        helperText={
+                          linkUrlErrors[idx] ??
+                          "Only http:// and https:// links are accepted."
+                        }
+                        sx={filterTextFieldSx}
+                      />
+                      <TextField
+                        size="small"
+                        disabled={!canEdit}
+                        value={link.label}
+                        onChange={(e) => {
+                          userHasEdited.current = true;
+                          const newLinks = [...links];
+                          newLinks[idx].label = e.target.value;
+                          setLinks(newLinks);
+                        }}
+                        placeholder="Label (e.g. GitHub Repo)"
+                        sx={{ ...filterTextFieldSx, minWidth: 200 }}
+                      />
+                      {links.length > 1 && canEdit && (
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={() => {
+                            userHasEdited.current = true;
+                            setLinks(links.filter((_, i) => i !== idx));
+                          }}
+                          sx={{
+                            height: 40,
+                            minWidth: 40,
+                            padding: 0,
+                            borderRadius: "10px",
+                          }}
+                          aria-label={`Remove link ${idx + 1}`}
                         >
-                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                        </svg>
-                      </Button>
-                    )}
-                  </div>
-                ))}
-
-                {canEdit && (
-                  <div className="flex gap-3 mt-1">
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                          </svg>
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <div>
                     <Button
                       variant="outlined"
                       onClick={() => {
@@ -1252,43 +1181,63 @@ export function SubmissionFormPage() {
                       + Add Link
                     </Button>
                   </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                  Note to Reviewers
                 </div>
-                <TextField
-                  fullWidth
-                  multiline
-                  minRows={3}
-                  size="small"
-                  value={note}
-                  onChange={(e) => {
-                    userHasEdited.current = true;
-                    setNote(e.target.value);
-                  }}
-                  placeholder="Context or notes for reviewers..."
-                  disabled={!canEdit}
-                  sx={filterTextFieldSx}
-                />
-              </div>
-            </div>
+              </section>
+            )}
+
+            {/* Note to reviewers */}
+            {(canEdit || note.trim().length > 0) && (
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  Note to reviewers
+                </h2>
+                <p className="mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
+                  Optional context to help judges review your submission.
+                </p>
+                {canEdit ? (
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={3}
+                    size="small"
+                    value={note}
+                    onChange={(e) => {
+                      userHasEdited.current = true;
+                      setNote(e.target.value);
+                    }}
+                    placeholder="Context or notes for reviewers..."
+                    disabled={!canEdit}
+                    sx={filterTextFieldSx}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
+                    {note}
+                  </p>
+                )}
+              </section>
+            )}
 
             {successMsg && (
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl text-sm text-emerald-800 dark:text-emerald-400 font-bold">
-                {successMsg}
+              <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                <CheckCircleOutlineRoundedIcon
+                  style={{ fontSize: 18 }}
+                  className="mt-0.5 shrink-0"
+                />
+                <span>{successMsg}</span>
               </div>
             )}
             {errorMsg && (
-              <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl text-sm text-rose-800 dark:text-rose-400 font-bold">
-                {errorMsg}
+              <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+                <ErrorOutlineRoundedIcon
+                  style={{ fontSize: 18 }}
+                  className="mt-0.5 shrink-0"
+                />
+                <span>{errorMsg}</span>
               </div>
             )}
 
             {canEdit && (
-              <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-700">
+              <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outlined"
@@ -1339,23 +1288,30 @@ export function SubmissionFormPage() {
                     Cancel
                   </Button>
                 </div>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSubmit}
-                  disabled={submitting || saving || !canSubmit}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 700,
-                    borderRadius: "10px",
-                    boxShadow: "none",
-                    height: 40,
-                    bgcolor: "#3b82f6",
-                    "&:hover": { bgcolor: "#2563eb" },
-                  }}
-                >
-                  {submitting ? "Submitting..." : "Submit Final"}
-                </Button>
+                <div className="flex items-center gap-3">
+                  {!canSubmit && blockedReason && (
+                    <span className="hidden max-w-xs text-right text-xs font-medium text-slate-500 dark:text-slate-400 sm:inline">
+                      {blockedReason}
+                    </span>
+                  )}
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSubmit}
+                    disabled={submitting || saving || !canSubmit}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 700,
+                      borderRadius: "10px",
+                      boxShadow: "none",
+                      height: 40,
+                      bgcolor: "#3b82f6",
+                      "&:hover": { bgcolor: "#2563eb" },
+                    }}
+                  >
+                    {submitting ? "Submitting..." : "Submit Final"}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
