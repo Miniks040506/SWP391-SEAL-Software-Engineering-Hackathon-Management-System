@@ -732,7 +732,7 @@ public class TeamServiceImpl implements TeamService {
         Optional<Ranking> mayBeRanking = rankingRepository.findByRoundIdAndTeamIdWithDetails(round.getId(), team.getId());
 
         boolean confirmed = round.getAdvancementConfirmedAt() != null;
-        boolean advanced = confirmed ? mayBeRanking.map(Ranking::hasAdvanced).orElse(false) : null;
+        Boolean advanced = confirmed ? mayBeRanking.map(Ranking::hasAdvanced).orElse(false) : null;
         boolean eliminated = confirmed && !Boolean.TRUE.equals(advanced);
 
         Round nextRound = findNextRound(event.getId(), round.getOrderIndex()).orElse(null);

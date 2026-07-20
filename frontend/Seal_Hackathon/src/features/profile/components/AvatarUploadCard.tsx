@@ -1,5 +1,6 @@
 import { Avatar, Button, LinearProgress } from "@mui/material";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import { enqueueSnackbar } from "notistack";
 import { useMemo, useRef, useState } from "react";
 import { AvatarCropModal } from "@/features/profile/components/AvatarCropModal";
@@ -14,6 +15,12 @@ type AvatarUploadCardProps = {
 function getInitialLetter(fullName?: string | null, email?: string | null) {
   const source = fullName || email || "U";
   return source.charAt(0).toUpperCase();
+}
+
+function getRequestErrorMessage(error: unknown) {
+  const responseMessage = (error as { response?: { data?: { message?: unknown } } })
+    .response?.data?.message;
+  return typeof responseMessage === "string" ? responseMessage : "Upload avatar failed.";
 }
 
 export function AvatarUploadCard({ profile }: AvatarUploadCardProps) {
@@ -70,12 +77,12 @@ export function AvatarUploadCard({ profile }: AvatarUploadCardProps) {
       });
 
       closeCropModal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       URL.revokeObjectURL(croppedPreviewUrl);
       setPreviewFileUrl(null);
 
       enqueueSnackbar(
-        error?.response?.data?.message || "Upload avatar failed.",
+        getRequestErrorMessage(error),
         {
           variant: "error",
         },
@@ -85,33 +92,33 @@ export function AvatarUploadCard({ profile }: AvatarUploadCardProps) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-black/30">
-        {uploadAvatarMutation.isPending && <LinearProgress />}
+      <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_45px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20">
+        {uploadAvatarMutation.isPending && <LinearProgress sx={{ height: 3 }} />}
 
-        <div className="p-6">
+        <div className="p-6 sm:p-7">
           <div className="flex flex-col items-center text-center">
             <Avatar
               src={previewUrl}
               alt={profile.fullName}
               sx={{
-                width: 132,
-                height: 132,
-                bgcolor: "#3b82f6",
-                fontSize: 48,
-                fontWeight: 900,
-                boxShadow: "0 18px 40px rgba(15, 23, 42, 0.18)",
+                width: 144,
+                height: 144,
+                borderRadius: "28px",
+                bgcolor: "#2563eb",
+                fontSize: 50,
+                fontWeight: 800,
+                boxShadow: "0 20px 42px rgba(15, 23, 42, 0.18)",
               }}
             >
               {getInitialLetter(profile.fullName, profile.email)}
             </Avatar>
 
-            <h3 className="mt-5 text-lg font-black text-gray-900 dark:text-white">
-              Profile Avatar
+            <h3 className="mt-6 text-xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+              Profile photo
             </h3>
 
-            <p className="mt-2 max-w-xs text-sm leading-6 text-gray-500 dark:text-slate-400">
-              Upload JPG, PNG, or WEBP. You can crop and reposition the image
-              before uploading.
+            <p className="mt-2 max-w-xs text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Add a clear image so teammates and organizers can recognize you quickly.
             </p>
 
             <input
@@ -126,14 +133,16 @@ export function AvatarUploadCard({ profile }: AvatarUploadCardProps) {
               }}
             />
 
-            <div className="mt-6">
+            <div className="mt-6 w-full">
               <Button
                 variant="contained"
                 startIcon={<CloudUploadOutlinedIcon />}
                 disabled={uploadAvatarMutation.isPending}
                 onClick={() => inputRef.current?.click()}
                 sx={{
-                  borderRadius: "12px",
+                  width: "100%",
+                  height: 46,
+                  borderRadius: "11px",
                   textTransform: "none",
                   fontWeight: 900,
                   boxShadow: "none",
@@ -143,6 +152,13 @@ export function AvatarUploadCard({ profile }: AvatarUploadCardProps) {
                   ? "Uploading..."
                   : "Upload avatar"}
               </Button>
+            </div>
+
+            <div className="mt-7 flex w-full items-start gap-3 rounded-2xl bg-slate-50 p-4 text-left dark:bg-slate-950/50">
+              <ImageOutlinedIcon className="mt-0.5 text-blue-600 dark:text-blue-300" sx={{ fontSize: 19 }} />
+              <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                JPG, PNG, and WEBP files are supported. You can crop the image before it is uploaded.
+              </p>
             </div>
           </div>
         </div>
