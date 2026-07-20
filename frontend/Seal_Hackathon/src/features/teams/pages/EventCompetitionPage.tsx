@@ -8,9 +8,12 @@ import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
+import ScheduleOutlinedIcon from "@mui/icons-material/ScheduleOutlined";
 import { Alert, CircularProgress } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { teamApi } from "@/api/team.api";
+import { eventApi } from "@/api/event.api";
+import { getSeasonLabel } from "@/features/events/utils/publicEventView";
 import type { EventCompetitionRoundResponse } from "@/types/team.types";
 
 import { useTeamAdvancementStatusQuery } from "@/features/advancement/hooks/useAdvancementQueries";
@@ -24,7 +27,6 @@ import {
   getCountdownState,
   roundElapsedPercent,
 } from "@/features/teams/utils/competitionTiming";
-import { RoundCountdown } from "../components/RoundCountDown";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "Not set";
@@ -47,6 +49,8 @@ export function EventCompetitionPage() {
   const location = useLocation();
   const [clock, setClock] = useState(() => Date.now());
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
+  const [bannerFailed, setBannerFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
   const lastOpenRoundId = useRef<string | null>(null);
 
   const competitionQuery = useQuery({
@@ -56,7 +60,16 @@ export function EventCompetitionPage() {
     refetchInterval: 5000,
   });
 
+  // Event detail carries the banner + season metadata the competition payload omits.
+  const eventQuery = useQuery({
+    queryKey: ["event-detail", eventId],
+    queryFn: () => eventApi.getEventById(eventId!),
+    enabled: Boolean(eventId),
+    staleTime: 60_000,
+  });
+
   const competition = competitionQuery.data;
+  const event = eventQuery.data;
 
   const advancementQuery = useTeamAdvancementStatusQuery(
     competition?.teamId ?? "",
@@ -157,6 +170,34 @@ export function EventCompetitionPage() {
     ? roundElapsedPercent(selectedRound, currentTime)
     : null;
 
+  const bannerSrc =
+    event?.bannerUrl && !bannerFailed
+      ? event.bannerUrl
+      : `https://picsum.photos/seed/seal-event-${competition.eventId}/1600/560`;
+
+  // Banner scrim is always dark, so the countdown needs white-safe tones in both themes.
+  const countdownTone: Record<string, string> = {
+    calm: "text-white",
+    warning: "text-amber-300",
+    critical: "text-rose-300",
+    idle: "text-slate-200",
+    closed: "text-slate-200",
+    over: "text-rose-300",
+  };
+  const countdownNote: Record<string, string> = {
+    calm: "Time remaining to submit",
+    warning: "Less than a day left — submit soon",
+    critical: "Final hour — submit now",
+    idle: "Timer starts when a coordinator opens this round",
+    closed: "This round's submission window has closed",
+    over: "The submission deadline has passed",
+  };
+  const countdownHeadline: Record<string, string> = {
+    idle: "Standby",
+    closed: "Closed",
+    over: "Closed",
+  };
+
   const statusNotice =
     competition.teamStatus === "ELIMINATED"
       ? {
@@ -188,111 +229,209 @@ export function EventCompetitionPage() {
 
   return (
     <div className="space-y-6 pb-4">
-      {/* ── Context bar ─────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm font-medium text-gray-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:text-blue-400"
-        >
-          <ArrowBackIcon style={{ fontSize: 16 }} />
-          Back to my teams
-        </button>
-
-        <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-gray-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-            <GroupsOutlinedIcon style={{ fontSize: 14 }} />
-            {competition.teamName}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-gray-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-            <CategoryOutlinedIcon style={{ fontSize: 14 }} />
-            {competition.trackName}
-          </span>
+      {/* ── Event banner hero ───────────────────────────────────────── */}
+      <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 shadow-xl motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 dark:border-slate-800">
+        <div className="absolute inset-0">
+          {!fallbackFailed ? (
+            <img
+              src={bannerSrc}
+              alt={`${competition.eventName} banner`}
+              onError={() =>
+                bannerSrc === event?.bannerUrl
+                  ? setBannerFailed(true)
+                  : setFallbackFailed(true)
+              }
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-linear-to-br from-blue-600 via-indigo-700 to-slate-900" />
+          )}
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950/95 via-slate-950/70 to-slate-950/35" />
         </div>
-      </div>
 
-      {/* ── Mission control ─────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="grid gap-8 p-6 md:p-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
-              Now competing
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white md:text-4xl">
-              {competition.eventName}
-            </h1>
+        <div className="relative flex flex-col gap-6 p-6 md:p-8">
+          {/* Top row: back + team/track */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-medium text-white/90 backdrop-blur-sm transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              <ArrowBackIcon style={{ fontSize: 16 }} />
+              Back to my teams
+            </button>
 
-            {selectedRound && (
-              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-                <span className="text-base font-semibold text-gray-700 dark:text-slate-200">
-                  {selectedRound.roundName}
-                </span>
-                <span
-                  className={[
-                    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
-                    selectedRound.open
-                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-                      : selectedRound.submissionLocked
-                        ? "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300"
-                        : "bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-300",
-                  ].join(" ")}
-                >
-                  {selectedRound.open ? (
-                    <span className="relative flex size-1.5">
-                      <span className="absolute inline-flex size-full rounded-full bg-emerald-500 opacity-75 motion-safe:animate-ping" />
-                      <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-                    </span>
-                  ) : (
-                    <LockOutlinedIcon style={{ fontSize: 13 }} />
-                  )}
-                  {roundStateLabel(selectedRound)}
-                </span>
-              </div>
-            )}
-
-            {selectedRound && (
-              <p className="mt-3 text-sm text-gray-500 dark:text-slate-400">
-                {formatDateTime(selectedRound.startAt)} →{" "}
-                {formatDateTime(selectedRound.endAt)}
-              </p>
-            )}
-
-            {elapsed !== null && (
-              <div className="mt-5 max-w-md">
-                <div
-                  className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-800"
-                  role="progressbar"
-                  aria-label="Round progress"
-                  aria-valuenow={Math.round(elapsed)}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <div
-                    className={[
-                      "h-full rounded-full transition-[width] duration-500",
-                      countdown.urgency === "critical"
-                        ? "bg-red-500"
-                        : countdown.urgency === "warning"
-                          ? "bg-amber-500"
-                          : "bg-blue-500",
-                    ].join(" ")}
-                    style={{ width: `${elapsed}%` }}
-                  />
-                </div>
-                <div className="mt-2 flex justify-between text-xs text-gray-400 dark:text-slate-500">
-                  <span>Round opened</span>
-                  <span>{Math.round(elapsed)}% elapsed</span>
-                  <span>Deadline</span>
-                </div>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/90 backdrop-blur-sm">
+                <GroupsOutlinedIcon style={{ fontSize: 14 }} />
+                {competition.teamName}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/90 backdrop-blur-sm">
+                <CategoryOutlinedIcon style={{ fontSize: 14 }} />
+                {competition.trackName}
+              </span>
+            </div>
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/60">
-            <RoundCountdown
-              state={countdown}
-              deadlineLabel={formatDateTime(selectedRound?.submissionDeadline)}
-            />
+          {/* Main: identity + countdown */}
+          <div className="grid gap-6 pt-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/15 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-emerald-200 backdrop-blur-sm">
+                  <span className="relative flex size-1.5">
+                    <span className="absolute inline-flex size-full rounded-full bg-emerald-300 opacity-75 motion-safe:animate-ping" />
+                    <span className="relative inline-flex size-1.5 rounded-full bg-emerald-300" />
+                  </span>
+                  Now competing
+                </span>
+                <span className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-cyan-100 backdrop-blur-sm">
+                  {getSeasonLabel(event?.season, event?.year)}
+                </span>
+              </div>
+
+              <h1 className="mt-4 text-3xl font-black leading-tight tracking-tight text-white drop-shadow-md md:text-4xl">
+                {competition.eventName}
+              </h1>
+
+              {selectedRound && (
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <span className="text-base font-semibold text-white drop-shadow-sm">
+                    {selectedRound.roundName}
+                  </span>
+                  <span
+                    className={[
+                      "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold backdrop-blur-sm",
+                      selectedRound.open
+                        ? "border border-emerald-300/30 bg-emerald-400/15 text-emerald-200"
+                        : selectedRound.submissionLocked
+                          ? "border border-rose-300/30 bg-rose-400/15 text-rose-200"
+                          : "border border-white/15 bg-white/10 text-slate-200",
+                    ].join(" ")}
+                  >
+                    {selectedRound.open ? (
+                      <span className="relative flex size-1.5">
+                        <span className="absolute inline-flex size-full rounded-full bg-emerald-300 opacity-75 motion-safe:animate-ping" />
+                        <span className="relative inline-flex size-1.5 rounded-full bg-emerald-300" />
+                      </span>
+                    ) : (
+                      <LockOutlinedIcon style={{ fontSize: 13 }} />
+                    )}
+                    {roundStateLabel(selectedRound)}
+                  </span>
+                </div>
+              )}
+
+              {selectedRound && (
+                <p className="mt-3 text-sm text-slate-300">
+                  {formatDateTime(selectedRound.startAt)} →{" "}
+                  {formatDateTime(selectedRound.endAt)}
+                </p>
+              )}
+
+              {elapsed !== null && (
+                <div className="mt-5 max-w-md">
+                  <div
+                    className="h-1.5 overflow-hidden rounded-full bg-white/20"
+                    role="progressbar"
+                    aria-label="Round progress"
+                    aria-valuenow={Math.round(elapsed)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <div
+                      className={[
+                        "h-full rounded-full transition-[width] duration-500",
+                        countdown.urgency === "critical"
+                          ? "bg-rose-400"
+                          : countdown.urgency === "warning"
+                            ? "bg-amber-400"
+                            : "bg-blue-400",
+                      ].join(" ")}
+                      style={{ width: `${elapsed}%` }}
+                    />
+                  </div>
+                  <div className="mt-2 flex justify-between text-xs text-slate-400">
+                    <span>Round opened</span>
+                    <span className="tabular-nums">
+                      {Math.round(elapsed)}% elapsed
+                    </span>
+                    <span>Deadline</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Glass countdown panel */}
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/60">
+                Submission window
+              </p>
+
+              <div
+                className="mt-3 flex items-end gap-3"
+                role="timer"
+                aria-live="off"
+                aria-label={
+                  countdown.parts.length > 0
+                    ? `Time remaining: ${countdown.parts
+                        .map((part) => `${Number(part.value)} ${part.label}`)
+                        .join(", ")}`
+                    : countdownNote[countdown.urgency]
+                }
+              >
+                {countdown.parts.length > 0 ? (
+                  countdown.parts.map((part, index) => (
+                    <div key={part.label} className="flex items-end gap-3">
+                      {index > 0 && (
+                        <span
+                          aria-hidden
+                          className="pb-3 text-3xl font-light text-white/30"
+                        >
+                          :
+                        </span>
+                      )}
+                      <div>
+                        <p
+                          className={[
+                            "text-4xl font-semibold tabular-nums tracking-tight md:text-5xl",
+                            countdownTone[countdown.urgency],
+                          ].join(" ")}
+                        >
+                          {part.value}
+                        </p>
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">
+                          {part.label}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p
+                    className={[
+                      "text-3xl font-semibold tracking-tight md:text-4xl",
+                      countdownTone[countdown.urgency],
+                    ].join(" ")}
+                  >
+                    {countdownHeadline[countdown.urgency] ?? ""}
+                  </p>
+                )}
+              </div>
+
+              <p className="mt-3 flex items-center gap-1.5 text-sm text-white/70">
+                <ScheduleOutlinedIcon style={{ fontSize: 15 }} />
+                <span>
+                  {countdownNote[countdown.urgency]}
+                  {countdown.parts.length > 0 && (
+                    <>
+                      {" · "}
+                      <span className="font-medium text-white/90">
+                        {formatDateTime(selectedRound?.submissionDeadline)}
+                      </span>
+                    </>
+                  )}
+                </span>
+              </p>
+            </div>
           </div>
         </div>
       </section>
