@@ -1,152 +1,269 @@
-# Week 1 — Access, users, system and audit
+# Module 1 — Access, Users, System Config và Audit
 
-## Goal and accounts
+> Baseline kiểm thử: SEAL hiện tại, Flyway `V1–V24`, API `/api/v1`.  
+> Mục tiêu: chứng minh toàn bộ vòng đời tài khoản, phân quyền quản trị, bảo vệ secret và audit append-only.
 
-Demonstrate the complete identity lifecycle: self-register, verify e-mail, become active immediately, login/refresh/logout, recover/change password, manage profile, administer users, protect secrets and inspect append-only audit records.
+## 1. Chuẩn bị
 
-Primary accounts: `admin@seal.test`, `coordinator@seal.test`, `student1@seal.test`; password `Password@123`.
+### Tài khoản
 
-## W1-S01 — Self-register and activate immediately
+| Mục đích | Tài khoản | Trạng thái |
+|---|---|---|
+| Admin | `admin@seal.test` | ADMIN / ACTIVE |
+| Coordinator | `coordinator@seal.test` | COORDINATOR / ACTIVE |
+| Participant | `student1@seal.test` | STUDENT / ACTIVE |
+| Legacy approve | `pending.student@seal.test` | STUDENT / PENDING_APPROVAL |
+| Legacy reject | `pending2.student@seal.test` | STUDENT / PENDING_APPROVAL |
+| Unverified | `unverified.student@seal.test` | STUDENT / UNVERIFIED |
+| Suspended | `suspended.student@seal.test` | STUDENT / SUSPENDED |
+| Deactivated | `deactivated.student@seal.test` | STUDENT / DEACTIVATED |
+| Locked | `locked.student@seal.test` | ACTIVE nhưng đang khóa tạm thời |
+| Deactivate target | `deactivate.me@seal.test` | STUDENT / ACTIVE |
+| Reset success | `reset.active@seal.test` | STUDENT / ACTIVE |
+| Reset expired | `reset.expired@seal.test` | STUDENT / ACTIVE |
 
-**Success path — Guest**
+Mật khẩu seed: `Password@123`.
 
-1. Open `/register` and select the appropriate student type.
-2. Enter a never-used email, full name, phone and a strong password.
-3. For FPT, enter student code format `SE123456`; for EXTERNAL, enter both external student code and university.
-4. Click **Create account**. Expect `201`, status `UNVERIFIED`, and navigation/instruction to verify e-mail.
-5. Open `/verify-email`, enter the same e-mail and six-digit verification code, then submit.
-6. Expect the response message **“Email verified successfully. Your account is now active.”**, status `ACTIVE`, and `/verify-email/success`.
-7. Click the login action, sign in with the new account and confirm participant pages are available. There is no coordinator approval step.
+### Điều kiện trước khi chạy
 
-**Failure checks**
+1. Flyway kết thúc ở V24 và tất cả migration thành công.
+2. Frontend `http://localhost:5173` và backend `http://localhost:8080` hoạt động.
+3. `/events` tải được khi chưa login.
+4. `/admin/health` tải được bằng admin.
+5. Dùng cửa sổ thường cho admin/coordinator và Incognito cho student.
 
-- Submit the same e-mail again: expect 409 `Email already exists`.
-- FPT without student code or with `ABC123`: expect 400 and no user row.
-- EXTERNAL without university: expect 400.
-- Wrong/expired verification code: expect 400 and status remains `UNVERIFIED`.
-- Verify the same account twice: expect 400 `already been verified`.
+### Quy tắc PASS
 
-## W1-S02 — Resend verification and login status guards
+- Kiểm tra UI sau refresh và HTTP response trong Network.
+- Mutation nhạy cảm phải có audit/notification khi thiết kế yêu cầu.
+- Không token phải 401; wrong role phải 403 hoặc 404 không làm lộ resource.
+- Không response nào được chứa password hash, JWT, reset/verification token hay secret thật.
 
-1. At `/verify-email`, use `unverified.student@seal.test` and click the visible resend action. Expect a new code and a renewed expiry.
-2. Attempt login with that account before verification: expect 401 and “verify your email”.
-3. Attempt login with `pending.student@seal.test`: expect 401 waiting-for-approval. This is a manually seeded legacy state, not the self-registration flow.
-4. Attempt login with `suspended.student@seal.test`: expect 401.
-5. Attempt login with `deactivated.student@seal.test`: expect 401.
-6. Attempt login with `locked.student@seal.test`: expect locked-account response and remaining lock duration.
-7. Login with `student1@seal.test`: expect access and refresh tokens and redirect to participant home.
+## 2. Danh sách scenario
 
-## W1-S03 — Refresh, logout and blacklist
+| ID | Scenario | Actor | Mode |
+|---|---|---|---|
+| W1-S01 | Register và verify thành ACTIVE | Guest | UI + API |
+| W1-S02 | Resend verification và status guards | Guest | UI + API |
+| W1-S03 | Failed-login lock persistence | Guest | API |
+| W1-S04 | Refresh, logout và blacklist | Student | API |
+| W1-S05 | Forgot/reset/change password | Guest + Student | UI + API |
+| W1-S06 | Profile và avatar | Student | UI |
+| W1-S07 | User CRUD và guest judge | Admin/Coordinator | UI + API |
+| W1-S08 | Legacy approve/reject | Coordinator | UI + API |
+| W1-S09 | SystemConfig, health và secret masking | Admin | UI + API |
+| W1-S10 | Audit aliases và append-only | Admin/Coordinator | UI + API + SQL |
 
-Use Swagger/Network because refresh is normally automatic in Axios.
+## W1-S01 — Self-register và active ngay sau verify
 
-1. Login as `student1@seal.test`; copy the refresh token.
-2. Call `POST /api/v1/auth/refresh-token`; expect 200 and a new access token.
-3. Call `POST /api/v1/auth/logout` with the current bearer/refresh data; expect 204.
-4. Repeat refresh with the logged-out token; expect 401 and no new session.
-5. Call `GET /api/v1/users/me` without bearer token; expect 401.
-6. Log in again to continue.
+### Happy path
 
-## W1-S04 — Forgot/reset password
+1. Logout và mở `/register`.
+2. Dùng email duy nhất, ví dụ `demo.student+<timestamp>@example.com`.
+3. Nhập full name, phone và password mạnh.
+4. Với FPT: chọn FPT và nhập student code `SE123456`.
+5. Submit.
+6. Xác nhận response `201`, user status `UNVERIFIED`.
+7. Mở `/verify-email`, nhập email và code sáu chữ số.
+8. Submit và mở `/verify-email/success`.
+9. Login ngay bằng tài khoản mới.
 
-1. Open `/forgot-password` as Guest.
-2. Enter `reset.active@seal.test` and submit. Confirm the generic success wording does not reveal whether an arbitrary e-mail exists.
-3. Continue to the reset-code/password step using the valid local seeded token/code documented in the V17 row or the code captured from local mail logs.
-4. Enter matching strong password/confirmation and submit. Expect 200; login succeeds with the new password and fails with `Password@123`.
-5. Reset the database before later replay, or reserve this account exclusively for this scenario.
+### Expected
 
-**Failure checks**
+- Verify đúng đặt `emailVerifiedAt` và chuyển thẳng `UNVERIFIED → ACTIVE`.
+- Không có bước coordinator approval cho self-registration bình thường.
+- Login thành công và truy cập participant routes.
 
-- Use the expired fixture `reset.expired@seal.test`: expect 400 invalid/expired code.
-- Mismatched confirmation: 400.
-- Reuse a recent password for `student1@seal.test`: 409/controlled validation failure.
-- Weak/blank password: client validation and backend 400.
+### Negative
 
-## W1-S05 — Personal profile, avatar and password
+- Đăng ký lại cùng email: 409.
+- FPT thiếu code hoặc code `ABC123`: 400.
+- EXTERNAL thiếu university: 400.
+- Wrong/expired verification code: 400, status vẫn UNVERIFIED.
+- Verify tài khoản đã active: controlled 400/409.
 
-1. Login as `student1@seal.test`; open the avatar menu → **Profile** (`/personal` or role profile route).
-2. Change editable full name/phone/profile fields and click **Save profile**. Refresh and confirm persistence.
-3. Upload a valid PNG/JPEG under the configured size; expect preview and updated avatar URL.
-4. Open **Change Password**, enter current password and a new non-reused password; submit and re-login.
+### Evidence
 
-**Failure checks**
+Registration response, verification response, user status trước/sau và trang participant sau login.
 
-- Invalid phone/year/data length: no save, readable field error.
-- Non-image or oversized avatar: 413/415; existing avatar remains.
-- Wrong current password, reused password, or mismatched confirmation: controlled 400/409.
-- A second user cannot update another profile through `/users/me`.
+## W1-S02 — Resend verification và login status guards
 
-## W1-S06 — Admin/coordinator create and inspect users
+1. Ở `/verify-email`, resend cho `unverified.student@seal.test`.
+2. Kiểm tra code cũ hết hiệu lực và expiry mới được cập nhật.
+3. Thử login lần lượt:
+   - `unverified.student@seal.test`;
+   - `pending.student@seal.test`;
+   - `suspended.student@seal.test`;
+   - `deactivated.student@seal.test`;
+   - `locked.student@seal.test`.
+4. Login `student1@seal.test` để xác nhận success baseline.
 
-1. Login as `admin@seal.test`; sidebar → **Users**.
-2. Search/filter by role and status, then open a row detail. Verify password hashes/tokens are never rendered.
-3. Click **Create New User**; create a disposable mentor or judge with a unique e-mail. Expect the new row after refresh.
-4. Create a temporary guest judge with future expiry. Verify judge type, affiliation/expertise and expiry.
-5. Login as `coordinator@seal.test`; sidebar → **Users** and confirm authorized management subset.
+### Expected
 
-**Failure checks**
+- Mỗi trạng thái trả thông báo phù hợp, không dùng một thông báo sai cho mọi trường hợp.
+- Resend không làm user ACTIVE.
+- Login success trả access/refresh token nhưng UI không hiển thị token.
 
-- Duplicate e-mail: 409.
-- Invalid role/status/guest expiry in the past: 400.
-- Login as `student1@seal.test` and call `GET /api/v1/users`: 403.
-- Unknown user UUID: 404.
+## W1-S03 — Failed-login lock phải được lưu
 
-## W1-S07 — Legacy approval and rejection
+Mục tiêu của case này là kiểm tra lỗi từng tồn tại khi transaction rollback làm mất `failed_login_count`.
 
-These APIs test manually created or migrated `PENDING_APPROVAL` accounts only.
+1. Chọn một disposable ACTIVE account hoặc reset database sau test.
+2. Gọi login với password sai liên tục tới `app.login.max-failed-attempts` (mặc định 5).
+3. Sau từng lần, ghi response và số attempt còn lại.
+4. Thử password đúng khi lock chưa hết.
+5. Kiểm tra database `failed_login_count` và `locked_until`.
 
-1. Login as coordinator; **Users** → filter `PENDING_APPROVAL`.
-2. Open `pending.student@seal.test` and choose **Approve**. Confirm status becomes `ACTIVE` and that the account can login.
-3. Open `pending2.student@seal.test`, choose **Reject**, enter a non-empty reason, and confirm the resulting status/message.
-4. Check Notifications/Audit Logs for the corresponding action when applicable.
+### Expected
 
-**Failure checks**
+- Failure count tăng sau mỗi request dù service ném authentication exception.
+- Đến ngưỡng thì `locked_until` được lưu.
+- Password đúng vẫn bị chặn trong thời gian lock.
+- Không có response 500.
 
-- Approve an already active account: 409.
-- Reject without reason: 400.
-- Student role attempts either API: 403.
+## W1-S04 — Refresh, logout và blacklist
 
-## W1-S08 — Update and deactivate a user
+1. Login `student1@seal.test`; lưu access/refresh token trong môi trường test an toàn.
+2. `POST /api/v1/auth/refresh-token`: 200.
+3. `POST /api/v1/auth/logout`: 204.
+4. Dùng lại refresh token vừa logout.
+5. Dùng access token đã bị blacklist nếu blacklist feature bật.
+6. Login lại để tiếp tục module.
 
-1. Login as admin/coordinator; **Users** → search `deactivate.me@seal.test`.
-2. Edit allowed fields and click **Save Changes**; refresh and verify.
-3. Use **Deactivate user** only after all other tests for this account. Expect `DEACTIVATED` and login denial.
+### Expected
 
-Failure: deactivate an already deactivated account, the current protected admin, or unknown UUID; expect controlled 400/404/409 and no collateral change.
+- Token hợp lệ refresh được trước logout.
+- Token logout không tạo session mới; trả 401/controlled failure.
+- `/users/me` không token trả 401.
 
-## W1-S09 — System config defaults, update and secret masking
+## W1-S05 — Forgot, reset và change password
 
-1. Login as `admin@seal.test`; sidebar → **System Config**.
-2. Filter by category; locate normal values and encrypted rows `integration.github.token` / `smtp.password`.
-3. Verify encrypted values display masked (`*****`) and never expose placeholder ciphertext.
-4. Change a harmless local value such as a reminder default, then click **Save (1)**. Refresh and confirm type-preserving persistence.
-5. Click the seed-defaults action only once if defaults are missing; repeated execution must be idempotent.
+### Reset success
 
-**Failure checks**
+1. Mở `/forgot-password`.
+2. Nhập `reset.active@seal.test`.
+3. Response phải dùng wording chung, không tiết lộ email có tồn tại.
+4. Dùng reset code hợp lệ từ local mail/log/fixture.
+5. Nhập password mới mạnh và confirmation.
+6. Login bằng password mới; thử lại password cũ.
 
-- Put a non-integer value into an integer config: 400.
-- Student/coordinator updates admin-only config: 403.
-- Unknown key: 404.
-- Confirm Network response also masks encrypted values.
+### Negative
 
-## W1-S10 — Health and audit aliases
+- `reset.expired@seal.test`: code hết hạn bị từ chối.
+- Confirmation khác nhau: 400.
+- Password yếu/rỗng: frontend validation và backend 400.
+- Đổi password student1 nhưng nhập wrong current password.
+- Reuse password gần nhất: 409/controlled conflict.
 
-1. Admin sidebar → **Health** → refresh; expect application/database components healthy.
-2. Perform one harmless profile/config mutation.
-3. Sidebar → **Audit Logs**; filter by actor, action, event/team and time range. Open the new row and verify before/after/context.
-4. Call all supported aliases and expect equivalent data under their permitted role:
-   - `/api/v1/audit-logs` and `/actions`
-   - `/api/v1/admin/audit-logs` and `/actions`
-   - `/api/v1/coordinator/audit-logs` and `/actions`
-   - `/api/v1/system/audit-logs` and `/actions`
-5. Attempt audit update/delete directly. No such mutation API exists; database trigger from V10 must also reject SQL update/delete in a local verification transaction.
+### Expected
 
-## Week 1 completion checkpoint
+Password history được enforce; password cũ không login sau reset; không lộ reset token trong API/log/UI.
 
-- Self-registered verified account is `ACTIVE` immediately.
-- All status-specific login failures are captured.
-- Reset/change/refresh/logout behavior is captured.
-- User CRUD/legacy approval authorization is captured.
-- System secrets remain masked.
-- Audit rows are searchable and append-only.
+## W1-S06 — Personal profile và avatar
 
+1. Login student1; mở Profile.
+2. Sửa full name/phone/trường được phép; Save và refresh.
+3. Upload PNG/JPEG hợp lệ dưới limit.
+4. Thử file executable/text giả ảnh và file oversize.
+5. Đổi password qua Change Password.
+
+### Expected
+
+- Chỉ profile hiện tại được sửa qua `/users/me`.
+- Avatar hợp lệ cập nhật URL/preview.
+- 413/415 không thay avatar cũ.
+- Invalid phone/year/length không được lưu.
+
+## W1-S07 — Admin/coordinator user management
+
+1. Admin mở `/admin/users`; search/filter role/status.
+2. Mở detail qua dialog hiện tại, không dùng route placeholder `/admin/users/:id`.
+3. Tạo disposable mentor với email mới.
+4. Tạo temporary guest judge với expiry tương lai, affiliation và expertise.
+5. Update allowed fields.
+6. Coordinator mở user management và xác nhận phạm vi được phép.
+7. Cuối module, deactivate đúng `deactivate.me@seal.test`.
+
+### Negative
+
+- Duplicate email: 409.
+- Role/status không hợp lệ hoặc guest expiry quá khứ: 400.
+- Student gọi `GET /users`: 403.
+- Unknown user ID: 404.
+- Không deactivate admin được bảo vệ hoặc deactivate lặp.
+
+## W1-S08 — Legacy approval và rejection
+
+Các API này chỉ dành cho manually-created/migrated `PENDING_APPROVAL`, không phải self-registration.
+
+1. Coordinator filter `PENDING_APPROVAL`.
+2. Approve `pending.student@seal.test`.
+3. Xác nhận user ACTIVE và login được.
+4. Reject `pending2.student@seal.test` với reason không rỗng.
+5. Kiểm tra audit/notification.
+
+### Negative
+
+- Approve user ACTIVE: 409.
+- Reject thiếu reason: 400.
+- Review cùng account lần hai: 409.
+- Student/Judge actor: 403.
+
+## W1-S09 — SystemConfig, health và secret masking
+
+1. Admin mở `/admin/system-config`.
+2. Seed defaults nếu thiếu; chạy seed lần hai để kiểm tra idempotency.
+3. Kiểm tra các key:
+   - `feature.ai_assistant.enabled`;
+   - `feature.ai_assistant.rag.enabled`;
+   - `feature.ai_assistant.academic_guardrails.enabled`;
+   - `feature.advanced_reminders.enabled`;
+   - reminder default values;
+   - `ai.rag.max_chunks`.
+4. Sửa một reminder integer vô hại; Save và refresh.
+5. Kiểm tra encrypted/secret-like rows trong UI và Network.
+6. Mở `/admin/health`.
+
+### Expected
+
+- Secret value bị mask cả UI và API khi không yêu cầu/không được phép xem.
+- AI provider/model/key thật lấy từ environment, không seed vào SystemConfig.
+- Invalid integer/JSON/value type trả 400.
+- Coordinator/Student update admin-only config trả 403.
+- Health `UP`, không trả API key.
+
+## W1-S10 — Audit aliases và append-only
+
+1. Tạo một profile/config mutation vô hại.
+2. Mở Audit Logs và filter actor/action/time.
+3. Đối chiếu target ID, before, after và context.
+4. Gọi các alias theo quyền:
+   - `/api/v1/audit-logs` và `/actions`;
+   - `/api/v1/admin/audit-logs` và `/actions`;
+   - `/api/v1/coordinator/audit-logs` và `/actions`;
+   - `/api/v1/system/audit-logs` và `/actions`.
+5. Thử update/delete audit qua API: không có operation tương ứng.
+6. Trên local database, thử UPDATE trong transaction rồi ROLLBACK.
+
+### Expected
+
+- Alias trả dữ liệu tương đương trong phạm vi role.
+- Audit không sửa/xóa được.
+- Không lưu password/token/secret trong before/after/context.
+
+## 3. Checkpoint hoàn thành Module 1
+
+- [ ] Self-register verify thành ACTIVE ngay.
+- [ ] Resend và mọi login status guard có evidence.
+- [ ] Failed-login count/lock persistence đã kiểm tra.
+- [ ] Refresh/logout/blacklist đúng.
+- [ ] Reset/change/password history đúng.
+- [ ] User CRUD/guest judge/legacy approval đúng quyền.
+- [ ] System secret được mask; health không lộ key.
+- [ ] Audit searchable và append-only.
+
+## 4. Cleanup
+
+- Reset database nếu đã đổi password của seed account cần dùng lại.
+- Chỉ deactivate `deactivate.me@seal.test` ở cuối.
+- Không xóa admin, coordinator, student1 hoặc audit rows.
