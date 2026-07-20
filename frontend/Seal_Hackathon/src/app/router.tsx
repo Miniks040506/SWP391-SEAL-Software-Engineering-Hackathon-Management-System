@@ -133,7 +133,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <Navigate to="/events" replace /> },
       { path: "/events", element: <EventsPage /> },
-      { path: "/explore", element: <EventsPage /> },
+      { path: "/explore", element: <Navigate to="/events" replace /> },
       { path: "/events/:eventId/competing", element: <EventCompetitionPage /> },
       { path: "/events/:eventId/awards", element: <EventAwardsPage /> },
       { path: "/events/:eventId", element: <EventDetailPage /> },
