@@ -3,16 +3,19 @@ import {
   Alert,
   Avatar,
   Button,
-  CircularProgress,
   Divider,
   Tab,
   Tabs,
   TextField,
 } from "@mui/material";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
+import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import { enqueueSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -42,6 +45,12 @@ function getInitialLetter(fullName?: string | null, email?: string | null) {
 function normalizeOptional(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function getRequestErrorMessage(error: unknown, fallback: string) {
+  const responseMessage = (error as { response?: { data?: { message?: unknown } } })
+    .response?.data?.message;
+  return typeof responseMessage === "string" ? responseMessage : fallback;
 }
 
 export function PersonalProfilePage() {
@@ -97,8 +106,8 @@ export function PersonalProfilePage() {
       });
 
       enqueueSnackbar("Profile updated successfully.", { variant: "success" });
-    } catch (error: any) {
-      enqueueSnackbar(error?.response?.data?.message || "Update profile failed.", {
+    } catch (error: unknown) {
+      enqueueSnackbar(getRequestErrorMessage(error, "Update profile failed."), {
         variant: "error",
       });
     }
@@ -120,8 +129,8 @@ export function PersonalProfilePage() {
       clearAuth();
 
       navigate("/login", { replace: true });
-    } catch (error: any) {
-      enqueueSnackbar(error?.response?.data?.message || "Change password failed.", {
+    } catch (error: unknown) {
+      enqueueSnackbar(getRequestErrorMessage(error, "Change password failed."), {
         variant: "error",
       });
     }
@@ -129,16 +138,22 @@ export function PersonalProfilePage() {
 
   if (profileQuery.isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <CircularProgress />
+      <div className="mx-auto max-w-6xl animate-pulse space-y-6" aria-label="Loading profile">
+        <div className="h-64 rounded-[28px] bg-slate-200 dark:bg-slate-800" />
+        <div className="grid gap-6 lg:grid-cols-12">
+          <div className="h-80 rounded-[28px] bg-slate-200 dark:bg-slate-800 lg:col-span-4" />
+          <div className="h-[28rem] rounded-[28px] bg-slate-200 dark:bg-slate-800 lg:col-span-8" />
+        </div>
       </div>
     );
   }
 
   if (profileQuery.isError || !profileQuery.data) {
     return (
-      <div className="mx-auto max-w-3xl">
-        <Alert severity="error">Cannot load your profile. Please sign in again.</Alert>
+      <div className="mx-auto max-w-3xl rounded-[28px] border border-rose-200 bg-rose-50 p-8 dark:border-rose-900/60 dark:bg-rose-950/30">
+        <Alert severity="error" sx={{ background: "transparent", p: 0 }}>
+          Cannot load your profile. Please sign in again.
+        </Alert>
       </div>
     );
   }
@@ -146,98 +161,107 @@ export function PersonalProfilePage() {
   const profile = profileQuery.data;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 animate-in fade-in duration-500">
-      <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        {/* Cover */}
-        <div className="relative h-44 bg-linear-to-r from-blue-500 via-sky-400 to-violet-600">
-          <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#fff_1px,transparent_1px)] bg-size-[22px_22px]" />
-        </div>
-
-        {/* Profile summary */}
-        <div className="relative px-8 pb-8 pt-20 sm:px-10 sm:pt-7">
-          {/* Avatar absolute, không còn đẩy layout bị lệch */}
-          <Avatar
-            src={profile.avatarUrl || ""}
-            alt={profile.fullName}
-            sx={{
-              position: "absolute",
-              left: {
-                xs: 32,
-                sm: 40,
-              },
-              top: -72,
-              width: 128,
-              height: 128,
-              border: "6px solid white",
-              bgcolor: "#3b82f6",
-              fontSize: 44,
-              fontWeight: 900,
-              boxShadow: "0 22px 48px rgba(15, 23, 42, 0.22)",
-            }}
-          >
-            {getInitialLetter(profile.fullName, profile.email)}
-          </Avatar>
-
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-            {/* Chừa khoảng bên trái cho avatar ở desktop */}
-            <div className="min-w-0 sm:pl-40">
-              <h1 className="wrap-break-word text-3xl font-black leading-tight tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+    <div className="mx-auto max-w-6xl space-y-6 pb-8 animate-in fade-in duration-500">
+      <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-slate-700/80 dark:bg-slate-900 dark:shadow-black/20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(59,130,246,0.18),transparent_36%),radial-gradient(circle_at_90%_100%,rgba(14,165,233,0.12),transparent_30%)]" />
+        <div className="relative grid gap-8 px-6 py-7 sm:px-10 sm:py-9 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
+          <div className="flex min-w-0 items-center gap-5 sm:gap-7">
+            <Avatar
+              src={profile.avatarUrl || ""}
+              alt={profile.fullName}
+              sx={{
+                width: { xs: 84, sm: 112 },
+                height: { xs: 84, sm: 112 },
+                flexShrink: 0,
+                border: "4px solid rgba(255,255,255,0.86)",
+                bgcolor: "#2563eb",
+                fontSize: { xs: 30, sm: 42 },
+                fontWeight: 800,
+                boxShadow: "0 18px 36px rgba(15, 23, 42, 0.2)",
+              }}
+            >
+              {getInitialLetter(profile.fullName, profile.email)}
+            </Avatar>
+            <div className="min-w-0">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
+                Personal profile
+              </p>
+              <h1 className="wrap-break-word text-3xl font-black leading-[1.05] tracking-[-0.04em] text-slate-950 dark:text-white sm:text-5xl">
                 {profile.fullName}
               </h1>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-500 dark:text-slate-400">
-                <span className="inline-flex max-w-full items-center gap-1.5 break-all">
-                  <EmailOutlinedIcon sx={{ fontSize: 16 }} />
+              <div className="mt-3 flex max-w-2xl flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600 dark:text-slate-300">
+                <span className="inline-flex max-w-full items-center gap-2 break-all">
+                  <EmailOutlinedIcon sx={{ fontSize: 17 }} />
                   {profile.email}
                 </span>
-
-                <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                  {profile.role}
-                </span>
-
-                <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-widest text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+                <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-300">
+                  <CheckCircleOutlinedIcon sx={{ fontSize: 17 }} />
                   {profile.status}
                 </span>
               </div>
             </div>
+          </div>
 
+          <div className="grid grid-cols-2 gap-3 sm:max-w-sm sm:justify-self-end lg:w-full">
+            <div className="rounded-2xl border border-white/70 bg-white/65 p-4 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-950/35">
+              <BadgeOutlinedIcon className="text-blue-600 dark:text-blue-300" sx={{ fontSize: 20 }} />
+              <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Role</p>
+              <p className="mt-1 truncate text-base font-bold text-slate-900 dark:text-white">{profile.role}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/65 p-4 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-950/35">
+              <PhoneOutlinedIcon className="text-blue-600 dark:text-blue-300" sx={{ fontSize: 20 }} />
+              <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Phone</p>
+              <p className="mt-1 truncate text-base font-bold text-slate-900 dark:text-white">{profile.phone || "Not added"}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-4">
+          <AvatarUploadCard profile={profile} />
+        </div>
+
+        <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_16px_45px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20 sm:p-7 lg:col-span-8">
+          <div className="mb-1 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-2xl">Account settings</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Keep your contact details current for event updates.</p>
+            </div>
             <Button
-              variant="outlined"
+              variant="text"
+              startIcon={<ArrowBackRoundedIcon />}
               onClick={() => navigate(-1)}
               sx={{
-                alignSelf: {
-                  xs: "flex-start",
-                  sm: "center",
-                },
-                borderRadius: "12px",
+                minWidth: "auto",
+                flexShrink: 0,
+                borderRadius: "10px",
                 textTransform: "none",
                 fontWeight: 800,
-                px: 3,
+                color: "#64748b",
               }}
             >
               Back
             </Button>
           </div>
-        </div>
-      </section>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        <div className="lg:col-span-4">
-          <AvatarUploadCard profile={profile} />
-        </div>
-
-        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-black/30 lg:col-span-8">
-          <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={tabsSx}>
+          <Tabs
+            value={tab}
+            onChange={(_, value) => setTab(value)}
+            variant="scrollable"
+            allowScrollButtonsMobile
+            sx={tabsSx}
+          >
             <Tab
               icon={<PersonOutlineOutlinedIcon />}
               iconPosition="start"
-              label="Profile Information"
+              label="Profile details"
             />
 
             <Tab
               icon={<LockResetOutlinedIcon />}
               iconPosition="start"
-              label="Change Password"
+              label="Password"
             />
           </Tabs>
 
@@ -305,7 +329,8 @@ export function PersonalProfilePage() {
                 <TextField fullWidth label="Status" value={profile.status} disabled sx={textFieldSx} />
               </div>
 
-              <div className="flex justify-end pt-2">
+              <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Changes are saved to your account immediately.</p>
                 <Button
                   type="submit"
                   variant="contained"
@@ -313,7 +338,7 @@ export function PersonalProfilePage() {
                   startIcon={<SaveOutlinedIcon />}
                   sx={{
                     height: 44,
-                    borderRadius: "12px",
+                    borderRadius: "11px",
                     px: 4,
                     textTransform: "none",
                     fontWeight: 900,
@@ -383,16 +408,17 @@ export function PersonalProfilePage() {
                 )}
               />
 
-              <div className="flex justify-end pt-2">
+              <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-slate-500 dark:text-slate-400">You will be signed out after a successful password change.</p>
                 <Button
                   type="submit"
                   variant="contained"
-                  color="warning"
+                  color="primary"
                   disabled={changePasswordMutation.isPending}
                   startIcon={<LockResetOutlinedIcon />}
                   sx={{
                     height: 44,
-                    borderRadius: "12px",
+                    borderRadius: "11px",
                     px: 4,
                     textTransform: "none",
                     fontWeight: 900,
