@@ -26,13 +26,14 @@ type RankTier = {
 const TIERS: Record<"gold" | "silver" | "bronze" | "other", RankTier> = {
   gold: {
     label: "Champion",
-    band: "bg-blue-600",
-    medallion: "bg-blue-50 text-blue-700",
-    medallionRing: "ring-blue-100 dark:ring-blue-500/30",
-    rankText: "text-blue-700 dark:text-blue-300",
+    band: "bg-linear-to-r from-amber-400 via-yellow-300 to-amber-500",
+    medallion:
+      "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+    medallionRing: "ring-amber-100 dark:ring-amber-500/30",
+    rankText: "text-amber-700 dark:text-amber-300",
     cardBorder:
-      "border-blue-200 hover:border-blue-400 dark:border-blue-500/40 dark:hover:border-blue-400",
-    glow: "shadow-lg shadow-blue-500/10",
+      "border-amber-300 hover:border-amber-400 dark:border-amber-500/45 dark:hover:border-amber-400",
+    glow: "shadow-lg shadow-amber-500/15",
   },
   silver: {
     label: "Runner-up",

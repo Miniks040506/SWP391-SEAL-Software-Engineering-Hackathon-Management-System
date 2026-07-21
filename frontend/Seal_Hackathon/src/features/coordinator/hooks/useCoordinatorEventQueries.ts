@@ -16,19 +16,24 @@ import type { AssignableUserRole } from "@/types/user.types";
 const USE_MOCK = false;
 
 export const activeEventApi = USE_MOCK
-  ? (mockCoordinatorService.eventApi as any)
+  ? // The mock intentionally implements a legacy response shape.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockCoordinatorService.eventApi as any)
   : eventApi;
 const activeTrackApi = USE_MOCK
-  ? (mockCoordinatorService.trackApi as any)
+  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockCoordinatorService.trackApi as any)
   : trackApi;
 const activeRoundApi: typeof roundApi = USE_MOCK
   ? (mockCoordinatorService.roundApi as unknown as typeof roundApi)
   : roundApi;
 const activePrizeApi = USE_MOCK
-  ? (mockCoordinatorService.prizeApi as any)
+  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockCoordinatorService.prizeApi as any)
   : prizeApi;
 const activeUserApi = USE_MOCK
-  ? (mockCoordinatorService.assignableUserApi as any)
+  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockCoordinatorService.assignableUserApi as any)
   : assignableUserApi;
 
 export const coordinatorEventKeys = {
@@ -111,7 +116,11 @@ export function useRoundOperationStatusQuery(roundId?: UUID) {
     queryKey: coordinatorEventKeys.roundOperationStatus(roundId),
     queryFn: () => activeRoundApi.getOperationStatus(roundId!),
     enabled: Boolean(roundId),
-    placeholderData: (previous) => previous,
+    refetchInterval: (query) => {
+      const status = query.state.data?.roundStatus;
+      return status === "OPEN" || status === "PENDING_LOCK" ? 15_000 : false;
+    },
+    refetchOnWindowFocus: true,
     retry: false,
   });
 }

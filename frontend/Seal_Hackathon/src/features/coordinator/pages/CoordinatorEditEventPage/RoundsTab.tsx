@@ -19,6 +19,7 @@ import {
   TextField,
 } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
+import { isAxiosError } from "axios";
 import { useEffect, useState } from "react";
 
 import {
@@ -78,7 +79,20 @@ type RoundsTabProps = {
   onChanged: () => void | Promise<void>;
   canEdit: boolean;
   readonlyReason?: string;
+  canOperate: boolean;
+  operationReadonlyReason?: string;
 };
+
+type ApiErrorResponse = {
+  message?: string;
+};
+
+function getOperationErrorMessage(error: unknown, fallback: string) {
+  if (isAxiosError<ApiErrorResponse>(error)) {
+    return error.response?.data?.message || fallback;
+  }
+  return error instanceof Error ? error.message : fallback;
+}
 
 const emptyRound: RoundForm = {
   name: "",
@@ -642,12 +656,12 @@ function RoundAdvanceRules({
 function RoundOperationPanel({
   eventId,
   roundId,
-  canEdit,
+  canOperate,
   readonlyReason,
 }: {
   eventId: UUID;
   roundId: UUID;
-  canEdit: boolean;
+  canOperate: boolean;
   readonlyReason?: string;
 }) {
   const statusQuery = useRoundOperationStatusQuery(roundId);
@@ -665,8 +679,11 @@ function RoundOperationPanel({
     try {
       await openRoundMutation.mutateAsync(roundId);
       enqueueSnackbar("Round opened.", { variant: "success" });
-    } catch {
-      enqueueSnackbar("Failed to open round.", { variant: "error" });
+    } catch (error) {
+      enqueueSnackbar(
+        getOperationErrorMessage(error, "Failed to open round."),
+        { variant: "error" },
+      );
     }
   };
 
@@ -674,8 +691,11 @@ function RoundOperationPanel({
     try {
       await closeRoundMutation.mutateAsync(roundId);
       enqueueSnackbar("Round closed.", { variant: "success" });
-    } catch {
-      enqueueSnackbar("Failed to close round.", { variant: "error" });
+    } catch (error) {
+      enqueueSnackbar(
+        getOperationErrorMessage(error, "Failed to close round."),
+        { variant: "error" },
+      );
     }
   };
 
@@ -684,8 +704,11 @@ function RoundOperationPanel({
       await lockSubmissionsMutation.mutateAsync(roundId);
       enqueueSnackbar("Submissions locked.", { variant: "success" });
       setLockConfirmOpen(false);
-    } catch {
-      enqueueSnackbar("Failed to lock submissions.", { variant: "error" });
+    } catch (error) {
+      enqueueSnackbar(
+        getOperationErrorMessage(error, "Failed to lock submissions."),
+        { variant: "error" },
+      );
     }
   };
 
@@ -768,7 +791,7 @@ function RoundOperationPanel({
               Locked at {formatRoundTime(status.submissionLockedAt)}
             </p>
           )}
-          {!canEdit && readonlyReason && (
+          {!canOperate && readonlyReason && (
             <p className="mt-3 text-xs font-semibold text-amber-600">
               {readonlyReason}
             </p>
@@ -780,7 +803,7 @@ function RoundOperationPanel({
             size="small"
             variant="outlined"
             startIcon={<PlayArrowOutlinedIcon />}
-            disabled={!canEdit || !status.canOpen || operating}
+            disabled={!canOperate || !status.canOpen || operating}
             onClick={handleOpen}
             sx={{
               borderRadius: "10px",
@@ -795,7 +818,7 @@ function RoundOperationPanel({
             size="small"
             variant="outlined"
             startIcon={<StopCircleOutlinedIcon />}
-            disabled={!canEdit || !status.canClose || operating}
+            disabled={!canOperate || !status.canClose || operating}
             onClick={handleClose}
             sx={{
               borderRadius: "10px",
@@ -811,7 +834,7 @@ function RoundOperationPanel({
             variant="contained"
             color="warning"
             startIcon={<LockOutlinedIcon />}
-            disabled={!canEdit || !status.canLockSubmissions || operating}
+            disabled={!canOperate || !status.canLockSubmissions || operating}
             onClick={() => setLockConfirmOpen(true)}
             sx={{
               borderRadius: "10px",
@@ -846,6 +869,8 @@ export function RoundsTab({
   onChanged,
   canEdit,
   readonlyReason,
+  canOperate,
+  operationReadonlyReason,
 }: RoundsTabProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRound, setNewRound] = useState<RoundForm>(emptyRound);
@@ -1326,8 +1351,8 @@ export function RoundsTab({
                 <RoundOperationPanel
                   eventId={eventId}
                   roundId={id}
-                  canEdit={canEdit}
-                  readonlyReason={readonlyReason}
+                  canOperate={canOperate}
+                  readonlyReason={operationReadonlyReason}
                 />
 
                 <RoundAdvanceRules

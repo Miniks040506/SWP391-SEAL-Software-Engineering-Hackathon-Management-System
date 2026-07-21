@@ -285,7 +285,7 @@ export type SubmissionRequirementsResponse = {
 };
 
 export type FileDownloadUrlResponse = {
-  downloadUrl: string;
+  url: string;
   expiresAt?: ISODateTime | null;
 };
 
