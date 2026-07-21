@@ -35,7 +35,7 @@ const textFieldSx = {
 const dateTimeFieldSx = {
   "& .MuiOutlinedInput-root": { borderRadius: "12px" },
   "& .MuiInputLabel-root": { backgroundColor: "white", paddingInline: "4px" },
-  ".dark & .MuiInputLabel-root": { backgroundColor: "#1e293b" },
+  ".dark & .MuiInputLabel-root": { backgroundColor: "#0f172a" },
 };
 
 export const CreateGuestJudgeModal = ({
@@ -85,14 +85,25 @@ export const CreateGuestJudgeModal = ({
       onClose={onClose}
       fullWidth
       maxWidth="sm"
-      slotProps={{ paper: { className: "rounded-2xl" } }}
+      slotProps={{ paper: { sx: { borderRadius: "20px" } } }}
     >
-      <DialogTitle className="font-extrabold text-gray-900 border-b border-gray-100 pb-4">
-        Create Guest Judge
+      <DialogTitle
+        sx={{ fontWeight: 900 }}
+        className="border-b border-slate-100 pb-4 dark:border-slate-800"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500 to-blue-400 text-white shadow-md shadow-cyan-500/25">
+            <PersonAddOutlinedIcon sx={{ fontSize: 19 }} />
+          </span>
+          Create Guest Judge
+        </span>
       </DialogTitle>
-      
+
       <DialogContent className="space-y-5 pt-6">
-        <Typography variant="body2" className="text-gray-500 mb-2">
+        <Typography
+          variant="body2"
+          className="mb-2 text-slate-500 dark:text-slate-400"
+        >
           This will create a temporary account. The judge will receive an email with login instructions.
         </Typography>
 
@@ -173,7 +184,7 @@ export const CreateGuestJudgeModal = ({
         />
       </DialogContent>
       
-      <DialogActions className="p-4 pt-0 border-t border-gray-100 mt-2">
+      <DialogActions className="mt-2 border-t border-slate-100 p-4 pt-3 dark:border-slate-800">
         <Button onClick={onClose} color="inherit" sx={{ textTransform: "none", fontWeight: 700 }}>
           Cancel
         </Button>

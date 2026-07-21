@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
-import Button from "@mui/material/Button";
-
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 
 import type {
   CreateEventFormValues,
   PrizeFormValues,
 } from "../../schemas/createEvent.schema";
 
+import { StepShell } from "./components/StepShell";
 import { PrizeCreateModal } from "./components/PrizeCreateModal";
 import { PrizeTable } from "./components/PrizeTable";
 
@@ -30,10 +28,10 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
   const [lockedTrackId, setLockedTrackId] = useState<string | null>(null);
   const [isTrackLocked, setIsTrackLocked] = useState(false);
 
-  const { 
-    append: appendPrize, 
+  const {
+    append: appendPrize,
     update: updatePrize,
-    remove: removePrize, 
+    remove: removePrize,
   } = useFieldArray({
     control,
     name: "prizes",
@@ -101,41 +99,28 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
   };
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-100 px-7 py-5">
-        <div>
-          <h2 className="text-lg font-extrabold text-gray-900">
-            Step 3: Prizes
-          </h2>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Add event-level or track-specific prizes. Track row actions will
-            lock the prize to that track.
-          </p>
-        </div>
-
-        <Button
-          type="button"
-          variant="contained"
-          startIcon={<AddOutlinedIcon />}
-          onClick={handleOpenGlobalCreateModal}
-          sx={{
-            bgcolor: "white",
-            color: "#2563eb",
-            border: "1px solid #bfdbfe",
-            fontWeight: 800,
-            boxShadow: "none",
-            "&:hover": {
-              bgcolor: "#eff6ff",
-              boxShadow: "none",
-            },
-          }}
-        >
-          Add Prize
-        </Button>
-      </div>
-
-      <div className="px-7 py-6">
+    <>
+      <StepShell
+        step={3}
+        title="Prizes"
+        description="Add event-level or track-specific prizes. Track row actions will lock the prize to that track."
+        headerActions={
+          <button
+            type="button"
+            onClick={handleOpenGlobalCreateModal}
+            className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-amber-500/25 transition-all duration-200 hover:from-amber-400 hover:to-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+          >
+            <AddOutlinedIcon sx={{ fontSize: 18 }} />
+            Add Prize
+          </button>
+        }
+        bodyClassName="px-7 py-6"
+        onBack={onBack}
+        next={{
+          label: currentPrizes.length === 0 ? "Skip Step" : "Next Step",
+          onClick: onNext,
+        }}
+      >
         <PrizeTable
           prizes={currentPrizes}
           tracks={currentTracks}
@@ -143,32 +128,7 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
           onEditPrize={handleOpenEditModal}
           onDeletePrize={removePrize}
         />
-      </div>
-
-      <div className="flex justify-between border-t border-gray-100 px-7 py-5">
-        <Button type="button" variant="outlined" onClick={onBack}>
-          Back
-        </Button>
-
-        <Button
-          type="button"
-          variant="contained"
-          endIcon={<ArrowForwardOutlinedIcon />}
-          onClick={onNext}
-          sx={{
-            px: 2.5,
-            py: 1.1,
-            borderRadius: 2,
-            bgcolor: "#2563eb",
-            fontWeight: 800,
-            "&:hover": {
-              bgcolor: "#1d4ed8",
-            },
-          }}
-        >
-          {currentPrizes.length === 0 ? "Skip Step" : "Next Step"}
-        </Button>
-      </div>
+      </StepShell>
 
       <PrizeCreateModal
         open={isPrizeModalOpen}
@@ -179,6 +139,6 @@ export const PrizesStep = ({ onBack, onNext }: PrizesStepProps) => {
         onClose={handleCloseModal}
         onSave={handleSavePrize}
       />
-    </section>
+    </>
   );
 };

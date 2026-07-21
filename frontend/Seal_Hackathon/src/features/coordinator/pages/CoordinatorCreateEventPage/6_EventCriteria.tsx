@@ -1,9 +1,12 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import { Alert, Button, CircularProgress } from "@mui/material";
+import ChecklistOutlinedIcon from "@mui/icons-material/ChecklistOutlined";
+import { Alert, CircularProgress } from "@mui/material";
 
 import { CreateEventCriteriaCard } from "@/features/coordinator/pages/CoordinatorCreateEventPage/components/CreateEventCriteriaCard";
 import { createEmptyCriteria } from "@/features/coordinator/schemas/createEvent.schema";
 import { useCreateEventCriteriaStep } from "@/features/criteria/hooks/useCreateEventCriteriaStep";
+
+import { StepShell } from "./components/StepShell";
 
 type EventCriteriaStepProps = {
   onBack: () => void;
@@ -43,107 +46,96 @@ export function EventCriteriaStep({
   const arrayErrorMessage = getArrayErrorMessage(errors.criteria);
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
-      <div className="border-b border-gray-100 px-7 py-5 dark:border-slate-700">
-        <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
-          Step 6: Event Criteria
-        </h2>
-
-        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-          Choose scoring templates or define custom criteria. You can also skip
-          this step and manage criteria after creating the event.
-        </p>
-      </div>
-
-      <div className="space-y-5 px-7 py-6">
-        {setupError && <Alert severity="warning">{setupError}</Alert>}
-        {arrayErrorMessage && (
-          <Alert severity="error">{arrayErrorMessage}</Alert>
-        )}
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-black text-slate-900 dark:text-white">
-              Criteria items: {fields.length}
-            </p>
-            <p className="text-sm font-medium text-slate-500">
-              Leave round scope empty to apply criteria to all rounds.
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            variant="contained"
-            startIcon={<AddOutlinedIcon />}
-            onClick={() => append(createEmptyCriteria())}
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 900 }}
-          >
-            Add Criteria
-          </Button>
-        </div>
-
-        {templatesQuery.isLoading && (
-          <div className="flex justify-center py-8">
-            <CircularProgress size={28} />
-          </div>
-        )}
-
-        {templatesQuery.isError && (
-          <Alert severity="warning">
-            Cannot load global scoring criteria templates. You can still create
-            custom event-only criteria.
-          </Alert>
-        )}
-
-        {fields.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center dark:border-slate-700 dark:bg-slate-900/40">
-            <p className="font-bold text-slate-500">
-              No criteria added. The event can still be created.
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          {fields.map((field, index) => (
-            <CreateEventCriteriaCard
-              key={field.fieldId}
-              index={index}
-              fieldId={field.fieldId}
-              item={criteria[index]}
-              rounds={rounds}
-              templateOptions={templateOptions}
-              onRemove={remove}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="flex justify-between border-t border-gray-100 px-7 py-5 dark:border-slate-700">
-        <Button type="button" variant="outlined" onClick={onBack}>
-          Back
-        </Button>
-
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={isSubmitting}
-          sx={{
-            px: 3,
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: 800,
-            boxShadow: "none",
-          }}
+    <StepShell
+      step={6}
+      title="Event Criteria"
+      description="Choose scoring templates or define custom criteria. You can also skip this step and manage criteria after creating the event."
+      headerActions={
+        <button
+          type="button"
+          onClick={() => append(createEmptyCriteria())}
+          className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-rose-500 to-pink-500 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-rose-500/25 transition-all duration-200 hover:from-rose-400 hover:to-pink-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
         >
-          {isSubmitting
-            ? isResuming
-              ? "Resuming..."
-              : "Creating..."
-            : isResuming
-              ? "Resume Setup"
-              : "Create Event"}
-        </Button>
+          <AddOutlinedIcon sx={{ fontSize: 18 }} />
+          Add Criteria
+        </button>
+      }
+      bodyClassName="space-y-5 px-7 py-6"
+      onBack={onBack}
+      next={{
+        label: isSubmitting
+          ? isResuming
+            ? "Resuming..."
+            : "Creating..."
+          : isResuming
+            ? "Resume Setup"
+            : "Create Event",
+        type: "submit",
+        disabled: isSubmitting,
+        loading: isSubmitting,
+        tone: "success",
+      }}
+    >
+      {setupError && <Alert severity="warning">{setupError}</Alert>}
+      {arrayErrorMessage && <Alert severity="error">{arrayErrorMessage}</Alert>}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 px-5 py-4 dark:border-rose-500/20 dark:bg-rose-500/5">
+        <div>
+          <p className="font-black text-slate-900 dark:text-white">
+            Criteria items:{" "}
+            <span className="tabular-nums text-rose-600 dark:text-rose-400">
+              {fields.length}
+            </span>
+          </p>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            Leave round scope empty to apply criteria to all rounds.
+          </p>
+        </div>
       </div>
-    </section>
+
+      {templatesQuery.isLoading && (
+        <div className="flex justify-center py-8">
+          <CircularProgress size={28} />
+        </div>
+      )}
+
+      {templatesQuery.isError && (
+        <Alert severity="warning">
+          Cannot load global scoring criteria templates. You can still create
+          custom event-only criteria.
+        </Alert>
+      )}
+
+      {fields.length === 0 && (
+        <div className="rounded-2xl border-2 border-dashed border-slate-200 px-8 py-14 text-center dark:border-slate-700">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400">
+            <ChecklistOutlinedIcon sx={{ fontSize: 28 }} />
+          </span>
+
+          <h3 className="mt-4 text-base font-black text-slate-900 dark:text-white">
+            No criteria added
+          </h3>
+
+          <p className="mx-auto mt-1.5 max-w-sm text-sm font-medium text-slate-500 dark:text-slate-400">
+            The event can still be created — you can define scoring criteria
+            later from the event settings.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {fields.map((field, index) => (
+          <CreateEventCriteriaCard
+            key={field.fieldId}
+            index={index}
+            fieldId={field.fieldId}
+            item={criteria[index]}
+            rounds={rounds}
+            templateOptions={templateOptions}
+            onRemove={remove}
+          />
+        ))}
+      </div>
+    </StepShell>
   );
 }
