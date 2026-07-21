@@ -91,7 +91,7 @@ export function EventBannerCropUpload({
 
   return (
     <>
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-5 transition-colors dark:border-slate-700 dark:bg-slate-900">
+      <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-5 transition-colors duration-200 hover:border-blue-300/70 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-500/40">
         <input
           ref={inputRef}
           type="file"
@@ -133,8 +133,11 @@ export function EventBannerCropUpload({
                 textTransform: "none",
                 fontWeight: 900,
                 boxShadow: "none",
-                bgcolor: "#4f6bff",
-                "&:hover": { bgcolor: "#3f5bef", boxShadow: "none" },
+                background: "linear-gradient(to right, #2563eb, #4f46e5)",
+                "&:hover": {
+                  background: "linear-gradient(to right, #3b82f6, #6366f1)",
+                  boxShadow: "none",
+                },
               }}
             >
               Choose banner

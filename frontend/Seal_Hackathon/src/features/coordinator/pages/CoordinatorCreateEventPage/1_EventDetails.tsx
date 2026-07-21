@@ -1,7 +1,10 @@
 import { Controller, useFormContext } from "react-hook-form";
 
-import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
-import Button from "@mui/material/Button";
+import AppRegistrationOutlinedIcon from "@mui/icons-material/AppRegistrationOutlined";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
+import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
 
@@ -11,28 +14,30 @@ import {
   type CreateEventFormValues,
 } from "@/features/coordinator/schemas/createEvent.schema";
 
+import { StepShell } from "./components/StepShell";
+import {
+  wizardDateFieldOnSoftSx,
+  wizardFieldSx,
+} from "./components/wizardUi";
+
 type EventDetailsStepProps = {
   onNext: () => void;
 };
 
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "14px",
-  },
-};
-
-const dateTimeFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "14px",
-  },
-  "& .MuiInputLabel-root": {
-    backgroundColor: "white",
-    paddingInline: "4px",
-  },
-  ".dark & .MuiInputLabel-root": {
-    backgroundColor: "#1e293b",
-  },
-};
+function SectionLabel({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
+      {icon}
+      {children}
+    </p>
+  );
+}
 
 export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
   const {
@@ -42,18 +47,18 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
   } = useFormContext<CreateEventFormValues>();
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
-      <div className="border-b border-gray-100 px-7 py-5 dark:border-slate-700">
-        <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
-          Step 1: Event Details
-        </h2>
+    <StepShell
+      step={1}
+      title="Event Details"
+      description="Set up event information, registration period, and the official competition period."
+      onBack={undefined}
+      next={{ label: "Next Step", onClick: onNext }}
+    >
+      <div className="space-y-3">
+        <SectionLabel icon={<InfoOutlinedIcon sx={{ fontSize: 15 }} />}>
+          Basics
+        </SectionLabel>
 
-        <p className="mt-2 text-sm font-medium text-gray-500 dark:text-slate-400">
-          Setup event information, registration period, and official competition period.
-        </p>
-      </div>
-
-      <div className="space-y-6 px-7 py-6">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <TextField
             label="Event name"
@@ -63,108 +68,160 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             required
             fullWidth
             size="small"
-            sx={textFieldSx}
+            sx={wizardFieldSx}
             {...register("eventName")}
           />
 
-          <Controller
-            name="season"
-            control={control}
-            render={({ field }) => (
+          <div className="grid grid-cols-[1fr_1fr_auto] items-start gap-4">
+            <Controller
+              name="season"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  label="Season"
+                  error={Boolean(errors.season)}
+                  helperText={errors.season?.message}
+                  required
+                  fullWidth
+                  size="small"
+                  sx={wizardFieldSx}
+                >
+                  {EVENT_SEASONS.map((season) => (
+                    <MenuItem key={season} value={season}>
+                      {season}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+
+            <TextField
+              label="Year"
+              placeholder="e.g. 2026"
+              error={Boolean(errors.year)}
+              helperText={errors.year?.message}
+              required
+              fullWidth
+              size="small"
+              slotProps={{ htmlInput: { maxLength: 4 } }}
+              sx={wizardFieldSx}
+              {...register("year")}
+            />
+
+            <div className="flex h-10 items-center">
+              <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-amber-600 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Draft
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <SectionLabel icon={<AppRegistrationOutlinedIcon sx={{ fontSize: 15 }} />}>
+          Timeline
+        </SectionLabel>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5 dark:border-blue-500/20 dark:bg-blue-500/5">
+            <div className="mb-4 flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-sky-400 text-white shadow-md shadow-blue-500/25">
+                <AppRegistrationOutlinedIcon sx={{ fontSize: 17 }} />
+              </span>
+              <div>
+                <p className="text-sm font-black text-slate-900 dark:text-white">
+                  Registration window
+                </p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  When teams can sign up
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <TextField
-                {...field}
-                select
-                label="Season"
-                error={Boolean(errors.season)}
-                helperText={errors.season?.message}
+                label="Registration Start At"
+                type="datetime-local"
+                error={Boolean(errors.registrationStartAt)}
+                helperText={errors.registrationStartAt?.message}
                 required
                 fullWidth
                 size="small"
-                sx={textFieldSx}
-              >
-                {EVENT_SEASONS.map((season) => (
-                  <MenuItem key={season} value={season}>
-                    {season}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
+                sx={wizardDateFieldOnSoftSx}
+                slotProps={{ inputLabel: { shrink: true } }}
+                {...register("registrationStartAt")}
+              />
 
-          <TextField
-            label="Year"
-            placeholder="e.g. 2026"
-            error={Boolean(errors.year)}
-            helperText={errors.year?.message}
-            required
-            fullWidth
-            size="small"
-            slotProps={{ htmlInput: { maxLength: 4 } }}
-            sx={textFieldSx}
-            {...register("year")}
-          />
+              <TextField
+                label="Registration End At"
+                type="datetime-local"
+                error={Boolean(errors.registrationEndAt)}
+                helperText={errors.registrationEndAt?.message}
+                required
+                fullWidth
+                size="small"
+                sx={wizardDateFieldOnSoftSx}
+                slotProps={{ inputLabel: { shrink: true } }}
+                {...register("registrationEndAt")}
+              />
+            </div>
+          </div>
 
-          <TextField
-            label="Status"
-            value="Draft"
-            disabled
-            fullWidth
-            size="small"
-            sx={textFieldSx}
-          />
+          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5 dark:border-indigo-500/20 dark:bg-indigo-500/5">
+            <div className="mb-4 flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-400 text-white shadow-md shadow-indigo-500/25">
+                <RocketLaunchOutlinedIcon sx={{ fontSize: 17 }} />
+              </span>
+              <div>
+                <p className="text-sm font-black text-slate-900 dark:text-white">
+                  Competition window
+                </p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Official competing period
+                </p>
+              </div>
+            </div>
 
-          <TextField
-            label="Registration Start At"
-            type="datetime-local"
-            error={Boolean(errors.registrationStartAt)}
-            helperText={errors.registrationStartAt?.message}
-            required
-            fullWidth
-            size="small"
-            sx={dateTimeFieldSx}
-            slotProps={{ inputLabel: { shrink: true } }}
-            {...register("registrationStartAt")}
-          />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                label="Competition Start At"
+                type="datetime-local"
+                error={Boolean(errors.competitionStartAt)}
+                helperText={errors.competitionStartAt?.message}
+                required
+                fullWidth
+                size="small"
+                sx={wizardDateFieldOnSoftSx}
+                slotProps={{ inputLabel: { shrink: true } }}
+                {...register("competitionStartAt")}
+              />
 
-          <TextField
-            label="Registration End At"
-            type="datetime-local"
-            error={Boolean(errors.registrationEndAt)}
-            helperText={errors.registrationEndAt?.message}
-            required
-            fullWidth
-            size="small"
-            sx={dateTimeFieldSx}
-            slotProps={{ inputLabel: { shrink: true } }}
-            {...register("registrationEndAt")}
-          />
+              <TextField
+                label="Competition End At"
+                type="datetime-local"
+                error={Boolean(errors.competitionEndAt)}
+                helperText={errors.competitionEndAt?.message}
+                required
+                fullWidth
+                size="small"
+                sx={wizardDateFieldOnSoftSx}
+                slotProps={{ inputLabel: { shrink: true } }}
+                {...register("competitionEndAt")}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <TextField
-            label="Competition Start At"
-            type="datetime-local"
-            error={Boolean(errors.competitionStartAt)}
-            helperText={errors.competitionStartAt?.message}
-            required
-            fullWidth
-            size="small"
-            sx={dateTimeFieldSx}
-            slotProps={{ inputLabel: { shrink: true } }}
-            {...register("competitionStartAt")}
-          />
+      <div className="space-y-3">
+        <SectionLabel icon={<TuneOutlinedIcon sx={{ fontSize: 15 }} />}>
+          Grading configuration
+        </SectionLabel>
 
-          <TextField
-            label="Competition End At"
-            type="datetime-local"
-            error={Boolean(errors.competitionEndAt)}
-            helperText={errors.competitionEndAt?.message}
-            required
-            fullWidth
-            size="small"
-            sx={dateTimeFieldSx}
-            slotProps={{ inputLabel: { shrink: true } }}
-            {...register("competitionEndAt")}
-          />
-
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <TextField
             label="Variance review threshold"
             type="number"
@@ -176,11 +233,17 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             required
             fullWidth
             size="small"
-            sx={textFieldSx}
+            sx={wizardFieldSx}
             slotProps={{ htmlInput: { min: 0.01, step: 0.1 } }}
             {...register("varianceThresholdPoints", { valueAsNumber: true })}
           />
         </div>
+      </div>
+
+      <div className="space-y-3">
+        <SectionLabel icon={<ImageOutlinedIcon sx={{ fontSize: 15 }} />}>
+          Story & Banner
+        </SectionLabel>
 
         <TextField
           label="Description"
@@ -190,7 +253,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
           multiline
           minRows={4}
           fullWidth
-          sx={textFieldSx}
+          sx={wizardFieldSx}
           {...register("description")}
         />
 
@@ -204,31 +267,7 @@ export const EventDetailsStep = ({ onNext }: EventDetailsStepProps) => {
             />
           )}
         />
-
-        <div className="flex justify-end border-t border-gray-100 pt-5 dark:border-slate-700">
-          <Button
-            type="button"
-            variant="contained"
-            endIcon={<ArrowForwardOutlinedIcon />}
-            onClick={onNext}
-            sx={{
-              px: 2.5,
-              py: 1.1,
-              borderRadius: 2,
-              bgcolor: "#2563eb",
-              fontWeight: 800,
-              textTransform: "none",
-              boxShadow: "none",
-              "&:hover": {
-                bgcolor: "#1d4ed8",
-                boxShadow: "none",
-              },
-            }}
-          >
-            Next Step
-          </Button>
-        </div>
       </div>
-    </section>
+    </StepShell>
   );
 };

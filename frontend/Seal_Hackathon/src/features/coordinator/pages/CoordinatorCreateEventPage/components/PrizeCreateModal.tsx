@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Controller, FormProvider, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -88,9 +89,20 @@ export const PrizeCreateModal = ({
   });
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle sx={{ fontWeight: 800 }}>
-        {isEditMode ? "Edit Prize" : "Create Prize"}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="md"
+      slotProps={{ paper: { sx: { borderRadius: "20px" } } }}
+    >
+      <DialogTitle sx={{ fontWeight: 900 }}>
+        <span className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-amber-500 to-orange-400 text-white shadow-md shadow-amber-500/25">
+            <EmojiEventsOutlinedIcon sx={{ fontSize: 19 }} />
+          </span>
+          {isEditMode ? "Edit Prize" : "Create Prize"}
+        </span>
       </DialogTitle>
 
       <FormProvider {...methods}>
