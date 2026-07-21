@@ -2,16 +2,15 @@ import { useState } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 
-import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 
 import { UserInviteSearchPanel } from "./components/UserInviteSearchPanel";
 import { MentorJudgeAssignmentTable } from "./components/MentorJudgeAssignmentTable";
 import { CreateGuestJudgeModal } from "./components/CreateGuestJugdeModal";
+import { StepShell } from "./components/StepShell";
 
 import {
   createJudgeTrackRoundAssignment,
@@ -62,14 +61,8 @@ export function MentorsJudgesStep({
     ...(watchedAssignments[index] ?? {}),
   }));
 
-  const handleTabChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newTab: "MENTOR" | "JUDGE" | null
-  ) => {
-    if (newTab !== null) {
-      setActiveTab(newTab);
-    }
-  };
+  const mentorCount = assignments.filter((a) => a.role === "MENTOR").length;
+  const judgeCount = assignments.filter((a) => a.role === "JUDGE").length;
 
   // 1. Xử lý khi chọn User CÓ SẴN (Dùng type AssignableUserResponse)
   const handleSelectExistingUser = (user: AssignableUserResponse) => {
@@ -83,13 +76,13 @@ export function MentorsJudgesStep({
     if (isAlreadyAssigned) return;
 
     const newAssignment = createMentorJudgeAssignment({
-      userId: user.userId, 
-      judgeId: user.judgeId, 
+      userId: user.userId,
+      judgeId: user.judgeId,
       email: user.email,
       fullName: user.fullName,
       role: activeTab,
     });
-    
+
     append(
       activeTab === "JUDGE"
         ? {
@@ -122,10 +115,10 @@ export function MentorsJudgesStep({
     };
 
     const newAssignment = createMentorJudgeAssignment({
-      userId: judge.userId, 
-      judgeId: judge.judgeId, 
+      userId: judge.userId,
+      judgeId: judge.judgeId,
       email: judge.email,
-      fullName: fullName, 
+      fullName: fullName,
       role: "JUDGE",
     });
 
@@ -162,90 +155,110 @@ export function MentorsJudgesStep({
   const arrayError = errors.mentorJudgeAssignments?.root?.message || errors.mentorJudgeAssignments?.message;
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
-      <div className="flex flex-col justify-between gap-4 border-b border-gray-100 px-7 py-5 sm:flex-row sm:items-center dark:border-slate-700">
-        <div>
-          <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
-            Step 5: Mentors & Judges
-          </h2>
-          <p className="mt-1 text-sm font-medium text-gray-500 dark:text-slate-400">
-            Mentors are assigned to tracks. Judges are assigned to specific rounds inside specific tracks.
-          </p>
-        </div>
+    <>
+      <StepShell
+        step={5}
+        title="Mentors & Judges"
+        description="Mentors are assigned to tracks. Judges are assigned to specific rounds inside specific tracks."
+        headerActions={
+          <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-800/60">
+            {(
+              [
+                {
+                  key: "MENTOR" as const,
+                  label: "Mentors",
+                  count: mentorCount,
+                  icon: <SchoolOutlinedIcon sx={{ fontSize: 16 }} />,
+                },
+                {
+                  key: "JUDGE" as const,
+                  label: "Judges",
+                  count: judgeCount,
+                  icon: <GavelOutlinedIcon sx={{ fontSize: 16 }} />,
+                },
+              ]
+            ).map((tab) => {
+              const active = activeTab === tab.key;
 
-        <ToggleButtonGroup
-          color="primary"
-          value={activeTab}
-          exclusive
-          onChange={handleTabChange}
-          size="small"
-          sx={{
-            bgcolor: "#f8fafc",
-            p: 0.5,
-            borderRadius: "12px",
-            ".MuiToggleButton-root": {
-              textTransform: "none",
-              fontWeight: 800,
-              border: "none",
-              borderRadius: "8px !important",
-              px: 3,
-            },
-            ".Mui-selected": {
-              bgcolor: "white !important",
-              color: "#2563eb !important",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            },
-            ".dark &": {
-              bgcolor: "#0f172a",
-              ".Mui-selected": { bgcolor: "#1e293b !important", color: "#38bdf8 !important" },
-            }
-          }}
-        >
-          <ToggleButton value="MENTOR">Mentors</ToggleButton>
-          <ToggleButton value="JUDGE">Judges</ToggleButton>
-        </ToggleButtonGroup>
-      </div>
-
-      <div className="grid gap-6 px-7 py-6 xl:grid-cols-[380px_1fr]">
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={[
+                    "inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60",
+                    active
+                      ? "bg-white text-cyan-600 shadow-sm dark:bg-slate-900 dark:text-cyan-400"
+                      : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
+                  ].join(" ")}
+                >
+                  {tab.icon}
+                  {tab.label}
+                  <span
+                    className={[
+                      "rounded-full px-2 py-0.5 text-[10px] font-black tabular-nums",
+                      active
+                        ? "bg-cyan-50 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-300"
+                        : "bg-slate-200/70 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
+                    ].join(" ")}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        }
+        bodyClassName="grid gap-6 px-7 py-6 xl:grid-cols-[380px_1fr]"
+        onBack={onBack}
+        next={{ label: "Next Step", onClick: onNext }}
+      >
         <div className="flex flex-col gap-5">
           {typeof arrayError === "string" && (
             <Alert severity="error">{arrayError}</Alert>
           )}
 
-          <div className="rounded-2xl border border-gray-200 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
-            <div className="mb-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-black text-slate-900 dark:text-white">
-                  Available {activeTab === "MENTOR" ? "Mentors" : "Judges"}
-                </h3>
-                
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <div className="border-b border-slate-100 bg-slate-50/70 px-5 py-4 dark:border-slate-800 dark:bg-slate-800/40">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500 to-blue-400 text-white shadow-md shadow-cyan-500/25">
+                    {activeTab === "MENTOR" ? (
+                      <SchoolOutlinedIcon sx={{ fontSize: 17 }} />
+                    ) : (
+                      <GavelOutlinedIcon sx={{ fontSize: 17 }} />
+                    )}
+                  </span>
+                  <h3 className="truncate text-base font-black text-slate-900 dark:text-white">
+                    Available {activeTab === "MENTOR" ? "Mentors" : "Judges"}
+                  </h3>
+                </div>
+
                 {activeTab === "JUDGE" && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<PersonAddOutlinedIcon fontSize="small" />}
-                  onClick={() => setGuestJudgeModalOpen(true)}
-                  sx={{ textTransform: "none", fontWeight: 800, borderRadius: "8px", mt: 1 }}
-                >
-                  Guest Judge
-                </Button>
-              )}
+                  <button
+                    type="button"
+                    onClick={() => setGuestJudgeModalOpen(true)}
+                    className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-cyan-300/70 bg-white px-3 py-1.5 text-xs font-black text-cyan-600 transition-colors duration-200 hover:bg-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 dark:border-cyan-500/30 dark:bg-slate-900 dark:text-cyan-400 dark:hover:bg-cyan-500/10"
+                  >
+                    <PersonAddOutlinedIcon sx={{ fontSize: 15 }} />
+                    Guest Judge
+                  </button>
+                )}
               </div>
-              
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+
+              <p className="mt-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                 Search by name or email, then invite to this event.
               </p>
-
-              
             </div>
 
-            <UserInviteSearchPanel 
-              role={activeTab} 
+            <UserInviteSearchPanel
+              role={activeTab}
               selectedUserIds={assignments
                 .filter((assignment) => assignment.role === activeTab)
                 .map((assignment) => assignment.userId)}
               extraUsers={activeTab === "JUDGE" ? createdGuestJudges : []}
-              onSelect={handleSelectExistingUser} 
+              onSelect={handleSelectExistingUser}
             />
           </div>
         </div>
@@ -259,29 +272,13 @@ export function MentorsJudgesStep({
             onRemove={handleRemoveAssignment}
           />
         </div>
-      </div>
+      </StepShell>
 
-      <div className="flex justify-between border-t border-gray-100 px-7 py-5 dark:border-slate-700">
-        <Button type="button" variant="outlined" onClick={onBack} sx={{ textTransform: "none", fontWeight: 700 }}>
-          Back
-        </Button>
-
-        <Button
-          type="button"
-          variant="contained"
-          endIcon={<ArrowForwardOutlinedIcon />}
-          onClick={onNext}
-          sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900, bgcolor: "#2563eb", "&:hover": { bgcolor: "#1d4ed8" } }}
-        >
-          Next Step
-        </Button>
-      </div>
-
-      <CreateGuestJudgeModal 
-        open={isGuestJudgeModalOpen} 
+      <CreateGuestJudgeModal
+        open={isGuestJudgeModalOpen}
         onClose={() => setGuestJudgeModalOpen(false)}
-        onSuccess={handleGuestJudgeCreated} 
+        onSuccess={handleGuestJudgeCreated}
       />
-    </section>
+    </>
   );
 }

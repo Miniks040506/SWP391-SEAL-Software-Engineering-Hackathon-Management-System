@@ -1,7 +1,10 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
+import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
   Alert,
   Button,
@@ -11,7 +14,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
-  IconButton,
   MenuItem,
   TextField,
 } from "@mui/material";
@@ -26,29 +28,16 @@ import {
   type TrackFormValues,
 } from "@/features/coordinator/schemas/createEvent.schema";
 
+import { StepShell } from "./components/StepShell";
+import {
+  wizardDateFieldSx,
+  wizardFieldSx,
+} from "./components/wizardUi";
+
 type RoundsStepProps = {
   tracks: TrackFormValues[];
   onBack: () => void;
   onNext: () => void;
-};
-
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "12px",
-  },
-};
-
-const dateTimeFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "12px",
-  },
-  "& .MuiInputLabel-root": {
-    backgroundColor: "white",
-    paddingInline: "4px",
-  },
-  ".dark & .MuiInputLabel-root": {
-    backgroundColor: "#1e293b",
-  },
 };
 
 function getArrayErrorMessage(error: unknown) {
@@ -146,8 +135,14 @@ function AdvanceRuleModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Advance Rule</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={{ paper: { sx: { borderRadius: "20px" } } }}
+    >
+      <DialogTitle sx={{ fontWeight: 900 }}>Add Advance Rule</DialogTitle>
       <DialogContent className="space-y-4 pt-2">
         <TextField
           select
@@ -155,7 +150,7 @@ function AdvanceRuleModal({
           fullWidth
           value={ruleType}
           onChange={(e) => setRuleType(e.target.value)}
-          sx={{ ...textFieldSx, mt: 1 }}
+          sx={{ ...wizardFieldSx, mt: 1 }}
         >
           {RULE_TYPE_OPTIONS.map((opt) => (
             <MenuItem key={opt.value} value={opt.value}>
@@ -169,7 +164,7 @@ function AdvanceRuleModal({
           fullWidth
           value={trackId}
           onChange={(e) => setTrackId(e.target.value)}
-          sx={textFieldSx}
+          sx={wizardFieldSx}
         >
           <MenuItem value="">
             <em>Global (All Tracks)</em>
@@ -188,7 +183,7 @@ function AdvanceRuleModal({
           onChange={(e) => setValue(e.target.value)}
           error={!!valueError}
           helperText={valueError}
-          sx={textFieldSx}
+          sx={wizardFieldSx}
         />
         <TextField
           label="Priority"
@@ -198,7 +193,7 @@ function AdvanceRuleModal({
           onChange={(e) => setPriority(e.target.value)}
           error={!!priorityError}
           helperText={priorityError}
-          sx={textFieldSx}
+          sx={wizardFieldSx}
         />
         <TextField
           label="Description"
@@ -207,13 +202,13 @@ function AdvanceRuleModal({
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          sx={textFieldSx}
+          sx={wizardFieldSx}
         />
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, py: 2 }}>
         <Button
           onClick={onClose}
-          sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+          sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 700 }}
         >
           Cancel
         </Button>
@@ -221,7 +216,7 @@ function AdvanceRuleModal({
           onClick={handleSave}
           variant="contained"
           disabled={!isValid}
-          sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+          sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 700 }}
         >
           Save Rule
         </Button>
@@ -304,19 +299,18 @@ function AdvanceRulesSection({
             </span>
           }
         />
-        <Button
-          variant="outlined"
-          size="small"
+        <button
+          type="button"
           onClick={() => setModalOpen(true)}
-          startIcon={<AddOutlinedIcon />}
-          sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+          className="inline-flex cursor-pointer items-center gap-1.5 self-start rounded-lg border border-violet-300/70 bg-white px-3 py-1.5 text-xs font-black text-violet-600 transition-colors duration-200 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60 dark:border-violet-500/30 dark:bg-slate-900 dark:text-violet-400 dark:hover:bg-violet-500/10"
         >
+          <AddOutlinedIcon sx={{ fontSize: 15 }} />
           Add Advance Rule
-        </Button>
+        </button>
       </div>
 
       {fields.length === 0 ? (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
           No advance rules configured for this round.
         </p>
       ) : (
@@ -336,7 +330,7 @@ function AdvanceRulesSection({
             return (
               <div
                 key={field.fieldId}
-                className={`group relative inline-flex max-w-full cursor-default items-center gap-2 rounded-full border py-1.5 pr-7 pl-3.5 text-sm font-medium shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${getRuleChipStyle(field.ruleType)}`}
+                className={`group relative inline-flex max-w-full cursor-default items-center gap-2 rounded-full border py-1.5 pr-7 pl-3.5 text-sm font-medium shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${getRuleChipStyle(field.ruleType)}`}
               >
                 <span>
                   {field.ruleType} · {val}
@@ -372,6 +366,14 @@ function AdvanceRulesSection({
   );
 }
 
+function FinalBadge() {
+  return (
+    <span className="rounded-full bg-linear-to-r from-violet-500 to-indigo-500 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-sm shadow-violet-500/30">
+      Final
+    </span>
+  );
+}
+
 export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
   const {
     control,
@@ -397,71 +399,81 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
   const arrayErrorMessage = getArrayErrorMessage(errors.rounds);
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
-      <div className="border-b border-gray-100 px-7 py-5 dark:border-slate-700">
-        <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
-          Step 4: Round
-        </h2>
+    <StepShell
+      step={4}
+      title="Rounds"
+      description="Create round templates separately from tracks. Every track will contain the same list of rounds, and judges will be assigned to a specific track-round pair in the next step."
+      bodyClassName="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]"
+      onBack={onBack}
+      next={{ label: "Next Step", onClick: onNext }}
+    >
+      <div className="space-y-5">
+        {arrayErrorMessage && (
+          <Alert severity="error">{arrayErrorMessage}</Alert>
+        )}
 
-        <p className="mt-2 text-sm font-medium text-gray-500 dark:text-slate-400">
-          Create round templates separately from tracks. Every track will
-          contain the same list of rounds, and judges will be assigned to a
-          specific track-round pair in the next step.
-        </p>
-      </div>
+        {fields.length === 0 && (
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 px-8 py-14 text-center dark:border-slate-700">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-500 dark:bg-violet-500/10 dark:text-violet-400">
+              <CalendarTodayOutlinedIcon sx={{ fontSize: 26 }} />
+            </span>
 
-      <div className="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
-        <div className="space-y-5">
-          {arrayErrorMessage && (
-            <Alert severity="error">{arrayErrorMessage}</Alert>
-          )}
+            <h3 className="mt-4 text-base font-black text-slate-900 dark:text-white">
+              No round added yet
+            </h3>
 
-          {fields.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center dark:border-slate-700">
-              <CalendarTodayOutlinedIcon className="mb-2 text-slate-300" />
-              <h3 className="text-base font-black text-slate-900 dark:text-white">
-                No round added yet
-              </h3>
+            <p className="mx-auto mt-1.5 max-w-sm text-sm font-medium text-slate-500 dark:text-slate-400">
+              Click Add Round to create the first event-level round template.
+            </p>
+          </div>
+        )}
 
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Click Add Round to create the first event-level round template.
-              </p>
-            </div>
-          )}
+        {fields.map((field, index) => {
+          const roundErrors = errors.rounds?.[index];
 
-          {fields.map((field, index) => {
-            const roundErrors = errors.rounds?.[index];
+          return (
+            <div
+              key={field.fieldId}
+              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white transition-colors duration-200 hover:border-violet-300/70 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-violet-500/40"
+            >
+              <span
+                aria-hidden
+                className="absolute inset-y-0 left-0 w-1 bg-linear-to-b from-violet-500 to-indigo-400"
+              />
 
-            return (
-              <div
-                key={field.fieldId}
-                className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700"
-              >
+              <div className="p-5 pl-6">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
+                    <h3 className="flex items-center gap-2.5 font-black text-slate-900 dark:text-white">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-sm font-black text-white shadow-md shadow-violet-500/25">
+                        {index + 1}
+                      </span>
                       Round {index + 1}
                       {rounds.length > 0 && index === rounds.length - 1 && (
-                        <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                          Final
-                        </span>
+                        <FinalBadge />
                       )}
                     </h3>
-                    <p className="mt-1 text-xs font-semibold text-slate-400">
+                    <p className="mt-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500">
                       This round will appear under every track.
                     </p>
                   </div>
 
-                  <IconButton color="error" onClick={() => remove(index)}>
-                    <DeleteOutlineOutlinedIcon />
-                  </IconButton>
+                  <button
+                    type="button"
+                    onClick={() => remove(index)}
+                    aria-label={`Remove round ${index + 1}`}
+                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-slate-400 transition-colors duration-200 hover:bg-rose-50 hover:text-rose-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60 dark:hover:bg-rose-500/10"
+                  >
+                    <DeleteOutlineOutlinedIcon sx={{ fontSize: 20 }} />
+                  </button>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <TextField
                     label="Round name"
                     fullWidth
-                    sx={textFieldSx}
+                    size="small"
+                    sx={wizardFieldSx}
                     error={Boolean(roundErrors?.roundName)}
                     helperText={roundErrors?.roundName?.message}
                     {...register(`rounds.${index}.roundName`)}
@@ -472,7 +484,7 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                     fullWidth
                     multiline
                     minRows={3}
-                    sx={textFieldSx}
+                    sx={wizardFieldSx}
                     error={Boolean(roundErrors?.description)}
                     helperText={roundErrors?.description?.message}
                     className="md:col-span-2"
@@ -483,8 +495,9 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                     label="Round order"
                     type="number"
                     fullWidth
+                    size="small"
                     value={index + 1}
-                    sx={textFieldSx}
+                    sx={wizardFieldSx}
                     helperText="Automatically follows this round's position."
                     slotProps={{ input: { readOnly: true } }}
                   />
@@ -493,7 +506,8 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                     label="Round start"
                     type="datetime-local"
                     fullWidth
-                    sx={dateTimeFieldSx}
+                    size="small"
+                    sx={wizardDateFieldSx}
                     error={Boolean(roundErrors?.startAt)}
                     helperText={roundErrors?.startAt?.message}
                     slotProps={{ inputLabel: { shrink: true } }}
@@ -504,7 +518,8 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                     label="Round end"
                     type="datetime-local"
                     fullWidth
-                    sx={dateTimeFieldSx}
+                    size="small"
+                    sx={wizardDateFieldSx}
                     error={Boolean(roundErrors?.endAt)}
                     helperText={roundErrors?.endAt?.message}
                     slotProps={{ inputLabel: { shrink: true } }}
@@ -515,7 +530,8 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                     label="Submission deadline"
                     type="datetime-local"
                     fullWidth
-                    sx={dateTimeFieldSx}
+                    size="small"
+                    sx={wizardDateFieldSx}
                     error={Boolean(roundErrors?.submissionDeadline)}
                     helperText={roundErrors?.submissionDeadline?.message}
                     slotProps={{ inputLabel: { shrink: true } }}
@@ -527,7 +543,8 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                     type="datetime-local"
                     required
                     fullWidth
-                    sx={dateTimeFieldSx}
+                    size="small"
+                    sx={wizardDateFieldSx}
                     error={Boolean(roundErrors?.judgingDeadline)}
                     helperText={roundErrors?.judgingDeadline?.message}
                     slotProps={{ inputLabel: { shrink: true } }}
@@ -541,109 +558,126 @@ export function RoundsStep({ tracks, onBack, onNext }: RoundsStepProps) {
                   />
                 </div>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
 
-          <Button
-            type="button"
-            variant="outlined"
-            startIcon={<AddOutlinedIcon />}
-            onClick={() => append(createEmptyRound(fields.length + 1))}
-            sx={{
-              borderRadius: "12px",
-              textTransform: "none",
-              fontWeight: 900,
-            }}
-          >
-            Add Round
-          </Button>
-        </div>
+        <button
+          type="button"
+          onClick={() => append(createEmptyRound(fields.length + 1))}
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-violet-300/70 py-3.5 text-sm font-black text-violet-600 transition-colors duration-200 hover:border-violet-400 hover:bg-violet-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60 dark:border-violet-500/30 dark:text-violet-400 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/5"
+        >
+          <AddOutlinedIcon sx={{ fontSize: 18 }} />
+          Add Round
+        </button>
+      </div>
 
-        <aside className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 dark:border-slate-700 dark:bg-slate-900/20">
-          <div className="mb-4">
+      <aside className="h-fit rounded-2xl border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-700 dark:bg-slate-800/40">
+        <div className="mb-5 flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-white shadow-md shadow-violet-500/25">
+            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+          </span>
+          <div>
             <h3 className="text-base font-black text-slate-900 dark:text-white">
               Track-round preview
             </h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-sm font-medium text-slate-500 dark:text-slate-400">
               This is how Step 5 and the Edit page will assign judges: by track
               and round.
             </p>
           </div>
+        </div>
 
-          {tracks.length === 0 && (
-            <Alert severity="warning">
-              Create at least one track before reviewing rounds.
-            </Alert>
-          )}
+        {tracks.length === 0 && (
+          <Alert severity="warning">
+            Create at least one track before reviewing rounds.
+          </Alert>
+        )}
 
-          {tracks.length > 0 && rounds.length === 0 && (
-            <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm font-semibold text-slate-400 dark:border-slate-700">
-              No rounds to preview yet.
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {tracks.map((track) => (
-              <div
-                key={track.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#1e293b]"
-              >
-                <p className="font-black text-slate-900 dark:text-white">
-                  Track: {track.trackName || "Unnamed track"}
-                </p>
-
-                <div className="mt-3 space-y-2">
-                  {rounds.map((round, index) => (
-                    <div
-                      key={`${track.id}-${round.id}`}
-                      className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-slate-800 dark:text-slate-200">
-                            {round.roundName || `Round ${index + 1}`}
-                          </p>
-                          {rounds.length > 0 && index === rounds.length - 1 && (
-                            <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                              Final
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <p className="mt-1 text-xs font-medium text-slate-500">
-                        Period: {formatRoundTime(round.startAt)} →{" "}
-                        {formatRoundTime(round.endAt)}
-                      </p>
-                      <p className="mt-1 text-xs font-medium text-slate-500">
-                        Submit: {formatRoundTime(round.submissionDeadline)}
-                      </p>
-                      <p className="text-xs font-medium text-slate-500">
-                        Judge: {formatRoundTime(round.judgingDeadline)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+        {tracks.length > 0 && rounds.length === 0 && (
+          <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm font-semibold text-slate-400 dark:border-slate-700">
+            No rounds to preview yet.
           </div>
-        </aside>
-      </div>
+        )}
 
-      <div className="flex justify-between border-t border-gray-100 px-7 py-5 dark:border-slate-700">
-        <Button type="button" variant="outlined" onClick={onBack}>
-          Back
-        </Button>
+        <div className="space-y-4">
+          {tracks.map((track) => (
+            <div
+              key={track.id}
+              className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+            >
+              <p className="font-black text-slate-900 dark:text-white">
+                {track.trackName || "Unnamed track"}
+              </p>
 
-        <Button
-          type="button"
-          variant="contained"
-          endIcon={<ArrowForwardOutlinedIcon />}
-          onClick={onNext}
-          sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
-        >
-          Next Step
-        </Button>
-      </div>
-    </section>
+              <div className="relative mt-4 space-y-4 pl-5">
+                <span
+                  aria-hidden
+                  className="absolute inset-y-1 left-1.5 w-px bg-slate-200 dark:bg-slate-700"
+                />
+
+                {rounds.map((round, index) => {
+                  const isFinal =
+                    rounds.length > 0 && index === rounds.length - 1;
+
+                  return (
+                    <div key={`${track.id}-${round.id}`} className="relative">
+                      <span
+                        aria-hidden
+                        className={`absolute top-1 -left-5 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900 ${
+                          isFinal
+                            ? "bg-linear-to-br from-violet-500 to-indigo-400"
+                            : "bg-slate-300 dark:bg-slate-600"
+                        }`}
+                      />
+
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-slate-800 dark:text-slate-200">
+                          {round.roundName || `Round ${index + 1}`}
+                        </p>
+                        {isFinal && <FinalBadge />}
+                      </div>
+
+                      <div className="mt-1.5 space-y-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <p className="flex items-center gap-1.5">
+                          <CalendarTodayOutlinedIcon sx={{ fontSize: 13 }} />
+                          {formatRoundTime(round.startAt)} →{" "}
+                          {formatRoundTime(round.endAt)}
+                        </p>
+                        <p className="flex items-center gap-1.5">
+                          <UploadFileOutlinedIcon sx={{ fontSize: 13 }} />
+                          Submit: {formatRoundTime(round.submissionDeadline)}
+                        </p>
+                        <p className="flex items-center gap-1.5">
+                          <GavelOutlinedIcon sx={{ fontSize: 13 }} />
+                          Judge: {formatRoundTime(round.judgingDeadline)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {rounds.length > 0 && (
+                  <div className="relative">
+                    <span
+                      aria-hidden
+                      className="absolute top-0.5 -left-5 flex h-3 w-3 items-center justify-center"
+                    >
+                      <FlagOutlinedIcon
+                        sx={{ fontSize: 14 }}
+                        className="text-violet-500"
+                      />
+                    </span>
+                    <p className="text-xs font-black uppercase tracking-widest text-violet-500 dark:text-violet-400">
+                      Results
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </aside>
+    </StepShell>
   );
 }
