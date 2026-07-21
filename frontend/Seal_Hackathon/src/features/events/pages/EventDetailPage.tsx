@@ -130,8 +130,7 @@ export function EventDetailPage() {
 
   const activeCompetition = (competitionsQuery.data ?? []).find(
     (competition) =>
-      competition.eventId === event.id &&
-      competition.eventStatus === "ONGOING",
+      competition.eventId === event.id && competition.eventStatus === "ONGOING",
   );
   const showCompetingButton =
     event.status === "ONGOING" && Boolean(activeCompetition);
@@ -278,14 +277,25 @@ export function EventDetailPage() {
             )}
 
             {completed && (
-              <button
-                type="button"
-                onClick={() => viewResults(event.id)}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-7 py-3 text-sm font-bold text-white backdrop-blur-sm transition-all hover:border-white/50 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 active:scale-95"
-              >
-                <LeaderboardIcon style={{ fontSize: 17 }} />
-                View Results
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => viewResults(event.id)}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-7 py-3 text-sm font-bold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-white/50 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 active:translate-y-0 active:scale-95"
+                >
+                  <LeaderboardIcon style={{ fontSize: 17 }} />
+                  View results
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate(`/events/${event.id}/awards`)}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-amber-300/35 bg-amber-300/10 px-7 py-3 text-sm font-bold text-amber-100 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-amber-200/60 hover:bg-amber-300/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 active:translate-y-0 active:scale-95"
+                >
+                  <EmojiEventsOutlinedIcon style={{ fontSize: 17 }} />
+                  View awards
+                </button>
+              </>
             )}
 
             {userRole === "COORDINATOR" && (

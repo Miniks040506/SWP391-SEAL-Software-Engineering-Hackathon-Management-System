@@ -142,7 +142,7 @@ export function PersonalProfilePage() {
         <div className="h-64 rounded-[28px] bg-slate-200 dark:bg-slate-800" />
         <div className="grid gap-6 lg:grid-cols-12">
           <div className="h-80 rounded-[28px] bg-slate-200 dark:bg-slate-800 lg:col-span-4" />
-          <div className="h-[28rem] rounded-[28px] bg-slate-200 dark:bg-slate-800 lg:col-span-8" />
+          <div className="h-112 rounded-[28px] bg-slate-200 dark:bg-slate-800 lg:col-span-8" />
         </div>
       </div>
     );

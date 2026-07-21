@@ -17,7 +17,9 @@ import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import KeyOutlinedIcon from "@mui/icons-material/KeyOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import MailOutlinedIcon from "@mui/icons-material/MailOutlined";
+import MilitaryTechOutlinedIcon from "@mui/icons-material/MilitaryTechOutlined";
 import PersonAddAltOutlinedIcon from "@mui/icons-material/PersonAddAltOutlined";
+import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
 import RouteOutlinedIcon from "@mui/icons-material/RouteOutlined";
 import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlined";
@@ -836,6 +838,75 @@ export const TeamDetailPage = () => {
               eventId={advancementData.eventId}
             />
           )}
+
+          <section
+            className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+            aria-labelledby="competition-outcomes-heading"
+          >
+            <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800 md:px-7">
+              <p className="text-xs font-bold uppercase tracking-widest text-blue-500">
+                Event progress
+              </p>
+              <h2
+                id="competition-outcomes-heading"
+                className="mt-1 text-xl font-extrabold tracking-tight text-slate-900 dark:text-white"
+              >
+                Competition outcomes
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                Follow your team&apos;s progression and review judge feedback as
+                soon as results are published.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 divide-y divide-slate-200 md:grid-cols-2 md:divide-x md:divide-y-0 dark:divide-slate-800">
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(`/participant/teams/${team.id}/advancement`)
+                }
+                className="group flex min-h-36 cursor-pointer items-center gap-4 bg-white px-6 py-6 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-50/70 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-blue-500 active:translate-y-0 active:bg-blue-100/70 dark:bg-slate-900 dark:hover:bg-blue-500/10 dark:active:bg-blue-500/15 md:px-7"
+              >
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:group-hover:bg-blue-500/20">
+                  <MilitaryTechOutlinedIcon style={{ fontSize: 25 }} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-extrabold text-slate-900 dark:text-white">
+                    Advancement details
+                  </span>
+                  <span className="mt-1 block text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    See the current round decision and what comes next.
+                  </span>
+                </span>
+                <EastOutlinedIcon
+                  className="shrink-0 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-blue-500 dark:text-slate-600"
+                  style={{ fontSize: 20 }}
+                />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate(`/participant/teams/${team.id}/scores`)}
+                className="group flex min-h-36 cursor-pointer items-center gap-4 bg-white px-6 py-6 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-indigo-50/70 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-indigo-500 active:translate-y-0 active:bg-indigo-100/70 dark:bg-slate-900 dark:hover:bg-indigo-500/10 dark:active:bg-indigo-500/15 md:px-7"
+              >
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:group-hover:bg-indigo-500/20">
+                  <QueryStatsOutlinedIcon style={{ fontSize: 25 }} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-extrabold text-slate-900 dark:text-white">
+                    Published scores
+                  </span>
+                  <span className="mt-1 block text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    Review round scores and open the detailed breakdown.
+                  </span>
+                </span>
+                <EastOutlinedIcon
+                  className="shrink-0 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-indigo-500 dark:text-slate-600"
+                  style={{ fontSize: 20 }}
+                />
+              </button>
+            </div>
+          </section>
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             {/* Main dossier: description and facts ledger, static read-only */}
