@@ -6,7 +6,7 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Typography
+  Typography,
 } from "@mui/material";
 import type { TeamScoreCriterionResponse } from "@/types/ranking.types";
 
@@ -14,12 +14,23 @@ export type CriterionScoreBreakdownTableProps = {
   criteria: (TeamScoreCriterionResponse & { comments?: string | null })[];
 };
 
-export const CriterionScoreBreakdownTable = ({ criteria }: CriterionScoreBreakdownTableProps) => {
-  const showComments = criteria.some((c) => c.comments && c.comments.trim().length > 0);
+export const CriterionScoreBreakdownTable = ({
+  criteria,
+}: CriterionScoreBreakdownTableProps) => {
+  const showComments = criteria.some(
+    (c) => c.comments && c.comments.trim().length > 0,
+  );
 
   return (
-    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: "auto" }}>
-      <Table sx={{ minWidth: 650 }} aria-label="criterion score breakdown table">
+    <TableContainer
+      component={Paper}
+      variant="outlined"
+      sx={{ overflowX: "auto" }}
+    >
+      <Table
+        sx={{ minWidth: 650 }}
+        aria-label="criterion score breakdown table"
+      >
         <TableHead sx={{ bgcolor: "background.default" }}>
           <TableRow>
             <TableCell>Criterion</TableCell>
@@ -47,9 +58,13 @@ export const CriterionScoreBreakdownTable = ({ criteria }: CriterionScoreBreakdo
                     {row.criteriaName}
                   </Typography>
                 </TableCell>
-                <TableCell>{row.category ?? "—"}</TableCell>
-                <TableCell align="right">{row.weight ?? "—"}</TableCell>
-                <TableCell align="right">{row.maxScore ?? "—"}</TableCell>
+                <TableCell>{row.category ?? "Not available"}</TableCell>
+                <TableCell align="right">
+                  {row.weight ?? "Not available"}
+                </TableCell>
+                <TableCell align="right">
+                  {row.maxScore ?? "Not available"}
+                </TableCell>
                 <TableCell align="right">{row.averageScore}</TableCell>
                 <TableCell align="right" sx={{ fontWeight: "bold" }}>
                   {weightedScore}
@@ -62,7 +77,7 @@ export const CriterionScoreBreakdownTable = ({ criteria }: CriterionScoreBreakdo
                         {row.comments}
                       </Typography>
                     ) : (
-                      "—"
+                      "Not available"
                     )}
                   </TableCell>
                 )}
@@ -71,7 +86,11 @@ export const CriterionScoreBreakdownTable = ({ criteria }: CriterionScoreBreakdo
           })}
           {criteria.length === 0 && (
             <TableRow>
-              <TableCell colSpan={showComments ? 8 : 7} align="center" sx={{ py: 3 }}>
+              <TableCell
+                colSpan={showComments ? 8 : 7}
+                align="center"
+                sx={{ py: 3 }}
+              >
                 <Typography variant="body2" color="text.secondary">
                   No criteria scores available.
                 </Typography>

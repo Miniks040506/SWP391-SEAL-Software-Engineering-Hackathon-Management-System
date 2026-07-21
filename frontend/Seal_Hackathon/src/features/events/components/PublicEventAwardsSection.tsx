@@ -26,18 +26,19 @@ type RankTier = {
 const TIERS: Record<"gold" | "silver" | "bronze" | "other", RankTier> = {
   gold: {
     label: "Champion",
-    band: "bg-linear-to-r from-amber-400 via-yellow-400 to-amber-500",
-    medallion: "bg-linear-to-br from-amber-300 to-amber-500 text-amber-900",
-    medallionRing: "ring-amber-200 dark:ring-amber-500/30",
-    rankText: "text-amber-600 dark:text-amber-400",
+    band: "bg-blue-600",
+    medallion: "bg-blue-50 text-blue-700",
+    medallionRing: "ring-blue-100 dark:ring-blue-500/30",
+    rankText: "text-blue-700 dark:text-blue-300",
     cardBorder:
-      "border-amber-200 hover:border-amber-300 dark:border-amber-500/30 dark:hover:border-amber-500/50",
-    glow: "shadow-lg shadow-amber-500/10",
+      "border-blue-200 hover:border-blue-400 dark:border-blue-500/40 dark:hover:border-blue-400",
+    glow: "shadow-lg shadow-blue-500/10",
   },
   silver: {
     label: "Runner-up",
-    band: "bg-linear-to-r from-slate-300 via-slate-200 to-slate-400",
-    medallion: "bg-linear-to-br from-slate-200 to-slate-400 text-slate-700",
+    band: "bg-slate-300 dark:bg-slate-700",
+    medallion:
+      "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
     medallionRing: "ring-slate-200 dark:ring-slate-500/30",
     rankText: "text-slate-500 dark:text-slate-400",
     cardBorder:
@@ -46,22 +47,24 @@ const TIERS: Record<"gold" | "silver" | "bronze" | "other", RankTier> = {
   },
   bronze: {
     label: "Third Place",
-    band: "bg-linear-to-r from-orange-500 via-orange-400 to-orange-600",
-    medallion: "bg-linear-to-br from-orange-400 to-orange-600 text-orange-50",
-    medallionRing: "ring-orange-200 dark:ring-orange-500/30",
-    rankText: "text-orange-600 dark:text-orange-400",
+    band: "bg-slate-400 dark:bg-slate-600",
+    medallion:
+      "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+    medallionRing: "ring-slate-200 dark:ring-slate-600/50",
+    rankText: "text-slate-600 dark:text-slate-300",
     cardBorder:
-      "border-orange-200 hover:border-orange-300 dark:border-orange-500/30 dark:hover:border-orange-500/50",
-    glow: "shadow-lg shadow-orange-500/10",
+      "border-slate-300 hover:border-blue-300 dark:border-slate-700 dark:hover:border-blue-500/50",
+    glow: "shadow-lg shadow-slate-500/10",
   },
   other: {
     label: "Awarded",
-    band: "bg-linear-to-r from-blue-500 via-cyan-400 to-blue-500",
-    medallion: "bg-linear-to-br from-blue-400 to-blue-600 text-blue-50",
+    band: "bg-blue-500",
+    medallion:
+      "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300",
     medallionRing: "ring-blue-200 dark:ring-blue-500/30",
     rankText: "text-blue-600 dark:text-blue-400",
     cardBorder:
-      "border-blue-200 hover:border-blue-300 dark:border-blue-500/30 dark:hover:border-blue-500/50",
+      "border-blue-200 hover:border-blue-400 dark:border-blue-500/30 dark:hover:border-blue-500/50",
     glow: "shadow-lg shadow-blue-500/10",
   },
 };
@@ -82,13 +85,19 @@ function formatAwardedDate(value?: string) {
   return format(date, "dd MMM yyyy");
 }
 
-function AwardCard({ prize }: { prize: PrizeResponse }) {
+function AwardCard({
+  prize,
+  featured = false,
+}: {
+  prize: PrizeResponse;
+  featured?: boolean;
+}) {
   const tier = getTier(prize.rankPosition);
   const awardedDate = formatAwardedDate(prize.awardedAt);
 
   return (
     <article
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-white transition-all hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 dark:bg-slate-900 ${tier.cardBorder} ${tier.glow}`}
+      className={`group relative flex flex-col overflow-hidden rounded-[1.5rem] border bg-white transition-all duration-300 hover:-translate-y-1 motion-reduce:hover:translate-y-0 dark:bg-slate-900 ${featured ? "sm:col-span-2" : ""} ${tier.cardBorder} ${tier.glow}`}
     >
       {/* Tier band */}
       <div className={`h-1.5 ${tier.band}`} />
@@ -103,9 +112,9 @@ function AwardCard({ prize }: { prize: PrizeResponse }) {
 
           <div className="flex flex-col items-end gap-1.5 text-right">
             <span
-              className={`text-xs font-black uppercase tracking-widest ${tier.rankText}`}
+              className={`text-xs font-black uppercase tracking-[0.16em] ${tier.rankText}`}
             >
-              Rank {prize.rankPosition ?? "—"} · {tier.label}
+              {tier.label} · place {prize.rankPosition ?? "Not ranked"}
             </span>
 
             <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-[11px] font-bold text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
@@ -115,7 +124,7 @@ function AwardCard({ prize }: { prize: PrizeResponse }) {
         </div>
 
         <div className="mt-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400 dark:text-slate-500">
             Winner
           </p>
 
@@ -138,7 +147,7 @@ function AwardCard({ prize }: { prize: PrizeResponse }) {
 
         {prize.value !== undefined && (
           <div className="mt-5 rounded-xl bg-gray-50 px-4 py-3 dark:bg-slate-950/50">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400 dark:text-slate-500">
               Prize value
             </p>
             <p className="mt-0.5 text-2xl font-black tabular-nums tracking-tight text-gray-900 dark:text-white">
@@ -242,9 +251,13 @@ export const PublicEventAwardsSection = ({ eventId }: { eventId: string }) => {
   );
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2">
-      {sorted.map((prize) => (
-        <AwardCard key={prize.id} prize={prize} />
+    <div className="grid grid-flow-dense gap-5 sm:grid-cols-2">
+      {sorted.map((prize, index) => (
+        <AwardCard
+          key={prize.id}
+          prize={prize}
+          featured={sorted.length > 2 && index === 0}
+        />
       ))}
     </div>
   );
