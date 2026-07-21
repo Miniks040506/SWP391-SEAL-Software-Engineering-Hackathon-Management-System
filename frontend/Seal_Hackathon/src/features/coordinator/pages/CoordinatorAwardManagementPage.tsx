@@ -1,15 +1,20 @@
 import { useState, useMemo } from "react";
+import type { ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button, CircularProgress, Alert } from "@mui/material";
+import { CircularProgress, Alert } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import AutoFixHighOutlinedIcon from "@mui/icons-material/AutoFixHighOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
+import SavingsOutlinedIcon from "@mui/icons-material/SavingsOutlined";
 
 import {
   useCoordinatorEventDetailQuery,
   useCoordinatorEventTracksQuery,
   useCoordinatorEventRoundsQuery,
-  useCoordinatorMultipleTeamsQueries
+  useCoordinatorMultipleTeamsQueries,
 } from "../hooks/useCoordinatorEventQueries";
 import { useCoordinatorPrizesQuery } from "../hooks/useCoordinatorPrizeQueries";
 import { useCoordinatorPrizeMutations } from "../hooks/useCoordinatorPrizeMutations";
@@ -18,24 +23,48 @@ import { AssignPrizesFromRankingDialog } from "../components/prizes/AssignPrizes
 import { ManualAwardDialog } from "../components/prizes/ManualAwardDialog";
 import { ClearAwardConfirmDialog } from "../components/prizes/ClearAwardConfirmDialog";
 import { AwardManagementTable } from "../components/prizes/AwardManagementTable";
-import { PrizeFilterBar, defaultPrizeFilters, applyPrizeFilters } from "../components/prizes/PrizeFilterBar";
+import {
+  PrizeFilterBar,
+  defaultPrizeFilters,
+  applyPrizeFilters,
+} from "../components/prizes/PrizeFilterBar";
 import type { PrizeFilterState } from "../components/prizes/PrizeFilterBar";
 
 import type { PrizeResponse } from "@/types/prize.types";
 import type { CoordinatorTeamSummaryResponse } from "@/types/team.types";
-import type { AssignPrizesFromRankingFormValues, ManualAwardFormValues, ClearAwardFormValues } from "../schemas/prize.schema";
+import type {
+  AssignPrizesFromRankingFormValues,
+  ManualAwardFormValues,
+  ClearAwardFormValues,
+} from "../schemas/prize.schema";
 
-type StatCardProps = {
+function HeroStat({
+  icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: ReactNode;
   label: string;
   value: string | number;
-  colorClass: string;
-};
-
-function StatCard({ label, value, colorClass }: StatCardProps) {
+  accent: string;
+}) {
   return (
-    <div className={`rounded-2xl border p-5 ${colorClass}`}>
-      <p className="text-sm font-bold uppercase tracking-widest opacity-70">{label}</p>
-      <p className="mt-2 text-4xl font-black">{value}</p>
+    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+      <span
+        className={[
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+          accent,
+        ].join(" ")}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-xl font-black leading-none text-white tabular-nums">{value}</p>
+        <p className="mt-1 truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          {label}
+        </p>
+      </div>
     </div>
   );
 }
@@ -56,19 +85,22 @@ export const CoordinatorAwardManagementPage = () => {
   const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
 
   const teamsQuery = useCoordinatorMultipleTeamsQueries(eventId ? [eventId] : []);
-  const teams: CoordinatorTeamSummaryResponse[] =
-    teamsQuery[0]?.data?.content ?? [];
+  const teams: CoordinatorTeamSummaryResponse[] = teamsQuery[0]?.data?.content ?? [];
 
   const { assignFromRanking, manualAward, clearAward } = useCoordinatorPrizeMutations(eventId);
 
   const totalPrizes = prizes.length;
   const awardedPrizes = prizes.filter((p) => p.awardedTeamId).length;
   const unawardedPrizes = totalPrizes - awardedPrizes;
+  const awardedPct = totalPrizes > 0 ? Math.round((awardedPrizes / totalPrizes) * 100) : 0;
 
-  const lastAssignedAt = useMemo(() => {
-    const awarded = prizes.filter(p => p.awardedAt).map(p => new Date(p.awardedAt!).getTime());
-    if (awarded.length === 0) return null;
-    return new Date(Math.max(...awarded)).toLocaleDateString();
+  // Total prize pool — a single event-level metric that stays constant regardless
+  // of how many tracks the event has (2 or 30), so it always scales.
+  const prizePool = useMemo(() => {
+    const total = prizes.reduce((sum, p) => sum + (p.value ?? 0), 0);
+    if (total <= 0) return "—";
+    const currency = prizes.find((p) => (p.value ?? 0) > 0)?.currency ?? "";
+    return `${total.toLocaleString()}${currency ? ` ${currency}` : ""}`;
   }, [prizes]);
 
   const [isAutoAssignOpen, setIsAutoAssignOpen] = useState(false);
@@ -99,7 +131,7 @@ export const CoordinatorAwardManagementPage = () => {
     if (!selectedPrizeForAward) return;
     manualAward.mutate(
       { prizeId: selectedPrizeForAward.id, payload: values },
-      { onSuccess: () => setIsManualAwardOpen(false) }
+      { onSuccess: () => setIsManualAwardOpen(false) },
     );
   };
 
@@ -107,7 +139,7 @@ export const CoordinatorAwardManagementPage = () => {
     if (!selectedPrizeForClear) return;
     clearAward.mutate(
       { prizeId: selectedPrizeForClear.id, payload: values },
-      { onSuccess: () => setIsClearAwardOpen(false) }
+      { onSuccess: () => setIsClearAwardOpen(false) },
     );
   };
 
@@ -120,82 +152,148 @@ export const CoordinatorAwardManagementPage = () => {
   }
 
   if (!event) {
-    return <Alert severity="error" sx={{ borderRadius: "12px" }}>Event not found.</Alert>;
+    return (
+      <Alert severity="error" sx={{ borderRadius: "12px" }}>
+        Event not found.
+      </Alert>
+    );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <Button
-            startIcon={<ArrowBackOutlinedIcon />}
-            onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
-            sx={{ mb: 1, textTransform: "none", fontWeight: 800 }}
-          >
-            Back to Event
-          </Button>
-          <h1 className="text-3xl font-black text-slate-950 dark:text-white">
-            Award Management
-          </h1>
-          <p className="mt-2 text-base font-medium text-slate-500 dark:text-slate-400">
-            Assign and manage prize winners for <span className="font-bold text-slate-700 dark:text-slate-200">{event.name}</span>
-          </p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* ===== Hero banner poster (event-level, fixed height — scales for any track count) ===== */}
+      <header className="relative overflow-hidden rounded-3xl border border-slate-800 bg-linear-to-br from-slate-950 via-slate-900 to-blue-950 p-6 sm:p-8">
+        {/* glow blobs — gold + blue for a celebratory prize vibe */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-28 h-80 w-80 rounded-full bg-amber-500/20 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-40 left-1/4 h-72 w-72 rounded-full bg-blue-600/25 blur-3xl"
+        />
+        {/* dot grid */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.15]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(148,163,184,0.5) 1px, transparent 1px)",
+            backgroundSize: "22px 22px",
+          }}
+        />
+        {/* decorative podium bars (pure decoration, not data-bound) */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-8 top-1/2 hidden -translate-y-1/2 items-end gap-2 lg:flex"
+        >
+          <span className="h-16 w-8 rounded-t-lg bg-linear-to-t from-slate-500/40 to-slate-300/60" />
+          <span className="h-24 w-8 rounded-t-lg bg-linear-to-t from-amber-500/50 to-amber-300/80" />
+          <span className="h-12 w-8 rounded-t-lg bg-linear-to-t from-orange-700/40 to-orange-400/70" />
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-3">
-          <Button
-            variant="outlined"
-            color="inherit"
-            startIcon={<RefreshOutlinedIcon />}
-            onClick={() => refetchPrizes()}
-            disabled={isRefetching}
-            sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
-          >
-            {isRefetching ? "Refreshing..." : "Refresh"}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AutoFixHighOutlinedIcon />}
-            onClick={() => setIsAutoAssignOpen(true)}
-            sx={{
-              bgcolor: "#2563eb",
-              borderRadius: "10px",
-              fontWeight: 700,
-              textTransform: "none",
-              "&:hover": { bgcolor: "#1d4ed8" },
-            }}
-          >
-            Auto Assign
-          </Button>
+        <div className="relative flex flex-col gap-6">
+          {/* Top row: back + actions */}
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+            >
+              <ArrowBackOutlinedIcon sx={{ fontSize: 16 }} />
+              Back to Event
+            </button>
+
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={() => refetchPrizes()}
+                disabled={isRefetching}
+                className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-bold text-slate-200 backdrop-blur-sm transition-all hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 disabled:opacity-50"
+              >
+                <RefreshOutlinedIcon
+                  sx={{ fontSize: 19 }}
+                  className={isRefetching ? "animate-spin" : ""}
+                />
+                {isRefetching ? "Refreshing..." : "Refresh"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAutoAssignOpen(true)}
+                className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-linear-to-r from-amber-400 to-orange-500 px-5 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/30 transition-all hover:from-amber-300 hover:to-orange-400 hover:shadow-amber-400/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 active:scale-[0.98] motion-reduce:active:scale-100"
+              >
+                <AutoFixHighOutlinedIcon sx={{ fontSize: 20 }} />
+                Auto Assign
+              </button>
+            </div>
+          </div>
+
+          {/* Title */}
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-amber-400">
+              Coordinator Workspace · Awards
+            </p>
+            <h1 className="mt-2 flex items-center gap-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+              <EmojiEventsOutlinedIcon sx={{ fontSize: 34 }} className="text-amber-300" />
+              Award{" "}
+              <span className="bg-linear-to-r from-amber-300 via-yellow-200 to-orange-300 bg-clip-text text-transparent">
+                Management
+              </span>
+            </h1>
+            <p className="mt-2 text-sm font-medium text-slate-400 sm:text-base">
+              Assign and manage prize winners for{" "}
+              <span className="font-bold text-slate-200">{event.name}</span>.
+            </p>
+          </div>
+
+          {/* Award progress */}
+          <div className="max-w-xl">
+            <div className="mb-1.5 flex items-center justify-between text-xs font-bold">
+              <span className="text-slate-300">Award progress</span>
+              <span className="text-amber-300 tabular-nums">
+                {awardedPrizes}/{totalPrizes} · {awardedPct}%
+              </span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-linear-to-r from-amber-400 to-emerald-400 transition-all duration-700 motion-reduce:transition-none"
+                style={{ width: `${awardedPct}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Glass stat tiles — event-level KPIs (fixed count) */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <HeroStat
+              icon={<EmojiEventsOutlinedIcon sx={{ fontSize: 19 }} />}
+              label="Total prizes"
+              value={totalPrizes}
+              accent="bg-blue-500/20 text-blue-300"
+            />
+            <HeroStat
+              icon={<EmojiEventsIcon sx={{ fontSize: 19 }} />}
+              label="Awarded"
+              value={awardedPrizes}
+              accent="bg-emerald-500/20 text-emerald-300"
+            />
+            <HeroStat
+              icon={<PendingActionsOutlinedIcon sx={{ fontSize: 19 }} />}
+              label="Unawarded"
+              value={unawardedPrizes}
+              accent="bg-amber-500/20 text-amber-300"
+            />
+            <HeroStat
+              icon={<SavingsOutlinedIcon sx={{ fontSize: 19 }} />}
+              label="Prize pool"
+              value={prizePool}
+              accent="bg-violet-500/20 text-violet-300"
+            />
+          </div>
         </div>
       </header>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Total Prizes"
-          value={totalPrizes}
-          colorClass="border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-        />
-        <StatCard
-          label="Awarded"
-          value={awardedPrizes}
-          colorClass="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-        />
-        <StatCard
-          label="Unawarded"
-          value={unawardedPrizes}
-          colorClass="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-        />
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Last Awarded</p>
-          <p className="mt-2 text-lg font-black text-slate-800 dark:text-white">{lastAssignedAt ?? "—"}</p>
-        </div>
-      </div>
-
-      {/* Awards Table */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 overflow-hidden">
+      {/* ===== Awards table panel — the data-dense list scales with any number of prizes/tracks ===== */}
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <PrizeFilterBar filters={filters} onChange={setFilters} tracks={tracks} />
         <AwardManagementTable
           prizes={filteredPrizes}
