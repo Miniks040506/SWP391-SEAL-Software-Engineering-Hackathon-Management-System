@@ -2,7 +2,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/stores/authStore";
 import type { RefreshTokenResponse } from "@/types/auth.types";
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
@@ -59,7 +59,11 @@ axiosClient.interceptors.response.use(
 
     const status = error.response?.status;
 
-    if (status !== 401 || originalRequest._retry || isAuthEndpoint(originalRequest.url)) {
+    if (
+      status !== 401 ||
+      originalRequest._retry ||
+      isAuthEndpoint(originalRequest.url)
+    ) {
       return Promise.reject(error);
     }
 

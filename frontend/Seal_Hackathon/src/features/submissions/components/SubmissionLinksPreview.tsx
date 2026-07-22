@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@mui/material";
 import { submissionApi } from "@/api/submission.api";
+import { openHttpUrl } from "@/utils/httpUrl";
 import type {
   RepositoryMetadata,
   SubmissionLinkResponse,
@@ -40,11 +41,7 @@ const safeExternalUrl = (value?: string) => {
   }
 };
 
-function GoogleDriveSourceLink({
-  link,
-}: {
-  link: SubmissionLinkResponse;
-}) {
+function GoogleDriveSourceLink({ link }: { link: SubmissionLinkResponse }) {
   if (link.storageProvider !== "GOOGLE_DRIVE") {
     return null;
   }
@@ -69,7 +66,8 @@ function GoogleDriveSourceLink({
 }
 
 function RepositoryEvidence({ metadata }: { metadata: RepositoryMetadata }) {
-  const repositoryName = metadata.repoName ||
+  const repositoryName =
+    metadata.repoName ||
     [metadata.owner, metadata.repository].filter(Boolean).join("/") ||
     "Repository";
   const commitUrl = safeExternalUrl(metadata.commitUrl);
@@ -83,7 +81,10 @@ function RepositoryEvidence({ metadata }: { metadata: RepositoryMetadata }) {
     ],
     ["Commit", metadata.commitSha ? metadata.commitSha.slice(0, 12) : null],
     ["Default branch", metadata.defaultBranch],
-    ["Visibility", metadata.visibility || (metadata.isPrivate ? "private" : null)],
+    [
+      "Visibility",
+      metadata.visibility || (metadata.isPrivate ? "private" : null),
+    ],
     ["Language", metadata.primaryLanguage],
     ["Last pushed", formatRepositoryDate(metadata.lastPushAt)],
     ["Committed", formatRepositoryDate(metadata.committedAt)],
@@ -96,12 +97,16 @@ function RepositoryEvidence({ metadata }: { metadata: RepositoryMetadata }) {
         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           Repository evidence
         </p>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-          metadata.commitSha
-            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
-            : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
-        }`}>
-          {metadata.commitSha ? "Immutable commit snapshot" : "Public metadata fallback"}
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+            metadata.commitSha
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+              : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+          }`}
+        >
+          {metadata.commitSha
+            ? "Immutable commit snapshot"
+            : "Public metadata fallback"}
         </span>
       </div>
 
@@ -155,33 +160,39 @@ export function SubmissionLinksPreview({
     setOpeningLinkId(link.id);
     setOpenError(null);
     try {
-      const result = await submissionApi.createSubmissionFileDownloadUrl(link.id);
-      const url = new URL(result.downloadUrl);
-      if (url.protocol !== "https:" && url.protocol !== "http:") {
-        throw new Error("The storage provider returned an unsafe download URL.");
+      const result = await submissionApi.createSubmissionFileDownloadUrl(
+        link.id,
+      );
+      if (!openHttpUrl(result.url)) {
+        throw new Error(
+          "The storage provider returned an invalid download URL.",
+        );
       }
-      const anchor = document.createElement("a");
-      anchor.href = url.toString();
-      anchor.target = "_blank";
-      anchor.rel = "noopener noreferrer";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
     } catch (error) {
-      setOpenError((error as { message?: string })?.message || "Evidence could not be opened.");
+      setOpenError(
+        (error as { message?: string })?.message ||
+          "Evidence could not be opened.",
+      );
     } finally {
       setOpeningLinkId(null);
     }
   };
 
   if (!links || links.length === 0) {
-    return <p className="text-sm text-slate-500 dark:text-slate-400 italic">No links provided for this submission.</p>;
+    return (
+      <p className="text-sm text-slate-500 dark:text-slate-400 italic">
+        No links provided for this submission.
+      </p>
+    );
   }
 
   return (
     <ul className="space-y-3">
       {links.map((link) => (
-        <li key={link.id} className="flex flex-col p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+        <li
+          key={link.id}
+          className="flex flex-col p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+        >
           <div className="flex items-center justify-between mb-2">
             <span className="font-bold text-sm text-slate-800 dark:text-slate-200">
               {link.label || link.linkType}
@@ -199,9 +210,13 @@ export function SubmissionLinksPreview({
             {link.originalFileName || link.url}
           </p>
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-            {link.storageProvider && <span>{link.storageProvider.replaceAll("_", " ")}</span>}
+            {link.storageProvider && (
+              <span>{link.storageProvider.replaceAll("_", " ")}</span>
+            )}
             {link.contentType && <span>{link.contentType}</span>}
-            {formatBytes(link.fileSizeBytes) && <span>{formatBytes(link.fileSizeBytes)}</span>}
+            {formatBytes(link.fileSizeBytes) && (
+              <span>{formatBytes(link.fileSizeBytes)}</span>
+            )}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {link.storageProvider === "AWS_S3" ? (
@@ -251,12 +266,17 @@ export function SubmissionLinksPreview({
               </Button>
             )}
           </div>
-          {link.repoMetadata !== null && typeof link.repoMetadata === "object" && (
-            <RepositoryEvidence metadata={link.repoMetadata} />
-          )}
+          {link.repoMetadata !== null &&
+            typeof link.repoMetadata === "object" && (
+              <RepositoryEvidence metadata={link.repoMetadata} />
+            )}
         </li>
       ))}
-      {openError && <li className="text-sm text-rose-600 dark:text-rose-400">{openError}</li>}
+      {openError && (
+        <li className="text-sm text-rose-600 dark:text-rose-400">
+          {openError}
+        </li>
+      )}
     </ul>
   );
 }

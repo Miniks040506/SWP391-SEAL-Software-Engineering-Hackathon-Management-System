@@ -8,6 +8,7 @@ import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutl
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import { submissionApi } from "@/api/submission.api";
+import { openHttpUrl } from "@/utils/httpUrl";
 import type {
   SubmissionAttemptEvidenceResponse,
   SubmissionAttemptResponse,
@@ -37,26 +38,10 @@ const formatDateTime = (value?: string | null) =>
       }).format(new Date(value))
     : "—";
 
-const safeHttpUrl = (raw?: string | null) => {
-  if (!raw) return null;
-  try {
-    const url = new URL(raw);
-    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
-  } catch {
-    return null;
-  }
-};
-
 const openUrl = (rawUrl: string) => {
-  const url = safeHttpUrl(rawUrl);
-  if (!url) throw new Error("The provider returned an unsafe evidence URL.");
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.target = "_blank";
-  anchor.rel = "noopener noreferrer";
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
+  if (!openHttpUrl(rawUrl)) {
+    throw new Error("The provider returned an invalid evidence URL.");
+  }
 };
 
 // The timeline node tints by status so the outcome reads at a glance, while the
@@ -88,8 +73,15 @@ function EvidenceIcon({
   );
 }
 
-export function SubmissionHistoryTable({ history, loading, error, onRetry }: Props) {
-  const [openingEvidenceId, setOpeningEvidenceId] = useState<string | null>(null);
+export function SubmissionHistoryTable({
+  history,
+  loading,
+  error,
+  onRetry,
+}: Props) {
+  const [openingEvidenceId, setOpeningEvidenceId] = useState<string | null>(
+    null,
+  );
   const [openError, setOpenError] = useState<string | null>(null);
 
   const openEvidence = async (
@@ -100,19 +92,23 @@ export function SubmissionHistoryTable({ history, loading, error, onRetry }: Pro
     setOpenError(null);
     try {
       if (evidence.storageProvider === "AWS_S3") {
-        const result = await submissionApi.createSubmissionAttemptFileDownloadUrl(
-          submissionId,
-          evidence.id,
-        );
-        openUrl(result.downloadUrl);
+        const result =
+          await submissionApi.createSubmissionAttemptFileDownloadUrl(
+            submissionId,
+            evidence.id,
+          );
+        openUrl(result.url);
       } else if (evidence.url) {
         openUrl(evidence.url);
       } else {
-        throw new Error("This historical evidence is no longer available from its provider.");
+        throw new Error(
+          "This historical evidence is no longer available from its provider.",
+        );
       }
     } catch (openFailure) {
       setOpenError(
-        (openFailure as { message?: string })?.message || "Evidence could not be opened.",
+        (openFailure as { message?: string })?.message ||
+          "Evidence could not be opened.",
       );
     } finally {
       setOpeningEvidenceId(null);
@@ -152,7 +148,12 @@ export function SubmissionHistoryTable({ history, loading, error, onRetry }: Pro
             "Submission history could not be loaded."}
         </p>
         {onRetry && (
-          <Button onClick={onRetry} variant="outlined" size="small" sx={{ textTransform: "none", fontWeight: 700 }}>
+          <Button
+            onClick={onRetry}
+            variant="outlined"
+            size="small"
+            sx={{ textTransform: "none", fontWeight: 700 }}
+          >
             Retry
           </Button>
         )}
@@ -185,7 +186,10 @@ export function SubmissionHistoryTable({ history, loading, error, onRetry }: Pro
           role="alert"
           className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
         >
-          <ErrorOutlineRoundedIcon style={{ fontSize: 18 }} className="mt-0.5 shrink-0" />
+          <ErrorOutlineRoundedIcon
+            style={{ fontSize: 18 }}
+            className="mt-0.5 shrink-0"
+          />
           <span>{openError}</span>
         </p>
       )}
@@ -236,7 +240,10 @@ export function SubmissionHistoryTable({ history, loading, error, onRetry }: Pro
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                   Evidence
                   {entry.evidence.length > 0 && (
-                    <span className="tabular-nums"> · {entry.evidence.length}</span>
+                    <span className="tabular-nums">
+                      {" "}
+                      · {entry.evidence.length}
+                    </span>
                   )}
                 </p>
 
@@ -275,7 +282,9 @@ export function SubmissionHistoryTable({ history, loading, error, onRetry }: Pro
                                 }
                                 className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-60 dark:text-blue-400 dark:hover:bg-blue-500/10"
                               >
-                                <OpenInNewRoundedIcon style={{ fontSize: 14 }} />
+                                <OpenInNewRoundedIcon
+                                  style={{ fontSize: 14 }}
+                                />
                                 {openingEvidenceId === evidence.id
                                   ? "Opening…"
                                   : "Open"}
