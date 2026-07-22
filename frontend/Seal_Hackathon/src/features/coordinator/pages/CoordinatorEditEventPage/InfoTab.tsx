@@ -1,17 +1,16 @@
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import {
   Alert,
   Button,
   CircularProgress,
   Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   MenuItem,
   TextField,
 } from "@mui/material";
@@ -33,6 +32,12 @@ import {
   normalizeEventStatus,
   type EditableEventStatus,
 } from "./eventEditRules";
+import {
+  editDateFieldSx,
+  editDialogPaperSx,
+  editFieldSx,
+} from "./editEventUi";
+import { TabShell } from "./TabShell";
 
 type InfoTabProps = {
   eventId: UUID;
@@ -43,25 +48,6 @@ type InfoTabProps = {
 };
 
 const EVENT_SEASONS = ["SPRING", "SUMMER", "FALL"] as const;
-
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "14px",
-  },
-};
-
-const dateTimeFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "14px",
-  },
-  "& .MuiInputLabel-root": {
-    backgroundColor: "white",
-    paddingInline: "4px",
-  },
-  ".dark & .MuiInputLabel-root": {
-    backgroundColor: "#0f172a",
-  },
-};
 
 function toDateTimeLocal(value?: string | null) {
   if (!value) return "";
@@ -131,13 +117,13 @@ function StatusWorkflow({
         className={[
           "rounded-2xl border p-5",
           isArchived
-            ? "border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800/40"
+            ? "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40"
             : "border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10",
         ].join(" ")}
       >
         <p
           className={[
-            "text-sm font-black uppercase tracking-[0.18em]",
+            "text-[11px] font-black uppercase tracking-[0.18em]",
             isArchived ? "text-slate-500" : "text-rose-500",
           ].join(" ")}
         >
@@ -145,12 +131,13 @@ function StatusWorkflow({
         </p>
         <h3
           className={[
-            "mt-2 text-xl font-black",
+            "mt-2 flex items-center gap-2 text-xl font-black",
             isArchived
               ? "text-slate-700 dark:text-slate-200"
               : "text-rose-700 dark:text-rose-300",
           ].join(" ")}
         >
+          <LockOutlinedIcon fontSize="small" />
           {isArchived ? "Archived" : "Cancelled"}
         </h3>
         <p
@@ -166,26 +153,27 @@ function StatusWorkflow({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/40">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 dark:border-slate-700 dark:bg-slate-800/40">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div>
-          <p className="text-sm font-black uppercase tracking-[0.18em] text-slate-400">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
             Event status workflow
           </p>
           <h3 className="mt-2 flex items-center gap-2 text-xl font-black text-slate-950 dark:text-white">
-            <FlagOutlinedIcon fontSize="small" className="text-blue-500" />
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-sky-400 text-white shadow-md shadow-blue-500/25">
+              <FlagOutlinedIcon sx={{ fontSize: 17 }} />
+            </span>
             {EVENT_STATUS_STEPS[currentIndex]?.label ?? status}
           </h3>
-          <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-slate-500">
+          <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
             {EVENT_STATUS_STEPS[currentIndex]?.description ??
               "Current event status."}
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row xl:flex-col">
-          <Button
-            variant="contained"
-            endIcon={<ArrowForwardOutlinedIcon />}
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row xl:flex-col">
+          <button
+            type="button"
             onClick={onAdvance}
             disabled={
               !rules.canAdvance ||
@@ -194,83 +182,96 @@ function StatusWorkflow({
               isCancelling ||
               isDeleting
             }
-            sx={{
-              borderRadius: "12px",
-              textTransform: "none",
-              fontWeight: 900,
-              minWidth: 210,
-            }}
+            className="inline-flex min-w-52 cursor-pointer items-center justify-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:from-blue-500 hover:to-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
           >
+            {isAdvancing ? (
+              <CircularProgress size={15} sx={{ color: "white" }} />
+            ) : null}
             {nextStatus ? `Move to ${nextStatus}` : "No next status"}
-          </Button>
+            {!isAdvancing && <ArrowForwardOutlinedIcon sx={{ fontSize: 16 }} />}
+          </button>
 
-          <Button
-            color="error"
-            variant="outlined"
-            startIcon={<CancelOutlinedIcon />}
+          <button
+            type="button"
             onClick={onCancel}
             disabled={
               !rules.canCancel || isAdvancing || isCancelling || isDeleting
             }
-            sx={{
-              borderRadius: "12px",
-              textTransform: "none",
-              fontWeight: 900,
-              minWidth: 210,
-            }}
+            className="inline-flex min-w-52 cursor-pointer items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-5 py-2.5 text-sm font-black text-rose-600 transition-colors duration-200 hover:border-rose-300 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-500/30 dark:bg-transparent dark:text-rose-400 dark:hover:bg-rose-500/10"
           >
+            <CancelOutlinedIcon sx={{ fontSize: 16 }} />
             Cancel event
-          </Button>
+          </button>
 
           {status === "DRAFT" && (
-            <Button
-              color="error"
-              variant="text"
-              startIcon={<DeleteOutlineOutlinedIcon />}
+            <button
+              type="button"
               onClick={onDelete}
               disabled={isAdvancing || isCancelling || isDeleting}
-              sx={{
-                borderRadius: "12px",
-                textTransform: "none",
-                fontWeight: 900,
-                minWidth: 210,
-              }}
+              className="inline-flex min-w-52 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black text-rose-500 transition-colors duration-200 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-rose-500/10"
             >
+              <DeleteOutlineOutlinedIcon sx={{ fontSize: 16 }} />
               Delete event
-            </Button>
+            </button>
           )}
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-5">
+      {/* Status pipeline — mirrors the wizard stepper rhythm */}
+      <div className="mt-6 flex items-start">
         {EVENT_STATUS_STEPS.map((step, index) => {
           const active = index === currentIndex;
           const done = currentIndex > index;
 
           return (
-            <div
-              key={step.value}
-              className={[
-                "rounded-xl border px-4 py-3 text-sm transition",
-                active
-                  ? "border-blue-300 bg-white text-blue-600 shadow-sm dark:border-blue-500/40 dark:bg-slate-900 dark:text-blue-300"
-                  : done
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
-                    : "border-slate-200 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-900/60",
-              ].join(" ")}
-            >
-              <p className="font-black">
-                {index + 1}. {step.label}
-              </p>
+            <div key={step.value} className="flex flex-1 items-start">
+              <div className="flex flex-1 flex-col items-center gap-2">
+                <span
+                  className={[
+                    "flex h-10 w-10 items-center justify-center rounded-full text-sm font-black transition-all duration-300 motion-reduce:transition-none",
+                    active
+                      ? "bg-linear-to-br from-blue-500 to-sky-400 text-white shadow-lg shadow-blue-500/30 ring-4 ring-blue-500/10"
+                      : done
+                        ? "bg-emerald-500/90 text-white shadow-md shadow-emerald-500/25"
+                        : "border border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-900",
+                  ].join(" ")}
+                >
+                  {done ? (
+                    <CheckOutlinedIcon sx={{ fontSize: 18 }} />
+                  ) : (
+                    index + 1
+                  )}
+                </span>
+
+                <span
+                  className={[
+                    "max-w-24 text-center text-[10px] font-black uppercase leading-tight tracking-widest transition-colors",
+                    active
+                      ? "text-blue-600 dark:text-blue-300"
+                      : done
+                        ? "text-emerald-600 dark:text-emerald-300"
+                        : "text-slate-400",
+                  ].join(" ")}
+                >
+                  {step.label}
+                </span>
+              </div>
+
+              {index < EVENT_STATUS_STEPS.length - 1 ? (
+                <div className="mt-5 h-0.5 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div
+                    className={`h-full rounded-full bg-linear-to-r from-emerald-400 to-teal-300 transition-all duration-500 motion-reduce:transition-none ${
+                      done ? "w-full" : "w-0"
+                    }`}
+                  />
+                </div>
+              ) : (
+                <div aria-hidden className="mt-5 h-0.5 flex-1" />
+              )}
             </div>
           );
         })}
       </div>
-
-      {/* <div className="mt-3 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-bold text-rose-600 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-300">
-        Cancelled is an exit state. Use Cancel event only when this event should
-        stop and become read-only.
-      </div> */}
     </div>
   );
 }
@@ -495,8 +496,14 @@ export function InfoTab({
     setActionError(null);
   };
 
+  const confirmBusy = isCancelling || deleteEventMutation.isPending;
+
   return (
-    <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <TabShell
+      tab="INFO"
+      title="Event Information"
+      description="Update basic information here. Status is changed only through the sequential workflow below."
+    >
       <StatusWorkflow
         status={form.status}
         isAdvancing={isAdvancing}
@@ -507,39 +514,77 @@ export function InfoTab({
         onDelete={() => openConfirmation("delete")}
       />
 
+      {/* Cancel / delete confirmation — dark gradient chrome like every edit popup */}
       <Dialog
         open={confirmAction !== null}
         onClose={closeConfirmation}
         maxWidth="sm"
         fullWidth
+        sx={editDialogPaperSx}
+        classes={{ paper: "bg-white dark:bg-slate-900" }}
         aria-labelledby="event-action-dialog-title"
       >
-        <DialogTitle id="event-action-dialog-title" sx={{ fontWeight: 900 }}>
-          {confirmAction === "delete" ? "Delete draft event?" : "Cancel event?"}
-        </DialogTitle>
-        <DialogContent dividers>
-          <DialogContentText component="div">
-            <strong>{form.name || "This event"}</strong>
+        <div className="relative overflow-hidden bg-linear-to-br from-rose-950 via-slate-900 to-slate-950 px-6 py-5">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-rose-500/25 blur-2xl"
+          />
+          <div className="relative flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-rose-500 to-red-600 text-white shadow-md">
+              <WarningAmberRoundedIcon />
+            </span>
+            <div>
+              <h2
+                id="event-action-dialog-title"
+                className="text-lg font-black text-white"
+              >
+                {confirmAction === "delete"
+                  ? "Delete draft event?"
+                  : "Cancel event?"}
+              </h2>
+              <p className="text-xs font-medium text-slate-400">
+                {confirmAction === "delete"
+                  ? "This permanently removes the draft"
+                  : "This stops the event and makes it read-only"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-6 py-5">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+            <strong className="text-slate-900 dark:text-white">
+              {form.name || "This event"}
+            </strong>
             {confirmAction === "delete"
               ? " will be permanently deleted. This action cannot be undone."
               : " will stop accepting workflow changes and become read-only."}
-          </DialogContentText>
+          </p>
+
           {confirmAction === "delete" && (
-            <Alert severity="warning" sx={{ mt: 2 }}>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-sm font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
               Deletion is allowed only for a DRAFT event without dependent
               records.
-            </Alert>
+            </div>
           )}
+
           {actionError && (
-            <Alert severity="error" sx={{ mt: 2 }}>
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-sm font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
               {actionError}
-            </Alert>
+            </div>
           )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4 dark:border-slate-800">
           <Button
             onClick={closeConfirmation}
-            disabled={isCancelling || deleteEventMutation.isPending}
+            disabled={confirmBusy}
+            variant="outlined"
+            sx={{
+              textTransform: "none",
+              borderRadius: "10px",
+              fontWeight: 700,
+            }}
           >
             Keep event
           </Button>
@@ -551,33 +596,29 @@ export function InfoTab({
                 ? handleDeleteEvent
                 : handleCancelStatus
             }
-            disabled={isCancelling || deleteEventMutation.isPending}
+            disabled={confirmBusy}
             startIcon={
-              isCancelling || deleteEventMutation.isPending ? (
+              confirmBusy ? (
                 <CircularProgress size={16} color="inherit" />
               ) : undefined
             }
-            sx={{ fontWeight: 900 }}
+            sx={{
+              textTransform: "none",
+              borderRadius: "10px",
+              fontWeight: 800,
+              boxShadow: "none",
+            }}
           >
             {confirmAction === "delete" ? "Delete event" : "Cancel event"}
           </Button>
-        </DialogActions>
+        </div>
       </Dialog>
 
       {!canEdit && readonlyReason && (
-        <Alert severity="warning">{readonlyReason}</Alert>
+        <Alert severity="warning" sx={{ borderRadius: "14px" }}>
+          {readonlyReason}
+        </Alert>
       )}
-
-      <div>
-        <h2 className="text-xl font-black text-slate-950 dark:text-white">
-          Event Information
-        </h2>
-
-        <p className="mt-1 text-sm text-slate-500">
-          Update basic information here. Status is changed only through the
-          sequential workflow above.
-        </p>
-      </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <TextField
@@ -586,7 +627,7 @@ export function InfoTab({
           onChange={(event) => updateField("name", event.target.value)}
           fullWidth
           size="small"
-          sx={textFieldSx}
+          sx={editFieldSx}
           disabled={!canEdit}
         />
 
@@ -597,7 +638,7 @@ export function InfoTab({
           onChange={(event) => updateField("season", event.target.value)}
           fullWidth
           size="small"
-          sx={textFieldSx}
+          sx={editFieldSx}
           disabled={!canEdit}
         >
           {EVENT_SEASONS.map((season) => (
@@ -614,7 +655,7 @@ export function InfoTab({
           onChange={(event) => updateField("year", Number(event.target.value))}
           fullWidth
           size="small"
-          sx={textFieldSx}
+          sx={editFieldSx}
           disabled={!canEdit}
         />
 
@@ -623,7 +664,7 @@ export function InfoTab({
           value={form.status}
           fullWidth
           size="small"
-          sx={textFieldSx}
+          sx={editFieldSx}
           disabled
         />
 
@@ -636,7 +677,7 @@ export function InfoTab({
           }
           fullWidth
           size="small"
-          sx={dateTimeFieldSx}
+          sx={editDateFieldSx}
           slotProps={{ inputLabel: { shrink: true } }}
           disabled={!canEdit}
         />
@@ -650,7 +691,7 @@ export function InfoTab({
           }
           fullWidth
           size="small"
-          sx={dateTimeFieldSx}
+          sx={editDateFieldSx}
           slotProps={{ inputLabel: { shrink: true } }}
           disabled={!canEdit}
         />
@@ -664,7 +705,7 @@ export function InfoTab({
           }
           fullWidth
           size="small"
-          sx={dateTimeFieldSx}
+          sx={editDateFieldSx}
           slotProps={{ inputLabel: { shrink: true } }}
           disabled={!canEdit}
         />
@@ -678,7 +719,7 @@ export function InfoTab({
           }
           fullWidth
           size="small"
-          sx={dateTimeFieldSx}
+          sx={editDateFieldSx}
           slotProps={{ inputLabel: { shrink: true } }}
           disabled={!canEdit}
         />
@@ -692,14 +733,14 @@ export function InfoTab({
           }
           fullWidth
           size="small"
-          sx={textFieldSx}
+          sx={editFieldSx}
           slotProps={{ htmlInput: { min: 0.01, step: 0.1 } }}
           helperText="Standard deviation threshold used for coordinator review flags."
           disabled={!canEdit}
         />
 
-        <div className="lg:col-span-2">
-          <p className="mb-2 text-sm font-black text-slate-700 dark:text-slate-200">
+        <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-700 dark:bg-slate-800/40">
+          <p className="mb-3 text-sm font-black text-slate-700 dark:text-slate-200">
             Event banner
           </p>
 
@@ -721,7 +762,7 @@ export function InfoTab({
             }}
             fullWidth
             size="small"
-            sx={textFieldSx}
+            sx={editFieldSx}
             disabled={!canEdit}
             className="mt-4"
             helperText="You can paste an external banner URL or choose an image above to upload and crop."
@@ -735,23 +776,27 @@ export function InfoTab({
           fullWidth
           multiline
           minRows={5}
-          sx={textFieldSx}
+          sx={editFieldSx}
           className="lg:col-span-2"
           disabled={!canEdit}
         />
       </div>
 
-      <div className="flex justify-end">
-        <Button
-          variant="contained"
-          startIcon={<SaveOutlinedIcon />}
+      <div className="flex justify-end border-t border-slate-100 pt-5 dark:border-slate-800">
+        <button
+          type="button"
           onClick={handleSave}
           disabled={!canEdit || isSaving}
-          sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 900 }}
+          className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:from-blue-500 hover:to-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none dark:focus-visible:ring-offset-slate-900"
         >
+          {isSaving ? (
+            <CircularProgress size={15} sx={{ color: "white" }} />
+          ) : (
+            <SaveOutlinedIcon sx={{ fontSize: 17 }} />
+          )}
           Save event
-        </Button>
+        </button>
       </div>
-    </section>
+    </TabShell>
   );
 }

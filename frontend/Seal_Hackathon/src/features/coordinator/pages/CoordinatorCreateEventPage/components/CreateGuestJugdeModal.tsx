@@ -5,35 +5,39 @@ import { useSnackbar } from "notistack";
 
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
 
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 
 import { useCreateGuestJudgeMutation } from "@/features/coordinator/hooks/useCoordinatorManageUserMutations";
 
-import { 
-  createGuestJudgeFormSchema, 
-  initialCreateGuestJudgeFormValues, 
-  type CreateGuestJudgeFormValues 
+import {
+  createGuestJudgeFormSchema,
+  initialCreateGuestJudgeFormValues,
+  type CreateGuestJudgeFormValues
 } from "@/features/coordinator/schemas/createEvent.schema";
 import type { GuestJudgeResponse } from "@/types/user.types";
 
 type CreateGuestJudgeModalProps = {
   open: boolean;
   onClose: () => void;
-  onSuccess: (judge: GuestJudgeResponse, fullName: string) => void | Promise<void>; 
+  onSuccess: (judge: GuestJudgeResponse, fullName: string) => void | Promise<void>;
 };
 
+const DIALOG_PAPER_SX = {
+  "& .MuiDialog-paper": {
+    borderRadius: "20px",
+    overflow: "hidden",
+    backgroundImage: "none",
+  },
+} as const;
+
 const textFieldSx = {
-  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+  "& .MuiOutlinedInput-root": { borderRadius: "14px" },
 };
 
 const dateTimeFieldSx = {
-  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+  "& .MuiOutlinedInput-root": { borderRadius: "14px" },
   "& .MuiInputLabel-root": { backgroundColor: "white", paddingInline: "4px" },
   ".dark & .MuiInputLabel-root": { backgroundColor: "#0f172a" },
 };
@@ -62,15 +66,16 @@ export const CreateGuestJudgeModal = ({
         email: data.email,
         affiliation: data.affiliation || undefined,
         expertise: data.expertise || undefined,
-        temporaryAccountExpiresAt: data.temporaryAccountExpiresAt 
+        temporaryAccountExpiresAt: data.temporaryAccountExpiresAt
           ? (data.temporaryAccountExpiresAt.length === 16 ? `${data.temporaryAccountExpiresAt}:00` : data.temporaryAccountExpiresAt)
           : undefined,
       },
       {
         onSuccess: async (response) => {
           enqueueSnackbar("Guest Judge created successfully!", { variant: "success" });
-          void onSuccess(response, response.fullName || data.fullName); 
+          void onSuccess(response, response.fullName || data.fullName);
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
           const msg = error?.response?.data?.message || "Failed to create guest judge. Email might be in use.";
           enqueueSnackbar(msg, { variant: "error" });
@@ -85,28 +90,29 @@ export const CreateGuestJudgeModal = ({
       onClose={onClose}
       fullWidth
       maxWidth="sm"
-      slotProps={{ paper: { sx: { borderRadius: "20px" } } }}
+      sx={DIALOG_PAPER_SX}
+      classes={{ paper: "bg-white dark:bg-slate-900" }}
     >
-      <DialogTitle
-        sx={{ fontWeight: 900 }}
-        className="border-b border-slate-100 pb-4 dark:border-slate-800"
-      >
-        <span className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500 to-blue-400 text-white shadow-md shadow-cyan-500/25">
-            <PersonAddOutlinedIcon sx={{ fontSize: 19 }} />
+      {/* Gradient header — shared chrome across edit-event popups */}
+      <div className="relative overflow-hidden bg-linear-to-br from-slate-950 via-slate-900 to-cyan-950 px-6 py-5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-cyan-500/25 blur-2xl"
+        />
+        <div className="relative flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500 to-blue-400 text-white shadow-md">
+            <PersonAddOutlinedIcon />
           </span>
-          Create Guest Judge
-        </span>
-      </DialogTitle>
+          <div>
+            <h2 className="text-lg font-black text-white">Create Guest Judge</h2>
+            <p className="text-xs font-medium text-slate-400">
+              A temporary account with emailed login instructions
+            </p>
+          </div>
+        </div>
+      </div>
 
-      <DialogContent className="space-y-5 pt-6">
-        <Typography
-          variant="body2"
-          className="mb-2 text-slate-500 dark:text-slate-400"
-        >
-          This will create a temporary account. The judge will receive an email with login instructions.
-        </Typography>
-
+      <div className="space-y-5 px-6 py-5">
         <Controller
           name="fullName"
           control={control}
@@ -115,6 +121,7 @@ export const CreateGuestJudgeModal = ({
               {...field}
               label="Full Name *"
               fullWidth
+              size="small"
               sx={textFieldSx}
               error={Boolean(errors.fullName)}
               helperText={errors.fullName?.message}
@@ -131,6 +138,7 @@ export const CreateGuestJudgeModal = ({
               label="Email Address *"
               type="email"
               fullWidth
+              size="small"
               sx={textFieldSx}
               error={Boolean(errors.email)}
               helperText={errors.email?.message}
@@ -147,6 +155,7 @@ export const CreateGuestJudgeModal = ({
                 {...field}
                 label="Affiliation / Company"
                 fullWidth
+                size="small"
                 sx={textFieldSx}
               />
             )}
@@ -160,6 +169,7 @@ export const CreateGuestJudgeModal = ({
                 {...field}
                 label="Expertise"
                 fullWidth
+                size="small"
                 sx={textFieldSx}
               />
             )}
@@ -175,6 +185,7 @@ export const CreateGuestJudgeModal = ({
               label="Account Expires At (Optional)"
               type="datetime-local"
               fullWidth
+              size="small"
               sx={dateTimeFieldSx}
               slotProps={{ inputLabel: { shrink: true } }}
               error={Boolean(errors.temporaryAccountExpiresAt)}
@@ -182,10 +193,14 @@ export const CreateGuestJudgeModal = ({
             />
           )}
         />
-      </DialogContent>
-      
-      <DialogActions className="mt-2 border-t border-slate-100 p-4 pt-3 dark:border-slate-800">
-        <Button onClick={onClose} color="inherit" sx={{ textTransform: "none", fontWeight: 700 }}>
+      </div>
+
+      <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4 dark:border-slate-800">
+        <Button
+          onClick={onClose}
+          variant="outlined"
+          sx={{ textTransform: "none", borderRadius: "10px", fontWeight: 700 }}
+        >
           Cancel
         </Button>
         <Button
@@ -193,11 +208,18 @@ export const CreateGuestJudgeModal = ({
           disabled={createMutation.isPending}
           variant="contained"
           startIcon={<PersonAddOutlinedIcon />}
-          sx={{ textTransform: "none", fontWeight: 800, borderRadius: "8px", bgcolor: "#2563eb", "&:hover": { bgcolor: "#1d4ed8" } }}
+          sx={{
+            textTransform: "none",
+            borderRadius: "10px",
+            fontWeight: 800,
+            boxShadow: "none",
+            bgcolor: "#0891b2",
+            "&:hover": { bgcolor: "#0e7490" },
+          }}
         >
           {createMutation.isPending ? "Creating..." : "Create Guest Judge"}
         </Button>
-      </DialogActions>
+      </div>
     </Dialog>
   );
 };

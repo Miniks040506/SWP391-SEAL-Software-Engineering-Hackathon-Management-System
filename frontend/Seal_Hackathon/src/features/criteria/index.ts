@@ -2,6 +2,10 @@ export { ScoringCriteriaManagementPage } from "./pages/ScoringCriteriaManagement
 export { EventCriteriaManagementPage } from "./pages/EventCriteriaManagementPage";
 export { EventCriteriaViewPage } from "./pages/EventCriteriaViewPage";
 export { EventCriteriaPanel } from "./components/EventCriteriaPanel";
+export { EventCriteriaFilters } from "./components/event/EventCriteriaFilters";
+export { EventCriteriaList } from "./components/event/EventCriteriaList";
+export { EventCriteriaDialog } from "./components/event/EventCriteriaDialog";
+export { EventCriteriaDetailsDialog } from "./components/event/EventCriteriaDetailsDialog";
 
 export { useScoringCriteriaManagement } from "./hooks/useScoringCriteriaManagement";
 export { useScoringCriteriaDialog } from "./hooks/useScoringCriteriaDialog";

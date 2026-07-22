@@ -1,26 +1,26 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { Alert, Button, CircularProgress, ToggleButtonGroup, ToggleButton } from "@mui/material";
+import { Alert, CircularProgress } from "@mui/material";
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useCoordinatorPrizesQuery } from "../../hooks/useCoordinatorPrizeQueries";
 import { useCoordinatorPrizeMutations } from "../../hooks/useCoordinatorPrizeMutations";
-import { useCoordinatorMultipleTeamsQueries } from "../../hooks/useCoordinatorEventQueries";
 
 import { PrizeSetupTable } from "../../components/prizes/PrizeSetupTable";
 import { PrizeFormDialog } from "../../components/prizes/PrizeFormDialog";
 import { DeletePrizeConfirmDialog } from "../../components/prizes/DeletePrizeConfirmDialog";
 
-import { AwardManagementTable } from "../../components/prizes/AwardManagementTable";
-import { ManualAwardDialog } from "../../components/prizes/ManualAwardDialog";
-import { ClearAwardConfirmDialog } from "../../components/prizes/ClearAwardConfirmDialog";
 import { PrizeFilterBar, defaultPrizeFilters, applyPrizeFilters } from "../../components/prizes/PrizeFilterBar";
 import type { PrizeFilterState } from "../../components/prizes/PrizeFilterBar";
 
 import type { UUID } from "@/types/common.types";
 import type { PrizeResponse } from "@/types/prize.types";
 import type { TrackResponse } from "@/types/track.types";
-import type { PrizeFormValues, ManualAwardFormValues, ClearAwardFormValues } from "../../schemas/prize.schema";
+import type { PrizeFormValues } from "../../schemas/prize.schema";
+
+import { TabShell } from "./TabShell";
 
 type PrizesTabProps = {
   eventId: UUID;
@@ -38,14 +38,11 @@ export function PrizesTab({
   canEdit,
   readonlyReason,
 }: PrizesTabProps) {
+  const navigate = useNavigate();
   // Use the mock-aware hook instead of prizeApi directly
   const { data: prizes = [], isLoading } = useCoordinatorPrizesQuery(eventId);
-  const { createPrize, updatePrize, deletePrize, manualAward, clearAward } = useCoordinatorPrizeMutations(eventId);
+  const { createPrize, updatePrize, deletePrize } = useCoordinatorPrizeMutations(eventId);
 
-  const teamsQuery = useCoordinatorMultipleTeamsQueries([eventId]);
-  const teams = teamsQuery[0]?.data?.content || [];
-
-  const [viewMode, setViewMode] = useState<"SETUP" | "AWARD">("SETUP");
   const [filters, setFilters] = useState<PrizeFilterState>(defaultPrizeFilters);
 
   const filteredPrizes = useMemo(() => applyPrizeFilters(prizes, filters), [prizes, filters]);
@@ -54,18 +51,6 @@ export function PrizesTab({
   const [selectedPrize, setSelectedPrize] = useState<PrizeResponse | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [prizeToDelete, setPrizeToDelete] = useState<PrizeResponse | null>(null);
-
-  const [isManualAwardOpen, setIsManualAwardOpen] = useState(false);
-  const [selectedPrizeForAward, setSelectedPrizeForAward] = useState<PrizeResponse | null>(null);
-  const [isClearAwardOpen, setIsClearAwardOpen] = useState(false);
-  const [selectedPrizeForClear, setSelectedPrizeForClear] = useState<PrizeResponse | null>(null);
-  const manualAwardTeams = useMemo(
-    () =>
-      selectedPrizeForAward?.trackId
-        ? teams.filter((team) => team.trackId === selectedPrizeForAward.trackId)
-        : teams,
-    [selectedPrizeForAward, teams],
-  );
 
   const isLocked = !canEdit;
 
@@ -86,6 +71,7 @@ export function PrizesTab({
 
   const handleFormSubmit = (values: PrizeFormValues) => {
     if (selectedPrize) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { trackId, value, currency, ...rest } = values;
       updatePrize.mutate(
         {
@@ -123,80 +109,46 @@ export function PrizesTab({
     deletePrize.mutate(prizeId, { onSuccess: handleCloseDelete });
   };
 
-  const handleManualAwardSubmit = (values: ManualAwardFormValues) => {
-    if (!selectedPrizeForAward) return;
-    manualAward.mutate(
-      { prizeId: selectedPrizeForAward.id, payload: values },
-      { onSuccess: () => setIsManualAwardOpen(false) }
-    );
-  };
-
-  const handleClearAwardSubmit = (values: ClearAwardFormValues) => {
-    if (!selectedPrizeForClear) return;
-    clearAward.mutate(
-      { prizeId: selectedPrizeForClear.id, payload: values },
-      { onSuccess: () => setIsClearAwardOpen(false) }
-    );
-  };
-
   return (
-    <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-extrabold text-slate-950 dark:text-white">Prizes</h2>
-          <p className="mt-1 text-sm font-medium text-slate-500">
-            Configure prizes for the whole event or a specific track.
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 items-center">
-          {viewMode === "SETUP" && (
-            <Button
-              variant="contained"
-              startIcon={isLocked ? <LockOutlinedIcon /> : <AddOutlinedIcon />}
-              onClick={handleOpenCreate}
-              disabled={isLocked}
-              sx={{
-                bgcolor: "#2563eb",
-                borderRadius: "12px",
-                px: 2.5,
-                py: 1,
-                textTransform: "none",
-                fontWeight: 900,
-                flexShrink: 0,
-                "&:hover": { bgcolor: "#1d4ed8" },
-                "&:disabled": { bgcolor: "#e2e8f0" },
-              }}
-            >
-              {isLocked ? "Locked" : "Create Prize"}
-            </Button>
-          )}
-
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(_, val) => val && setViewMode(val)}
-            size="small"
-            sx={{ bgcolor: "white" }}
+    <TabShell
+      tab="PRIZES"
+      title="Prize Setup"
+      description="Configure prizes for the whole event or a specific track. Winners are assigned on the dedicated Awards page."
+      headerActions={
+        <>
+          <button
+            type="button"
+            onClick={() => navigate(`/coordinator/events/${eventId}/awards`)}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 transition-colors duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:hover:text-white"
           >
-            <ToggleButton value="SETUP" sx={{ textTransform: "none", fontWeight: 600, px: 3 }}>
-              Setup
-            </ToggleButton>
-            <ToggleButton value="AWARD" sx={{ textTransform: "none", fontWeight: 600, px: 3 }}>
-              Awards
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </div>
-      </div>
+            <EmojiEventsOutlinedIcon sx={{ fontSize: 17 }} />
+            Award Management
+          </button>
 
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            disabled={isLocked}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-amber-500/25 transition-all duration-200 hover:from-amber-400 hover:to-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
+          >
+            {isLocked ? (
+              <LockOutlinedIcon sx={{ fontSize: 17 }} />
+            ) : (
+              <AddOutlinedIcon sx={{ fontSize: 17 }} />
+            )}
+            {isLocked ? "Locked" : "Create Prize"}
+          </button>
+        </>
+      }
+      bodyClassName="space-y-5 px-7 py-6"
+    >
       {/* Alerts */}
       {!canEdit && readonlyReason && (
-        <Alert severity="warning" sx={{ borderRadius: "12px" }}>{readonlyReason}</Alert>
+        <Alert severity="warning" sx={{ borderRadius: "14px" }}>{readonlyReason}</Alert>
       )}
 
       {canEdit && prizes.length === 0 && !isLoading && (
-        <Alert severity="warning" sx={{ borderRadius: "12px", fontWeight: 600 }}>
+        <Alert severity="warning" sx={{ borderRadius: "14px", fontWeight: 600 }}>
           No prizes configured yet. Add prizes before publishing results.
         </Alert>
       )}
@@ -210,28 +162,14 @@ export function PrizesTab({
 
       {/* Prize table */}
       {!isLoading && (
-        <div className="rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
           <PrizeFilterBar filters={filters} onChange={setFilters} tracks={tracks} />
-          {viewMode === "SETUP" ? (
-            <PrizeSetupTable
-              prizes={filteredPrizes}
-              isLocked={isLocked}
-              onEdit={handleOpenEdit}
-              onDelete={handleOpenDelete}
-            />
-          ) : (
-            <AwardManagementTable
-              prizes={filteredPrizes}
-              onManualAward={(prize) => {
-                setSelectedPrizeForAward(prize);
-                setIsManualAwardOpen(true);
-              }}
-              onClearAward={(prize) => {
-                setSelectedPrizeForClear(prize);
-                setIsClearAwardOpen(true);
-              }}
-            />
-          )}
+          <PrizeSetupTable
+            prizes={filteredPrizes}
+            isLocked={isLocked}
+            onEdit={handleOpenEdit}
+            onDelete={handleOpenDelete}
+          />
         </div>
       )}
 
@@ -252,23 +190,6 @@ export function PrizesTab({
         onClose={handleCloseDelete}
         onConfirm={handleDeleteConfirm}
       />
-
-      <ManualAwardDialog
-        open={isManualAwardOpen}
-        prize={selectedPrizeForAward}
-        teams={manualAwardTeams}
-        isSubmitting={manualAward.isPending}
-        onClose={() => setIsManualAwardOpen(false)}
-        onSubmit={handleManualAwardSubmit}
-      />
-
-      <ClearAwardConfirmDialog
-        open={isClearAwardOpen}
-        prize={selectedPrizeForClear}
-        isSubmitting={clearAward.isPending}
-        onClose={() => setIsClearAwardOpen(false)}
-        onSubmit={handleClearAwardSubmit}
-      />
-    </section>
+    </TabShell>
   );
 }

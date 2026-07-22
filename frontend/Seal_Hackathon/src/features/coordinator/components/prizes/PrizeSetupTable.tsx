@@ -5,6 +5,7 @@ import type { PrizeResponse } from "@/types/prize.types";
 import { PrizeScopeBadge } from "./PrizeScopeBadge";
 import { PrizeValueDisplay } from "./PrizeValueDisplay";
 import { AwardedTeamChip } from "./AwardedTeamChip";
+import { getMedal, formatOrdinal } from "./awardUi";
 
 type PrizeSetupTableProps = {
     prizes: PrizeResponse[];
@@ -43,12 +44,26 @@ export const PrizeSetupTable = ({
                     ) : (
                         prizes.map((prize) => {
                             const isAwarded = Boolean(prize.awardedTeamId);
+                            const medal = getMedal(prize.rankPosition);
                             return (
                                 <tr key={prize.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                    {/* Rank medal — same visual language as Award Management */}
                                     <td className="px-5 py-4">
-                                        <span className="text-base font-black text-slate-700 dark:text-slate-200">
-                                            #{prize.rankPosition ?? "—"}
-                                        </span>
+                                        <div className="flex items-center gap-2.5">
+                                            <span
+                                                className={[
+                                                    "flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br text-white shadow-sm ring-1 ring-inset ring-white/20",
+                                                    medal.gradient,
+                                                ].join(" ")}
+                                            >
+                                                <span className="text-xs font-black tabular-nums drop-shadow">
+                                                    {prize.rankPosition ?? "—"}
+                                                </span>
+                                            </span>
+                                            <span className={["text-xs font-bold", medal.text].join(" ")}>
+                                                {formatOrdinal(prize.rankPosition)}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td className="px-5 py-4">
                                         <PrizeScopeBadge trackName={prize.trackName} />
