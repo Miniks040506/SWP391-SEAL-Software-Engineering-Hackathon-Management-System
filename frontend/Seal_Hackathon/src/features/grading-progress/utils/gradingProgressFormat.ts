@@ -1,5 +1,5 @@
 const progressFormatter = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 3,
+  minimumFractionDigits: 2,
   maximumFractionDigits: 3,
   useGrouping: false,
 });
