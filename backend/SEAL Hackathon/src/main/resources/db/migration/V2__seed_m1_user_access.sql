@@ -139,7 +139,7 @@ INSERT INTO judge (id, judge_type, affiliation, bio, expertise_tags, is_temporar
 ('79f650d1-4a5b-552a-8f9b-98570a7a2021', 'INTERNAL', 'FPT Software', 'Senior solution architect, backend and security reviewer.', 'java,spring,architecture,security', FALSE, NULL, '0de59ca5-e62b-5ceb-af81-66ff5e9d875c'),
 ('958f88d4-4f60-55f3-99df-00cb502ccb7e', 'INTERNAL', 'FPT University', 'Lecturer focusing on UI/UX and presentation quality.', 'ui,ux,presentation,product', FALSE, NULL, '9148fc50-3878-55d2-905b-c72b74cd3511'),
 ('1aea112d-a34e-54a5-95f9-9a68f1aca4ef', 'GUEST', 'Startup Founder', 'External guest judge for business and innovation criteria.', 'startup,business,innovation', FALSE, NULL, '420f656c-cc0e-5d42-9c3e-36fe88a291bd'),
-('13790868-1c36-58a0-af63-7d2fa2458082', 'GUEST', 'Data Consultant', 'Temporary guest judge for AI/data submissions.', 'ai,data,ml', TRUE, TIMESTAMP '2026-07-10 23:59:00', '207d4b86-dac7-5ec7-af11-cd834b0777df');
+('13790868-1c36-58a0-af63-7d2fa2458082', 'GUEST', 'Data Consultant', 'Temporary guest judge for AI/data submissions.', 'ai,data,ml', TRUE, TIMESTAMP '2026-07-25 23:59:00', '207d4b86-dac7-5ec7-af11-cd834b0777df');
 
 -- ---- system_configs ----
 -- from seed v19

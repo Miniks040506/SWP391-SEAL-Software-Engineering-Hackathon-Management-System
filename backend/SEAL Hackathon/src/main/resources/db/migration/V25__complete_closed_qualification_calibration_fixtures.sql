@@ -5,7 +5,8 @@
 WITH target_judges(judge_id) AS (
     VALUES
         ('1aea112d-a34e-54a5-95f9-9a68f1aca4ef'::uuid),
-        ('17000000-0000-4000-8000-000000000741'::uuid)
+        ('17000000-0000-4000-8000-000000000741'::uuid),
+        ('13790868-1c36-58a0-af63-7d2fa2458082'::uuid)
 ), required_scores AS (
     SELECT
         calibration.id AS calibration_round_id,
