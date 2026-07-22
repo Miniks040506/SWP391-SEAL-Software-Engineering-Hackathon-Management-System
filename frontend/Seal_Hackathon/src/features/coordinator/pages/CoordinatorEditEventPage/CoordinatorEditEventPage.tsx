@@ -13,7 +13,10 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import type { UUID } from "@/types/common.types";
-import { getEventSeasonGradient } from "@/utils/eventBanner";
+import {
+  getEventFallbackBannerUrl,
+  getEventSeasonGradient,
+} from "@/utils/eventBanner";
 
 import { AssignmentsTab } from "./AssignmentsTab";
 import { InfoTab } from "./InfoTab";
@@ -72,6 +75,8 @@ export function CoordinatorEditEventPage() {
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: UUID }>();
   const [activeTab, setActiveTab] = useState<EditTab>("INFO");
+  const [bannerFailed, setBannerFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
 
   const eventQuery = useCoordinatorEventDetailQuery(eventId);
   const tracksQuery = useCoordinatorEventTracksQuery(eventId);
@@ -92,6 +97,14 @@ export function CoordinatorEditEventPage() {
     () => getEventSeasonGradient(getSeason(eventQuery.data)),
     [eventQuery.data],
   );
+  // Uploaded banner first, then the same seeded fallback photo as every other
+  // event surface (see utils/eventBanner.ts); gradient is the final fallback.
+  const bannerSrc =
+    bannerUrl && !bannerFailed
+      ? bannerUrl
+      : eventId
+        ? getEventFallbackBannerUrl(eventId, 1600, 640)
+        : null;
   const eventStatus = normalizeEventStatus(
     (eventQuery.data as { status?: string | null } | undefined)?.status,
   );
@@ -125,10 +138,15 @@ export function CoordinatorEditEventPage() {
     <div className="space-y-7 animate-in fade-in duration-500">
       <header className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="aspect-21/9 max-h-80 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-          {bannerUrl ? (
+          {bannerSrc && !fallbackFailed ? (
             <img
-              src={bannerUrl}
+              src={bannerSrc}
               alt={eventName}
+              onError={() =>
+                bannerSrc === bannerUrl
+                  ? setBannerFailed(true)
+                  : setFallbackFailed(true)
+              }
               className="h-full w-full object-cover object-center"
             />
           ) : (

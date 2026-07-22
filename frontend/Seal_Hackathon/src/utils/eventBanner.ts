@@ -7,6 +7,20 @@
  * Returns Tailwind gradient stops; apply together with a direction utility
  * such as `bg-linear-to-br` or `bg-linear-to-r`.
  */
+/**
+ * Deterministic fallback banner IMAGE for an event that has no uploaded
+ * banner. Seeded by event id so the SAME event shows the SAME photo across
+ * every surface (list card, public detail hero, ...). Picsum returns the same
+ * photo for the same seed regardless of the requested dimensions.
+ */
+export function getEventFallbackBannerUrl(
+  eventId: string,
+  width: number,
+  height: number,
+): string {
+  return `https://picsum.photos/seed/seal-event-${eventId}/${width}/${height}`;
+}
+
 export function getEventSeasonGradient(season?: string | null): string {
   switch ((season ?? "").toUpperCase()) {
     case "SPRING":

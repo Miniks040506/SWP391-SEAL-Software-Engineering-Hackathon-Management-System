@@ -26,7 +26,10 @@ import {
 } from "@/features/events/hooks/usePublicEventQueries";
 import { useAuthStore } from "@/stores/authStore";
 import { getPrimaryRole } from "@/utils/roleRedirect";
-import { getEventSeasonGradient } from "@/utils/eventBanner";
+import {
+  getEventFallbackBannerUrl,
+  getEventSeasonGradient,
+} from "@/utils/eventBanner";
 import {
   getEventDescription,
   getSeasonLabel,
@@ -67,6 +70,7 @@ export function EventDetailPage() {
   const [showAnnouncementsList, setShowAnnouncementsList] = useState(false);
   const [cameFromList, setCameFromList] = useState(false);
   const [bannerFailed, setBannerFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
 
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -124,6 +128,10 @@ export function EventDetailPage() {
     : null;
 
   const hasRealBanner = Boolean(event.bannerUrl) && !bannerFailed;
+  // Same seeded fallback photo as the events list card (see utils/eventBanner.ts)
+  const bannerSrc = hasRealBanner
+    ? (event.bannerUrl as string)
+    : getEventFallbackBannerUrl(event.id, 1600, 640);
 
   const activeCompetition = (competitionsQuery.data ?? []).find(
     (competition) =>
@@ -200,16 +208,20 @@ export function EventDetailPage() {
       {/* ---------------------------------------------------------------- */}
       <section className="relative overflow-hidden rounded-3xl border border-gray-200 bg-slate-900 shadow-xl dark:border-slate-800">
         <div className="absolute inset-0">
-          {hasRealBanner ? (
+          {!fallbackFailed ? (
             <img
-              src={event.bannerUrl as string}
+              src={bannerSrc}
               alt={`${event.name} banner`}
-              onError={() => setBannerFailed(true)}
+              onError={() =>
+                bannerSrc === event.bannerUrl
+                  ? setBannerFailed(true)
+                  : setFallbackFailed(true)
+              }
               className="h-full w-full object-cover"
             />
           ) : (
-            // No uploaded banner → deterministic season gradient, matching the
-            // events list card and the edit page (see utils/eventBanner.ts).
+            // Both the uploaded banner and the seeded fallback photo failed →
+            // deterministic season gradient (see utils/eventBanner.ts).
             <div
               className={`h-full w-full bg-linear-to-br ${getEventSeasonGradient(event.season)}`}
             />
