@@ -126,6 +126,7 @@ import {
   AdminAiKnowledgePage,
   AdminAiSafetyLogsPage,
 } from "@/features/assistant";
+import { SchedulePage } from "@/features/schedule";
 
 export const router = createBrowserRouter([
   {
@@ -378,7 +379,7 @@ export const router = createBrowserRouter([
       { path: "analytics", element: <NotFoundPage /> },
       { path: "announcement", element: <CoordinatorAnnouncementPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
-      { path: "schedule", element: <NotFoundPage /> },
+      { path: "schedule", element: <SchedulePage /> },
       { path: "reminders", element: <CoordinatorEventRemindersPage /> },
       { path: "exports", element: <ExportJobListPage /> },
       { path: "events/:eventId/exports", element: <ExportJobListPage /> },
@@ -463,7 +464,7 @@ export const router = createBrowserRouter([
       { path: "notifications", element: <NotificationInboxPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
-      { path: "schedule", element: <NotFoundPage /> },
+      { path: "schedule", element: <SchedulePage /> },
       { path: "reminders", element: <CoordinatorEventRemindersPage /> },
     ],
   },
@@ -490,7 +491,7 @@ export const router = createBrowserRouter([
       { path: "notifications", element: <NotificationInboxPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
-      { path: "schedule", element: <NotFoundPage /> },
+      { path: "schedule", element: <SchedulePage /> },
       { path: "reminders", element: <CoordinatorEventRemindersPage /> },
     ],
   },
