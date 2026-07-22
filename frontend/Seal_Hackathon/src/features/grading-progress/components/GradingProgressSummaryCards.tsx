@@ -1,4 +1,8 @@
 import { LinearProgress } from "@mui/material";
+import {
+    formatProgressPercent,
+    normalizeProgressPercent,
+} from "../utils/gradingProgressFormat";
 
 interface GradingProgressSummaryCardsProps {
     percent: number;
@@ -17,13 +21,15 @@ export const GradingProgressSummaryCards = ({
     draftSavedSubmissions,
     lockedSubmissions,
 }: GradingProgressSummaryCardsProps) => {
+    const normalizedPercent = normalizeProgressPercent(percent);
+
     return (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
             <div className="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Progress</span>
-                <span className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{percent}%</span>
+                <span className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{formatProgressPercent(percent)}%</span>
                 <div className="mt-3">
-                    <LinearProgress variant="determinate" value={percent} />
+                    <LinearProgress variant="determinate" value={normalizedPercent} />
                 </div>
             </div>
 
