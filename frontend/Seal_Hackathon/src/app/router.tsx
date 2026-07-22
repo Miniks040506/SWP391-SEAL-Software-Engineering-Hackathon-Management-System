@@ -14,7 +14,6 @@ import { ExportJobListPage } from "../features/exports";
 import {
   JudgeDashboardPage,
   JudgeSubmissionDetailPage,
-  JudgeAssignedSubmissionPage,
   JudgeSubmissionsPage,
 } from "@/features/judge";
 
@@ -427,10 +426,10 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <JudgeDashboardPage /> },
       { path: "events", element: <NotFoundPage /> },
-      { path: "submissions", element: <JudgeAssignedSubmissionPage /> },
+      { path: "submissions", element: <JudgeSubmissionsPage /> },
       {
         path: "rounds/:roundId/submissions",
-        element: <JudgeAssignedSubmissionPage />,
+        element: <JudgeSubmissionsPage />,
       },
       {
         path: "submissions/:submissionId",
@@ -440,7 +439,10 @@ export const router = createBrowserRouter([
         path: "submissions/:submissionId/score",
         element: <JudgeScoreSheetPage />,
       },
-      { path: "scoring", element: <JudgeSubmissionsPage /> },
+      {
+        path: "scoring",
+        element: <Navigate to="/judge/submissions" replace />,
+      },
       { path: "calibrations", element: <JudgeCalibrationListPage /> },
       {
         path: "calibrations/:calibrationId",

@@ -4,14 +4,16 @@ import LockIcon from "@mui/icons-material/Lock";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
-import type { GradingSubmissionDetailResponse, ScoreSheetResponse } from "@/types/grading.types";
-import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
+import type {
+  GradingSubmissionDetailResponse,
+  ScoreSheetResponse,
+} from "@/types/grading.types";
 
 type Props = {
   submission: GradingSubmissionDetailResponse;
   scoreSheet: ScoreSheetResponse;
   isLocked: boolean;
-  assignmentInfo?: JudgeSubmissionAssignmentResponse;
+  gradingStatus: string;
 };
 
 const getGradingStatusColor = (status: string): string => {
@@ -47,10 +49,8 @@ export const ScoreSheetHeader = ({
   submission,
   scoreSheet,
   isLocked,
-  assignmentInfo,
+  gradingStatus,
 }: Props) => {
-  const gradingStatus = assignmentInfo?.gradingStatus || "PENDING";
-
   return (
     <div className="flex flex-col gap-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-col gap-1">
@@ -92,9 +92,7 @@ export const ScoreSheetHeader = ({
             variant="body2"
             className="font-bold text-gray-900 dark:text-slate-200"
           >
-            {assignmentInfo?.roundName
-              ? "Current Event"
-              : "Hackathon Event"}
+            {submission.eventName || "Not available"}
           </Typography>
         </div>
         <div>
@@ -108,7 +106,7 @@ export const ScoreSheetHeader = ({
             variant="body2"
             className="font-bold text-gray-900 dark:text-slate-200"
           >
-            {assignmentInfo?.roundName || "Current Round"}
+            {submission.roundName || "Not available"}
           </Typography>
         </div>
         <div>
@@ -122,7 +120,7 @@ export const ScoreSheetHeader = ({
             variant="body2"
             className="font-bold text-gray-900 dark:text-slate-200"
           >
-            {assignmentInfo?.trackName || "General Track"}
+            {submission.trackName || "Not available"}
           </Typography>
         </div>
       </div>
@@ -133,7 +131,7 @@ export const ScoreSheetHeader = ({
             Submission:
           </Typography>
           <Chip
-            label={assignmentInfo?.submissionStatus || "SUBMITTED"}
+            label={submission.submissionStatus || "Not available"}
             size="small"
             color="primary"
             variant="outlined"

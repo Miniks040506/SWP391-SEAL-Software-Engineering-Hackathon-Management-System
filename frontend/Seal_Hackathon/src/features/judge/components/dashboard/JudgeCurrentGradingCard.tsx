@@ -33,7 +33,7 @@ export const JudgeCurrentGradingCard = ({
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="mb-4 flex items-center gap-3">
-              <p className="text-sm font-bold uppercase tracking-wide text-gray-400">Current Grading</p>
+              <p className="text-sm font-bold uppercase tracking-wide text-gray-400">Active assignment</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">{currentGrading.eventName}</h2>
