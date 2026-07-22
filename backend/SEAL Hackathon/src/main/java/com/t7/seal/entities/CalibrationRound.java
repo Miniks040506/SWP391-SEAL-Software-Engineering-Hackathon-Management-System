@@ -176,4 +176,11 @@ public class CalibrationRound {
     public boolean isMandatoryRound() {
         return Boolean.TRUE.equals(isMandatory);
     }
+
+    public boolean appliesToRound(UUID roundId) {
+        return roundId != null
+                && sampleSubmission != null
+                && sampleSubmission.getRound() != null
+                && roundId.equals(sampleSubmission.getRound().getId());
+    }
 }

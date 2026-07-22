@@ -381,10 +381,11 @@ public class GradingServiceImpl implements GradingService {
 
     private boolean hasCompletedMandatoryCalibration(Submission submission, Judge judge) {
         UUID eventId = submission.getRound().getEvent().getId();
+        UUID roundId = submission.getRound().getId();
 
         for (CalibrationRound calibrationRound :
                 calibrationRoundRepository.findByEventIdOrderByStartAtAsc(eventId)) {
-            if (!calibrationRound.isMandatoryRound()) {
+            if (!calibrationRound.isMandatoryRound() || !calibrationRound.appliesToRound(roundId)) {
                 continue;
             }
 
