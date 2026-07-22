@@ -29,6 +29,30 @@ public record GradingSubmissionDetailResponse(
         )
         String projectTitle,
         @Schema(
+                description = "API-returned event name.",
+                example = "SEAL Summer 2026",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String eventName,
+        @Schema(
+                description = "API-returned round name.",
+                example = "Final Round",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String roundName,
+        @Schema(
+                description = "API-returned track name.",
+                example = "Artificial Intelligence",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String trackName,
+        @Schema(
+                description = "API-returned submission status.",
+                example = "SUBMITTED",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String submissionStatus,
+        @Schema(
                 description = "Optional business note.",
                 example = "Example test note.",
                 accessMode = Schema.AccessMode.READ_ONLY

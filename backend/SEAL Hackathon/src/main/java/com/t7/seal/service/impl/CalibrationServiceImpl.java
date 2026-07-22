@@ -777,6 +777,7 @@ public class CalibrationServiceImpl implements CalibrationService {
     ) {
         Submission sample = calibrationRound.getSampleSubmission();
         Team team = sample.getTeam();
+        Track track = team == null ? null : team.getTrack();
         LocalDateTime now = LocalDateTime.now();
 
         long criteriaCount = criteria.size();
@@ -788,9 +789,12 @@ public class CalibrationServiceImpl implements CalibrationService {
         return new CalibrationScoreSheetResponse(
                 calibrationRound.getId(),
                 calibrationRound.getEvent().getId(),
+                calibrationRound.getEvent().getName(),
                 sample.getId(),
                 team == null ? null : team.getName(),
                 team == null ? null : team.getProjectTitle(),
+                track == null ? null : track.getName(),
+                sample.getRound() == null ? null : sample.getRound().getName(),
                 sample.getNote(),
                 calibrationRound.getStartAt(),
                 calibrationRound.getEndAt(),
@@ -821,11 +825,16 @@ public class CalibrationServiceImpl implements CalibrationService {
                 .findActiveJudgeUsersByEventId(calibrationRound.getEvent().getId())
                 .size();
         long submittedJudgeCount = countSubmittedJudges(calibrationRound);
+        Submission sample = calibrationRound.getSampleSubmission();
+        Team team = sample.getTeam();
 
         return new CalibrationRoundResponse(
                 calibrationRound.getId(),
                 calibrationRound.getEvent().getId(),
-                calibrationRound.getSampleSubmission().getId(),
+                calibrationRound.getEvent().getName(),
+                sample.getId(),
+                team == null ? null : team.getName(),
+                team == null ? null : team.getProjectTitle(),
                 calibrationRound.getDescription(),
                 calibrationRound.getStartAt(),
                 calibrationRound.getEndAt(),

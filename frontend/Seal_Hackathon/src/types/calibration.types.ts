@@ -34,7 +34,10 @@ export type SubmitCalibrationScoreRequest = {
 export type CalibrationRoundResponse = {
   id: UUID;
   eventId: UUID;
+  eventName: string;
   sampleSubmissionId: UUID;
+  sampleTeamName?: string | null;
+  sampleProjectTitle?: string | null;
   description?: string | null;
   startAt?: ISODateTime | null;
   endAt?: ISODateTime | null;
@@ -67,9 +70,12 @@ export type CalibrationScoreResponse = {
 export type CalibrationScoreSheetResponse = {
   calibrationRoundId: UUID;
   eventId: UUID;
+  eventName: string;
   sampleSubmissionId: UUID;
   sampleTeamName?: string | null;
   sampleProjectTitle?: string | null;
+  sampleTrackName?: string | null;
+  sampleRoundName?: string | null;
   sampleNote?: string | null;
   startAt?: ISODateTime | null;
   endAt?: ISODateTime | null;
