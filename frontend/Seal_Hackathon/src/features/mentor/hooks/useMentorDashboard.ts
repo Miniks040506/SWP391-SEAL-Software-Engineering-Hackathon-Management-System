@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
 import { userApi } from "@/api/user.api";
 import { trackApi } from "@/api/track.api";
-import { notificationApi } from "@/api/notification.api";
+import { scheduleApi } from "@/api/schedule.api";
 
 import { mentorDashboardMock, type MentorDashboardData } from "../mocks/mentorDashboard.mock";
 
@@ -29,7 +30,7 @@ export function useMentorDashboard() {
   const myTrackInfo = myTracks[0] || null;
 
   const activeEventsCount = myTracks.length > 0
-    ? new Set(myTracks.map((t: any) => t.eventId)).size
+    ? new Set(myTracks.map((track) => track.eventId)).size
     : 0;
 
   // --- Teams in the first assigned track ---
@@ -38,18 +39,23 @@ export function useMentorDashboard() {
   const trackTeamsQuery = useQuery({
     queryKey: ["mentor-dashboard-teams", myTrackInfo?.trackId],
     queryFn: () =>
-      trackApi.getTeamInAssignedTracks(myTrackInfo!.trackId, { page: 0, size: 100 } as any),
+      trackApi.getTeamInAssignedTracks(myTrackInfo!.trackId, { page: 0, size: 100 }),
     enabled: !USE_MOCK && Boolean(myTrackInfo?.trackId),
   });
 
-  const teamList: any[] = trackTeamsQuery.data?.content
-    || (trackTeamsQuery.data as any)?.data?.content
-    || [];
+  const teamList = trackTeamsQuery.data?.content ?? [];
 
-  // --- Notifications (for recent activity & schedule) ---
-  const notifsQuery = useQuery({
-    queryKey: ["mentor-dashboard-notifs"],
-    queryFn: () => notificationApi.getMyNotifications({ page: 0, size: 5 }),
+  const scheduleQuery = useQuery({
+    queryKey: ["mentor-dashboard-schedule"],
+    queryFn: () => {
+      const from = new Date();
+      const to = new Date(from);
+      to.setDate(to.getDate() + 30);
+      return scheduleApi.getMySchedule({
+        from: format(from, "yyyy-MM-dd'T'HH:mm:ss"),
+        to: format(to, "yyyy-MM-dd'T'HH:mm:ss"),
+      });
+    },
     enabled: !USE_MOCK,
   });
 
@@ -61,45 +67,30 @@ export function useMentorDashboard() {
   } else {
     // Use pre-aggregated counts from MentorTeamProgressResponse
     const totalSubmissions = teamList.reduce(
-      (acc: number, t: any) => acc + (t.submissionCount ?? 0),
+      (count, team) => count + team.submissionCount,
       0,
     );
     // missingSubmissionCount = teams that have not yet submitted
     const pendingReviewCount = teamList.reduce(
-      (acc: number, t: any) => acc + (t.missingSubmissionCount ?? 0),
+      (count, team) => count + team.missingSubmissionCount,
       0,
     );
 
-    const notifs =
-      notifsQuery.data?.content ||
-      (notifsQuery.data as any)?.data?.content ||
-      [];
-    const recentActivities = notifs.slice(0, 4).map((n: any) => ({
-      id: n.id,
-      time: new Date(n.sentAt || n.createdAt).toLocaleString([], {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }),
-      title: n.title || "Notification",
-      description: n.body || n.message || "",
-    }));
-
     // Build recent submissions from teamList round progress
     const recentSubmissions = teamList
-      .flatMap((team: any) =>
-        (team.roundProgress || []).map((rp: any) => ({
-          id: `${team.teamId}-${rp.roundId}`,
+      .flatMap((team) =>
+        team.roundProgress.filter((round) => round.submissionId).map((round) => ({
+          id: round.submissionId!,
           teamName: team.teamName || "Unknown Team",
           projectName: team.projectTitle || team.trackName || "No Project Title",
-          roundName: rp.roundName || `Round ${rp.roundId?.slice(0, 6) ?? ""}`,
-          submittedAt:
-            rp.latestSubmissionDate || rp.submittedAt
-              ? new Date(rp.latestSubmissionDate || rp.submittedAt).toLocaleString([], {
+          roundName: round.roundName || `Round ${round.roundId?.slice(0, 6) ?? ""}`,
+          submittedAt: round.submittedAt
+              ? new Date(round.submittedAt).toLocaleString([], {
                 dateStyle: "medium",
                 timeStyle: "short",
               })
               : "Not submitted",
-          feedbackStatus: rp.hasFeedback || rp.feedbackGiven ? "Given" : "Not Given",
+          feedbackStatus: "Not Given" as const,
         })),
       )
       .slice(0, 5);
@@ -151,11 +142,14 @@ export function useMentorDashboard() {
         pendingFeedbackCount: pendingReviewCount,
       },
       recentSubmissions,
-      upcomingSchedule: recentActivities.slice(0, 2).map((a: any, i: number) => ({
-        id: `sch-${i}`,
-        date: a.time,
-        title: a.title,
-        context: "Recent Notification",
+      upcomingSchedule: (scheduleQuery.data ?? []).slice(0, 2).map((entry) => ({
+        id: entry.id,
+        date: new Date(entry.startAt).toLocaleString([], {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }),
+        title: entry.title,
+        context: entry.eventName,
       })),
     };
   }
@@ -165,7 +159,7 @@ export function useMentorDashboard() {
     (profileQuery.isLoading ||
       myTracksQuery.isLoading ||
       trackTeamsQuery.isLoading ||
-      notifsQuery.isLoading);
+      scheduleQuery.isLoading);
 
   const goToTeams = () => navigate("/mentor/teams");
   const goToSubmissions = () => navigate("/mentor/submissions");
