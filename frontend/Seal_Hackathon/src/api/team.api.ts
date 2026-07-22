@@ -137,6 +137,13 @@ export const teamApi = {
     );
   },
 
+  getCoordinatorTeams(params?: Omit<CoordinatorTeamListParams, "eventId">) {
+    return apiRequest.get<PageResponse<CoordinatorTeamSummaryResponse>>(
+      "/teams",
+      { params },
+    );
+  },
+
   getCoordinatorTeamSummary(teamId: UUID) {
     return apiRequest.get<CoordinatorTeamDetailResponse>(
       `/teams/${teamId}/summary`,

@@ -12,6 +12,10 @@ import {
 import { Link } from "react-router-dom";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import type { JudgeAssignmentProgressResponse } from "@/types/grading.types";
+import {
+    formatProgressPercent,
+    normalizeProgressPercent,
+} from "../utils/gradingProgressFormat";
 
 interface JudgeAssignmentProgressTableProps {
     assignments: JudgeAssignmentProgressResponse[];
@@ -59,10 +63,10 @@ export const JudgeAssignmentProgressTable = ({ assignments = [] }: JudgeAssignme
                                 <div className="flex items-center gap-2">
                                     <LinearProgress
                                         variant="determinate"
-                                        value={assignment.percent}
+                                        value={normalizeProgressPercent(assignment.percent)}
                                         sx={{ width: 60, height: 6, borderRadius: 3 }}
                                     />
-                                    <span className="text-xs font-bold">{assignment.percent}%</span>
+                                    <span className="text-xs font-bold">{formatProgressPercent(assignment.percent)}%</span>
                                 </div>
                             </TableCell>
                             <TableCell>

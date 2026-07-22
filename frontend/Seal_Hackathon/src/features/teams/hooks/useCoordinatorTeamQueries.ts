@@ -14,29 +14,23 @@ export const useCoordinatorTeamsQuery = (params: CoordinatorTeamListParams) => {
 
   useEffect(() => {
     const fetchTeams = async () => {
-      if (!params.eventId) {
-        setData(null);
-        return;
-      }
-
       setLoading(true);
       try {
-        const res = await teamApi.getCoordinatorEventTeams(params.eventId, {
+        const requestParams = {
           trackId: params.trackId,
           status: params.status,
           registrationStatus: params.registrationStatus,
           search: params.search,
           page: params.page ? params.page - 1 : 0,
           size: params.size,
-        });
-        const filteredContent = res.content.filter(
-          (team) =>
-            team.status !== "FORMING" || team.registrationStatus != null,
-        );
-        setData({
-          ...res,
-          content: filteredContent,
-        });
+        };
+        const res = params.eventId
+          ? await teamApi.getCoordinatorEventTeams(
+              params.eventId,
+              requestParams,
+            )
+          : await teamApi.getCoordinatorTeams(requestParams);
+        setData(res);
       } catch {
         // Silently handle error
       } finally {

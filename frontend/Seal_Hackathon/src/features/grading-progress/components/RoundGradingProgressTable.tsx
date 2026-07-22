@@ -14,6 +14,10 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import type { RoundGradingProgressResponse } from "@/types/grading.types";
+import {
+    formatProgressPercent,
+    normalizeProgressPercent,
+} from "../utils/gradingProgressFormat";
 
 interface RoundGradingProgressTableProps {
     rounds: RoundGradingProgressResponse[];
@@ -74,10 +78,10 @@ export const RoundGradingProgressTable = ({ rounds = [] }: RoundGradingProgressT
                                 <div className="flex items-center gap-2">
                                     <LinearProgress
                                         variant="determinate"
-                                        value={round.percent}
+                                        value={normalizeProgressPercent(round.percent)}
                                         sx={{ width: 60, height: 6, borderRadius: 3 }}
                                     />
-                                    <span className="text-xs font-bold">{round.percent}%</span>
+                                    <span className="text-xs font-bold">{formatProgressPercent(round.percent)}%</span>
                                 </div>
                             </TableCell>
                             <TableCell align="right">
