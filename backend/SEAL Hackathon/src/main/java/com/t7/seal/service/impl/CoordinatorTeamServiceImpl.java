@@ -83,16 +83,17 @@ public class CoordinatorTeamServiceImpl implements CoordinatorTeamService {
     ) {
         ensureCoordinator(authentication);
 
-        HackathonEvent event = hackathonEventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
-
-        ensureTrackBelongsToEvent(event, trackId);
+        if (eventId != null) {
+            HackathonEvent event = hackathonEventRepository.findById(eventId)
+                    .orElseThrow(() -> new NotFoundException("Event not found " + eventId));
+            ensureTrackBelongsToEvent(event, trackId);
+        }
 
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
         Page<Team> result = teamRepository.searchCoordinatorTeams(
-                event.getId(),
+                eventId,
                 trackId,
                 parseTeamStatus(status),
                 parseRegistrationStatus(registrationStatus),

@@ -75,7 +75,8 @@ export function CoordinatorSubmissionsPage() {
     fetchFilterOptions();
   }, []);
 
-  const { data, loading, error, refetch } = useCoordinatorSubmissionsQuery(filters);
+  const { data, summary, loading, error, refetch } =
+    useCoordinatorSubmissionsQuery(filters);
 
   const handleCloseDrawer = () => {
     navigate("/coordinator/submissions");
@@ -84,25 +85,6 @@ export function CoordinatorSubmissionsPage() {
   const items = useMemo(() => data?.content ?? [], [data?.content]);
   const total = data?.totalElements ?? 0;
   const totalPages = data?.totalPages ?? 0;
-
-  const progressSummary = useMemo(() => {
-    const stats = {
-      draft: 0,
-      submitted: 0,
-      late: 0,
-      disqualified: 0,
-      locked: 0,
-      total: items.length,
-    };
-    items.forEach((sub) => {
-      if (sub.roundSubmissionLocked) stats.locked += 1;
-      if (sub.status === "DRAFT") stats.draft += 1;
-      if (sub.status === "SUBMITTED") stats.submitted += 1;
-      if (sub.status === "LATE") stats.late += 1;
-      if (sub.status === "DISQUALIFIED") stats.disqualified += 1;
-    });
-    return stats;
-  }, [items]);
 
   return (
     <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
@@ -124,18 +106,18 @@ export function CoordinatorSubmissionsPage() {
         </Alert>
       )}
 
-      {items.length > 0 && (
+      {summary && summary.total > 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 mb-6">
           <div className="flex items-center gap-2 pr-4 sm:border-r border-slate-200 dark:border-slate-700">
             <span className="text-sm font-bold text-slate-500">Finalized:</span>
-            <span className="text-xl font-extrabold text-slate-900 dark:text-white">{progressSummary.submitted + progressSummary.late} / {progressSummary.total}</span>
+            <span className="text-xl font-extrabold text-slate-900 dark:text-white">{summary.submitted + summary.late} / {summary.total}</span>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
-            <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400"><span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>{progressSummary.draft} Draft Saved</span>
-            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400"><span className="h-2.5 w-2.5 rounded-full bg-green-500"></span>{progressSummary.submitted} Submitted</span>
-            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400"><span className="h-2.5 w-2.5 rounded-full bg-amber-500"></span>{progressSummary.late} Late</span>
-            <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400"><span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>{progressSummary.disqualified} Disqualified</span>
-            <span className="text-slate-500 dark:text-slate-400">{progressSummary.locked} in locked rounds</span>
+            <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400"><span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>{summary.draft} Draft Saved</span>
+            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400"><span className="h-2.5 w-2.5 rounded-full bg-green-500"></span>{summary.submitted} Submitted</span>
+            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400"><span className="h-2.5 w-2.5 rounded-full bg-amber-500"></span>{summary.late} Late</span>
+            <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400"><span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>{summary.disqualified} Disqualified</span>
+            <span className="text-slate-500 dark:text-slate-400">{summary.locked} in locked rounds</span>
           </div>
         </div>
       )}

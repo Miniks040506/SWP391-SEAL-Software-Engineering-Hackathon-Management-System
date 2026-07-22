@@ -37,11 +37,6 @@ export function CoordinatorTeamsPage() {
           name: event.name,
         }));
         setEvents(eventOptions);
-        setFilters((prev) =>
-          prev.eventId || eventOptions.length === 0
-            ? prev
-            : { ...prev, eventId: eventOptions[0].id, page: 1 },
-        );
       } catch {
         // Silently handle error
       }
