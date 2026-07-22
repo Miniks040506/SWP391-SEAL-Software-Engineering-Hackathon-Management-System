@@ -1,0 +1,159 @@
+/*
+ * Pure-CSS motion for the Rounds tab (Edit Event workspace).
+ * The "live" round card gets an animated gradient border, a breathing glow
+ * and a shimmer sweep — no JS animation library involved.
+ */
+
+/* Rotating/flowing gradient ring around the live round card. */
+.seal-round-live {
+  position: relative;
+  isolation: isolate;
+  animation: seal-round-glow 2.8s ease-in-out infinite;
+}
+
+.seal-round-live::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(
+    120deg,
+    #8b5cf6,
+    #6366f1,
+    #22d3ee,
+    #a78bfa,
+    #8b5cf6
+  );
+  background-size: 300% 300%;
+  animation: seal-round-border-flow 5s linear infinite;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Diagonal shimmer sweep across the live card. */
+.seal-round-live::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(139, 92, 246, 0.08) 48%,
+    rgba(99, 102, 241, 0.14) 52%,
+    transparent 60%
+  );
+  background-size: 250% 100%;
+  animation: seal-round-shimmer 3.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes seal-round-border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes seal-round-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.28), 0 10px 30px -10px rgba(99, 102, 241, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 24px 4px rgba(139, 92, 246, 0.22), 0 10px 34px -8px rgba(99, 102, 241, 0.45);
+  }
+}
+
+@keyframes seal-round-shimmer {
+  0% {
+    background-position: 130% 0;
+  }
+  60%,
+  100% {
+    background-position: -30% 0;
+  }
+}
+
+/* Pulse ring behind the live round's number badge. */
+.seal-round-live-badge {
+  position: relative;
+}
+
+.seal-round-live-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(139, 92, 246, 0.7);
+  animation: seal-round-badge-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes seal-round-badge-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  70%,
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+/* Soft breathing highlight for the live row in the track-round preview. */
+.seal-preview-live {
+  animation: seal-preview-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes seal-preview-breathe {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.35);
+  }
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.7), 0 0 14px -2px rgba(139, 92, 246, 0.35);
+  }
+}
+
+/* Live dot on the timeline rail + preview rows. */
+.seal-live-dot {
+  position: relative;
+}
+
+.seal-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgb(139 92 246 / 0.6);
+  animation: seal-round-badge-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Respect reduced-motion preferences: freeze every decorative animation. */
+@media (prefers-reduced-motion: reduce) {
+  .seal-round-live,
+  .seal-round-live::before,
+  .seal-round-live::after,
+  .seal-round-live-badge::after,
+  .seal-preview-live,
+  .seal-live-dot::after {
+    animation: none;
+  }
+}

@@ -1,0 +1,129 @@
+/*
+ * Pure-CSS motion for the Mentors & Judges tab (Edit Event workspace).
+ * Guides the user through the assign flow: mode swap transition, pulsing
+ * "do this next" step badges, glowing target banner, staggered roster cards.
+ */
+
+/* Content swap when switching Mentors <-> Judges (keyed remount). */
+.seal-assign-swap {
+  animation: seal-assign-swap-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes seal-assign-swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Staggered entrance for roster/assignment cards (delay set inline). */
+.seal-assign-card-in {
+  animation: seal-assign-swap-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Pulsing ring on the step badge the user should complete next. */
+.seal-step-todo {
+  position: relative;
+}
+
+.seal-step-todo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(245, 158, 11, 0.75);
+  animation: seal-step-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes seal-step-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  70%,
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+/* Check icon pop when a context chip becomes selected. */
+.seal-chip-pop {
+  animation: seal-chip-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes seal-chip-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Breathing glow on the sticky target banner once context is complete. */
+.seal-target-ready-emerald {
+  animation: seal-target-breathe-emerald 2.6s ease-in-out infinite;
+}
+
+@keyframes seal-target-breathe-emerald {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 18px 2px rgba(16, 185, 129, 0.28);
+  }
+}
+
+.seal-target-ready-blue {
+  animation: seal-target-breathe-blue 2.6s ease-in-out infinite;
+}
+
+@keyframes seal-target-breathe-blue {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 18px 2px rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* Live dot inside the target banner. */
+.seal-target-dot {
+  position: relative;
+}
+
+.seal-target-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.55;
+  animation: seal-step-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Respect reduced-motion preferences: freeze everything decorative. */
+@media (prefers-reduced-motion: reduce) {
+  .seal-assign-swap,
+  .seal-assign-card-in,
+  .seal-step-todo::after,
+  .seal-chip-pop,
+  .seal-target-ready-emerald,
+  .seal-target-ready-blue,
+  .seal-target-dot::after {
+    animation: none;
+  }
+}

@@ -3,6 +3,7 @@ import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
+import RuleOutlinedIcon from "@mui/icons-material/RuleOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
@@ -10,9 +11,6 @@ import {
   Button,
   Checkbox,
   Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControlLabel,
   MenuItem,
   TextField,
@@ -140,17 +138,45 @@ function AdvanceRuleModal({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      slotProps={{ paper: { sx: { borderRadius: "20px" } } }}
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: "20px",
+            overflow: "hidden",
+            backgroundImage: "none",
+          },
+        },
+      }}
+      classes={{ paper: "bg-white dark:bg-slate-900" }}
     >
-      <DialogTitle sx={{ fontWeight: 900 }}>Add Advance Rule</DialogTitle>
-      <DialogContent className="space-y-4 pt-2">
+      {/* Gradient header — same chrome as the Edit Event advance-rule popup */}
+      <div className="relative overflow-hidden bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 px-6 py-5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-violet-500/25 blur-2xl"
+        />
+        <div className="relative flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-white shadow-md">
+            <RuleOutlinedIcon />
+          </span>
+          <div>
+            <h2 className="text-lg font-black text-white">Add Advance Rule</h2>
+            <p className="text-xs font-medium text-slate-400">
+              Decide which teams advance from this round
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 px-6 py-5">
         <TextField
           select
           label="Rule Type"
           fullWidth
+          size="small"
           value={ruleType}
           onChange={(e) => setRuleType(e.target.value)}
-          sx={{ ...wizardFieldSx, mt: 1 }}
+          sx={{ ...wizardFieldSx, mt: 0.5 }}
         >
           {RULE_TYPE_OPTIONS.map((opt) => (
             <MenuItem key={opt.value} value={opt.value}>
@@ -162,6 +188,7 @@ function AdvanceRuleModal({
           select
           label="Track (Optional, Global if empty)"
           fullWidth
+          size="small"
           value={trackId}
           onChange={(e) => setTrackId(e.target.value)}
           sx={wizardFieldSx}
@@ -179,6 +206,7 @@ function AdvanceRuleModal({
           label={getValueLabel()}
           type="number"
           fullWidth
+          size="small"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           error={!!valueError}
@@ -189,6 +217,7 @@ function AdvanceRuleModal({
           label="Priority"
           type="number"
           fullWidth
+          size="small"
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
           error={!!priorityError}
@@ -200,15 +229,18 @@ function AdvanceRuleModal({
           fullWidth
           multiline
           rows={2}
+          size="small"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           sx={wizardFieldSx}
         />
-      </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
+      </div>
+
+      <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4 dark:border-slate-800">
         <Button
           onClick={onClose}
-          sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 700 }}
+          variant="outlined"
+          sx={{ textTransform: "none", borderRadius: "10px", fontWeight: 700 }}
         >
           Cancel
         </Button>
@@ -216,11 +248,18 @@ function AdvanceRuleModal({
           onClick={handleSave}
           variant="contained"
           disabled={!isValid}
-          sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 700 }}
+          sx={{
+            textTransform: "none",
+            borderRadius: "10px",
+            fontWeight: 800,
+            boxShadow: "none",
+            bgcolor: "#7c3aed",
+            "&:hover": { bgcolor: "#6d28d9" },
+          }}
         >
           Save Rule
         </Button>
-      </DialogActions>
+      </div>
     </Dialog>
   );
 }
