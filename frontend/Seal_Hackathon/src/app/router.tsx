@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import { NotFoundPage } from "@/components/common/NotFoundPage";
 import { RouteErrorPage } from "@/components/common/RouteErrorPage";
+import { AuthGuard } from "@/components/guards/AuthGuard";
 
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { LoggedinLayout } from "@/components/layout/LoggedinLayout";
@@ -134,7 +135,14 @@ export const router = createBrowserRouter([
       { path: "/", element: <Navigate to="/events" replace /> },
       { path: "/events", element: <EventsPage /> },
       { path: "/explore", element: <Navigate to="/events" replace /> },
-      { path: "/events/:eventId/competing", element: <EventCompetitionPage /> },
+      {
+        path: "/events/:eventId/competing",
+        element: (
+          <AuthGuard>
+            <EventCompetitionPage />
+          </AuthGuard>
+        ),
+      },
       { path: "/events/:eventId/awards", element: <EventAwardsPage /> },
       { path: "/events/:eventId", element: <EventDetailPage /> },
       { path: "/standings", element: <StandingsPage /> },
@@ -204,7 +212,11 @@ export const router = createBrowserRouter([
 
   {
     path: "/participant",
-    element: <RootLayout />,
+    element: (
+      <AuthGuard>
+        <RootLayout />
+      </AuthGuard>
+    ),
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="teams" replace /> },
