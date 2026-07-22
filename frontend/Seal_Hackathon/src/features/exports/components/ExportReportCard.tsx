@@ -1,18 +1,13 @@
-import { type ReactNode } from "react";
-import Button from "@mui/material/Button";
-import CircularProgress from "@mui/material/CircularProgress";
+import type { ReactNode } from "react";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 
 type Props = {
   title: string;
   description: string;
   icon: ReactNode;
-  iconBgClass: string;
-  iconColorClass: string;
   controls?: ReactNode;
   onExport: () => void;
   isExporting?: boolean;
-  exportText?: string;
   disabled?: boolean;
 };
 
@@ -20,69 +15,46 @@ export const ExportReportCard = ({
   title,
   description,
   icon,
-  iconBgClass,
-  iconColorClass,
   controls,
   onExport,
   isExporting,
-  exportText = "Export & download",
   disabled = false,
 }: Props) => {
   return (
-    <article className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md xl:grid-cols-[minmax(260px,380px)_1fr_auto] xl:items-center dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex items-start gap-4 px-5 py-4 sm:px-6">
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconBgClass} ${iconColorClass}`}
-        >
+    <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/50">
+      <div className="flex items-start gap-4 p-5 sm:p-6">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
           {icon}
-        </div>
+        </span>
         <div>
-          <p className="text-sm font-black text-slate-900 dark:text-white">
-            {title}
-          </p>
-          <p className="mt-0.5 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+          <h3 className="font-black text-slate-950 dark:text-white">{title}</h3>
+          <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
             {description}
           </p>
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3 border-y border-slate-100 px-5 py-4 sm:px-6 xl:border-x xl:border-y-0 dark:border-slate-800">
-        {controls}
-        <div className="ml-auto flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-          <span
-            className="h-2 w-2 rounded-sm bg-emerald-500"
-            aria-hidden="true"
-          />
-          Excel workbook <span className="font-mono text-slate-400">.xlsx</span>
-        </div>
+      <div className="flex-1 border-y border-slate-100 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-950/30">
+        {controls || (
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            Uses the complete selected event scope.
+          </p>
+        )}
       </div>
 
-      <div className="px-5 pb-5 pt-4 sm:px-6 xl:p-5">
-        <Button
-          variant="contained"
-          disableElevation
+      <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          Excel workbook <span className="font-mono">.xlsx</span>
+        </span>
+        <button
+          type="button"
           disabled={isExporting || disabled}
           onClick={onExport}
-          startIcon={
-            isExporting ? (
-              <CircularProgress size={14} color="inherit" />
-            ) : (
-              <FileDownloadOutlinedIcon />
-            )
-          }
-          sx={{
-            textTransform: "none",
-            fontWeight: 700,
-            borderRadius: "10px",
-            boxShadow: "none",
-            whiteSpace: "nowrap",
-            minWidth: 130,
-            height: 38,
-            width: { xs: "100%", xl: "auto" },
-          }}
+          className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"
         >
-          {isExporting ? "Preparing Excel..." : exportText}
-        </Button>
+          <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />
+          {isExporting ? "Preparing" : "Export and download"}
+        </button>
       </div>
     </article>
   );

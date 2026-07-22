@@ -1,48 +1,118 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import Button from "@mui/material/Button";
-import Alert from "@mui/material/Alert";
-import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Switch from "@mui/material/Switch";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
+import { useNavigate, useParams } from "react-router-dom";
 import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import InputLabel from "@mui/material/InputLabel";
-import CircularProgress from "@mui/material/CircularProgress";
+import MenuItem from "@mui/material/MenuItem";
+import Pagination from "@mui/material/Pagination";
+import Select from "@mui/material/Select";
+import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
-import Pagination from "@mui/material/Pagination";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 
-import { ExportReportCard } from "../components/ExportReportCard";
-import { ExportJobTable } from "../components/ExportJobTable";
+import { AdminOperationsHeader } from "@/features/admin/components/AdminOperationsHeader";
 import {
-  useExportJobsQuery,
-  useCreateRankingExport,
-  useCreateScoresExport,
-  useCreateTeamListExport,
-  useCreateGenericExport,
-  useDownloadExport,
-  useRetryExport,
-  useDeleteExport,
-} from "../hooks/useExports";
+  menuPropsAll,
+  paginationSx,
+  selectSx,
+  textFieldSx,
+} from "@/features/admin/schemas/admin.schema";
+import { useAuthStore } from "@/stores/authStore";
+import { getPrimaryRole } from "@/utils/roleRedirect";
+import type { UUID } from "@/types/common.types";
 import type {
   EventExportRequest,
   ExportJobResponse,
 } from "@/types/export.types";
-import type { UUID } from "@/types/common.types";
 import type { TrackResponse } from "@/types/track.types";
 import {
   useCoordinatorEventDetailQuery,
+  useCoordinatorEventRoundsQuery,
   useCoordinatorEventsQuery,
   useCoordinatorEventTracksQuery,
-  useCoordinatorEventRoundsQuery,
 } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
-import { useAuthStore } from "@/stores/authStore";
-import { getPrimaryRole } from "@/utils/roleRedirect";
+import { ExportJobTable } from "../components/ExportJobTable";
+import { ExportReportCard } from "../components/ExportReportCard";
+import {
+  useCreateGenericExport,
+  useCreateRankingExport,
+  useCreateScoresExport,
+  useCreateTeamListExport,
+  useDeleteExport,
+  useDownloadExport,
+  useExportJobsQuery,
+  useRetryExport,
+} from "../hooks/useExports";
+
+type SelectOption = { id: string; name: string };
+
+function ScopeSelect({
+  label,
+  allLabel,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  allLabel: string;
+  value: string;
+  options: SelectOption[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <FormControl size="small" sx={{ minWidth: 150 }}>
+      <InputLabel>{label}</InputLabel>
+      <Select
+        label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        sx={selectSx}
+        MenuProps={menuPropsAll}
+      >
+        <MenuItem value="">{allLabel}</MenuItem>
+        {options.map((option) => (
+          <MenuItem key={option.id} value={option.id}>
+            {option.name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
+
+function ExportSwitch({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <FormControlLabel
+      control={
+        <Switch
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          size="small"
+        />
+      }
+      label={
+        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+          {label}
+        </span>
+      }
+      sx={{ m: 0 }}
+    />
+  );
+}
 
 export const ExportJobListPage = () => {
   const navigate = useNavigate();
@@ -50,12 +120,13 @@ export const ExportJobListPage = () => {
   const user = useAuthStore((state) => state.user);
   const isAdmin = getPrimaryRole(user) === "ADMIN";
   const [page, setPage] = useState(0);
+  const [manualEventId, setManualEventId] = useState("");
+  const activeEventId = eventId || manualEventId;
 
   const eventQuery = useCoordinatorEventDetailQuery(
     eventId as UUID | undefined,
   );
   const eventName = eventQuery.data?.name;
-
   const {
     data: eventsData,
     isLoading: isLoadingEvents,
@@ -68,6 +139,7 @@ export const ExportJobListPage = () => {
   const {
     data: jobsData,
     isLoading,
+    isFetching,
     isError: isJobsError,
     refetch,
   } = useExportJobsQuery({ page, size: 10 });
@@ -88,9 +160,6 @@ export const ExportJobListPage = () => {
   const { mutate: retryExport } = useRetryExport();
   const { mutate: deleteExport } = useDeleteExport();
 
-  const [manualEventId, setManualEventId] = useState<string>("");
-  const activeEventId = eventId || manualEventId;
-
   const tracksQuery = useCoordinatorEventTracksQuery(
     activeEventId as UUID | undefined,
   );
@@ -103,27 +172,22 @@ export const ExportJobListPage = () => {
   const rounds = roundsQuery.data || [];
 
   const [rankingDisqualified, setRankingDisqualified] = useState(false);
-  const [rankingTrackId, setRankingTrackId] = useState<string>("");
-  const [rankingRoundId, setRankingRoundId] = useState<string>("");
-
+  const [rankingTrackId, setRankingTrackId] = useState("");
+  const [rankingRoundId, setRankingRoundId] = useState("");
   const [scoreDrafts, setScoreDrafts] = useState(false);
   const [scoreAnonymize, setScoreAnonymize] = useState(true);
   const [scoreDisqualified, setScoreDisqualified] = useState(false);
-  const [scoreTrackId, setScoreTrackId] = useState<string>("");
-  const [scoreRoundId, setScoreRoundId] = useState<string>("");
-
-  const [teamTrackId, setTeamTrackId] = useState<string>("");
-
-  const [annualYear, setAnnualYear] = useState<string>(
+  const [scoreTrackId, setScoreTrackId] = useState("");
+  const [scoreRoundId, setScoreRoundId] = useState("");
+  const [teamTrackId, setTeamTrackId] = useState("");
+  const [annualYear, setAnnualYear] = useState(
     String(new Date().getFullYear()),
   );
-  const [annualSeason, setAnnualSeason] = useState<string>("");
+  const [annualSeason, setAnnualSeason] = useState("");
 
   const downloadCreatedExport = (job: ExportJobResponse) => {
     setPage(0);
-    if (job.status === "DONE") {
-      downloadExport(job.id);
-    }
+    if (job.status === "DONE") downloadExport(job.id);
   };
 
   const handleCreateRanking = () => {
@@ -173,10 +237,7 @@ export const ExportJobListPage = () => {
     createFullEventExport(
       {
         exportType: "FULL_EVENT_REPORT",
-        params: {
-          eventId: activeEventId as UUID,
-          format: "XLSX",
-        },
+        params: { eventId: activeEventId as UUID, format: "XLSX" },
       },
       { onSuccess: downloadCreatedExport },
     );
@@ -187,10 +248,7 @@ export const ExportJobListPage = () => {
     createCalibrationExport(
       {
         exportType: "CALIBRATION_REPORT",
-        params: {
-          eventId: activeEventId as UUID,
-          format: "XLSX",
-        },
+        params: { eventId: activeEventId as UUID, format: "XLSX" },
       },
       { onSuccess: downloadCreatedExport },
     );
@@ -212,212 +270,244 @@ export const ExportJobListPage = () => {
   };
 
   const jobs = jobsData?.content || [];
+  const totalJobs = jobsData?.totalElements ?? jobs.length;
   const totalPages = jobsData?.totalPages || 0;
+  const readyJobs = jobs.filter((job) => job.status === "DONE").length;
+  const activeJobs = jobs.filter(
+    (job) => job.status === "QUEUED" || job.status === "PROCESSING",
+  ).length;
+  const failedJobs = jobs.filter((job) => job.status === "FAILED").length;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 p-4">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          {eventId && (
-            <Button
-              startIcon={<ArrowBackOutlinedIcon />}
-              onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
-              sx={{
-                mb: 2,
-                textTransform: "none",
-                fontWeight: 800,
-                color: "text.secondary",
-              }}
-            >
-              Back to Event Edit
-            </Button>
-          )}
-          <h1 className="text-3xl font-black text-slate-950 dark:text-white flex items-center gap-3">
-            Export reports
-            {eventName && (
-              <>
-                <span className="text-slate-300 dark:text-slate-600 font-light">
-                  |
-                </span>
-                <span className="text-blue-600 dark:text-blue-400 text-xl font-bold bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-lg">
-                  {eventName}
-                </span>
-              </>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <AdminOperationsHeader
+        eyebrow={isAdmin ? "Administration Workspace" : "Coordinator Workspace"}
+        title="Report"
+        accentTitle="Exports"
+        description={
+          eventName
+            ? `Create and manage Excel workbooks for ${eventName}.`
+            : "Create event workbooks and manage previous export jobs from one workspace."
+        }
+        icon={<FileDownloadOutlinedIcon sx={{ fontSize: 34 }} />}
+        actions={
+          <>
+            {eventId && (
+              <button
+                type="button"
+                onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
+                className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/40 bg-white/10 px-4 text-sm font-bold text-white transition-colors hover:border-white hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:scale-[0.98] motion-reduce:active:scale-100"
+              >
+                <ArrowBackOutlinedIcon sx={{ fontSize: 18 }} />
+                Event setup
+              </button>
             )}
-          </h1>
-          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
-            Create polished Excel workbooks. Each report downloads immediately
-            and stays available in Recent exports.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <Button
-            variant="outlined"
-            color="inherit"
-            startIcon={<RefreshOutlinedIcon />}
-            onClick={() => refetch()}
-            sx={{
-              borderRadius: "10px",
-              fontWeight: 700,
-              textTransform: "none",
-            }}
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-bold text-slate-900 shadow-lg transition-transform hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none motion-reduce:active:scale-100"
+            >
+              <RefreshOutlinedIcon sx={{ fontSize: 18 }} />
+              {isFetching ? "Refreshing" : "Refresh"}
+            </button>
+          </>
+        }
+      />
+
+      <section className="grid overflow-hidden rounded-3xl border border-slate-200 bg-white sm:grid-cols-4 dark:border-slate-800 dark:bg-slate-900">
+        {[
+          ["Total jobs", totalJobs],
+          ["Ready on page", readyJobs],
+          ["In progress", activeJobs],
+          ["Failed on page", failedJobs],
+        ].map(([label, value], index) => (
+          <div
+            key={label}
+            className={`px-5 py-4 ${index ? "border-t border-slate-200 sm:border-t-0 sm:border-l dark:border-slate-800" : ""}`}
           >
-            Refresh
-          </Button>
-        </div>
-      </header>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {label}
+            </p>
+            <p className="mt-1 text-2xl font-black text-slate-950 tabular-nums dark:text-white">
+              {isLoading ? "-" : value}
+            </p>
+          </div>
+        ))}
+      </section>
 
       {isJobsError && (
-        <Alert
-          severity="error"
-          action={
-            <Button color="inherit" size="small" onClick={() => void refetch()}>
-              Retry
-            </Button>
-          }
-        >
-          Export jobs could not be loaded. Your existing exports are unchanged.
-        </Alert>
+        <div className="flex flex-col gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700 sm:flex-row sm:items-center sm:justify-between dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+          <span>
+            Export jobs could not be loaded. Existing exports are unchanged.
+          </span>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="cursor-pointer font-black underline underline-offset-4"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {eventId && eventQuery.isError && (
-        <Alert severity="warning">
-          The selected event could not be loaded. Return to Events and check
-          that it still exists.
-        </Alert>
-      )}
-
-      {!eventId && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <p className="mb-1 text-sm font-bold text-blue-900 dark:text-blue-100">
-            {isAdmin ? "All-event export workspace" : "Choose an event"}
-          </p>
-          <p className="mb-4 text-xs font-medium text-blue-700 dark:text-blue-300">
-            {isAdmin
-              ? "You are viewing export jobs across all events. Select an event to create a report."
-              : "Select the event you manage to create a report. You can still review existing jobs below."}
-          </p>
-          {isEventsError && (
-            <Alert
-              severity="warning"
-              sx={{ mb: 2 }}
-              action={
-                <Button
-                  color="inherit"
-                  size="small"
-                  onClick={() => void refetchEvents()}
-                >
-                  Retry
-                </Button>
-              }
-            >
-              Events could not be loaded. The export page remains available.
-            </Alert>
-          )}
-          <FormControl
-            size="small"
-            sx={{ width: 320, bgcolor: "background.paper", borderRadius: 2 }}
-          >
-            <InputLabel>Target Event</InputLabel>
-            <Select
-              label="Target Event"
-              value={manualEventId}
-              onChange={(e) => setManualEventId(e.target.value)}
-              disabled={isLoadingEvents || isEventsError}
-            >
-              {isLoadingEvents && (
-                <MenuItem value="" disabled>
-                  <CircularProgress size={16} sx={{ mr: 2 }} /> Loading
-                  events...
-                </MenuItem>
-              )}
-              {!isLoadingEvents && eventList.length === 0 && (
-                <MenuItem value="" disabled>
-                  No events found
-                </MenuItem>
-              )}
-              {eventList.map((event) => (
-                <MenuItem key={event.id} value={event.id}>
-                  {event.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          The selected event could not be loaded. Return to Events and confirm
+          it still exists.
         </div>
       )}
 
+      {!eventId && (
+        <section className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-5 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+              <TuneOutlinedIcon sx={{ fontSize: 21 }} />
+            </span>
+            <div>
+              <h2 className="font-black text-slate-950 dark:text-white">
+                {isAdmin ? "Event export scope" : "Choose an event"}
+              </h2>
+              <p className="mt-1 max-w-xl text-sm text-slate-500 dark:text-slate-400">
+                Select an event to enable event reports. Existing jobs remain
+                available below.
+              </p>
+            </div>
+          </div>
+          <div className="w-full lg:w-auto">
+            {isEventsError ? (
+              <button
+                type="button"
+                onClick={() => refetchEvents()}
+                className="inline-flex h-10 cursor-pointer items-center rounded-lg border border-amber-300 px-4 text-sm font-bold text-amber-700 hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:border-amber-500/50 dark:text-amber-300 dark:hover:bg-amber-500/10"
+              >
+                Retry event loading
+              </button>
+            ) : (
+              <FormControl size="small" className="w-full lg:w-80">
+                <InputLabel>Target event</InputLabel>
+                <Select
+                  label="Target event"
+                  value={manualEventId}
+                  onChange={(event) => setManualEventId(event.target.value)}
+                  disabled={isLoadingEvents}
+                  sx={selectSx}
+                  MenuProps={menuPropsAll}
+                >
+                  {isLoadingEvents && (
+                    <MenuItem value="" disabled>
+                      Loading events
+                    </MenuItem>
+                  )}
+                  {!isLoadingEvents && eventList.length === 0 && (
+                    <MenuItem value="" disabled>
+                      No events found
+                    </MenuItem>
+                  )}
+                  {eventList.map((event) => (
+                    <MenuItem key={event.id} value={event.id}>
+                      {event.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </div>
+        </section>
+      )}
+
       {activeEventId && (tracksQuery.isError || roundsQuery.isError) && (
-        <Alert severity="warning">
-          Some event filters could not be loaded. You can retry by reselecting
-          the event or export without a track/round filter.
-        </Alert>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          Some event filters could not be loaded. You can export without a track
+          or round filter.
+        </div>
       )}
 
       <section>
-        <h2 className="mb-4 text-base font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          Create an Excel report
-        </h2>
-        <div className="flex flex-col gap-3">
+        <div className="mb-4">
+          <h2 className="text-xl font-black text-slate-950 dark:text-white">
+            Create a report
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Reports are saved to export history and downloaded when processing
+            completes.
+          </p>
+        </div>
+        <div className="grid gap-4 xl:grid-cols-2">
           <ExportReportCard
-            title="Ranking Report"
-            description="Export final ranking rows with score, rank, advancement & publish state."
+            title="Ranking report"
+            description="Final ranking rows with score, rank, advancement and publish state."
             icon={<WorkspacePremiumOutlinedIcon fontSize="small" />}
-            iconBgClass="bg-amber-100 dark:bg-amber-900/40"
-            iconColorClass="text-amber-600 dark:text-amber-400"
             onExport={handleCreateRanking}
             isExporting={isRankingPending}
             disabled={!activeEventId || isDownloading}
             controls={
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap items-center gap-4">
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Track</InputLabel>
-                    <Select
-                      label="Track"
-                      value={rankingTrackId}
-                      onChange={(e) => setRankingTrackId(e.target.value)}
-                    >
-                      <MenuItem value="">All Tracks</MenuItem>
-                      {tracks.map((track) => (
-                        <MenuItem key={track.id} value={track.id}>
-                          {track.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Round</InputLabel>
-                    <Select
-                      label="Round"
-                      value={rankingRoundId}
-                      onChange={(e) => setRankingRoundId(e.target.value)}
-                    >
-                      <MenuItem value="">All Rounds</MenuItem>
-                      {rounds.map((round) => (
-                        <MenuItem key={round.id} value={round.id}>
-                          {round.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-3">
+                  <ScopeSelect
+                    label="Track"
+                    allLabel="All tracks"
+                    value={rankingTrackId}
+                    options={tracks}
+                    onChange={setRankingTrackId}
+                  />
+                  <ScopeSelect
+                    label="Round"
+                    allLabel="All rounds"
+                    value={rankingRoundId}
+                    options={rounds}
+                    onChange={setRankingRoundId}
+                  />
                 </div>
-                <div className="flex items-center gap-4">
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={rankingDisqualified}
-                        onChange={(e) =>
-                          setRankingDisqualified(e.target.checked)
-                        }
-                        size="small"
-                      />
-                    }
-                    label={
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                        Disqualified
-                      </span>
-                    }
-                    sx={{ m: 0 }}
+                <ExportSwitch
+                  label="Include disqualified teams"
+                  checked={rankingDisqualified}
+                  onChange={setRankingDisqualified}
+                />
+              </div>
+            }
+          />
+
+          <ExportReportCard
+            title="Score report"
+            description="Score rows by judge, submission and criterion for internal review."
+            icon={<AssessmentOutlinedIcon fontSize="small" />}
+            onExport={handleCreateScore}
+            isExporting={isScorePending}
+            disabled={!activeEventId || isDownloading}
+            controls={
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-3">
+                  <ScopeSelect
+                    label="Track"
+                    allLabel="All tracks"
+                    value={scoreTrackId}
+                    options={tracks}
+                    onChange={setScoreTrackId}
+                  />
+                  <ScopeSelect
+                    label="Round"
+                    allLabel="All rounds"
+                    value={scoreRoundId}
+                    options={rounds}
+                    onChange={setScoreRoundId}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <ExportSwitch
+                    label="Include draft scores"
+                    checked={scoreDrafts}
+                    onChange={setScoreDrafts}
+                  />
+                  <ExportSwitch
+                    label="Include disqualified teams"
+                    checked={scoreDisqualified}
+                    onChange={setScoreDisqualified}
+                  />
+                  <ExportSwitch
+                    label="Anonymize judges"
+                    checked={scoreAnonymize}
+                    onChange={setScoreAnonymize}
                   />
                 </div>
               </div>
@@ -425,152 +515,36 @@ export const ExportJobListPage = () => {
           />
 
           <ExportReportCard
-            title="Score Report"
-            description="Export score rows per judge, submission and criterion for internal review."
-            icon={<AssessmentOutlinedIcon fontSize="small" />}
-            iconBgClass="bg-blue-100 dark:bg-blue-900/40"
-            iconColorClass="text-blue-600 dark:text-blue-400"
-            onExport={handleCreateScore}
-            isExporting={isScorePending}
-            disabled={!activeEventId || isDownloading}
-            controls={
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap items-center gap-4">
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Track</InputLabel>
-                    <Select
-                      label="Track"
-                      value={scoreTrackId}
-                      onChange={(e) => setScoreTrackId(e.target.value)}
-                    >
-                      <MenuItem value="">All Tracks</MenuItem>
-                      {tracks.map((track) => (
-                        <MenuItem key={track.id} value={track.id}>
-                          {track.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Round</InputLabel>
-                    <Select
-                      label="Round"
-                      value={scoreRoundId}
-                      onChange={(e) => setScoreRoundId(e.target.value)}
-                    >
-                      <MenuItem value="">All Rounds</MenuItem>
-                      {rounds.map((round) => (
-                        <MenuItem key={round.id} value={round.id}>
-                          {round.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col gap-1">
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={scoreDrafts}
-                          onChange={(e) => setScoreDrafts(e.target.checked)}
-                          size="small"
-                        />
-                      }
-                      label={
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                          Draft Scores
-                        </span>
-                      }
-                      sx={{ m: 0 }}
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={scoreDisqualified}
-                          onChange={(e) =>
-                            setScoreDisqualified(e.target.checked)
-                          }
-                          size="small"
-                        />
-                      }
-                      label={
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                          Disqualified
-                        </span>
-                      }
-                      sx={{ m: 0 }}
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={scoreAnonymize}
-                          onChange={(e) => setScoreAnonymize(e.target.checked)}
-                          size="small"
-                        />
-                      }
-                      label={
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                          Anonymize
-                        </span>
-                      }
-                      sx={{ m: 0 }}
-                    />
-                  </div>
-                </div>
-              </div>
-            }
-          />
-
-          <ExportReportCard
-            title="Team List Report"
-            description="Export teams, tracks, leaders, member counts and registration status."
+            title="Team list report"
+            description="Teams, tracks, leaders, member counts and registration status."
             icon={<GroupsOutlinedIcon fontSize="small" />}
-            iconBgClass="bg-emerald-100 dark:bg-emerald-900/40"
-            iconColorClass="text-emerald-600 dark:text-emerald-400"
             onExport={handleCreateTeam}
             isExporting={isTeamPending}
             disabled={!activeEventId || isDownloading}
             controls={
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap items-center gap-4">
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Track</InputLabel>
-                    <Select
-                      label="Track"
-                      value={teamTrackId}
-                      onChange={(e) => setTeamTrackId(e.target.value)}
-                    >
-                      <MenuItem value="">All Tracks</MenuItem>
-                      {tracks.map((track) => (
-                        <MenuItem key={track.id} value={track.id}>
-                          {track.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </div>
-              </div>
+              <ScopeSelect
+                label="Track"
+                allLabel="All tracks"
+                value={teamTrackId}
+                options={tracks}
+                onChange={setTeamTrackId}
+              />
             }
           />
 
           <ExportReportCard
-            title="Full Event Report"
-            description="Export event setup, teams, rankings, scores, calibration summary and ICC estimate."
+            title="Full event report"
+            description="Event setup, teams, rankings, scores, calibration summary and ICC estimate."
             icon={<AssessmentOutlinedIcon fontSize="small" />}
-            iconBgClass="bg-purple-100 dark:bg-purple-900/40"
-            iconColorClass="text-purple-600 dark:text-purple-400"
             onExport={handleCreateFullEvent}
             isExporting={isFullEventPending}
             disabled={!activeEventId || isDownloading}
           />
 
           <ExportReportCard
-            title="Calibration Report"
-            description="Export calibration rounds, benchmark coverage, score counts and benchmark deviation summary."
+            title="Calibration report"
+            description="Calibration rounds, benchmark coverage, score counts and deviation summary."
             icon={<WorkspacePremiumOutlinedIcon fontSize="small" />}
-            iconBgClass="bg-cyan-100 dark:bg-cyan-900/40"
-            iconColorClass="text-cyan-600 dark:text-cyan-400"
             onExport={handleCreateCalibration}
             isExporting={isCalibrationPending}
             disabled={!activeEventId || isDownloading}
@@ -578,32 +552,32 @@ export const ExportJobListPage = () => {
 
           {isAdmin && (
             <ExportReportCard
-              title="Admin Annual/System Report"
-              description="Generate cross-event annual or seasonal participation, audit and ICC summary reports."
+              title="Annual system report"
+              description="Cross-event annual or seasonal participation, audit and ICC summaries."
               icon={<AssessmentOutlinedIcon fontSize="small" />}
-              iconBgClass="bg-rose-100 dark:bg-rose-900/40"
-              iconColorClass="text-rose-600 dark:text-rose-400"
               onExport={handleCreateAnnual}
               isExporting={isAnnualPending}
               disabled={isDownloading}
               controls={
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap gap-3">
                   <TextField
                     size="small"
                     label="Year"
                     type="number"
                     value={annualYear}
-                    onChange={(e) => setAnnualYear(e.target.value)}
-                    sx={{ width: 120 }}
+                    onChange={(event) => setAnnualYear(event.target.value)}
+                    sx={{ width: 130, ...textFieldSx }}
                   />
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <FormControl size="small" sx={{ minWidth: 150 }}>
                     <InputLabel>Season</InputLabel>
                     <Select
                       label="Season"
                       value={annualSeason}
-                      onChange={(e) => setAnnualSeason(e.target.value)}
+                      onChange={(event) => setAnnualSeason(event.target.value)}
+                      sx={selectSx}
+                      MenuProps={menuPropsAll}
                     >
-                      <MenuItem value="">All Seasons</MenuItem>
+                      <MenuItem value="">All seasons</MenuItem>
                       <MenuItem value="SPRING">Spring</MenuItem>
                       <MenuItem value="SUMMER">Summer</MenuItem>
                       <MenuItem value="FALL">Fall</MenuItem>
@@ -617,13 +591,19 @@ export const ExportJobListPage = () => {
       </section>
 
       <section>
-        <h2 className="mb-4 text-base font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          Recent exports
-        </h2>
-        <p className="mb-4 text-sm font-medium text-slate-500 dark:text-slate-400">
-          Every generated workbook is saved here for an optional re-download
-          until it expires.
-        </p>
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-black text-slate-950 dark:text-white">
+              Recent exports
+            </h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Download completed workbooks again until their expiration date.
+            </p>
+          </div>
+          <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 tabular-nums dark:bg-slate-800 dark:text-slate-300">
+            {totalJobs} jobs
+          </span>
+        </div>
         <ExportJobTable
           jobs={jobs}
           isLoading={isLoading}
@@ -633,15 +613,15 @@ export const ExportJobListPage = () => {
           isDownloading={isDownloading}
         />
         {totalPages > 1 && (
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex justify-end">
             <Pagination
               count={totalPages}
               page={page + 1}
-              onChange={(_, p) => setPage(p - 1)}
+              onChange={(_, nextPage) => setPage(nextPage - 1)}
               size="small"
               shape="rounded"
               variant="outlined"
-              color="primary"
+              sx={paginationSx}
             />
           </div>
         )}
