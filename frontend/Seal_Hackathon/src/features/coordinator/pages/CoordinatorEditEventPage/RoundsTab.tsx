@@ -52,6 +52,7 @@ import {
   editFieldSx,
 } from "./editEventUi";
 import { TabShell } from "./TabShell";
+import "./roundsTab.css";
 
 type EditableRound = RoundResponse & {
   id: UUID;
@@ -133,6 +134,67 @@ function formatRoundTime(value?: string | null) {
   if (!value) return "Not configured";
   return value.replace("T", " ").slice(0, 16);
 }
+
+/**
+ * Lifecycle phase of a round, used to drive the pure-CSS motion treatment.
+ * A round is "live" when its status says so, or (as a fallback) when the
+ * current time sits inside its start/end window.
+ */
+type RoundPhase = "live" | "upcoming" | "completed" | "unscheduled";
+
+const LIVE_ROUND_STATUSES = ["OPEN", "ONGOING", "IN_PROGRESS", "ACTIVE"];
+const DONE_ROUND_STATUSES = [
+  "CLOSED",
+  "COMPLETED",
+  "FINISHED",
+  "DONE",
+  "ARCHIVED",
+];
+
+function getRoundPhase(round: RoundResponse, now: Date): RoundPhase {
+  const status = (round.status ?? "").toUpperCase();
+  if (LIVE_ROUND_STATUSES.includes(status)) return "live";
+  if (DONE_ROUND_STATUSES.includes(status)) return "completed";
+
+  const raw = round as EditableRound;
+  const start = raw.startAt ? new Date(raw.startAt) : null;
+  const end = raw.endAt ? new Date(raw.endAt) : null;
+
+  if (!start || !end) return "unscheduled";
+  if (now < start) return "upcoming";
+  if (now > end) return "completed";
+  return "live";
+}
+
+const ROUND_PHASE_META: Record<
+  RoundPhase,
+  { label: string; chipClass: string; dotClass: string }
+> = {
+  live: {
+    label: "Live now",
+    chipClass:
+      "border-violet-400/60 bg-violet-50 text-violet-700 dark:border-violet-400/40 dark:bg-violet-500/15 dark:text-violet-300",
+    dotClass: "bg-violet-500",
+  },
+  upcoming: {
+    label: "Upcoming",
+    chipClass:
+      "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-300",
+    dotClass: "bg-sky-400",
+  },
+  completed: {
+    label: "Completed",
+    chipClass:
+      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-300",
+    dotClass: "bg-emerald-500",
+  },
+  unscheduled: {
+    label: "Not scheduled",
+    chipClass:
+      "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400",
+    dotClass: "bg-slate-400",
+  },
+};
 
 function createRoundForm(round: RoundResponse): RoundForm {
   const raw = round as EditableRound;
@@ -907,9 +969,18 @@ export function RoundsTab({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRound, setNewRound] = useState<RoundForm>(emptyRound);
   const [editing, setEditing] = useState<Record<string, RoundForm>>({});
+  const [selectedRoundId, setSelectedRoundId] = useState<UUID | null>(null);
   const createRoundMutation = useCreateRoundMutation(eventId);
   const updateRoundMutation = useUpdateRoundMutation(eventId);
   const deleteRoundMutation = useDeleteRoundMutation(eventId);
+  const now = new Date();
+
+  // Focused round for the big 3:1 frame — user selection first, then the
+  // live round, then the first round.
+  const liveRound = rounds.find((r) => getRoundPhase(r, now) === "live");
+  const selectedRound =
+    rounds.find((r) => getId(r) === selectedRoundId) ?? liveRound ?? rounds[0];
+  const selectedIndex = selectedRound ? rounds.indexOf(selectedRound) : -1;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -1061,7 +1132,7 @@ export function RoundsTab({
           </button>
         ) : undefined
       }
-      bodyClassName="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]"
+      bodyClassName="space-y-8 px-7 py-6"
     >
       <div className="space-y-5">
         {!canEdit && readonlyReason && (
@@ -1210,20 +1281,38 @@ export function RoundsTab({
           </div>
         )}
 
-        {rounds.map((round, index) => {
-          const id = getId(round);
-          const values = editing[id] ?? createRoundForm(round);
-          const isFinalRound =
-            rounds.length > 0 && index === rounds.length - 1;
+        {/* Big 3:1 frame — left (3): full detail of the focused round with the
+            live motion treatment; right (1): compact list of every round. */}
+        {!isLoading && selectedRound && (
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(240px,1fr)]">
+            {(() => {
+              const round = selectedRound;
+              const index = selectedIndex;
+              const id = getId(round);
+              const values = editing[id] ?? createRoundForm(round);
+              const isFinalRound = index === rounds.length - 1;
+              const phase = getRoundPhase(round, now);
+              const isLive = phase === "live";
+              const phaseMeta = ROUND_PHASE_META[phase];
 
-          return (
+              return (
             <div
               key={id}
-              className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 dark:border-slate-700 dark:bg-slate-800/30"
+              className={
+                isLive
+                  ? "seal-round-live rounded-2xl border border-transparent bg-violet-50/40 p-6 dark:bg-slate-900/80"
+                  : phase === "completed"
+                    ? "rounded-2xl border border-slate-200 bg-slate-50/70 p-6 opacity-80 dark:border-slate-700 dark:bg-slate-800/20"
+                    : "rounded-2xl border border-slate-200 bg-slate-50/50 p-6 dark:border-slate-700 dark:bg-slate-800/30"
+              }
             >
               <div className="mb-5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-sm font-black text-white shadow-md shadow-violet-500/25">
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-sm font-black text-white shadow-md shadow-violet-500/25 ${
+                      isLive ? "seal-round-live-badge" : ""
+                    }`}
+                  >
                     {index + 1}
                   </span>
                   <div>
@@ -1237,6 +1326,16 @@ export function RoundsTab({
                           Final
                         </span>
                       )}
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${phaseMeta.chipClass}`}
+                      >
+                        <span
+                          className={`relative inline-flex h-1.5 w-1.5 rounded-full ${phaseMeta.dotClass} ${
+                            isLive ? "seal-live-dot" : ""
+                          }`}
+                        />
+                        {phaseMeta.label}
+                      </span>
                     </h3>
                     <p className="mt-0.5 text-xs font-semibold text-slate-400">
                       This round appears under every track.
@@ -1401,8 +1500,71 @@ export function RoundsTab({
                 canEdit={canEdit}
               />
             </div>
-          );
-        })}
+              );
+            })()}
+
+            {/* Right rail (1 part): every round of the event, click to focus. */}
+            <aside className="space-y-3">
+              <p className="px-1 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                All rounds · {rounds.length}
+              </p>
+
+              {rounds.map((r, i) => {
+                const rId = getId(r);
+                const rRaw = r as EditableRound;
+                const rPhase = getRoundPhase(r, now);
+                const rMeta = ROUND_PHASE_META[rPhase];
+                const isSelected = rId === getId(selectedRound);
+                const rIsLive = rPhase === "live";
+
+                return (
+                  <button
+                    key={rId}
+                    type="button"
+                    onClick={() => setSelectedRoundId(rId)}
+                    aria-pressed={isSelected}
+                    className={`w-full cursor-pointer rounded-xl border p-3.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 motion-reduce:transition-none ${
+                      isSelected
+                        ? "border-violet-400 bg-violet-50/70 shadow-md shadow-violet-500/10 dark:border-violet-500/60 dark:bg-violet-500/10"
+                        : "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-violet-500/40 dark:hover:bg-violet-500/5"
+                    } ${rIsLive ? "seal-preview-live" : ""}`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
+                          isSelected || rIsLive
+                            ? "bg-linear-to-br from-violet-500 to-indigo-400 text-white shadow-sm shadow-violet-500/25"
+                            : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                        }`}
+                      >
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-slate-900 dark:text-white">
+                          {getName(r)}
+                        </p>
+                        <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-400">
+                          {formatRoundTime(rRaw.startAt)} →{" "}
+                          {formatRoundTime(rRaw.endAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`mt-2.5 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${rMeta.chipClass}`}
+                    >
+                      <span
+                        className={`relative inline-flex h-1.5 w-1.5 rounded-full ${rMeta.dotClass} ${
+                          rIsLive ? "seal-live-dot" : ""
+                        }`}
+                      />
+                      {rMeta.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </aside>
+          </div>
+        )}
 
         {!isLoading && rounds.length === 0 && (
           <div className="rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center dark:border-slate-700">
@@ -1419,8 +1581,9 @@ export function RoundsTab({
         )}
       </div>
 
-      <aside className="h-fit rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 dark:border-slate-700 dark:bg-slate-900/20">
-        <div className="mb-4">
+      {/* Track-round preview — moved below the rounds list as a full-width panel. */}
+      <section className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-6 dark:border-slate-700 dark:bg-slate-900/20">
+        <div className="mb-5">
           <h3 className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-white shadow-md shadow-violet-500/25">
               <CalendarTodayOutlinedIcon sx={{ fontSize: 16 }} />
@@ -1444,7 +1607,7 @@ export function RoundsTab({
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {tracks.map((track) => (
             <div
               key={getId(track)}
@@ -1458,17 +1621,31 @@ export function RoundsTab({
               <div className="mt-3 space-y-2">
                 {rounds.map((round, index) => {
                   const raw = round as EditableRound;
+                  const phase = getRoundPhase(round, now);
+                  const isLive = phase === "live";
 
                   return (
                     <div
                       key={`${getId(track)}-${getId(round)}`}
-                      className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60"
+                      className={
+                        isLive
+                          ? "seal-preview-live rounded-lg bg-violet-50/70 p-3 dark:bg-violet-500/10"
+                          : "rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60"
+                      }
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
+                          {isLive && (
+                            <span className="seal-live-dot relative inline-flex h-2 w-2 shrink-0 rounded-full bg-violet-500" />
+                          )}
                           <p className="font-bold text-slate-800 dark:text-slate-200">
                             {getName(round) || `Round ${index + 1}`}
                           </p>
+                          {isLive && (
+                            <span className="rounded-full border border-violet-300/70 bg-violet-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-700 dark:border-violet-400/40 dark:bg-violet-500/15 dark:text-violet-300">
+                              Live
+                            </span>
+                          )}
                           {rounds.length > 0 &&
                             index === rounds.length - 1 && (
                               <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
@@ -1494,7 +1671,7 @@ export function RoundsTab({
             </div>
           ))}
         </div>
-      </aside>
+      </section>
     </TabShell>
   );
 }
