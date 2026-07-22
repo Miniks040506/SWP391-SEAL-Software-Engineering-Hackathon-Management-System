@@ -1,42 +1,57 @@
-import { Card, CardContent, Skeleton } from "@mui/material";
+import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import SupervisorAccountOutlinedIcon from "@mui/icons-material/SupervisorAccountOutlined";
+import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
+import { Skeleton } from "@mui/material";
+import type { ReactNode } from "react";
 import type { AdminUserStats } from "@/types/user.types";
 
 function RoleCard({
   title,
   count,
   subtitle,
-  colorClass,
+  icon,
+  accent,
+  iconWrap,
   isLoading,
 }: {
   title: string;
   count: number;
   subtitle: string;
-  colorClass: string;
+  icon: ReactNode;
+  accent: string;
+  iconWrap: string;
   isLoading?: boolean;
 }) {
   return (
-    <Card
-      variant="outlined"
-      className="border-slate-100 dark:border-slate-700 bg-white! dark:bg-slate-800! shadow-sm rounded-xl"
-    >
-      <CardContent className="p-5">
+    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
+      <div
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconWrap}`}
+      >
+        {icon}
+      </div>
+      <div className="min-w-0">
         <p
-          className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${colorClass}`}
+          className={`text-[11px] font-bold uppercase tracking-[0.12em] ${accent}`}
         >
           {title}
         </p>
         {isLoading ? (
-          <Skeleton variant="text" width={40} height={44} className="dark:bg-slate-600" />
+          <Skeleton
+            variant="text"
+            width={32}
+            height={32}
+            className="dark:bg-slate-700"
+          />
         ) : (
-          <h2 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100">
+          <p className="text-2xl font-black leading-tight text-slate-900 tabular-nums dark:text-white">
             {count}
-          </h2>
+          </p>
         )}
-        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-          {subtitle}
-        </p>
-      </CardContent>
-    </Card>
+        <p className="text-[11px] text-slate-400">{subtitle}</p>
+      </div>
+    </div>
   );
 }
 
@@ -48,54 +63,52 @@ export function DashboardRoleCards({
   isLoading?: boolean;
 }) {
   return (
-    <section>
-      <div className="mb-4">
-        <h2 className="text-xl font-extrabold text-gray-900 dark:text-slate-100">
-          Users by Role
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-slate-400">
-          {isLoading
-            ? "Distribution of users across the system."
-            : `Distribution of ${stats.totalCount} registered accounts across the system.`}
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-        <RoleCard
-          title="ADMINISTRATORS"
-          count={stats.adminCount}
-          subtitle="Active"
-          colorClass="text-red-600 dark:text-red-400"
-          isLoading={isLoading}
-        />
-        <RoleCard
-          title="STUDENTS"
-          count={stats.studentCount}
-          subtitle="Registered"
-          colorClass="text-green-600 dark:text-green-400"
-          isLoading={isLoading}
-        />
-        <RoleCard
-          title="MENTORS"
-          count={stats.mentorCount}
-          subtitle="Assigned"
-          colorClass="text-pink-600 dark:text-pink-400"
-          isLoading={isLoading}
-        />
-        <RoleCard
-          title="JUDGES"
-          count={stats.judgeCount}
-          subtitle="Invited"
-          colorClass="text-amber-600 dark:text-amber-400"
-          isLoading={isLoading}
-        />
-        <RoleCard
-          title="EVENT COORDINATORS"
-          count={stats.coordinatorCount}
-          subtitle="Assigned"
-          colorClass="text-indigo-600 dark:text-indigo-400"
-          isLoading={isLoading}
-        />
-      </div>
+    <section className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+      <RoleCard
+        title="Administrators"
+        count={stats.adminCount}
+        subtitle="Active"
+        icon={<AdminPanelSettingsOutlinedIcon className="text-rose-500" />}
+        iconWrap="bg-rose-50 dark:bg-rose-500/10"
+        accent="text-rose-600 dark:text-rose-400"
+        isLoading={isLoading}
+      />
+      <RoleCard
+        title="Students"
+        count={stats.studentCount}
+        subtitle="Registered"
+        icon={<SchoolOutlinedIcon className="text-emerald-500" />}
+        iconWrap="bg-emerald-50 dark:bg-emerald-500/10"
+        accent="text-emerald-600 dark:text-emerald-400"
+        isLoading={isLoading}
+      />
+      <RoleCard
+        title="Mentors"
+        count={stats.mentorCount}
+        subtitle="Assigned"
+        icon={<SupervisorAccountOutlinedIcon className="text-pink-500" />}
+        iconWrap="bg-pink-50 dark:bg-pink-500/10"
+        accent="text-pink-600 dark:text-pink-400"
+        isLoading={isLoading}
+      />
+      <RoleCard
+        title="Judges"
+        count={stats.judgeCount}
+        subtitle="Invited"
+        icon={<GavelOutlinedIcon className="text-amber-500" />}
+        iconWrap="bg-amber-50 dark:bg-amber-500/10"
+        accent="text-amber-600 dark:text-amber-400"
+        isLoading={isLoading}
+      />
+      <RoleCard
+        title="Coordinators"
+        count={stats.coordinatorCount}
+        subtitle="Assigned"
+        icon={<WorkspacePremiumOutlinedIcon className="text-violet-500" />}
+        iconWrap="bg-violet-50 dark:bg-violet-500/10"
+        accent="text-violet-600 dark:text-violet-400"
+        isLoading={isLoading}
+      />
     </section>
   );
 }

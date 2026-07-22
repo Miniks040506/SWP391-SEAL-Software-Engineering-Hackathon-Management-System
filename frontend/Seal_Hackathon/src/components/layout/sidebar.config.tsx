@@ -13,7 +13,6 @@ import HealthAndSafetyOutlinedIcon from "@mui/icons-material/HealthAndSafetyOutl
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
-import RuleOutlinedIcon from "@mui/icons-material/RuleOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
@@ -69,16 +68,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             label: "Users",
             path: "/admin/users",
             icon: <ManageAccountsOutlinedIcon fontSize="small" />,
-          },
-          {
-            label: "Roles",
-            path: "/admin/roles",
-            icon: <RuleOutlinedIcon fontSize="small" />,
-          },
-          {
-            label: "Permissions",
-            path: "/admin/permissions",
-            icon: <FactCheckOutlinedIcon fontSize="small" />,
           },
         ],
       },
