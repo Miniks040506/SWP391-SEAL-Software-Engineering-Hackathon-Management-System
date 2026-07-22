@@ -14,6 +14,10 @@ import { useNavigate } from "react-router-dom";
 
 import type { UUID } from "@/types/common.types";
 import type { EventSummaryResponse } from "@/types/event.types";
+import {
+  getEventFallbackBannerUrl,
+  getEventSeasonGradient,
+} from "@/utils/eventBanner";
 
 import {
   useCoordinatorEventsQuery,
@@ -188,18 +192,9 @@ function normalizeEvents(value: unknown): EventSummaryResponse[] {
   return [];
 }
 
-function seasonGradient(season: string) {
-  switch ((season ?? "").toUpperCase()) {
-    case "SPRING":
-      return "from-emerald-600 via-teal-500 to-cyan-500";
-    case "SUMMER":
-      return "from-amber-500 via-orange-500 to-rose-500";
-    case "FALL":
-      return "from-violet-600 via-indigo-600 to-blue-500";
-    default:
-      return "from-blue-600 via-sky-500 to-indigo-600";
-  }
-}
+// Shared with the edit + detail pages so a bannerless event shows the same
+// season colour everywhere. See utils/eventBanner.ts.
+const seasonGradient = getEventSeasonGradient;
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -313,6 +308,7 @@ function EventManagementCard({
 }) {
   const navigate = useNavigate();
   const [bannerFailed, setBannerFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
 
   const eventId = getEventId(event);
   const name = getEventName(event);
@@ -320,7 +316,16 @@ function EventManagementCard({
   const season = getEventSeason(event);
   const year = getEventYear(event);
   const bannerUrl = (event as EventCard).bannerUrl;
-  const showBanner = Boolean(bannerUrl) && !bannerFailed;
+  // Uploaded banner first, then the same seeded fallback photo as the public
+  // pages (see utils/eventBanner.ts). The gradient base below stays as the
+  // final fallback if both images fail to load.
+  const bannerSrc =
+    bannerUrl && !bannerFailed
+      ? bannerUrl
+      : eventId
+        ? getEventFallbackBannerUrl(eventId, 840, 360)
+        : null;
+  const showBanner = Boolean(bannerSrc) && !fallbackFailed;
 
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/50 dark:hover:shadow-blue-500/10">
@@ -348,10 +353,14 @@ function EventManagementCard({
 
         {showBanner && (
           <img
-            src={bannerUrl as string}
+            src={bannerSrc as string}
             alt=""
             loading="lazy"
-            onError={() => setBannerFailed(true)}
+            onError={() =>
+              bannerSrc === bannerUrl
+                ? setBannerFailed(true)
+                : setFallbackFailed(true)
+            }
             className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         )}

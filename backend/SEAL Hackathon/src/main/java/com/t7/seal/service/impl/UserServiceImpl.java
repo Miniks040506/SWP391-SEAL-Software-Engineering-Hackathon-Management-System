@@ -42,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -352,7 +353,7 @@ public class UserServiceImpl implements UserService {
         user.setEmail(email);
         user.setFullName(request.fullName().trim());
         user.setRole(UserRole.JUDGE);
-        
+
         user.setStatus(UserStatus.ACTIVE);
         user.setEmailVerifiedAt(LocalDateTime.now());
         user.setPasswordHash(passwordEncoder.encode(temporaryPassword));
@@ -621,14 +622,53 @@ public class UserServiceImpl implements UserService {
 
     private Object resolveRoleProfile(User user) {
         if (user.getRole() == UserRole.STUDENT) {
-            return studentProfileRepository.findByUserId(user.getId()).orElse(null);
+            return studentProfileRepository.findByUserId(user.getId())
+                    .map(this::toStudentRoleProfile)
+                    .orElse(null);
         }
 
         if (user.getRole() == UserRole.JUDGE || user.getRole() == UserRole.MENTOR) {
-            return judgeRepository.findByUserId(user.getId()).orElse(null);
+            return judgeRepository.findByUserId(user.getId())
+                    .map(this::toJudgeMentorRoleProfile)
+                    .orElse(null);
         }
 
         return null;
+    }
+
+    /**
+     * Maps a StudentProfile to a flat, cycle-free view. The raw entity must never
+     * be serialized directly: its bidirectional {@code user} back-reference causes
+     * Jackson infinite recursion (which truncates the response into invalid JSON)
+     * and would leak the user's {@code passwordHash}. See AGENTS.md §13/§21.
+     */
+    private Map<String, Object> toStudentRoleProfile(StudentProfile profile) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id", profile.getId());
+        data.put("studentType", profile.getStudentType() == null ? null : profile.getStudentType().name());
+        data.put("studentCode", profile.getStudentCode());
+        data.put("universityName", profile.getUniversityName());
+        data.put("major", profile.getMajor());
+        data.put("graduationYear", profile.getGraduationYear());
+        data.put("verifiedAt", profile.getVerifiedAt());
+        return data;
+    }
+
+    /**
+     * Maps a Judge to a flat, cycle-free view. Same rationale as
+     * {@link #toStudentRoleProfile}: never serialize the raw entity (bidirectional
+     * {@code user} back-reference + password leak).
+     */
+    private Map<String, Object> toJudgeMentorRoleProfile(Judge judge) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id", judge.getId());
+        data.put("judgeType", judge.getJudgeType() == null ? null : judge.getJudgeType().name());
+        data.put("affiliation", judge.getAffiliation());
+        data.put("bio", judge.getBio());
+        data.put("expertiseTags", judge.getExpertiseTags());
+        data.put("isTemporary", judge.getIsTemporary());
+        data.put("expiresAt", judge.getExpiresAt());
+        return data;
     }
 
     private void validateCreateUserRequest(CreateUserRequest request) {

@@ -27,6 +27,10 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { getPrimaryRole } from "@/utils/roleRedirect";
 import {
+  getEventFallbackBannerUrl,
+  getEventSeasonGradient,
+} from "@/utils/eventBanner";
+import {
   getEventDescription,
   getSeasonLabel,
   isCompletedEvent,
@@ -123,10 +127,11 @@ export function EventDetailPage() {
     ? getRegistrationCountdown(event.registrationEndAt)
     : null;
 
-  const bannerSrc =
-    event.bannerUrl && !bannerFailed
-      ? event.bannerUrl
-      : `https://picsum.photos/seed/seal-event-${event.id}/1440/560`;
+  const hasRealBanner = Boolean(event.bannerUrl) && !bannerFailed;
+  // Same seeded fallback photo as the events list card (see utils/eventBanner.ts)
+  const bannerSrc = hasRealBanner
+    ? (event.bannerUrl as string)
+    : getEventFallbackBannerUrl(event.id, 1600, 640);
 
   const activeCompetition = (competitionsQuery.data ?? []).find(
     (competition) =>
@@ -215,7 +220,11 @@ export function EventDetailPage() {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="h-full w-full bg-linear-to-br from-blue-600 via-indigo-700 to-slate-900" />
+            // Both the uploaded banner and the seeded fallback photo failed →
+            // deterministic season gradient (see utils/eventBanner.ts).
+            <div
+              className={`h-full w-full bg-linear-to-br ${getEventSeasonGradient(event.season)}`}
+            />
           )}
 
           {/* Bottom-only scrim keeps the banner image clearly visible */}

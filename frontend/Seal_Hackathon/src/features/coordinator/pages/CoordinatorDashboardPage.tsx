@@ -16,6 +16,7 @@ import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import CircularProgress from "@mui/material/CircularProgress";
 
 import { useCoordinatorDashboard } from "../hooks/useCoordinatorDashboard";
+import { getEventFallbackBannerUrl } from "@/utils/eventBanner";
 import type { EventSummaryResponse, EventDetailResponse } from "@/types/event.types";
 import type { ReactNode } from "react";
 
@@ -172,6 +173,7 @@ const priorityBadge: Record<PendingActionType["priority"], string> = {
 export const CoordinatorDashboardPage = () => {
   const navigate = useNavigate();
   const [bannerFailed, setBannerFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
 
   const {
     isEventError,
@@ -201,7 +203,15 @@ export const CoordinatorDashboardPage = () => {
   };
 
   const bannerUrl = currentEvent?.bannerUrl;
-  const showBanner = Boolean(bannerUrl) && !bannerFailed;
+  // Uploaded banner first, then the same seeded fallback photo as every other
+  // event surface (see utils/eventBanner.ts); gradient base stays underneath.
+  const bannerSrc =
+    bannerUrl && !bannerFailed
+      ? bannerUrl
+      : currentEvent
+        ? getEventFallbackBannerUrl(currentEvent.id, 1600, 640)
+        : null;
+  const showBanner = Boolean(bannerSrc) && !fallbackFailed;
   const isLive = (currentEvent?.status ?? "").toUpperCase() === "ONGOING";
 
   return (
@@ -214,9 +224,13 @@ export const CoordinatorDashboardPage = () => {
         {/* Optional real banner */}
         {showBanner && (
           <img
-            src={bannerUrl as string}
+            src={bannerSrc as string}
             alt=""
-            onError={() => setBannerFailed(true)}
+            onError={() =>
+              bannerSrc === bannerUrl
+                ? setBannerFailed(true)
+                : setFallbackFailed(true)
+            }
             className="absolute inset-0 h-full w-full object-cover object-center"
           />
         )}

@@ -8,6 +8,7 @@ import {
   formatShortDate,
   getSeasonLabel,
 } from "@/features/events/utils/publicEventView";
+import { getEventFallbackBannerUrl } from "@/utils/eventBanner";
 import type { EventSummaryResponse } from "@/types/event.types";
 
 type EventCardProps = {
@@ -29,7 +30,7 @@ export function EventCard({
   const bannerSrc =
     event.bannerUrl && !bannerFailed
       ? event.bannerUrl
-      : `https://picsum.photos/seed/seal-event-${event.id}/640/280`;
+      : getEventFallbackBannerUrl(event.id, 640, 280);
 
   const competitionPeriod = `${formatShortDate(
     event.competitionStartAt,
