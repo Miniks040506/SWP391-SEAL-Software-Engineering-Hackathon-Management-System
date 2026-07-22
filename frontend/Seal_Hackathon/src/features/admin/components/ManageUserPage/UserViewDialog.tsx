@@ -11,11 +11,12 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import PersonIcon from "@mui/icons-material/Person";
+import ReportGmailerrorredOutlinedIcon from "@mui/icons-material/ReportGmailerrorredOutlined";
 
 import { useAdminUserQuery } from "@/features/admin/hooks/useAdminMutations";
 import { RoleBadge, StatusDot } from "./UserBadges";
 import type { UserRole } from "@/types/auth.types";
-import type { UserStatus } from "@/types/user.types";
+import type { UserDetailResponse, UserStatus } from "@/types/user.types";
 
 function DetailRow({
   label,
@@ -34,6 +35,20 @@ function DetailRow({
   );
 }
 
+/**
+ * The detail endpoint can occasionally return a malformed payload (e.g. a
+ * server-side serialization error surfaced as a raw string). Guard against it
+ * so a bad response degrades into an inline error instead of crashing the whole
+ * page through the router error boundary.
+ */
+function asUserDetail(data: unknown): UserDetailResponse | null {
+  if (data && typeof data === "object" && "id" in data) {
+    const id = (data as { id?: unknown }).id;
+    if (typeof id === "string") return data as UserDetailResponse;
+  }
+  return null;
+}
+
 export function UserViewDialog({
   userId,
   onClose,
@@ -45,15 +60,17 @@ export function UserViewDialog({
   onEdit: (userId: string) => void;
   onResetPassword: (user: { id: string; email: string }) => void;
 }) {
-  const { data: user, isLoading } = useAdminUserQuery(userId);
+  const { data, isLoading } = useAdminUserQuery(userId);
 
+  const user = asUserDetail(data);
+  const loadFailed = Boolean(userId) && !isLoading && !user;
   const isAdmin = user?.role === "ADMIN";
 
   return (
-    <Dialog 
-      open={Boolean(userId)} 
-      onClose={onClose} 
-      maxWidth="sm" 
+    <Dialog
+      open={Boolean(userId)}
+      onClose={onClose}
+      maxWidth="sm"
       fullWidth
       classes={{ paper: "bg-white dark:bg-slate-800 dark:text-slate-200" }}
       sx={{ "& .MuiDialog-paper": { backgroundImage: "none" } }}
@@ -66,11 +83,27 @@ export function UserViewDialog({
       </DialogTitle>
 
       <DialogContent>
-        {isLoading || !user ? (
+        {isLoading ? (
           <div className="flex justify-center py-10">
             <CircularProgress size={28} />
           </div>
-        ) : (
+        ) : loadFailed ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <ReportGmailerrorredOutlinedIcon
+              sx={{ fontSize: 40 }}
+              className="text-rose-400"
+            />
+            <div>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                Couldn&apos;t load this profile
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                The server returned an unexpected response. Please try again
+                later.
+              </p>
+            </div>
+          </div>
+        ) : user ? (
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 p-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-600 text-slate-400 dark:text-slate-300">
@@ -118,7 +151,7 @@ export function UserViewDialog({
               />
             </div>
           </div>
-        )}
+        ) : null}
       </DialogContent>
 
       <DialogActions className="gap-2 px-6 pb-4">
@@ -143,7 +176,7 @@ export function UserViewDialog({
                 </Button>
               </span>
             </Tooltip>
-            
+
             <Tooltip title={isAdmin ? "Cannot edit Admin" : ""}>
               <span>
                 <Button

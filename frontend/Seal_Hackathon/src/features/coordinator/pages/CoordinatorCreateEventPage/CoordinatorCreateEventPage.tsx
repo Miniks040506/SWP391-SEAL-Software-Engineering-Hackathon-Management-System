@@ -98,7 +98,7 @@ function WizardStepper({
                 </span>
               </button>
 
-              {index < WIZARD_STEPS.length - 1 && (
+              {index < WIZARD_STEPS.length - 1 ? (
                 <div className="mt-5 h-0.5 flex-1 overflow-hidden rounded-full bg-white/10">
                   <div
                     className={`h-full rounded-full bg-linear-to-r from-emerald-400 to-teal-300 transition-all duration-500 motion-reduce:transition-none ${
@@ -106,6 +106,12 @@ function WizardStepper({
                     }`}
                   />
                 </div>
+              ) : (
+                // Invisible spacer so the final step's button occupies the left
+                // half of its wrapper — mirroring every other step (button +
+                // connector) so its dot lands on the same rhythm and stays
+                // "attached" to the preceding connector line.
+                <div aria-hidden className="mt-5 h-0.5 flex-1" />
               )}
             </div>
           );

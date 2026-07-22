@@ -26,6 +26,7 @@ import {
 } from "@/features/events/hooks/usePublicEventQueries";
 import { useAuthStore } from "@/stores/authStore";
 import { getPrimaryRole } from "@/utils/roleRedirect";
+import { getEventSeasonGradient } from "@/utils/eventBanner";
 import {
   getEventDescription,
   getSeasonLabel,
@@ -66,7 +67,6 @@ export function EventDetailPage() {
   const [showAnnouncementsList, setShowAnnouncementsList] = useState(false);
   const [cameFromList, setCameFromList] = useState(false);
   const [bannerFailed, setBannerFailed] = useState(false);
-  const [fallbackFailed, setFallbackFailed] = useState(false);
 
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -123,10 +123,7 @@ export function EventDetailPage() {
     ? getRegistrationCountdown(event.registrationEndAt)
     : null;
 
-  const bannerSrc =
-    event.bannerUrl && !bannerFailed
-      ? event.bannerUrl
-      : `https://picsum.photos/seed/seal-event-${event.id}/1440/560`;
+  const hasRealBanner = Boolean(event.bannerUrl) && !bannerFailed;
 
   const activeCompetition = (competitionsQuery.data ?? []).find(
     (competition) =>
@@ -203,19 +200,19 @@ export function EventDetailPage() {
       {/* ---------------------------------------------------------------- */}
       <section className="relative overflow-hidden rounded-3xl border border-gray-200 bg-slate-900 shadow-xl dark:border-slate-800">
         <div className="absolute inset-0">
-          {!fallbackFailed ? (
+          {hasRealBanner ? (
             <img
-              src={bannerSrc}
+              src={event.bannerUrl as string}
               alt={`${event.name} banner`}
-              onError={() =>
-                bannerSrc === event.bannerUrl
-                  ? setBannerFailed(true)
-                  : setFallbackFailed(true)
-              }
+              onError={() => setBannerFailed(true)}
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="h-full w-full bg-linear-to-br from-blue-600 via-indigo-700 to-slate-900" />
+            // No uploaded banner → deterministic season gradient, matching the
+            // events list card and the edit page (see utils/eventBanner.ts).
+            <div
+              className={`h-full w-full bg-linear-to-br ${getEventSeasonGradient(event.season)}`}
+            />
           )}
 
           {/* Bottom-only scrim keeps the banner image clearly visible */}

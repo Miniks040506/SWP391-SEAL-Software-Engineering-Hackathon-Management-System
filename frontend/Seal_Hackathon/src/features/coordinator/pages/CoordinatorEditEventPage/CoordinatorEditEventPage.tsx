@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import type { UUID } from "@/types/common.types";
+import { getEventSeasonGradient } from "@/utils/eventBanner";
 
 import { AssignmentsTab } from "./AssignmentsTab";
 import { InfoTab } from "./InfoTab";
@@ -63,6 +64,10 @@ function getBannerUrl(event: unknown) {
   return (event as { bannerUrl?: string | null })?.bannerUrl ?? null;
 }
 
+function getSeason(event: unknown) {
+  return (event as { season?: string | null })?.season ?? null;
+}
+
 export function CoordinatorEditEventPage() {
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: UUID }>();
@@ -81,6 +86,10 @@ export function CoordinatorEditEventPage() {
   );
   const bannerUrl = useMemo(
     () => getBannerUrl(eventQuery.data),
+    [eventQuery.data],
+  );
+  const bannerGradient = useMemo(
+    () => getEventSeasonGradient(getSeason(eventQuery.data)),
     [eventQuery.data],
   );
   const eventStatus = normalizeEventStatus(
@@ -123,7 +132,9 @@ export function CoordinatorEditEventPage() {
               className="h-full w-full object-cover object-center"
             />
           ) : (
-            <div className="flex h-full items-center justify-center bg-linear-to-br from-blue-500 via-cyan-400 to-violet-600 font-black text-white">
+            <div
+              className={`flex h-full items-center justify-center bg-linear-to-br ${bannerGradient} font-black text-white`}
+            >
               SEAL EVENT
             </div>
           )}

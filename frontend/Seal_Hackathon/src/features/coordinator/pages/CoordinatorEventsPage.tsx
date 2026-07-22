@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 import type { UUID } from "@/types/common.types";
 import type { EventSummaryResponse } from "@/types/event.types";
+import { getEventSeasonGradient } from "@/utils/eventBanner";
 
 import {
   useCoordinatorEventsQuery,
@@ -188,18 +189,9 @@ function normalizeEvents(value: unknown): EventSummaryResponse[] {
   return [];
 }
 
-function seasonGradient(season: string) {
-  switch ((season ?? "").toUpperCase()) {
-    case "SPRING":
-      return "from-emerald-600 via-teal-500 to-cyan-500";
-    case "SUMMER":
-      return "from-amber-500 via-orange-500 to-rose-500";
-    case "FALL":
-      return "from-violet-600 via-indigo-600 to-blue-500";
-    default:
-      return "from-blue-600 via-sky-500 to-indigo-600";
-  }
-}
+// Shared with the edit + detail pages so a bannerless event shows the same
+// season colour everywhere. See utils/eventBanner.ts.
+const seasonGradient = getEventSeasonGradient;
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
