@@ -2,12 +2,10 @@ import { useEffect } from "react";
 import { FormProvider, useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import type { PrizeResponse } from "@/types/prize.types";
 import type { TrackResponse } from "@/types/track.types";
 import {
@@ -23,6 +21,20 @@ type PrizeFormDialogProps = {
   isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (values: PrizeFormValues) => void;
+};
+
+const DIALOG_PAPER_SX = {
+  "& .MuiDialog-paper": {
+    borderRadius: "20px",
+    overflow: "hidden",
+    backgroundImage: "none",
+  },
+} as const;
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "14px",
+  },
 };
 
 export const PrizeFormDialog = ({
@@ -84,15 +96,41 @@ export const PrizeFormDialog = ({
   }, [open, initialPrize, reset]);
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ fontWeight: "bold" }}>
-        {isEditMode ? "Edit Prize" : "Create Prize"}
-      </DialogTitle>
-      
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      sx={DIALOG_PAPER_SX}
+      classes={{ paper: "bg-white dark:bg-slate-900" }}
+    >
+      {/* Gradient header — shared chrome across edit-event popups */}
+      <div className="relative overflow-hidden bg-linear-to-br from-slate-950 via-slate-900 to-amber-950 px-6 py-5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-amber-500/25 blur-2xl"
+        />
+        <div className="relative flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-amber-500 to-orange-400 text-white shadow-md">
+            <EmojiEventsOutlinedIcon />
+          </span>
+          <div>
+            <h2 className="text-lg font-black text-white">
+              {isEditMode ? "Edit Prize" : "Create Prize"}
+            </h2>
+            <p className="text-xs font-medium text-slate-400">
+              {isEditMode
+                ? "Adjust this prize's scope, rank, and value"
+                : "Add a prize for the whole event or a specific track"}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogContent dividers>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="px-6 py-5">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Controller
                 name="trackId"
                 control={control}
@@ -106,6 +144,7 @@ export const PrizeFormDialog = ({
                     helperText={errors.trackId?.message}
                     fullWidth
                     size="small"
+                    sx={fieldSx}
                   >
                     <MenuItem value="">
                       <em>Overall</em>
@@ -127,6 +166,7 @@ export const PrizeFormDialog = ({
                 fullWidth
                 required
                 size="small"
+                sx={fieldSx}
                 slotProps={{ htmlInput: { min: 1 } }}
                 {...register("rankPosition", { valueAsNumber: true })}
               />
@@ -139,6 +179,7 @@ export const PrizeFormDialog = ({
                 fullWidth
                 required
                 size="small"
+                sx={fieldSx}
                 className="md:col-span-2"
                 {...register("title")}
               />
@@ -150,6 +191,7 @@ export const PrizeFormDialog = ({
                 helperText={errors.value?.message}
                 fullWidth
                 size="small"
+                sx={fieldSx}
                 slotProps={{ htmlInput: { min: 0 } }}
                 {...register("value", { valueAsNumber: true })}
               />
@@ -161,6 +203,7 @@ export const PrizeFormDialog = ({
                 helperText={errors.currency?.message}
                 fullWidth
                 size="small"
+                sx={fieldSx}
                 {...register("currency")}
               />
 
@@ -171,6 +214,7 @@ export const PrizeFormDialog = ({
                 helperText={errors.sponsorName?.message}
                 fullWidth
                 size="small"
+                sx={fieldSx}
                 className="md:col-span-2"
                 {...register("sponsorName")}
               />
@@ -184,24 +228,38 @@ export const PrizeFormDialog = ({
                 multiline
                 minRows={3}
                 size="small"
+                sx={fieldSx}
                 className="md:col-span-2"
                 {...register("description")}
               />
             </div>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button onClick={onClose} disabled={isSubmitting} variant="outlined">
+          </div>
+
+          <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4 dark:border-slate-800">
+            <Button
+              onClick={onClose}
+              disabled={isSubmitting}
+              variant="outlined"
+              sx={{ textTransform: "none", borderRadius: "10px", fontWeight: 700 }}
+            >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
               variant="contained"
-              sx={{ fontWeight: "bold" }}
+              sx={{
+                textTransform: "none",
+                borderRadius: "10px",
+                fontWeight: 800,
+                boxShadow: "none",
+                bgcolor: "#d97706",
+                "&:hover": { bgcolor: "#b45309" },
+              }}
             >
               {isSubmitting ? "Saving..." : isEditMode ? "Save Changes" : "Create Prize"}
             </Button>
-          </DialogActions>
+          </div>
         </form>
       </FormProvider>
     </Dialog>

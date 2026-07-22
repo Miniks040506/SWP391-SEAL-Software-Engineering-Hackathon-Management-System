@@ -10,6 +10,8 @@ import type { UUID } from "@/types/common.types";
 import type { CoordinatorTeamListParams } from "@/types/team.types";
 import type { TrackResponse } from "@/types/track.types";
 
+import { TabShell } from "./TabShell";
+
 const PAGE_SIZE = 20;
 
 type TeamsTabProps = {
@@ -27,6 +29,7 @@ export const TeamsTab = ({ eventId, eventName, tracks }: TeamsTabProps) => {
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilters((prev) => ({
       ...prev,
       eventId,
@@ -52,7 +55,12 @@ export const TeamsTab = ({ eventId, eventName, tracks }: TeamsTabProps) => {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <TabShell
+      tab="TEAMS"
+      title="Registered Teams"
+      description={`Review every team registered for ${eventName}. Open a team to inspect members and status.`}
+      bodyClassName="p-0"
+    >
       <TeamFilterBar
         filters={filters}
         onChange={handleFiltersChange}
@@ -67,8 +75,8 @@ export const TeamsTab = ({ eventId, eventName, tracks }: TeamsTabProps) => {
       />
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-100 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-900">
-          <span className="text-xs text-slate-400">
+        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3 dark:border-slate-800">
+          <span className="text-xs font-semibold text-slate-400">
             Showing {(filters.page! - 1) * filters.size! + 1}-
             {Math.min(filters.page! * filters.size!, total)} of {total} teams
           </span>
@@ -91,6 +99,6 @@ export const TeamsTab = ({ eventId, eventName, tracks }: TeamsTabProps) => {
           onChanged={refetch}
         />
       )}
-    </div>
+    </TabShell>
   );
 };

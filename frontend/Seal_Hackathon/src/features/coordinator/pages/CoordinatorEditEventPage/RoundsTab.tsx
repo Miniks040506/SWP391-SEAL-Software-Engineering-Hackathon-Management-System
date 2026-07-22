@@ -4,16 +4,15 @@ import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PlayArrowOutlinedIcon from "@mui/icons-material/PlayArrowOutlined";
+import RuleOutlinedIcon from "@mui/icons-material/RuleOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import StopCircleOutlinedIcon from "@mui/icons-material/StopCircleOutlined";
+import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import {
   Alert,
   Button,
   CircularProgress,
   Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   IconButton,
   MenuItem,
   TextField,
@@ -46,6 +45,13 @@ import type {
 } from "@/types/round.types";
 import type { TrackResponse } from "@/types/track.types";
 import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
+
+import {
+  editDateFieldSx,
+  editDialogPaperSx,
+  editFieldSx,
+} from "./editEventUi";
+import { TabShell } from "./TabShell";
 
 type EditableRound = RoundResponse & {
   id: UUID;
@@ -102,25 +108,6 @@ const emptyRound: RoundForm = {
   endAt: "",
   submissionDeadline: "",
   judgingDeadline: "",
-};
-
-const textFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "12px",
-  },
-};
-
-const dateTimeFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "12px",
-  },
-  "& .MuiInputLabel-root": {
-    backgroundColor: "white",
-    paddingInline: "4px",
-  },
-  ".dark & .MuiInputLabel-root": {
-    backgroundColor: "#0f172a",
-  },
 };
 
 function getId(value: unknown) {
@@ -404,18 +391,44 @@ function AdvanceRuleModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        {initialData ? "Edit Advance Rule" : "Add Advance Rule"}
-      </DialogTitle>
-      <DialogContent className="space-y-4 pt-2">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      sx={editDialogPaperSx}
+      classes={{ paper: "bg-white dark:bg-slate-900" }}
+    >
+      {/* Gradient header — same chrome as the other edit-event popups */}
+      <div className="relative overflow-hidden bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 px-6 py-5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-violet-500/25 blur-2xl"
+        />
+        <div className="relative flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-white shadow-md">
+            <RuleOutlinedIcon />
+          </span>
+          <div>
+            <h2 className="text-lg font-black text-white">
+              {initialData ? "Edit Advance Rule" : "Add Advance Rule"}
+            </h2>
+            <p className="text-xs font-medium text-slate-400">
+              Decide which teams advance from this round
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 px-6 py-5">
         <TextField
           select
           label="Rule Type"
           fullWidth
+          size="small"
           value={ruleType}
           onChange={(e) => setRuleType(e.target.value)}
-          sx={{ ...textFieldSx, mt: 1 }}
+          sx={{ ...editFieldSx, mt: 0.5 }}
         >
           {RULE_TYPE_OPTIONS.map((opt) => (
             <MenuItem key={opt.value} value={opt.value}>
@@ -427,9 +440,10 @@ function AdvanceRuleModal({
           select
           label="Track (Optional, Global if empty)"
           fullWidth
+          size="small"
           value={trackId}
           onChange={(e) => setTrackId(e.target.value)}
-          sx={textFieldSx}
+          sx={editFieldSx}
         >
           <MenuItem value="">
             <em>Global (All Tracks)</em>
@@ -444,36 +458,41 @@ function AdvanceRuleModal({
           label={getValueLabel()}
           type="number"
           fullWidth
+          size="small"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           error={!!valueError}
           helperText={valueError}
-          sx={textFieldSx}
+          sx={editFieldSx}
         />
         <TextField
           label="Priority"
           type="number"
           fullWidth
+          size="small"
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
           error={!!priorityError}
           helperText={priorityError}
-          sx={textFieldSx}
+          sx={editFieldSx}
         />
         <TextField
           label="Description"
           fullWidth
           multiline
           rows={2}
+          size="small"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          sx={textFieldSx}
+          sx={editFieldSx}
         />
-      </DialogContent>
-      <DialogActions>
+      </div>
+
+      <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4 dark:border-slate-800">
         <Button
           onClick={onClose}
-          sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+          variant="outlined"
+          sx={{ textTransform: "none", borderRadius: "10px", fontWeight: 700 }}
         >
           Cancel
         </Button>
@@ -481,11 +500,18 @@ function AdvanceRuleModal({
           onClick={handleSave}
           variant="contained"
           disabled={!isValid}
-          sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+          sx={{
+            textTransform: "none",
+            borderRadius: "10px",
+            fontWeight: 800,
+            boxShadow: "none",
+            bgcolor: "#7c3aed",
+            "&:hover": { bgcolor: "#6d28d9" },
+          }}
         >
           Save Rule
         </Button>
-      </DialogActions>
+      </div>
     </Dialog>
   );
 }
@@ -557,29 +583,32 @@ function RoundAdvanceRules({
 
   return (
     <div className="col-span-1 md:col-span-2 mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+      <div className="mb-4 flex items-center justify-between">
+        <h4 className="flex items-center gap-1.5 text-sm font-black text-slate-800 dark:text-slate-200">
+          <RuleOutlinedIcon
+            sx={{ fontSize: 16 }}
+            className="text-violet-500"
+          />
           Advance Rules
         </h4>
         {canEdit && (
-          <Button
-            variant="outlined"
-            size="small"
+          <button
+            type="button"
             onClick={() => setModalOpen(true)}
-            startIcon={<AddOutlinedIcon />}
-            sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 700 }}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-600 transition-colors duration-200 hover:border-violet-300 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300 dark:hover:bg-violet-500/20"
           >
+            <AddOutlinedIcon sx={{ fontSize: 14 }} />
             Add Rule
-          </Button>
+          </button>
         )}
       </div>
 
       {rules.length === 0 ? (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs font-medium text-slate-500">
           No advance rules configured for this round.
         </p>
       ) : (
-        <div className="flex flex-wrap gap-2 mt-3">
+        <div className="mt-3 flex flex-wrap gap-2">
           {rules.map((rule) => {
             const trackName = rule.trackId
               ? tracks.find((track) => track.id === rule.trackId)?.name ||
@@ -596,7 +625,7 @@ function RoundAdvanceRules({
             return (
               <div
                 key={rule.id}
-                className={`relative inline-flex group items-center gap-2 px-3.5 py-1.5 rounded-full border font-medium text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer ${getRuleChipStyle(rule.ruleType)}`}
+                className={`relative inline-flex group items-center gap-2 px-3.5 py-1.5 rounded-full border font-medium text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${getRuleChipStyle(rule.ruleType)}`}
                 onClick={() => canEdit && setEditingRule(rule)}
               >
                 <span>
@@ -730,10 +759,11 @@ function RoundOperationPanel({
   }
 
   return (
-    <div className="col-span-1 md:col-span-2 mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+    <div className="col-span-1 md:col-span-2 mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/60">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0 flex-1 sm:min-w-[280px]">
-          <p className="text-sm font-black text-slate-900 dark:text-white">
+          <p className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
+            <span className="inline-flex h-2 w-2 rounded-full bg-violet-500" />
             Operation status: {status.roundStatus}
           </p>
           <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -777,7 +807,7 @@ function RoundOperationPanel({
             </span>
           </div>
           {status.openBlockers?.length > 0 && (
-            <Alert severity="warning" sx={{ mt: 1.5 }}>
+            <Alert severity="warning" sx={{ mt: 1.5, borderRadius: "12px" }}>
               <p className="text-xs font-bold">Complete before opening:</p>
               <ul className="mt-1 list-disc pl-5 text-xs">
                 {status.openBlockers.map((blocker) => (
@@ -787,7 +817,8 @@ function RoundOperationPanel({
             </Alert>
           )}
           {status.submissionLockedAt && (
-            <p className="mt-3 text-xs font-semibold text-rose-600">
+            <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-rose-600">
+              <LockOutlinedIcon sx={{ fontSize: 13 }} />
               Locked at {formatRoundTime(status.submissionLockedAt)}
             </p>
           )}
@@ -798,7 +829,7 @@ function RoundOperationPanel({
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 shrink-0">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <Button
             size="small"
             variant="outlined"
@@ -841,6 +872,7 @@ function RoundOperationPanel({
               textTransform: "none",
               fontWeight: 800,
               whiteSpace: "nowrap",
+              boxShadow: "none",
             }}
           >
             Lock submissions
@@ -1013,442 +1045,456 @@ export function RoundsTab({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="border-b border-slate-100 px-7 py-5 dark:border-slate-700">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-lg font-extrabold text-slate-950 dark:text-white">
-              Rounds
-            </h2>
+    <TabShell
+      tab="ROUNDS"
+      title="Rounds"
+      description="Create event-level round templates separately. Round structure is locked from ONGOING onward."
+      headerActions={
+        canEdit && !showAddForm ? (
+          <button
+            type="button"
+            onClick={() => setShowAddForm(true)}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-600/25 transition-all duration-200 hover:from-violet-500 hover:to-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 motion-reduce:transition-none"
+          >
+            <AddOutlinedIcon sx={{ fontSize: 17 }} />
+            Add Round
+          </button>
+        ) : undefined
+      }
+      bodyClassName="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]"
+    >
+      <div className="space-y-5">
+        {!canEdit && readonlyReason && (
+          <Alert severity="warning" sx={{ borderRadius: "14px" }}>
+            {readonlyReason}
+          </Alert>
+        )}
 
-            <p className="mt-2 text-sm font-medium text-slate-500">
-              Create event-level round templates separately. Round structure is
-              locked from ONGOING onward.
-            </p>
-          </div>
-
-          {canEdit && !showAddForm && (
-            <Button
-              variant="contained"
-              startIcon={<AddOutlinedIcon />}
-              onClick={() => setShowAddForm(true)}
-              sx={{
-                borderRadius: "12px",
-                textTransform: "none",
-                fontWeight: 900,
-              }}
-            >
-              Add Round
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <div className="grid gap-6 px-7 py-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
-        <div className="space-y-5">
-          {!canEdit && readonlyReason && (
-            <Alert severity="warning">{readonlyReason}</Alert>
-          )}
-
-          {canEdit && showAddForm && (
-            <div className="rounded-2xl border border-dashed border-slate-200 p-5 dark:border-slate-700">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="font-black text-slate-800 dark:text-white">
-                  Add Round
+        {canEdit && showAddForm && (
+          <div className="rounded-2xl border-2 border-dashed border-violet-300/70 bg-violet-50/40 p-6 dark:border-violet-500/30 dark:bg-violet-500/5">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-white shadow-md shadow-violet-500/25">
+                  <AddOutlinedIcon sx={{ fontSize: 19 }} />
+                </span>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  New Round
                 </h3>
-                <IconButton onClick={() => setShowAddForm(false)}>
-                  <CloseOutlinedIcon />
-                </IconButton>
+              </div>
+              <IconButton
+                onClick={() => setShowAddForm(false)}
+                size="small"
+                aria-label="Close add round form"
+              >
+                <CloseOutlinedIcon fontSize="small" />
+              </IconButton>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextField
+                label="Round name"
+                value={newRound.name}
+                onChange={(event) =>
+                  setNewRound((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={editFieldSx}
+              />
+
+              <TextField
+                label="Order index"
+                type="number"
+                value={rounds.length + 1}
+                size="small"
+                sx={editFieldSx}
+                disabled
+              />
+
+              <TextField
+                label="Round instructions / competing exam"
+                value={newRound.description}
+                onChange={(event) =>
+                  setNewRound((current) => ({
+                    ...current,
+                    description: event.target.value,
+                  }))
+                }
+                multiline
+                minRows={3}
+                size="small"
+                sx={editFieldSx}
+                className="md:col-span-2"
+              />
+
+              <TextField
+                label="Round start"
+                type="datetime-local"
+                value={newRound.startAt}
+                onChange={(event) =>
+                  setNewRound((current) => ({
+                    ...current,
+                    startAt: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={editDateFieldSx}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+
+              <TextField
+                label="Round end"
+                type="datetime-local"
+                value={newRound.endAt}
+                onChange={(event) =>
+                  setNewRound((current) => ({
+                    ...current,
+                    endAt: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={editDateFieldSx}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+
+              <TextField
+                label="Submission deadline"
+                type="datetime-local"
+                value={newRound.submissionDeadline}
+                onChange={(event) =>
+                  setNewRound((current) => ({
+                    ...current,
+                    submissionDeadline: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={editDateFieldSx}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+
+              <TextField
+                label="Judging deadline"
+                type="datetime-local"
+                required
+                value={newRound.judgingDeadline}
+                onChange={(event) =>
+                  setNewRound((current) => ({
+                    ...current,
+                    judgingDeadline: event.target.value,
+                  }))
+                }
+                size="small"
+                sx={editDateFieldSx}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+
+              <div className="md:col-span-2">
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-600/25 transition-all duration-200 hover:from-violet-500 hover:to-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 motion-reduce:transition-none"
+                >
+                  <AddOutlinedIcon sx={{ fontSize: 17 }} />
+                  Add Round
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <CircularProgress />
+          </div>
+        )}
+
+        {rounds.map((round, index) => {
+          const id = getId(round);
+          const values = editing[id] ?? createRoundForm(round);
+          const isFinalRound =
+            rounds.length > 0 && index === rounds.length - 1;
+
+          return (
+            <div
+              key={id}
+              className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 dark:border-slate-700 dark:bg-slate-800/30"
+            >
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-sm font-black text-white shadow-md shadow-violet-500/25">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-violet-600 dark:text-violet-400">
+                      Round {index + 1}
+                    </p>
+                    <h3 className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
+                      {values.name || `Round ${index + 1}`}
+                      {isFinalRound && (
+                        <span className="rounded-full bg-linear-to-r from-violet-500 to-indigo-400 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm shadow-violet-500/25">
+                          Final
+                        </span>
+                      )}
+                    </h3>
+                    <p className="mt-0.5 text-xs font-semibold text-slate-400">
+                      This round appears under every track.
+                    </p>
+                  </div>
+                </div>
+
+                {canEdit && (
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDelete(id)}
+                    aria-label={`Delete round ${values.name || index + 1}`}
+                  >
+                    <DeleteOutlineOutlinedIcon />
+                  </IconButton>
+                )}
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <TextField
                   label="Round name"
-                  value={newRound.name}
+                  value={values.name}
                   onChange={(event) =>
-                    setNewRound((current) => ({
+                    setEditing((current) => ({
                       ...current,
-                      name: event.target.value,
+                      [id]: { ...values, name: event.target.value },
                     }))
                   }
                   size="small"
-                  sx={textFieldSx}
-                />
-
-                <TextField
-                  label="Round instructions / competing exam"
-                  value={newRound.description}
-                  onChange={(event) =>
-                    setNewRound((current) => ({
-                      ...current,
-                      description: event.target.value,
-                    }))
-                  }
-                  multiline
-                  minRows={3}
-                  size="small"
-                  sx={textFieldSx}
-                  className="md:col-span-2"
+                  sx={editFieldSx}
+                  disabled={!canEdit}
                 />
 
                 <TextField
                   label="Order index"
                   type="number"
-                  value={rounds.length + 1}
+                  value={index + 1}
                   size="small"
-                  sx={textFieldSx}
+                  sx={editFieldSx}
                   disabled
+                />
+
+                <TextField
+                  label="Round instructions / competing exam"
+                  value={values.description}
+                  onChange={(event) =>
+                    setEditing((current) => ({
+                      ...current,
+                      [id]: { ...values, description: event.target.value },
+                    }))
+                  }
+                  multiline
+                  minRows={3}
+                  size="small"
+                  sx={editFieldSx}
+                  className="md:col-span-2"
+                  disabled={!canEdit}
                 />
 
                 <TextField
                   label="Round start"
                   type="datetime-local"
-                  value={newRound.startAt}
+                  value={values.startAt}
                   onChange={(event) =>
-                    setNewRound((current) => ({
+                    setEditing((current) => ({
                       ...current,
-                      startAt: event.target.value,
+                      [id]: {
+                        ...values,
+                        startAt: event.target.value,
+                      },
                     }))
                   }
                   size="small"
-                  sx={dateTimeFieldSx}
+                  sx={editDateFieldSx}
                   slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={!canEdit}
                 />
 
                 <TextField
                   label="Round end"
                   type="datetime-local"
-                  value={newRound.endAt}
+                  value={values.endAt}
                   onChange={(event) =>
-                    setNewRound((current) => ({
+                    setEditing((current) => ({
                       ...current,
-                      endAt: event.target.value,
+                      [id]: {
+                        ...values,
+                        endAt: event.target.value,
+                      },
                     }))
                   }
                   size="small"
-                  sx={dateTimeFieldSx}
+                  sx={editDateFieldSx}
                   slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={!canEdit}
                 />
 
                 <TextField
                   label="Submission deadline"
                   type="datetime-local"
-                  value={newRound.submissionDeadline}
+                  value={values.submissionDeadline}
                   onChange={(event) =>
-                    setNewRound((current) => ({
+                    setEditing((current) => ({
                       ...current,
-                      submissionDeadline: event.target.value,
+                      [id]: {
+                        ...values,
+                        submissionDeadline: event.target.value,
+                      },
                     }))
                   }
                   size="small"
-                  sx={dateTimeFieldSx}
+                  sx={editDateFieldSx}
                   slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={!canEdit}
                 />
 
                 <TextField
                   label="Judging deadline"
                   type="datetime-local"
                   required
-                  value={newRound.judgingDeadline}
+                  value={values.judgingDeadline}
                   onChange={(event) =>
-                    setNewRound((current) => ({
+                    setEditing((current) => ({
                       ...current,
-                      judgingDeadline: event.target.value,
+                      [id]: {
+                        ...values,
+                        judgingDeadline: event.target.value,
+                      },
                     }))
                   }
                   size="small"
-                  sx={dateTimeFieldSx}
+                  sx={editDateFieldSx}
                   slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={!canEdit}
                 />
 
-                <Button
-                  variant="outlined"
-                  startIcon={<AddOutlinedIcon />}
-                  onClick={handleCreate}
-                  sx={{
-                    borderRadius: "12px",
-                    textTransform: "none",
-                    fontWeight: 900,
-                  }}
-                >
-                  Add Round
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {isLoading && (
-            <div className="flex justify-center py-12">
-              <CircularProgress />
-            </div>
-          )}
-
-          {rounds.map((round, index) => {
-            const id = getId(round);
-            const values = editing[id] ?? createRoundForm(round);
-
-            return (
-              <div
-                key={id}
-                className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700"
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
-                      Round {index + 1}
-                      {rounds.length > 0 && index === rounds.length - 1 && (
-                        <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                          Final
-                        </span>
-                      )}
-                    </h3>
-                    <p className="mt-1 text-xs font-semibold text-slate-400">
-                      This round appears under every track.
-                    </p>
-                  </div>
-
-                  {canEdit && (
-                    <IconButton color="error" onClick={() => handleDelete(id)}>
-                      <DeleteOutlineOutlinedIcon />
-                    </IconButton>
-                  )}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <TextField
-                    label="Round name"
-                    value={values.name}
-                    onChange={(event) =>
-                      setEditing((current) => ({
-                        ...current,
-                        [id]: { ...values, name: event.target.value },
-                      }))
-                    }
-                    size="small"
-                    sx={textFieldSx}
-                    disabled={!canEdit}
-                  />
-
-                  <TextField
-                    label="Round instructions / competing exam"
-                    value={values.description}
-                    onChange={(event) =>
-                      setEditing((current) => ({
-                        ...current,
-                        [id]: { ...values, description: event.target.value },
-                      }))
-                    }
-                    multiline
-                    minRows={3}
-                    size="small"
-                    sx={textFieldSx}
-                    className="md:col-span-2"
-                    disabled={!canEdit}
-                  />
-
-                  <TextField
-                    label="Order index"
-                    type="number"
-                    value={index + 1}
-                    size="small"
-                    sx={textFieldSx}
-                    disabled
-                  />
-
-                  <TextField
-                    label="Round start"
-                    type="datetime-local"
-                    value={values.startAt}
-                    onChange={(event) =>
-                      setEditing((current) => ({
-                        ...current,
-                        [id]: {
-                          ...values,
-                          startAt: event.target.value,
-                        },
-                      }))
-                    }
-                    size="small"
-                    sx={dateTimeFieldSx}
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    disabled={!canEdit}
-                  />
-
-                  <TextField
-                    label="Round end"
-                    type="datetime-local"
-                    value={values.endAt}
-                    onChange={(event) =>
-                      setEditing((current) => ({
-                        ...current,
-                        [id]: {
-                          ...values,
-                          endAt: event.target.value,
-                        },
-                      }))
-                    }
-                    size="small"
-                    sx={dateTimeFieldSx}
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    disabled={!canEdit}
-                  />
-
-                  <TextField
-                    label="Submission deadline"
-                    type="datetime-local"
-                    value={values.submissionDeadline}
-                    onChange={(event) =>
-                      setEditing((current) => ({
-                        ...current,
-                        [id]: {
-                          ...values,
-                          submissionDeadline: event.target.value,
-                        },
-                      }))
-                    }
-                    size="small"
-                    sx={dateTimeFieldSx}
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    disabled={!canEdit}
-                  />
-
-                  <TextField
-                    label="Judging deadline"
-                    type="datetime-local"
-                    required
-                    value={values.judgingDeadline}
-                    onChange={(event) =>
-                      setEditing((current) => ({
-                        ...current,
-                        [id]: {
-                          ...values,
-                          judgingDeadline: event.target.value,
-                        },
-                      }))
-                    }
-                    size="small"
-                    sx={dateTimeFieldSx}
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    disabled={!canEdit}
-                  />
-
-                  {canEdit && (
-                    <Button
-                      variant="contained"
-                      startIcon={<SaveOutlinedIcon />}
+                {canEdit && (
+                  <div className="md:col-span-2 flex justify-end">
+                    <button
+                      type="button"
                       onClick={() => handleUpdate(round)}
-                      sx={{
-                        borderRadius: "12px",
-                        textTransform: "none",
-                        fontWeight: 900,
-                      }}
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-600/25 transition-all duration-200 hover:from-violet-500 hover:to-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 motion-reduce:transition-none"
                     >
+                      <SaveOutlinedIcon sx={{ fontSize: 17 }} />
                       Save Round
-                    </Button>
-                  )}
-                </div>
-
-                <RoundOperationPanel
-                  eventId={eventId}
-                  roundId={id}
-                  canOperate={canOperate}
-                  readonlyReason={operationReadonlyReason}
-                />
-
-                <RoundAdvanceRules
-                  eventId={eventId}
-                  roundId={id}
-                  tracks={tracks}
-                  canEdit={canEdit}
-                />
+                    </button>
+                  </div>
+                )}
               </div>
-            );
-          })}
 
-          {!isLoading && rounds.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-slate-400">
-              No rounds yet.
-            </div>
-          )}
-        </div>
-
-        <aside className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 dark:border-slate-700 dark:bg-slate-900/20">
-          <div className="mb-4">
-            <h3 className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white">
-              <CalendarTodayOutlinedIcon
-                fontSize="small"
-                className="text-blue-500"
+              <RoundOperationPanel
+                eventId={eventId}
+                roundId={id}
+                canOperate={canOperate}
+                readonlyReason={operationReadonlyReason}
               />
-              Track-round preview
-            </h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Judges are assigned to a specific track and round pair.
+
+              <RoundAdvanceRules
+                eventId={eventId}
+                roundId={id}
+                tracks={tracks}
+                canEdit={canEdit}
+              />
+            </div>
+          );
+        })}
+
+        {!isLoading && rounds.length === 0 && (
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center dark:border-slate-700">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-500 dark:bg-violet-500/10">
+              <TimelineOutlinedIcon />
+            </span>
+            <p className="mt-4 font-black text-slate-600 dark:text-slate-300">
+              No rounds yet
+            </p>
+            <p className="mt-1 text-sm font-medium text-slate-400">
+              Add rounds to define the competition timeline.
             </p>
           </div>
-
-          {tracks.length === 0 && (
-            <Alert severity="warning">
-              Create at least one track before reviewing rounds.
-            </Alert>
-          )}
-
-          {tracks.length > 0 && rounds.length === 0 && (
-            <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm font-semibold text-slate-400 dark:border-slate-700">
-              No rounds to preview yet.
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {tracks.map((track) => (
-              <div
-                key={getId(track)}
-                className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
-              >
-                <p className="font-black text-slate-900 dark:text-white">
-                  Track: {getTrackName(track)}
-                </p>
-
-                <div className="mt-3 space-y-2">
-                  {rounds.map((round, index) => {
-                    const raw = round as EditableRound;
-
-                    return (
-                      <div
-                        key={`${getId(track)}-${getId(round)}`}
-                        className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <p className="font-bold text-slate-800 dark:text-slate-200">
-                              {getName(round) || `Round ${index + 1}`}
-                            </p>
-                            {rounds.length > 0 &&
-                              index === rounds.length - 1 && (
-                                <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                                  Final
-                                </span>
-                              )}
-                          </div>
-                        </div>
-                        <p className="mt-1 text-xs font-medium text-slate-500">
-                          Period: {formatRoundTime(raw.startAt)} →{" "}
-                          {formatRoundTime(raw.endAt)}
-                        </p>
-                        <p className="mt-1 text-xs font-medium text-slate-500">
-                          Submit: {formatRoundTime(raw.submissionDeadline)}
-                        </p>
-                        <p className="text-xs font-medium text-slate-500">
-                          Judge: {formatRoundTime(raw.judgingDeadline)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </aside>
+        )}
       </div>
-    </section>
+
+      <aside className="h-fit rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 dark:border-slate-700 dark:bg-slate-900/20">
+        <div className="mb-4">
+          <h3 className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-400 text-white shadow-md shadow-violet-500/25">
+              <CalendarTodayOutlinedIcon sx={{ fontSize: 16 }} />
+            </span>
+            Track-round preview
+          </h3>
+          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+            Judges are assigned to a specific track and round pair.
+          </p>
+        </div>
+
+        {tracks.length === 0 && (
+          <Alert severity="warning" sx={{ borderRadius: "12px" }}>
+            Create at least one track before reviewing rounds.
+          </Alert>
+        )}
+
+        {tracks.length > 0 && rounds.length === 0 && (
+          <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm font-semibold text-slate-400 dark:border-slate-700">
+            No rounds to preview yet.
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {tracks.map((track) => (
+            <div
+              key={getId(track)}
+              className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+            >
+              <p className="flex items-center gap-1.5 font-black text-slate-900 dark:text-white">
+                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
+                {getTrackName(track)}
+              </p>
+
+              <div className="mt-3 space-y-2">
+                {rounds.map((round, index) => {
+                  const raw = round as EditableRound;
+
+                  return (
+                    <div
+                      key={`${getId(track)}-${getId(round)}`}
+                      className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-800 dark:text-slate-200">
+                            {getName(round) || `Round ${index + 1}`}
+                          </p>
+                          {rounds.length > 0 &&
+                            index === rounds.length - 1 && (
+                              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+                                Final
+                              </span>
+                            )}
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs font-medium text-slate-500">
+                        Period: {formatRoundTime(raw.startAt)} →{" "}
+                        {formatRoundTime(raw.endAt)}
+                      </p>
+                      <p className="mt-1 text-xs font-medium text-slate-500">
+                        Submit: {formatRoundTime(raw.submissionDeadline)}
+                      </p>
+                      <p className="text-xs font-medium text-slate-500">
+                        Judge: {formatRoundTime(raw.judgingDeadline)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </aside>
+    </TabShell>
   );
 }
