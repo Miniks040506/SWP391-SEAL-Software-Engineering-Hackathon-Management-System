@@ -30,7 +30,7 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
 
     @GetMapping("/schedule")
-    @PreAuthorize("hasAnyRole('COORDINATOR', 'JUDGE', 'MENTOR')")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'JUDGE', 'MENTOR', 'STUDENT')")
     @Operation(summary = "Get my schedule", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<List<ScheduleEntryResponse>> getSchedule(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,

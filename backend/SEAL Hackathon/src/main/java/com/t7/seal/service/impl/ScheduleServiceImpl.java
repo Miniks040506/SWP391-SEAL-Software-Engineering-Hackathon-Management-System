@@ -1,12 +1,14 @@
 package com.t7.seal.service.impl;
 
 import com.t7.seal.domain.NotificationType;
+import com.t7.seal.domain.TeamRegistrationStatus;
 import com.t7.seal.entities.CalibrationRound;
 import com.t7.seal.entities.EventAnnouncement;
 import com.t7.seal.entities.HackathonEvent;
 import com.t7.seal.entities.Notification;
 import com.t7.seal.entities.Round;
 import com.t7.seal.entities.RoundJudgeAssignment;
+import com.t7.seal.entities.Team;
 import com.t7.seal.entities.User;
 import com.t7.seal.exception.BadRequestException;
 import com.t7.seal.exception.ForbiddenException;
@@ -17,6 +19,7 @@ import com.t7.seal.repository.MentorAssignmentRepository;
 import com.t7.seal.repository.NotificationRepository;
 import com.t7.seal.repository.RoundJudgeAssignmentRepository;
 import com.t7.seal.repository.RoundRepository;
+import com.t7.seal.repository.TeamRepository;
 import com.t7.seal.response.schedule.ScheduleEntryResponse;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.ScheduleService;
@@ -60,6 +63,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final CalibrationRoundRepository calibrationRoundRepository;
     private final NotificationRepository notificationRepository;
     private final EventAnnouncementRepository announcementRepository;
+    private final TeamRepository teamRepository;
 
     @Transactional(readOnly = true)
     @Override
@@ -117,8 +121,22 @@ public class ScheduleServiceImpl implements ScheduleService {
             includeCalibrations = false;
             includeCoordinatorOperations = false;
             includeEventWindows = true;
+        } else if (actor.isStudent()) {
+            events = distinct(
+                    teamRepository.findActiveTeamByUserId(actor.getId()).stream()
+                            .filter(ScheduleServiceImpl::isStudentTeamVisible)
+                            .map(team -> team.getTrack().getEvent())
+                            .toList(),
+                    HackathonEvent::getId
+            );
+            rounds = loadRounds(events);
+            includeSubmissionDeadlines = true;
+            includeJudgingDeadlines = false;
+            includeCalibrations = false;
+            includeCoordinatorOperations = false;
+            includeEventWindows = true;
         } else {
-            throw new ForbiddenException("Schedule is available to coordinators, judges, and mentors.");
+            throw new ForbiddenException("Schedule is available to coordinators, judges, mentors, and students.");
         }
 
         if (eventId != null) {
@@ -164,6 +182,11 @@ public class ScheduleServiceImpl implements ScheduleService {
     static boolean overlaps(LocalDateTime start, LocalDateTime end, LocalDateTime from, LocalDateTime to) {
         LocalDateTime effectiveEnd = end == null ? start : end;
         return !start.isAfter(to) && !effectiveEnd.isBefore(from);
+    }
+
+    static boolean isStudentTeamVisible(Team team) {
+        return team.getTrack() != null
+                && team.getRegistrationStatus() != TeamRegistrationStatus.REJECTED;
     }
 
     private void validateRange(LocalDateTime from, LocalDateTime to) {
