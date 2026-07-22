@@ -10,6 +10,41 @@ import type {
 export type CoordinatorSubmissionListParams = GetEventSubmissionsParams;
 export type CoordinatorSubmissionSummary = CoordinatorSubmissionSummaryResponse;
 
+export type CoordinatorSubmissionProgressSummary = {
+  draft: number;
+  submitted: number;
+  late: number;
+  disqualified: number;
+  locked: number;
+  total: number;
+};
+
+const SUMMARY_PAGE_SIZE = 100;
+
+function summarizeSubmissions(
+  submissions: CoordinatorSubmissionSummary[],
+  total: number,
+): CoordinatorSubmissionProgressSummary {
+  const summary: CoordinatorSubmissionProgressSummary = {
+    draft: 0,
+    submitted: 0,
+    late: 0,
+    disqualified: 0,
+    locked: 0,
+    total,
+  };
+
+  submissions.forEach((submission) => {
+    if (submission.roundSubmissionLocked) summary.locked += 1;
+    if (submission.status === "DRAFT") summary.draft += 1;
+    if (submission.status === "SUBMITTED") summary.submitted += 1;
+    if (submission.status === "LATE") summary.late += 1;
+    if (submission.status === "DISQUALIFIED") summary.disqualified += 1;
+  });
+
+  return summary;
+}
+
 export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionListParams) => {
   const query = useQuery({
     queryKey: ["coordinator-submissions", params],
@@ -26,11 +61,50 @@ export const useCoordinatorSubmissionsQuery = (params: CoordinatorSubmissionList
     }),
   });
 
+  const summaryParams: CoordinatorSubmissionListParams = {
+    eventId: params.eventId,
+    roundId: params.roundId,
+    trackId: params.trackId,
+    status: params.status,
+    search: params.search,
+  };
+  const summaryQuery = useQuery({
+    queryKey: ["coordinator-submissions-summary", summaryParams],
+    queryFn: async () => {
+      const firstPage = await submissionApi.getEventSubmissions({
+        ...summaryParams,
+        page: 0,
+        size: SUMMARY_PAGE_SIZE,
+      });
+
+      const remainingPages = await Promise.all(
+        Array.from(
+          { length: Math.max(firstPage.totalPages - 1, 0) },
+          (_, index) =>
+            submissionApi.getEventSubmissions({
+              ...summaryParams,
+              page: index + 1,
+              size: SUMMARY_PAGE_SIZE,
+            }),
+        ),
+      );
+      const submissions = [firstPage, ...remainingPages].flatMap(
+        (page) => page.content,
+      );
+
+      return summarizeSubmissions(submissions, firstPage.totalElements);
+    },
+  });
+
   return {
     data: query.data ?? null,
+    summary: summaryQuery.data ?? null,
     loading: query.isLoading,
+    summaryLoading: summaryQuery.isLoading,
     error: query.error,
-    refetch: query.refetch,
+    refetch: async () => {
+      await Promise.all([query.refetch(), summaryQuery.refetch()]);
+    },
   };
 };
 

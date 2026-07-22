@@ -43,6 +43,35 @@ public class CoordinatorTeamController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     @Operation(
+            summary = "Get Teams Across Events",
+            description = "Returns coordinator-visible teams across every event with optional filters and pagination.",
+            operationId = "coordinatorTeamGetTeams",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/teams")
+    public ResponseEntity<PageResponse<CoordinatorTeamSummaryResponse>> getTeams(
+            @RequestParam(required = false) UUID trackId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String registrationStatus,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(coordinatorTeamService.getEventTeams(
+                null,
+                trackId,
+                status,
+                registrationStatus,
+                search,
+                page,
+                size,
+                authentication
+        ));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @Operation(
             summary = "Get Event Teams",
             description = "Get Event Teams through GET /api/v1/events/{eventId}/teams. Successful execution returns HTTP 200 with PageResponse<CoordinatorTeamSummaryResponse>. Access: Authenticated via SecurityConfig matcher anyRequest(); @PreAuthorize(\"hasAnyRole('ADMIN', 'COORDINATOR')\").",
             operationId = "coordinatorTeamGetEventTeams",

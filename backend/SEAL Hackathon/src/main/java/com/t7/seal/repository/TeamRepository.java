@@ -64,7 +64,9 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
             LEFT JOIN t.track tr
             LEFT JOIN tr.event e
             LEFT JOIN t.leader l
-            WHERE e.id = :eventId
+            WHERE e.id IS NOT NULL
+              AND (:eventId IS NULL OR e.id = :eventId)
+              AND (t.status <> com.t7.seal.domain.TeamStatus.FORMING OR t.registrationStatus IS NOT NULL)
               AND (:trackId IS NULL OR tr.id = :trackId)
               AND (:status IS NULL OR t.status = :status)
               AND (:registrationStatus IS NULL OR t.registrationStatus = :registrationStatus)
