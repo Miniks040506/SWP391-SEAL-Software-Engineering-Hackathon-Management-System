@@ -52,6 +52,9 @@ function typeIcon(type: ScheduleEntryType): ReactNode {
 }
 
 function entryPath(role: UserRole | undefined, entry: ScheduleEntry) {
+  if (role === "STUDENT" || role === "PARTICIPANT") {
+    return `/events/${entry.eventId}/competing`;
+  }
   if (role === "JUDGE") {
     if (entry.type === "EVENT") return `/events/${entry.eventId}`;
     return entry.type === "CALIBRATION"
@@ -74,6 +77,14 @@ function formatTime(entry: ScheduleEntry, rangeStart: number) {
 }
 
 function roleCopy(role: UserRole | undefined) {
+  if (role === "STUDENT" || role === "PARTICIPANT") {
+    return {
+      eyebrow: "Competition planning",
+      title: "Team",
+      accentTitle: "Schedule",
+      description: "Registration windows, competition rounds, and submission deadlines for your active teams.",
+    };
+  }
   if (role === "JUDGE") {
     return {
       eyebrow: "Judging operations",
