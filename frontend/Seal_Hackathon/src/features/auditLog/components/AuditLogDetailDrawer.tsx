@@ -1,4 +1,4 @@
-import Drawer from "@mui/material/Drawer";
+import Dialog from "@mui/material/Dialog";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
@@ -47,16 +47,21 @@ function CopyButton({ text }: { text?: string }) {
 
 export const AuditLogDetailDrawer = ({ log, onClose }: Props) => {
   return (
-    <Drawer
-      anchor="right"
+    <Dialog
       open={Boolean(log)}
       onClose={onClose}
+      fullWidth
+      maxWidth="md"
+      aria-labelledby="audit-log-detail-title"
       slotProps={{
         paper: {
           sx: {
-            width: { xs: "100%", sm: "600px", md: "800px" },
-            borderTopLeftRadius: 24,
-            borderBottomLeftRadius: 24,
+            height: { xs: "100dvh", sm: "min(88dvh, 860px)" },
+            maxHeight: { xs: "100dvh", sm: "88dvh" },
+            margin: { xs: 0, sm: 4 },
+            borderRadius: { xs: 0, sm: 3 },
+            overflow: "hidden",
+            backgroundImage: "none",
           },
         },
       }}
@@ -64,17 +69,24 @@ export const AuditLogDetailDrawer = ({ log, onClose }: Props) => {
       {log && (
         <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-950">
           <div className="flex items-center justify-between border-b border-slate-800 bg-linear-to-r from-slate-950 to-blue-950 p-5">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-blue-300">
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-300">
                 <ManageSearchOutlinedIcon />
               </span>
-              <h2 className="text-xl font-black text-white">
+              <h2
+                id="audit-log-detail-title"
+                className="text-xl font-black text-white"
+              >
                 Audit log detail
               </h2>
               <Chip
                 label={log.actionType}
                 size="small"
-                sx={{ fontWeight: 800, fontSize: "11px" }}
+                sx={{
+                  maxWidth: { xs: 180, sm: "none" },
+                  fontWeight: 800,
+                  fontSize: "11px",
+                }}
                 color="primary"
               />
             </div>
@@ -203,6 +215,6 @@ export const AuditLogDetailDrawer = ({ log, onClose }: Props) => {
           </div>
         </div>
       )}
-    </Drawer>
+    </Dialog>
   );
 };
