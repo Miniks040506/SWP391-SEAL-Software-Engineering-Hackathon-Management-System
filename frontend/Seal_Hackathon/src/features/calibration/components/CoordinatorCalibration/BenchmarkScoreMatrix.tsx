@@ -1,16 +1,19 @@
 import { useFormContext } from "react-hook-form";
 import { TextField } from "@mui/material";
 import type { EventCriteriaResponse } from "@/types/criteria.types";
+import { formatScore } from "../../utils/format";
 
 interface BenchmarkScoreMatrixProps {
     criteria: EventCriteriaResponse[];
+    disabled?: boolean;
 }
 
 const textFieldSx = { "& .MuiOutlinedInput-root": { borderRadius: "10px" } };
 
-export const BenchmarkScoreMatrix = ({ criteria }: BenchmarkScoreMatrixProps) => {
+export const BenchmarkScoreMatrix = ({ criteria, disabled }: BenchmarkScoreMatrixProps) => {
     const {
         register,
+        watch,
         formState: { errors },
     } = useFormContext();
 
@@ -22,64 +25,80 @@ export const BenchmarkScoreMatrix = ({ criteria }: BenchmarkScoreMatrixProps) =>
         );
     }
 
-    return (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50">
-                    <tr>
-                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">Criterion</th>
-                        <th className="w-32 px-4 py-3 font-bold text-slate-600 dark:text-slate-300">Category</th>
-                        <th className="w-24 px-4 py-3 text-right font-bold text-slate-600 dark:text-slate-300">Weight</th>
-                        <th className="w-48 px-4 py-3 text-right font-bold text-slate-600 dark:text-slate-300">Benchmark Score</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {criteria.map((c) => {
-                        const fieldName = `benchmarkScores.${c.id}`;
-                        const error = (errors.benchmarkScores as any)?.[c.id];
+    const scores = (watch("benchmarkScores") ?? {}) as Record<string, number>;
 
-                        return (
-                            <tr key={c.id} className="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                                <td className="px-4 py-4 align-middle">
-                                    <div className="font-bold text-slate-900 dark:text-white">{c.effectiveName}</div>
-                                    {c.effectiveDescription && (
-                                        <div className="mt-1 max-w-md line-clamp-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                            {c.effectiveDescription}
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="px-4 py-4 align-middle">
-                                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                                        {c.templateCategory || "CUSTOM"}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-4 text-right align-middle font-bold text-slate-600 dark:text-slate-300">
-                                    {c.effectiveWeight}x
-                                </td>
-                                <td className="px-4 py-4 text-right align-middle">
-                                    <div className="flex flex-col items-end gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <TextField
-                                                size="small"
-                                                type="number"
-                                                sx={{ width: 90, ...textFieldSx }}
-                                                error={!!error}
-                                                {...register(fieldName, { valueAsNumber: true })}
-                                            />
-                                            <span className="font-bold text-slate-400 dark:text-slate-500">/ {c.effectiveMaxScore}</span>
-                                        </div>
-                                        {error && (
-                                            <span className="text-xs font-bold text-rose-500">
-                                                {error.message as string}
-                                            </span>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
+    return (
+        <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900">
+            {criteria.map((criterion) => {
+                const fieldName = `benchmarkScores.${criterion.id}`;
+                const error = (
+                    errors.benchmarkScores as
+                        | Record<string, { message?: string } | undefined>
+                        | undefined
+                )?.[criterion.id];
+                const rawValue = scores[criterion.id];
+                const value = typeof rawValue === "number" && !Number.isNaN(rawValue) ? rawValue : null;
+                const pct =
+                    value !== null && criterion.effectiveMaxScore > 0
+                        ? Math.min(100, Math.max(0, (value / criterion.effectiveMaxScore) * 100))
+                        : 0;
+
+                return (
+                    <li key={criterion.id} className="flex items-center gap-6 px-5 py-4">
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-sm font-black text-slate-900 dark:text-white">
+                                    {criterion.effectiveName}
+                                </span>
+                                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                    {criterion.templateCategory || "CUSTOM"}
+                                </span>
+                                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                                    ×{formatScore(criterion.effectiveWeight)}
+                                </span>
+                            </div>
+                            {criterion.effectiveDescription && (
+                                <p className="mt-1 line-clamp-1 max-w-xl text-xs font-medium text-slate-500 dark:text-slate-400">
+                                    {criterion.effectiveDescription}
+                                </p>
+                            )}
+                            {/* Realtime score preview bar */}
+                            <div className="mt-2.5 h-1.5 max-w-md overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-[width] duration-300 ease-out"
+                                    style={{ width: `${pct}%` }}
+                                />
+                            </div>
+                            {error && (
+                                <p className="mt-1.5 text-xs font-bold text-rose-500">
+                                    {error.message as string}
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                            <TextField
+                                size="small"
+                                type="number"
+                                disabled={disabled}
+                                slotProps={{
+                                    htmlInput: {
+                                        step: 0.5,
+                                        min: 0,
+                                        max: criterion.effectiveMaxScore,
+                                        "aria-label": `Benchmark score for ${criterion.effectiveName}`,
+                                    },
+                                }}
+                                sx={{ width: 92, ...textFieldSx }}
+                                error={!!error}
+                                {...register(fieldName, { valueAsNumber: true })}
+                            />
+                            <span className="text-sm font-bold text-slate-400 dark:text-slate-500">
+                                / {criterion.effectiveMaxScore}
+                            </span>
+                        </div>
+                    </li>
+                );
+            })}
+        </ul>
     );
 };
