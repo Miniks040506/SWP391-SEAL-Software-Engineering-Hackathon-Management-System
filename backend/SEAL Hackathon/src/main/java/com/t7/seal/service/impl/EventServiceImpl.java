@@ -249,7 +249,8 @@ public class EventServiceImpl implements EventService {
         RegistrationStatus nextStatus = switch (event.getStatus()) {
             case DRAFT -> RegistrationStatus.REGISTRATION;
             case REGISTRATION -> RegistrationStatus.ONGOING;
-            case ONGOING -> RegistrationStatus.JUDGING;
+            case ONGOING -> throw new ConflictException(
+                    "Lock submissions for the final round to move the event to JUDGING.");
             case JUDGING -> RegistrationStatus.COMPLETED;
             case COMPLETED, CANCELLED, ARCHIVED -> throw new ConflictException("Event has no next status.");
         };
