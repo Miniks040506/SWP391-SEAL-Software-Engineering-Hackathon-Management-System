@@ -21,6 +21,7 @@ export type RankingResponse = {
   projectTitle?: string | null;
   roundId: UUID;
   roundName?: string | null;
+  finalRound: boolean;
   trackId?: UUID | null;
   trackName?: string | null;
   totalScore: number;
@@ -35,6 +36,7 @@ export type RankingResponse = {
   calculatedAt?: ISODateTime | null;
   published?: boolean | null;
   advanceReason?: string | null;
+  appealStatus?: "PENDING" | "UPHELD" | "OVERTURNED" | null;
   submissionStatus?: string | null;
   teamStatus?: string | null;
 };
@@ -121,6 +123,7 @@ export type TeamDetailedScoreResponse = {
   submissionId: UUID;
   roundId: UUID;
   roundName: string;
+  finalRound: boolean;
   trackId: UUID;
   trackName: string;
   totalScore: number;

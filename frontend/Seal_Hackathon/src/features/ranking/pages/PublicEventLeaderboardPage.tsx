@@ -28,7 +28,11 @@ import type { RankingResponse } from "@/types/ranking.types";
 /* Row status helpers                                                   */
 /* ------------------------------------------------------------------ */
 
-type RowStatus = "ADVANCED" | "ELIMINATED" | "DISQUALIFIED";
+type RowStatus =
+  | "ADVANCED"
+  | "FINAL_RESULT"
+  | "ELIMINATED"
+  | "DISQUALIFIED";
 
 function getRowStatus(row: RankingResponse): RowStatus {
   if (
@@ -36,6 +40,9 @@ function getRowStatus(row: RankingResponse): RowStatus {
     row.submissionStatus === "DISQUALIFIED"
   ) {
     return "DISQUALIFIED";
+  }
+  if (row.finalRound) {
+    return "FINAL_RESULT";
   }
   return row.advanced ? "ADVANCED" : "ELIMINATED";
 }
@@ -54,6 +61,13 @@ function StatusText({ status }: { status: RowStatus }) {
       <span className="inline-flex items-center gap-1 text-xs font-bold text-red-600 dark:text-red-400">
         <BlockOutlinedIcon style={{ fontSize: 14 }} />
         Disqualified
+      </span>
+    );
+  }
+  if (status === "FINAL_RESULT") {
+    return (
+      <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+        Final result
       </span>
     );
   }

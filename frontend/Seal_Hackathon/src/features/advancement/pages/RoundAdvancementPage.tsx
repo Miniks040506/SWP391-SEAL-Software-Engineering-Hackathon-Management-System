@@ -176,21 +176,28 @@ export function RoundAdvancementPage() {
     }).length || 0;
 
   return (
-    <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
-      <div className="mb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <div>
-          <Typography variant="body2" className="text-slate-500 mb-1">
-            Coordinator / Rounds /{" "}
-            {roundDetail ? roundDetail.name : validRoundId} / Advancement
-          </Typography>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-300 mb-1">
-            Round Advancement
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400">
-            Preview and confirm which teams advance to the next round.
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <header className="mb-10 border-b border-slate-200 pb-8 dark:border-slate-800">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+          <div className="space-y-4">
+            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400">
+              Advancement review
+            </p>
+            <h1 className="max-w-4xl text-4xl font-black leading-[1.02] tracking-tight text-slate-900 dark:text-white md:text-5xl">
+              {roundDetail?.name || "Round advancement"}
+            </h1>
+            <p className="max-w-2xl text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+              Preview the rule outcome, record any exceptions, and confirm the next-round roster.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Coordinator</span>
+              <span>/</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Rounds</span>
+              <span>/</span>
+              <span className="font-semibold text-slate-900 dark:text-white">Advancement</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
           <Button
             variant="outlined"
             onClick={() => refetch()}
@@ -231,12 +238,26 @@ export function RoundAdvancementPage() {
           >
             Confirm Advancement
           </Button>
+          </div>
         </div>
-      </div>
+        <dl className="mt-8 flex flex-wrap gap-x-12 gap-y-5">
+          <div>
+            <dd className="font-mono text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{advancedCount}</dd>
+            <dt className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Advanced</dt>
+          </div>
+          <div>
+            <dd className="font-mono text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{eliminatedCount}</dd>
+            <dt className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Eliminated</dt>
+          </div>
+          <div>
+            <dd className="font-mono text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{displayPreviewData?.candidates.length || 0}</dd>
+            <dt className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Teams in preview</dt>
+          </div>
+        </dl>
+      </header>
 
-      {/* Section 1 - Round context card */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-300">
+      <section className="mb-8 border-b border-slate-200 pb-8 dark:border-slate-800">
+        <h2 className="mb-4 text-xl font-black tracking-tight text-slate-900 dark:text-white">
           Round Context
         </h2>
         {isRoundLoading ? (
@@ -340,7 +361,7 @@ export function RoundAdvancementPage() {
             override flow.
           </Alert>
         )}
-      </div>
+      </section>
 
       {/* Section 2 - Advance rule panel */}
       <AdvanceRulePanel

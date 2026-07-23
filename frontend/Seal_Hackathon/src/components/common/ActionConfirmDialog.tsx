@@ -65,13 +65,31 @@ export const ActionConfirmDialog = ({
     sx={dialogSx}
     slotProps={{
       transition: TransitionProps,
-      paper: { sx: { borderRadius: 3, ...paperSx } },
+      paper: {
+        sx: {
+          borderRadius: 4,
+          border: "1px solid",
+          borderColor: "divider",
+          backgroundImage: "none",
+          boxShadow: "0 24px 80px rgba(15, 23, 42, 0.16)",
+          ...paperSx,
+        },
+      },
     }}
   >
-    <DialogTitle sx={titleSx} className={titleClassName}>{title}</DialogTitle>
-    <DialogContent dividers={!noDividers} className={contentClassName}>
+    <DialogTitle
+      sx={{ px: 3, pb: 1.5, pt: 3, ...titleSx }}
+      className={titleClassName}
+    >
+      {title}
+    </DialogTitle>
+    <DialogContent
+      dividers={!noDividers}
+      className={contentClassName}
+      sx={{ px: 3, py: 1.5 }}
+    >
       {alertText && (
-        <Alert severity={severity} sx={{ mb: 2 }}>
+        <Alert severity={severity} sx={{ mb: 2, borderRadius: 2 }}>
           {alertText}
         </Alert>
       )}
@@ -81,7 +99,10 @@ export const ActionConfirmDialog = ({
         description
       )}
     </DialogContent>
-    <DialogActions sx={{ p: 2, px: 3, gap: 1 }} className={actionsClassName}>
+    <DialogActions
+      sx={{ px: 3, py: 2.5, gap: 1, borderTop: "1px solid", borderColor: "divider" }}
+      className={actionsClassName}
+    >
       <Button onClick={onClose} disabled={isPending} color="inherit" sx={cancelButtonSx}>
         Cancel
       </Button>
@@ -90,7 +111,7 @@ export const ActionConfirmDialog = ({
         disabled={isPending}
         variant="contained"
         color={confirmButtonColor || (severity === "error" ? "error" : "warning")}
-        sx={confirmButtonSx}
+        sx={{ borderRadius: 2.5, fontWeight: 800, textTransform: "none", ...confirmButtonSx }}
       >
         {isPending ? "Working..." : confirmLabel}
       </Button>

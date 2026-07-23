@@ -31,12 +31,14 @@ export function SidebarLoggedin({
     location.pathname.includes("/awards") ||
     location.pathname.includes("/prizes");
 
+  const isResultsPage = location.pathname.includes("/rankings");
+
   const isDisqualificationsPage = location.pathname.includes("/disqualifications");
 
   const isActive = (path: string, end?: boolean) => {
     if (end) return location.pathname === path;
 
-    if (path === "/coordinator/events" && (isGradingProgressPage || isAwardsPage || isDisqualificationsPage)) {
+    if (path === "/coordinator/events" && (isGradingProgressPage || isAwardsPage || isResultsPage || isDisqualificationsPage)) {
       return false;
     }
 
@@ -73,6 +75,10 @@ export function SidebarLoggedin({
                   }
 
                   if (item.path === "/coordinator/awards" && isAwardsPage) {
+                    active = true;
+                  }
+
+                  if (item.path === "/coordinator/results" && isResultsPage) {
                     active = true;
                   }
 

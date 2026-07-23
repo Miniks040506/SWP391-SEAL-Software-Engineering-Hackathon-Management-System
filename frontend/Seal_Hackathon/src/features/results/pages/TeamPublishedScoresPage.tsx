@@ -145,9 +145,13 @@ export const TeamPublishedScoresPage = () => {
                           {score.roundName}
                         </h3>
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-black ${score.advanced ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}`}
+                          className={`rounded-full px-3 py-1 text-xs font-black ${score.finalRound ? "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" : score.advanced ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}`}
                         >
-                          {score.advanced ? "Advanced" : "Not advanced"}
+                          {score.finalRound
+                            ? "Final result"
+                            : score.advanced
+                              ? "Advanced"
+                              : "Not advanced"}
                         </span>
                       </div>
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

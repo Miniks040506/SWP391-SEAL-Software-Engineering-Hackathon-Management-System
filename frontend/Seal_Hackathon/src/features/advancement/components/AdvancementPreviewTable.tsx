@@ -47,7 +47,7 @@ export function AdvancementPreviewTable({
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 mb-6">
+      <div className="mb-8 border-y border-slate-200 py-6 dark:border-slate-800">
         <Skeleton variant="rectangular" height={40} className="mb-4 rounded" />
         <Skeleton variant="rectangular" height={300} className="rounded" />
       </div>
@@ -70,11 +70,16 @@ export function AdvancementPreviewTable({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-300">
+    <section className="mb-8 border-y border-slate-200 py-6 dark:border-slate-800">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+            Decision queue
+          </p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
           Advancement Preview
-        </h2>
+          </h2>
+        </div>
         <Chip
           label="Suggested by system"
           color="primary"
@@ -83,7 +88,7 @@ export function AdvancementPreviewTable({
         />
       </div>
 
-      <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-lg text-sm">
+      <div className="mb-5 border-l-2 border-blue-500 bg-blue-50/60 p-3 text-sm text-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
         Rules applied for cutoff calculation. Teams matching rules advance
         automatically.
       </div>
@@ -91,10 +96,10 @@ export function AdvancementPreviewTable({
       <TableContainer
         component={Paper}
         elevation={0}
-        className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden"
+        className="overflow-hidden rounded-none border-y border-slate-200 dark:border-slate-700"
       >
         <Table>
-          <TableHead className="bg-slate-50 dark:bg-slate-900/50">
+          <TableHead className="bg-slate-50/70 dark:bg-slate-900/50">
             <TableRow>
               <TableCell className="font-semibold text-slate-600 dark:text-slate-300">
                 Rank
@@ -172,7 +177,7 @@ export function AdvancementPreviewTable({
                       </div>
                     </TableCell>
                     <TableCell className="text-slate-600 dark:text-slate-400">
-                      {team.projectTitle || "—"}
+                      {team.projectTitle || "-"}
                     </TableCell>
                     <TableCell>{team.trackName || "N/A"}</TableCell>
                     <TableCell>{team.totalScore || 0}</TableCell>
@@ -196,7 +201,7 @@ export function AdvancementPreviewTable({
                           />
                         )
                       ) : (
-                        <span className="text-slate-400 text-sm">—</span>
+                        <span className="text-slate-400 text-sm">-</span>
                       )}
                     </TableCell>
                     <TableCell>{team.overrideReason || ""}</TableCell>
@@ -264,6 +269,6 @@ export function AdvancementPreviewTable({
           }}
         />
       )}
-    </div>
+    </section>
   );
 }

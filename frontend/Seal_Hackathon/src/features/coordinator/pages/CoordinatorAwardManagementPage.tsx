@@ -8,6 +8,7 @@ import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
+import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
 import SavingsOutlinedIcon from "@mui/icons-material/SavingsOutlined";
 
 import {
@@ -60,7 +61,9 @@ function HeroStat({
         {icon}
       </span>
       <div className="min-w-0">
-        <p className="truncate text-xl font-black leading-none text-white tabular-nums">{value}</p>
+        <p className="truncate text-xl font-black leading-none text-white tabular-nums">
+          {value}
+        </p>
         <p className="mt-1 truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">
           {label}
         </p>
@@ -73,55 +76,73 @@ export const CoordinatorAwardManagementPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
 
-  const { data: event, isLoading: isLoadingEvent } = useCoordinatorEventDetailQuery(eventId);
+  const { data: event, isLoading: isLoadingEvent } =
+    useCoordinatorEventDetailQuery(eventId);
   const {
     data: prizeData,
     isLoading: isLoadingPrizes,
     refetch: refetchPrizes,
     isRefetching,
   } = useCoordinatorPrizesQuery(eventId);
-  const prizes = (prizeData ?? []) as PrizeResponse[];
+  const prizes = useMemo(
+    () => (prizeData ?? []) as PrizeResponse[],
+    [prizeData],
+  );
   const { data: tracks = [] } = useCoordinatorEventTracksQuery(eventId);
-  const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
+  const { data: rounds = [], isLoading: isLoadingRounds } =
+    useCoordinatorEventRoundsQuery(eventId);
 
-  const teamsQuery = useCoordinatorMultipleTeamsQueries(eventId ? [eventId] : []);
-  const teams: CoordinatorTeamSummaryResponse[] = teamsQuery[0]?.data?.content ?? [];
+  const teamsQuery = useCoordinatorMultipleTeamsQueries(
+    eventId ? [eventId] : [],
+  );
+  const teams = teamsQuery[0]?.data?.content;
 
-  const { assignFromRanking, manualAward, clearAward } = useCoordinatorPrizeMutations(eventId);
+  const { assignFromRanking, manualAward, clearAward } =
+    useCoordinatorPrizeMutations(eventId);
 
   const totalPrizes = prizes.length;
   const awardedPrizes = prizes.filter((p) => p.awardedTeamId).length;
   const unawardedPrizes = totalPrizes - awardedPrizes;
-  const awardedPct = totalPrizes > 0 ? Math.round((awardedPrizes / totalPrizes) * 100) : 0;
+  const awardedPct =
+    totalPrizes > 0 ? Math.round((awardedPrizes / totalPrizes) * 100) : 0;
 
-  // Total prize pool — a single event-level metric that stays constant regardless
+  // Total prize pool is a single event-level metric that stays constant regardless
   // of how many tracks the event has (2 or 30), so it always scales.
   const prizePool = useMemo(() => {
     const total = prizes.reduce((sum, p) => sum + (p.value ?? 0), 0);
-    if (total <= 0) return "—";
+    if (total <= 0) return "None";
     const currency = prizes.find((p) => (p.value ?? 0) > 0)?.currency ?? "";
     return `${total.toLocaleString()}${currency ? ` ${currency}` : ""}`;
   }, [prizes]);
 
   const [isAutoAssignOpen, setIsAutoAssignOpen] = useState(false);
   const [isManualAwardOpen, setIsManualAwardOpen] = useState(false);
-  const [selectedPrizeForAward, setSelectedPrizeForAward] = useState<PrizeResponse | null>(null);
+  const [selectedPrizeForAward, setSelectedPrizeForAward] =
+    useState<PrizeResponse | null>(null);
   const [isClearAwardOpen, setIsClearAwardOpen] = useState(false);
-  const [selectedPrizeForClear, setSelectedPrizeForClear] = useState<PrizeResponse | null>(null);
+  const [selectedPrizeForClear, setSelectedPrizeForClear] =
+    useState<PrizeResponse | null>(null);
 
   const [filters, setFilters] = useState<PrizeFilterState>(defaultPrizeFilters);
-  const filteredPrizes = useMemo(() => applyPrizeFilters(prizes, filters), [prizes, filters]);
+  const filteredPrizes = useMemo(
+    () => applyPrizeFilters(prizes, filters),
+    [prizes, filters],
+  );
   const manualAwardTeams = useMemo(
-    () =>
+    (): CoordinatorTeamSummaryResponse[] =>
       selectedPrizeForAward?.trackId
-        ? teams.filter((team) => team.trackId === selectedPrizeForAward.trackId)
-        : teams,
+        ? (teams ?? []).filter(
+            (team) => team.trackId === selectedPrizeForAward.trackId,
+          )
+        : (teams ?? []),
     [selectedPrizeForAward, teams],
   );
 
-  const isLoading = isLoadingEvent || isLoadingPrizes;
+  const isLoading = isLoadingEvent || isLoadingPrizes || isLoadingRounds;
 
-  const handleAutoAssignSubmit = (values: AssignPrizesFromRankingFormValues) => {
+  const handleAutoAssignSubmit = (
+    values: AssignPrizesFromRankingFormValues,
+  ) => {
     assignFromRanking.mutate(values, {
       onSuccess: () => setIsAutoAssignOpen(false),
     });
@@ -159,11 +180,16 @@ export const CoordinatorAwardManagementPage = () => {
     );
   }
 
+  const publishedRounds = event.resultPublishedAt
+    ? rounds
+    : rounds.filter((round) => round.resultPublishedAt);
+  const canAssignPrizes = publishedRounds.length > 0;
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* ===== Hero banner poster (event-level, fixed height — scales for any track count) ===== */}
+      {/* Hero banner poster scales for any track count. */}
       <header className="relative overflow-hidden rounded-3xl border border-slate-800 bg-linear-to-br from-slate-950 via-slate-900 to-blue-950 p-6 sm:p-8">
-        {/* glow blobs — gold + blue for a celebratory prize vibe */}
+        {/* Gold and blue glow for a celebratory prize theme. */}
         <div
           aria-hidden
           className="pointer-events-none absolute -right-20 -top-28 h-80 w-80 rounded-full bg-amber-500/20 blur-3xl"
@@ -220,7 +246,13 @@ export const CoordinatorAwardManagementPage = () => {
               <button
                 type="button"
                 onClick={() => setIsAutoAssignOpen(true)}
-                className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-linear-to-r from-amber-400 to-orange-500 px-5 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/30 transition-all hover:from-amber-300 hover:to-orange-400 hover:shadow-amber-400/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 active:scale-[0.98] motion-reduce:active:scale-100"
+                disabled={!canAssignPrizes}
+                title={
+                  canAssignPrizes
+                    ? "Assign prizes from published rankings"
+                    : "Publish results before assigning prizes"
+                }
+                className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-linear-to-r from-amber-400 to-orange-500 px-5 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/30 transition-all hover:from-amber-300 hover:to-orange-400 hover:shadow-amber-400/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-slate-600 disabled:to-slate-600 disabled:text-slate-300 disabled:shadow-none motion-reduce:active:scale-100"
               >
                 <AutoFixHighOutlinedIcon sx={{ fontSize: 20 }} />
                 Auto Assign
@@ -234,7 +266,10 @@ export const CoordinatorAwardManagementPage = () => {
               Coordinator Workspace · Awards
             </p>
             <h1 className="mt-2 flex items-center gap-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
-              <EmojiEventsOutlinedIcon sx={{ fontSize: 34 }} className="text-amber-300" />
+              <EmojiEventsOutlinedIcon
+                sx={{ fontSize: 34 }}
+                className="text-amber-300"
+              />
               Award{" "}
               <span className="bg-linear-to-r from-amber-300 via-yellow-200 to-orange-300 bg-clip-text text-transparent">
                 Management
@@ -262,7 +297,7 @@ export const CoordinatorAwardManagementPage = () => {
             </div>
           </div>
 
-          {/* Glass stat tiles — event-level KPIs (fixed count) */}
+          {/* Fixed event-level summary. */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <HeroStat
               icon={<EmojiEventsOutlinedIcon sx={{ fontSize: 19 }} />}
@@ -292,11 +327,47 @@ export const CoordinatorAwardManagementPage = () => {
         </div>
       </header>
 
-      {/* ===== Awards table panel — the data-dense list scales with any number of prizes/tracks ===== */}
+      {!canAssignPrizes && (
+        <section
+          aria-labelledby="publish-results-required"
+          className="flex flex-col gap-4 rounded-2xl bg-amber-50 p-5 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-500/30 sm:flex-row sm:items-center"
+        >
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+            <PublishOutlinedIcon />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2
+              id="publish-results-required"
+              className="text-base font-black text-amber-950 dark:text-amber-100"
+            >
+              Publish results before assigning prizes
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-amber-800 dark:text-amber-200/80">
+              Lock grading, calculate the final ranking, and publish the event
+              results. Award controls will unlock after publication.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate(`/coordinator/events/${eventId}/rankings`)}
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-900 px-4 py-2.5 text-sm font-bold whitespace-nowrap text-amber-50 transition-[transform,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-amber-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700 active:scale-[0.98] dark:bg-amber-300 dark:text-amber-950 dark:hover:bg-amber-200"
+          >
+            <PublishOutlinedIcon sx={{ fontSize: 18 }} />
+            Open rankings
+          </button>
+        </section>
+      )}
+
+      {/* Awards table scales with any number of prizes or tracks. */}
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <PrizeFilterBar filters={filters} onChange={setFilters} tracks={tracks} />
+        <PrizeFilterBar
+          filters={filters}
+          onChange={setFilters}
+          tracks={tracks}
+        />
         <AwardManagementTable
           prizes={filteredPrizes}
+          canAssignPrizes={canAssignPrizes}
           onManualAward={(prize) => {
             setSelectedPrizeForAward(prize);
             setIsManualAwardOpen(true);
@@ -312,7 +383,7 @@ export const CoordinatorAwardManagementPage = () => {
       <AssignPrizesFromRankingDialog
         open={isAutoAssignOpen}
         tracks={tracks}
-        rounds={rounds}
+        rounds={publishedRounds}
         isSubmitting={assignFromRanking.isPending}
         onClose={() => setIsAutoAssignOpen(false)}
         onSubmit={handleAutoAssignSubmit}

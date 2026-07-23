@@ -87,6 +87,7 @@ export type RoundResponse = {
   endAt?: ISODateTime;
   submissionDeadline?: ISODateTime;
   judgingDeadline?: ISODateTime;
+  resultPublishedAt?: ISODateTime | null;
 };
 
 export type RoundDetailResponse = {

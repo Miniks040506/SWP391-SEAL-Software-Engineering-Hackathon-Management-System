@@ -52,6 +52,7 @@ import {
 import {
   CoordinatorRankingPage,
   CoordinatorRoundRankingPage,
+  CoordinatorResultsRedirectPage,
   PublicEventLeaderboardPage,
   StandingsPage,
 } from "@/features/ranking";
@@ -265,6 +266,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <CoordinatorDashboardPage /> },
       { path: "events", element: <CoordinatorEventsPage /> },
+      { path: "results", element: <CoordinatorResultsRedirectPage /> },
       { path: "events/create", element: <CoordinatorCreateEventPage /> },
       { path: "events/:eventId/edit", element: <CoordinatorEditEventPage /> },
       {

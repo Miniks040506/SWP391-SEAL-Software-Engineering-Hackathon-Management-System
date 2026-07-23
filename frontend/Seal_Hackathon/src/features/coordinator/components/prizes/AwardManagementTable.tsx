@@ -9,6 +9,7 @@ import { getMedal, formatOrdinal, formatPrizeValue } from "./awardUi";
 
 type AwardManagementTableProps = {
   prizes: PrizeResponse[];
+  canAssignPrizes: boolean;
   onManualAward: (prize: PrizeResponse) => void;
   onClearAward: (prize: PrizeResponse) => void;
 };
@@ -32,6 +33,7 @@ function ScopePill({ trackName }: { trackName?: string }) {
 
 export const AwardManagementTable = ({
   prizes,
+  canAssignPrizes,
   onManualAward,
   onClearAward,
 }: AwardManagementTableProps) => {
@@ -40,17 +42,19 @@ export const AwardManagementTable = ({
       <table className="w-full min-w-[820px] text-sm">
         <thead>
           <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/50">
-            {["Rank", "Scope", "Prize", "Value", "Winner", "Actions"].map((h, i) => (
-              <th
-                key={h}
-                className={[
-                  "px-5 py-3.5 text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400",
-                  i === 5 ? "text-center" : "text-left",
-                ].join(" ")}
-              >
-                {h}
-              </th>
-            ))}
+            {["Rank", "Scope", "Prize", "Value", "Winner", "Actions"].map(
+              (h, i) => (
+                <th
+                  key={h}
+                  className={[
+                    "px-5 py-3.5 text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400",
+                    i === 5 ? "text-center" : "text-left",
+                  ].join(" ")}
+                >
+                  {h}
+                </th>
+              ),
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -65,7 +69,8 @@ export const AwardManagementTable = ({
                     No prizes match your filters
                   </p>
                   <p className="max-w-sm text-sm font-medium text-slate-400">
-                    Adjust the filters above, or configure prizes for this event first.
+                    Adjust the filters above, or configure prizes for this event
+                    first.
                   </p>
                 </div>
               </td>
@@ -95,10 +100,12 @@ export const AwardManagementTable = ({
                         ].join(" ")}
                       >
                         <span className="text-xs font-black tabular-nums drop-shadow">
-                          {prize.rankPosition ?? "—"}
+                          {prize.rankPosition ?? "-"}
                         </span>
                       </span>
-                      <span className={["text-xs font-bold", medal.text].join(" ")}>
+                      <span
+                        className={["text-xs font-bold", medal.text].join(" ")}
+                      >
                         {formatOrdinal(prize.rankPosition)}
                       </span>
                     </div>
@@ -111,7 +118,9 @@ export const AwardManagementTable = ({
 
                   {/* Prize title + sponsor */}
                   <td className="px-5 py-4">
-                    <p className="font-bold text-slate-900 dark:text-white">{prize.title}</p>
+                    <p className="font-bold text-slate-900 dark:text-white">
+                      {prize.title}
+                    </p>
                     {prize.sponsorName && (
                       <p className="mt-0.5 text-[11px] font-medium text-slate-400">
                         by {prize.sponsorName}
@@ -126,7 +135,9 @@ export const AwardManagementTable = ({
                         {value}
                       </span>
                     ) : (
-                      <span className="text-xs italic text-slate-400">No value</span>
+                      <span className="text-xs italic text-slate-400">
+                        No value
+                      </span>
                     )}
                   </td>
 
@@ -157,9 +168,16 @@ export const AwardManagementTable = ({
                     <div className="flex items-center justify-center gap-2">
                       <button
                         type="button"
-                        title={isAwarded ? "Reassign winner" : "Award prize"}
+                        title={
+                          canAssignPrizes
+                            ? isAwarded
+                              ? "Reassign winner"
+                              : "Award prize"
+                            : "Publish results before assigning prizes"
+                        }
+                        disabled={!canAssignPrizes}
                         onClick={() => onManualAward(prize)}
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-600 transition-colors hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-600 transition-colors hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20 dark:disabled:border-slate-700 dark:disabled:bg-slate-800 dark:disabled:text-slate-500"
                       >
                         <EmojiEventsOutlinedIcon sx={{ fontSize: 14 }} />
                         {isAwarded ? "Reassign" : "Award"}

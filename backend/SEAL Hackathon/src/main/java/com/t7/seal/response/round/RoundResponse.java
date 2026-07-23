@@ -79,6 +79,13 @@ public record RoundResponse(
                 format = "date-time",
                 accessMode = Schema.AccessMode.READ_ONLY
         )
-        LocalDateTime judgingDeadline
+        LocalDateTime judgingDeadline,
+        @Schema(
+                description = "Timestamp when this round's results were published.",
+                example = "2027-09-01T09:00:00",
+                format = "date-time",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        LocalDateTime resultPublishedAt
 ) {
 }

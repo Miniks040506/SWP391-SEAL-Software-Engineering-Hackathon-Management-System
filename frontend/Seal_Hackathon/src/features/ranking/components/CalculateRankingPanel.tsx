@@ -1,5 +1,6 @@
 import { Button, CircularProgress } from "@mui/material";
 import CalculateOutlinedIcon from "@mui/icons-material/CalculateOutlined";
+import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 
 interface CalculateRankingPanelProps {
   roundName?: string;
@@ -7,8 +8,12 @@ interface CalculateRankingPanelProps {
   gradingLocked: boolean;
   lastCalculatedTime?: string | null;
   rankingRowCount: number;
+  uniqueSubmissionCount?: number;
+  completedSubmissionCount?: number;
+  judgeAssignmentCount?: number;
   isCalculating: boolean;
   onCalculate: () => void;
+  onOpenGradingProgress: () => void;
 }
 
 export const CalculateRankingPanel = ({
@@ -17,8 +22,12 @@ export const CalculateRankingPanel = ({
   gradingLocked,
   lastCalculatedTime,
   rankingRowCount,
+  uniqueSubmissionCount,
+  completedSubmissionCount,
+  judgeAssignmentCount,
   isCalculating,
   onCalculate,
+  onOpenGradingProgress,
 }: CalculateRankingPanelProps) => {
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-center md:justify-between">
@@ -50,6 +59,22 @@ export const CalculateRankingPanel = ({
               {rankingRowCount}
             </span>
           </div>
+          {uniqueSubmissionCount !== undefined && (
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium">Unique submissions:</span>
+              <span className="font-bold text-slate-900 dark:text-slate-300">
+                {completedSubmissionCount ?? 0} / {uniqueSubmissionCount} complete
+              </span>
+            </div>
+          )}
+          {judgeAssignmentCount !== undefined && (
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium">Judge assignments:</span>
+              <span className="font-bold text-slate-900 dark:text-slate-300">
+                {judgeAssignmentCount}
+              </span>
+            </div>
+          )}
           {lastCalculatedTime && (
             <div className="flex items-center gap-1.5">
               <span className="font-medium">Last calculated:</span>
@@ -58,6 +83,9 @@ export const CalculateRankingPanel = ({
               </span>
             </div>
           )}
+          <p className="basis-full text-xs font-medium text-slate-500 dark:text-slate-400">
+            Rows represent submissions. Disqualified submissions may appear as separate rows.
+          </p>
         </div>
       </div>
 
@@ -85,9 +113,15 @@ export const CalculateRankingPanel = ({
           {isCalculating ? "Calculating..." : "Calculate Ranking"}
         </Button>
         {!gradingLocked && (
-          <span className="text-xs font-semibold text-red-500">
-            Grading must be locked first
-          </span>
+          <Button
+            variant="text"
+            size="small"
+            endIcon={<ArrowForwardOutlinedIcon />}
+            onClick={onOpenGradingProgress}
+            sx={{ fontWeight: 700, textTransform: "none" }}
+          >
+            Open grading progress
+          </Button>
         )}
       </div>
     </div>

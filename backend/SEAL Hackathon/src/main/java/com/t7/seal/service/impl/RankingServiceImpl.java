@@ -134,6 +134,11 @@ public class RankingServiceImpl implements RankingService {
             draft.ifPresent(rankingDrafts::add);
         }
 
+        if (rankingDrafts.isEmpty()) {
+            throw new ConflictException(
+                    "No completed final score sheets found for ranking calculation.");
+        }
+
         rankingRepository.deleteByRoundIdAndTrackIdNullable(roundId, trackId);
         rankingRepository.flush();
 
@@ -794,6 +799,7 @@ public class RankingServiceImpl implements RankingService {
                 submission.getId(),
                 round.getId(),
                 round.getName(),
+                round.isFinalRound(),
                 track.getId(),
                 track.getName(),
                 ranking.getTotalScore(),
@@ -891,6 +897,7 @@ public class RankingServiceImpl implements RankingService {
                 team.getProjectTitle(),
                 round.getId(),
                 round.getName(),
+                round.isFinalRound(),
                 track.getId(),
                 track.getName(),
                 ranking.getTotalScore(),
