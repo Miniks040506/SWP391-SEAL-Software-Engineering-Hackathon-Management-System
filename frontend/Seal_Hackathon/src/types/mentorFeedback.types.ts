@@ -31,6 +31,7 @@ export type MentorFeedbackResponse = {
   teamId?: UUID | null;
   teamName?: string | null;
   submissionId?: UUID | null;
+  submissionNumber?: number | null;
   roundId?: UUID | null;
   roundName?: string | null;
   mentorUserId?: UUID | null;
