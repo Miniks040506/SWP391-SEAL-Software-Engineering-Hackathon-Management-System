@@ -1,0 +1,137 @@
+/*
+ * Pure-CSS motion for the Calibration workspace (list / overview / form / distribution).
+ * Emerald–teal identity. Transform/opacity only, everything <= 500ms except ambient
+ * loops, all gated behind prefers-reduced-motion.
+ */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Staggered section / card entrance. Set --calib-stagger per item (0, 1, 2, …). */
+  .calib-fade-up {
+    opacity: 0;
+    animation: calib-fade-up 320ms ease-out forwards;
+    animation-delay: calc(var(--calib-stagger, 0) * 45ms);
+  }
+
+  @keyframes calib-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Breathing ring on the LIVE status dot. */
+  .calib-live-dot {
+    position: relative;
+  }
+
+  .calib-live-dot::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    border: 2px solid rgba(16, 185, 129, 0.55);
+    animation: calib-live-pulse 2s ease-out infinite;
+  }
+
+  @keyframes calib-live-pulse {
+    0% {
+      transform: scale(0.7);
+      opacity: 0.9;
+    }
+    70% {
+      transform: scale(1.7);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.7);
+      opacity: 0;
+    }
+  }
+
+  /* Ambient emerald glow around a LIVE round card. */
+  .calib-live-card {
+    animation: calib-live-glow 3s ease-in-out infinite;
+  }
+
+  /* When the live card also fades in, run both animations (shorthand would override). */
+  .calib-fade-up.calib-live-card {
+    animation:
+      calib-fade-up 320ms ease-out forwards,
+      calib-live-glow 3s ease-in-out infinite;
+    animation-delay: calc(var(--calib-stagger, 0) * 45ms), 0ms;
+  }
+
+  @keyframes calib-live-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.18), 0 8px 24px -10px rgba(20, 184, 166, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 20px 2px rgba(16, 185, 129, 0.16), 0 10px 28px -8px rgba(20, 184, 166, 0.4);
+    }
+  }
+
+  /* Horizontal bar fill (progress / score / variance bars). */
+  .calib-bar-grow {
+    transform-origin: left center;
+    animation: calib-bar-grow 420ms ease-out both;
+    animation-delay: calc(var(--calib-stagger, 0) * 45ms + 120ms);
+  }
+
+  @keyframes calib-bar-grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Skeleton shimmer for loading cards. */
+  .calib-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .calib-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(148, 163, 184, 0.14),
+      transparent
+    );
+    animation: calib-shimmer 1.6s ease-in-out infinite;
+  }
+
+  @keyframes calib-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Press feedback for cards / prominent buttons. */
+  .calib-press {
+    transition: transform 120ms ease-out;
+  }
+
+  .calib-press:active {
+    transform: scale(0.97);
+  }
+
+  /* Hover lift for interactive cards. */
+  .calib-lift {
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+  }
+
+  .calib-lift:hover {
+    transform: translateY(-2px);
+  }
+}
