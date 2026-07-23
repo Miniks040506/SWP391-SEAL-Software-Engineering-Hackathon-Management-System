@@ -1,4 +1,5 @@
 import type { SubmissionResponse } from "@/types/submission.types";
+import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
 
 const absoluteFormat = new Intl.DateTimeFormat("en", {
   dateStyle: "medium",
@@ -91,4 +92,35 @@ export function summarizeSubmissions(
     rounds: rounds.size,
     latest,
   };
+}
+
+export function groupFeedbackBySubmission(
+  submissions: SubmissionResponse[],
+  feedbacks: MentorFeedbackResponse[],
+) {
+  const bySubmission = new Map<string, MentorFeedbackResponse[]>(
+    submissions.map((submission) => [submission.id, []]),
+  );
+  const submissionIdByRound = new Map(
+    submissions.map((submission) => [submission.roundId, submission.id]),
+  );
+  const other: MentorFeedbackResponse[] = [];
+
+  for (const feedback of feedbacks) {
+    const submissionId =
+      (feedback.submissionId && bySubmission.has(feedback.submissionId)
+        ? feedback.submissionId
+        : undefined) ??
+      (feedback.roundId
+        ? submissionIdByRound.get(feedback.roundId)
+        : undefined);
+
+    if (submissionId) {
+      bySubmission.get(submissionId)?.push(feedback);
+    } else {
+      other.push(feedback);
+    }
+  }
+
+  return { bySubmission, other };
 }

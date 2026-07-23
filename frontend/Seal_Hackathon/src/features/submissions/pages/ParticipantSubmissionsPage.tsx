@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -9,13 +9,14 @@ import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import { Alert } from "@mui/material";
 import { teamApi } from "@/api/team.api";
 import { usePublicEventDetailQuery } from "@/features/events/hooks/usePublicEventQueries";
-import { TeamFeedbackList } from "@/features/teams/components/TeamFeedbackList";
+import { MentorFeedbackCard } from "@/features/teams/components/MentorFeedbackCard";
 import { useTeamFeedback } from "@/features/teams/hooks/useTeamFeedback";
 import type { SubmissionResponse } from "@/types/submission.types";
 import { useTeamSubmissionsQuery } from "../hooks/useParticipantSubmissionQueries";
 import { SubmissionLedgerRow } from "../components/SubmissionLedgerRow";
 import {
   formatDay,
+  groupFeedbackBySubmission,
   summarizeSubmissions,
 } from "../utils/submissionHistoryFormat";
 
@@ -74,11 +75,15 @@ export function ParticipantSubmissionsPage() {
     eventQuery.data?.name ?? activeCompetition?.eventName ?? "Your submissions";
 
   const summary = summarizeSubmissions(submissions);
+  const feedbackGroups = useMemo(
+    () => groupFeedbackBySubmission(submissions, feedbackQuery.data ?? []),
+    [feedbackQuery.data, submissions],
+  );
   const stats = [
     { label: "Submissions", value: `${summary.total}` },
     { label: "Submitted", value: `${summary.submitted}` },
     { label: "Rounds covered", value: `${summary.rounds}` },
-    { label: "Latest activity", value: formatDay(summary.latest) ?? "—" },
+    { label: "Latest activity", value: formatDay(summary.latest) ?? "None" },
   ];
 
   const hasStats = !loading && !error && submissions.length > 0;
@@ -94,7 +99,6 @@ export function ParticipantSubmissionsPage() {
         Back to competing
       </button>
 
-      {/* ── Event hero ──────────────────────────────────────────────── */}
       <section className="relative isolate overflow-hidden rounded-2xl border border-gray-200 shadow-sm dark:border-slate-800">
         {showBanner ? (
           <img
@@ -111,19 +115,12 @@ export function ParticipantSubmissionsPage() {
           />
         )}
 
-        {/* Matches the event detail hero: a light overall veil plus a
-            bottom-weighted scrim, so the banner stays visible while the
-            bottom-anchored copy keeps its contrast. */}
-        {/* Same recipe as the event detail hero: a single bottom-weighted
-            scrim and no overall veil, so the artwork stays bright. The hero is
-            tall enough that the bottom-anchored copy sits inside the dark
-            band rather than over the picture. */}
         <div
           aria-hidden
           className="absolute inset-x-0 bottom-0 -z-10 h-4/5 bg-gradient-to-t from-slate-950/90 via-slate-950/45 to-transparent"
         />
 
-        <div className="flex min-h-90 flex-col justify-end px-6 py-8 sm:px-8 sm:py-10">
+        <div className="flex min-h-72 flex-col justify-end px-6 py-8 sm:px-8 sm:py-10">
           <p className="text-xs font-bold tracking-[0.18em] text-blue-200 uppercase">
             Submission history
           </p>
@@ -147,32 +144,63 @@ export function ParticipantSubmissionsPage() {
               )}
             </div>
           )}
-
-          {hasStats && (
-            <dl className="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-5 sm:grid-cols-4">
-              {stats.map((stat) => (
-                <div key={stat.label}>
-                  <dt className="text-xs font-medium text-white/75">
-                    {stat.label}
-                  </dt>
-                  <dd className="mt-1 truncate text-xl font-semibold tracking-tight text-white tabular-nums">
-                    {stat.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          )}
         </div>
       </section>
 
-      {/* ── Ledger ──────────────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      {hasStats && (
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-slate-200 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-800 sm:grid-cols-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="bg-white px-5 py-4 dark:bg-slate-900"
+            >
+              <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                {stat.label}
+              </dt>
+              <dd className="mt-1 truncate text-xl font-bold tracking-tight text-slate-950 tabular-nums dark:text-white">
+                {stat.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      <section className="overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200 dark:bg-slate-950/30 dark:ring-slate-800">
+        <div className="border-b border-slate-200 bg-white px-5 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+          <h2 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white">
+            Submissions and feedback
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Each mentor note appears with the submission it reviews.
+          </p>
+        </div>
+
+        {feedbackQuery.isError && (
+          <div className="px-4 pt-4 sm:px-5">
+            <Alert
+              severity="warning"
+              action={
+                <button
+                  type="button"
+                  onClick={() => void feedbackQuery.refetch()}
+                  className="cursor-pointer rounded px-2 py-1 text-xs font-bold uppercase"
+                >
+                  Retry
+                </button>
+              }
+            >
+              Submission history loaded, but mentor feedback could not be
+              loaded.
+            </Alert>
+          </div>
+        )}
+
         {loading ? (
-          <ul className="divide-y divide-gray-100 dark:divide-slate-800">
+          <ul className="space-y-3 p-4 sm:p-5">
             {[0, 1, 2].map((index) => (
               <li
                 key={index}
-                className="flex items-center gap-4 px-5 py-4"
+                className="flex items-center gap-4 rounded-2xl bg-white px-5 py-6 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
                 aria-hidden
               >
                 <div className="flex-1 space-y-2">
@@ -226,11 +254,14 @@ export function ParticipantSubmissionsPage() {
             )}
           </div>
         ) : (
-          <ul className="divide-y divide-gray-100 dark:divide-slate-800">
+          <ul className="space-y-4 p-4 sm:p-5">
             {submissions.map((submission) => (
               <SubmissionLedgerRow
                 key={submission.id}
                 submission={submission}
+                feedbacks={feedbackGroups.bySubmission.get(submission.id) ?? []}
+                feedbackLoading={feedbackQuery.isLoading}
+                feedbackError={feedbackQuery.isError}
                 now={now}
                 onOpen={openSubmission}
               />
@@ -239,31 +270,39 @@ export function ParticipantSubmissionsPage() {
         )}
       </section>
 
-      <section aria-labelledby="mentor-feedback-heading">
-        <div className="mb-4 flex items-start gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-            <RateReviewOutlinedIcon style={{ fontSize: 21 }} />
-          </span>
-          <div>
-            <h2
-              id="mentor-feedback-heading"
-              className="text-lg font-bold tracking-tight text-slate-900 dark:text-white"
-            >
-              Mentor feedback
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Published guidance for your team and submitted rounds.
-            </p>
-          </div>
-        </div>
+      {!feedbackQuery.isLoading &&
+        !feedbackQuery.isError &&
+        feedbackGroups.other.length > 0 && (
+          <section aria-labelledby="other-feedback-heading">
+            <div className="mb-4 flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                <RateReviewOutlinedIcon style={{ fontSize: 21 }} />
+              </span>
+              <div>
+                <h2
+                  id="other-feedback-heading"
+                  className="text-lg font-bold tracking-tight text-slate-900 dark:text-white"
+                >
+                  Other mentor feedback
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  Team-wide guidance and notes from submissions outside this
+                  ledger.
+                </p>
+              </div>
+            </div>
 
-        <TeamFeedbackList
-          feedbacks={feedbackQuery.data ?? []}
-          isLoading={feedbackQuery.isLoading}
-          isError={feedbackQuery.isError}
-          onRetry={() => void feedbackQuery.refetch()}
-        />
-      </section>
+            <div className="space-y-3">
+              {feedbackGroups.other.map((feedback) => (
+                <MentorFeedbackCard
+                  key={feedback.id}
+                  feedback={feedback}
+                  showSubmissionContext
+                />
+              ))}
+            </div>
+          </section>
+        )}
     </div>
   );
 }
