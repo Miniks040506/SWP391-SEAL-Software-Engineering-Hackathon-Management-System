@@ -4,8 +4,7 @@ import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlin
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
+import { MentorStatTile, type MentorStatTileAccent } from "../common/MentorStatTile";
 
 export type MentorSummaryCard = {
   title: string;
@@ -30,34 +29,27 @@ function getSummaryIcon(iconType: MentorSummaryCard["iconType"]) {
   }
 }
 
+const ACCENT_BY_ICON: Record<MentorSummaryCard["iconType"], MentorStatTileAccent> = {
+  event: "blue",
+  track: "indigo",
+  team: "emerald",
+  feedback: "amber",
+  deadline: "rose",
+};
+
 export const MentorSummaryCards = ({ cards }: MentorSummaryCardsProps) => {
   return (
     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      {cards.map((card) => (
-        <Card
+      {cards.map((card, index) => (
+        <MentorStatTile
           key={card.title}
-          variant="outlined"
-          className="border-gray-100 dark:border-slate-700 dark:bg-[#1e293b]"
-        >
-          <CardContent>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">
-                  {card.title}
-                </p>
-                <h2 className="mt-2 text-2xl font-extrabold text-gray-900 dark:text-white">
-                  {card.value}
-                </h2>
-                <p className="mt-1 text-sm text-gray-400 dark:text-slate-500">
-                  {card.description}
-                </p>
-              </div>
-              <div className={`rounded-2xl p-3 ${card.color}`}>
-                {getSummaryIcon(card.iconType)}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          title={card.title}
+          value={Number(card.value) || 0}
+          description={card.description}
+          icon={getSummaryIcon(card.iconType)}
+          accent={ACCENT_BY_ICON[card.iconType]}
+          stagger={index + 1}
+        />
       ))}
     </section>
   );
