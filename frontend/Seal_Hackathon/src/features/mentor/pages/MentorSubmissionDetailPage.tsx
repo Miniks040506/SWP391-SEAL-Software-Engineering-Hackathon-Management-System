@@ -1,15 +1,15 @@
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { useSnackbar } from "notistack";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
+import ReportProblemOutlinedIcon from "@mui/icons-material/ReportProblemOutlined";
 import Button from "@mui/material/Button";
-import CircularProgress from "@mui/material/CircularProgress";
-import Divider from "@mui/material/Divider";
 
 import { MentorSubmissionDetailCard } from "../components/submission/MentorSubmissionDetailCard";
 import { MentorSubmissionLinksList } from "../components/submission/MentorSubmissionLinkList";
 import { MentorFeedbackList } from "../components/feedback/MentorFeedbackList";
 import { MentorFeedbackDialog } from "../components/feedback/MentorFeedbackDialog";
+import { MentorPageHero } from "../components/common/MentorPageHero";
 
 import { useMentorSubmissions } from "../hooks/useMentorSubmission";
 import {
@@ -23,6 +23,8 @@ import type { MentorFeedbackFormValues } from "../schemas/mentorFeedback.schema"
 import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
 import type { UUID } from "@/types/common.types";
 import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
+
+import "../styles/mentor.css";
 
 export const MentorSubmissionDetailPage = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -151,23 +153,30 @@ export const MentorSubmissionDetailPage = () => {
 
   if (isSubLoading) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4">
-        <CircularProgress />
+      <div className="space-y-6">
+        <div className="mt-shimmer h-44 rounded-3xl bg-slate-100 dark:bg-slate-800/60" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
+          <div className="space-y-6">
+            <div className="mt-shimmer h-40 rounded-3xl bg-slate-100 dark:bg-slate-800/60" />
+            <div className="mt-shimmer h-56 rounded-3xl bg-slate-100 dark:bg-slate-800/60" />
+          </div>
+          <div className="mt-shimmer h-72 rounded-3xl bg-slate-100 dark:bg-slate-800/60" />
+        </div>
       </div>
     );
   }
 
   if (isError || !submission) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 p-8 text-center dark:border-slate-700 dark:bg-[#1e293b]">
-        <p className="text-lg font-medium text-red-500 dark:text-red-400">
+      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/50">
+        <ReportProblemOutlinedIcon className="mt-pop mb-4 text-4xl text-slate-400 dark:text-slate-500" />
+        <p className="text-lg font-medium text-rose-500 dark:text-rose-400">
           Submission not found.
         </p>
         <Button
           variant="outlined"
           onClick={goBackToHistory}
-          className="mt-6"
-          sx={{ fontWeight: 800, textTransform: "none", borderRadius: "8px" }}
+          sx={{ mt: 3, fontWeight: 700, textTransform: "none", borderRadius: "10px" }}
         >
           Go Back
         </Button>
@@ -176,56 +185,53 @@ export const MentorSubmissionDetailPage = () => {
   }
 
   return (
-    <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
-      <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="text"
-            startIcon={<ArrowBackIcon />}
-            onClick={goBackToHistory}
-            className="text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
-            sx={{ textTransform: "none", fontWeight: 700, marginLeft: "-8px" }}
-          >
-            Back to Track Submissions
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <MentorPageHero
+        backTo={{ label: "Back to Track Submissions", onClick: goBackToHistory }}
+        eyebrow={`${submission.teamName} · ${submission.trackName}`}
+        title={submission.roundName || "Submission Detail"}
+        chips={
+          <>
+            <span
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase ${
+                submission.status === "SUBMITTED"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                  : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              }`}
+            >
+              {submission.status}
+            </span>
+            <span className="rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-xs font-bold tabular-nums text-slate-600 dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
+              Attempt #{submission.submissionNumber}
+            </span>
+          </>
+        }
+      />
 
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-            Submission Detail
-          </h1>
-        </div>
-
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
         <div className="space-y-6">
           <MentorSubmissionDetailCard submission={submission} />
           <MentorSubmissionLinksList links={submission.links || []} />
         </div>
 
-        <Divider className="my-8 border-gray-200 dark:border-slate-700" />
-
-        <div className="space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="flex items-center gap-2 text-xl font-extrabold text-gray-900 dark:text-white">
-                <RateReviewOutlinedIcon className="text-blue-500" />
-                Submission Feedback
-              </h2>
-            </div>
+        <aside
+          className="mt-fade-up self-start rounded-3xl border border-slate-200 bg-white p-5 lg:sticky lg:top-24 dark:border-slate-700/80 dark:bg-slate-900"
+          style={{ "--mt-stagger": 2 } as CSSProperties}
+        >
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <RateReviewOutlinedIcon
+                sx={{ fontSize: 18 }}
+                className="text-blue-600 dark:text-blue-400"
+              />
+              Submission Feedback
+            </h2>
             {!isDialogOpen && (
               <Button
-                variant="outlined"
+                variant="contained"
+                size="small"
                 onClick={handleOpenCreate}
-                sx={{
-                  borderStyle: "dashed",
-                  textTransform: "none",
-                  borderColor: "divider",
-                  color: "primary.main",
-                  borderRadius: "8px",
-                  "&:hover": {
-                    borderStyle: "dashed",
-                    backgroundColor: "action.hover",
-                  },
-                }}
+                sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
               >
                 + Add Feedback
               </Button>
@@ -249,18 +255,19 @@ export const MentorSubmissionDetailPage = () => {
               onPublish={handlePublish}
             />
           )}
-        </div>
-        <ActionConfirmDialog
-          open={feedbackToDelete !== null}
-          title="Delete draft feedback?"
-          description="This draft feedback will be permanently removed and cannot be published later."
-          confirmLabel="Delete feedback"
-          severity="error"
-          onClose={() => setFeedbackToDelete(null)}
-          onConfirm={confirmDelete}
-          isPending={deleteMutation.isPending}
-        />
+        </aside>
       </div>
+
+      <ActionConfirmDialog
+        open={feedbackToDelete !== null}
+        title="Delete draft feedback?"
+        description="This draft feedback will be permanently removed and cannot be published later."
+        confirmLabel="Delete feedback"
+        severity="error"
+        onClose={() => setFeedbackToDelete(null)}
+        onConfirm={confirmDelete}
+        isPending={deleteMutation.isPending}
+      />
     </div>
   );
 };

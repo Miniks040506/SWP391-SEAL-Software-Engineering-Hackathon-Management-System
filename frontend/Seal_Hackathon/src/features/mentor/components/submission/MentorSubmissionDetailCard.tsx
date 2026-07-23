@@ -1,9 +1,6 @@
-import { format } from "date-fns";
+import type { CSSProperties } from "react";
 
-import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
+import { format } from "date-fns";
 
 import type { SubmissionDetailResponse } from "@/types/submission.types";
 
@@ -11,91 +8,83 @@ type MentorSubmissionDetailCardProps = {
   submission: SubmissionDetailResponse;
 };
 
+const MetaTile = ({
+  label,
+  value,
+  stagger,
+  tabular = false,
+}: {
+  label: string;
+  value: string;
+  stagger: number;
+  tabular?: boolean;
+}) => (
+  <div
+    className="mt-fade-up rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50"
+    style={{ "--mt-stagger": stagger } as CSSProperties}
+  >
+    <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      {label}
+    </p>
+    <p
+      className={`mt-1 text-sm font-bold text-slate-950 dark:text-white ${
+        tabular ? "tabular-nums text-lg" : ""
+      }`}
+    >
+      {value}
+    </p>
+  </div>
+);
+
+/**
+ * Slim meta band under the hero: submission number, timestamps and the
+ * team note as a quote block. Team/track/round/status live in the hero.
+ */
 export const MentorSubmissionDetailCard = ({
   submission,
 }: MentorSubmissionDetailCardProps) => {
   return (
-    <Card
-      variant="outlined"
-      className="mb-6 rounded-2xl border-gray-100 dark:border-slate-700 dark:bg-[#1e293b]"
-    >
-      <CardContent>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="flex-1">
-              <div className="mb-4 flex items-center gap-3">
-                <AssignmentOutlinedIcon className="text-blue-600" />
-                <p className="text-sm font-bold uppercase tracking-wide text-gray-400">
-                  {submission.teamName} • {submission.trackName}
-                </p>
-              </div>
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-700/80 dark:bg-slate-900">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <MetaTile
+          label="Submission #"
+          value={`${submission.submissionNumber}`}
+          stagger={1}
+          tabular
+        />
+        <MetaTile
+          label="Submitted At"
+          value={
+            submission.submittedAt
+              ? format(new Date(submission.submittedAt), "MMM dd, yyyy HH:mm")
+              : "Not submitted"
+          }
+          stagger={2}
+        />
+        <MetaTile
+          label="Last Updated"
+          value={
+            submission.updatedAt
+              ? format(new Date(submission.updatedAt), "MMM dd, yyyy HH:mm")
+              : "-"
+          }
+          stagger={3}
+        />
+      </div>
 
-              <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-                {submission.roundName || "Unknown Round"}
-              </h2>
-            </div>
-
-            <div>
-              <Chip
-                label={submission.status}
-                color={
-                  submission.status === "SUBMITTED" ? "success" : "default"
-                }
-                sx={{ fontWeight: 800, textTransform: "uppercase" }}
-              />
-            </div>
-          </div>
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                Submission #
-              </p>
-              <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-                {submission.submissionNumber}
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                Submitted At
-              </p>
-              <p className="mt-1 text-sm font-bold text-gray-900 dark:text-white">
-                {submission.submittedAt
-                  ? format(
-                      new Date(submission.submittedAt),
-                      "MMM dd, yyyy HH:mm",
-                    )
-                  : "Not submitted"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                Last Updated
-              </p>
-              <p className="mt-1 text-sm font-bold text-gray-900 dark:text-white">
-                {submission.updatedAt
-                  ? format(new Date(submission.updatedAt), "MMM dd, yyyy HH:mm")
-                  : "-"}
-              </p>
-            </div>
-          </div>
-          
-          {/* Team Note Section */}
-          {submission.note && (
-            <div className="border-t border-gray-100 pt-5 dark:border-slate-700">
-              <div className="rounded-2xl border border-gray-100 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900/40">
-                <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900 dark:text-white">
-                  Team Note
-                </h3>
-                <p className="mt-2 text-sm font-medium text-gray-600 dark:text-slate-400">
-                  {submission.note}
-                </p>
-              </div>
-            </div>
-          )}
+      {submission.note && (
+        <div
+          className="mt-fade-up mt-4 rounded-2xl border border-slate-200 border-l-4 border-l-blue-500 bg-slate-50 p-5 dark:border-slate-700 dark:border-l-blue-500 dark:bg-slate-800/50"
+          style={{ "--mt-stagger": 4 } as CSSProperties}
+        >
+          <h3 className="text-xs font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">
+            Team Note
+          </h3>
+          <p className="mt-2 whitespace-pre-wrap text-sm font-medium text-slate-600 dark:text-slate-400">
+            {submission.note}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </section>
   );
 };

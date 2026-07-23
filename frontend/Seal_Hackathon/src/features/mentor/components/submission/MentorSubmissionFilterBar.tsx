@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import type { CSSProperties } from "react";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
@@ -80,7 +81,10 @@ export const MentorSubmissionFilterBar = ({ filters, onChange, rounds = [] }: Pr
   const hasActiveFilters = Boolean(filters.search || filters.status || filters.roundId);
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-[#1e293b]">
+    <div
+      className="mt-fade-up rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700/80 dark:bg-slate-900"
+      style={{ "--mt-stagger": 1 } as CSSProperties}
+    >
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
         {/* Search Bar */}
         <div className="flex-1">
@@ -95,7 +99,7 @@ export const MentorSubmissionFilterBar = ({ filters, onChange, rounds = [] }: Pr
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon fontSize="small" className="text-gray-400" />
+                    <SearchIcon fontSize="small" className="text-slate-400" />
                   </InputAdornment>
                 ),
               },
@@ -112,9 +116,9 @@ export const MentorSubmissionFilterBar = ({ filters, onChange, rounds = [] }: Pr
               onChange={handleRoundChange}
               sx={filterInputSx}
               renderValue={(selected) => {
-                if (!selected) return <span className="font-medium text-gray-500">All Rounds</span>;
+                if (!selected) return <span className="font-medium text-slate-500">All Rounds</span>;
                 const found = rounds.find((r) => r.id === selected);
-                return <span className="text-gray-900 dark:text-white">{found?.name || "Unknown Round"}</span>;
+                return <span className="text-slate-900 dark:text-white">{found?.name || "Unknown Round"}</span>;
               }}
             >
               <MenuItem value="">All Rounds</MenuItem>
@@ -133,8 +137,8 @@ export const MentorSubmissionFilterBar = ({ filters, onChange, rounds = [] }: Pr
               onChange={handleStatusChange}
               sx={filterInputSx}
               renderValue={(selected) => {
-                if (!selected) return <span className="font-medium text-gray-500">All Statuses</span>;
-                return <span className="text-gray-900 dark:text-white">{selected}</span>;
+                if (!selected) return <span className="font-medium text-slate-500">All Statuses</span>;
+                return <span className="text-slate-900 dark:text-white">{selected}</span>;
               }}
             >
               <MenuItem value="">All Statuses</MenuItem>

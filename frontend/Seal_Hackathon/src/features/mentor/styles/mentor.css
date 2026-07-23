@@ -1,0 +1,239 @@
+/*
+ * Pure-CSS motion for the Mentor pages
+ * (dashboard, teams, submissions, team detail, submission detail).
+ * Transform/opacity only, micro-interactions kept within 150-400ms,
+ * ambient loops slower, everything animation-related gated behind
+ * prefers-reduced-motion. Mirrors gradingProgress.css structure.
+ */
+
+/* Layout-critical collapse primitives live outside the media query so the
+   expandable rows work even with reduced motion (values jump instantly). */
+.mt-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+
+.mt-collapse.mt-open {
+  grid-template-rows: 1fr;
+}
+
+.mt-collapse > * {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Staggered section / row entrance. Set --mt-stagger per item (0, 1, 2, …). */
+  .mt-fade-up {
+    opacity: 0;
+    animation: mt-fade-up 320ms ease-out forwards;
+    animation-delay: calc(var(--mt-stagger, 0) * 45ms);
+  }
+
+  @keyframes mt-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Expand/collapse transition for expandable detail rows. */
+  .mt-collapse {
+    transition: grid-template-rows 280ms ease-out;
+  }
+
+  /* Breathing ring on the live-monitoring dot. Only force `relative` on
+     statically-positioned dots — timeline dots position themselves with
+     Tailwind's `absolute`, which must win (this file is unlayered and would
+     otherwise override the `utilities` layer). */
+  .mt-live-dot:not(.absolute) {
+    position: relative;
+  }
+
+  .mt-live-dot::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    border: 2px solid rgba(16, 185, 129, 0.55);
+    animation: mt-live-pulse 2s ease-out infinite;
+  }
+
+  @keyframes mt-live-pulse {
+    0% {
+      transform: scale(0.7);
+      opacity: 0.9;
+    }
+    70% {
+      transform: scale(1.7);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.7);
+      opacity: 0;
+    }
+  }
+
+  /* Ambient amber glow on a row that needs live attention (e.g. JUDGING). */
+  .mt-glow-amber {
+    animation: mt-glow-amber 3s ease-in-out infinite;
+  }
+
+  .mt-fade-up.mt-glow-amber {
+    animation:
+      mt-fade-up 320ms ease-out forwards,
+      mt-glow-amber 3s ease-in-out infinite;
+    animation-delay: calc(var(--mt-stagger, 0) * 45ms), 0ms;
+  }
+
+  @keyframes mt-glow-amber {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.14), 0 8px 24px -10px rgba(245, 158, 11, 0.25);
+    }
+    50% {
+      box-shadow: 0 0 18px 2px rgba(245, 158, 11, 0.14), 0 10px 28px -8px rgba(245, 158, 11, 0.32);
+    }
+  }
+
+  /* Horizontal bar fill entrance (progress / segment bars). */
+  .mt-bar-grow {
+    transform-origin: left center;
+    animation: mt-bar-grow 420ms ease-out both;
+    animation-delay: calc(var(--mt-stagger, 0) * 45ms + 120ms);
+  }
+
+  @keyframes mt-bar-grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Moving sheen on a bar that is actively live. */
+  .mt-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mt-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.35),
+      transparent
+    );
+    animation: mt-sheen 2.2s ease-in-out infinite;
+  }
+
+  @keyframes mt-sheen {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Skeleton shimmer for loading blocks. */
+  .mt-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mt-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(148, 163, 184, 0.14),
+      transparent
+    );
+    animation: mt-shimmer 1.6s ease-in-out infinite;
+  }
+
+  @keyframes mt-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Refresh icon spin while a refetch is in flight. */
+  .mt-spin {
+    animation: mt-spin 1s linear infinite;
+  }
+
+  @keyframes mt-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Checklist tick / icon pop-in. */
+  .mt-pop {
+    animation: mt-pop 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes mt-pop {
+    from {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* One-time settle for prominent state cards. */
+  .mt-settle {
+    animation: mt-settle 420ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  }
+
+  @keyframes mt-settle {
+    from {
+      transform: scale(0.97);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Chevron rotation on expandable rows. */
+  .mt-chevron {
+    transition: transform 200ms ease-out;
+  }
+
+  .mt-chevron.mt-open {
+    transform: rotate(180deg);
+  }
+
+  /* Press feedback for cards / prominent buttons. */
+  .mt-press {
+    transition: transform 120ms ease-out;
+  }
+
+  .mt-press:active {
+    transform: scale(0.97);
+  }
+
+  /* Hover lift for interactive rows / cards. */
+  .mt-lift {
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+  }
+
+  .mt-lift:hover {
+    transform: translateY(-2px);
+  }
+}

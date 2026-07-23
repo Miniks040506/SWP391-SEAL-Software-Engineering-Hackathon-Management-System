@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import Alert from "@mui/material/Alert";
 import Pagination from "@mui/material/Pagination";
 
@@ -7,8 +8,11 @@ import {
   MentorSubmissionFilterBar,
   type MentorSubmissionFilters,
 } from "../components/submission/MentorSubmissionFilterBar";
+import { MentorPageHero } from "../components/common/MentorPageHero";
 import { useMentorSubmissions } from "../hooks/useMentorSubmission";
 import type { GetMentorSubmissionsParams } from "@/types/submission.types";
+
+import "../styles/mentor.css";
 
 const PAGE_SIZE = 20;
 
@@ -40,48 +44,55 @@ export const MentorSubmissionPage = () => {
   }, [submissions]);
 
   return (
-    <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-300">
-            Track Submissions
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-            Review submitted deliverables from teams across your assigned tracks.
-          </p>
+    <div className="space-y-6">
+      <MentorPageHero
+        eyebrow="Mentor · Submissions"
+        title="Track Submissions"
+        subtitle="Review submitted deliverables from teams across your assigned tracks."
+        chips={
+          !trackSubmissionsQuery.isLoading && (
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400">
+              {response?.totalElements ?? submissions.length}{" "}
+              {(response?.totalElements ?? submissions.length) === 1
+                ? "submission"
+                : "submissions"}
+            </span>
+          )
+        }
+      />
+
+      <MentorSubmissionFilterBar
+        filters={filters}
+        onChange={handleFiltersChange}
+        rounds={availableRounds}
+      />
+
+      {trackSubmissionsQuery.isError && (
+        <Alert severity="error">
+          Unable to load assigned-track submissions. Please try again.
+        </Alert>
+      )}
+
+      <MentorSubmissionTable
+        isLoading={trackSubmissionsQuery.isLoading}
+        submissions={submissions}
+        emptyReason={response?.emptyReason}
+        onRowClick={goToSubmissionDetail}
+      />
+
+      {response && response.totalPages > 1 && (
+        <div
+          className="mt-fade-up flex justify-center"
+          style={{ "--mt-stagger": 3 } as CSSProperties}
+        >
+          <Pagination
+            page={response.page + 1}
+            count={response.totalPages}
+            onChange={(_, nextPage) => setPage(nextPage - 1)}
+            color="primary"
+          />
         </div>
-
-        {/* Thanh Filter Mới */}
-        <MentorSubmissionFilterBar
-          filters={filters}
-          onChange={handleFiltersChange}
-          rounds={availableRounds}
-        />
-
-        {trackSubmissionsQuery.isError && (
-          <Alert severity="error">
-            Unable to load assigned-track submissions. Please try again.
-          </Alert>
-        )}
-
-        <MentorSubmissionTable
-          isLoading={trackSubmissionsQuery.isLoading}
-          submissions={submissions}
-          emptyReason={response?.emptyReason}
-          onRowClick={goToSubmissionDetail}
-        />
-
-        {response && response.totalPages > 1 && (
-          <div className="flex justify-center">
-            <Pagination
-              page={response.page + 1}
-              count={response.totalPages}
-              onChange={(_, nextPage) => setPage(nextPage - 1)}
-              color="primary"
-            />
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };

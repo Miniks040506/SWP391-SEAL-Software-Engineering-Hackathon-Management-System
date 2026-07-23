@@ -166,8 +166,6 @@ export function useMentorDashboard() {
   const goToSchedule = () => navigate("/mentor/schedule");
   const goToSubmissionDetail = (submissionId: string) =>
     navigate(`/mentor/submissions/${submissionId}`);
-  const goToFeedback = (submissionId: string) =>
-    navigate(`/mentor/submissions/${submissionId}/feedback`);
 
   return {
     isLoading,
@@ -178,6 +176,5 @@ export function useMentorDashboard() {
     goToSubmissions,
     goToSchedule,
     goToSubmissionDetail,
-    goToFeedback,
   };
 }

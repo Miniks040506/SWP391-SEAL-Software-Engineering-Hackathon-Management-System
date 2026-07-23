@@ -1,13 +1,215 @@
+import { useState } from "react";
+import type { CSSProperties } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
+import Button from "@mui/material/Button";
+
+import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import ReportProblemOutlinedIcon from "@mui/icons-material/ReportProblemOutlined";
+import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
+
 import { teamApi } from "@/api/team.api";
-import {
-  getTeamStatusColor,
-  getSubmissionStatusColor,
-} from "@/features/teams/schemas/teams.schema";
 import { useMentorTeamFeedbackQuery } from "../hooks/useMentorFeedback";
 import type { MentorFeedbackResponse } from "@/types/mentorFeedback.types";
+
+import { MentorPageHero } from "../components/common/MentorPageHero";
+import { MentorStatTile } from "../components/common/MentorStatTile";
+
+import "../styles/mentor.css";
+
+/** Local pill helpers — no cross-feature schema imports. */
+function getTeamStatusPill(status: string): string {
+  switch (status) {
+    case "ACTIVE":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400";
+    case "REGISTERED":
+      return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300";
+  }
+}
+
+function getSubmissionStatusPill(status: string): string {
+  switch (status) {
+    case "SUBMITTED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400";
+    case "DRAFT":
+      return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400";
+    default:
+      return "border-slate-300 bg-transparent text-slate-500 dark:border-slate-600 dark:text-slate-400";
+  }
+}
+
+const NEUTRAL_PILL =
+  "border-slate-200 bg-white/70 text-slate-600 dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-300";
+
+type RoundSubmission = NonNullable<
+  Awaited<ReturnType<typeof teamApi.getAssignedTeamDetails>>["submissions"]
+>[number];
+
+type RoundJourneyNodeProps = {
+  submission: RoundSubmission;
+  feedbacks: MentorFeedbackResponse[];
+  stagger: number;
+  isLast: boolean;
+};
+
+/** One node of the round journey timeline, with a collapsible feedback thread. */
+const RoundJourneyNode = ({
+  submission: sub,
+  feedbacks,
+  stagger,
+  isLast,
+}: RoundJourneyNodeProps) => {
+  const [open, setOpen] = useState(feedbacks.length > 0);
+  const isJudging = sub.roundStatus === "JUDGING";
+
+  return (
+    <li className="relative pl-8">
+      {!isLast && (
+        <span className="absolute left-[5px] top-6 h-full w-px bg-slate-200 dark:bg-slate-700/80" />
+      )}
+      <span
+        className={`absolute left-0 top-2.5 inline-block h-[11px] w-[11px] rounded-full ${
+          sub.submissionStatus === "SUBMITTED"
+            ? "bg-emerald-500"
+            : isJudging
+              ? "mt-live-dot bg-amber-500"
+              : "bg-slate-300 dark:bg-slate-600"
+        }`}
+      />
+
+      <div
+        className={`mt-fade-up rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700/80 dark:bg-slate-900 ${
+          isJudging ? "mt-glow-amber" : ""
+        }`}
+        style={{ "--mt-stagger": stagger } as CSSProperties}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h4 className="font-black text-slate-950 dark:text-white">
+              {sub.roundName || "Unknown Round"}
+            </h4>
+            {sub.submissionStatus && (
+              <span
+                className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${getSubmissionStatusPill(sub.submissionStatus)}`}
+              >
+                {sub.submissionStatus}
+              </span>
+            )}
+            {isJudging && (
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+                JUDGING
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              Round Status
+            </p>
+            <p className="mt-0.5 text-xs font-bold text-slate-700 dark:text-slate-300">
+              {sub.roundStatus || "-"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              Attempt
+            </p>
+            <p className="mt-0.5 text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300">
+              {sub.submissionNumber || "-"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              Submitted
+            </p>
+            <p className="mt-0.5 text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300">
+              {sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString() : "-"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              Links
+            </p>
+            <p className="mt-0.5 text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300">
+              {sub.linkCount || 0}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700/80">
+          <button
+            type="button"
+            onClick={() => setOpen((prev) => !prev)}
+            aria-expanded={open}
+            className="flex cursor-pointer items-center gap-1.5 rounded text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+          >
+            <ExpandMoreOutlinedIcon
+              sx={{ fontSize: 18 }}
+              className={`mt-chevron ${open ? "mt-open" : ""}`}
+            />
+            {feedbacks.length}{" "}
+            {feedbacks.length === 1 ? "feedback" : "feedbacks"} ·{" "}
+            {open ? "hide" : "show"}
+          </button>
+
+          <div className={`mt-collapse ${open ? "mt-open" : ""}`}>
+            <div>
+              <div className="space-y-3 pt-3">
+                {feedbacks.length === 0 ? (
+                  <p className="text-xs italic text-slate-500 dark:text-slate-400">
+                    No feedback for this round yet
+                  </p>
+                ) : (
+                  feedbacks.map((fb) => (
+                    <div
+                      key={fb.id}
+                      className="rounded-lg border border-slate-200 border-l-4 border-l-blue-500 bg-slate-50 p-3 dark:border-slate-700 dark:border-l-blue-500 dark:bg-slate-800/50"
+                    >
+                      <div className="mb-2 flex items-start justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                            {fb.mentorName || "Unknown Mentor"}
+                          </span>
+                          {fb.category && (
+                            <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                              {fb.category}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`rounded border px-1.5 py-0.5 text-[10px] font-bold ${
+                            fb.visibility === "PUBLISHED"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                              : "border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                          }`}
+                        >
+                          {fb.visibility || "DRAFT"}
+                        </span>
+                      </div>
+                      <p className="whitespace-pre-wrap text-xs text-slate-700 dark:text-slate-300">
+                        {fb.content}
+                      </p>
+                      <div className="mt-2 text-right text-[10px] text-slate-400 dark:text-slate-500">
+                        {new Date(fb.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+};
 
 export function MentorTeamDetailPage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -22,349 +224,275 @@ export function MentorTeamDetailPage() {
   const { data: rawFeedbacks } = useMentorTeamFeedbackQuery(teamId);
   const feedbacks = (rawFeedbacks as MentorFeedbackResponse[]) ?? [];
 
-  return (
-    <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <button
-            onClick={() => navigate("/mentor/teams")}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-2 block"
-          >
-            ← Back to Teams
-          </button>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-300">
-            Team Details
-          </h1>
+  if (loadingDetail) {
+    return (
+      <div className="space-y-6">
+        <div className="mt-shimmer h-44 rounded-3xl bg-slate-100 dark:bg-slate-800/60" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div
+              key={index}
+              className="mt-shimmer h-64 rounded-3xl bg-slate-100 dark:bg-slate-800/60"
+            />
+          ))}
         </div>
-        <button
-          type="button"
-          onClick={() => navigate(`/mentor/teams/${teamId}/scores`)}
-          disabled={!teamId}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          View published scores
-        </button>
       </div>
+    );
+  }
 
-      <div className="bg-white dark:bg-slate-900 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="p-6">
-          {loadingDetail ? (
-            <div className="flex items-center justify-center py-20 text-slate-500 dark:text-slate-400 text-sm">
-              Loading team details...
-            </div>
-          ) : detail ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column */}
-                <div className="col-span-1 lg:col-span-2 space-y-6">
-                  {/* Team Overview Card */}
-                  <section className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700/50 h-full">
-                    <div className="flex items-center justify-between mb-5">
-                      <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        TEAM OVERVIEW
-                      </h3>
+  if (!detail) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
+          <ReportProblemOutlinedIcon className="mt-pop mb-4 text-4xl text-slate-400 dark:text-slate-500" />
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+            Failed to load team details.
+          </p>
+          <Button
+            variant="outlined"
+            onClick={() => navigate("/mentor/teams")}
+            sx={{ mt: 3, borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
+          >
+            Back to Teams
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-                      {detail.status && (
-                        <span
-                          className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getTeamStatusColor(
-                            detail.status,
-                          )}`}
-                        >
-                          {detail.status}
-                        </span>
-                      )}
-                    </div>
+  const totalCount = detail.submissionCount ?? 0;
+  const submittedCount = detail.submittedSubmissionCount ?? 0;
+  const fillPercent = totalCount > 0 ? (submittedCount / totalCount) * 100 : 0;
+  const leaderName =
+    detail.leaderName ||
+    detail.members?.find((m) => m.role === "LEADER")?.fullName ||
+    "Unassigned";
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                          Team Name
-                        </p>
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                          {detail.teamName}
-                        </p>
-                      </div>
+  return (
+    <div className="space-y-6">
+      <MentorPageHero
+        backTo={{ label: "Back to Teams", onClick: () => navigate("/mentor/teams") }}
+        eyebrow="Mentor · Team"
+        title={detail.teamName}
+        subtitle={detail.projectTitle || undefined}
+        chips={
+          <>
+            {detail.status && (
+              <span
+                className={`rounded-full border px-3 py-1 text-xs font-bold ${getTeamStatusPill(detail.status)}`}
+              >
+                {detail.status}
+              </span>
+            )}
+            {detail.eventName && (
+              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${NEUTRAL_PILL}`}>
+                {detail.eventName}
+              </span>
+            )}
+            {detail.trackName && (
+              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${NEUTRAL_PILL}`}>
+                {detail.trackName}
+              </span>
+            )}
+          </>
+        }
+        actions={
+          <Button
+            variant="contained"
+            onClick={() => navigate(`/mentor/teams/${teamId}/scores`)}
+            disabled={!teamId}
+            sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
+          >
+            View published scores
+          </Button>
+        }
+      />
 
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                          Leader
-                        </p>
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                          {detail.leaderName ||
-                            detail.members?.find((m) => m.role === "LEADER")
-                              ?.fullName ||
-                            "Unassigned"}
-                        </p>
-                      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Roster */}
+        <section
+          className="mt-fade-up rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-700/80 dark:bg-slate-900"
+          style={{ "--mt-stagger": 1 } as CSSProperties}
+        >
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Roster ({detail.members?.length ?? 0})
+          </h3>
 
-                      {detail.leaderEmail && (
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                            Leader Email
-                          </p>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                            {detail.leaderEmail}
-                          </p>
-                        </div>
-                      )}
-
-                      {detail.projectTitle && (
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                            Project Title
-                          </p>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                            {detail.projectTitle}
-                          </p>
-                        </div>
-                      )}
-
-                      {detail.description && (
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                            Description
-                          </p>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                            {detail.description}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="col-span-1 md:col-span-2 border-t border-slate-200 dark:border-slate-700/50 pt-3 mt-1 grid grid-cols-2 gap-5">
-                        <div>
-                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                            Event
-                          </p>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                            {detail.eventName || "No event"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                            Track
-                          </p>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                            {detail.trackName || "No track"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-                </div>
-
-                {/* Right Column */}
-                <div className="col-span-1 space-y-6">
-                  {/* Members Card */}
-                  <section className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                    <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
-                      Members ({detail.members?.length ?? 0})
-                    </h3>
-
-                    {detail.members?.length ? (
-                      <ul className="space-y-3">
-                        {detail.members.map((member) => (
-                          <li
-                            key={member.memberId}
-                            className="flex items-start justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 shadow-sm"
-                          >
-                            <div>
-                              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                                {member.fullName}
-                              </p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                {member.email}
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 uppercase shrink-0">
-                              {member.role || "MEMBER"}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-                        No members found.
+          {detail.members?.length ? (
+            <ul className="mt-4 space-y-3">
+              {detail.members.map((member, index) => (
+                <li
+                  key={member.memberId}
+                  className="mt-fade-up flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700/80 dark:bg-slate-800/50"
+                  style={{ "--mt-stagger": 2 + index } as CSSProperties}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-black text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                      {(member.fullName || "?").charAt(0).toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+                        {member.fullName}
                       </p>
-                    )}
-                  </section>
-
-                  {/* Submission Stats Card */}
-                  <section className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                    <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
-                      Submission Stats
-                    </h3>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <p className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                          {detail.submissionCount}
-                        </p>
-                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase mt-1">
-                          Total
-                        </p>
-                      </div>
-                      <div className="bg-green-50 dark:bg-green-900/10 p-3 rounded-lg border border-green-200 dark:border-green-800/30 shadow-sm">
-                        <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                          {detail.submittedSubmissionCount}
-                        </p>
-                        <p className="text-[10px] font-semibold text-green-600/70 dark:text-green-400/70 uppercase mt-1">
-                          Submitted
-                        </p>
-                      </div>
-                      <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-200 dark:border-red-800/30 shadow-sm">
-                        <p className="text-xl font-bold text-red-600 dark:text-red-400">
-                          {detail.missingSubmissionCount}
-                        </p>
-                        <p className="text-[10px] font-semibold text-red-600/70 dark:text-red-400/70 uppercase mt-1">
-                          Missing
-                        </p>
-                      </div>
+                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                        {member.email}
+                      </p>
                     </div>
-                  </section>
-                </div>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase ${
+                      member.role === "LEADER"
+                        ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
+                        : "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                    }`}
+                  >
+                    {member.role || "MEMBER"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-4 text-sm italic text-slate-500 dark:text-slate-400">
+              No members found.
+            </p>
+          )}
+        </section>
 
-                {/* Submission Progress */}
-                <section className="col-span-1 lg:col-span-3 w-full">
-                  <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
-                    Submission Progress
-                  </h3>
+        {/* Submission pulse */}
+        <section
+          className="mt-fade-up rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-700/80 dark:bg-slate-900"
+          style={{ "--mt-stagger": 2 } as CSSProperties}
+        >
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Submission Pulse
+          </h3>
 
-                  {detail.submissions?.length ? (
-                    <div className="flex flex-col gap-4 w-full">
-                      {detail.submissions.map((sub, idx) => (
-                        <div
-                          key={sub.roundId || idx}
-                          className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 flex flex-col"
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 line-clamp-1">
-                              {sub.roundName || "Unknown Round"}
-                            </h4>
-                            {sub.submissionStatus && (
-                              <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ml-2 ${getSubmissionStatusColor(
-                                  sub.submissionStatus,
-                                )}`}
-                              >
-                                {sub.submissionStatus}
-                              </span>
-                            )}
-                          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3">
+            <MentorStatTile
+              title="Total"
+              value={totalCount}
+              description="Rounds tracked"
+              icon={<FactCheckOutlinedIcon />}
+              accent="blue"
+              stagger={3}
+            />
+            <MentorStatTile
+              title="Submitted"
+              value={submittedCount}
+              description="Rounds delivered"
+              icon={<TaskAltOutlinedIcon />}
+              accent="emerald"
+              stagger={4}
+            />
+            <MentorStatTile
+              title="Missing"
+              value={detail.missingSubmissionCount ?? 0}
+              description="Rounds outstanding"
+              icon={<ReportProblemOutlinedIcon />}
+              accent="rose"
+              stagger={5}
+            />
+          </div>
 
-                          <div className="space-y-1.5 mt-auto">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                Round Status
-                              </span>
-                              <span className="font-medium text-slate-700 dark:text-slate-300">
-                                {sub.roundStatus || "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                Attempt Number
-                              </span>
-                              <span className="font-medium text-slate-700 dark:text-slate-300">
-                                {sub.submissionNumber || "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                Submitted
-                              </span>
-                              <span className="font-medium text-slate-700 dark:text-slate-300">
-                                {sub.submittedAt
-                                  ? new Date(
-                                      sub.submittedAt,
-                                    ).toLocaleDateString()
-                                  : "-"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                Links
-                              </span>
-                              <span className="font-medium text-slate-700 dark:text-slate-300">
-                                {sub.linkCount || 0}
-                              </span>
-                            </div>
-                          </div>
+          <div className="mt-4">
+            <div className="h-2 overflow-hidden rounded-full bg-slate-200/70 dark:bg-slate-700/60">
+              {totalCount > 0 && (
+                <div
+                  className="mt-bar-grow h-full rounded-full bg-emerald-500"
+                  style={{ width: `${fillPercent}%`, "--mt-stagger": 5 } as CSSProperties}
+                />
+              )}
+            </div>
+            <p className="mt-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {totalCount > 0
+                ? `${submittedCount}/${totalCount} rounds submitted`
+                : "No rounds submitted yet"}
+            </p>
+          </div>
+        </section>
 
-                          {/* Mentor Feedback Section for this round */}
-                          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                            <h5 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
-                              Mentor Feedback
-                            </h5>
+        {/* About */}
+        <section
+          className="mt-fade-up rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-700/80 dark:bg-slate-900"
+          style={{ "--mt-stagger": 3 } as CSSProperties}
+        >
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            About
+          </h3>
 
-                            <div className="space-y-3 mb-4">
-                              {(() => {
-                                const roundFeedbacks = feedbacks.filter(
-                                  (f) => f.roundId === sub.roundId,
-                                );
-                                if (roundFeedbacks.length === 0) {
-                                  return (
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 italic">
-                                      No feedback for this round yet
-                                    </p>
-                                  );
-                                }
-                                return roundFeedbacks.map((fb) => (
-                                  <div
-                                    key={fb.id}
-                                    className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-700"
-                                  >
-                                    <div className="flex justify-between items-start mb-2">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                                          {fb.mentorName || "Unknown Mentor"}
-                                        </span>
-                                        {fb.category && (
-                                          <span className="text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-1.5 py-0.5 rounded">
-                                            {fb.category}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <span
-                                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                                            fb.visibility === "PUBLISHED"
-                                              ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/50"
-                                              : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
-                                          }`}
-                                        >
-                                          {fb.visibility || "DRAFT"}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <p className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                                      {fb.content}
-                                    </p>
-                                    <div className="mt-2 text-[10px] text-slate-400 dark:text-slate-500 text-right">
-                                      {new Date(fb.createdAt).toLocaleString()}
-                                    </div>
-                                  </div>
-                                ));
-                              })()}
-                            </div>
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Leader</p>
+              <p className="mt-0.5 text-sm font-medium text-slate-800 dark:text-slate-200">
+                {leaderName}
+              </p>
+            </div>
 
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-                      No submissions found.
-                    </p>
-                  )}
-                </section>
+            {detail.leaderEmail && (
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  Leader Email
+                </p>
+                <p className="mt-0.5 text-sm font-medium text-slate-800 dark:text-slate-200">
+                  {detail.leaderEmail}
+                </p>
+              </div>
+            )}
+
+            {detail.description && (
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  Description
+                </p>
+                <p className="mt-0.5 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                  {detail.description}
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-3 dark:border-slate-700/80">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Event</p>
+                <p className="mt-0.5 text-sm font-medium text-slate-800 dark:text-slate-200">
+                  {detail.eventName || "No event"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Track</p>
+                <p className="mt-0.5 text-sm font-medium text-slate-800 dark:text-slate-200">
+                  {detail.trackName || "No track"}
+                </p>
               </div>
             </div>
-          ) : (
-            <div className="text-center text-slate-500 dark:text-slate-400 py-10 text-sm">
-              Failed to load team details.
-            </div>
-          )}
-        </div>
+          </div>
+        </section>
       </div>
+
+      {/* Round journey */}
+      <section>
+        <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <GroupsOutlinedIcon sx={{ fontSize: 16 }} />
+          Round Journey
+        </h3>
+
+        {detail.submissions?.length ? (
+          <ol className="space-y-5">
+            {detail.submissions.map((sub, idx) => (
+              <RoundJourneyNode
+                key={sub.roundId || idx}
+                submission={sub}
+                feedbacks={feedbacks.filter((f) => f.roundId === sub.roundId)}
+                stagger={4 + idx}
+                isLast={idx === (detail.submissions?.length ?? 0) - 1}
+              />
+            ))}
+          </ol>
+        ) : (
+          <p className="text-sm italic text-slate-500 dark:text-slate-400">
+            No submissions found.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

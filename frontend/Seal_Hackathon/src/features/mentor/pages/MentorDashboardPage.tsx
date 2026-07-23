@@ -5,6 +5,8 @@ import { MentorWelcomeBanner } from "../components/dashboard/MentorWelcomeBanner
 
 import { useMentorDashboard } from "../hooks/useMentorDashboard";
 
+import "../styles/mentor.css";
+
 export const MentorDashboardPage = () => {
   const {
     dashboard,
@@ -12,11 +14,10 @@ export const MentorDashboardPage = () => {
     goToSubmissions,
     goToSchedule,
     goToSubmissionDetail,
-    goToFeedback,
   } = useMentorDashboard();
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6">
       <MentorWelcomeBanner
         mentorName={dashboard.mentorName}
         onViewTeams={goToTeams}
@@ -32,7 +33,6 @@ export const MentorDashboardPage = () => {
           onViewTeams={goToTeams}
           onViewSubmissions={goToSubmissions}
           onViewSubmission={goToSubmissionDetail}
-          onGiveFeedback={goToFeedback}
         />
 
         <MentorScheduleCard
