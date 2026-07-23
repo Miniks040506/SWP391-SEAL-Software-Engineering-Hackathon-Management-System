@@ -5,8 +5,9 @@ import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import { useJudgeAssignmentProgressQuery } from "../hooks/useGradingProgressQueries";
 import { useReopenScoreSheetMutation } from "../hooks/useGradingProgressMutations";
-import { GradingProgressSummaryCards } from "../components/GradingProgressSummaryCards";
+import { GradingOverviewBand } from "../components/GradingOverviewBand";
 import { SubmissionGradingProgressTable } from "../components/SubmissionGradingProgressTable";
+import "../styles/gradingProgress.css";
 import { useSnackbar } from "notistack";
 import { isAxiosError } from "axios";
 import type { UUID } from "@/types/common.types";
@@ -116,13 +117,26 @@ export const CoordinatorJudgeAssignmentProgressPage = () => {
                 </div>
             </header>
 
-            <GradingProgressSummaryCards
+            <GradingOverviewBand
                 percent={assignmentProgress.percent}
-                totalAssignedSubmissions={assignmentProgress.totalAssignedSubmissions}
-                completedAssignedSubmissions={assignmentProgress.completedAssignedSubmissions}
-                pendingSubmissions={assignmentProgress.pendingSubmissions}
-                draftSavedSubmissions={assignmentProgress.draftSavedSubmissions}
-                lockedSubmissions={assignmentProgress.lockedSubmissions}
+                completed={assignmentProgress.completedAssignedSubmissions}
+                total={assignmentProgress.totalAssignedSubmissions}
+                pending={assignmentProgress.pendingSubmissions}
+                draft={assignmentProgress.draftSavedSubmissions}
+                submitted={assignmentProgress.submittedSubmissions}
+                locked={assignmentProgress.lockedSubmissions}
+                tiles={[
+                    {
+                        label: "Confirmed scores",
+                        value: `${assignmentProgress.confirmedScoreCount} / ${assignmentProgress.expectedFinalScoreCount}`,
+                        hint: "Final judge scores",
+                    },
+                    {
+                        label: "Criteria",
+                        value: `${assignmentProgress.criteriaCount}`,
+                        hint: "Per submission",
+                    },
+                ]}
             />
 
             <section className="space-y-4">
