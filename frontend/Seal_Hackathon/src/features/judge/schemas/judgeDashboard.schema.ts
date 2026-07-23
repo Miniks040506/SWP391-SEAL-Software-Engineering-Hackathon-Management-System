@@ -8,7 +8,11 @@ export const judgeSummaryIconTypes = [
   "deadline",
 ] as const;
 
-export const calibrationStatuses = ["Not Completed", "Completed"] as const;
+export const calibrationStatuses = [
+  "Not Completed",
+  "Completed",
+  "Not required",
+] as const;
 
 export const judgeSummaryCardSchema = z.object({
   title: z.string(),
@@ -33,7 +37,9 @@ export const calibrationSchema = z.object({
   status: z.enum(calibrationStatuses),
 });
 
-export type DashboardPriority = z.infer<typeof judgePendingActionSchema>["priority"];
+export type DashboardPriority = z.infer<
+  typeof judgePendingActionSchema
+>["priority"];
 export type JudgePendingAction = z.infer<typeof judgePendingActionSchema>;
 export type JudgeRecentActivity = z.infer<typeof judgeRecentActivitySchema>;
 

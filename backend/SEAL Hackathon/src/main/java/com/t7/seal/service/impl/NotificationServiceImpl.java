@@ -691,14 +691,17 @@ public class NotificationServiceImpl implements NotificationService {
             }
             return "/participant/submissions";
         }
+        if (notification.getType() == NotificationType.MENTOR_FEEDBACK
+                || notification.getType() == NotificationType.MENTOR_FEEDBACK_PUBLISHED) {
+            return notification.getTargetId() == null
+                    ? "/participant/teams"
+                    : "/participant/teams/" + notification.getTargetId() + "/submissions";
+        }
         if (notification.getTargetScope() == NotificationTargetScope.TEAM && notification.getTargetId() != null) {
             return "/participant/teams/" + notification.getTargetId();
         }
         if (notification.getType() == NotificationType.JUDGE_ASSIGNED) {
             return "/judge/submissions";
-        }
-        if (notification.getType() == NotificationType.MENTOR_FEEDBACK || notification.getType() == NotificationType.MENTOR_FEEDBACK_PUBLISHED) {
-            return notification.getTargetId() == null ? "/participant/teams" : "/participant/teams/" + notification.getTargetId() + "/feedback";
         }
         return "/notifications";
     }

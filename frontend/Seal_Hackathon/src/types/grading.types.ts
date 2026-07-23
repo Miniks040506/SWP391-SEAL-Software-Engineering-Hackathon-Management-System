@@ -60,6 +60,10 @@ export type GradingSubmissionDetailResponse = {
   submissionId: UUID;
   teamName: string;
   projectTitle?: string;
+  eventName?: string | null;
+  roundName?: string | null;
+  trackName?: string | null;
+  submissionStatus?: string | null;
   note?: string;
   links: SubmissionLinkResponse[];
   criteria: EventCriteriaResponse[];

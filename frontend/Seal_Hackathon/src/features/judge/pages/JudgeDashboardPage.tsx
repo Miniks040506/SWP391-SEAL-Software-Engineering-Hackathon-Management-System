@@ -9,20 +9,43 @@ import { useJudgeDashboard } from "../hooks/useJudgeDashboard";
 export const JudgeDashboardPage = () => {
   const {
     dashboard,
+    isLoading,
+    isError,
+    retry,
     totalScorecards,
     gradingProgressPercent,
-    goToEvents,
     goToScoring,
     goToCalibration,
     goToPath,
   } = useJudgeDashboard();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton variant="rounded" height={156} />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} variant="rounded" height={132} />
+          ))}
+        </div>
+        <Skeleton variant="rounded" height={320} />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Alert severity="error" action={<Button onClick={retry}>Retry</Button>}>
+        Could not load the judge dashboard.
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <JudgeWelcomeBanner
         judgeName={dashboard.judgeName}
         onStartGrading={goToScoring}
-        onViewEvents={goToEvents}
       />
 
       <JudgeSummaryCards cards={dashboard.summaryCards} />
@@ -50,3 +73,6 @@ export const JudgeDashboardPage = () => {
     </div>
   );
 };
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+import Skeleton from "@mui/material/Skeleton";

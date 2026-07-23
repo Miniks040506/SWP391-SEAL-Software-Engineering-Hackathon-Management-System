@@ -25,6 +25,12 @@ public record CalibrationScoreSheetResponse(
         )
         UUID eventId,
         @Schema(
+                description = "API-returned event name.",
+                example = "SEAL Summer 2026",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String eventName,
+        @Schema(
                 description = "UUID reference to the sample submission.",
                 example = "18000000-0000-4000-8000-000000000999",
                 format = "uuid",
@@ -43,6 +49,18 @@ public record CalibrationScoreSheetResponse(
                 accessMode = Schema.AccessMode.READ_ONLY
         )
         String sampleProjectTitle,
+        @Schema(
+                description = "API-returned sample track name.",
+                example = "Artificial Intelligence",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String sampleTrackName,
+        @Schema(
+                description = "API-returned sample round name.",
+                example = "Final Round",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String sampleRoundName,
         @Schema(
                 description = "API-returned value for sample note.",
                 example = "sample note example",

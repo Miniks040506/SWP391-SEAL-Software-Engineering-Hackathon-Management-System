@@ -14,7 +14,6 @@ import { ExportJobListPage } from "../features/exports";
 import {
   JudgeDashboardPage,
   JudgeSubmissionDetailPage,
-  JudgeAssignedSubmissionPage,
   JudgeSubmissionsPage,
 } from "@/features/judge";
 
@@ -126,6 +125,7 @@ import {
   AdminAiKnowledgePage,
   AdminAiSafetyLogsPage,
 } from "@/features/assistant";
+import { SchedulePage } from "@/features/schedule";
 
 export const router = createBrowserRouter([
   {
@@ -220,6 +220,7 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="teams" replace /> },
+      { path: "schedule", element: <SchedulePage /> },
       { path: "teams", element: <MyTeamsPage /> },
       { path: "teams/create", element: <CreateTeamPage /> },
       { path: "teams/:teamId", element: <TeamDetailPage /> },
@@ -378,7 +379,7 @@ export const router = createBrowserRouter([
       { path: "analytics", element: <NotFoundPage /> },
       { path: "announcement", element: <CoordinatorAnnouncementPage /> },
       { path: "notifications", element: <NotificationInboxPage /> },
-      { path: "schedule", element: <NotFoundPage /> },
+      { path: "schedule", element: <SchedulePage /> },
       { path: "reminders", element: <CoordinatorEventRemindersPage /> },
       { path: "exports", element: <ExportJobListPage /> },
       { path: "events/:eventId/exports", element: <ExportJobListPage /> },
@@ -425,10 +426,10 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <JudgeDashboardPage /> },
       { path: "events", element: <NotFoundPage /> },
-      { path: "submissions", element: <JudgeAssignedSubmissionPage /> },
+      { path: "submissions", element: <JudgeSubmissionsPage /> },
       {
         path: "rounds/:roundId/submissions",
-        element: <JudgeAssignedSubmissionPage />,
+        element: <JudgeSubmissionsPage />,
       },
       {
         path: "submissions/:submissionId",
@@ -438,7 +439,10 @@ export const router = createBrowserRouter([
         path: "submissions/:submissionId/score",
         element: <JudgeScoreSheetPage />,
       },
-      { path: "scoring", element: <JudgeSubmissionsPage /> },
+      {
+        path: "scoring",
+        element: <Navigate to="/judge/submissions" replace />,
+      },
       { path: "calibrations", element: <JudgeCalibrationListPage /> },
       {
         path: "calibrations/:calibrationId",
@@ -463,7 +467,7 @@ export const router = createBrowserRouter([
       { path: "notifications", element: <NotificationInboxPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
-      { path: "schedule", element: <NotFoundPage /> },
+      { path: "schedule", element: <SchedulePage /> },
       { path: "reminders", element: <CoordinatorEventRemindersPage /> },
     ],
   },
@@ -490,7 +494,7 @@ export const router = createBrowserRouter([
       { path: "notifications", element: <NotificationInboxPage /> },
       { path: "profile", element: <PersonalProfilePage /> },
       { path: "settings", element: <NotFoundPage /> },
-      { path: "schedule", element: <NotFoundPage /> },
+      { path: "schedule", element: <SchedulePage /> },
       { path: "reminders", element: <CoordinatorEventRemindersPage /> },
     ],
   },

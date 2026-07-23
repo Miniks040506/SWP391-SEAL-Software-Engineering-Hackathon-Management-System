@@ -168,9 +168,13 @@ export function AppNavbar({
     icon: RocketLaunchOutlinedIcon,
   }));
   const exploreLinks = [
-    ...publicExploreLinks.map((link) =>
-      link.label === "Dashboard" ? { ...link, path: dashboardPath } : link,
-    ),
+    ...publicExploreLinks.map((link) => {
+      if (link.label === "Dashboard") return { ...link, path: dashboardPath };
+      if (link.label === "Schedule" && canFetchCompetitions) {
+        return { ...link, path: "/participant/schedule", description: "Your team deadlines" };
+      }
+      return link;
+    }),
     ...competitionLinks,
   ];
 

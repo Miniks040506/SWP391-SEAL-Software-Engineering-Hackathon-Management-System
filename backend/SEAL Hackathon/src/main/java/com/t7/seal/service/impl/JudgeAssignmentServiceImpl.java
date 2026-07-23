@@ -298,6 +298,8 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
         ensureJudgeCanViewSubmission(judge, submission);
 
         Team team = submission.getTeam();
+        Track track = team == null ? null : team.getTrack();
+        Round round = submission.getRound();
         List<SubmissionLinkResponse> links = submissionLinkRepository
                 .findBySubmissionIdOrderByDisplayOrderAscCreatedAtAsc(submission.getId())
                 .stream()
@@ -315,6 +317,10 @@ public class JudgeAssignmentServiceImpl implements JudgeAssignmentService {
                 submission.getId(),
                 team == null ? null : team.getName(),
                 team == null ? null : team.getProjectTitle(),
+                round == null || round.getEvent() == null ? null : round.getEvent().getName(),
+                round == null ? null : round.getName(),
+                track == null ? null : track.getName(),
+                submission.getStatus() == null ? null : submission.getStatus().name(),
                 submission.getNote(),
                 links,
                 criteria

@@ -1,11 +1,6 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import {
-  useParams,
-  useLocation,
-  useBlocker,
-  useNavigate,
-} from "react-router-dom";
+import { useForm, useWatch } from "react-hook-form";
+import { useParams, useBlocker, useNavigate } from "react-router-dom";
 
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
@@ -23,7 +18,6 @@ import type {
   JudgeScoreFormValues,
   ScoreResponse,
 } from "@/types/grading.types";
-import type { JudgeSubmissionAssignmentResponse } from "@/types/grading.types";
 
 import { useScoreSheet } from "../hooks/useScoreSheet";
 import { useScoreMutations } from "../hooks/useScoreMutations";
@@ -35,11 +29,7 @@ import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
 
 export const JudgeScoreSheetPage = () => {
   const { submissionId } = useParams();
-  const { state } = useLocation();
   const navigate = useNavigate();
-  const assignmentInfo = state?.assignmentInfo as
-    | JudgeSubmissionAssignmentResponse
-    | undefined;
 
   const { submission, scoreSheet, isLoading, isError, error } = useScoreSheet(
     submissionId!,
@@ -51,7 +41,6 @@ export const JudgeScoreSheetPage = () => {
   const {
     control,
     handleSubmit,
-    watch,
     reset,
     setError,
     formState: { isDirty },
@@ -59,6 +48,7 @@ export const JudgeScoreSheetPage = () => {
     defaultValues: { scores: {}, comments: {} },
     mode: "onChange",
   });
+  const scores = useWatch({ control, name: "scores" });
   const canEdit = scoreSheet?.canEdit ?? false;
   const navigationBlocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -135,7 +125,6 @@ export const JudgeScoreSheetPage = () => {
     );
   }
 
-  const scores = watch("scores");
   const scoredCount = Object.values(scores || {}).filter(
     (value) => typeof value === "number" && Number.isFinite(value),
   ).length;
@@ -144,7 +133,7 @@ export const JudgeScoreSheetPage = () => {
 
   const totalPossible = submission.criteria.reduce(
     (sum: number, c: EventCriteriaResponse) =>
-      sum + c.effectiveMaxScore * (c.effectiveWeight || 1),
+      sum + c.effectiveMaxScore * (c.effectiveWeight ?? 1),
     0,
   );
   const currentTotal = submission.criteria.reduce(
@@ -153,16 +142,20 @@ export const JudgeScoreSheetPage = () => {
       if (typeof val === "number" && !isNaN(val)) {
         if (val > c.effectiveMaxScore) val = c.effectiveMaxScore;
         if (val < 0) val = 0;
-        return sum + val * (c.effectiveWeight || 1);
+        return sum + val * (c.effectiveWeight ?? 1);
       }
       return sum;
     },
     0,
   );
 
-  const gradingStatus =
-    assignmentInfo?.gradingStatus ||
-    (isFinalSubmitted ? "SUBMITTED" : "PENDING");
+  const gradingStatus = isGradingLocked
+    ? "LOCKED"
+    : isFinalSubmitted
+      ? "SUBMITTED"
+      : scoreSheet.scores.length > 0
+        ? "DRAFT_SAVED"
+        : "PENDING";
 
   const preparePayload = (data: JudgeScoreFormValues) => {
     const versionsByCriteria = new Map(
@@ -275,13 +268,13 @@ export const JudgeScoreSheetPage = () => {
         )}
 
         <div className="flex flex-col items-start gap-8 lg:flex-row">
-          {/* Left column — 65% */}
+          {/* Left column - 65% */}
           <div className="flex w-full flex-col gap-6 lg:w-[65%]">
             <ScoreSheetHeader
               submission={submission}
               scoreSheet={scoreSheet}
               isLocked={isGradingLocked}
-              assignmentInfo={assignmentInfo}
+              gradingStatus={gradingStatus}
             />
             {submission.note && (
               <Typography
@@ -312,7 +305,7 @@ export const JudgeScoreSheetPage = () => {
             </div>
           </div>
 
-          {/* Right column — 35% */}
+          {/* Right column - 35% */}
           <div className="w-full lg:sticky lg:top-8 lg:w-[35%]">
             <Card
               variant="outlined"
@@ -425,7 +418,8 @@ export const JudgeScoreSheetPage = () => {
           if (navigationBlocker.state === "blocked") navigationBlocker.reset();
         }}
         onConfirm={() => {
-          if (navigationBlocker.state === "blocked") navigationBlocker.proceed();
+          if (navigationBlocker.state === "blocked")
+            navigationBlocker.proceed();
         }}
       />
     </div>

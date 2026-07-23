@@ -3,13 +3,11 @@ import Button from "@mui/material/Button";
 type JudgeWelcomeBannerProps = {
   judgeName: string;
   onStartGrading: () => void;
-  onViewEvents: () => void;
 };
 
 export const JudgeWelcomeBanner = ({
   judgeName,
   onStartGrading,
-  onViewEvents,
 }: JudgeWelcomeBannerProps) => {
   return (
     <section className="flex flex-col gap-4 rounded-3xl bg-linear-to-r from-blue-600 to-indigo-600 px-8 py-7 text-white shadow-sm md:flex-row md:items-center md:justify-between">
@@ -42,23 +40,6 @@ export const JudgeWelcomeBanner = ({
           }}
         >
           Start Grading
-        </Button>
-
-        <Button
-          variant="outlined"
-          onClick={onViewEvents}
-          sx={{
-            borderColor: "rgba(255,255,255,0.6)",
-            color: "white",
-            textTransform: "none",
-            fontWeight: 800,
-            "&:hover": {
-              borderColor: "white",
-              bgcolor: "rgba(255,255,255,0.08)",
-            },
-          }}
-        >
-          View Events
         </Button>
       </div>
     </section>

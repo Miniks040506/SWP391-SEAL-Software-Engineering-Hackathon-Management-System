@@ -5,9 +5,12 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import InboxOutlinedIcon from "@mui/icons-material/InboxOutlined";
+import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import { Alert } from "@mui/material";
 import { teamApi } from "@/api/team.api";
 import { usePublicEventDetailQuery } from "@/features/events/hooks/usePublicEventQueries";
+import { TeamFeedbackList } from "@/features/teams/components/TeamFeedbackList";
+import { useTeamFeedback } from "@/features/teams/hooks/useTeamFeedback";
 import type { SubmissionResponse } from "@/types/submission.types";
 import { useTeamSubmissionsQuery } from "../hooks/useParticipantSubmissionQueries";
 import { SubmissionLedgerRow } from "../components/SubmissionLedgerRow";
@@ -22,6 +25,7 @@ export function ParticipantSubmissionsPage() {
   const location = useLocation();
   const { submissions, loading, error, refetch } =
     useTeamSubmissionsQuery(teamId);
+  const feedbackQuery = useTeamFeedback(teamId);
 
   // Relative labels here are day-scale, so a snapshot at mount is enough and
   // avoids re-rendering the whole ledger every second.
@@ -233,6 +237,32 @@ export function ParticipantSubmissionsPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section aria-labelledby="mentor-feedback-heading">
+        <div className="mb-4 flex items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+            <RateReviewOutlinedIcon style={{ fontSize: 21 }} />
+          </span>
+          <div>
+            <h2
+              id="mentor-feedback-heading"
+              className="text-lg font-bold tracking-tight text-slate-900 dark:text-white"
+            >
+              Mentor feedback
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Published guidance for your team and submitted rounds.
+            </p>
+          </div>
+        </div>
+
+        <TeamFeedbackList
+          feedbacks={feedbackQuery.data ?? []}
+          isLoading={feedbackQuery.isLoading}
+          isError={feedbackQuery.isError}
+          onRetry={() => void feedbackQuery.refetch()}
+        />
       </section>
     </div>
   );

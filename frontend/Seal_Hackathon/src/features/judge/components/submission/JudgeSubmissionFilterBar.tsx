@@ -38,14 +38,21 @@ export function JudgeSubmissionFilterBar({ filters, onChange }: Props) {
   const handleStatusChange = (e: SelectChangeEvent<string>) => {
     onChange({
       ...filters,
-      status: (e.target.value || undefined) as JudgeEligibleSubmissionStatus | undefined,
+      status: (e.target.value || undefined) as
+        | JudgeEligibleSubmissionStatus
+        | undefined,
       page: 0,
     });
   };
 
   const handleClear = () => {
     setLocalSearch("");
-    onChange({ page: 0, size: filters.size, status: undefined, search: undefined });
+    onChange({
+      page: 0,
+      size: filters.size,
+      status: undefined,
+      search: undefined,
+    });
   };
 
   const hasActiveFilters = Boolean(localSearch.trim() || filters.status);
@@ -63,7 +70,9 @@ export function JudgeSubmissionFilterBar({ filters, onChange }: Props) {
           slotProps={{
             input: {
               startAdornment: (
-                <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
               ),
             },
           }}
@@ -77,11 +86,19 @@ export function JudgeSubmissionFilterBar({ filters, onChange }: Props) {
             value={filters.status || ""}
             onChange={handleStatusChange}
             sx={filterSx}
-            renderValue={(val) => (val ? val : <span className="text-gray-400">All Statuses</span>)}
+            renderValue={(val) =>
+              val ? (
+                val
+              ) : (
+                <span className="text-gray-400">All submission statuses</span>
+              )
+            }
           >
-            <MenuItem value="">All Statuses</MenuItem>
+            <MenuItem value="">All submission statuses</MenuItem>
             {judgeSubmissionFilterSchema.STATUSES.map((status) => (
-              <MenuItem key={status} value={status}>{status}</MenuItem>
+              <MenuItem key={status} value={status}>
+                {status === "SUBMITTED" ? "Submitted" : "Late"}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>

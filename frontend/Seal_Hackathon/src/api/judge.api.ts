@@ -24,16 +24,6 @@ export const judgeApi = {
     );
   },
 
-  getMyRoundSubmissions(
-    roundId: UUID,
-    params?: Omit<JudgeSubmissionApiParams, "roundId">,
-  ) {
-    return apiRequest.get<PageResponse<JudgeSubmissionAssignmentResponse>>(
-      `/judge/rounds/${roundId}/submissions`,
-      { params },
-    );
-  },
-
   getMySubmissionSummary(roundId?: UUID) {
     const url = roundId
       ? `/judge/rounds/${roundId}/submissions/summary`

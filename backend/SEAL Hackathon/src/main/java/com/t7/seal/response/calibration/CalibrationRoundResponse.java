@@ -22,12 +22,30 @@ public record CalibrationRoundResponse(
         )
         UUID eventId,
         @Schema(
+                description = "API-returned event name.",
+                example = "SEAL Summer 2026",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String eventName,
+        @Schema(
                 description = "UUID reference to the sample submission.",
                 example = "18000000-0000-4000-8000-000000000999",
                 format = "uuid",
                 accessMode = Schema.AccessMode.READ_ONLY
         )
         UUID sampleSubmissionId,
+        @Schema(
+                description = "API-returned sample team name.",
+                example = "Team Horizon",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String sampleTeamName,
+        @Schema(
+                description = "API-returned sample project title.",
+                example = "Accessible Campus Navigator",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        String sampleProjectTitle,
         @Schema(
                 description = "Detailed resource description.",
                 example = "Example description for the API contract.",

@@ -29,6 +29,11 @@ export const MentorScheduleCard = ({ scheduleItems, onViewSchedule }: MentorSche
         </div>
 
         <div className="mt-5 space-y-4">
+          {scheduleItems.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm font-semibold text-gray-500 dark:border-slate-700 dark:text-slate-400">
+              No deadlines in the next 30 days.
+            </div>
+          )}
           {scheduleItems.map((item) => (
             <div key={item.id} className="rounded-2xl border border-gray-100 p-4 dark:border-slate-700">
               <div className="flex items-start gap-3">

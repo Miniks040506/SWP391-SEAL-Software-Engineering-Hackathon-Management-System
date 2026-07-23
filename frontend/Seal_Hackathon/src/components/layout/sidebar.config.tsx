@@ -241,11 +241,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             icon: <UploadFileOutlinedIcon fontSize="small" />,
           },
           {
-            label: "Scoring",
-            path: "/judge/scoring",
-            icon: <GradingOutlinedIcon fontSize="small" />,
-          },
-          {
             label: "Calibration Tasks",
             path: "/judge/calibrations",
             icon: <ModelTrainingOutlinedIcon fontSize="small" />,
