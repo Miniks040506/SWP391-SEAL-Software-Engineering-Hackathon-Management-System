@@ -137,8 +137,8 @@ INSERT INTO team_member (id, role, joined_at, left_at, left_reason, user_id, tea
 -- ---------------------------------------------------------------------
 -- E. LIVE calibration round for SEAL Summer 2026: window is open NOW so
 --    judges can actually call submitCalibrationScores. Benchmark covers all
---    5 active Summer event criteria. judge3 (guest) has already submitted so
---    the distribution endpoints have data even before other judges test.
+--    5 active Summer event criteria. Judge3 intentionally has no scores and
+--    must complete this calibration before final-round grading.
 --    (The old round 6438c4af stays closed & unpublished: use it for the
 --     publishDistribution happy path.)
 -- ---------------------------------------------------------------------
@@ -148,13 +148,6 @@ INSERT INTO calibration_rounds (id, event_id, sample_submission_id, benchmark_sc
      'LIVE calibration before final-round scoring. Window is currently open.',
      NOW() - INTERVAL '1 day', NOW() + INTERVAL '6 days', TRUE, NULL);
 
-INSERT INTO calibration_scores (id, calibration_round_id, judge_id, event_criteria_id, value, deviation_from_benchmark, judge_comment, scored_at) VALUES
-                                                                                                                                                      ('18000000-0000-4000-8000-000000000311', '18000000-0000-4000-8000-000000000301', '1aea112d-a34e-54a5-95f9-9a68f1aca4ef', '853acfed-a265-5931-af69-456c4d9a522a', 8.3,  0.3, 'Solid architecture.',           NOW() - INTERVAL '12 hours'),
-                                                                                                                                                      ('18000000-0000-4000-8000-000000000312', '18000000-0000-4000-8000-000000000301', '1aea112d-a34e-54a5-95f9-9a68f1aca4ef', '9fa11673-4fb2-5f00-9641-30f924093617', 7.2, -0.3, 'Novel but derivative in parts.', NOW() - INTERVAL '12 hours'),
-                                                                                                                                                      ('18000000-0000-4000-8000-000000000313', '18000000-0000-4000-8000-000000000301', '1aea112d-a34e-54a5-95f9-9a68f1aca4ef', '42a9272d-fc7b-524d-83b2-610640100f0c', 7.8,  0.3, 'Clear market fit.',              NOW() - INTERVAL '12 hours'),
-                                                                                                                                                      ('18000000-0000-4000-8000-000000000314', '18000000-0000-4000-8000-000000000301', '1aea112d-a34e-54a5-95f9-9a68f1aca4ef', '7fee79e5-ec63-5699-9428-3e25b411885e', 8.1,  0.1, 'Great demo flow.',               NOW() - INTERVAL '12 hours'),
-                                                                                                                                                      ('18000000-0000-4000-8000-000000000315', '18000000-0000-4000-8000-000000000301', '1aea112d-a34e-54a5-95f9-9a68f1aca4ef', '74ff8b44-3bbc-5747-a232-1e962a4089c1', 6.9, -0.1, 'Scaling plan is thin.',          NOW() - INTERVAL '12 hours');
-
 -- ---------------------------------------------------------------------
 -- F. Final Demo Round judge assignments. judge5 -> mobile is DISPOSABLE:
 --    it has no submissions to lose, so DELETE /judge-assignments tests use it.
@@ -163,6 +156,35 @@ INSERT INTO round_judge_assignments (id, round_id, judge_id, track_id, scoring_p
                                                                                                                                                     ('18000000-0000-4000-8000-000000000321', 'd7104abc-8192-5a20-bcd8-4b99748297bb', '79f650d1-4a5b-552a-8f9b-98570a7a2021', '8039cc28-1b76-556f-8bc2-2e544416d4c8', 0, 2, '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', NOW() - INTERVAL '1 day', NULL),
                                                                                                                                                     ('18000000-0000-4000-8000-000000000322', 'd7104abc-8192-5a20-bcd8-4b99748297bb', '1aea112d-a34e-54a5-95f9-9a68f1aca4ef', 'c8c619b7-551c-50e4-b1a2-de5b8b7a7bb9', 0, 1, '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', NOW() - INTERVAL '1 day', NULL),
                                                                                                                                                     ('18000000-0000-4000-8000-000000000323', 'd7104abc-8192-5a20-bcd8-4b99748297bb', '17000000-0000-4000-8000-000000000741', 'bacf7939-4158-55ee-9376-fc50c9b855e2', 0, 0, '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', NOW() - INTERVAL '1 day', NULL);
+
+WITH required_scores AS (
+    SELECT DISTINCT
+        calibration.id AS calibration_round_id,
+        assignment.judge_id,
+        benchmark.key::uuid AS event_criteria_id,
+        benchmark.value::real AS value
+    FROM calibration_rounds calibration
+    JOIN submissions sample ON sample.id = calibration.sample_submission_id
+    JOIN round_judge_assignments assignment
+      ON assignment.round_id = sample.round_id
+     AND assignment.judge_id <> '1aea112d-a34e-54a5-95f9-9a68f1aca4ef'
+    CROSS JOIN LATERAL jsonb_each_text(calibration.benchmark_scores) benchmark
+    WHERE calibration.id = '18000000-0000-4000-8000-000000000301'
+)
+INSERT INTO calibration_scores (
+    id, calibration_round_id, judge_id, event_criteria_id,
+    value, deviation_from_benchmark, judge_comment, scored_at
+)
+SELECT
+    gen_random_uuid(),
+    calibration_round_id,
+    judge_id,
+    event_criteria_id,
+    value,
+    0.0,
+    'Summer 2026 completed final calibration fixture.',
+    NOW() - INTERVAL '12 hours'
+FROM required_scores;
 
 -- ---------------------------------------------------------------------
 -- G. Final Draft Crew DRAFT submission in the OPEN Final Demo Round.

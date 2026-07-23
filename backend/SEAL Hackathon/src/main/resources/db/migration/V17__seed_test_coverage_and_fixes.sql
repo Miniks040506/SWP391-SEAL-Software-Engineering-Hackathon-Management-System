@@ -339,17 +339,34 @@ SET start_at = NOW() + INTERVAL '15 days', submission_deadline = NOW() + INTERVA
 WHERE id = '82e35947-a92f-5a39-a993-a37ed1d2ab55';
 
 UPDATE hackathon_events
-SET competition_end_at = NOW() + INTERVAL '10 days', update_at = NOW()
+SET status = 'ONGOING',
+    competition_end_at = NOW() + INTERVAL '10 days',
+    result_published_at = NULL,
+    completed_at = NULL,
+    update_at = NOW()
 WHERE id = '9d1822f7-ec66-52fe-8569-4faeb6b0a85b';
 
 UPDATE rounds
-SET status = 'OPEN', start_at = TIMESTAMP '2026-06-25 00:00:00',
+SET status = 'OPEN', start_at = NOW() - INTERVAL '1 day',
     submission_deadline = NOW() + INTERVAL '7 days',
-    judging_deadline = NOW() + INTERVAL '9 days', end_at = NOW() + INTERVAL '10 days'
+    judging_deadline = NOW() + INTERVAL '9 days', end_at = NOW() + INTERVAL '10 days',
+    submission_locked_at = NULL, grading_locked_at = NULL,
+    advancement_confirmed_at = NULL, result_published_at = NULL
 WHERE id = 'd7104abc-8192-5a20-bcd8-4b99748297bb';
 
 UPDATE rounds
-SET status = 'JUDGING', submission_locked_at = TIMESTAMP '2026-06-19 00:05:00'
+SET status = 'RESULTS_READY',
+    start_at = NOW() - INTERVAL '14 days',
+    submission_deadline = NOW() - INTERVAL '10 days',
+    judging_deadline = NOW() - INTERVAL '8 days',
+    end_at = NOW() - INTERVAL '7 days',
+    submission_locked_at = NOW() - INTERVAL '10 days',
+    grading_locked_at = NOW() - INTERVAL '7 days',
+    advancement_confirmed_at = COALESCE(
+        advancement_confirmed_at,
+        NOW() - INTERVAL '6 days'
+    ),
+    result_published_at = NULL
 WHERE id = 'd92484b1-2090-5067-87d2-ec03f227fc96';
 
 -- Reschedule the stale queued items into the future instead of the past.
@@ -374,10 +391,62 @@ INSERT INTO notifications (id, event_id, created_by, type, title, body, target_s
 --    rows (weighted by criteria weight, technical = 1.5). Fixes the swapped
 --    breakdowns, the wrong totals, the contradictory MIN_SCORE_FAILED flag,
 --    and ranks the 9 previously unranked submissions. Disqualified and
---    draft submissions are excluded per the SRS. Grading remains unlocked:
---    this is the coordinator "preview" state of RES-02; publication tests
---    must lock grading first (UC-42 guard).
+--    draft submissions are excluded per the SRS. Every assigned scorecard
+--    is complete so the qualification round can remain grading-locked.
 -- ---------------------------------------------------------------------
+INSERT INTO scores (
+    id, submission_id, judge_id, event_criteria_id,
+    value, comment, is_draft, scored_at, updated_at
+)
+SELECT
+    gen_random_uuid(),
+    submission.id,
+    assignment.judge_id,
+    criteria.id,
+    8.0,
+    'Summer 2026 completed qualification fixture.',
+    FALSE,
+    NOW() - INTERVAL '8 days',
+    NOW() - INTERVAL '8 days'
+FROM round_judge_assignments assignment
+JOIN submissions submission
+  ON submission.round_id = assignment.round_id
+ AND submission.status IN ('SUBMITTED', 'LATE')
+JOIN teams team
+  ON team.id = submission.team_id
+ AND (assignment.track_id IS NULL OR assignment.track_id = team.track_id)
+JOIN rounds round ON round.id = assignment.round_id
+JOIN event_criteria criteria
+  ON criteria.event_id = round.event_id
+ AND criteria.is_active = TRUE
+ AND (
+     criteria.applies_to_round_ids IS NULL
+     OR criteria.applies_to_round_ids = ''
+     OR criteria.applies_to_round_ids::jsonb ? round.id::text
+ )
+WHERE assignment.round_id = 'd92484b1-2090-5067-87d2-ec03f227fc96'
+ON CONFLICT ON CONSTRAINT uk_score_submission_judge_criteria
+DO UPDATE SET is_draft = FALSE, updated_at = EXCLUDED.updated_at;
+
+UPDATE round_judge_assignments assignment
+SET scoring_progress = (
+        SELECT COUNT(*)::integer
+        FROM submissions submission
+        JOIN teams team ON team.id = submission.team_id
+        WHERE submission.round_id = assignment.round_id
+          AND submission.status IN ('SUBMITTED', 'LATE')
+          AND (assignment.track_id IS NULL OR assignment.track_id = team.track_id)
+    ),
+    total_to_score = (
+        SELECT COUNT(*)::integer
+        FROM submissions submission
+        JOIN teams team ON team.id = submission.team_id
+        WHERE submission.round_id = assignment.round_id
+          AND submission.status IN ('SUBMITTED', 'LATE')
+          AND (assignment.track_id IS NULL OR assignment.track_id = team.track_id)
+    )
+WHERE assignment.round_id = 'd92484b1-2090-5067-87d2-ec03f227fc96';
+
 WITH weighted AS (
     SELECT sub.id AS submission_id, t.track_id,
            SUM(s.value * COALESCE(ec.weight_override, sc.default_weight))

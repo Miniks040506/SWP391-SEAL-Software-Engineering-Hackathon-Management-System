@@ -36,7 +36,7 @@ INSERT INTO submissions (id, team_id, round_id, note, submitted_at, updated_at, 
 -- from seed v21
 INSERT INTO submissions (id, team_id, round_id, note, submitted_at, updated_at, status, submission_number) VALUES
 ('4a000000-0000-4000-8000-000000000101', 'c8a7ea92-97b9-5d7d-b9a8-eb0243689cb0', 'd7104abc-8192-5a20-bcd8-4b99748297bb', 'Alpha Coders final-round submission (clean).', TIMESTAMP '2026-06-27 20:00:00', TIMESTAMP '2026-06-27 20:00:00', 'SUBMITTED', 1),
-('4a000000-0000-4000-8000-000000000102', 'a5133b30-7943-5acc-82fb-85c1f52c6098', 'd7104abc-8192-5a20-bcd8-4b99748297bb', 'Gamma AI final-round submission (disqualified).', TIMESTAMP '2026-06-27 21:00:00', TIMESTAMP '2026-06-27 21:00:00', 'DISQUALIFIED', 1);
+('4a000000-0000-4000-8000-000000000102', 'a5133b30-7943-5acc-82fb-85c1f52c6098', 'd7104abc-8192-5a20-bcd8-4b99748297bb', 'Gamma AI final-round submission ready for Judge 3 scoring.', TIMESTAMP '2026-06-27 21:00:00', TIMESTAMP '2026-06-27 21:00:00', 'SUBMITTED', 1);
 
 -- ---- submission_links ----
 -- from seed v19
@@ -93,7 +93,9 @@ INSERT INTO submission_links (id, submission_id, link_type, url, label, storage_
 -- from seed v21
 INSERT INTO submission_links (id, submission_id, link_type, url, label, storage_provider, object_key, original_file_name, content_type, file_size_bytes, repo_metadata, is_primary, display_order, created_at, updated_at) VALUES
 ('4a000000-0000-4000-8000-000000000201', '4a000000-0000-4000-8000-000000000101', 'REPOSITORY', 'https://github.com/seal-demo/alpha-coders-final', 'Final Repository', 'GITHUB', NULL, NULL, NULL, NULL, '{"platform": "GITHUB", "repoName": "seal-demo/alpha-coders-final", "commitCount": 140, "contributorCount": 3, "lastPushAt": "2026-06-27T13:00:00", "primaryLanguage": "TypeScript", "isPrivate": false}'::jsonb, TRUE, 1, TIMESTAMP '2026-06-27 20:00:00', TIMESTAMP '2026-06-27 20:00:00'),
-('4a000000-0000-4000-8000-000000000202', '4a000000-0000-4000-8000-000000000102', 'REPOSITORY', 'https://github.com/seal-demo/gamma-ai-final', 'Final Repository', 'GITHUB', NULL, NULL, NULL, NULL, '{"platform": "GITHUB", "repoName": "seal-demo/gamma-ai-final", "commitCount": 95, "contributorCount": 5, "lastPushAt": "2026-06-27T14:00:00", "primaryLanguage": "Python", "isPrivate": false}'::jsonb, TRUE, 1, TIMESTAMP '2026-06-27 21:00:00', TIMESTAMP '2026-06-27 21:00:00');
+('4a000000-0000-4000-8000-000000000202', '4a000000-0000-4000-8000-000000000102', 'REPOSITORY', 'https://github.com/seal-demo/gamma-ai-final', 'Final Repository', 'GITHUB', NULL, NULL, NULL, NULL, '{"platform": "GITHUB", "repoName": "seal-demo/gamma-ai-final", "commitCount": 95, "contributorCount": 5, "lastPushAt": "2026-06-27T14:00:00", "primaryLanguage": "Python", "isPrivate": false}'::jsonb, TRUE, 1, TIMESTAMP '2026-06-27 21:00:00', TIMESTAMP '2026-06-27 21:00:00'),
+('4a000000-0000-4000-8000-000000000203', '4a000000-0000-4000-8000-000000000102', 'DEMO', 'https://gamma-ai.demo.seal.test', 'Final AI Demo', 'EXTERNAL_URL', NULL, NULL, NULL, NULL, NULL, TRUE, 2, TIMESTAMP '2026-06-27 21:00:00', TIMESTAMP '2026-06-27 21:00:00'),
+('4a000000-0000-4000-8000-000000000204', '4a000000-0000-4000-8000-000000000102', 'REPORT', 'https://docs.google.com/document/d/gamma-ai-final-report', 'Final AI Report', 'GOOGLE_DRIVE', NULL, NULL, NULL, NULL, NULL, TRUE, 3, TIMESTAMP '2026-06-27 21:00:00', TIMESTAMP '2026-06-27 21:00:00');
 
 -- ---- round_judge_assignments ----
 -- from seed v19
