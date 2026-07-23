@@ -35,6 +35,12 @@ public record MentorFeedbackResponse(
         )
         UUID submissionId,
         @Schema(
+                description = "Submission attempt number.",
+                example = "2",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        Integer submissionNumber,
+        @Schema(
                 description = "Competition round UUID.",
                 example = "18000000-0000-4000-8000-000000000504",
                 format = "uuid",

@@ -329,6 +329,7 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
                 team == null ? null : team.getId(),
                 team == null ? null : team.getName(),
                 submission == null ? null : submission.getId(),
+                submission == null ? null : submission.getSubmissionNumber(),
                 round == null ? null : round.getId(),
                 round == null ? null : round.getName(),
                 mentor == null ? null : mentor.getId(),
