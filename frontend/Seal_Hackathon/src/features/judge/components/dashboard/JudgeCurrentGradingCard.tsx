@@ -1,25 +1,14 @@
+import type { CSSProperties } from "react";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
-import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
-import LinearProgress from "@mui/material/LinearProgress";
 
-export type CurrentGrading = {
-  eventName: string;
-  roundName: string;
-  trackName: string;
-  pendingSubmissions: number;
-  completedSubmissions: number;
-  deadline: string;
-};
+import type { JudgeDashboardData } from "../../schemas/judgeDashboard.schema";
 
-type JudgeCurrentGradingCardProps = {
-  currentGrading: CurrentGrading;
+interface JudgeCurrentGradingCardProps {
+  currentGrading: JudgeDashboardData["currentGrading"];
   totalScorecards: number;
   progressPercent: number;
   onStartGrading: () => void;
-};
+}
 
 export const JudgeCurrentGradingCard = ({
   currentGrading,
@@ -27,53 +16,71 @@ export const JudgeCurrentGradingCard = ({
   progressPercent,
   onStartGrading,
 }: JudgeCurrentGradingCardProps) => {
+  const isComplete = progressPercent >= 100;
+
   return (
-    <Card variant="outlined" className="xl:col-span-2 dark:border-slate-700 dark:bg-[#1e293b]">
-      <CardContent>
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <div className="mb-4 flex items-center gap-3">
-              <p className="text-sm font-bold uppercase tracking-wide text-gray-400">Active assignment</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">{currentGrading.eventName}</h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">- {currentGrading.roundName}</h2>
-              <Chip label={`Track: ${currentGrading.trackName}`} color="secondary" size="small" />
-            </div>
-          </div>
-          <Button
-            variant="contained"
-            endIcon={<ArrowForwardOutlinedIcon />}
-            onClick={onStartGrading}
-            sx={{ bgcolor: "#2563eb", textTransform: "none", fontWeight: 800, "&:hover": { bgcolor: "#1d4ed8" } }}
+    <div
+      className="jd-fade-up rounded-2xl border border-slate-200 bg-white p-6 xl:col-span-2 dark:border-slate-700/80 dark:bg-slate-900"
+      style={{ "--jd-stagger": 5 } as CSSProperties}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            Active assignment
+          </p>
+          <h2 className="mt-1 truncate text-xl font-black text-slate-950 dark:text-white">
+            {currentGrading.eventName}
+          </h2>
+          <p className="mt-0.5 text-sm font-semibold text-slate-500 dark:text-slate-400">
+            {currentGrading.roundName} · {currentGrading.trackName}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onStartGrading}
+          className="jd-press inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        >
+          Open queue
+          <ArrowForwardOutlinedIcon sx={{ fontSize: 16 }} />
+        </button>
+      </div>
+
+      <dl className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { label: "Pending", value: `${currentGrading.pendingSubmissions} submissions` },
+          { label: "Completed", value: `${currentGrading.completedSubmissions} submissions` },
+          { label: "Deadline", value: currentGrading.deadline },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60"
           >
-            Start Grading
-          </Button>
+            <dt className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              {item.label}
+            </dt>
+            <dd className="mt-1 text-sm font-bold tabular-nums text-slate-900 dark:text-white">
+              {item.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="mt-5">
+        <div className="flex items-center justify-between text-sm font-semibold">
+          <span className="text-slate-500 dark:text-slate-400">Grading progress</span>
+          <span className="tabular-nums text-slate-900 dark:text-white">
+            {currentGrading.completedSubmissions}/{totalScorecards} scorecards
+          </span>
         </div>
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-            <p className="text-sm text-gray-500">Pending</p>
-            <p className="mt-1 font-bold text-gray-900 dark:text-white">{currentGrading.pendingSubmissions} submissions</p>
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-            <p className="text-sm text-gray-500">Completed</p>
-            <p className="mt-1 font-bold text-gray-900 dark:text-white">{currentGrading.completedSubmissions} submissions</p>
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-            <p className="text-sm text-gray-500">Deadline</p>
-            <p className="mt-1 font-bold text-gray-900 dark:text-white">{currentGrading.deadline}</p>
-          </div>
+        <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div
+            className={`jd-bar-grow h-full rounded-full ${
+              isComplete ? "bg-emerald-500" : "jd-sheen bg-blue-600 dark:bg-blue-500"
+            }`}
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
-        <div className="mt-6">
-          <div className="mb-2 flex justify-between text-sm">
-            <span className="font-semibold text-gray-500">Grading Progress</span>
-            <span className="font-bold text-gray-900 dark:text-white">{currentGrading.completedSubmissions}/{totalScorecards} scorecards</span>
-          </div>
-          <LinearProgress variant="determinate" value={progressPercent} sx={{ height: 8, borderRadius: 999, bgcolor: "#e5e7eb" }} />
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };

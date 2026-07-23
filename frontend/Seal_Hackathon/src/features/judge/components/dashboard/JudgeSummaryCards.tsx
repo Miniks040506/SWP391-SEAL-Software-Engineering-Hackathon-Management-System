@@ -1,53 +1,44 @@
-import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
-import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
-import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
-import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import type { ReactNode } from "react";
+
+import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
+import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
+import ScheduleOutlinedIcon from "@mui/icons-material/ScheduleOutlined";
 
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
+import type { JudgeDashboardData } from "../../schemas/judgeDashboard.schema";
+import { JudgeStatTile, type JudgeStatTileAccent } from "../common/JudgeStatTile";
 
-export type JudgeSummaryCard = {
-  title: string;
-  value: string | number;
-  description: string;
-  iconType: "event" | "round" | "pending" | "completed" | "deadline";
-  color: string;
-};
-
-type JudgeSummaryCardsProps = {
-  cards: JudgeSummaryCard[];
-};
-
-function getSummaryIcon(iconType: JudgeSummaryCard["iconType"]) {
-  switch (iconType) {
-    case "event": return <EventAvailableOutlinedIcon />;
-    case "round": return <FactCheckOutlinedIcon />;
-    case "pending": return <PendingActionsOutlinedIcon />;
-    case "completed": return <AssignmentTurnedInOutlinedIcon />;
-    case "deadline": return <AccessTimeOutlinedIcon />;
-    default: return <EventAvailableOutlinedIcon />;
-  }
+interface JudgeSummaryCardsProps {
+  cards: JudgeDashboardData["summaryCards"];
 }
+
+const ICON_BY_TYPE: Record<string, ReactNode> = {
+  round: <EventNoteOutlinedIcon sx={{ fontSize: 22 }} />,
+  pending: <PendingActionsOutlinedIcon sx={{ fontSize: 22 }} />,
+  completed: <TaskAltOutlinedIcon sx={{ fontSize: 22 }} />,
+  deadline: <ScheduleOutlinedIcon sx={{ fontSize: 22 }} />,
+};
+
+const ACCENT_BY_TYPE: Record<string, JudgeStatTileAccent> = {
+  round: "indigo",
+  pending: "amber",
+  completed: "emerald",
+  deadline: "rose",
+};
 
 export const JudgeSummaryCards = ({ cards }: JudgeSummaryCardsProps) => {
   return (
-    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((item) => (
-        <Card key={item.title} variant="outlined" className="border-gray-100 dark:border-slate-700 dark:bg-[#1e293b]">
-          <CardContent>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">{item.title}</p>
-                <h2 className="mt-2 text-2xl font-extrabold text-gray-900 dark:text-white">{item.value}</h2>
-                <p className="mt-1 text-sm text-gray-400 dark:text-slate-500">{item.description}</p>
-              </div>
-              <div className={`rounded-2xl p-3 ${item.color}`}>
-                {getSummaryIcon(item.iconType)}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card, index) => (
+        <JudgeStatTile
+          key={card.title}
+          title={card.title}
+          value={card.value}
+          description={card.description}
+          icon={ICON_BY_TYPE[card.iconType] ?? ICON_BY_TYPE.round}
+          accent={ACCENT_BY_TYPE[card.iconType] ?? "blue"}
+          stagger={index + 1}
+        />
       ))}
     </section>
   );

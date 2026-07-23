@@ -4,9 +4,10 @@ import { CalibrationCriteriaScoreInput } from "./CalibrationCriteriaScoreInput";
 interface CalibrationScoreSheetProps {
     criteria: EventCriteriaResponse[];
     disabled?: boolean;
+    staggerOffset?: number;
 }
 
-export const CalibrationScoreSheet = ({ criteria, disabled }: CalibrationScoreSheetProps) => {
+export const CalibrationScoreSheet = ({ criteria, disabled, staggerOffset = 2 }: CalibrationScoreSheetProps) => {
     if (!criteria || criteria.length === 0) {
         return (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
@@ -29,11 +30,12 @@ export const CalibrationScoreSheet = ({ criteria, disabled }: CalibrationScoreSh
             </div>
 
             <div className="flex flex-col gap-4">
-                {criteria.map((criterion) => (
+                {criteria.map((criterion, index) => (
                     <CalibrationCriteriaScoreInput
                         key={criterion.id}
                         criterion={criterion}
                         disabled={disabled}
+                        stagger={staggerOffset + index}
                     />
                 ))}
             </div>

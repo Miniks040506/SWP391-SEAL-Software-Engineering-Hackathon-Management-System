@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useParams, useBlocker, useNavigate } from "react-router-dom";
 
@@ -6,10 +6,12 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
-import CircularProgress from "@mui/material/CircularProgress";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import HourglassEmptyOutlinedIcon from "@mui/icons-material/HourglassEmptyOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import { isAxiosError } from "axios";
 import { useSnackbar } from "notistack";
 
@@ -26,6 +28,9 @@ import { SubmissionEvidencePanel } from "../components/SubmissionEvidencePanel";
 import { CriteriaScoreCard } from "../components/CriteriaScoreCard";
 import { ScoreDraftBar } from "../components/ScoreDraftBar";
 import { ActionConfirmDialog } from "@/components/common/ActionConfirmDialog";
+import "@/features/judge/styles/judge.css";
+import { JudgeProgressRing } from "@/features/judge/components/common/JudgeProgressRing";
+import { useCountUp } from "@/features/judge/hooks/useCountUp";
 
 export const JudgeScoreSheetPage = () => {
   const { submissionId } = useParams();
@@ -80,63 +85,21 @@ export const JudgeScoreSheetPage = () => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty, canEdit]);
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <CircularProgress />
-      </div>
-    );
-  }
-
-  const isForbidden = isAxiosError(error) && error.response?.status === 403;
-
-  if (isForbidden) {
-    return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
-        <Alert severity="error" sx={{ borderRadius: 2 }}>
-          You are not assigned to grade this submission. (403 Forbidden)
-        </Alert>
-      </div>
-    );
-  }
-
-  if (isError || !submission || !scoreSheet) {
-    return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
-        <Alert severity="error" sx={{ borderRadius: 2 }}>
-          Error loading score sheet.
-        </Alert>
-      </div>
-    );
-  }
-
-  const isGradingLocked = scoreSheet.gradingLocked;
-  const isFinalSubmitted = scoreSheet.confirmed;
-  const isCalibrationIncomplete = !scoreSheet.calibrationCompleted;
-  const isNotReady = !scoreSheet.submissionLocked;
-
-  if (isNotReady) {
-    return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
-        <Alert severity="warning" sx={{ borderRadius: 2 }}>
-          Scoring starts after submission lock.
-        </Alert>
-      </div>
-    );
-  }
-
+  // Derived pre-guard so all hooks below (useCountUp) are called
+  // unconditionally, before any early return.
+  const criteriaList = submission?.criteria ?? [];
   const scoredCount = Object.values(scores || {}).filter(
     (value) => typeof value === "number" && Number.isFinite(value),
   ).length;
-  const totalCriteria = submission.criteria.length;
+  const totalCriteria = criteriaList.length;
   const allCriteriaScored = scoredCount === totalCriteria;
 
-  const totalPossible = submission.criteria.reduce(
+  const totalPossible = criteriaList.reduce(
     (sum: number, c: EventCriteriaResponse) =>
       sum + c.effectiveMaxScore * (c.effectiveWeight ?? 1),
     0,
   );
-  const currentTotal = submission.criteria.reduce(
+  const currentTotal = criteriaList.reduce(
     (sum: number, c: EventCriteriaResponse) => {
       let val = scores?.[c.id];
       if (typeof val === "number" && !isNaN(val)) {
@@ -148,6 +111,99 @@ export const JudgeScoreSheetPage = () => {
     },
     0,
   );
+  const animatedTotal = useCountUp(currentTotal, 500);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
+        <div className="mx-auto flex max-w-7xl flex-col items-start gap-8 lg:flex-row">
+          <div className="jd-shimmer h-96 w-full rounded-2xl bg-slate-200 dark:bg-slate-800 lg:w-[65%]" />
+          <div className="jd-shimmer h-72 w-full rounded-2xl bg-slate-200 dark:bg-slate-800 lg:w-[35%]" />
+        </div>
+      </div>
+    );
+  }
+
+  const isForbidden = isAxiosError(error) && error.response?.status === 403;
+
+  if (isForbidden) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-slate-50 p-8 dark:bg-slate-950">
+        <div className="jd-settle max-w-md rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center dark:border-rose-500/30 dark:bg-rose-500/10">
+          <LockOutlinedIcon className="text-rose-500" sx={{ fontSize: 40 }} />
+          <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">
+            Not assigned to this submission
+          </h2>
+          <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+            You are not assigned to grade this submission. (403 Forbidden)
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/judge/submissions")}
+            className="jd-press mt-5 cursor-pointer rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-extrabold text-white hover:bg-blue-700"
+          >
+            Back to Submissions
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !submission || !scoreSheet) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-slate-50 p-8 dark:bg-slate-950">
+        <div className="jd-settle max-w-md rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center dark:border-rose-500/30 dark:bg-rose-500/10">
+          <ErrorOutlineIcon className="text-rose-500" sx={{ fontSize: 40 }} />
+          <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">
+            Unable to load score sheet
+          </h2>
+          <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+            Something went wrong while loading this submission. Please try
+            again later.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/judge/submissions")}
+            className="jd-press mt-5 cursor-pointer rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-extrabold text-white hover:bg-blue-700"
+          >
+            Back to Submissions
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isGradingLocked = scoreSheet.gradingLocked;
+  const isFinalSubmitted = scoreSheet.confirmed;
+  const isCalibrationIncomplete = !scoreSheet.calibrationCompleted;
+  const isNotReady = !scoreSheet.submissionLocked;
+
+  if (isNotReady) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-slate-50 p-8 dark:bg-slate-950">
+        <div className="jd-settle max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
+          <HourglassEmptyOutlinedIcon
+            className="text-amber-500"
+            sx={{ fontSize: 40 }}
+          />
+          <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">
+            Scoring not open yet
+          </h2>
+          <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+            Scoring starts after the coordinator locks the submission window
+            for this round. You will be able to grade this submission then.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/judge/submissions")}
+            className="jd-press mt-5 cursor-pointer rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-extrabold text-white hover:bg-blue-700"
+          >
+            Back to Submissions
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const gradingStatus = isGradingLocked
     ? "LOCKED"
@@ -279,29 +335,36 @@ export const JudgeScoreSheetPage = () => {
             {submission.note && (
               <Typography
                 variant="body2"
-                className="mt-1 text-gray-500 dark:text-slate-400"
+                className="jd-fade-up mt-1 text-gray-500 dark:text-slate-400"
+                style={{ "--jd-stagger": 1 } as CSSProperties}
               >
                 {submission.note}
               </Typography>
             )}
             <SubmissionEvidencePanel links={submission.links} />
 
-            <div className="space-y-4 pt-4">
+            <div
+              className="jd-fade-up space-y-4 pt-4"
+              style={{ "--jd-stagger": 3 } as CSSProperties}
+            >
               <Typography
                 variant="h5"
                 className="font-extrabold text-gray-900 dark:text-white"
               >
                 Evaluation Criteria
               </Typography>
-              {submission.criteria.map((crit: EventCriteriaResponse) => (
-                <CriteriaScoreCard
-                  key={crit.id}
-                  criterion={crit}
-                  control={control}
-                  isLocked={!canEdit}
-                  isFinalSubmitted={isFinalSubmitted}
-                />
-              ))}
+              {submission.criteria.map(
+                (crit: EventCriteriaResponse, index: number) => (
+                  <CriteriaScoreCard
+                    key={crit.id}
+                    criterion={crit}
+                    control={control}
+                    isLocked={!canEdit}
+                    isFinalSubmitted={isFinalSubmitted}
+                    stagger={4 + index}
+                  />
+                ),
+              )}
             </div>
           </div>
 
@@ -309,7 +372,7 @@ export const JudgeScoreSheetPage = () => {
           <div className="w-full lg:sticky lg:top-8 lg:w-[35%]">
             <Card
               variant="outlined"
-              className="rounded-3xl border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              className="jd-settle rounded-3xl border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
             >
               <div className="p-6 md:p-8">
                 <Typography
@@ -319,7 +382,24 @@ export const JudgeScoreSheetPage = () => {
                   Score Summary
                 </Typography>
 
-                <div className="mt-6 flex flex-col gap-4">
+                <div className="flex items-center justify-center py-6">
+                  <JudgeProgressRing
+                    percent={
+                      totalCriteria === 0
+                        ? 0
+                        : (scoredCount / totalCriteria) * 100
+                    }
+                    size={72}
+                    strokeWidth={7}
+                    label={
+                      <span className="text-sm font-black tabular-nums text-slate-950 dark:text-white">
+                        {scoredCount}/{totalCriteria}
+                      </span>
+                    }
+                  />
+                </div>
+
+                <div className="flex flex-col gap-4">
                   {/* Total criteria */}
                   <div className="flex justify-between border-b border-gray-100 pb-4 dark:border-slate-800">
                     <span className="text-gray-500 dark:text-slate-400">
@@ -383,8 +463,8 @@ export const JudgeScoreSheetPage = () => {
                     <span className="text-gray-500 dark:text-slate-400">
                       Weighted Total
                     </span>
-                    <span className="text-xl font-black text-blue-600 dark:text-blue-400">
-                      {currentTotal.toFixed(1)} / {totalPossible.toFixed(1)}
+                    <span className="text-xl font-black tabular-nums text-blue-600 dark:text-blue-400">
+                      {animatedTotal.toFixed(1)} / {totalPossible.toFixed(1)}
                     </span>
                   </div>
                 </div>
