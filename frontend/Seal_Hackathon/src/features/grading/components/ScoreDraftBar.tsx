@@ -2,12 +2,13 @@ import { useState } from "react";
 
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import CloudDoneIcon from "@mui/icons-material/CloudDone";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
 import CircleIcon from "@mui/icons-material/Circle";
 import LockIcon from "@mui/icons-material/Lock";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 import { FinalSubmitConfirmDialog } from "./FinalSubmitConfirmDialog";
+import "@/features/judge/styles/judge.css";
 
 type Props = {
   isDirty: boolean;
@@ -51,6 +52,12 @@ const getStatusLabel = (status: string): string => {
     default:
       return status;
   }
+};
+
+const formatSavedTime = (date: Date) => {
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
 };
 
 export const ScoreDraftBar = ({
@@ -100,22 +107,24 @@ export const ScoreDraftBar = ({
         </div>
       )}
 
-      {/* Unsaved indicator & timestamp */}
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2">
-          {isDirty ? (
-            <span className="flex items-center gap-1.5 font-medium text-amber-600 dark:text-amber-500">
-              <CircleIcon sx={{ fontSize: 8 }} /> Unsaved changes
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5 font-medium text-gray-500 dark:text-slate-400">
-              <CloudDoneIcon fontSize="small" /> Saved
-            </span>
-          )}
-        </div>
-        {lastSavedAt && (
-          <span className="text-gray-400 dark:text-slate-500">
-            {lastSavedAt.toLocaleTimeString()}
+      {/* Unsaved / saving / saved indicator */}
+      <div className="flex items-center text-sm">
+        {isSaving ? (
+          <span className="flex items-center gap-1.5 font-medium text-blue-600 dark:text-blue-400">
+            <AutorenewIcon className="jd-spin" sx={{ fontSize: 16 }} />
+            Saving...
+          </span>
+        ) : isDirty ? (
+          <span className="flex items-center gap-1.5 font-medium text-amber-600 dark:text-amber-500">
+            <CircleIcon sx={{ fontSize: 8 }} /> Unsaved changes
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 font-medium text-gray-500 dark:text-slate-400">
+            <CheckCircleIcon
+              className="jd-pop"
+              sx={{ fontSize: 16, color: "#10b981" }}
+            />
+            {lastSavedAt ? `Saved · ${formatSavedTime(lastSavedAt)}` : "Saved"}
           </span>
         )}
       </div>
@@ -127,8 +136,16 @@ export const ScoreDraftBar = ({
           onClick={onSaveDraft}
           disabled={disabledDraft}
           fullWidth
-          sx={{ fontWeight: 700, borderRadius: "8px", textTransform: "none", py: 1.5 }}
+          className="jd-press"
+          sx={{
+            fontWeight: 700,
+            borderRadius: "8px",
+            textTransform: "none",
+            py: 1.5,
+            "&.Mui-disabled": { opacity: 0.5, cursor: "not-allowed" },
+          }}
         >
+          {isSaving && <AutorenewIcon className="jd-spin mr-2" sx={{ fontSize: 16 }} />}
           {isSaving ? "Saving..." : "Save Draft"}
         </Button>
         <Button
@@ -137,7 +154,14 @@ export const ScoreDraftBar = ({
           onClick={() => setDialogOpen(true)}
           disabled={disabledSubmit}
           fullWidth
-          sx={{ fontWeight: 800, borderRadius: "8px", textTransform: "none", py: 1.5 }}
+          className="jd-press"
+          sx={{
+            fontWeight: 800,
+            borderRadius: "8px",
+            textTransform: "none",
+            py: 1.5,
+            "&.Mui-disabled": { opacity: 0.5, cursor: "not-allowed" },
+          }}
         >
           Final Submit
         </Button>

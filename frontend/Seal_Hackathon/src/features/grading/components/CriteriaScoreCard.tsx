@@ -1,23 +1,24 @@
-import { useState } from "react";
-import { type Control, Controller } from "react-hook-form";
+import { useState, type CSSProperties } from "react";
+import { type Control, Controller, useWatch } from "react-hook-form";
 
 import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import FormHelperText from "@mui/material/FormHelperText";
 import Chip from "@mui/material/Chip";
-import Collapse from "@mui/material/Collapse";
-import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 import type { EventCriteriaResponse } from "@/types/criteria.types";
 import type { JudgeScoreFormValues } from "@/types/grading.types";
+import "@/features/judge/styles/judge.css";
 
 type Props = {
   criterion: EventCriteriaResponse;
   control: Control<JudgeScoreFormValues>;
   isLocked: boolean;
   isFinalSubmitted: boolean;
+  stagger?: number;
 };
 
 const hasMoreThanOneDecimalPlace = (value: number) =>
@@ -30,6 +31,7 @@ export const CriteriaScoreCard = ({
   control,
   isLocked,
   isFinalSubmitted,
+  stagger = 0,
 }: Props) => {
   const disabled = isLocked || isFinalSubmitted;
   const [rubricOpen, setRubricOpen] = useState(false);
@@ -37,8 +39,21 @@ export const CriteriaScoreCard = ({
   const hasRubric = Boolean(criterion.effectiveRubric);
   const hasDescription = Boolean(criterion.effectiveDescription);
 
+  const watchedScore = useWatch({ control, name: `scores.${criterion.id}` });
+  const isScored =
+    typeof watchedScore === "number" && Number.isFinite(watchedScore);
+
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div
+      className="jd-fade-up jd-lift relative flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+      style={{ "--jd-stagger": stagger } as CSSProperties}
+    >
+      {isScored && (
+        <CheckCircleIcon
+          className="jd-pop absolute -right-2 -top-2 rounded-full bg-white text-emerald-500 dark:bg-slate-900"
+          sx={{ fontSize: 22 }}
+        />
+      )}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="mb-2 flex items-center gap-2">
@@ -82,26 +97,23 @@ export const CriteriaScoreCard = ({
               <button
                 type="button"
                 onClick={() => setRubricOpen((prev) => !prev)}
+                aria-expanded={rubricOpen}
                 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
               >
                 <MenuBookIcon sx={{ fontSize: 14 }} />
                 Rubric
-                <IconButton size="small" sx={{ p: 0, ml: -0.5 }}>
-                  <ExpandMoreIcon
-                    sx={{
-                      fontSize: 16,
-                      transform: rubricOpen ? "rotate(180deg)" : "rotate(0deg)",
-                      transition: "transform 0.2s ease",
-                      color: "inherit",
-                    }}
-                  />
-                </IconButton>
+                <ExpandMoreIcon
+                  sx={{ fontSize: 16 }}
+                  className={`jd-chevron ${rubricOpen ? "jd-open" : ""}`}
+                />
               </button>
-              <Collapse in={rubricOpen}>
-                <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-sm leading-relaxed text-gray-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-slate-300">
-                  {criterion.effectiveRubric}
+              <div className={`jd-collapse ${rubricOpen ? "jd-open" : ""}`}>
+                <div>
+                  <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-sm leading-relaxed text-gray-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-slate-300">
+                    {criterion.effectiveRubric}
+                  </div>
                 </div>
-              </Collapse>
+              </div>
             </div>
           )}
 
@@ -201,23 +213,49 @@ export const CriteriaScoreCard = ({
         <Controller
           name={`comments.${criterion.id}`}
           control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              className="flex-1"
-              placeholder="Optional comment for this criterion..."
-              multiline
-              minRows={2}
-              fullWidth
-              disabled={disabled}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "8px",
-                  bgcolor: disabled ? "rgba(0,0,0,0.03)" : "transparent",
-                },
-              }}
-            />
-          )}
+          render={({ field }) => {
+            if (disabled) {
+              if (!field.value) {
+                return (
+                  <div className="flex flex-1 items-center rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2 text-sm italic text-gray-400 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-500">
+                    — No comment
+                  </div>
+                );
+              }
+              return (
+                <TextField
+                  value={field.value}
+                  className="flex-1"
+                  multiline
+                  minRows={2}
+                  fullWidth
+                  disabled
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
+                      bgcolor: "rgba(0,0,0,0.03)",
+                    },
+                  }}
+                />
+              );
+            }
+
+            return (
+              <TextField
+                {...field}
+                className="flex-1"
+                placeholder="Optional comment for this criterion..."
+                multiline
+                minRows={2}
+                fullWidth
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+            );
+          }}
         />
       </div>
     </div>

@@ -1,8 +1,12 @@
+import type { CSSProperties } from "react";
+
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
 import LockIcon from "@mui/icons-material/Lock";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+
+import "@/features/judge/styles/judge.css";
 
 import type {
   GradingSubmissionDetailResponse,
@@ -52,7 +56,10 @@ export const ScoreSheetHeader = ({
   gradingStatus,
 }: Props) => {
   return (
-    <div className="flex flex-col gap-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div
+      className="jd-fade-up flex flex-col gap-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+      style={{ "--jd-stagger": 0 } as CSSProperties}
+    >
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-3">
           <Typography

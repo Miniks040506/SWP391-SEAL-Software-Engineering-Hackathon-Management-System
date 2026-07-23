@@ -1,17 +1,20 @@
-import { useFormContext } from "react-hook-form";
+import type { CSSProperties } from "react";
+import { useFormContext, useWatch } from "react-hook-form";
 import { TextField } from "@mui/material";
 import type { EventCriteriaResponse } from "@/types/criteria.types";
 
 interface CalibrationCriteriaScoreInputProps {
     criterion: EventCriteriaResponse;
     disabled?: boolean;
+    stagger?: number;
 }
 
 const textFieldSx = { "& .MuiOutlinedInput-root": { borderRadius: "10px" } };
 
-export const CalibrationCriteriaScoreInput = ({ criterion, disabled }: CalibrationCriteriaScoreInputProps) => {
+export const CalibrationCriteriaScoreInput = ({ criterion, disabled, stagger = 0 }: CalibrationCriteriaScoreInputProps) => {
     const {
         register,
+        control,
         formState: { errors },
     } = useFormContext();
 
@@ -19,9 +22,13 @@ export const CalibrationCriteriaScoreInput = ({ criterion, disabled }: Calibrati
     const commentFieldName = `scores.${criterion.id}.comment`;
     const scoreError = (errors.scores as any)?.[criterion.id]?.score?.message;
     const commentError = (errors.scores as any)?.[criterion.id]?.comment?.message;
+    const commentValue = useWatch({ control, name: commentFieldName }) as string | undefined;
 
     return (
-        <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900 md:flex-row md:items-start md:justify-between">
+        <div
+            className="jd-fade-up flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900 md:flex-row md:items-start md:justify-between"
+            style={{ "--jd-stagger": stagger } as CSSProperties}
+        >
             <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -84,22 +91,32 @@ export const CalibrationCriteriaScoreInput = ({ criterion, disabled }: Calibrati
                     <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                         Comment <span className="font-medium text-slate-400">(Optional)</span>
                     </label>
-                    <TextField
-                        multiline
-                        minRows={2}
-                        maxRows={4}
-                        placeholder="Leave a comment..."
-                        error={!!commentError}
-                        disabled={disabled}
-                        {...register(commentFieldName, {
-                            maxLength: {
-                                value: 2000,
-                                message: "Comment must not exceed 2000 characters",
-                            },
-                        })}
-                        sx={textFieldSx}
-                        slotProps={{ htmlInput: { maxLength: 2000 } }}
-                    />
+                    {disabled ? (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium whitespace-pre-wrap dark:border-slate-700 dark:bg-slate-800/50">
+                            {commentValue && commentValue.trim() ? (
+                                <span className="text-slate-700 dark:text-slate-300">{commentValue}</span>
+                            ) : (
+                                <span className="italic text-slate-400 dark:text-slate-500">— No comment</span>
+                            )}
+                        </div>
+                    ) : (
+                        <TextField
+                            multiline
+                            minRows={2}
+                            maxRows={4}
+                            placeholder="Leave a comment..."
+                            error={!!commentError}
+                            disabled={disabled}
+                            {...register(commentFieldName, {
+                                maxLength: {
+                                    value: 2000,
+                                    message: "Comment must not exceed 2000 characters",
+                                },
+                            })}
+                            sx={textFieldSx}
+                            slotProps={{ htmlInput: { maxLength: 2000 } }}
+                        />
+                    )}
                     {commentError && (
                         <span className="text-xs font-bold text-rose-500">{commentError as string}</span>
                     )}

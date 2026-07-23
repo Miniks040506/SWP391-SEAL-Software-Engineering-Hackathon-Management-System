@@ -1,13 +1,16 @@
+import type { CSSProperties } from "react";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import { SubmissionLinksPreview } from "@/features/submissions/components/SubmissionLinksPreview";
 import type { CalibrationScoreSheetResponse } from "@/types/calibration.types";
 
 interface CalibrationSubmissionPreviewProps {
   scoreSheet?: CalibrationScoreSheetResponse;
+  stagger?: number;
 }
 
 export const CalibrationSubmissionPreview = ({
   scoreSheet,
+  stagger = 1,
 }: CalibrationSubmissionPreviewProps) => {
   if (!scoreSheet) {
     return (
@@ -18,7 +21,10 @@ export const CalibrationSubmissionPreview = ({
   }
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div
+      className="jd-fade-up flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+      style={{ "--jd-stagger": stagger } as CSSProperties}
+    >
       {/* Header / Basic Info */}
       <div className="border-b border-slate-100 pb-5 dark:border-slate-800">
         <h2 className="mb-2 text-xl font-black text-slate-900 dark:text-white">

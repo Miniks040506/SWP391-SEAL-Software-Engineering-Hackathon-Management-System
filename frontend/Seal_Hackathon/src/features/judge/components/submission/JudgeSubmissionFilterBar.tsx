@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useState, useEffect } from "react";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -58,7 +59,10 @@ export function JudgeSubmissionFilterBar({ filters, onChange }: Props) {
   const hasActiveFilters = Boolean(localSearch.trim() || filters.status);
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center dark:border-slate-700 dark:bg-slate-900">
+    <div
+      className="jd-fade-up flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 md:flex-row md:items-center dark:border-slate-700/80 dark:bg-slate-900"
+      style={{ "--jd-stagger": 2 } as CSSProperties}
+    >
       <div className="flex-1">
         <TextField
           fullWidth

@@ -1,3 +1,8 @@
+import "../styles/judge.css";
+
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+
 import { JudgeActionActivitySection } from "../components/dashboard/JudgeActionActivitySection";
 import { JudgeCalibrationCard } from "../components/dashboard/JudgeCalibrationCard";
 import { JudgeCurrentGradingCard } from "../components/dashboard/JudgeCurrentGradingCard";
@@ -22,13 +27,16 @@ export const JudgeDashboardPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton variant="rounded" height={156} />
+        <div className="jd-shimmer h-40 rounded-3xl bg-slate-100 dark:bg-slate-800/60" />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} variant="rounded" height={132} />
+            <div
+              key={index}
+              className="jd-shimmer h-32 rounded-2xl bg-slate-100 dark:bg-slate-800/60"
+            />
           ))}
         </div>
-        <Skeleton variant="rounded" height={320} />
+        <div className="jd-shimmer h-72 rounded-2xl bg-slate-100 dark:bg-slate-800/60" />
       </div>
     );
   }
@@ -41,11 +49,19 @@ export const JudgeDashboardPage = () => {
     );
   }
 
+  const calibrationBlocked =
+    dashboard.calibration.required && !dashboard.calibration.completed;
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6">
       <JudgeWelcomeBanner
         judgeName={dashboard.judgeName}
+        gradingProgressPercent={gradingProgressPercent}
+        totalScorecards={totalScorecards}
+        completedScorecards={dashboard.currentGrading.completedSubmissions}
+        calibrationBlocked={calibrationBlocked}
         onStartGrading={goToScoring}
+        onStartCalibration={goToCalibration}
       />
 
       <JudgeSummaryCards cards={dashboard.summaryCards} />
@@ -57,11 +73,9 @@ export const JudgeDashboardPage = () => {
           progressPercent={gradingProgressPercent}
           onStartGrading={goToScoring}
         />
-
         <JudgeCalibrationCard
           calibration={dashboard.calibration}
           onStartCalibration={goToCalibration}
-          onStartGrading={goToScoring}
         />
       </section>
 
@@ -73,6 +87,3 @@ export const JudgeDashboardPage = () => {
     </div>
   );
 };
-import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
-import Skeleton from "@mui/material/Skeleton";

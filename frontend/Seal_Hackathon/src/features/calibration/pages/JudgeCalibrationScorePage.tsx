@@ -1,11 +1,15 @@
+import "@/features/judge/styles/judge.css";
+
 import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { formatDistanceToNow } from "date-fns";
 import { isAxiosError } from "axios";
-import { Alert, CircularProgress, Button, Chip } from "@mui/material";
+import { Alert, Button } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 
+import { JudgePageHero } from "@/features/judge/components/common/JudgePageHero";
 import {
   useCalibrationScoreSheetQuery,
   useCalibrationRoundQuery,
@@ -115,8 +119,21 @@ export const JudgeCalibrationScorePage = () => {
 
   if (isLoadingData) {
     return (
-      <div className="flex justify-center py-20">
-        <CircularProgress />
+      <div className="mx-auto max-w-7xl space-y-7 pb-10 pt-6">
+        <div className="jd-shimmer h-40 rounded-3xl bg-slate-100 dark:bg-slate-800/60" />
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+          <div className="lg:col-span-5 xl:col-span-4">
+            <div className="jd-shimmer h-96 rounded-2xl bg-slate-100 dark:bg-slate-800/60" />
+          </div>
+          <div className="flex flex-col gap-4 lg:col-span-7 xl:col-span-8">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="jd-shimmer h-40 rounded-2xl bg-slate-100 dark:bg-slate-800/60"
+              />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -133,7 +150,7 @@ export const JudgeCalibrationScorePage = () => {
           : "Unable to load the calibration score sheet.";
 
     return (
-      <div className="mx-auto max-w-3xl space-y-4 py-12">
+      <div className="jd-settle mx-auto max-w-3xl space-y-4 py-12">
         <Alert severity="error">{message}</Alert>
         <Button
           startIcon={<ArrowBackOutlinedIcon />}
@@ -148,45 +165,60 @@ export const JudgeCalibrationScorePage = () => {
 
   return (
     <FormProvider {...methods}>
-      <div className="mx-auto max-w-7xl animate-in fade-in duration-500 space-y-7 pb-10 pt-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <Button
-              startIcon={<ArrowBackOutlinedIcon />}
-              onClick={() => navigate("/judge/calibrations")}
-              sx={{ mb: 2, textTransform: "none", fontWeight: 800 }}
-            >
-              Back to Tasks
-            </Button>
-            <h1 className="text-3xl font-black text-slate-950 dark:text-white">
-              Calibration Scoring
-            </h1>
-            <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-              {round?.description ||
-                "Evaluate the sample submission to calibrate your scoring baseline."}
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            {round?.mandatory && (
-              <Chip
-                label="Mandatory Task"
-                color="error"
-                size="small"
-                sx={{ fontWeight: 800, borderRadius: "6px" }}
-              />
-            )}
-            {status === "OPEN" && end && (
-              <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                Closes in {formatDistanceToNow(end)}
+      <div className="mx-auto max-w-7xl space-y-7 pb-10 pt-6">
+        <JudgePageHero
+          eyebrow="Calibration"
+          title="Calibration Scoring"
+          subtitle={
+            round?.description ||
+            "Evaluate the sample submission to calibrate your scoring baseline."
+          }
+          backTo={{ label: "Back to Tasks", onClick: () => navigate("/judge/calibrations") }}
+          chips={
+            <>
+              {round?.mandatory && (
+                <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-extrabold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+                  Mandatory task
+                </span>
+              )}
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                {status === "DISTRIBUTION_PUBLISHED"
+                  ? "Distribution published"
+                  : status === "SUBMITTED"
+                    ? "Submitted"
+                    : status === "UPCOMING"
+                      ? "Upcoming"
+                      : status === "CLOSED"
+                        ? "Closed"
+                        : "Open"}
               </span>
-            )}
+              {status === "OPEN" && end && (
+                <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700 dark:bg-orange-500/15 dark:text-orange-300">
+                  Closes in {formatDistanceToNow(end)}
+                </span>
+              )}
+            </>
+          }
+        />
+
+        {isSubmitted && (
+          <div className="jd-settle flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+            <CheckCircleOutlinedIcon className="jd-pop text-emerald-600" sx={{ fontSize: 24 }} />
+            <div>
+              <p className="font-bold text-emerald-900 dark:text-emerald-300">Scores submitted</p>
+              <p className="text-sm font-medium text-emerald-700/80 dark:text-emerald-300/70">
+                {isPublished
+                  ? "The distribution has been published — view it to compare with other judges."
+                  : "Waiting for the coordinator to publish the score distribution."}
+              </p>
+            </div>
           </div>
-        </header>
+        )}
 
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
           <div className="lg:col-span-5 xl:col-span-4">
             <div className="sticky top-6">
-              <CalibrationSubmissionPreview scoreSheet={scoreSheet} />
+              <CalibrationSubmissionPreview scoreSheet={scoreSheet} stagger={1} />
             </div>
           </div>
 
@@ -194,6 +226,7 @@ export const JudgeCalibrationScorePage = () => {
             <CalibrationScoreSheet
               criteria={scoreSheet?.criteria || []}
               disabled={isReadOnly}
+              staggerOffset={2}
             />
           </div>
         </div>

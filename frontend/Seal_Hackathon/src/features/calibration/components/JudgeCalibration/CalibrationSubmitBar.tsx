@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
+
+import "@/features/judge/styles/judge.css";
 
 export type CalibrationStatusType = "UPCOMING" | "OPEN" | "CLOSED" | "SUBMITTED" | "DISTRIBUTION_PUBLISHED";
 

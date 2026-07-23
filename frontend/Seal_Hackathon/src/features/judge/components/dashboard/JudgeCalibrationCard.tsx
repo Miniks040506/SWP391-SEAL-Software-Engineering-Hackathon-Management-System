@@ -1,122 +1,69 @@
+import type { CSSProperties } from "react";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
-import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 
-export type JudgeCalibration = {
-  required: boolean;
-  completed: boolean;
-  status: string;
-};
+import type { JudgeDashboardData } from "../../schemas/judgeDashboard.schema";
 
-type JudgeCalibrationCardProps = {
-  calibration: JudgeCalibration;
+interface JudgeCalibrationCardProps {
+  calibration: JudgeDashboardData["calibration"];
   onStartCalibration: () => void;
-  onStartGrading: () => void;
-};
+}
 
 export const JudgeCalibrationCard = ({
   calibration,
   onStartCalibration,
-  onStartGrading,
 }: JudgeCalibrationCardProps) => {
-  const shouldShowRequiredState =
-    calibration.required && !calibration.completed;
+  const needsAction = calibration.required && !calibration.completed;
 
   return (
-    <Card
-      variant="outlined"
-      className="dark:border-slate-700 dark:bg-[#1e293b]"
+    <div
+      className={`jd-fade-up jd-settle rounded-2xl border p-6 ${
+        needsAction
+          ? "border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/5"
+          : "border-emerald-200 bg-emerald-50/60 dark:border-emerald-500/30 dark:bg-emerald-500/5"
+      }`}
+      style={{ "--jd-stagger": 6 } as CSSProperties}
     >
-      <CardContent>
-        <div className="mb-5 flex items-center gap-3">
-          <ScienceOutlinedIcon
-            className={
-              calibration.completed ? "text-emerald-500" : "text-amber-500"
-            }
-          />
-          <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
-            Calibration
-          </h2>
-        </div>
+      <div className="flex items-center gap-2">
+        <ScienceOutlinedIcon
+          sx={{ fontSize: 20 }}
+          className={needsAction ? "text-amber-600" : "text-emerald-600"}
+        />
+        <h2 className="text-base font-black text-slate-950 dark:text-white">Calibration</h2>
+      </div>
 
-        {!calibration.required ? (
-          <div className="rounded-2xl bg-slate-50 p-5 dark:bg-slate-900/50">
-            <h3 className="font-extrabold text-slate-900 dark:text-white">
-              No calibration required
-            </h3>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Your assigned events do not currently require calibration.
-            </p>
-            <Button
-              variant="contained"
-              onClick={onStartGrading}
-              sx={{ mt: 3, textTransform: "none", fontWeight: 800 }}
-            >
-              Open grading queue
-            </Button>
-          </div>
-        ) : shouldShowRequiredState ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-500/30 dark:bg-amber-500/10">
-            <div className="flex items-start gap-3">
-              <div>
-                <h3 className="font-extrabold text-amber-800 dark:text-amber-200">
-                  Calibration Required
-                </h3>
-                <p className="mt-2 text-sm text-amber-700 dark:text-amber-200/80">
-                  You must complete the calibration round before official
-                  grading.
-                </p>
-                <p className="mt-4 text-sm font-bold text-amber-800 dark:text-amber-200">
-                  Status: {calibration.status}
-                </p>
-                <Button
-                  variant="contained"
-                  onClick={onStartCalibration}
-                  sx={{
-                    mt: 3,
-                    bgcolor: "#d97706",
-                    textTransform: "none",
-                    fontWeight: 800,
-                    "&:hover": { bgcolor: "#b45309" },
-                  }}
-                >
-                  Start Calibration
-                </Button>
-              </div>
-            </div>
-          </div>
+      <div className="mt-4 flex items-start gap-3">
+        {needsAction ? (
+          <ErrorOutlineOutlinedIcon className="jd-pop mt-0.5 text-amber-600" sx={{ fontSize: 22 }} />
         ) : (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
-            <div className="flex items-start gap-3">
-              <div>
-                <h3 className="font-extrabold text-emerald-800 dark:text-emerald-200">
-                  Calibration Completed
-                </h3>
-                <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-200/80">
-                  You can now start official grading.
-                </p>
-                <p className="mt-4 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                  Status: Completed
-                </p>
-                <Button
-                  variant="contained"
-                  onClick={onStartGrading}
-                  sx={{
-                    mt: 3,
-                    bgcolor: "#059669",
-                    textTransform: "none",
-                    fontWeight: 800,
-                    "&:hover": { bgcolor: "#047857" },
-                  }}
-                >
-                  Start Grading
-                </Button>
-              </div>
-            </div>
-          </div>
+          <CheckCircleOutlinedIcon className="jd-pop mt-0.5 text-emerald-600" sx={{ fontSize: 22 }} />
         )}
-      </CardContent>
-    </Card>
+        <div>
+          <p className="font-bold text-slate-900 dark:text-white">
+            {!calibration.required
+              ? "Not required for this event"
+              : calibration.completed
+                ? "Calibration completed"
+                : "Calibration required"}
+          </p>
+          <p className="mt-0.5 text-sm font-medium text-slate-500 dark:text-slate-400">
+            {needsAction
+              ? "Finish the benchmark scoring to unlock official grading."
+              : "You are cleared for official grading."}
+          </p>
+        </div>
+      </div>
+
+      {needsAction && (
+        <button
+          type="button"
+          onClick={onStartCalibration}
+          className="jd-press mt-4 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-extrabold text-white transition-colors hover:bg-amber-600"
+        >
+          Start Calibration
+        </button>
+      )}
+    </div>
   );
 };
