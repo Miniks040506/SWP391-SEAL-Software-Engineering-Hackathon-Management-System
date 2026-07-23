@@ -1,15 +1,34 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { Button, CircularProgress, Typography } from "@mui/material";
-import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
-import { useEventGradingProgressQuery } from "../hooks/useGradingProgressQueries";
-import { GradingProgressSummaryCards } from "../components/GradingProgressSummaryCards";
+import type { CSSProperties } from "react";
+import { useParams } from "react-router-dom";
+import {
+    useEventGradingProgressQuery,
+    isEventProgressLive,
+} from "../hooks/useGradingProgressQueries";
+import { useLastUpdated } from "../hooks/useLastUpdated";
+import { GradingProgressHero } from "../components/GradingProgressHero";
+import { GradingOverviewBand } from "../components/GradingOverviewBand";
 import { RoundGradingProgressTable } from "../components/RoundGradingProgressTable";
+import {
+    GradingProgressSkeleton,
+    GradingProgressErrorState,
+} from "../components/GradingProgressStates";
 import type { UUID } from "@/types/common.types";
+import "../styles/gradingProgress.css";
+
+const EVENT_STATUS_STYLES: Record<string, string> = {
+    ONGOING: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    JUDGING: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+    PUBLISHED: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
+    UPCOMING: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
+    COMPLETED: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+};
+
+const eventStatusClass = (status: string) =>
+    EVENT_STATUS_STYLES[status] ??
+    "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
 
 export const CoordinatorEventGradingProgressPage = () => {
     const { eventId } = useParams<{ eventId: string }>();
-    const navigate = useNavigate();
 
     const {
         data: eventProgress,
@@ -17,74 +36,86 @@ export const CoordinatorEventGradingProgressPage = () => {
         isError,
         refetch,
         isRefetching,
-    } = useEventGradingProgressQuery(eventId as UUID, "ONGOING"); // Defaulting status check, hook handles internal
+        dataUpdatedAt,
+    } = useEventGradingProgressQuery(eventId as UUID);
+
+    const updatedLabel = useLastUpdated(dataUpdatedAt);
 
     if (isLoading) {
-        return (
-            <div className="flex h-64 items-center justify-center">
-                <CircularProgress />
-            </div>
-        );
+        return <GradingProgressSkeleton />;
     }
 
     if (isError || !eventProgress) {
         return (
-            <div className="flex h-64 flex-col items-center justify-center gap-4">
-                <Typography color="error">Could not load grading progress. Please try again.</Typography>
-                <Button variant="outlined" onClick={() => refetch()}>Retry</Button>
-            </div>
+            <GradingProgressErrorState
+                message="Could not load grading progress. Please try again."
+                onRetry={() => refetch()}
+            />
         );
     }
 
-    return (
-        <div className="mx-auto max-w-7xl animate-in fade-in duration-500 space-y-8">
-            <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                    <Button
-                        startIcon={<ArrowBackOutlinedIcon />}
-                        onClick={() => navigate(`/coordinator/events/${eventId}/edit`)}
-                        sx={{ mb: 1, textTransform: "none", fontWeight: 800 }}
-                    >
-                        Back to Event
-                    </Button>
-                    <h1 className="text-3xl font-black text-slate-950 dark:text-white">
-                        Grading Progress
-                    </h1>
-                    <p className="mt-2 max-w-2xl text-sm font-medium text-slate-500 dark:text-slate-400">
-                        Monitor judge scoring progress before locking grading.
-                    </p>
-                    <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">Event: {eventProgress.eventName}</span>
-                    </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                    <Button
-                        variant="outlined"
-                        color="inherit"
-                        startIcon={<RefreshOutlinedIcon />}
-                        onClick={() => refetch()}
-                        disabled={isRefetching}
-                        sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
-                    >
-                        Refresh
-                    </Button>
-                </div>
-            </header>
+    const isLive = isEventProgressLive(eventProgress.eventStatus);
 
-            <GradingProgressSummaryCards
-                percent={eventProgress.percent}
-                totalAssignedSubmissions={eventProgress.totalAssignedSubmissions}
-                completedAssignedSubmissions={eventProgress.completedAssignedSubmissions}
-                pendingSubmissions={eventProgress.pendingSubmissions}
-                draftSavedSubmissions={eventProgress.draftSavedSubmissions}
-                lockedSubmissions={eventProgress.lockedSubmissions}
+    return (
+        <div className="mx-auto max-w-7xl space-y-6 pb-24">
+            <GradingProgressHero
+                breadcrumbs={[
+                    { label: "Events", to: "/coordinator/events" },
+                    { label: eventProgress.eventName, to: `/coordinator/events/${eventId}/edit` },
+                    { label: "Grading Progress" },
+                ]}
+                title="Grading Progress"
+                subtitle="Monitor judge scoring across every round before locking grading."
+                chips={
+                    <>
+                        <span
+                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${eventStatusClass(eventProgress.eventStatus)}`}
+                        >
+                            {eventProgress.eventStatus}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            {eventProgress.roundCount}{" "}
+                            {eventProgress.roundCount === 1 ? "round" : "rounds"}
+                        </span>
+                    </>
+                }
+                isLive={isLive}
+                updatedLabel={updatedLabel}
+                isRefetching={isRefetching}
+                onRefresh={() => refetch()}
             />
 
-            <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Rounds</h2>
-                </div>
-                <RoundGradingProgressTable rounds={eventProgress.rounds} />
+            <GradingOverviewBand
+                percent={eventProgress.percent}
+                completed={eventProgress.completedAssignedSubmissions}
+                total={eventProgress.totalAssignedSubmissions}
+                pending={eventProgress.pendingSubmissions}
+                draft={eventProgress.draftSavedSubmissions}
+                submitted={eventProgress.submittedSubmissions}
+                locked={eventProgress.lockedSubmissions}
+                tiles={[
+                    {
+                        label: "Confirmed scores",
+                        value: `${eventProgress.confirmedScoreCount} / ${eventProgress.expectedFinalScoreCount}`,
+                        hint: "Final judge scores",
+                    },
+                    {
+                        label: "Rounds",
+                        value: `${eventProgress.roundCount}`,
+                        hint: "In this event",
+                    },
+                ]}
+            />
+
+            <section
+                className="gp-fade-up space-y-4"
+                style={{ "--gp-stagger": 2 } as CSSProperties}
+            >
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">Rounds</h2>
+                <RoundGradingProgressTable
+                    rounds={eventProgress.rounds}
+                    eventId={eventId as UUID}
+                />
             </section>
         </div>
     );

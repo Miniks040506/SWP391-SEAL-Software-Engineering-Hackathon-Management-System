@@ -1,0 +1,235 @@
+/*
+ * Pure-CSS motion for the Grading Progress mission-control pages
+ * (event overview + round detail). Transform/opacity only, micro-interactions
+ * kept within 150-400ms, ambient loops slower, everything animation-related
+ * gated behind prefers-reduced-motion. Mirrors calibration.css structure.
+ */
+
+/* Layout-critical collapse primitives live outside the media query so the
+   expandable judge rows work even with reduced motion (values jump instantly). */
+.gp-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+
+.gp-collapse.gp-open {
+  grid-template-rows: 1fr;
+}
+
+.gp-collapse > * {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Staggered section / row entrance. Set --gp-stagger per item (0, 1, 2, …). */
+  .gp-fade-up {
+    opacity: 0;
+    animation: gp-fade-up 320ms ease-out forwards;
+    animation-delay: calc(var(--gp-stagger, 0) * 45ms);
+  }
+
+  @keyframes gp-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Expand/collapse transition for judge assignment detail rows. */
+  .gp-collapse {
+    transition: grid-template-rows 280ms ease-out;
+  }
+
+  /* Breathing ring on the live-monitoring dot. */
+  .gp-live-dot {
+    position: relative;
+  }
+
+  .gp-live-dot::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    border: 2px solid rgba(16, 185, 129, 0.55);
+    animation: gp-live-pulse 2s ease-out infinite;
+  }
+
+  @keyframes gp-live-pulse {
+    0% {
+      transform: scale(0.7);
+      opacity: 0.9;
+    }
+    70% {
+      transform: scale(1.7);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.7);
+      opacity: 0;
+    }
+  }
+
+  /* Ambient amber glow on the actively-judging round row. */
+  .gp-judging-glow {
+    animation: gp-judging-glow 3s ease-in-out infinite;
+  }
+
+  .gp-fade-up.gp-judging-glow {
+    animation:
+      gp-fade-up 320ms ease-out forwards,
+      gp-judging-glow 3s ease-in-out infinite;
+    animation-delay: calc(var(--gp-stagger, 0) * 45ms), 0ms;
+  }
+
+  @keyframes gp-judging-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.14), 0 8px 24px -10px rgba(245, 158, 11, 0.25);
+    }
+    50% {
+      box-shadow: 0 0 18px 2px rgba(245, 158, 11, 0.14), 0 10px 28px -8px rgba(245, 158, 11, 0.32);
+    }
+  }
+
+  /* Horizontal bar fill entrance (progress / segment bars). */
+  .gp-bar-grow {
+    transform-origin: left center;
+    animation: gp-bar-grow 420ms ease-out both;
+    animation-delay: calc(var(--gp-stagger, 0) * 45ms + 120ms);
+  }
+
+  @keyframes gp-bar-grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Moving sheen on the bar of a round that is actively being judged. */
+  .gp-bar-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gp-bar-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.35),
+      transparent
+    );
+    animation: gp-sheen 2.2s ease-in-out infinite;
+  }
+
+  @keyframes gp-sheen {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Skeleton shimmer for loading blocks. */
+  .gp-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gp-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(148, 163, 184, 0.14),
+      transparent
+    );
+    animation: gp-shimmer 1.6s ease-in-out infinite;
+  }
+
+  @keyframes gp-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Refresh icon spin while a refetch is in flight. */
+  .gp-spin {
+    animation: gp-spin 1s linear infinite;
+  }
+
+  @keyframes gp-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Checklist tick / cross pop-in. */
+  .gp-pop {
+    animation: gp-pop 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes gp-pop {
+    from {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* One-time settle for the "Grading Locked" state card. */
+  .gp-settle {
+    animation: gp-settle 420ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  }
+
+  @keyframes gp-settle {
+    from {
+      transform: scale(0.97);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Chevron rotation on expandable rows. */
+  .gp-chevron {
+    transition: transform 200ms ease-out;
+  }
+
+  .gp-chevron.gp-open {
+    transform: rotate(180deg);
+  }
+
+  /* Press feedback for cards / prominent buttons. */
+  .gp-press {
+    transition: transform 120ms ease-out;
+  }
+
+  .gp-press:active {
+    transform: scale(0.97);
+  }
+
+  /* Hover lift for interactive rows / cards. */
+  .gp-lift {
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+  }
+
+  .gp-lift:hover {
+    transform: translateY(-2px);
+  }
+}
