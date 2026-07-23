@@ -8,6 +8,7 @@ import {
   DialogTitle,
   TextField,
 } from "@mui/material";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import { useForm } from "react-hook-form";
 import { enqueueSnackbar } from "notistack";
 import type { UUID } from "@/types/common.types";
@@ -83,15 +84,35 @@ export function DisqualifySubmissionDialog({
       maxWidth="sm"
       fullWidth
       classes={{ paper: "bg-white dark:bg-slate-800 dark:text-slate-200" }}
-      sx={{ "& .MuiDialog-paper": { backgroundImage: "none" } }}
+      sx={{
+        "& .MuiDialog-paper": {
+          backgroundImage: "none",
+          borderRadius: 16,
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: "0 24px 80px rgba(15, 23, 42, 0.16)",
+        },
+      }}
     >
-      <DialogTitle className="font-bold text-slate-800 dark:text-slate-100">
-        Disqualify Submission
+      <DialogTitle className="px-6 pb-2 pt-6">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300">
+            <GavelOutlinedIcon fontSize="small" />
+          </span>
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+              Destructive action
+            </p>
+            <p className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+              Disqualify submission
+            </p>
+          </div>
+        </div>
       </DialogTitle>
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogContent className="space-y-4">
-          <Alert severity="warning">
+        <DialogContent className="space-y-4 px-6 py-3">
+          <Alert severity="warning" sx={{ borderRadius: 2 }}>
             This action will mark the submission as DISQUALIFIED, eliminate the
             team, clear awarded prizes for this team if any, and recalculate
             ranking if ranking already exists.
@@ -121,7 +142,7 @@ export function DisqualifySubmissionDialog({
           />
         </DialogContent>
 
-        <DialogActions className="px-6 pb-4">
+        <DialogActions className="border-t border-slate-200 px-6 py-5 dark:border-slate-700">
           <Button onClick={handleClose} sx={{ textTransform: "none" }}>
             Cancel
           </Button>
@@ -132,8 +153,8 @@ export function DisqualifySubmissionDialog({
             disabled={isPending}
             sx={{
               textTransform: "none",
-              fontWeight: 700,
-              borderRadius: "8px",
+              fontWeight: 800,
+              borderRadius: "10px",
               boxShadow: "none",
             }}
           >

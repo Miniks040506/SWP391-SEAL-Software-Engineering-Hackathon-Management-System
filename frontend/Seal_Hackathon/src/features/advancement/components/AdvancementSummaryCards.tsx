@@ -22,53 +22,45 @@ export function AdvancementSummaryCards({
     {
       label: "Advanced",
       value: advancedCount,
-      icon: <CheckCircleOutlined className="text-green-500" />,
-      color:
-        "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950",
-      textColor: "text-green-700 dark:text-green-300",
+      icon: <CheckCircleOutlined className="text-emerald-600 dark:text-emerald-400" />,
+      textColor: "text-emerald-700 dark:text-emerald-300",
     },
     {
       label: "Eliminated",
       value: eliminatedCount,
-      icon: <CancelOutlined className="text-red-500" />,
-      color: "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950",
-      textColor: "text-red-700 dark:text-red-300",
+      icon: <CancelOutlined className="text-rose-600 dark:text-rose-400" />,
+      textColor: "text-rose-700 dark:text-rose-300",
     },
     {
       label: "Total Teams",
       value: totalCount,
-      icon: <PeopleOutlined className="text-blue-500" />,
-      color: "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950",
+      icon: <PeopleOutlined className="text-blue-600 dark:text-blue-400" />,
       textColor: "text-blue-700 dark:text-blue-300",
     },
     {
       label: "Manual Overrides",
       value: overrideCount,
-      icon: <EditOutlined className="text-amber-500" />,
-      color:
-        "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950",
+      icon: <EditOutlined className="text-amber-600 dark:text-amber-400" />,
       textColor: "text-amber-700 dark:text-amber-300",
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
+    <dl className="mb-8 grid grid-cols-2 border-y border-slate-200 dark:border-slate-800 sm:grid-cols-4">
       {cards.map((card) => (
         <div
           key={card.label}
-          className={`rounded-xl border p-4 flex flex-col gap-2 ${card.color}`}
+          className="flex min-h-28 flex-col justify-between border-b border-slate-200 px-4 py-5 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 dark:border-slate-800"
         >
-          <div className="flex items-center gap-2">
+          <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             {card.icon}
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              {card.label}
-            </span>
-          </div>
-          <span className={`text-2xl font-bold ${card.textColor}`}>
+            {card.label}
+          </dt>
+          <dd className={`font-mono text-4xl font-extrabold tracking-tight ${card.textColor}`}>
             {card.value}
-          </span>
+          </dd>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }

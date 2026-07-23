@@ -155,11 +155,16 @@ export function AdvanceRulePanel({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-300">
-          Advance Rules
-        </h2>
+    <section className="mb-8 border-y border-slate-200 py-6 dark:border-slate-800">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+            Advancement policy
+          </p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+            Advance Rules
+          </h2>
+        </div>
         <div className="flex gap-2">
           <Button
             variant="outlined"
@@ -387,6 +392,6 @@ export function AdvanceRulePanel({
         onConfirm={confirmDelete}
         isPending={deleteMutation.isPending}
       />
-    </div>
+    </section>
   );
 }

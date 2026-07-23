@@ -68,6 +68,12 @@ public record RankingResponse(
         )
         String roundName,
         @Schema(
+                description = "Whether this ranking belongs to the final round.",
+                example = "true",
+                accessMode = Schema.AccessMode.READ_ONLY
+        )
+        Boolean finalRound,
+        @Schema(
                 description = "Track UUID.",
                 example = "18000000-0000-4000-8000-000000000403",
                 format = "uuid",

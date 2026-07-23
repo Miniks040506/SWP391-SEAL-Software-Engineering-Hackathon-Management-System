@@ -74,12 +74,14 @@ export const RankingTable = ({ rankings = [], awardsByTeamId }: RankingTableProp
                 </TableHead>
                 <TableBody>
                     {rankings.map((row) => {
-                        let statusType: "ADVANCED" | "NOT_ADVANCED" | "DISQUALIFIED" = "NOT_ADVANCED";
+                        let statusType: "ADVANCED" | "FINAL_RESULT" | "NOT_ADVANCED" | "DISQUALIFIED" = "NOT_ADVANCED";
                         if (
                             row.advanceReason === "DISQUALIFIED" ||
                             row.submissionStatus === "DISQUALIFIED"
                         ) {
                             statusType = "DISQUALIFIED";
+                        } else if (row.finalRound) {
+                            statusType = "FINAL_RESULT";
                         } else if (row.advanced) {
                             statusType = "ADVANCED";
                         }
@@ -123,8 +125,8 @@ export const RankingTable = ({ rankings = [], awardsByTeamId }: RankingTableProp
                                 </TableCell>
                                 <TableCell>{row.judgeCount || 0}</TableCell>
                                 <TableCell align="center">
-                                    {statusType === "DISQUALIFIED" && (row as any).appealStatus ? (
-                                        <DisqualificationStatusBadge appealStatus={(row as any).appealStatus} />
+                                    {statusType === "DISQUALIFIED" && row.appealStatus ? (
+                                        <DisqualificationStatusBadge appealStatus={row.appealStatus} />
                                     ) : (
                                         <RankingStatusBadge type={statusType} />
                                     )}

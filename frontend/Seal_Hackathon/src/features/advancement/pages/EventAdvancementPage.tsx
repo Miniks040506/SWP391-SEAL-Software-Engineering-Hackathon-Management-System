@@ -83,33 +83,69 @@ export function EventAdvancementPage() {
   const totalCount = previewData?.candidates?.length ?? 0;
 
   return (
-    <div className="flex-1 h-full min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-300">
-            Event Advancement
-          </h1>
-          {previewData && (
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {previewData.eventName} — {previewData.roundName}
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <header className="mb-10 border-b border-slate-200 pb-8 dark:border-slate-800">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+          <div className="space-y-4">
+            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400">
+              Advancement review
             </p>
-          )}
+            <h1 className="max-w-4xl text-4xl font-black leading-[1.02] tracking-tight text-slate-900 dark:text-white md:text-5xl">
+              {previewData?.eventName || "Event advancement"}
+            </h1>
+            {previewData && (
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                {previewData.roundName}
+              </p>
+            )}
+            <p className="max-w-2xl text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+              Preview the event-wide outcome and confirm the next-round roster
+              when the review is complete.
+            </p>
+          </div>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshOutlined />}
+            onClick={handleRefresh}
+            disabled={isLoading}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: "10px",
+              height: 40,
+              alignSelf: "flex-start",
+            }}
+          >
+            Refresh
+          </Button>
         </div>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshOutlined />}
-          onClick={handleRefresh}
-          disabled={isLoading}
-          sx={{
-            textTransform: "none",
-            fontWeight: 700,
-            borderRadius: "10px",
-            height: 40,
-          }}
-        >
-          Refresh
-        </Button>
-      </div>
+        <dl className="mt-8 flex flex-wrap gap-x-12 gap-y-5">
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+              Advanced
+            </dt>
+            <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
+              {advancedCount}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+              Eliminated
+            </dt>
+            <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
+              {eliminatedCount}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+              Teams in preview
+            </dt>
+            <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
+              {totalCount}
+            </dd>
+          </div>
+        </dl>
+      </header>
 
       {isLoading && (
         <div className="flex justify-center py-12">

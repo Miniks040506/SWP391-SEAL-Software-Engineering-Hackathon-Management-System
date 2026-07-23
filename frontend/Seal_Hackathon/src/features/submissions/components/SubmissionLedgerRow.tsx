@@ -1,4 +1,6 @@
+import { useState } from "react";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import { SubmissionStatusBadge } from "@/features/submissions/components/SubmissionStatusBadge";
@@ -32,7 +34,9 @@ export function SubmissionLedgerRow({
   const relative = formatRelative(stamp, now);
   const absolute = formatAbsolute(stamp);
   const isDraft = submission.status === "DRAFT";
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const feedbackCountLabel = `${feedbacks.length} ${feedbacks.length === 1 ? "note" : "notes"}`;
+  const feedbackPanelId = `submission-${submission.id}-feedback`;
 
   return (
     <li>
@@ -90,44 +94,71 @@ export function SubmissionLedgerRow({
         </div>
 
         <section
-          className="border-t border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/35 sm:p-6"
+          className="border-t border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-950/35"
           aria-label={`Mentor feedback for ${submission.roundName ?? "submission"}, attempt ${submission.submissionNumber}`}
         >
-          <div className="mb-3 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            aria-expanded={feedbackOpen}
+            aria-controls={feedbackPanelId}
+            onClick={() => setFeedbackOpen((current) => !current)}
+            className="group flex min-h-16 w-full cursor-pointer items-center gap-3 px-5 py-3 text-left transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-blue-50/70 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500 active:bg-blue-100/70 dark:hover:bg-blue-500/5 dark:active:bg-blue-500/10 sm:px-6"
+          >
             <div className="flex items-center gap-2">
               <RateReviewOutlinedIcon
                 className="text-blue-600 dark:text-blue-300"
                 style={{ fontSize: 18 }}
               />
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              <span className="text-sm font-bold text-slate-900 dark:text-white">
                 Mentor feedback
-              </h3>
+              </span>
             </div>
+
             {!feedbackLoading && !feedbackError && (
               <span className="text-xs font-semibold tabular-nums text-slate-500 dark:text-slate-400">
                 {feedbackCountLabel}
               </span>
             )}
-          </div>
 
-          {feedbackLoading ? (
-            <div className="space-y-2" aria-label="Loading mentor feedback">
-              <div className="h-3 w-full rounded bg-slate-200 motion-safe:animate-pulse dark:bg-slate-800" />
-              <div className="h-3 w-2/3 rounded bg-slate-200 motion-safe:animate-pulse dark:bg-slate-800" />
-            </div>
-          ) : feedbackError ? (
-            <p className="text-sm text-rose-700 dark:text-rose-300">
-              Feedback is temporarily unavailable. Use Retry above to load it.
-            </p>
-          ) : feedbacks.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              No published mentor feedback for this submission.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {feedbacks.map((feedback) => (
-                <MentorFeedbackCard key={feedback.id} feedback={feedback} />
-              ))}
+            <span
+              className={[
+                "ml-auto flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-400 ring-1 ring-slate-200 transition-[transform,color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:text-blue-600 dark:bg-slate-900 dark:text-slate-500 dark:ring-slate-700 dark:group-hover:text-blue-300",
+                feedbackOpen
+                  ? "rotate-180 text-blue-600 ring-blue-200 dark:text-blue-300 dark:ring-blue-500/40"
+                  : "",
+              ].join(" ")}
+              aria-hidden
+            >
+              <KeyboardArrowDownIcon style={{ fontSize: 19 }} />
+            </span>
+          </button>
+
+          {feedbackOpen && (
+            <div
+              id={feedbackPanelId}
+              className="border-t border-slate-200 px-5 py-5 dark:border-slate-800 sm:px-6"
+            >
+              {feedbackLoading ? (
+                <div className="space-y-2" aria-label="Loading mentor feedback">
+                  <div className="h-3 w-full rounded bg-slate-200 motion-safe:animate-pulse dark:bg-slate-800" />
+                  <div className="h-3 w-2/3 rounded bg-slate-200 motion-safe:animate-pulse dark:bg-slate-800" />
+                </div>
+              ) : feedbackError ? (
+                <p className="text-sm text-rose-700 dark:text-rose-300">
+                  Feedback is temporarily unavailable. Use Retry above to load
+                  it.
+                </p>
+              ) : feedbacks.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  No published mentor feedback for this submission.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {feedbacks.map((feedback) => (
+                    <MentorFeedbackCard key={feedback.id} feedback={feedback} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </section>

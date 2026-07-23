@@ -390,6 +390,7 @@ export type TeamDetailedScoreResponse = {
   submissionId: UUID;
   roundId: UUID;
   roundName: string;
+  finalRound: boolean;
   trackId: UUID;
   trackName: string;
   totalScore: number;

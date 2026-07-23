@@ -967,7 +967,8 @@ public class RoundServiceImpl implements RoundService {
                 round.getStartAt(),
                 round.getEndAt(),
                 round.getSubmissionDeadline(),
-                round.getJudgingDeadline()
+                round.getJudgingDeadline(),
+                round.getResultPublishedAt()
         );
     }
 
@@ -1349,6 +1350,7 @@ public class RoundServiceImpl implements RoundService {
                 team.getProjectTitle(),
                 round.getId(),
                 round.getName(),
+                round.isFinalRound(),
                 track.getId(),
                 track.getName(),
                 ranking.getTotalScore(),

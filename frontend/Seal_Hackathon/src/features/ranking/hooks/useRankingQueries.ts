@@ -6,9 +6,6 @@ import type {
   RankingResponse,
   RoundRankingParams,
 } from "@/types/ranking.types";
-import { mockCoordinatorService } from "@/features/coordinator/mocks/coordinatorService.mock";
-
-const USE_MOCK = false;
 
 export const rankingQueryKeys = {
   all: ["rankings"] as const,
@@ -40,7 +37,7 @@ export const useRoundRankingsQuery = (
 ) => {
   return useQuery<RankingResponse[]>({
     queryKey: rankingQueryKeys.roundRankings(roundId!, params),
-    queryFn: () => rankingApi.getRoundRankings(roundId!, params),
+    queryFn: () => rankingApi.getCoordinatorRoundResults(roundId!, params),
     enabled: !!roundId,
   });
 };
@@ -51,7 +48,7 @@ export const useEventRankingsQuery = (
 ) => {
   return useQuery<RankingResponse[]>({
     queryKey: rankingQueryKeys.eventRankings(eventId!, params),
-    queryFn: () => rankingApi.getEventRankings(eventId!, params),
+    queryFn: () => rankingApi.getCoordinatorEventResults(eventId!, params),
     enabled: !!eventId,
   });
 };
@@ -62,7 +59,7 @@ export const usePublicEventLeaderboardQuery = (
 ) => {
   return useQuery<RankingResponse[]>({
     queryKey: rankingQueryKeys.publicEventLeaderboard(eventId!, params),
-    queryFn: () => USE_MOCK ? mockCoordinatorService.rankingApi.getPublicEventLeaderboard(eventId!, params) as any : rankingApi.getPublicEventLeaderboard(eventId!, params),
+    queryFn: () => rankingApi.getPublicEventLeaderboard(eventId!, params),
     enabled: !!eventId,
   });
 };
@@ -78,7 +75,8 @@ export const usePublicTrackLeaderboardQuery = (
       trackId!,
       params,
     ),
-    queryFn: () => USE_MOCK ? mockCoordinatorService.rankingApi.getPublicTrackLeaderboard(eventId!, trackId!, params) as any : rankingApi.getPublicTrackLeaderboard(eventId!, trackId!, params),
+    queryFn: () =>
+      rankingApi.getPublicTrackLeaderboard(eventId!, trackId!, params),
     enabled: !!eventId && !!trackId,
   });
 };

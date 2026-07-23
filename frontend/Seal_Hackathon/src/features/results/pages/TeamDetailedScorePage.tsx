@@ -126,6 +126,7 @@ export const TeamDetailedScorePage = () => {
             trackName={scoreData.trackName}
             roundName={scoreData.roundName}
             advanced={scoreData.advanced}
+            finalRound={scoreData.finalRound}
           />
         </section>
 

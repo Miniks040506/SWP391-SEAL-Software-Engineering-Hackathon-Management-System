@@ -11,6 +11,7 @@ import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import HealthAndSafetyOutlinedIcon from "@mui/icons-material/HealthAndSafetyOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
+import LeaderboardOutlinedIcon from "@mui/icons-material/LeaderboardOutlined";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
@@ -162,6 +163,11 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
             path: "/coordinator/disqualifications",
             icon: <GavelOutlinedIcon fontSize="small" />,
             badgeKey: "pendingAppeals",
+          },
+          {
+            label: "Results",
+            path: "/coordinator/results",
+            icon: <LeaderboardOutlinedIcon fontSize="small" />,
           },
           {
             label: "Awards",

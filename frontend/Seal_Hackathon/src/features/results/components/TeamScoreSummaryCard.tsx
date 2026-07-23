@@ -2,7 +2,12 @@ import type { TeamDetailedScoreResponse } from "@/types/ranking.types";
 
 export type TeamScoreSummaryCardProps = Pick<
   TeamDetailedScoreResponse,
-  "totalScore" | "rankPosition" | "trackName" | "roundName" | "advanced"
+  | "totalScore"
+  | "rankPosition"
+  | "trackName"
+  | "roundName"
+  | "advanced"
+  | "finalRound"
 >;
 
 export const TeamScoreSummaryCard = ({
@@ -11,6 +16,7 @@ export const TeamScoreSummaryCard = ({
   trackName,
   roundName,
   advanced,
+  finalRound,
 }: TeamScoreSummaryCardProps) => {
   return (
     <dl className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-5">
@@ -51,9 +57,9 @@ export const TeamScoreSummaryCard = ({
           Status
         </dt>
         <dd
-          className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-black ${advanced ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300" : "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"}`}
+          className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-black ${finalRound ? "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" : advanced ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300" : "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"}`}
         >
-          {advanced ? "Advanced" : "Not advanced"}
+          {finalRound ? "Final result" : advanced ? "Advanced" : "Not advanced"}
         </dd>
       </div>
     </dl>

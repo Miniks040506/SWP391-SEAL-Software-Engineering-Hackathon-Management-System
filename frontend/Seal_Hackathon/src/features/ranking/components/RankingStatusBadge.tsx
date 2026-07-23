@@ -1,5 +1,6 @@
 type BadgeType =
   | "ADVANCED"
+  | "FINAL_RESULT"
   | "NOT_ADVANCED"
   | "DISQUALIFIED"
   | "MANUAL_REVIEW"
@@ -11,14 +12,19 @@ interface RankingStatusBadgeProps {
 }
 
 export const RankingStatusBadge = ({ type }: RankingStatusBadgeProps) => {
-  let label = "";
-  let twColor = "";
+  let label: string;
+  let twColor: string;
 
   switch (type) {
     case "ADVANCED":
       label = "Advanced";
       twColor =
         "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/30";
+      break;
+    case "FINAL_RESULT":
+      label = "Final result";
+      twColor =
+        "text-amber-800 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30";
       break;
     case "NOT_ADVANCED":
       label = "Not advanced";

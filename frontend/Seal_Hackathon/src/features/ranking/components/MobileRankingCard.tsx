@@ -58,6 +58,10 @@ export const MobileRankingCard = ({ ranking, awardsByTeamId }: MobileRankingCard
         <div className="mt-2">
           <RankingStatusBadge type="DISQUALIFIED" />
         </div>
+      ) : ranking.finalRound ? (
+        <div className="mt-2">
+          <RankingStatusBadge type="FINAL_RESULT" />
+        </div>
       ) : ranking.advanced && (
         <div className="mt-2 text-xs font-bold text-emerald-600">
           ✓ Advanced to next round

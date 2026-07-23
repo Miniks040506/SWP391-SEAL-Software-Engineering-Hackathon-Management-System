@@ -4,6 +4,7 @@ import { Alert, Button, CircularProgress } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 
 import { useRoundGradingProgressQuery } from "@/features/grading-progress/hooks/useGradingProgressQueries";
 import { useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
@@ -82,28 +83,50 @@ export const CoordinatorRoundRankingPage = () => {
     const selectedTrackName = tracks.find((t: SelectOption) => t.id === selectedTrackId)?.name;
     const lastCalculatedTime = rankings.length > 0 ? rankings[0].calculatedAt : null;
     const gradingLocked = roundInfo.gradingLocked;
+    const selectedAssignments = roundInfo.judgeAssignments.filter(
+        (assignment) =>
+            selectedTrackId === "all" || assignment.trackId === selectedTrackId,
+    );
+    const uniqueSubmissions = new Map(
+        selectedAssignments
+            .flatMap((assignment) => assignment.submissions)
+            .map((submission) => [submission.submissionId, submission] as const),
+    );
+    const uniqueSubmissionCount = uniqueSubmissions.size;
+    const completedSubmissionCount = [...uniqueSubmissions.values()].filter(
+        (submission) => submission.completed,
+    ).length;
+    const judgeAssignmentCount =
+        selectedTrackId === "all"
+            ? roundInfo.totalAssignedSubmissions
+            : selectedAssignments.reduce(
+                (total, assignment) => total + assignment.totalAssignedSubmissions,
+                0,
+            );
 
     return (
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-            <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-                        {roundInfo.roundName} Rankings
-                    </h1>
-                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
-                        Calculate and preview rankings for this round.
-                    </p>
-                    <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">Coordinator</span>
-                        <span>/</span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">Rounds</span>
-                        <span>/</span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">{roundInfo.roundName}</span>
-                        <span>/</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">Rankings</span>
+            <header className="mb-10 border-b border-slate-200 pb-8 dark:border-slate-800">
+                <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+                    <div className="space-y-4">
+                        <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400">
+                            Round results
+                        </p>
+                        <h1 className="max-w-4xl text-4xl font-black leading-[1.02] tracking-tight text-slate-900 dark:text-white md:text-5xl">
+                            {roundInfo.roundName}
+                        </h1>
+                        <p className="max-w-2xl text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+                            Review the calculated order, inspect disqualifications, and prepare the official release.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">Coordinator</span>
+                            <span>/</span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">Rounds</span>
+                            <span>/</span>
+                            <span className="font-semibold text-slate-900 dark:text-white">Rankings</span>
+                        </div>
                     </div>
-                </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-3">
+                    <div className="flex shrink-0 flex-wrap items-center gap-3">
                     <Button
                         variant="outlined"
                         color="inherit"
@@ -122,6 +145,15 @@ export const CoordinatorRoundRankingPage = () => {
                         sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                     >
                         Event Rankings
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        endIcon={<ArrowForwardOutlinedIcon />}
+                        onClick={() => navigate(`/coordinator/rounds/${roundId}/advancement`)}
+                        sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
+                    >
+                        Go to Advancement
                     </Button>
                     <Link to={`/coordinator/events/${roundInfo.eventId}/disqualifications`} style={{ textDecoration: 'none' }}>
                         <Button
@@ -142,7 +174,22 @@ export const CoordinatorRoundRankingPage = () => {
                     >
                         Publish Results
                     </Button>
+                    </div>
                 </div>
+                <dl className="mt-8 flex flex-wrap gap-x-12 gap-y-5">
+                    <div>
+                        <dd className="font-mono text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{uniqueSubmissionCount}</dd>
+                        <dt className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Unique submissions</dt>
+                    </div>
+                    <div>
+                        <dd className="font-mono text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{roundInfo.totalAssignedSubmissions}</dd>
+                        <dt className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Judge assignments</dt>
+                    </div>
+                    <div>
+                        <dd className="font-mono text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{rankings.length}</dd>
+                        <dt className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Rows in view</dt>
+                    </div>
+                </dl>
             </header>
 
             {showRecalculationBanner && (
@@ -170,8 +217,14 @@ export const CoordinatorRoundRankingPage = () => {
                     gradingLocked={gradingLocked}
                     lastCalculatedTime={lastCalculatedTime}
                     rankingRowCount={rankings.length}
+                    uniqueSubmissionCount={uniqueSubmissionCount}
+                    completedSubmissionCount={completedSubmissionCount}
+                    judgeAssignmentCount={judgeAssignmentCount}
                     isCalculating={calculateMutation.isPending}
                     onCalculate={handleCalculate}
+                    onOpenGradingProgress={() =>
+                        navigate(`/coordinator/rounds/${roundId}/grading-progress`)
+                    }
                 />
             </div>
 
@@ -183,7 +236,9 @@ export const CoordinatorRoundRankingPage = () => {
                 )}
                 {gradingLocked && rankings.length === 0 && !isLoadingRankings && (
                     <Alert severity="warning" sx={{ borderRadius: "12px", fontWeight: 600 }}>
-                        Warning: No submitted final scores found for this round or ranking not calculated yet.
+                        No ranking rows yet. Click Calculate Ranking to materialize results from the{" "}
+                        {completedSubmissionCount} complete unique submission
+                        {completedSubmissionCount === 1 ? "" : "s"}.
                     </Alert>
                 )}
             </div>

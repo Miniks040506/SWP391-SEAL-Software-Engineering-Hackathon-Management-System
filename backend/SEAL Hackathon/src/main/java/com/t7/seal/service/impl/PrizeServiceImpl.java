@@ -524,10 +524,6 @@ public class PrizeServiceImpl implements PrizeService {
         if (prize.getTrack() != null && !prize.getTrack().getId().equals(team.getTrack().getId())) {
             throw new BadRequestException("Track specific prize can only be awarded to a team in the same track.");
         }
-        if (team.getStatus() == TeamStatus.ELIMINATED) {
-            throw new ConflictException("Eliminated or disqualified teams cannot be awarded prizes.");
-        }
-
         boolean hasEligibleRanking = rankingRepository.findByEventRoundTrackWithDetails(
                         prize.getEvent().getId(), null, prizeTrackId(prize)
                 ).stream()
@@ -544,7 +540,8 @@ public class PrizeServiceImpl implements PrizeService {
                 && ranking.getSubmission() != null
                 && ranking.getSubmission().getTeam() != null
                 && ranking.getSubmission().getStatus() != SubmissionStatus.DISQUALIFIED
-                && ranking.getSubmission().getTeam().getStatus() != TeamStatus.ELIMINATED;
+                && (ranking.getSubmission().getTeam().getStatus() != TeamStatus.ELIMINATED
+                || ranking.getRound() != null && ranking.getRound().isFinalRound());
     }
 
     private UUID prizeTrackId(Prize prize) {
