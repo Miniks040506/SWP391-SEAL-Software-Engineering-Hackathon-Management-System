@@ -87,7 +87,10 @@ export function getEventEditRules(status: EditableEventStatus) {
     canEditAssignments: isDraft || isRegistration || isOngoing,
     canEditPrizes: isDraft || isRegistration || isOngoing,
     canEditCriteria: isDraft || isRegistration || isOngoing,
-    canAdvance: isDraft || isRegistration || isOngoing || isJudging,
+    canAdvance: isDraft || isRegistration || isJudging,
+    advanceReason: isOngoing
+      ? "Lock submissions for the final round to move the event to JUDGING."
+      : "",
     canCancel: isDraft || isRegistration || isOngoing || isJudging,
     isReadOnly: isJudging || isCompleted || isCancelled || isArchived,
     trackRoundReason: isOngoing

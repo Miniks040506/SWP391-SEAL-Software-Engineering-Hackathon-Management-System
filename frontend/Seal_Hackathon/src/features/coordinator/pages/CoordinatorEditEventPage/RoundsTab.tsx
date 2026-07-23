@@ -6,7 +6,6 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PlayArrowOutlinedIcon from "@mui/icons-material/PlayArrowOutlined";
 import RuleOutlinedIcon from "@mui/icons-material/RuleOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
-import StopCircleOutlinedIcon from "@mui/icons-material/StopCircleOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import {
   Alert,
@@ -26,7 +25,6 @@ import {
   useRoundOperationStatusQuery,
 } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 import {
-  useCloseRoundMutation,
   useCreateAdvanceRuleMutation,
   useCreateRoundMutation,
   useDeleteAdvanceRuleMutation,
@@ -757,13 +755,11 @@ function RoundOperationPanel({
 }) {
   const statusQuery = useRoundOperationStatusQuery(roundId);
   const openRoundMutation = useOpenRoundMutation(eventId);
-  const closeRoundMutation = useCloseRoundMutation(eventId);
   const lockSubmissionsMutation = useLockSubmissionsMutation(eventId);
   const [lockConfirmOpen, setLockConfirmOpen] = useState(false);
   const status = statusQuery.data;
   const operating =
     openRoundMutation.isPending ||
-    closeRoundMutation.isPending ||
     lockSubmissionsMutation.isPending;
 
   const handleOpen = async () => {
@@ -773,18 +769,6 @@ function RoundOperationPanel({
     } catch (error) {
       enqueueSnackbar(
         getOperationErrorMessage(error, "Failed to open round."),
-        { variant: "error" },
-      );
-    }
-  };
-
-  const handleClose = async () => {
-    try {
-      await closeRoundMutation.mutateAsync(roundId);
-      enqueueSnackbar("Round closed.", { variant: "success" });
-    } catch (error) {
-      enqueueSnackbar(
-        getOperationErrorMessage(error, "Failed to close round."),
         { variant: "error" },
       );
     }
@@ -909,21 +893,6 @@ function RoundOperationPanel({
           </Button>
           <Button
             size="small"
-            variant="outlined"
-            startIcon={<StopCircleOutlinedIcon />}
-            disabled={!canOperate || !status.canClose || operating}
-            onClick={handleClose}
-            sx={{
-              borderRadius: "10px",
-              textTransform: "none",
-              fontWeight: 800,
-              whiteSpace: "nowrap",
-            }}
-          >
-            Close
-          </Button>
-          <Button
-            size="small"
             variant="contained"
             color="warning"
             startIcon={<LockOutlinedIcon />}
@@ -944,7 +913,7 @@ function RoundOperationPanel({
       <ActionConfirmDialog
         open={lockConfirmOpen}
         title="Lock submissions for this round?"
-        description="This permanently closes participant submission changes for the round."
+        description="This locks participant submissions and closes the round. Locking the final round also moves the event to judging."
         confirmLabel="Lock submissions"
         onClose={() => setLockConfirmOpen(false)}
         onConfirm={handleLock}

@@ -1,5 +1,6 @@
 package com.t7.seal.entities;
 
+import com.t7.seal.domain.RegistrationStatus;
 import com.t7.seal.domain.RoundStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -123,6 +124,12 @@ public class Round {
         }
 
         submissionLockedAt = now;
+        status = RoundStatus.CLOSED;
+
+        if (isFinalRound() && event != null && event.getStatus() == RegistrationStatus.ONGOING) {
+            event.startJudging();
+            event.setUpdatedAt(now);
+        }
     }
 
     // Confirms advancement after submissions have been locked.

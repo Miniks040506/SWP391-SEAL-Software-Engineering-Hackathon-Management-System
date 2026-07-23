@@ -40,10 +40,6 @@ INSERT INTO prizes (id, event_id, track_id, rank_position, title, description, v
 INSERT INTO disqualifications (id, submission_id, issued_by, reason, evidence_url, appeal_note, appeal_status, issued_at) VALUES
 ('5907ed6e-50a8-5d30-8be2-b94f0876692c', 'ef64a5ec-d680-52d4-a4f7-e5b3231e0676', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'Repository history did not match final demo and plagiarism evidence was reported.', 'https://drive.google.com/file/d/disq-evidence/view', 'Team requested review and provided explanation.', 'PENDING', TIMESTAMP '2025-04-18 15:00:00');
 
--- from seed v21
-INSERT INTO disqualifications (id, submission_id, issued_by, reason, evidence_url, appeal_note, appeal_status, issued_at) VALUES
-('4a000000-0000-4000-8000-000000000301', '4a000000-0000-4000-8000-000000000102', '0406b2de-5dcd-59c7-ad4c-e614f1f201a5', 'Commit history shows large unattributed code drop close to the deadline; possible external authorship.', 'https://drive.google.com/file/d/summer-gamma-disq-evidence/view', 'Team disputes the finding and requests a review of the commit timeline.', 'PENDING', TIMESTAMP '2026-06-28 10:00:00');
-
 -- ---- export_jobs ----
 -- from seed v19
 INSERT INTO export_jobs (id, requested_by, export_type, params, status, file_url, file_name, file_size_bytes, row_count, error_message, requested_at, started_at, completed_at, expires_at) VALUES

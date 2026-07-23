@@ -175,6 +175,9 @@ function StatusWorkflow({
           <button
             type="button"
             onClick={onAdvance}
+            aria-describedby={
+              rules.advanceReason ? "event-status-advance-reason" : undefined
+            }
             disabled={
               !rules.canAdvance ||
               !nextStatus ||
@@ -190,7 +193,6 @@ function StatusWorkflow({
             {nextStatus ? `Move to ${nextStatus}` : "No next status"}
             {!isAdvancing && <ArrowForwardOutlinedIcon sx={{ fontSize: 16 }} />}
           </button>
-
           <button
             type="button"
             onClick={onCancel}
@@ -216,6 +218,26 @@ function StatusWorkflow({
           )}
         </div>
       </div>
+
+      {rules.advanceReason && (
+        <div
+          id="event-status-advance-reason"
+          role="note"
+          className="mt-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/30 dark:bg-amber-500/10"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+            <LockOutlinedIcon sx={{ fontSize: 17 }} />
+          </span>
+          <div>
+            <p className="text-sm font-black text-amber-900 dark:text-amber-200">
+              Judging starts automatically
+            </p>
+            <p className="mt-0.5 text-sm font-medium leading-5 text-amber-800 dark:text-amber-300">
+              {rules.advanceReason}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Status pipeline — mirrors the wizard stepper rhythm */}
       <div className="mt-6 flex items-start">

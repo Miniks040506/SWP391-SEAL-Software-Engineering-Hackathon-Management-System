@@ -410,21 +410,8 @@ public class RoundServiceImpl implements RoundService {
     @Transactional
     @Override
     public RoundResponse closeRound(UUID roundId, Authentication authentication) {
-        User actor = currentUserService.getCurrentUser(authentication);
-        Round round = getRound(roundId);
-
-        if (round.getStatus() != RoundStatus.OPEN) {
-            throw new ConflictException("Only open rounds can be closed.");
-        }
-
-        RoundStatus before = round.getStatus();
-        round.setStatus(RoundStatus.CLOSED);
-        Round saved = roundRepository.save(round);
-        roundDeadlineReminderService.cancelSubmissionDeadlineReminders(saved);
-        saveRoundAudit(actor, round, AuditActionType.ROUND_CLOSED, before.name(), saved.getStatus().name());
-
-        saveRoundNotification(actor, round, NotificationType.ROUND_CLOSED, "Round closed", "Round " + saved.getName());
-        return toRoundResponse(saved);
+        lockSubmission(roundId, authentication);
+        return toRoundResponse(getRound(roundId));
     }
 
     @Transactional
@@ -445,9 +432,11 @@ public class RoundServiceImpl implements RoundService {
 
         LocalDateTime now = LocalDateTime.now();
         RoundStatus before = round.getStatus();
-        round.setSubmissionLockedAt(now);
-        round.setStatus(RoundStatus.CLOSED);
+        round.lockSubmissions(now);
         Round saved = roundRepository.save(round);
+        if (saved.isFinalRound()) {
+            hackathonEventRepository.save(saved.getEvent());
+        }
         roundDeadlineReminderService.cancelSubmissionDeadlineReminders(saved);
 
         List<Submission> drafts = submissionRepository.findDraftsByRoundId(saved.getId());
