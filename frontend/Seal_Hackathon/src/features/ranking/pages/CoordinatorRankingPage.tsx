@@ -8,7 +8,11 @@ import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 
 import { useCoordinatorEventDetailQuery, useCoordinatorEventRoundsQuery, useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 import { useRoundRankingsQuery, useEventRankingsQuery } from "../hooks/useRankingQueries";
-import { useCalculateRoundRankingMutation, usePublishEventResultsMutation } from "../hooks/useRankingMutations";
+import {
+    useCalculateRoundRankingMutation,
+    usePublishEventResultsMutation,
+    usePublishRoundResultsMutation,
+} from "../hooks/useRankingMutations";
 import { useRoundGradingProgressQuery } from "@/features/grading-progress/hooks/useGradingProgressQueries";
 import type { PublishResultsRequest } from "@/types/ranking.types";
 
@@ -34,9 +38,7 @@ export const CoordinatorRankingPage = () => {
     const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
     const { data: tracks = [] } = useCoordinatorEventTracksQuery(eventId);
 
-    const activeRoundId = selectedRoundId === "all" && rounds.length > 0
-        ? rounds[0].id
-        : selectedRoundId;
+    const activeRoundId = selectedRoundId;
 
     const { data: roundProgress } = useRoundGradingProgressQuery(
         activeRoundId !== "all" ? activeRoundId : undefined
@@ -58,7 +60,9 @@ export const CoordinatorRankingPage = () => {
         activeRoundId === "all" ? eventRankingsQuery : roundRankingsQuery;
 
     const calculateMutation = useCalculateRoundRankingMutation();
-    const publishMutation = usePublishEventResultsMutation();
+    const eventPublishMutation = usePublishEventResultsMutation();
+    const roundPublishMutation = usePublishRoundResultsMutation();
+    const isPublishing = eventPublishMutation.isPending || roundPublishMutation.isPending;
 
     const handleCalculate = () => {
         if (activeRoundId === "all") return;
@@ -69,8 +73,15 @@ export const CoordinatorRankingPage = () => {
     };
 
     const handlePublishResults = async (payload: PublishResultsRequest) => {
-        if (!eventId) return;
-        await publishMutation.mutateAsync({ eventId, payload });
+        if (activeRoundId === "all") {
+            if (!eventId) return;
+            await eventPublishMutation.mutateAsync({ eventId, payload });
+        } else {
+            await roundPublishMutation.mutateAsync({
+                roundId: activeRoundId,
+                payload,
+            });
+        }
         setPublishDialogOpen(false);
         refetch();
     };
@@ -169,11 +180,11 @@ export const CoordinatorRankingPage = () => {
                     variant="contained"
                     color="primary"
                     startIcon={<PublishOutlinedIcon />}
-                    disabled={rankings.length === 0 || publishMutation.isPending}
+                    disabled={rankings.length === 0 || isPublishing}
                     onClick={() => setPublishDialogOpen(true)}
                     sx={{ borderRadius: "10px", fontWeight: 800, textTransform: "none" }}
                 >
-                    Publish results
+                    {activeRoundId === "all" ? "Publish final results" : "Publish round"}
                 </Button>
             </section>
 
@@ -254,11 +265,19 @@ export const CoordinatorRankingPage = () => {
             </section>
             <PublishResultsDialog
                 open={publishDialogOpen}
-                scopeLabel={event.name}
+                scopeLabel={activeRoundId === "all" ? event.name : selectedRoundName ?? event.name}
                 rankingCount={rankings.length}
-                defaultTitle={`Results are published for ${event.name}`}
-                defaultContent="The results are now available. Please open the leaderboard or your team score page for details."
-                isPending={publishMutation.isPending}
+                defaultTitle={
+                    activeRoundId === "all"
+                        ? `Final results are published for ${event.name}`
+                        : `${selectedRoundName ?? "Round"} results are published`
+                }
+                defaultContent={
+                    activeRoundId === "all"
+                        ? "Final results are now available on the leaderboard and team score pages."
+                        : "This round's results are now available to participants on their team score pages."
+                }
+                isPending={isPublishing}
                 onClose={() => setPublishDialogOpen(false)}
                 onConfirm={handlePublishResults}
             />
