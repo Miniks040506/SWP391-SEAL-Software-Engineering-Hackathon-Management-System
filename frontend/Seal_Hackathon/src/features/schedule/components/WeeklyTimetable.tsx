@@ -200,14 +200,16 @@ export function WeeklyTimetable({
                 Multi-day windows
               </p>
             </div>
-            <div className="flex min-w-0 flex-1 flex-wrap justify-center gap-2">
+            <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
               {activeWindows.map((entry) => (
                 <button
                   key={entry.id}
                   type="button"
                   onClick={() => onOpen(entry)}
                   aria-label={`Open ${entry.title}`}
-                  className="group flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-blue-400 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 lg:w-1/2"
+                  className={`group flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-blue-400 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 ${
+                    activeWindows.length === 1 ? "sm:col-span-2 sm:w-1/2 sm:justify-self-center" : ""
+                  }`}
                 >
                   <span className="min-w-0">
                     <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-blue-600 dark:text-blue-400">
