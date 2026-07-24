@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import { Pagination } from "@mui/material";
 import { eventApi } from "@/api/event.api";
 import { trackApi } from "@/api/track.api";
@@ -7,7 +6,6 @@ import { useCoordinatorTeamsQuery } from "../hooks/useCoordinatorTeamQueries";
 import { usePendingTeamApprovalCounts } from "../hooks/usePendingTeamApprovalCounts";
 import { TeamFilterBar } from "../components/TeamFilterBar";
 import { TeamTable } from "../components/TeamTable";
-import { TeamDetailDrawer } from "../components/TeamDetailDrawer";
 import { paginationSx } from "../schemas/teams.schema";
 import type { CoordinatorTeamListParams } from "@/types/team.types";
 
@@ -17,9 +15,6 @@ type EventOption = { id: string; name: string };
 type TrackOption = { id: string; name: string; eventId: string };
 
 export function CoordinatorTeamsPage() {
-  const { teamId } = useParams<{ teamId: string }>();
-  const navigate = useNavigate();
-
   const [filters, setFilters] = useState<CoordinatorTeamListParams>({
     page: 1,
     size: PAGE_SIZE,
@@ -66,13 +61,9 @@ export function CoordinatorTeamsPage() {
     fetchTracks();
   }, [filters.eventId]);
 
-  const { data, loading, refetch } = useCoordinatorTeamsQuery(filters);
+  const { data, loading } = useCoordinatorTeamsQuery(filters);
   const { countsByEventId: pendingCountsByEvent } =
     usePendingTeamApprovalCounts();
-
-  const handleCloseDrawer = () => {
-    navigate("/coordinator/teams");
-  };
 
   const items = data?.content ?? [];
   const total = data?.totalElements ?? 0;
@@ -120,14 +111,6 @@ export function CoordinatorTeamsPage() {
           </div>
         )}
       </div>
-
-      {teamId && (
-        <TeamDetailDrawer
-          teamId={teamId}
-          onClose={handleCloseDrawer}
-          onChanged={refetch}
-        />
-      )}
     </div>
   );
 }

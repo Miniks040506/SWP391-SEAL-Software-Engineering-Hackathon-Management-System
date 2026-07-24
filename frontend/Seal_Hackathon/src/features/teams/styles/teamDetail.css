@@ -1,0 +1,138 @@
+/*
+ * Pure-CSS motion for the Coordinator Team Detail page — a full route that
+ * replaces the old right-side Team Details drawer. The page reads like a
+ * command console: the hero rises with a status ribbon wipe, KPI tiles and
+ * sections stagger in, member rows cascade, and cards lift on hover. Every
+ * animation is purely decorative-of-state (it tells the coordinator "this is
+ * the team you opened, here is its standing"), and the whole file is
+ * reduced-motion safe.
+ */
+
+.td-fade {
+  animation: td-fade 0.4s ease both;
+}
+
+@keyframes td-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.td-rise {
+  animation: td-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes td-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Member / submission rows cascade in from the left. */
+.td-stagger {
+  animation: td-stagger 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes td-stagger {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Status ribbon wipe on the hero left edge. */
+.td-ribbon {
+  transform-origin: top;
+  animation: td-ribbon 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes td-ribbon {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* KPI accent underline sweeps across after the tile lands. */
+.td-underline {
+  transform-origin: left;
+  animation: td-underline 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes td-underline {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Card hover lift for KPI tiles, member card, submission rows. */
+.td-card {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.td-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -18px rgba(15, 23, 42, 0.35);
+}
+
+/* Live "action required" pulse on the pending-approval affordance. */
+.td-live-dot {
+  position: relative;
+}
+
+.td-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55);
+  animation: td-live 1.8s ease-out infinite;
+}
+
+@keyframes td-live {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .td-fade,
+  .td-rise,
+  .td-stagger,
+  .td-ribbon,
+  .td-underline {
+    animation: none;
+  }
+  .td-card:hover {
+    transform: none;
+  }
+  .td-live-dot::after {
+    animation: none;
+  }
+}
