@@ -117,7 +117,30 @@ export function useCoordinatorAnnouncements(initialEventId?: string) {
     return getPageItems<EventSummaryResponse>(eventsQuery.data);
   }, [eventsQuery.data]);
 
-  const effectiveEventId = selectedEventId || initialEventId || events[0]?.id || "";
+  // When the coordinator opens the page without an explicit event, auto-point
+  // at the live event so they land on the season currently running instead of
+  // an arbitrary first entry they may not even manage. The event lifecycle is
+  // DRAFT -> REGISTRATION -> ONGOING -> JUDGING -> COMPLETED, so any of the
+  // active phases counts as "live"; rank them by how live they are and pick the
+  // strongest match (ONGOING first, then JUDGING, then REGISTRATION).
+  const liveEventId = useMemo(() => {
+    const liveRank: Record<string, number> = {
+      ONGOING: 3,
+      JUDGING: 2,
+      REGISTRATION: 1,
+    };
+    let best: { id: string; rank: number } | undefined;
+    for (const event of events) {
+      const rank = liveRank[(event.status ?? "").toUpperCase()] ?? 0;
+      if (rank > 0 && (!best || rank > best.rank)) {
+        best = { id: event.id, rank };
+      }
+    }
+    return best?.id;
+  }, [events]);
+
+  const effectiveEventId =
+    selectedEventId || initialEventId || liveEventId || events[0]?.id || "";
 
   const tracksQuery = useQuery({
     queryKey: announcementQueryKeys.tracks(effectiveEventId),

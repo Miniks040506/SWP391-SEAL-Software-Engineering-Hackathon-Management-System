@@ -1,0 +1,162 @@
+/*
+ * Pure-CSS motion for the Coordinator Announcements console
+ * (/coordinator/announcement). Header + KPI tiles rise in, announcement cards
+ * cascade, the create/edit dialog pops from its trigger, and a shimmer
+ * skeleton stands in while data fetches. All reduced-motion safe.
+ */
+
+.an-fade {
+  animation: an-fade 0.4s ease both;
+}
+
+@keyframes an-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.an-rise {
+  animation: an-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes an-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Announcement cards cascade up as the list loads. */
+.an-card-in {
+  animation: an-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes an-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* KPI accent underline sweeps across after the tile lands. */
+.an-underline {
+  transform-origin: left;
+  animation: an-underline 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes an-underline {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Card + tile hover lift. */
+.an-card {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.an-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -18px rgba(15, 23, 42, 0.35);
+}
+
+/* Live-event dot pulse. */
+.an-live-dot {
+  position: relative;
+}
+
+.an-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  animation: an-live 1.8s ease-out infinite;
+}
+
+@keyframes an-live {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Dialog backdrop + panel entrance. */
+.an-backdrop {
+  animation: an-fade 0.2s ease both;
+}
+
+.an-dialog {
+  animation: an-dialog 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes an-dialog {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Skeleton shimmer for the loading state. */
+.an-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.12) 25%,
+    rgba(148, 163, 184, 0.24) 37%,
+    rgba(148, 163, 184, 0.12) 63%
+  );
+  background-size: 400% 100%;
+  animation: an-shimmer 1.4s ease infinite;
+}
+
+@keyframes an-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .an-fade,
+  .an-rise,
+  .an-card-in,
+  .an-underline,
+  .an-backdrop,
+  .an-dialog,
+  .an-skeleton {
+    animation: none;
+  }
+  .an-card:hover {
+    transform: none;
+  }
+  .an-live-dot::after {
+    animation: none;
+  }
+}
