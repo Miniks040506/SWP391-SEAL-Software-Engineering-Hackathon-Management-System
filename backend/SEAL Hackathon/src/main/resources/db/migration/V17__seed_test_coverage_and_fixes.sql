@@ -366,7 +366,10 @@ SET status = 'RESULTS_READY',
         advancement_confirmed_at,
         NOW() - INTERVAL '6 days'
     ),
-    result_published_at = NULL
+    result_published_at = COALESCE(
+        result_published_at,
+        NOW() - INTERVAL '5 days'
+    )
 WHERE id = 'd92484b1-2090-5067-87d2-ec03f227fc96';
 
 -- Reschedule the stale queued items into the future instead of the past.
@@ -563,6 +566,30 @@ FROM ranked
 WHERE ranked.submission_id NOT IN (
     SELECT submission_id FROM rankings WHERE round_id = 'd92484b1-2090-5067-87d2-ec03f227fc96'
 );
+
+-- Keep the confirmed advancement state consistent with the configured rules.
+UPDATE rankings
+SET is_advanced = (
+        (track_id = '8039cc28-1b76-556f-8bc2-2e544416d4c8' AND rank_position <= 3)
+        OR (track_id = 'c8c619b7-551c-50e4-b1a2-de5b8b7a7bb9' AND rank_position <= 2)
+        OR total_score >= 6.5
+    ),
+    advance_reason = CASE
+        WHEN track_id = '8039cc28-1b76-556f-8bc2-2e544416d4c8' AND rank_position <= 3 THEN 'TOP_N'
+        WHEN track_id = 'c8c619b7-551c-50e4-b1a2-de5b8b7a7bb9' AND rank_position <= 2 THEN 'TOP_N'
+        WHEN total_score >= 6.5 THEN 'MIN_SCORE'
+        ELSE 'NOT_ADVANCED'
+    END
+WHERE round_id = 'd92484b1-2090-5067-87d2-ec03f227fc96';
+
+UPDATE teams t
+SET status = CASE WHEN r.is_advanced THEN 'ADVANCED' ELSE 'ELIMINATED' END,
+    updated_at = NOW()
+FROM submissions s
+JOIN rankings r ON r.submission_id = s.id
+WHERE s.team_id = t.id
+  AND r.round_id = 'd92484b1-2090-5067-87d2-ec03f227fc96'
+  AND t.status <> 'WINNER';
 
 -- ---------------------------------------------------------------------
 -- N. Seed-data bug fixes: broken email addresses (student01.. do not exist)

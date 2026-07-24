@@ -236,7 +236,7 @@ export function RoundAdvancementPage() {
               boxShadow: "none",
             }}
           >
-            Confirm Advancement
+            {advancementConfirmed ? "Advancement Confirmed" : "Confirm Advancement"}
           </Button>
           </div>
         </div>
