@@ -1,0 +1,151 @@
+/*
+ * Pure-CSS motion for the Coordinator Submissions console
+ * (/coordinator/submissions). Header + KPI tiles rise in, the finalization
+ * progress bar fills to show grading readiness, table rows cascade on load,
+ * and a shimmer skeleton stands in while data fetches. Reduced-motion safe.
+ */
+
+.sl-fade {
+  animation: sl-fade 0.4s ease both;
+}
+
+@keyframes sl-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sl-rise {
+  animation: sl-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Table rows cascade up as the page loads. */
+.sl-row {
+  animation: sl-row 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sl-row {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* KPI accent underline sweeps across after the tile lands. */
+.sl-underline {
+  transform-origin: left;
+  animation: sl-underline 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sl-underline {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Finalization progress bar grows from empty to its target width. The target
+ * width is passed via the --sl-fill custom property so the keyframe animates
+ * to the real percentage. */
+.sl-bar {
+  width: var(--sl-fill, 0%);
+  animation: sl-bar 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sl-bar {
+  from {
+    width: 0%;
+  }
+  to {
+    width: var(--sl-fill, 0%);
+  }
+}
+
+/* Card hover lift, shared by KPI tiles. */
+.sl-card {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.sl-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -18px rgba(15, 23, 42, 0.35);
+}
+
+/* Row hover + chevron nudge to signal the row navigates. */
+.sl-row-hover {
+  transition:
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.sl-chevron {
+  transition: transform 0.18s ease;
+}
+
+.sl-row-hover:hover .sl-chevron {
+  transform: translateX(3px);
+}
+
+/* Skeleton shimmer for the loading state. */
+.sl-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.12) 25%,
+    rgba(148, 163, 184, 0.24) 37%,
+    rgba(148, 163, 184, 0.12) 63%
+  );
+  background-size: 400% 100%;
+  animation: sl-shimmer 1.4s ease infinite;
+}
+
+@keyframes sl-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-fade,
+  .sl-rise,
+  .sl-row,
+  .sl-underline,
+  .sl-bar,
+  .sl-skeleton {
+    animation: none;
+  }
+  .sl-bar {
+    width: var(--sl-fill, 0%);
+  }
+  .sl-card:hover {
+    transform: none;
+  }
+  .sl-row-hover:hover .sl-chevron {
+    transform: none;
+  }
+}

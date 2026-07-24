@@ -1,4 +1,5 @@
 export { CoordinatorTeamsPage } from "./pages/CoordinatorTeamsPage";
+export { CoordinatorTeamDetailPage } from "./pages/CoordinatorTeamDetailPage";
 export { MyTeamsPage } from "./pages/ParticipantMyTeamsPage";
 export { CreateTeamPage } from "./pages/ParticipantCreateTeam";
 export { TeamDetailPage } from "./pages/ParticipantTeamDetailPage";

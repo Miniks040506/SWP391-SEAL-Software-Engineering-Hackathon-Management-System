@@ -1,0 +1,72 @@
+/*
+ * Pure-CSS motion for the Coordinator Submission Detail page — a full route
+ * that replaces the old submission popups/drawers. Sections rise in sequence,
+ * the status ribbon wipes in, and cards lift on hover. Reduced-motion safe.
+ */
+
+.sd-rise {
+  animation: sd-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sd-fade {
+  animation: sd-fade 0.4s ease both;
+}
+
+@keyframes sd-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Status ribbon wipe on the hero left edge. */
+.sd-ribbon {
+  transform-origin: top;
+  animation: sd-ribbon 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sd-ribbon {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Card hover lift for the deliverable / info cards. */
+.sd-card {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.sd-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -18px rgba(15, 23, 42, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-rise,
+  .sd-fade,
+  .sd-ribbon {
+    animation: none;
+  }
+  .sd-card:hover {
+    transform: none;
+  }
+}
