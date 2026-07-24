@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import { Alert, Pagination } from "@mui/material";
 import { eventApi } from "@/api/event.api";
 import { roundApi } from "@/api/round.api";
@@ -7,7 +6,6 @@ import { trackApi } from "@/api/track.api";
 import { useCoordinatorSubmissionsQuery } from "../hooks/useCoordinatorSubmissionQueries";
 import { SubmissionFilterBar } from "../components/SubmissionFilterBar";
 import { SubmissionTable } from "../components/SubmissionTable";
-import { SubmissionDetailDrawer } from "../components/SubmissionDetailDrawer";
 import { paginationSx } from "../schemas/submissions.schema";
 import type { CoordinatorSubmissionListParams } from "../hooks/useCoordinatorSubmissionQueries";
 
@@ -18,9 +16,6 @@ type TrackOption = { id: string; name: string; eventId: string };
 type RoundOption = { id: string; name: string; eventId: string };
 
 export function CoordinatorSubmissionsPage() {
-  const { submissionId } = useParams<{ submissionId: string }>();
-  const navigate = useNavigate();
-
   const [filters, setFilters] = useState<CoordinatorSubmissionListParams>({
     page: 1,
     size: PAGE_SIZE,
@@ -75,12 +70,8 @@ export function CoordinatorSubmissionsPage() {
     fetchFilterOptions();
   }, []);
 
-  const { data, summary, loading, error, refetch } =
+  const { data, summary, loading, error } =
     useCoordinatorSubmissionsQuery(filters);
-
-  const handleCloseDrawer = () => {
-    navigate("/coordinator/submissions");
-  };
 
   const items = useMemo(() => data?.content ?? [], [data?.content]);
   const total = data?.totalElements ?? 0;
@@ -155,14 +146,6 @@ export function CoordinatorSubmissionsPage() {
           </div>
         )}
       </div>
-
-      {submissionId && (
-        <SubmissionDetailDrawer
-          submissionId={submissionId}
-          onClose={handleCloseDrawer}
-          onRefresh={() => refetch()}
-        />
-      )}
     </div>
   );
 }

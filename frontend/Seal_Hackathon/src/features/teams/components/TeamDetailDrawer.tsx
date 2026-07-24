@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -7,21 +8,16 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
-import Tooltip from "@mui/material/Tooltip";
 import { teamApi } from "@/api/team.api";
-import { submissionApi } from "@/api/submission.api";
 import type { UUID } from "@/types/common.types";
 import type { CoordinatorTeamDetailResponse } from "@/types/team.types";
-import type { SubmissionDetailResponse } from "@/types/submission.types";
 import {
   formatTeamStatusLabel,
   getTeamRegistrationStatusColor,
   getTeamStatusColor,
-  getSubmissionStatusColor,
 } from "../schemas/teams.schema";
 import { useCoordinatorRegistrationReview } from "../hooks/useCoordinatorRegistrationReview";
 import { TeamSubmissionProgressGrid } from "./TeamSubmissionProgressGrid";
-import { SubmissionLinksPreview } from "@/features/submissions/components/SubmissionLinksPreview";
 import { DisqualifySubmissionDialog } from "@/features/disqualification/components/DisqualifySubmissionDialog";
 import { useDisqualifySubmissionMutation } from "@/features/disqualification/hooks/useDisqualificationQueries";
 import type { DisqualifyFormValues } from "@/features/disqualification/schemas/disqualification.schema";
@@ -36,6 +32,7 @@ type Props = {
 type ReviewAction = "approve" | "reject";
 
 export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [detail, setDetail] = useState<CoordinatorTeamDetailResponse | null>(
     null,
@@ -45,13 +42,6 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
   const [rejectReason, setRejectReason] = useState("");
   const { approve, reject, reviewingTeamId, error, clearError } =
     useCoordinatorRegistrationReview();
-
-  const [selectedSubmissionId, setSelectedSubmissionId] = useState<UUID | null>(
-    null,
-  );
-  const [submissionDetail, setSubmissionDetail] =
-    useState<SubmissionDetailResponse | null>(null);
-  const [loadingSubmissionDetail, setLoadingSubmissionDetail] = useState(false);
 
   const [disqualifySubmissionId, setDisqualifySubmissionId] =
     useState<UUID | null>(null);
@@ -73,9 +63,7 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
   useEffect(() => {
     if (!teamId) return;
 
-    setSelectedSubmissionId(null);
-    setSubmissionDetail(null);
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     teamApi
@@ -90,24 +78,6 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
         setLoading(false);
       });
   }, [teamId]);
-
-  const handleViewSubmission = async (subId: UUID) => {
-    setSelectedSubmissionId(subId);
-    setLoadingSubmissionDetail(true);
-    try {
-      const res = await submissionApi.getSubmissionAdminView(subId);
-      setSubmissionDetail(res);
-    } catch {
-      setSubmissionDetail(null);
-    } finally {
-      setLoadingSubmissionDetail(false);
-    }
-  };
-
-  const handleBackToTeam = () => {
-    setSelectedSubmissionId(null);
-    setSubmissionDetail(null);
-  };
 
   const handleOpenReviewDialog = (action: ReviewAction) => {
     clearError();
@@ -175,7 +145,7 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
       <div className="fixed inset-y-0 right-0 w-full md:w-150 bg-white dark:bg-slate-900 shadow-2xl z-70 overflow-y-auto transform transition-transform flex flex-col border-l border-slate-200 dark:border-slate-800">
         <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900 sticky top-0 z-10">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-            {selectedSubmissionId ? "Submission Details" : "Team Details"}
+            Team Details
           </h2>
 
           <button
@@ -187,159 +157,7 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
         </div>
 
         <div className="p-6 flex-1">
-          {selectedSubmissionId ? (
-            <div className="space-y-6">
-              <button
-                onClick={handleBackToTeam}
-                className="flex items-center text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors mb-2"
-              >
-                ← Back to Team Details
-              </button>
-
-              {loadingSubmissionDetail ? (
-                <div className="text-center text-slate-500 dark:text-slate-400 mt-10 text-sm">
-                  Loading submission details...
-                </div>
-              ) : submissionDetail ? (
-                <>
-                  <section className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                    <div className="flex items-center justify-between mb-5">
-                      <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Overview
-                      </h3>
-                      <span
-                        className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(
-                          submissionDetail.status,
-                        )}`}
-                      >
-                        {submissionDetail.status}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-5">
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                          Submission ID
-                        </p>
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate font-mono">
-                          {submissionDetail.id}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                          Attempt Number
-                        </p>
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                          {submissionDetail.submissionNumber}
-                        </p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                          Submitted At
-                        </p>
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                          {submissionDetail.submittedAt
-                            ? new Date(
-                                submissionDetail.submittedAt,
-                              ).toLocaleString()
-                            : "Not submitted yet"}
-                        </p>
-                      </div>
-                      {submissionDetail.roundSubmissionLocked && (
-                        <div className="col-span-2 pt-3 border-t border-slate-200 dark:border-slate-700/50">
-                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                            Round Submission Locked
-                          </p>
-                          <p className="text-sm font-medium text-red-600 dark:text-red-400">
-                            Locked at{" "}
-                            {submissionDetail.roundSubmissionLockedAt
-                              ? new Date(
-                                  submissionDetail.roundSubmissionLockedAt,
-                                ).toLocaleString()
-                              : "Unknown time"}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700 space-y-3">
-                      {(() => {
-                        const isScorable =
-                          submissionDetail.status === "SUBMITTED" ||
-                          submissionDetail.status === "LATE";
-                        const isEliminated =
-                          detail?.status === "ELIMINATED" ||
-                          detail?.status === "DISQUALIFIED";
-                        const disabled = !isScorable || isEliminated;
-
-                        const button = (
-                          <span className="w-full block">
-                            <Button
-                              fullWidth
-                              variant="contained"
-                              color="error"
-                              disabled={disabled}
-                              onClick={() =>
-                                !disabled &&
-                                setDisqualifySubmissionId(submissionDetail.id)
-                              }
-                              sx={{
-                                textTransform: "none",
-                                fontWeight: 600,
-                                py: 1,
-                              }}
-                            >
-                              Disqualify submission
-                            </Button>
-                          </span>
-                        );
-
-                        if (disabled) {
-                          return (
-                            <Tooltip
-                              title={
-                                isEliminated
-                                  ? "This team has already been disqualified."
-                                  : "Only submitted submissions can be disqualified."
-                              }
-                              arrow
-                              placement="top"
-                            >
-                              {button}
-                            </Tooltip>
-                          );
-                        }
-
-                        return button;
-                      })()}
-                    </div>
-                  </section>
-
-                  <section>
-                    <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
-                      Deliverable Links
-                    </h3>
-                    <SubmissionLinksPreview
-                      links={submissionDetail.links || []}
-                    />
-                  </section>
-
-                  {submissionDetail.note && (
-                    <section>
-                      <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
-                        Submitter Note
-                      </h3>
-                      <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-4 rounded-xl text-sm text-amber-900 dark:text-amber-200 whitespace-pre-wrap leading-relaxed">
-                        {submissionDetail.note}
-                      </div>
-                    </section>
-                  )}
-                </>
-              ) : (
-                <div className="text-center text-slate-500 dark:text-slate-400 mt-10 text-sm">
-                  Failed to load submission details.
-                </div>
-              )}
-            </div>
-          ) : loading ? (
+          {loading ? (
             <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400 text-sm">
               Loading team details...
             </div>
@@ -512,7 +330,9 @@ export function TeamDetailDrawer({ teamId, onClose, onChanged }: Props) {
                 <TeamSubmissionProgressGrid
                   submissions={detail.submissions}
                   teamStatus={detail.status}
-                  onSelectSubmission={handleViewSubmission}
+                  onSelectSubmission={(id) =>
+                    navigate(`/coordinator/submissions/${id}`)
+                  }
                   onDisqualifySubmission={(id) => setDisqualifySubmissionId(id)}
                 />
               </section>

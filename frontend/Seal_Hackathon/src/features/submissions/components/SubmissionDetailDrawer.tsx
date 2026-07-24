@@ -7,7 +7,11 @@ import { teamApi } from "@/api/team.api";
 import type { UUID } from "@/types/common.types";
 import type { TeamDetailResponse } from "@/types/team.types";
 import { Button, Tooltip } from "@mui/material";
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import { DisqualifySubmissionDialog } from "../../disqualification/components/DisqualifySubmissionDialog";
+import "../../disqualification/styles/disqualifications.css";
 import { useDisqualifySubmissionMutation } from "../../disqualification/hooks/useDisqualificationQueries";
 import type { DisqualifyFormValues } from "../../disqualification/schemas/disqualification.schema";
 import { DisqualificationStatusBadge } from "../../disqualification/components/DisqualificationStatusBadge";
@@ -77,19 +81,41 @@ export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh, overt
   return (
     <>
       <div
-        className="fixed inset-0 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm z-60 transition-opacity"
+        className="dqx-overlay-in fixed inset-0 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm z-60"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 w-full md:w-150 bg-white dark:bg-slate-900 shadow-2xl z-70 overflow-y-auto transform transition-transform flex flex-col border-l border-slate-200 dark:border-slate-800">
-        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900 sticky top-0 z-10">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-            {isViewingTeam ? "Team Details" : "Submission Details"}
-          </h2>
+      <div className="dqx-drawer-in fixed inset-y-0 right-0 w-full md:w-150 bg-white dark:bg-slate-900 shadow-2xl z-70 overflow-y-auto flex flex-col border-l border-slate-200 dark:border-slate-800">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <span
+              className={[
+                "flex h-9 w-9 items-center justify-center rounded-lg",
+                isViewingTeam
+                  ? "bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300"
+                  : "bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+              ].join(" ")}
+            >
+              {isViewingTeam ? (
+                <GroupsOutlinedIcon fontSize="small" />
+              ) : (
+                <DescriptionOutlinedIcon fontSize="small" />
+              )}
+            </span>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                {isViewingTeam ? "Participants" : "Case file"}
+              </p>
+              <h2 className="text-lg font-bold leading-tight text-slate-800 dark:text-slate-200">
+                {isViewingTeam ? "Team Details" : "Submission Details"}
+              </h2>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
+            aria-label="Close"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
           >
-            ✕
+            <CloseOutlinedIcon fontSize="small" />
           </button>
         </div>
 
@@ -275,7 +301,18 @@ export function SubmissionDetailDrawer({ submissionId, onClose, onRefresh, overt
                         Overview
                       </h3>
                       {detail.status === "DISQUALIFIED" ? (
-                        <DisqualificationStatusBadge appealStatus={(detail as any).appealStatus} />
+                        <DisqualificationStatusBadge
+                          appealStatus={
+                            (
+                              detail as {
+                                appealStatus?:
+                                  | "PENDING"
+                                  | "UPHELD"
+                                  | "OVERTURNED";
+                              }
+                            ).appealStatus
+                          }
+                        />
                       ) : (
                         <span
                           className={`px-2.5 py-1 rounded-md border text-xs font-bold ${getSubmissionStatusColor(

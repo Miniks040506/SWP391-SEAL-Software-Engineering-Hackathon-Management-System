@@ -98,6 +98,7 @@ import { EventCriteriaManagementPage } from "@/features/criteria/pages/EventCrit
 import { EventCriteriaViewPage } from "@/features/criteria/pages/EventCriteriaViewPage";
 import { ScoringCriteriaManagementPage } from "@/features/criteria/pages/ScoringCriteriaManagementPage";
 import { CoordinatorSubmissionsPage } from "@/features/submissions/pages/CoordinatorSubmissionsPage";
+import { CoordinatorSubmissionDetailPage } from "@/features/submissions/pages/CoordinatorSubmissionDetailPage";
 import { CoordinatorTeamsPage } from "@/features/teams";
 import { ParticipantSubmissionsPage } from "@/features/submissions/pages/ParticipantSubmissionsPage";
 import { NotificationInboxPage } from "@/features/notification";
@@ -372,7 +373,7 @@ export const router = createBrowserRouter([
       { path: "submissions", element: <CoordinatorSubmissionsPage /> },
       {
         path: "submissions/:submissionId",
-        element: <CoordinatorSubmissionsPage />,
+        element: <CoordinatorSubmissionDetailPage />,
       },
       { path: "judging", element: <NotFoundPage /> },
       { path: "prizes", element: <CoordinatorPrizesRedirectPage /> },
