@@ -1,0 +1,159 @@
+/*
+ * Pure-CSS motion for the Coordinator Teams console (the /coordinator/teams
+ * list). The header and KPI tiles rise in, an actionable "pending approval"
+ * banner pulses when work is waiting, table rows cascade on load, and a
+ * shimmer skeleton stands in while data fetches. All reduced-motion safe.
+ */
+
+.tl-fade {
+  animation: tl-fade 0.4s ease both;
+}
+
+@keyframes tl-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tl-rise {
+  animation: tl-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Table rows cascade up as the page loads. */
+.tl-row {
+  animation: tl-row 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tl-row {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* KPI accent underline sweeps across after the tile lands. */
+.tl-underline {
+  transform-origin: left;
+  animation: tl-underline 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tl-underline {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Card hover lift, shared by KPI tiles. */
+.tl-card {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.tl-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -18px rgba(15, 23, 42, 0.35);
+}
+
+/* Row hover accent bar (the left edge fills on hover). */
+.tl-row-hover {
+  transition:
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+/* Chevron nudges right on row hover to signal navigation. */
+.tl-chevron {
+  transition: transform 0.18s ease;
+}
+
+.tl-row-hover:hover .tl-chevron {
+  transform: translateX(3px);
+}
+
+/* "Action required" pulse on the pending-approval banner icon. */
+.tl-pulse {
+  position: relative;
+}
+
+.tl-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: tl-pulse 1.8s ease-out infinite;
+}
+
+@keyframes tl-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 9px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+/* Skeleton shimmer for the loading state. */
+.tl-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.12) 25%,
+    rgba(148, 163, 184, 0.24) 37%,
+    rgba(148, 163, 184, 0.12) 63%
+  );
+  background-size: 400% 100%;
+  animation: tl-shimmer 1.4s ease infinite;
+}
+
+@keyframes tl-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-fade,
+  .tl-rise,
+  .tl-row,
+  .tl-underline,
+  .tl-skeleton {
+    animation: none;
+  }
+  .tl-card:hover {
+    transform: none;
+  }
+  .tl-pulse::after {
+    animation: none;
+  }
+  .tl-row-hover:hover .tl-chevron {
+    transform: none;
+  }
+}
