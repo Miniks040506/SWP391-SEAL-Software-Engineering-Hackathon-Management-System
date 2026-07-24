@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Alert, Button, CircularProgress } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
@@ -7,84 +7,139 @@ import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 
 import { useCoordinatorEventDetailQuery, useCoordinatorEventRoundsQuery, useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
-import { useRoundRankingsQuery, useEventRankingsQuery } from "../hooks/useRankingQueries";
+import { useRoundRankingsQuery } from "../hooks/useRankingQueries";
 import {
     useCalculateRoundRankingMutation,
-    usePublishEventResultsMutation,
     usePublishRoundResultsMutation,
 } from "../hooks/useRankingMutations";
 import { useRoundGradingProgressQuery } from "@/features/grading-progress/hooks/useGradingProgressQueries";
+import { useCoordinatorPublishedAwardsQuery } from "@/features/coordinator/hooks/useCoordinatorPrizeQueries";
+import type { PrizeResponse } from "@/types/prize.types";
 import type { PublishResultsRequest } from "@/types/ranking.types";
+import type { RoundResponse } from "@/types/round.types";
 
 import { CalculateRankingPanel } from "../components/CalculateRankingPanel";
-import { RankingFilterBar } from "../components/RankingFilterBar";
-import { RankingPodium } from "../components/RankingPodium";
-import { RankingTable } from "../components/RankingTable";
-import { MobileRankingCard } from "../components/MobileRankingCard";
+import { CoordinatorRankingTable } from "../components/CoordinatorRankingTable";
+import { CoordinatorResultsPodium } from "../components/CoordinatorResultsPodium";
 import { PublishResultsDialog } from "../components/PublishResultsDialog";
 import { LeaderboardHeader } from "../components/LeaderboardHeader";
+import { RoundSelectorRail } from "../components/RoundSelectorRail";
+import { TrackPillFilter } from "../components/TrackPillFilter";
+import "./rankings.css";
 
 type SelectOption = { id: string; name: string };
+
+const LOCKED_ROUND_STATUSES = new Set(["CLOSED", "JUDGING", "RESULTS_READY"]);
+
+function pickDefaultRound(rounds: RoundResponse[]): string | undefined {
+    if (rounds.length === 0) return undefined;
+    const ascending = [...rounds].sort((a, b) => a.orderIndex - b.orderIndex);
+    const descending = [...ascending].reverse();
+    const completed = descending.find(
+        (round) => round.status === "RESULTS_READY" || round.resultPublishedAt,
+    );
+    if (completed) return completed.id;
+
+    const locked = descending.find((round) =>
+        LOCKED_ROUND_STATUSES.has(round.status),
+    );
+    if (locked) return locked.id;
+
+    return ascending.at(-1)?.id;
+}
 
 export const CoordinatorRankingPage = () => {
     const { eventId } = useParams();
     const navigate = useNavigate();
 
-    const [selectedRoundId, setSelectedRoundId] = useState<string>("all");
+    const [selectedRoundId, setSelectedRoundId] = useState<string>();
     const [selectedTrackId, setSelectedTrackId] = useState<string>("all");
     const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+    // Rounds whose top-3 podium has been revealed via Calculate Ranking this session.
+    const [calculatedRoundIds, setCalculatedRoundIds] = useState<Set<string>>(
+        () => new Set(),
+    );
 
     const { data: event } = useCoordinatorEventDetailQuery(eventId);
-    const { data: rounds = [] } = useCoordinatorEventRoundsQuery(eventId);
+    const { data: rounds = [], isSuccess: roundsLoaded } =
+        useCoordinatorEventRoundsQuery(eventId);
     const { data: tracks = [] } = useCoordinatorEventTracksQuery(eventId);
+    const { data: awards = [] } = useCoordinatorPublishedAwardsQuery(eventId);
+
+    useEffect(() => {
+        if (!selectedRoundId && roundsLoaded) {
+            const defaultRoundId = pickDefaultRound(rounds);
+            if (!defaultRoundId) return;
+            queueMicrotask(() => {
+                setSelectedRoundId((currentRoundId) =>
+                    currentRoundId ?? defaultRoundId,
+                );
+            });
+        }
+    }, [rounds, roundsLoaded, selectedRoundId]);
 
     const activeRoundId = selectedRoundId;
+    const revealed = activeRoundId
+        ? calculatedRoundIds.has(activeRoundId)
+        : false;
 
-    const { data: roundProgress } = useRoundGradingProgressQuery(
-        activeRoundId !== "all" ? activeRoundId : undefined
-    );
+    const { data: roundProgress } = useRoundGradingProgressQuery(activeRoundId);
     const gradingLocked = roundProgress?.gradingLocked ?? false;
 
     const rankingParams = {
         trackId: selectedTrackId !== "all" ? selectedTrackId : undefined,
     };
-    const eventRankingsQuery = useEventRankingsQuery(
-        activeRoundId === "all" ? eventId : undefined,
-        rankingParams,
-    );
-    const roundRankingsQuery = useRoundRankingsQuery(
-        activeRoundId !== "all" ? activeRoundId : undefined,
-        rankingParams,
-    );
-    const { data: rankings = [], isLoading, isRefetching, refetch } =
-        activeRoundId === "all" ? eventRankingsQuery : roundRankingsQuery;
+    // Table respects the track filter; the podium always reflects all tracks.
+    const roundRankingsQuery = useRoundRankingsQuery(activeRoundId, rankingParams);
+    const podiumRankingsQuery = useRoundRankingsQuery(activeRoundId, {});
+    const { data: rankings = [], isLoading, isRefetching } = roundRankingsQuery;
+    const podiumRankings = podiumRankingsQuery.data ?? [];
 
     const calculateMutation = useCalculateRoundRankingMutation();
-    const eventPublishMutation = usePublishEventResultsMutation();
     const roundPublishMutation = usePublishRoundResultsMutation();
-    const isPublishing = eventPublishMutation.isPending || roundPublishMutation.isPending;
+    const isPublishing = roundPublishMutation.isPending;
+
+    const refetchRankings = () => {
+        roundRankingsQuery.refetch();
+        podiumRankingsQuery.refetch();
+    };
 
     const handleCalculate = () => {
-        if (activeRoundId === "all") return;
-        calculateMutation.mutate({
-            roundId: activeRoundId,
-            params: { trackId: selectedTrackId !== "all" ? selectedTrackId : undefined }
-        });
+        if (!activeRoundId) return;
+        // Always calculate across every track, regardless of the active filter.
+        calculateMutation.mutate(
+            { roundId: activeRoundId, params: {} },
+            {
+                onSuccess: () =>
+                    setCalculatedRoundIds((previous) => {
+                        const next = new Set(previous);
+                        next.add(activeRoundId);
+                        return next;
+                    }),
+            },
+        );
     };
 
     const handlePublishResults = async (payload: PublishResultsRequest) => {
-        if (activeRoundId === "all") {
-            if (!eventId) return;
-            await eventPublishMutation.mutateAsync({ eventId, payload });
-        } else {
-            await roundPublishMutation.mutateAsync({
-                roundId: activeRoundId,
-                payload,
-            });
-        }
+        if (!activeRoundId) return;
+        await roundPublishMutation.mutateAsync({
+            roundId: activeRoundId,
+            payload,
+        });
         setPublishDialogOpen(false);
-        refetch();
+        refetchRankings();
     };
+
+    const awardsByTeamId = useMemo(() => {
+        const map = new Map<string, PrizeResponse[]>();
+        for (const award of awards) {
+            if (!award.awardedTeamId) continue;
+            const teamAwards = map.get(award.awardedTeamId) ?? [];
+            teamAwards.push(award);
+            map.set(award.awardedTeamId, teamAwards);
+        }
+        return map;
+    }, [awards]);
 
     if (!event) {
         return (
@@ -94,19 +149,13 @@ export const CoordinatorRankingPage = () => {
         );
     }
 
-    const roundOptions = rounds.map((r: SelectOption) => ({ id: r.id, name: r.name }));
     const trackOptions = tracks.map((t: SelectOption) => ({ id: t.id, name: t.name }));
-
     const selectedRoundName = rounds.find((r: SelectOption) => r.id === activeRoundId)?.name;
-    const selectedTrackName = tracks.find((t: SelectOption) => t.id === selectedTrackId)?.name;
 
     const lastCalculatedTime = rankings.length > 0 ? rankings[0].calculatedAt : null;
-    const selectedAssignments = (roundProgress?.judgeAssignments ?? []).filter(
-        (assignment) =>
-            selectedTrackId === "all" || assignment.trackId === selectedTrackId,
-    );
+    const roundAssignments = roundProgress?.judgeAssignments ?? [];
     const uniqueSubmissions = new Map(
-        selectedAssignments
+        roundAssignments
             .flatMap((assignment) => assignment.submissions)
             .map((submission) => [submission.submissionId, submission] as const),
     );
@@ -114,14 +163,8 @@ export const CoordinatorRankingPage = () => {
     const completedSubmissionCount = [...uniqueSubmissions.values()].filter(
         (submission) => submission.completed,
     ).length;
-    const judgeAssignmentCount =
-        selectedTrackId === "all"
-            ? roundProgress?.totalAssignedSubmissions
-            : selectedAssignments.reduce(
-                (total, assignment) => total + assignment.totalAssignedSubmissions,
-                0,
-            );
-    const teamCount = new Set(rankings.map((ranking) => ranking.teamId)).size;
+    const judgeAssignmentCount = roundProgress?.totalAssignedSubmissions;
+    const teamCount = new Set(podiumRankings.map((ranking) => ranking.teamId)).size;
     const publishedDate =
         event.resultPublishedAt ??
         (rankings.some((ranking) => ranking.published)
@@ -160,8 +203,8 @@ export const CoordinatorRankingPage = () => {
                     variant="outlined"
                     color="inherit"
                     startIcon={<RefreshOutlinedIcon />}
-                    onClick={() => refetch()}
-                    disabled={isRefetching}
+                    onClick={refetchRankings}
+                    disabled={!activeRoundId || isRefetching}
                     sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                 >
                     Refresh
@@ -171,7 +214,7 @@ export const CoordinatorRankingPage = () => {
                     color="primary"
                     endIcon={<ArrowForwardOutlinedIcon />}
                     onClick={() => navigate(`/coordinator/rounds/${activeRoundId}/advancement`)}
-                    disabled={activeRoundId === "all"}
+                    disabled={!activeRoundId}
                     sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                 >
                     Advancement
@@ -180,36 +223,54 @@ export const CoordinatorRankingPage = () => {
                     variant="contained"
                     color="primary"
                     startIcon={<PublishOutlinedIcon />}
-                    disabled={rankings.length === 0 || isPublishing}
+                    disabled={!activeRoundId || rankings.length === 0 || isPublishing}
                     onClick={() => setPublishDialogOpen(true)}
                     sx={{ borderRadius: "10px", fontWeight: 800, textTransform: "none" }}
                 >
-                    {activeRoundId === "all" ? "Publish final results" : "Publish round"}
+                    Publish round
                 </Button>
             </section>
 
-            {!isLoading && rankings.length > 0 && (
-                <div className="mb-8">
-                    <RankingPodium rankings={rankings} />
-                </div>
-            )}
+            <section aria-label="Top standings" className="mb-10">
+                {activeRoundId ? (
+                    <div key={activeRoundId} className="rankboard-enter">
+                        <CoordinatorResultsPodium
+                            rankings={podiumRankings}
+                            revealed={revealed}
+                        />
+                    </div>
+                ) : (
+                    <div className="h-56 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800/70 motion-reduce:animate-none" />
+                )}
+            </section>
 
-            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <RankingFilterBar
-                    rounds={roundOptions}
-                    tracks={trackOptions}
-                    selectedRoundId={activeRoundId}
-                    selectedTrackId={selectedTrackId}
-                    onRoundChange={setSelectedRoundId}
-                    onTrackChange={setSelectedTrackId}
-                />
+            <div className="mb-8 space-y-4">
+                {activeRoundId ? (
+                    <>
+                        <RoundSelectorRail
+                            rounds={rounds}
+                            selectedRoundId={activeRoundId}
+                            onSelect={setSelectedRoundId}
+                            includeAllSegment={false}
+                        />
+                        <TrackPillFilter
+                            tracks={trackOptions}
+                            selectedTrackId={selectedTrackId}
+                            onSelect={setSelectedTrackId}
+                        />
+                    </>
+                ) : (
+                    <div className="space-y-3" aria-label="Loading result filters">
+                        <div className="h-16 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800/70 motion-reduce:animate-none" />
+                        <div className="h-11 w-72 max-w-full animate-pulse rounded-full bg-slate-100 dark:bg-slate-800/70 motion-reduce:animate-none" />
+                    </div>
+                )}
             </div>
 
-            {activeRoundId !== "all" && (
+            {activeRoundId && (
                 <div className="mb-6">
                     <CalculateRankingPanel
                         roundName={selectedRoundName}
-                        trackName={selectedTrackName}
                         gradingLocked={gradingLocked}
                         lastCalculatedTime={lastCalculatedTime}
                         rankingRowCount={rankings.length}
@@ -226,12 +287,15 @@ export const CoordinatorRankingPage = () => {
             )}
 
             <div className="mb-4 space-y-3">
-                {!gradingLocked && activeRoundId !== "all" && (
+                {activeRoundId && !gradingLocked && (
                     <Alert severity="warning" sx={{ borderRadius: "12px", fontWeight: 600 }}>
                         Warning: Grading must be locked before ranking calculation.
                     </Alert>
                 )}
-                {gradingLocked && rankings.length === 0 && !isLoading && activeRoundId !== "all" && (
+                {activeRoundId &&
+                    gradingLocked &&
+                    rankings.length === 0 &&
+                    !isLoading && (
                     <Alert severity="warning" sx={{ borderRadius: "12px", fontWeight: 600 }}>
                         No ranking rows yet. Click Calculate Ranking to materialize results from the{" "}
                         {completedSubmissionCount} complete unique submission
@@ -241,42 +305,33 @@ export const CoordinatorRankingPage = () => {
             </div>
 
             <section className="mb-8">
-                {isLoading ? (
-                    <div className="flex h-64 items-center justify-center">
-                        <CircularProgress />
-                    </div>
-                ) : (
-                    <>
-                        <div className="hidden md:block">
-                            <RankingTable rankings={rankings} />
-                        </div>
-                        <div className="flex flex-col gap-4 md:hidden">
-                            {rankings.map(ranking => (
-                                <MobileRankingCard key={ranking.id} ranking={ranking} />
+                <div
+                    key={activeRoundId ?? "loading"}
+                    className={activeRoundId ? "rankboard-enter" : undefined}
+                >
+                    {!activeRoundId || isLoading ? (
+                        <div className="space-y-4" aria-label="Loading rankings">
+                            {[1, 2, 3, 4].map((row) => (
+                                <div
+                                    key={row}
+                                    className="h-16 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800/70 motion-reduce:animate-none"
+                                />
                             ))}
-                            {rankings.length === 0 && (
-                                <div className="rounded-xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
-                                    No rankings available yet.
-                                </div>
-                            )}
                         </div>
-                    </>
-                )}
+                    ) : (
+                        <CoordinatorRankingTable
+                            rankings={rankings}
+                            awardsByTeamId={awardsByTeamId}
+                        />
+                    )}
+                </div>
             </section>
             <PublishResultsDialog
                 open={publishDialogOpen}
-                scopeLabel={activeRoundId === "all" ? event.name : selectedRoundName ?? event.name}
+                scopeLabel={selectedRoundName ?? event.name}
                 rankingCount={rankings.length}
-                defaultTitle={
-                    activeRoundId === "all"
-                        ? `Final results are published for ${event.name}`
-                        : `${selectedRoundName ?? "Round"} results are published`
-                }
-                defaultContent={
-                    activeRoundId === "all"
-                        ? "Final results are now available on the leaderboard and team score pages."
-                        : "This round's results are now available to participants on their team score pages."
-                }
+                defaultTitle={`${selectedRoundName ?? "Round"} results are published`}
+                defaultContent="This round's results are now available to participants on their team score pages."
                 isPending={isPublishing}
                 onClose={() => setPublishDialogOpen(false)}
                 onConfirm={handlePublishResults}

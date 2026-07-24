@@ -1,0 +1,84 @@
+/* Coordinator Results tab motion (pure CSS). */
+
+@keyframes rankboard-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rankboard-enter {
+  animation: rankboard-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes rankrow-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rankrow-enter {
+  animation: rankrow-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--row-index, 0) * 28ms);
+}
+
+.round-seg__indicator {
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.round-seg[aria-pressed="true"] .round-seg__indicator {
+  transform: scaleX(1);
+}
+
+@keyframes round-pop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-1px) scale(1.015);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.round-seg[aria-pressed="true"] {
+  animation: round-pop 240ms ease-out;
+}
+
+@keyframes pill-pop {
+  from {
+    transform: scale(0.94);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.track-pill[aria-pressed="true"] {
+  animation: pill-pop 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rankboard-enter,
+  .rankrow-enter,
+  .round-seg[aria-pressed="true"],
+  .track-pill[aria-pressed="true"] {
+    animation: none !important;
+  }
+
+  .round-seg__indicator {
+    transition: none !important;
+  }
+}
