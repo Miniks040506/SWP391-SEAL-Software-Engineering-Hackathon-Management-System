@@ -6,6 +6,7 @@ interface CalculateRankingPanelProps {
   roundName?: string;
   trackName?: string;
   gradingLocked: boolean;
+  finalized: boolean;
   lastCalculatedTime?: string | null;
   rankingRowCount: number;
   uniqueSubmissionCount?: number;
@@ -20,6 +21,7 @@ export const CalculateRankingPanel = ({
   roundName,
   trackName,
   gradingLocked,
+  finalized,
   lastCalculatedTime,
   rankingRowCount,
   uniqueSubmissionCount,
@@ -101,7 +103,7 @@ export const CalculateRankingPanel = ({
             )
           }
           onClick={onCalculate}
-          disabled={!gradingLocked || isCalculating}
+          disabled={!gradingLocked || finalized || isCalculating}
           sx={{
             borderRadius: "10px",
             fontWeight: 700,
@@ -110,7 +112,11 @@ export const CalculateRankingPanel = ({
             py: 1,
           }}
         >
-          {isCalculating ? "Calculating..." : "Calculate Ranking"}
+          {isCalculating
+            ? "Calculating..."
+            : finalized
+              ? "Ranking Finalized"
+              : "Calculate Ranking"}
         </Button>
         {!gradingLocked && (
           <Button
