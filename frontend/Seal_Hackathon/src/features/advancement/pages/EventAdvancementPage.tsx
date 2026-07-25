@@ -209,7 +209,9 @@ export function EventAdvancementPage() {
                 height: 40,
               }}
             >
-              Confirm Advancement
+              {previewData.advancementConfirmed
+                ? "Advancement Confirmed"
+                : "Confirm Advancement"}
             </Button>
           </div>
         </>

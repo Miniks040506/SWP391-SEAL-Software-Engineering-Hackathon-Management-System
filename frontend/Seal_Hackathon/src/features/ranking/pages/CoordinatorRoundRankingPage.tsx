@@ -7,7 +7,10 @@ import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 
 import { useRoundGradingProgressQuery } from "@/features/grading-progress/hooks/useGradingProgressQueries";
-import { useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
+import {
+    useCoordinatorEventRoundsQuery,
+    useCoordinatorEventTracksQuery,
+} from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 import { useRoundRankingsQuery } from "../hooks/useRankingQueries";
 import { useCalculateRoundRankingMutation, usePublishRoundResultsMutation } from "../hooks/useRankingMutations";
 import type { PublishResultsRequest } from "@/types/ranking.types";
@@ -39,6 +42,7 @@ export const CoordinatorRoundRankingPage = () => {
     const { data: roundInfo, isLoading: isLoadingInfo } = useRoundGradingProgressQuery(roundId);
 
     const { data: tracks = [] } = useCoordinatorEventTracksQuery(roundInfo?.eventId);
+    const { data: rounds = [] } = useCoordinatorEventRoundsQuery(roundInfo?.eventId);
 
     const { data: rankings = [], isLoading: isLoadingRankings, isRefetching, refetch } = useRoundRankingsQuery(
         roundId,
@@ -83,6 +87,9 @@ export const CoordinatorRoundRankingPage = () => {
     const selectedTrackName = tracks.find((t: SelectOption) => t.id === selectedTrackId)?.name;
     const lastCalculatedTime = rankings.length > 0 ? rankings[0].calculatedAt : null;
     const gradingLocked = roundInfo.gradingLocked;
+    const roundFinalized = Boolean(
+        rounds.find((round) => round.id === roundId)?.resultPublishedAt,
+    );
     const selectedAssignments = roundInfo.judgeAssignments.filter(
         (assignment) =>
             selectedTrackId === "all" || assignment.trackId === selectedTrackId,
@@ -151,9 +158,10 @@ export const CoordinatorRoundRankingPage = () => {
                         color="primary"
                         endIcon={<ArrowForwardOutlinedIcon />}
                         onClick={() => navigate(`/coordinator/rounds/${roundId}/advancement`)}
+                        disabled={roundFinalized}
                         sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                     >
-                        Go to Advancement
+                        {roundFinalized ? "Advancement Complete" : "Go to Advancement"}
                     </Button>
                     <Link to={`/coordinator/events/${roundInfo.eventId}/disqualifications`} style={{ textDecoration: 'none' }}>
                         <Button
@@ -168,11 +176,11 @@ export const CoordinatorRoundRankingPage = () => {
                         variant="contained"
                         color="primary"
                         startIcon={<PublishOutlinedIcon />}
-                        disabled={rankings.length === 0}
+                        disabled={rankings.length === 0 || roundFinalized}
                         onClick={() => setPublishDialogOpen(true)}
                         sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                     >
-                        Publish Results
+                        {roundFinalized ? "Results Published" : "Publish Results"}
                     </Button>
                     </div>
                 </div>
@@ -215,6 +223,7 @@ export const CoordinatorRoundRankingPage = () => {
                     roundName={roundInfo.roundName}
                     trackName={selectedTrackName}
                     gradingLocked={gradingLocked}
+                    finalized={roundFinalized}
                     lastCalculatedTime={lastCalculatedTime}
                     rankingRowCount={rankings.length}
                     uniqueSubmissionCount={uniqueSubmissionCount}

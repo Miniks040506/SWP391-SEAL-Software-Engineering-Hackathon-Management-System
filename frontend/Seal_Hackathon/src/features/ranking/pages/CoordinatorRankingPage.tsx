@@ -55,10 +55,6 @@ export const CoordinatorRankingPage = () => {
     const [selectedRoundId, setSelectedRoundId] = useState<string>();
     const [selectedTrackId, setSelectedTrackId] = useState<string>("all");
     const [publishDialogOpen, setPublishDialogOpen] = useState(false);
-    // Rounds whose top-3 podium has been revealed via Calculate Ranking this session.
-    const [calculatedRoundIds, setCalculatedRoundIds] = useState<Set<string>>(
-        () => new Set(),
-    );
 
     const { data: event } = useCoordinatorEventDetailQuery(eventId);
     const { data: rounds = [], isSuccess: roundsLoaded } =
@@ -79,9 +75,8 @@ export const CoordinatorRankingPage = () => {
     }, [rounds, roundsLoaded, selectedRoundId]);
 
     const activeRoundId = selectedRoundId;
-    const revealed = activeRoundId
-        ? calculatedRoundIds.has(activeRoundId)
-        : false;
+    const activeRound = rounds.find((round) => round.id === activeRoundId);
+    const roundFinalized = Boolean(activeRound?.resultPublishedAt);
 
     const { data: roundProgress } = useRoundGradingProgressQuery(activeRoundId);
     const gradingLocked = roundProgress?.gradingLocked ?? false;
@@ -107,17 +102,7 @@ export const CoordinatorRankingPage = () => {
     const handleCalculate = () => {
         if (!activeRoundId) return;
         // Always calculate across every track, regardless of the active filter.
-        calculateMutation.mutate(
-            { roundId: activeRoundId, params: {} },
-            {
-                onSuccess: () =>
-                    setCalculatedRoundIds((previous) => {
-                        const next = new Set(previous);
-                        next.add(activeRoundId);
-                        return next;
-                    }),
-            },
-        );
+        calculateMutation.mutate({ roundId: activeRoundId, params: {} });
     };
 
     const handlePublishResults = async (payload: PublishResultsRequest) => {
@@ -214,20 +199,25 @@ export const CoordinatorRankingPage = () => {
                     color="primary"
                     endIcon={<ArrowForwardOutlinedIcon />}
                     onClick={() => navigate(`/coordinator/rounds/${activeRoundId}/advancement`)}
-                    disabled={!activeRoundId}
+                    disabled={!activeRoundId || roundFinalized}
                     sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                 >
-                    Advancement
+                    {roundFinalized ? "Advancement Complete" : "Advancement"}
                 </Button>
                 <Button
                     variant="contained"
                     color="primary"
                     startIcon={<PublishOutlinedIcon />}
-                    disabled={!activeRoundId || rankings.length === 0 || isPublishing}
+                    disabled={
+                        !activeRoundId ||
+                        rankings.length === 0 ||
+                        roundFinalized ||
+                        isPublishing
+                    }
                     onClick={() => setPublishDialogOpen(true)}
                     sx={{ borderRadius: "10px", fontWeight: 800, textTransform: "none" }}
                 >
-                    Publish round
+                    {roundFinalized ? "Results Published" : "Publish round"}
                 </Button>
             </section>
 
@@ -236,7 +226,7 @@ export const CoordinatorRankingPage = () => {
                     <div key={activeRoundId} className="rankboard-enter">
                         <CoordinatorResultsPodium
                             rankings={podiumRankings}
-                            revealed={revealed}
+                            revealed={podiumRankings.length > 0}
                         />
                     </div>
                 ) : (
@@ -272,6 +262,7 @@ export const CoordinatorRankingPage = () => {
                     <CalculateRankingPanel
                         roundName={selectedRoundName}
                         gradingLocked={gradingLocked}
+                        finalized={roundFinalized}
                         lastCalculatedTime={lastCalculatedTime}
                         rankingRowCount={rankings.length}
                         uniqueSubmissionCount={uniqueSubmissionCount}
