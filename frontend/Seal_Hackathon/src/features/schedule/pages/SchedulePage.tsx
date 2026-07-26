@@ -15,6 +15,7 @@ import { WeeklyTimetable } from "@/features/schedule/components/WeeklyTimetable"
 import { useAuthStore } from "@/stores/authStore";
 import type { UserRole } from "@/types/auth.types";
 import type { ScheduleEntry, ScheduleEntryType } from "@/types/schedule.types";
+import "../styles/schedule.css";
 
 const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -72,6 +73,7 @@ export function SchedulePage() {
   const navigate = useNavigate();
   const role = useAuthStore((state) => state.user?.role);
   const [week, setWeek] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [weekDir, setWeekDir] = useState<"next" | "prev">("next");
   const [now] = useState(() => Date.now());
   const [eventId, setEventId] = useState("ALL");
   const [type, setType] = useState<ScheduleEntryType | "ALL">("ALL");
@@ -103,21 +105,27 @@ export function SchedulePage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <AdminOperationsHeader
-        {...copy}
-        icon={<CalendarMonthOutlinedIcon fontSize="inherit" />}
-        actions={
-          <Button
-            variant="contained"
-            onClick={() => setWeek(startOfWeek(new Date(), { weekStartsOn: 1 }))}
-            sx={{ borderRadius: 2.5, px: 2.25, fontWeight: 800, textTransform: "none" }}
-          >
-            Today
-          </Button>
-        }
-      />
+      <div className="ps-head">
+        <AdminOperationsHeader
+          {...copy}
+          icon={<CalendarMonthOutlinedIcon fontSize="inherit" />}
+          actions={
+            <Button
+              variant="contained"
+              onClick={() => {
+                const today = startOfWeek(new Date(), { weekStartsOn: 1 });
+                setWeekDir(today < rangeStart ? "prev" : "next");
+                setWeek(today);
+              }}
+              sx={{ borderRadius: 2.5, px: 2.25, fontWeight: 800, textTransform: "none" }}
+            >
+              Today
+            </Button>
+          }
+        />
+      </div>
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <section className="ps-panel overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="border-b border-slate-200 px-4 py-5 dark:border-slate-800 sm:px-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-3">
@@ -125,7 +133,10 @@ export function SchedulePage() {
                 <button
                   type="button"
                   aria-label="Previous week"
-                  onClick={() => setWeek((value) => addWeeks(value, -1))}
+                  onClick={() => {
+                    setWeekDir("prev");
+                    setWeek((value) => addWeeks(value, -1));
+                  }}
                   className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-blue-500/10"
                 >
                   <ArrowBackRoundedIcon sx={{ fontSize: 18 }} />
@@ -139,7 +150,10 @@ export function SchedulePage() {
                 <button
                   type="button"
                   aria-label="Next week"
-                  onClick={() => setWeek((value) => addWeeks(value, 1))}
+                  onClick={() => {
+                    setWeekDir("next");
+                    setWeek((value) => addWeeks(value, 1));
+                  }}
                   className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-blue-500/10"
                 >
                   <ArrowForwardRoundedIcon sx={{ fontSize: 18 }} />
@@ -191,7 +205,7 @@ export function SchedulePage() {
         </div>
 
         {scheduleQuery.isLoading ? (
-          <div className="grid min-h-96 grid-cols-2 divide-x divide-slate-200 dark:divide-slate-800 sm:grid-cols-4 lg:grid-cols-7">
+          <div className="ps-skeleton grid min-h-96 grid-cols-2 divide-x divide-slate-200 dark:divide-slate-800 sm:grid-cols-4 lg:grid-cols-7">
             {Array.from({ length: 7 }, (_, day) => (
               <div key={day} className="space-y-3 p-3">
                 <Skeleton width="70%" height={42} />
@@ -215,13 +229,18 @@ export function SchedulePage() {
             </div>
           </div>
         ) : (
-          <WeeklyTimetable
+          <div
             key={rangeStart.toISOString()}
-            entries={filteredEntries}
-            rangeStart={rangeStart}
-            rangeEnd={rangeEnd}
-            onOpen={(entry) => navigate(entryPath(role, entry))}
-          />
+            className={weekDir === "next" ? "ps-week-next" : "ps-week-prev"}
+          >
+            <WeeklyTimetable
+              entries={filteredEntries}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              highlightEntryId={nextEntry?.id}
+              onOpen={(entry) => navigate(entryPath(role, entry))}
+            />
+          </div>
         )}
       </section>
     </div>

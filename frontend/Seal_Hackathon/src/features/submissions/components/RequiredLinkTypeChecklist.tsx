@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { RequiredLinkConfig } from "@/types/submission.types";
 
 type LinkTypeStatus = RequiredLinkConfig & { isFilled: boolean };
@@ -7,6 +8,25 @@ type Props = {
 };
 
 export function RequiredLinkTypeChecklist({ linkTypes }: Props) {
+  const filledRef = useRef(
+    new Set(linkTypes.filter((item) => item.isFilled).map((item) => item.linkType)),
+  );
+  const [animated, setAnimated] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const newlyFilled = linkTypes
+      .filter((item) => item.isFilled && !filledRef.current.has(item.linkType))
+      .map((item) => item.linkType);
+    linkTypes.forEach((item) => {
+      if (item.isFilled) filledRef.current.add(item.linkType);
+    });
+    if (newlyFilled.length === 0) return;
+    const frame = requestAnimationFrame(() =>
+      setAnimated((current) => new Set([...current, ...newlyFilled])),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [linkTypes]);
+
   const required = linkTypes.filter((l) => l.isRequired);
   if (required.length === 0) return null;
 
@@ -32,7 +52,7 @@ export function RequiredLinkTypeChecklist({ linkTypes }: Props) {
         {required.map((item) => (
           <li key={item.linkType} className="flex items-center gap-2.5">
             {item.isFilled ? (
-              <span className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+              <span className={`${animated.has(item.linkType) ? "sf-check-pop" : ""} w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center shrink-0`}>
                 <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
                   <path d="M1.5 4L3 5.5L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>

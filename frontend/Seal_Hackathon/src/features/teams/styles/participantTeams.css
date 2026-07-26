@@ -1,0 +1,55 @@
+@keyframes pt-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pt-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pt-pop { 0% { opacity: 0; transform: scale(.82); } 70% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes pt-drift-a { 50% { transform: translate(10px, -8px); } }
+@keyframes pt-drift-b { 50% { transform: translate(-10px, 8px); } }
+@keyframes pt-accent-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes pt-sheen { 0%, 65% { opacity: 0; transform: translateX(-120%); } 80% { opacity: .7; } 100% { opacity: 0; transform: translateX(120%); } }
+@keyframes pt-dialog-in { from { opacity: 0; transform: translateY(10px) scale(.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes pt-dialog-head { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pt-error-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+.pt-page { animation: pt-fade 320ms ease both; }
+.pt-hero { animation: pt-rise 520ms cubic-bezier(.16,1,.3,1) both; will-change: transform; }
+.pt-glow-a { animation: pt-drift-a 12s ease-in-out infinite; }
+.pt-glow-b { animation: pt-drift-b 12s ease-in-out infinite; }
+.pt-stat { animation: pt-rise 440ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--i, 0) * 60ms + 90ms); }
+.pt-accent { transform-origin: left; animation: pt-accent-in 620ms cubic-bezier(.16,1,.3,1) 200ms both; }
+.pt-card, .pt-browse-card { position: relative; animation: pt-rise 460ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(min(var(--i, 0), 16) * 70ms); will-change: transform; transition: transform 220ms, box-shadow 220ms, border-color 220ms; }
+.pt-browse-card { animation-delay: calc(min(var(--i, 0), 16) * 55ms); }
+.pt-card:hover, .pt-browse-card:hover { transform: translateY(-3px); }
+.pt-card img { transition: transform 220ms cubic-bezier(.16,1,.3,1); }
+.pt-card:hover img { transform: scale(1.04); }
+.pt-avatar { animation: pt-pop 420ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(min(var(--i, 0), 16) * 70ms + 140ms); }
+.pt-empty > * { animation: pt-rise 420ms cubic-bezier(.16,1,.3,1) both; }
+.pt-empty > *:nth-child(2) { animation-delay: 70ms; }
+.pt-empty > *:nth-child(3) { animation-delay: 140ms; }
+.pt-invite-row { animation: pt-rise 320ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(min(var(--i, 0), 12) * 40ms); }
+.pt-live { position: relative; overflow: hidden; }
+.pt-live::after { content: ""; position: absolute; inset: 0; pointer-events: none; border: 1px solid rgb(96 165 250 / .35); transform: translateX(-120%); animation: pt-sheen 3.2s ease-in-out infinite; }
+.pt-reveal-idle { opacity: 0; transform: translateY(18px); }
+.pt-reveal { animation: pt-rise 480ms cubic-bezier(.16,1,.3,1) both; }
+.pt-member-dot-filled { animation: pt-pop 320ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--i, 0) * 70ms); }
+
+.pt-dialog { animation: pt-dialog-in 380ms cubic-bezier(.16,1,.3,1) both; }
+.pt-dialog-head { animation: pt-dialog-head 340ms cubic-bezier(.16,1,.3,1) both; }
+.pt-dialog-avatar { animation: pt-pop 420ms cubic-bezier(.16,1,.3,1) 120ms both; }
+.pt-dialog-copy { animation: pt-rise 340ms cubic-bezier(.16,1,.3,1) 180ms both; }
+.pt-dialog-pill { animation: pt-rise 340ms cubic-bezier(.16,1,.3,1) 240ms both; }
+.pt-dialog-chip { animation: pt-fade 260ms ease both; animation-delay: calc(var(--i, 0) * 60ms + 160ms); }
+.pt-dialog-error { animation: pt-error-in 260ms cubic-bezier(.16,1,.3,1) both; }
+.pt-dialog-label { display: grid; }
+.pt-dialog-label > * { grid-area: 1 / 1; transition: opacity 180ms, transform 180ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pt-page, .pt-hero, .pt-glow-a, .pt-glow-b, .pt-stat, .pt-accent, .pt-card,
+  .pt-browse-card, .pt-avatar, .pt-empty > *, .pt-invite-row, .pt-live::after,
+  .pt-reveal, .pt-member-dot-filled, .pt-dialog, .pt-dialog-head, .pt-dialog-avatar,
+  .pt-dialog-copy, .pt-dialog-pill, .pt-dialog-chip, .pt-dialog-error {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .pt-reveal-idle { opacity: 1 !important; transform: none !important; }
+  .pt-card, .pt-browse-card, .pt-card img, .pt-dialog-label > * { transition: none !important; }
+}

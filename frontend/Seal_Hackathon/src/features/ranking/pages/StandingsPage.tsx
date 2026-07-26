@@ -1,5 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
@@ -19,6 +25,7 @@ import {
   isOngoingEvent,
 } from "@/features/events/utils/publicEventView";
 import type { EventSummaryResponse } from "@/types/event.types";
+import { useNavTransition } from "@/hooks/useNavTransition";
 
 /* ------------------------------------------------------------------ */
 /* Scroll reveal (mirrors the landing page pattern)                     */
@@ -161,7 +168,10 @@ function StandingsCard({
   onOpen,
 }: {
   event: EventSummaryResponse;
-  onOpen: (event: EventSummaryResponse) => void;
+  onOpen: (
+    event: EventSummaryResponse,
+    clickEvent: MouseEvent<HTMLButtonElement>,
+  ) => void;
 }) {
   const state = getResultState(event.status);
   const chip = resultStateChip[state];
@@ -169,7 +179,7 @@ function StandingsCard({
   return (
     <button
       type="button"
-      onClick={() => onOpen(event)}
+      onClick={(clickEvent) => onOpen(event, clickEvent)}
       className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white text-left transition-all hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/60 motion-reduce:hover:translate-y-0"
     >
       <div className="relative h-36 w-full overflow-hidden">
@@ -225,7 +235,7 @@ function StandingsCard({
 /* ------------------------------------------------------------------ */
 
 export const StandingsPage = () => {
-  const navigate = useNavigate();
+  const { navigateWithTransition } = useNavTransition();
 
   const eventsQuery = usePublicEventsQuery({ page: 0, size: 50 });
   const events = useMemo(
@@ -274,9 +284,16 @@ export const StandingsPage = () => {
     isCompletedEvent(event.status),
   ).length;
 
-  const handleOpenLeaderboard = (event: EventSummaryResponse) => {
+  const handleOpenLeaderboard = (
+    event: EventSummaryResponse,
+    clickEvent: MouseEvent<HTMLButtonElement>,
+  ) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    navigate(`/events/${event.id}/leaderboard`);
+    navigateWithTransition(
+      `/events/${event.id}/leaderboard`,
+      "podium",
+      clickEvent,
+    );
   };
 
   return (
@@ -384,8 +401,11 @@ export const StandingsPage = () => {
                     </p>
                   )}
                   {spotlightEvent && (
-                    <Link
-                      to={`/events/${spotlightEvent.id}/leaderboard`}
+                    <button
+                      type="button"
+                      onClick={(clickEvent) =>
+                        handleOpenLeaderboard(spotlightEvent, clickEvent)
+                      }
                       className="group mt-2 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-lg transition-all hover:bg-blue-50 active:translate-y-0.5"
                     >
                       View full leaderboard
@@ -393,7 +413,7 @@ export const StandingsPage = () => {
                         style={{ fontSize: 16 }}
                         className="transition-transform group-hover:translate-x-0.5"
                       />
-                    </Link>
+                    </button>
                   )}
                 </div>
               </div>

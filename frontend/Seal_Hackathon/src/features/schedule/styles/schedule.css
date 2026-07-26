@@ -1,0 +1,32 @@
+@keyframes ps-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ps-next { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ps-prev { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ps-band-in { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0); } }
+@keyframes ps-breathe { 50% { filter: drop-shadow(0 0 5px rgb(59 130 246 / .28)); } }
+@keyframes ps-deadline { 50% { opacity: .55; transform: scale(.92); } }
+@keyframes ps-daypill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.ps-head { animation: ps-rise 460ms cubic-bezier(.16,1,.3,1) both; }
+.ps-panel { animation: ps-rise 460ms cubic-bezier(.16,1,.3,1) 90ms both; }
+.ps-week-next { animation: ps-next 380ms cubic-bezier(.16,1,.3,1) both; }
+.ps-week-prev { animation: ps-prev 380ms cubic-bezier(.16,1,.3,1) both; }
+.ps-content { animation: ps-rise 260ms cubic-bezier(.16,1,.3,1) both; }
+.ps-skeleton { animation: ps-rise 180ms ease both; }
+.ps-band { animation: ps-band-in 520ms cubic-bezier(.16,1,.3,1) both; }
+.ps-col { animation: ps-rise 420ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--i, 0) * 55ms); }
+.ps-card { animation: ps-rise 360ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--i, 0) * 55ms + var(--j, 0) * 45ms); }
+.ps-today { animation: ps-breathe 4s ease-in-out infinite; }
+.ps-deadline { animation: ps-deadline 2.6s ease-in-out infinite; }
+.ps-daypill { position: relative; }
+.ps-daypill::after { content: ""; position: absolute; inset: auto 25% 4px; height: 2px; border-radius: 999px; background: currentColor; transform-origin: center; animation: ps-daypill 240ms cubic-bezier(.16,1,.3,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-head, .ps-panel, .ps-week-next, .ps-week-prev, .ps-content, .ps-skeleton,
+  .ps-band, .ps-col, .ps-card, .ps-today, .ps-deadline, .ps-daypill::after {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}

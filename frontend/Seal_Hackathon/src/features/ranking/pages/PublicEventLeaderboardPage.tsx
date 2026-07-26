@@ -23,6 +23,8 @@ import { LeaderboardEmptyState } from "../components/LeaderboardEmptyState";
 import { WinnerPrizeBadge } from "@/features/events/components/WinnerPrizeBadge";
 import type { PrizeResponse } from "@/types/prize.types";
 import type { RankingResponse } from "@/types/ranking.types";
+import { useCountUp } from "@/features/teams/hooks/useCountUp";
+import "./publicLeaderboard.css";
 
 /* ------------------------------------------------------------------ */
 /* Row status helpers                                                   */
@@ -108,10 +110,15 @@ function TrophyWatermark({
   return (
     <EmojiEventsRoundedIcon
       aria-hidden
-      className={`pointer-events-none absolute select-none ${tone}`}
+      className={`lb-trophy pointer-events-none absolute select-none ${tone}`}
       style={{ fontSize: size, right: offset, bottom: offset }}
     />
   );
+}
+
+function ScoreCount({ value }: { value: number }) {
+  const count = useCountUp(value, 900);
+  return <>{count.toFixed(2)}</>;
 }
 
 function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
@@ -184,14 +191,14 @@ function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
 
   return (
     <div className="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-12 md:items-end">
-      <div className="relative overflow-hidden rounded-b-2xl border-t-2 border-amber-500 bg-amber-50/70 px-5 pt-5 pb-6 md:col-span-5 dark:border-amber-400 dark:bg-amber-400/8">
+      <div style={{ "--delay": "120ms" } as React.CSSProperties} className="lb-podium lb-champion relative overflow-hidden rounded-b-2xl border-t-2 border-amber-500 bg-amber-50/70 px-5 pt-5 pb-6 md:col-span-5 dark:border-amber-400 dark:bg-amber-400/8">
         <TrophyWatermark
           size={148}
           tone="text-amber-500/22 dark:text-amber-400/16"
         />
         <div className="relative space-y-3">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-amber-300 to-amber-500 text-sm font-extrabold text-amber-950 shadow-sm shadow-amber-500/40">
+            <span className="lb-medal flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-amber-300 to-amber-500 text-sm font-extrabold text-amber-950 shadow-sm shadow-amber-500/40">
               1
             </span>
             <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
@@ -206,7 +213,7 @@ function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
             {first.projectTitle ? ` · ${first.projectTitle}` : ""}
           </p>
           <p className="text-6xl font-extrabold tracking-tight tabular-nums text-amber-500 md:text-7xl dark:text-amber-400">
-            {Number(first.totalScore).toFixed(2)}
+            <ScoreCount value={Number(first.totalScore)} />
           </p>
         </div>
       </div>
@@ -229,13 +236,14 @@ function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
         }) => (
           <div
             key={row.id}
-            className={`relative overflow-hidden rounded-b-2xl px-5 pt-5 pb-6 ${span} ${border} ${surface}`}
+            style={{ "--delay": rank === 2 ? "220ms" : "300ms" } as React.CSSProperties}
+            className={`lb-podium relative overflow-hidden rounded-b-2xl px-5 pt-5 pb-6 ${span} ${border} ${surface}`}
           >
             <TrophyWatermark size={trophySize} tone={trophyTone} />
             <div className="relative space-y-3">
               <div className="flex items-center gap-2.5">
                 <span
-                  className={`flex items-center justify-center rounded-lg text-sm font-extrabold ${medal}`}
+                  className={`lb-medal flex items-center justify-center rounded-lg text-sm font-extrabold ${medal}`}
                 >
                   {rank}
                 </span>
@@ -252,7 +260,7 @@ function ResultsHead({ rankings }: { rankings: RankingResponse[] }) {
               <p
                 className={`font-extrabold tracking-tight tabular-nums ${scoreSize} ${scoreColor}`}
               >
-                {Number(row.totalScore).toFixed(2)}
+                <ScoreCount value={Number(row.totalScore)} />
               </p>
             </div>
           </div>
@@ -288,8 +296,9 @@ function TabGroup({
             key={option.id}
             type="button"
             onClick={() => onChange(option.id)}
+            aria-pressed={active}
             className={[
-              "relative -mb-px cursor-pointer px-4 py-3 text-sm transition-colors",
+              "lb-tab relative -mb-px cursor-pointer px-4 py-3 text-sm transition-colors",
               active
                 ? "border-b-2 border-blue-600 font-bold text-gray-900 dark:border-blue-500 dark:text-white"
                 : "border-b-2 border-transparent font-semibold text-gray-400 hover:text-gray-700 dark:text-slate-500 dark:hover:text-slate-300",
@@ -322,7 +331,7 @@ function RankCell({ row }: { row: RankingResponse }) {
       className={[
         "text-lg font-extrabold tabular-nums",
         top3
-          ? "text-blue-600 dark:text-blue-400"
+          ? "lb-top-rank text-blue-600 dark:text-blue-400"
           : "text-gray-300 dark:text-slate-600",
       ].join(" ")}
     >
@@ -376,14 +385,15 @@ function RankingTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-          {rankings.map((row) => {
+          {rankings.map((row, index) => {
             const status = getRowStatus(row);
             const disqualified = status === "DISQUALIFIED";
 
             return (
               <tr
                 key={row.id}
-                className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-900/60"
+                style={{ "--i": index } as React.CSSProperties}
+                className="lb-row transition-colors hover:bg-gray-50 dark:hover:bg-slate-900/60"
               >
                 <td className="py-4 pr-4">
                   <RankCell row={row} />
@@ -395,7 +405,7 @@ function RankingTable({
                         className={[
                           "truncate text-[15px] font-bold",
                           disqualified
-                            ? "text-gray-400 line-through decoration-1 dark:text-slate-500"
+                            ? "lb-disqualified text-gray-400 dark:text-slate-500"
                             : "text-gray-900 dark:text-white",
                         ].join(" ")}
                       >
@@ -552,9 +562,9 @@ export const PublicEventLeaderboardPage = () => {
 
   if (isLoadingEvent) {
     return (
-      <div className="animate-in space-y-10 fade-in duration-500">
-        <div className="h-56 animate-pulse rounded-xl bg-gray-100 dark:bg-slate-800/70 motion-reduce:animate-none" />
-        <div className="h-72 animate-pulse rounded-xl bg-gray-100 dark:bg-slate-800/70 motion-reduce:animate-none" />
+      <div className="space-y-10">
+        <div className="lb-skeleton h-56 rounded-xl bg-gray-100 dark:bg-slate-800/70" />
+        <div className="lb-skeleton h-72 rounded-xl bg-gray-100 dark:bg-slate-800/70" />
       </div>
     );
   }
@@ -586,8 +596,8 @@ export const PublicEventLeaderboardPage = () => {
     event.resultPublishedAt ?? (isPublished ? rankings[0].calculatedAt : null);
 
   return (
-    <div className="animate-in space-y-12 fade-in duration-500">
-      <nav>
+    <div className="lb-page space-y-12">
+      <nav className="lb-back">
         <Link
           to="/standings"
           className="group inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
@@ -600,16 +610,18 @@ export const PublicEventLeaderboardPage = () => {
         </Link>
       </nav>
 
-      <LeaderboardHeader
-        event={event}
-        publishedDate={publishedDate}
-        roundCount={sortedRounds.length}
-        trackCount={trackOptions.length}
-        teamCount={teamCount}
-      />
+      <div className="lb-header">
+        <LeaderboardHeader
+          event={event}
+          publishedDate={publishedDate}
+          roundCount={sortedRounds.length}
+          trackCount={trackOptions.length}
+          teamCount={teamCount}
+        />
+      </div>
 
       {!isLoadingRankings && isPublished && (
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 motion-reduce:animate-none">
+        <div>
           <ResultsHead rankings={rankings} />
         </div>
       )}
@@ -636,12 +648,12 @@ export const PublicEventLeaderboardPage = () => {
           </div>
         )}
 
-        <div className="pt-2">
+        <div key={`${selectedRoundId}-${selectedTrackId}`} className="pt-2">
           {isLoadingRankings ? (
             <div className="divide-y divide-gray-100 dark:divide-slate-800">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="py-4">
-                  <div className="h-8 animate-pulse rounded bg-gray-100 dark:bg-slate-800/70 motion-reduce:animate-none" />
+                  <div className="lb-skeleton h-8 rounded bg-gray-100 dark:bg-slate-800/70" />
                 </div>
               ))}
             </div>

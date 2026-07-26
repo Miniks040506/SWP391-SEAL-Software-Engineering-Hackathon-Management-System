@@ -75,7 +75,11 @@ export function CompetitionRoundTimeline({
           const selected = round.roundId === selectedRoundId;
 
           return (
-            <li key={round.roundId} className="min-w-0">
+            <li
+              key={round.roundId}
+              style={{ "--i": index } as React.CSSProperties}
+              className="min-w-0"
+            >
               <button
                 type="button"
                 role="tab"
