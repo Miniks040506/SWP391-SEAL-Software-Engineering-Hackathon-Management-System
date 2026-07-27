@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type ScrollRevealOptions = {
   threshold?: number;
@@ -9,6 +9,11 @@ type ScrollRevealOptions = {
  * Reveals an element once it scrolls into view. Reveal is one-way: the observer
  * disconnects on first intersection so scrolling back up never re-hides content.
  *
+ * The observed node is tracked in state through a callback ref, not a plain ref:
+ * panels here mount late (behind async query data), and a ref alone is not
+ * reactive, so the observer would never attach to a node that appears after the
+ * first commit.
+ *
  * Users who ask for reduced motion get the revealed state immediately, so the
  * content is never gated behind an animation they have opted out of.
  */
@@ -16,7 +21,8 @@ export function useScrollReveal<T extends HTMLElement = HTMLDivElement>(
   options: ScrollRevealOptions = {},
 ) {
   const { threshold = 0.12, rootMargin = "0px 0px -8% 0px" } = options;
-  const ref = useRef<T>(null);
+  const [node, setNode] = useState<T | null>(null);
+  const ref = useCallback((instance: T | null) => setNode(instance), []);
   const [revealed, setRevealed] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -24,9 +30,7 @@ export function useScrollReveal<T extends HTMLElement = HTMLDivElement>(
   );
 
   useEffect(() => {
-    if (revealed) return;
-    const node = ref.current;
-    if (!node) return;
+    if (revealed || !node) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -40,7 +44,7 @@ export function useScrollReveal<T extends HTMLElement = HTMLDivElement>(
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [revealed, threshold, rootMargin]);
+  }, [node, revealed, threshold, rootMargin]);
 
   return { ref, revealed };
 }
