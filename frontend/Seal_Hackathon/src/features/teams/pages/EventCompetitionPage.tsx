@@ -23,10 +23,12 @@ import { useSubmissionRequirementsQuery } from "@/features/submissions/hooks/use
 import { CompetitionRoundTimeline } from "@/features/teams/components/CompetitionRoundTimeline";
 
 import { SavedEvidencePanel } from "@/features/teams/components/SavedEvidencePanel";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import {
   getCountdownState,
   roundElapsedPercent,
 } from "@/features/teams/utils/competitionTiming";
+import "../styles/eventCompetition.css";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "Not set";
@@ -51,7 +53,14 @@ export function EventCompetitionPage() {
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
   const [bannerFailed, setBannerFailed] = useState(false);
   const [fallbackFailed, setFallbackFailed] = useState(false);
+  const [showOpenSheen, setShowOpenSheen] = useState(false);
   const lastOpenRoundId = useRef<string | null>(null);
+  const openSheenLatched = useRef(false);
+  const { ref: briefRef, revealed: briefRevealed } =
+    useScrollReveal<HTMLElement>();
+  const { ref: requirementsRef, revealed: requirementsRevealed } =
+    useScrollReveal();
+  const { ref: evidenceRef, revealed: evidenceRevealed } = useScrollReveal();
 
   const competitionQuery = useQuery({
     queryKey: ["event-competition", eventId],
@@ -125,6 +134,19 @@ export function EventCompetitionPage() {
     }
   };
 
+  const canOpenSubmission = Boolean(
+    requirementsQuery.data?.canView &&
+      !requirementsQuery.isLoading &&
+      !requirementsQuery.isError,
+  );
+
+  useEffect(() => {
+    if (canOpenSubmission && !openSheenLatched.current) {
+      openSheenLatched.current = true;
+      setShowOpenSheen(true);
+    }
+  }, [canOpenSubmission]);
+
   if (competitionQuery.isLoading) {
     return (
       <div className="flex justify-center py-24">
@@ -151,12 +173,6 @@ export function EventCompetitionPage() {
       </div>
     );
   }
-
-  const canOpenSubmission = Boolean(
-    requirementsQuery.data?.canView &&
-      !requirementsQuery.isLoading &&
-      !requirementsQuery.isError,
-  );
 
   const openSubmissionPage = () =>
     navigate(
@@ -230,7 +246,7 @@ export function EventCompetitionPage() {
   return (
     <div className="space-y-6 pb-4">
       {/* ── Event banner hero ───────────────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 shadow-xl motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 dark:border-slate-800">
+      <section className="ec-hero relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 shadow-xl dark:border-slate-800">
         <div className="absolute inset-0">
           {!fallbackFailed ? (
             <img
@@ -241,7 +257,7 @@ export function EventCompetitionPage() {
                   ? setBannerFailed(true)
                   : setFallbackFailed(true)
               }
-              className="h-full w-full object-cover"
+              className="ec-banner h-full w-full object-cover"
             />
           ) : (
             <div className="h-full w-full bg-linear-to-br from-blue-600 via-indigo-700 to-slate-900" />
@@ -276,7 +292,7 @@ export function EventCompetitionPage() {
           {/* Main: identity + countdown */}
           <div className="grid gap-6 pt-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
+              <div style={{ "--delay": "0ms" } as React.CSSProperties} className="ec-stagger flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/15 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-emerald-200 backdrop-blur-sm">
                   <span className="relative flex size-1.5">
                     <span className="absolute inline-flex size-full rounded-full bg-emerald-300 opacity-75 motion-safe:animate-ping" />
@@ -289,12 +305,12 @@ export function EventCompetitionPage() {
                 </span>
               </div>
 
-              <h1 className="mt-4 text-3xl font-black leading-tight tracking-tight text-white drop-shadow-md md:text-4xl">
+              <h1 style={{ "--delay": "90ms" } as React.CSSProperties} className="ec-stagger mt-4 text-3xl font-black leading-tight tracking-tight text-white drop-shadow-md md:text-4xl">
                 {competition.eventName}
               </h1>
 
               {selectedRound && (
-                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                <div style={{ "--delay": "170ms" } as React.CSSProperties} className="ec-stagger mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                   <span className="text-base font-semibold text-white drop-shadow-sm">
                     {selectedRound.roundName}
                   </span>
@@ -322,14 +338,14 @@ export function EventCompetitionPage() {
               )}
 
               {selectedRound && (
-                <p className="mt-3 text-sm text-slate-300">
+                <p style={{ "--delay": "240ms" } as React.CSSProperties} className="ec-stagger mt-3 text-sm text-slate-300">
                   {formatDateTime(selectedRound.startAt)} →{" "}
                   {formatDateTime(selectedRound.endAt)}
                 </p>
               )}
 
               {elapsed !== null && (
-                <div className="mt-5 max-w-md">
+                <div style={{ "--delay": "320ms" } as React.CSSProperties} className="ec-stagger mt-5 max-w-md">
                   <div
                     className="h-1.5 overflow-hidden rounded-full bg-white/20"
                     role="progressbar"
@@ -339,16 +355,24 @@ export function EventCompetitionPage() {
                     aria-valuemax={100}
                   >
                     <div
-                      className={[
-                        "h-full rounded-full transition-[width] duration-500",
-                        countdown.urgency === "critical"
-                          ? "bg-rose-400"
-                          : countdown.urgency === "warning"
-                            ? "bg-amber-400"
-                            : "bg-blue-400",
-                      ].join(" ")}
-                      style={{ width: `${elapsed}%` }}
-                    />
+                      className="h-full rounded-full transition-[width] duration-500"
+                      style={{
+                        width: `${elapsed}%`,
+                        "--elapsed": elapsed / 100,
+                      } as React.CSSProperties}
+                    >
+                      <div
+                        className={[
+                          "ec-progress h-full w-full rounded-full",
+                          countdown.urgency === "critical"
+                            ? "bg-rose-400"
+                            : countdown.urgency === "warning"
+                              ? "bg-amber-400"
+                              : "bg-blue-400",
+                        ].join(" ")}
+                        style={{ "--elapsed": 1 } as React.CSSProperties}
+                      />
+                    </div>
                   </div>
                   <div className="mt-2 flex justify-between text-xs text-slate-400">
                     <span>Round opened</span>
@@ -362,7 +386,7 @@ export function EventCompetitionPage() {
             </div>
 
             {/* Glass countdown panel */}
-            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md">
+            <div className={`rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md ${countdown.urgency === "critical" ? "ec-critical" : countdown.urgency === "warning" ? "ec-warning" : "ec-panel"}`}>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/60">
                 Submission window
               </p>
@@ -381,7 +405,7 @@ export function EventCompetitionPage() {
               >
                 {countdown.parts.length > 0 ? (
                   countdown.parts.map((part, index) => (
-                    <div key={part.label} className="flex items-end gap-3">
+                    <div key={part.label} style={{ "--i": index } as React.CSSProperties} className="ec-digit flex items-end gap-3">
                       {index > 0 && (
                         <span
                           aria-hidden
@@ -397,7 +421,7 @@ export function EventCompetitionPage() {
                             countdownTone[countdown.urgency],
                           ].join(" ")}
                         >
-                          {part.value}
+                          <span key={part.value} className="ec-tick">{part.value}</span>
                         </p>
                         <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">
                           {part.label}
@@ -453,11 +477,13 @@ export function EventCompetitionPage() {
 
       {/* ── Round rail ──────────────────────────────────────────────── */}
       {competition.rounds.length > 0 && (
-        <CompetitionRoundTimeline
-          rounds={competition.rounds}
-          selectedRoundId={selectedRound?.roundId}
-          onSelect={setSelectedRoundId}
-        />
+        <div className="ec-timeline">
+          <CompetitionRoundTimeline
+            rounds={competition.rounds}
+            selectedRoundId={selectedRound?.roundId}
+            onSelect={setSelectedRoundId}
+          />
+        </div>
       )}
 
       {/* ── Work area ───────────────────────────────────────────────── */}
@@ -469,7 +495,10 @@ export function EventCompetitionPage() {
             aria-labelledby={`round-tab-${selectedRound.roundId}`}
             className="min-w-0 space-y-6"
           >
-            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <section
+              ref={briefRef}
+              className={`${briefRevealed ? "ec-reveal" : "ec-reveal-idle"} rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900`}
+            >
               <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
                 <DescriptionOutlinedIcon style={{ fontSize: 17 }} />
                 <h2 className="text-xs font-bold uppercase tracking-[0.18em]">
@@ -514,31 +543,39 @@ export function EventCompetitionPage() {
             )}
 
             {requirementsQuery.data && (
-              <SubmissionRequirementsPanel
-                requirements={requirementsQuery.data}
-              />
+              <div
+                ref={requirementsRef}
+                style={{ "--delay": "80ms" } as React.CSSProperties}
+                className={requirementsRevealed ? "ec-reveal" : "ec-reveal-idle"}
+              >
+                <SubmissionRequirementsPanel requirements={requirementsQuery.data} />
+              </div>
             )}
 
             {savedEvidence && (
-              <SavedEvidencePanel
-                links={savedEvidence}
-                onManage={openSubmissionPage}
-              />
+              <div
+                ref={evidenceRef}
+                style={{ "--delay": "160ms" } as React.CSSProperties}
+                className={evidenceRevealed ? "ec-reveal" : "ec-reveal-idle"}
+              >
+                <SavedEvidencePanel links={savedEvidence} onManage={openSubmissionPage} />
+              </div>
             )}
           </div>
 
           {/* Action rail */}
-          <aside className="space-y-4 lg:sticky lg:top-6">
+          <aside className="ec-aside space-y-4 lg:sticky lg:top-6">
             <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-slate-500">
                 Your round status
               </h2>
 
               <dl className="mt-4 space-y-3">
-                {stats.map((stat) => (
+                {stats.map((stat, index) => (
                   <div
                     key={stat.label}
-                    className="flex items-center justify-between gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0 dark:border-slate-800"
+                    style={{ "--i": index } as React.CSSProperties}
+                    className="ec-stat flex items-center justify-between gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0 dark:border-slate-800"
                   >
                     <dt className="text-sm text-gray-500 dark:text-slate-400">
                       {stat.label}
@@ -556,7 +593,7 @@ export function EventCompetitionPage() {
                   disabled={!canOpenSubmission}
                   onClick={openSubmissionPage}
                   className={[
-                    "inline-flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-colors duration-200",
+                    `inline-flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-colors duration-200 ${showOpenSheen ? "ec-open" : ""}`,
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900",
                     canOpenSubmission
                       ? "cursor-pointer bg-blue-600 text-white hover:bg-blue-700"

@@ -36,10 +36,12 @@ import {
   useJoinTeamByCodeMutation,
   useMyActiveCompetitionsQuery,
 } from "../hooks/useParticipantTeams";
+import { useCountUp } from "../hooks/useCountUp";
 import type {
   TeamInvitationResponse,
   TeamJoinCodePreviewResponse,
 } from "@/types/team.types";
+import "../styles/participantTeams.css";
 
 type TeamSummaryView = {
   id: string;
@@ -175,6 +177,11 @@ export const MyTeamsPage = () => {
   const invitations = (
     (invitationsQuery.data ?? []) as TeamInvitationResponse[]
   ).filter((inv) => inv.status === "PENDING");
+  const teamCount = useCountUp(teams.length);
+  const competitionCount = useCountUp(
+    (activeCompetitionsQuery.data ?? []).length,
+  );
+  const invitationCount = useCountUp(invitations.length);
 
   const showEmptyState =
     !myTeamsQuery.isLoading && (myTeamsQuery.isError || teams.length === 0);
@@ -213,14 +220,14 @@ export const MyTeamsPage = () => {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
+    <div className="pt-page space-y-10">
       {/* ---------------------------------------------------------------- */}
       {/* Hero header                                                       */}
       {/* ---------------------------------------------------------------- */}
-      <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-white via-blue-50/70 to-indigo-100/60 p-8 shadow-sm md:p-10 dark:border-slate-800 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 dark:shadow-xl">
+      <section className="pt-hero relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-white via-blue-50/70 to-indigo-100/60 p-8 shadow-sm md:p-10 dark:border-slate-800 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 dark:shadow-xl">
         {/* Decorative glows */}
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-400/15 blur-3xl dark:bg-blue-500/20" />
-        <div className="pointer-events-none absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-indigo-400/10 blur-3xl dark:bg-indigo-500/15" />
+        <div className="pt-glow-a pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-400/15 blur-3xl dark:bg-blue-500/20" />
+        <div className="pt-glow-b pointer-events-none absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-indigo-400/10 blur-3xl dark:bg-indigo-500/15" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.08),transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.12),transparent_55%)]" />
 
         <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
@@ -280,13 +287,13 @@ export const MyTeamsPage = () => {
 
         {/* Quick stats */}
         <div className="relative mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:backdrop-blur-sm">
+          <div style={{ "--i": 0 } as React.CSSProperties} className="pt-stat flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:backdrop-blur-sm">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-500 dark:bg-blue-500/20 dark:text-blue-300">
               <GroupsOutlinedIcon style={{ fontSize: 19 }} />
             </div>
             <div>
               <p className="text-xl font-black tabular-nums leading-none text-slate-900 dark:text-white">
-                {myTeamsQuery.isLoading ? "–" : teams.length}
+                {myTeamsQuery.isLoading ? "–" : Math.round(teamCount)}
               </p>
               <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 My teams
@@ -294,7 +301,7 @@ export const MyTeamsPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:backdrop-blur-sm">
+          <div style={{ "--i": 1 } as React.CSSProperties} className="pt-stat flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:backdrop-blur-sm">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 dark:bg-emerald-500/20 dark:text-emerald-300">
               <RocketLaunchOutlinedIcon style={{ fontSize: 19 }} />
             </div>
@@ -302,7 +309,7 @@ export const MyTeamsPage = () => {
               <p className="text-xl font-black tabular-nums leading-none text-slate-900 dark:text-white">
                 {activeCompetitionsQuery.isLoading
                   ? "–"
-                  : (activeCompetitionsQuery.data ?? []).length}
+                  : Math.round(competitionCount)}
               </p>
               <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 Competing now
@@ -310,13 +317,13 @@ export const MyTeamsPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:backdrop-blur-sm">
+          <div style={{ "--i": 2 } as React.CSSProperties} className="pt-stat flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:backdrop-blur-sm">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-500 dark:bg-amber-500/20 dark:text-amber-300">
               <NotificationsOutlinedIcon style={{ fontSize: 19 }} />
             </div>
             <div>
               <p className="text-xl font-black tabular-nums leading-none text-slate-900 dark:text-white">
-                {invitationsQuery.isLoading ? "–" : invitations.length}
+                {invitationsQuery.isLoading ? "–" : Math.round(invitationCount)}
               </p>
               <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 Pending invites
@@ -326,7 +333,7 @@ export const MyTeamsPage = () => {
         </div>
 
         {/* Brand accent */}
-        <div className="absolute inset-x-0 bottom-0 h-1 bg-linear-to-r from-blue-500 via-cyan-400 to-indigo-500" />
+        <div className="pt-accent absolute inset-x-0 bottom-0 h-1 bg-linear-to-r from-blue-500 via-cyan-400 to-indigo-500" />
       </section>
 
       {/* ---------------------------------------------------------------- */}
@@ -380,10 +387,11 @@ export const MyTeamsPage = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-1">
-              {invitations.map((inv) => (
+              {invitations.map((inv, index) => (
                 <div
                   key={inv.id}
-                  className="flex items-center justify-between rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                  style={{ "--i": index } as React.CSSProperties}
+                  className="pt-invite-row flex items-center justify-between rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-gray-900 dark:text-white">
@@ -562,7 +570,7 @@ export const MyTeamsPage = () => {
       )}
 
       {showEmptyState && (
-        <section className="rounded-3xl border border-dashed border-gray-300 bg-gray-50/50 p-12 text-center dark:border-slate-700 dark:bg-slate-900/40">
+        <section className="pt-empty rounded-3xl border border-dashed border-gray-300 bg-gray-50/50 p-12 text-center dark:border-slate-700 dark:bg-slate-900/40">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400">
             <GroupsOutlinedIcon style={{ fontSize: 30 }} />
           </div>
@@ -599,7 +607,7 @@ export const MyTeamsPage = () => {
       {/* ---------------------------------------------------------------- */}
       {!myTeamsQuery.isLoading && teams.length > 0 && (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          {teams.map((team) => {
+          {teams.map((team, index) => {
             const activeCompetition = (activeCompetitionsQuery.data ?? []).find(
               (c) => c.teamId === team.id,
             );
@@ -607,7 +615,8 @@ export const MyTeamsPage = () => {
             return (
               <article
                 key={team.id}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:border-blue-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/50"
+                style={{ "--i": index } as React.CSSProperties}
+                className="pt-card group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/50"
               >
                 {activeCompetitionsQuery.isLoading ? (
                   <Skeleton variant="rectangular" width="100%" height={112} />
@@ -630,7 +639,7 @@ export const MyTeamsPage = () => {
                   <div className="flex items-end justify-between gap-4">
                     <div className="flex min-w-0 items-end gap-4">
                       <div
-                        className={`-mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-base font-black text-white shadow-md ring-4 ring-white dark:ring-slate-900 ${getAvatarGradient(team.name)}`}
+                        className={`pt-avatar -mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-base font-black text-white shadow-md ring-4 ring-white dark:ring-slate-900 ${getAvatarGradient(team.name)}`}
                       >
                         {getTeamInitials(team.name)}
                       </div>
@@ -682,7 +691,7 @@ export const MyTeamsPage = () => {
                   </div>
 
                   {activeCompetition && (
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-linear-to-r from-blue-50 to-indigo-50/60 px-4 py-3 dark:border-blue-500/30 dark:from-blue-500/10 dark:to-indigo-500/10">
+                    <div className="pt-live flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-linear-to-r from-blue-50 to-indigo-50/60 px-4 py-3 dark:border-blue-500/30 dark:from-blue-500/10 dark:to-indigo-500/10">
                       <div className="min-w-0">
                         <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
                           <span className="relative flex h-2 w-2">

@@ -20,6 +20,7 @@ import {
   DialogTitle,
   Checkbox,
   FormControlLabel,
+  CircularProgress,
 } from "@mui/material";
 import { submissionApi } from "@/api/submission.api";
 import {
@@ -47,6 +48,7 @@ import type {
   SubmissionLinkResponse,
   SubmissionUploadPolicyResponse,
 } from "@/types/submission.types";
+import "../styles/submissionForm.css";
 
 type StorageItem = {
   id: string;
@@ -212,6 +214,8 @@ export function SubmissionFormPage() {
   const [editEvidenceOrder, setEditEvidenceOrder] = useState("0");
   const [editEvidenceError, setEditEvidenceError] = useState<string | null>(null);
   const [savingEvidenceMetadata, setSavingEvidenceMetadata] = useState(false);
+  const [shakingLinks, setShakingLinks] = useState<Set<number>>(new Set());
+  const previousLinkErrors = useRef<Array<string | null>>([]);
 
   useEffect(() => {
     const callbackUrl = new URL(window.location.href);
@@ -387,6 +391,22 @@ export function SubmissionFormPage() {
     () => links.map((link) => getHttpUrlError(link.url)),
     [links],
   );
+
+  useEffect(() => {
+    const entered = linkUrlErrors
+      .map((error, index) =>
+        error && !previousLinkErrors.current[index] ? index : -1,
+      )
+      .filter((index) => index >= 0);
+    previousLinkErrors.current = linkUrlErrors;
+    if (entered.length === 0) return;
+    const frame = requestAnimationFrame(() => setShakingLinks(new Set(entered)));
+    const timer = window.setTimeout(() => setShakingLinks(new Set()), 320);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [linkUrlErrors]);
 
   const generateId = () => crypto.randomUUID();
 
@@ -792,7 +812,7 @@ export function SubmissionFormPage() {
   return (
     <div className="flex-1 min-h-[calc(100vh-64px)] p-6 bg-slate-50 dark:bg-transparent">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
+        <div className="sf-head mb-6">
           <button
             onClick={() => navigate(-1)}
             className="text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 mb-3 flex items-center gap-1.5 transition-colors"
@@ -875,10 +895,10 @@ export function SubmissionFormPage() {
         ) : (
           <div className="space-y-6">
             {/* Evidence — what the team has filed, and how to add more */}
-            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <section style={{ "--delay": "0ms" } as React.CSSProperties} className="sf-section rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 p-5 dark:border-slate-800 sm:p-6">
                 <div className="min-w-0">
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  <h2 className="sf-heading text-base font-bold text-slate-900 dark:text-white">
                     Evidence &amp; files
                   </h2>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -940,7 +960,7 @@ export function SubmissionFormPage() {
                   <div
                     role="status"
                     aria-live="polite"
-                    className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
+                    className="sf-upload flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
                   >
                     <CloudUploadOutlinedIcon style={{ fontSize: 18 }} />
                     <span className="tabular-nums">
@@ -960,7 +980,7 @@ export function SubmissionFormPage() {
                       if (currentItems.length === 0) openPicker();
                     }}
                     className={[
-                      "rounded-xl border-2 border-dashed transition-colors",
+                      `sf-drop rounded-xl border-2 border-dashed transition-colors ${dragActive ? "sf-drop-active" : ""}`,
                       dragActive
                         ? "border-blue-400 bg-blue-50/70 dark:border-blue-500/70 dark:bg-blue-500/10"
                         : "border-slate-300 dark:border-slate-700",
@@ -1018,7 +1038,7 @@ export function SubmissionFormPage() {
                           {currentItems.map((item) => (
                             <li
                               key={item.id}
-                              className={`flex items-center gap-3 p-3 transition-colors ${selectedIds.has(item.id) ? "bg-blue-50/60 dark:bg-blue-500/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
+                              className={`sf-row-in flex items-center gap-3 p-3 transition-colors ${selectedIds.has(item.id) ? "bg-blue-50/60 dark:bg-blue-500/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
                             >
                               <input
                                 type="checkbox"
@@ -1070,8 +1090,8 @@ export function SubmissionFormPage() {
 
             {/* Resource links — an editing surface; saved URLs appear above */}
             {canEdit && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              <section style={{ "--delay": "80ms" } as React.CSSProperties} className="sf-section rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+                <h2 className="sf-heading text-base font-bold text-slate-900 dark:text-white">
                   Resource links
                 </h2>
                 <p className="mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
@@ -1081,7 +1101,7 @@ export function SubmissionFormPage() {
                   {links.map((link, idx) => (
                     <div
                       key={link.clientId}
-                      className="flex flex-col gap-3 sm:flex-row sm:items-start"
+                      className={`sf-row-in flex flex-col gap-3 sm:flex-row sm:items-start ${shakingLinks.has(idx) ? "sf-error-shake" : ""}`}
                     >
                       <TextField
                         select
@@ -1187,8 +1207,8 @@ export function SubmissionFormPage() {
 
             {/* Note to reviewers */}
             {(canEdit || note.trim().length > 0) && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              <section style={{ "--delay": "160ms" } as React.CSSProperties} className="sf-section rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+                <h2 className="sf-heading text-base font-bold text-slate-900 dark:text-white">
                   Note to reviewers
                 </h2>
                 <p className="mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
@@ -1221,7 +1241,7 @@ export function SubmissionFormPage() {
               <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
                 <CheckCircleOutlineRoundedIcon
                   style={{ fontSize: 18 }}
-                  className="mt-0.5 shrink-0"
+                  className="sf-success-icon mt-0.5 shrink-0"
                 />
                 <span>{successMsg}</span>
               </div>
@@ -1237,7 +1257,7 @@ export function SubmissionFormPage() {
             )}
 
             {canEdit && (
-              <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
+              <div className="sf-action sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outlined"
@@ -1261,6 +1281,7 @@ export function SubmissionFormPage() {
                       },
                     }}
                   >
+                    {saving && <CircularProgress size={15} sx={{ mr: 1 }} />}
                     {saving ? "Saving..." : "Draft"}
                   </Button>
                   <Button
@@ -1309,6 +1330,7 @@ export function SubmissionFormPage() {
                       "&:hover": { bgcolor: "#2563eb" },
                     }}
                   >
+                    {submitting && <CircularProgress size={15} color="inherit" sx={{ mr: 1 }} />}
                     {submitting ? "Submitting..." : "Submit Final"}
                   </Button>
                 </div>
@@ -1322,14 +1344,14 @@ export function SubmissionFormPage() {
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
           <div
             aria-hidden
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
+            className="sf-backdrop absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
             onClick={() => setIsPickerOpen(false)}
           />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="attachment-dialog-title"
-            className="relative flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-200 dark:border-slate-700 dark:bg-slate-900"
+            className="sf-dialog relative flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
           >
             <div className="flex flex-col gap-4 border-b border-gray-100 px-6 pt-5 pb-4 dark:border-slate-800">
               <div className="flex items-start justify-between gap-4">
@@ -1549,7 +1571,7 @@ export function SubmissionFormPage() {
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setEditItem(null)}
           />
-          <div className="relative border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="sf-dialog relative border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-transparent">
               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 truncate pr-4">
                 Edit {editItem.name}
@@ -1689,6 +1711,10 @@ export function SubmissionFormPage() {
         onClose={closeDeleteDialog}
         fullWidth
         maxWidth="xs"
+        slotProps={{
+          transition: { timeout: 240 },
+          paper: { className: "sf-dialog" },
+        }}
       >
         <DialogTitle sx={{ fontWeight: 800 }}>Confirm deletion</DialogTitle>
         <DialogContent dividers>
@@ -1728,6 +1754,10 @@ export function SubmissionFormPage() {
         onClose={closeEvidenceEditor}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          transition: { timeout: 240 },
+          paper: { className: "sf-dialog" },
+        }}
       >
         <DialogTitle sx={{ fontWeight: 800 }}>Edit saved evidence</DialogTitle>
         <DialogContent dividers>

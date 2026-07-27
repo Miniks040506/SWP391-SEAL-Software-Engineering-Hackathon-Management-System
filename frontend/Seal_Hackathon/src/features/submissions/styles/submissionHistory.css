@@ -1,0 +1,36 @@
+@keyframes sh-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sh-banner { from { transform: scale(1.05); } to { transform: scale(1); } }
+@keyframes sh-pop { 0% { opacity: 0; transform: scale(.8); } 70% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes sh-shimmer { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
+
+.sh-back { animation: sh-rise 280ms cubic-bezier(.16,1,.3,1) both; }
+.sh-hero { animation: sh-rise 560ms cubic-bezier(.16,1,.3,1) both; }
+.sh-banner { animation: sh-banner 900ms cubic-bezier(.16,1,.3,1) both; }
+.sh-hero-part { animation: sh-rise 420ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--i, 0) * 70ms + 100ms); }
+.sh-stat { animation: sh-rise 420ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--i, 0) * 60ms + 180ms); }
+.sh-section-head { animation: sh-rise 440ms cubic-bezier(.16,1,.3,1) both; }
+.sh-row { position: relative; animation: sh-rise 420ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(min(var(--i, 0), 4) * 60ms); }
+.sh-row article { transition: transform 200ms cubic-bezier(.16,1,.3,1), box-shadow 200ms; }
+.sh-row article:hover { transform: translateY(-2px); }
+.sh-row::before { content: ""; position: absolute; z-index: 2; inset: 8px auto 8px 0; width: 2px; border-radius: 999px; background: #3b82f6; transform: scaleY(0); transition: transform 180ms cubic-bezier(.16,1,.3,1); }
+.sh-row:hover::before { transform: scaleY(1); }
+.sh-feedback { animation: sh-rise 260ms cubic-bezier(.16,1,.3,1) both; }
+.sh-empty-icon { animation: sh-pop 420ms cubic-bezier(.16,1,.3,1) both; }
+.sh-empty-copy { animation: sh-rise 380ms cubic-bezier(.16,1,.3,1) 80ms both; }
+.sh-skeleton { position: relative; overflow: hidden; }
+.sh-skeleton::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / .62), transparent 80%); animation: sh-shimmer 1.3s ease-in-out infinite; }
+.sh-reveal-idle { opacity: 0; transform: translateY(18px); }
+.sh-reveal { animation: sh-rise 460ms cubic-bezier(.16,1,.3,1) var(--delay, 0ms) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sh-back, .sh-hero, .sh-banner, .sh-hero-part, .sh-stat, .sh-section-head,
+  .sh-row, .sh-feedback, .sh-empty-icon, .sh-empty-copy, .sh-skeleton::after,
+  .sh-reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .sh-reveal-idle { opacity: 1 !important; transform: none !important; }
+  .sh-row article, .sh-row::before { transition: none !important; }
+}

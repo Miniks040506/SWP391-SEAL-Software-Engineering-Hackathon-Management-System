@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
@@ -20,6 +21,8 @@ type Props = {
   feedbackError: boolean;
   now: number;
   onOpen: (submission: SubmissionResponse) => void;
+  motionClassName?: string;
+  motionStyle?: CSSProperties;
 };
 
 export function SubmissionLedgerRow({
@@ -29,6 +32,8 @@ export function SubmissionLedgerRow({
   feedbackError,
   now,
   onOpen,
+  motionClassName = "",
+  motionStyle,
 }: Props) {
   const stamp = submissionTimestamp(submission);
   const relative = formatRelative(stamp, now);
@@ -39,7 +44,7 @@ export function SubmissionLedgerRow({
   const feedbackPanelId = `submission-${submission.id}-feedback`;
 
   return (
-    <li>
+    <li className={motionClassName} style={motionStyle}>
       <article className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200/90 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.6)] transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-[0_24px_60px_-40px_rgba(30,64,175,0.55)] dark:bg-slate-900 dark:ring-slate-800">
         <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
           <span className="flex size-12 shrink-0 flex-col items-center justify-center rounded-xl bg-slate-950 text-white dark:bg-blue-500">
@@ -136,7 +141,7 @@ export function SubmissionLedgerRow({
           {feedbackOpen && (
             <div
               id={feedbackPanelId}
-              className="border-t border-slate-200 px-5 py-5 dark:border-slate-800 sm:px-6"
+              className="sh-feedback border-t border-slate-200 px-5 py-5 dark:border-slate-800 sm:px-6"
             >
               {feedbackLoading ? (
                 <div className="space-y-2" aria-label="Loading mentor feedback">

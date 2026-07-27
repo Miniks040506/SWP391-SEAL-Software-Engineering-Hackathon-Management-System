@@ -19,6 +19,9 @@ import {
   groupFeedbackBySubmission,
   summarizeSubmissions,
 } from "../utils/submissionHistoryFormat";
+import { useCountUp } from "../hooks/useCountUp";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
+import "../styles/submissionHistory.css";
 
 export function ParticipantSubmissionsPage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -27,6 +30,10 @@ export function ParticipantSubmissionsPage() {
   const { submissions, loading, error, refetch } =
     useTeamSubmissionsQuery(teamId);
   const feedbackQuery = useTeamFeedback(teamId);
+  const { ref: ledgerRef, revealed: ledgerRevealed } =
+    useScrollReveal<HTMLUListElement>();
+  const { ref: otherFeedbackRef, revealed: otherFeedbackRevealed } =
+    useScrollReveal<HTMLElement>();
 
   // Relative labels here are day-scale, so a snapshot at mount is enough and
   // avoids re-rendering the whole ledger every second.
@@ -75,14 +82,17 @@ export function ParticipantSubmissionsPage() {
     eventQuery.data?.name ?? activeCompetition?.eventName ?? "Your submissions";
 
   const summary = summarizeSubmissions(submissions);
+  const totalCount = useCountUp(summary.total);
+  const submittedCount = useCountUp(summary.submitted);
+  const roundsCount = useCountUp(summary.rounds);
   const feedbackGroups = useMemo(
     () => groupFeedbackBySubmission(submissions, feedbackQuery.data ?? []),
     [feedbackQuery.data, submissions],
   );
   const stats = [
-    { label: "Submissions", value: `${summary.total}` },
-    { label: "Submitted", value: `${summary.submitted}` },
-    { label: "Rounds covered", value: `${summary.rounds}` },
+    { label: "Submissions", value: `${Math.round(totalCount)}` },
+    { label: "Submitted", value: `${Math.round(submittedCount)}` },
+    { label: "Rounds covered", value: `${Math.round(roundsCount)}` },
     { label: "Latest activity", value: formatDay(summary.latest) ?? "None" },
   ];
 
@@ -93,20 +103,20 @@ export function ParticipantSubmissionsPage() {
       <button
         type="button"
         onClick={handleBack}
-        className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm font-medium text-gray-500 transition-colors hover:text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:text-slate-400 dark:hover:text-blue-400"
+        className="sh-back inline-flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm font-medium text-gray-500 transition-colors hover:text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:text-slate-400 dark:hover:text-blue-400"
       >
         <ArrowBackIcon style={{ fontSize: 16 }} />
         Back to competing
       </button>
 
-      <section className="relative isolate overflow-hidden rounded-2xl border border-gray-200 shadow-sm dark:border-slate-800">
+      <section className="sh-hero relative isolate overflow-hidden rounded-2xl border border-gray-200 shadow-sm dark:border-slate-800">
         {showBanner ? (
           <img
             src={bannerUrl ?? ""}
             alt=""
             aria-hidden
             onError={() => setBannerBroken(true)}
-            className="absolute inset-0 -z-10 h-full w-full object-cover"
+            className="sh-banner absolute inset-0 -z-10 h-full w-full object-cover"
           />
         ) : (
           <div
@@ -121,15 +131,15 @@ export function ParticipantSubmissionsPage() {
         />
 
         <div className="flex min-h-72 flex-col justify-end px-6 py-8 sm:px-8 sm:py-10">
-          <p className="text-xs font-bold tracking-[0.18em] text-blue-200 uppercase">
+          <p style={{ "--i": 0 } as React.CSSProperties} className="sh-hero-part text-xs font-bold tracking-[0.18em] text-blue-200 uppercase">
             Submission history
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+          <h1 style={{ "--i": 1 } as React.CSSProperties} className="sh-hero-part mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">
             {eventName}
           </h1>
 
           {(teamName || trackName) && (
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium">
+            <div style={{ "--i": 2 } as React.CSSProperties} className="sh-hero-part mt-4 flex flex-wrap items-center gap-2 text-xs font-medium">
               {teamName && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1.5 text-white ring-1 ring-white/20 backdrop-blur-sm">
                   <GroupsOutlinedIcon style={{ fontSize: 14 }} />
@@ -149,10 +159,11 @@ export function ParticipantSubmissionsPage() {
 
       {hasStats && (
         <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-slate-200 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-800 sm:grid-cols-4">
-          {stats.map((stat) => (
+          {stats.map((stat, index) => (
             <div
               key={stat.label}
-              className="bg-white px-5 py-4 dark:bg-slate-900"
+              style={{ "--i": index } as React.CSSProperties}
+              className="sh-stat bg-white px-5 py-4 dark:bg-slate-900"
             >
               <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 {stat.label}
@@ -166,7 +177,7 @@ export function ParticipantSubmissionsPage() {
       )}
 
       <section className="overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200 dark:bg-slate-950/30 dark:ring-slate-800">
-        <div className="border-b border-slate-200 bg-white px-5 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+        <div className="sh-section-head border-b border-slate-200 bg-white px-5 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
           <h2 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white">
             Submissions and feedback
           </h2>
@@ -204,10 +215,10 @@ export function ParticipantSubmissionsPage() {
                 aria-hidden
               >
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-48 rounded bg-gray-200 motion-safe:animate-pulse dark:bg-slate-800" />
-                  <div className="h-3 w-24 rounded bg-gray-100 motion-safe:animate-pulse dark:bg-slate-800/60" />
+                  <div className="sh-skeleton h-4 w-48 rounded bg-gray-200 dark:bg-slate-800" />
+                  <div className="sh-skeleton h-3 w-24 rounded bg-gray-100 dark:bg-slate-800/60" />
                 </div>
-                <div className="h-9 w-24 rounded-lg bg-gray-100 motion-safe:animate-pulse dark:bg-slate-800/60" />
+                <div className="sh-skeleton h-9 w-24 rounded-lg bg-gray-100 dark:bg-slate-800/60" />
               </li>
             ))}
             <li className="sr-only">Loading submissions…</li>
@@ -233,10 +244,10 @@ export function ParticipantSubmissionsPage() {
           </div>
         ) : submissions.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-16 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500">
+            <span className="sh-empty-icon flex size-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500">
               <InboxOutlinedIcon style={{ fontSize: 24 }} />
             </span>
-            <p className="mt-4 text-base font-semibold text-gray-900 dark:text-white">
+            <p className="sh-empty-copy mt-4 text-base font-semibold text-gray-900 dark:text-white">
               Nothing filed yet
             </p>
             <p className="mt-1.5 max-w-sm text-sm leading-6 text-gray-500 dark:text-slate-400">
@@ -254,8 +265,8 @@ export function ParticipantSubmissionsPage() {
             )}
           </div>
         ) : (
-          <ul className="space-y-4 p-4 sm:p-5">
-            {submissions.map((submission) => (
+          <ul ref={ledgerRef} className="space-y-4 p-4 sm:p-5">
+            {submissions.map((submission, index) => (
               <SubmissionLedgerRow
                 key={submission.id}
                 submission={submission}
@@ -264,6 +275,14 @@ export function ParticipantSubmissionsPage() {
                 feedbackError={feedbackQuery.isError}
                 now={now}
                 onOpen={openSubmission}
+                motionStyle={{ "--i": index } as React.CSSProperties}
+                motionClassName={
+                  index < 4
+                    ? "sh-row"
+                    : ledgerRevealed
+                      ? "sh-row sh-reveal"
+                      : "sh-row sh-reveal-idle"
+                }
               />
             ))}
           </ul>
@@ -273,7 +292,11 @@ export function ParticipantSubmissionsPage() {
       {!feedbackQuery.isLoading &&
         !feedbackQuery.isError &&
         feedbackGroups.other.length > 0 && (
-          <section aria-labelledby="other-feedback-heading">
+          <section
+            ref={otherFeedbackRef}
+            aria-labelledby="other-feedback-heading"
+            className={otherFeedbackRevealed ? "sh-reveal" : "sh-reveal-idle"}
+          >
             <div className="mb-4 flex items-start gap-3">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
                 <RateReviewOutlinedIcon style={{ fontSize: 21 }} />
@@ -293,12 +316,10 @@ export function ParticipantSubmissionsPage() {
             </div>
 
             <div className="space-y-3">
-              {feedbackGroups.other.map((feedback) => (
-                <MentorFeedbackCard
-                  key={feedback.id}
-                  feedback={feedback}
-                  showSubmissionContext
-                />
+              {feedbackGroups.other.map((feedback, index) => (
+                <div key={feedback.id} style={{ "--delay": `${index * 55}ms` } as React.CSSProperties} className="sh-reveal">
+                  <MentorFeedbackCard feedback={feedback} showSubmissionContext />
+                </div>
               ))}
             </div>
           </section>

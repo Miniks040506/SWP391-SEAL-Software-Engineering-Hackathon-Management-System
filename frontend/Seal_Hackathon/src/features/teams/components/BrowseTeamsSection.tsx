@@ -1,20 +1,20 @@
 import { useState } from "react";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
-import TextField from "@mui/material/TextField";
 
 import type { FormingTeamResponse } from "@/types/team.types";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import {
   useFormingTeamsQuery,
   useRequestToJoinTeamMutation,
 } from "../hooks/useTeamJoinRequests";
 import { TeamStatusBadge } from "./TeamStatusBagde";
+import {
+  JoinRequestDialog,
+  MemberDots,
+} from "./JoinRequestDialog";
+import { getGradient, getInitials } from "../utils/teamVisuals";
 
 const requestButtonLabel = (team: FormingTeamResponse) => {
   if (team.alreadyMember) return "Already a Member";
@@ -23,55 +23,14 @@ const requestButtonLabel = (team: FormingTeamResponse) => {
   return "Request to Join";
 };
 
-const BROWSE_AVATAR_GRADIENTS = [
-  "from-blue-500 to-indigo-600",
-  "from-sky-500 to-blue-600",
-  "from-indigo-500 to-violet-600",
-  "from-cyan-500 to-sky-600",
-];
-
-function getInitials(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-
-  if (words.length === 0) return "?";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-
-  return `${words[0][0]}${words[1][0]}`.toUpperCase();
-}
-
-function getGradient(name: string) {
-  const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-
-  return BROWSE_AVATAR_GRADIENTS[hash % BROWSE_AVATAR_GRADIENTS.length];
-}
-
-function MemberDots({ count, max }: { count: number; max: number }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      {Array.from({ length: max }, (_, index) => (
-        <span
-          key={index}
-          className={[
-            "h-2 w-2 rounded-full transition-colors",
-            index < count
-              ? "bg-blue-500"
-              : "bg-gray-200 dark:bg-slate-700",
-          ].join(" ")}
-        />
-      ))}
-      <span className="ml-1.5 text-xs font-bold tabular-nums text-gray-500 dark:text-slate-400">
-        {count}/{max}
-      </span>
-    </div>
-  );
-}
-
 export function BrowseTeamsSection() {
   const [selectedTeam, setSelectedTeam] = useState<FormingTeamResponse | null>(null);
   const [message, setMessage] = useState("");
   const formingTeamsQuery = useFormingTeamsQuery({ page: 0, size: 100 });
   const requestMutation = useRequestToJoinTeamMutation();
   const teams = formingTeamsQuery.data?.content ?? [];
+  const { ref: headerRef, revealed: headerRevealed } = useScrollReveal();
+  const { ref: gridRef, revealed: gridRevealed } = useScrollReveal();
 
   const closeDialog = () => {
     if (requestMutation.isPending) return;
@@ -93,7 +52,10 @@ export function BrowseTeamsSection() {
 
   return (
     <div className="mt-14 space-y-6 border-t border-gray-200 pt-12 dark:border-slate-800">
-      <div>
+      <div
+        ref={headerRef}
+        className={headerRevealed ? "pt-reveal" : "pt-reveal-idle"}
+      >
         <p className="text-xs font-bold uppercase tracking-widest text-blue-500">
           Still forming
         </p>
@@ -123,11 +85,15 @@ export function BrowseTeamsSection() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {teams.map((team) => (
+      <div
+        ref={gridRef}
+        className={`${gridRevealed ? "pt-reveal" : "pt-reveal-idle"} grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3`}
+      >
+        {teams.map((team, index) => (
           <article
             key={team.id}
-            className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:border-blue-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/50"
+            style={{ "--i": index } as React.CSSProperties}
+            className="pt-browse-card flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/50"
           >
             <div className="flex flex-1 flex-col p-6">
               <div className="flex items-start justify-between gap-3">
@@ -198,72 +164,15 @@ export function BrowseTeamsSection() {
         ))}
       </div>
 
-      <Dialog
-        open={Boolean(selectedTeam)}
+      <JoinRequestDialog
+        team={selectedTeam}
+        message={message}
+        onMessageChange={setMessage}
         onClose={closeDialog}
-        fullWidth
-        maxWidth="sm"
-        slotProps={{
-          paper: {
-            className: "rounded-2xl dark:bg-slate-900",
-          },
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>
-          <span className="text-gray-900 dark:text-slate-100">
-            Request to Join Team
-          </span>
-        </DialogTitle>
-        <DialogContent dividers className="dark:border-slate-800">
-          {selectedTeam && (
-            <div className="space-y-4 pt-2">
-              <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-950/50">
-                <p className="text-sm text-gray-600 dark:text-slate-400">
-                  Requesting to join <strong className="text-gray-900 dark:text-white">{selectedTeam.name}</strong>
-                </p>
-                <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
-                  Leader: <strong className="text-gray-900 dark:text-white">{selectedTeam.leaderName}</strong>
-                </p>
-              </div>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Message to Leader (Optional)"
-                placeholder="Introduce yourself and explain how you can contribute."
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                disabled={requestMutation.isPending}
-                slotProps={{ htmlInput: { maxLength: 1000 } }}
-                helperText={`${message.length}/1000`}
-              />
-              {requestMutation.isError && (
-                <Alert severity="error">The request could not be sent. Review the message and try again.</Alert>
-              )}
-            </div>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={closeDialog} disabled={requestMutation.isPending}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={sendRequest}
-            disabled={requestMutation.isPending}
-            sx={{
-              bgcolor: "#3b82f6",
-              fontWeight: 800,
-              textTransform: "none",
-              borderRadius: "10px",
-              boxShadow: "none",
-              "&:hover": { bgcolor: "#2563eb", boxShadow: "none" },
-            }}
-          >
-            {requestMutation.isPending ? "Sending..." : "Send Request"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onSubmit={sendRequest}
+        isPending={requestMutation.isPending}
+        isError={requestMutation.isError}
+      />
     </div>
   );
 }

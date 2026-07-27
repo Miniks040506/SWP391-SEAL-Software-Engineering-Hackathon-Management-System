@@ -73,19 +73,32 @@ type ScheduleCardProps = {
   entry: ScheduleEntry;
   rangeStartTime: number;
   onOpen: (entry: ScheduleEntry) => void;
+  highlight: boolean;
+  columnIndex?: number;
+  cardIndex?: number;
 };
 
-function ScheduleCard({ entry, rangeStartTime, onOpen }: ScheduleCardProps) {
+function ScheduleCard({
+  entry,
+  rangeStartTime,
+  onOpen,
+  highlight,
+  columnIndex = 0,
+  cardIndex = 0,
+}: ScheduleCardProps) {
   return (
     <button
       type="button"
       onClick={() => onOpen(entry)}
       aria-label={`Open ${entry.title}`}
-      className={`group w-full rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950 ${TYPE_STYLES[entry.type]}`}
+      style={{ "--i": columnIndex, "--j": cardIndex } as React.CSSProperties}
+      className={`ps-card group w-full rounded-xl border p-3 text-left transition duration-200 hover:-translate-y-1 hover:border-blue-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950 ${TYPE_STYLES[entry.type]}`}
     >
       <span className="flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-[0.12em]">
         <span className="inline-flex items-center gap-1 whitespace-nowrap">
-          {typeIcon(entry.type)}
+          <span className={highlight && entry.type === "DEADLINE" ? "ps-deadline inline-flex" : "inline-flex"}>
+            {typeIcon(entry.type)}
+          </span>
           {TYPE_LABELS[entry.type]}
         </span>
         <ArrowForwardRoundedIcon
@@ -119,7 +132,7 @@ function RoundWindowCard({
       type="button"
       onClick={() => onOpen(entry)}
       aria-label={`Open ${entry.title}`}
-      className="group w-full rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-left text-blue-700 transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:focus-visible:ring-offset-slate-950"
+      className="group w-full rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-left text-blue-700 transition duration-200 hover:-translate-y-1 hover:border-blue-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:focus-visible:ring-offset-slate-950"
     >
       <span className="flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-[0.12em]">
         <span className="inline-flex items-center gap-1 whitespace-nowrap">
@@ -150,6 +163,7 @@ type WeeklyTimetableProps = {
   rangeStart: Date;
   rangeEnd: Date;
   onOpen: (entry: ScheduleEntry) => void;
+  highlightEntryId?: string;
 };
 
 export function WeeklyTimetable({
@@ -157,6 +171,7 @@ export function WeeklyTimetable({
   rangeStart,
   rangeEnd,
   onOpen,
+  highlightEntryId,
 }: WeeklyTimetableProps) {
   const days = useMemo(
     () => eachDayOfInterval({ start: rangeStart, end: rangeEnd }),
@@ -190,7 +205,7 @@ export function WeeklyTimetable({
   return (
     <>
       {activeWindows.length > 0 && (
-        <section className="border-b border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/30">
+        <section className="ps-band border-b border-slate-200 bg-slate-50/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/30">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
             <div className="shrink-0 lg:w-32">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
@@ -247,7 +262,7 @@ export function WeeklyTimetable({
                 aria-pressed={active}
                 className={`rounded-xl py-2 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                   active
-                    ? "bg-blue-600 text-white"
+                    ? "ps-daypill bg-blue-600 text-white"
                     : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                 }`}
               >
@@ -283,6 +298,7 @@ export function WeeklyTimetable({
                   key={entry.id}
                   entry={entry}
                   rangeStartTime={rangeStartTime}
+                  highlight={entry.id === highlightEntryId}
                   onOpen={onOpen}
                 />
               ))
@@ -296,7 +312,7 @@ export function WeeklyTimetable({
       </div>
 
       <div className="hidden grid-cols-7 lg:grid">
-        {days.map((day) => {
+        {days.map((day, dayIndex) => {
           const dayEntries = entriesFor(day);
           const dayRounds = roundsFor(day);
           const today = isToday(day);
@@ -304,11 +320,12 @@ export function WeeklyTimetable({
             <section
               key={day.toISOString()}
               aria-label={format(day, "EEEE, MMMM d")}
-              className={`min-w-0 border-r border-slate-200 last:border-r-0 dark:border-slate-800 ${
+              style={{ "--i": dayIndex } as React.CSSProperties}
+              className={`ps-col min-w-0 border-r border-slate-200 last:border-r-0 dark:border-slate-800 ${
                 today ? "bg-blue-50/40 dark:bg-blue-500/5" : ""
               }`}
             >
-              <header className={`border-b px-3 py-4 text-center ${
+              <header className={`border-b px-3 py-4 text-center ${today ? "ps-today" : ""} ${
                 today
                   ? "border-blue-200 bg-blue-50 dark:border-blue-500/30 dark:bg-blue-500/10"
                   : "border-slate-200 dark:border-slate-800"
@@ -331,11 +348,14 @@ export function WeeklyTimetable({
                   <RoundWindowCard key={entry.id} entry={entry} onOpen={onOpen} />
                 ))}
                 {dayEntries.length ? (
-                  dayEntries.map((entry) => (
+                  dayEntries.map((entry, cardIndex) => (
                     <ScheduleCard
                       key={entry.id}
                       entry={entry}
                       rangeStartTime={rangeStartTime}
+                      highlight={entry.id === highlightEntryId}
+                      columnIndex={dayIndex}
+                      cardIndex={cardIndex}
                       onOpen={onOpen}
                     />
                   ))
