@@ -187,7 +187,7 @@ export function JoinRequestDialog({
             >
               <span className="inline-flex items-center gap-2">
                 {isPending && <CircularProgress size={15} color="inherit" />}
-                {isPending ? "Sendingâ€¦" : "Send Request"}
+                {isPending ? "Sending..." : "Send Request"}
               </span>
             </Button>
           </footer>
