@@ -21,6 +21,9 @@ interface JudgeAssignmentProgressTableProps {
     assignments: JudgeAssignmentProgressResponse[];
 }
 
+const assignmentProgressPercent = (assignment: JudgeAssignmentProgressResponse) =>
+    assignment.totalAssignedSubmissions === 0 ? 100 : assignment.percent;
+
 /**
  * Judge assignment progress as expandable rows. The collapsed row keeps
  * judge identity + one progress bar + a status distribution bar; expanding
@@ -32,7 +35,10 @@ export const JudgeAssignmentProgressTable = ({ assignments = [] }: JudgeAssignme
     const [expanded, setExpanded] = useState<Set<UUID>>(new Set());
 
     const sortedAssignments = useMemo(
-        () => [...assignments].sort((a, b) => a.percent - b.percent),
+        () =>
+            [...assignments].sort(
+                (a, b) => assignmentProgressPercent(a) - assignmentProgressPercent(b),
+            ),
         [assignments],
     );
 
@@ -119,7 +125,10 @@ export const JudgeAssignmentProgressTable = ({ assignments = [] }: JudgeAssignme
                                             {" "}/ {assignment.totalAssignedSubmissions}
                                         </span>
                                         <span className="ml-2 text-blue-600 dark:text-blue-400">
-                                            {formatProgressPercent(assignment.percent)}%
+                                            {formatProgressPercent(
+                                                assignmentProgressPercent(assignment),
+                                            )}
+                                            %
                                         </span>
                                     </span>
                                 </div>
@@ -135,6 +144,7 @@ export const JudgeAssignmentProgressTable = ({ assignments = [] }: JudgeAssignme
                                             size="sm"
                                             showLegend={false}
                                             stagger={index + 4}
+                                            completeWhenEmpty
                                         />
                                     </div>
                                 </Tooltip>

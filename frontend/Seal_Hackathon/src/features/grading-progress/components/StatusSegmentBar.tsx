@@ -8,6 +8,7 @@ interface StatusSegmentBarProps {
     size?: "sm" | "lg";
     showLegend?: boolean;
     stagger?: number;
+    completeWhenEmpty?: boolean;
 }
 
 /**
@@ -29,11 +30,13 @@ export const StatusSegmentBar = ({
     size = "lg",
     showLegend = true,
     stagger = 0,
+    completeWhenEmpty = false,
 }: StatusSegmentBarProps) => {
     const counts = { draft, submitted, locked };
     const total = pending + draft + submitted + locked;
     const filled = draft + submitted + locked;
-    const fillPercent = total > 0 ? (filled / total) * 100 : 0;
+    const isEmptyComplete = completeWhenEmpty && total === 0;
+    const fillPercent = isEmptyComplete ? 100 : total > 0 ? (filled / total) * 100 : 0;
     const heightClass = size === "lg" ? "h-3.5" : "h-2";
 
     const legendItems = [
@@ -50,9 +53,13 @@ export const StatusSegmentBar = ({
             <div
                 className={`w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 ${heightClass}`}
                 role="img"
-                aria-label={`Grading progress: ${locked} locked, ${submitted} submitted, ${draft} draft, ${pending} pending`}
+                aria-label={
+                    isEmptyComplete
+                        ? "Grading progress complete: no submissions assigned"
+                        : `Grading progress: ${locked} locked, ${submitted} submitted, ${draft} draft, ${pending} pending`
+                }
             >
-                {filled > 0 && (
+                {(filled > 0 || isEmptyComplete) && (
                     <div
                         className="gp-bar-grow flex h-full overflow-hidden rounded-r-full"
                         style={
@@ -62,14 +69,18 @@ export const StatusSegmentBar = ({
                             } as CSSProperties
                         }
                     >
-                        {FILL_SEGMENTS.map(({ key, barClass }) =>
-                            counts[key] > 0 ? (
-                                <div
-                                    key={key}
-                                    className={`h-full ${barClass}`}
-                                    style={{ width: `${(counts[key] / filled) * 100}%` }}
-                                />
-                            ) : null,
+                        {isEmptyComplete ? (
+                            <div className="h-full w-full bg-violet-500" />
+                        ) : (
+                            FILL_SEGMENTS.map(({ key, barClass }) =>
+                                counts[key] > 0 ? (
+                                    <div
+                                        key={key}
+                                        className={`h-full ${barClass}`}
+                                        style={{ width: `${(counts[key] / filled) * 100}%` }}
+                                    />
+                                ) : null,
+                            )
                         )}
                     </div>
                 )}
