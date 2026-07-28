@@ -42,7 +42,6 @@ export type RoleLayoutConfig = {
   basePath: string;
   homePath: string;
   profilePath: string;
-  settingsPath: string;
   notificationPath?: string;
   sidebar: SidebarSection[];
 };
@@ -53,7 +52,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
     basePath: "/admin",
     homePath: "/admin/dashboard",
     profilePath: "/admin/profile",
-    settingsPath: "/admin/settings",
     notificationPath: "/admin/notifications",
     sidebar: [
       {
@@ -120,7 +118,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
     basePath: "/coordinator",
     homePath: "/coordinator/dashboard",
     profilePath: "/coordinator/profile",
-    settingsPath: "/coordinator/settings",
     notificationPath: "/coordinator/notifications",
     sidebar: [
       {
@@ -229,7 +226,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
     basePath: "/judge",
     homePath: "/judge/dashboard",
     profilePath: "/judge/profile",
-    settingsPath: "/judge/settings",
     notificationPath: "/judge/notifications",
     sidebar: [
       {
@@ -266,7 +262,6 @@ export const roleLayoutConfigs: Partial<Record<UserRole, RoleLayoutConfig>> = {
     basePath: "/mentor",
     homePath: "/mentor/dashboard",
     profilePath: "/mentor/profile",
-    settingsPath: "/mentor/settings",
     notificationPath: "/mentor/notifications",
     sidebar: [
       {

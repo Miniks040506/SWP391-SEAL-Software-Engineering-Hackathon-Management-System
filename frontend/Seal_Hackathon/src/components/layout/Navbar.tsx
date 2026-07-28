@@ -8,7 +8,6 @@ import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownR
 import LeaderboardOutlinedIcon from "@mui/icons-material/LeaderboardOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import { useAuth } from "@/hooks/useAuth";
@@ -292,14 +291,6 @@ const AuthActions = ({
       className="hidden text-gray-500 transition-colors hover:text-gray-900 sm:flex"
     >
       <NotificationsNoneOutlinedIcon />
-    </button>
-
-    <button
-      type="button"
-      onClick={() => navigate("/settings")}
-      className="hidden text-gray-500 transition-colors hover:text-gray-900 sm:flex"
-    >
-      <SettingsOutlinedIcon fontSize="small" />
     </button>
 
     <AvatarMenu

@@ -6,7 +6,6 @@ import Divider from "@mui/material/Divider";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 
 import type { AuthUser } from "@/types/auth.types";
 import { getPrimaryRole, getRoleRedirectPath } from "@/utils/roleRedirect";
@@ -14,7 +13,6 @@ import { getPrimaryRole, getRoleRedirectPath } from "@/utils/roleRedirect";
 type UserAvatarMenuProps = {
   user: AuthUser;
   profilePath?: string;
-  settingsPath?: string;
   onLogout: () => Promise<void> | void;
 };
 
@@ -26,7 +24,6 @@ function getAvatarLetter(user: AuthUser) {
 export function UserAvatarMenu({
   user,
   profilePath = "/personal",
-  settingsPath,
   onLogout,
 }: UserAvatarMenuProps) {
   const navigate = useNavigate();
@@ -135,17 +132,6 @@ export function UserAvatarMenu({
             <PersonOutlineOutlinedIcon fontSize="small" />
             Profile
           </button>
-
-          {settingsPath && (
-            <button
-              type="button"
-              onClick={() => go(settingsPath)}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-            >
-              <SettingsOutlinedIcon fontSize="small" />
-              Settings
-            </button>
-          )}
 
           <Divider />
 

@@ -87,7 +87,6 @@ export function LoggedinLayout({ sectionRole }: LoggedinLayoutProps) {
       <AppNavbar
         homePath={layoutConfig.homePath}
         notificationPath={layoutConfig.notificationPath}
-        settingsPath={layoutConfig.settingsPath}
         profilePath={layoutConfig.profilePath}
         currentEventLabel={sectionRole === "COORDINATOR" ? "Current Event" : null}
         maxWidthClassName="max-w-none"
