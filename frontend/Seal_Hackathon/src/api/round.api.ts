@@ -35,6 +35,15 @@ export const roundApi = {
     return apiRequest.patch<RoundResponse>(`/rounds/${roundId}`, payload);
   },
 
+  uploadProblemStatement(roundId: UUID, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiRequest.postForm<RoundResponse>(
+      `/rounds/${roundId}/problem-statement`,
+      formData,
+    );
+  },
+
   deleteRound(roundId: UUID) {
     return apiRequest.delete<void>(`/rounds/${roundId}`);
   },

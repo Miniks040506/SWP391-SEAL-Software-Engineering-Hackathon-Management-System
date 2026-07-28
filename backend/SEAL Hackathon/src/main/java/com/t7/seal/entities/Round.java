@@ -73,6 +73,15 @@ public class Round {
     @Column(name = "result_published_at")
     private LocalDateTime resultPublishedAt;
 
+    @Column(name = "problem_statement_url", columnDefinition = "TEXT")
+    private String problemStatementUrl;
+
+    @Column(name = "problem_statement_file_name", length = 255)
+    private String problemStatementFileName;
+
+    @Column(name = "problem_statement_uploaded_at")
+    private LocalDateTime problemStatementUploadedAt;
+
     @OneToMany(
             mappedBy = "round",
             fetch = FetchType.LAZY

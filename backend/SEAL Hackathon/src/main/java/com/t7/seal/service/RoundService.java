@@ -3,6 +3,7 @@ package com.t7.seal.service;
 import com.t7.seal.request.round.*;
 import com.t7.seal.response.round.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -13,6 +14,9 @@ public interface RoundService {
     List<RoundResponse> getRoundsByEvent(UUID eventId, Authentication authentication);
 
     RoundDetailResponse getRoundById(UUID roundId, Authentication authentication);
+
+    RoundResponse uploadProblemStatement(UUID roundId, MultipartFile file,
+                                         Authentication authentication);
 
     RoundResponse updateRound(UUID roundId, UpdateRoundRequest request, Authentication authentication);
 

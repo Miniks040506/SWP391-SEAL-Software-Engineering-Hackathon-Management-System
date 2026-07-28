@@ -100,6 +100,9 @@ public record RoundDetailResponse(
                 format = "date-time",
                 accessMode = Schema.AccessMode.READ_ONLY
         )
-        LocalDateTime advancementConfirmedAt
+        LocalDateTime advancementConfirmedAt,
+        String problemStatementUrl,
+        String problemStatementFileName,
+        LocalDateTime problemStatementUploadedAt
 ) {
 }

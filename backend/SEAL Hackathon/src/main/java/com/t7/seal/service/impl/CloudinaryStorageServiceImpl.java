@@ -22,6 +22,7 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp"
     );
+    private static final long PROBLEM_STATEMENT_MAX_SIZE_BYTES = 20L * 1024 * 1024;
 
     private final Cloudinary cloudinary;
     private final CloudinaryProperties cloudinaryProperties;
@@ -85,6 +86,35 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
         }
     }
 
+    @Override
+    public String uploadRoundProblemStatement(UUID roundId, MultipartFile file) {
+        validateProblemStatement(file);
+
+        try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "seal/problem-statements",
+                            "public_id", "round_" + roundId + "_problem_statement.pdf",
+                            "overwrite", true,
+                            "resource_type", "raw",
+                            "unique_filename", false,
+                            "use_filename", false,
+                            "allowed_formats", new String[]{"pdf"}
+                    )
+            );
+            Object secureUrl = uploadResult.get("secure_url");
+            if (secureUrl == null) {
+                throw new ExternalServiceException("Problem statement storage service did not return an upload URL.");
+            }
+            return secureUrl.toString();
+        } catch (ExternalServiceException ex) {
+            throw ex;
+        } catch (IOException | RuntimeException ex) {
+            throw new ExternalServiceException("Problem statement storage service is unavailable.", ex);
+        }
+    }
+
     //HELPERS
     private void validateAvatar(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -119,6 +149,24 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
 
         if (file.getSize() > maxSizeBytes) {
             throw new BadRequestException(label + " must not exceed " + maxSizeMb + "MB.");
+        }
+    }
+
+    private void validateProblemStatement(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Problem statement PDF is required.");
+        }
+
+        String contentType = file.getContentType();
+        String filename = file.getOriginalFilename();
+        if (!"application/pdf".equalsIgnoreCase(contentType)
+                || filename == null
+                || !filename.toLowerCase().endsWith(".pdf")) {
+            throw new BadRequestException("Problem statement must be a PDF file.");
+        }
+
+        if (file.getSize() > PROBLEM_STATEMENT_MAX_SIZE_BYTES) {
+            throw new BadRequestException("Problem statement PDF must not exceed 20MB.");
         }
     }
 }

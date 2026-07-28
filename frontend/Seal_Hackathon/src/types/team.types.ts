@@ -188,6 +188,8 @@ export type EventCompetitionRoundResponse = {
   submittedAt?: ISODateTime | null;
   updatedAt?: ISODateTime | null;
   linkCount: number;
+  problemStatementUrl?: string | null;
+  problemStatementFileName?: string | null;
 };
 
 export type EventCompetitionResponse = {

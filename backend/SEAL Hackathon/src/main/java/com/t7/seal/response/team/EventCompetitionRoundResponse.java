@@ -185,6 +185,8 @@ public record EventCompetitionRoundResponse(
                 example = "1",
                 accessMode = Schema.AccessMode.READ_ONLY
         )
-        Long linkCount
+        Long linkCount,
+        String problemStatementUrl,
+        String problemStatementFileName
 ) {
 }

@@ -13,6 +13,7 @@ import { getEventFallbackBannerUrl } from "@/utils/eventBanner";
 import { AssignmentsTab } from "./AssignmentsTab";
 import { InfoTab } from "./InfoTab";
 import { PrizesTab } from "./PrizesTab";
+import { ProblemStatementsTab } from "./ProblemStatementsTab";
 import { RoundsTab } from "./RoundsTab";
 import { TeamsTab } from "./TeamsTab";
 import { TracksTab } from "./TracksTab";
@@ -357,6 +358,15 @@ export function CoordinatorEditEventPage() {
           readonlyReason={editRules.trackRoundReason}
           canOperate={editRules.canOperateRounds}
           operationReadonlyReason={editRules.roundOperationReason}
+        />
+      )}
+      {activeTab === "PROBLEMS" && (
+        <ProblemStatementsTab
+          rounds={roundsQuery.data ?? []}
+          isLoading={roundsQuery.isLoading}
+          canEdit={!editRules.isReadOnly}
+          readonlyReason="Problem statements are read-only for this event status."
+          onChanged={invalidateEditData}
         />
       )}
       {activeTab === "ASSIGNMENTS" && (

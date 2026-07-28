@@ -876,7 +876,9 @@ public class TeamServiceImpl implements TeamService {
                 submission == null ? null : submission.getSubmissionNumber(),
                 submission == null ? null : submission.getSubmittedAt(),
                 submission == null ? null : submission.getUpdatedAt(),
-                linkCount
+                linkCount,
+                round.getProblemStatementUrl(),
+                round.getProblemStatementFileName()
         );
     }
 

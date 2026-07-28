@@ -86,6 +86,9 @@ public record RoundResponse(
                 format = "date-time",
                 accessMode = Schema.AccessMode.READ_ONLY
         )
-        LocalDateTime resultPublishedAt
+        LocalDateTime resultPublishedAt,
+        String problemStatementUrl,
+        String problemStatementFileName,
+        LocalDateTime problemStatementUploadedAt
 ) {
 }
