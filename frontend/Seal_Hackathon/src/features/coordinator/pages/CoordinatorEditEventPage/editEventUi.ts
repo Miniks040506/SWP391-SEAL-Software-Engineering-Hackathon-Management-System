@@ -7,12 +7,14 @@ import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import Diversity3OutlinedIcon from "@mui/icons-material/Diversity3Outlined";
 import ChecklistOutlinedIcon from "@mui/icons-material/ChecklistOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 
 export type EditTab =
   | "INFO"
   | "TRACKS"
   | "TEAMS"
   | "ROUNDS"
+  | "PROBLEMS"
   | "ASSIGNMENTS"
   | "CRITERIA"
   | "PRIZES";
@@ -69,6 +71,15 @@ export const EDIT_TABS: EditTabTheme[] = [
     glow: "shadow-violet-500/30",
     text: "text-violet-600 dark:text-violet-400",
     soft: "bg-violet-50 dark:bg-violet-500/10",
+  },
+  {
+    value: "PROBLEMS",
+    label: "Problem PDFs",
+    icon: PictureAsPdfOutlinedIcon,
+    gradient: "from-red-500 to-orange-400",
+    glow: "shadow-red-500/30",
+    text: "text-red-600 dark:text-red-400",
+    soft: "bg-red-50 dark:bg-red-500/10",
   },
   {
     value: "ASSIGNMENTS",

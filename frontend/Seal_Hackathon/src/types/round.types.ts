@@ -88,6 +88,9 @@ export type RoundResponse = {
   submissionDeadline?: ISODateTime;
   judgingDeadline?: ISODateTime;
   resultPublishedAt?: ISODateTime | null;
+  problemStatementUrl?: string | null;
+  problemStatementFileName?: string | null;
+  problemStatementUploadedAt?: ISODateTime | null;
 };
 
 export type RoundDetailResponse = {
@@ -105,6 +108,9 @@ export type RoundDetailResponse = {
   submissionLockedAt?: ISODateTime;
   gradingLockedAt?: ISODateTime;
   advancementConfirmedAt?: ISODateTime;
+  problemStatementUrl?: string | null;
+  problemStatementFileName?: string | null;
+  problemStatementUploadedAt?: ISODateTime | null;
 };
 
 export type RoundLockResponse = {
