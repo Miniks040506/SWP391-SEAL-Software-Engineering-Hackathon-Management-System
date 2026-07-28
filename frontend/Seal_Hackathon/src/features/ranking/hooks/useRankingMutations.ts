@@ -46,6 +46,30 @@ export const useCalculateRoundRankingMutation = () => {
   });
 };
 
+export const useApproveRankingTieMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      roundId,
+      rankingId,
+    }: {
+      roundId: UUID;
+      rankingId: UUID;
+    }) => rankingApi.approveTie(roundId, rankingId),
+    onSuccess: () => {
+      enqueueSnackbar("Tie review approved.", { variant: "success" });
+      queryClient.invalidateQueries({ queryKey: rankingQueryKeys.all });
+    },
+    onError: (error: unknown) => {
+      enqueueSnackbar(
+        getPublishErrorMessage(error, "Failed to approve tie review."),
+        { variant: "error" },
+      );
+    },
+  });
+};
+
 export const usePublishEventResultsMutation = () => {
   const queryClient = useQueryClient();
 

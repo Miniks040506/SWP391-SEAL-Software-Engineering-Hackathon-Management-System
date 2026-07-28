@@ -21,6 +21,8 @@ public interface RankingService {
     RankingRecalculationResponse calculateRoundRankings(UUID roundId, UUID trackId,
                                                         Authentication authentication);
 
+    void approveTie(UUID roundId, UUID rankingId, Authentication authentication);
+
     PublishResultsResponse publishEventResults(UUID eventId,
                                                PublishResultsRequest request,
                                                Authentication authentication);

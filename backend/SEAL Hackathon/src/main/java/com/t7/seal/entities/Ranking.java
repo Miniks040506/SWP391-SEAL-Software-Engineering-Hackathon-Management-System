@@ -229,6 +229,11 @@ public class Ranking {
         this.manualResolutionRequired = true;
     }
 
+    // Records coordinator approval while preserving the published tie metadata.
+    public void approveTie() {
+        this.manualResolutionRequired = false;
+    }
+
     // Clears tie-resolution metadata after recalculation.
     public void clearTieStatus() {
         this.tied = false;

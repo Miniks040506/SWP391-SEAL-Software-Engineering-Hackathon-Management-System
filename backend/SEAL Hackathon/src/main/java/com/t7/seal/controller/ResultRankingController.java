@@ -91,6 +91,23 @@ public class ResultRankingController {
         return ResponseEntity.ok(rankingService.calculateRoundRankings(roundId, trackId, authentication));
     }
 
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @Operation(
+            summary = "Approve Ranking Tie",
+            description = "Acknowledges manual review for a tied ranking group so results can be published.",
+            operationId = "resultRankingApproveTie",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PostMapping("/rounds/{roundId}/rankings/{rankingId}/approve-tie")
+    public ResponseEntity<Void> approveTie(
+            @PathVariable UUID roundId,
+            @PathVariable UUID rankingId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        rankingService.approveTie(roundId, rankingId, authentication);
+        return ResponseEntity.noContent().build();
+    }
+
     @PreAuthorize("@eventSecurity.canManageEvent(#eventId, authentication)")
     @Operation(
             summary = "Publish Event Results",

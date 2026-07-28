@@ -9,13 +9,14 @@ import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import { useCoordinatorEventDetailQuery, useCoordinatorEventRoundsQuery, useCoordinatorEventTracksQuery } from "@/features/coordinator/hooks/useCoordinatorEventQueries";
 import { useRoundRankingsQuery } from "../hooks/useRankingQueries";
 import {
+    useApproveRankingTieMutation,
     useCalculateRoundRankingMutation,
     usePublishRoundResultsMutation,
 } from "../hooks/useRankingMutations";
 import { useRoundGradingProgressQuery } from "@/features/grading-progress/hooks/useGradingProgressQueries";
 import { useCoordinatorPublishedAwardsQuery } from "@/features/coordinator/hooks/useCoordinatorPrizeQueries";
 import type { PrizeResponse } from "@/types/prize.types";
-import type { PublishResultsRequest } from "@/types/ranking.types";
+import type { PublishResultsRequest, RankingResponse } from "@/types/ranking.types";
 import type { RoundResponse } from "@/types/round.types";
 
 import { CalculateRankingPanel } from "../components/CalculateRankingPanel";
@@ -91,6 +92,7 @@ export const CoordinatorRankingPage = () => {
     const podiumRankings = podiumRankingsQuery.data ?? [];
 
     const calculateMutation = useCalculateRoundRankingMutation();
+    const approveTieMutation = useApproveRankingTieMutation();
     const roundPublishMutation = usePublishRoundResultsMutation();
     const isPublishing = roundPublishMutation.isPending;
 
@@ -113,6 +115,17 @@ export const CoordinatorRankingPage = () => {
         });
         setPublishDialogOpen(false);
         refetchRankings();
+    };
+
+    const handleApproveTie = (ranking: RankingResponse) => {
+        if (!activeRoundId) return;
+        if (!window.confirm(
+            `Approve the tied score shared by ${ranking.tieGroupSize ?? 2} teams? The tied rank will be preserved.`,
+        )) return;
+        approveTieMutation.mutate({
+            roundId: activeRoundId,
+            rankingId: ranking.id,
+        });
     };
 
     const awardsByTeamId = useMemo(() => {
@@ -150,6 +163,9 @@ export const CoordinatorRankingPage = () => {
     ).length;
     const judgeAssignmentCount = roundProgress?.totalAssignedSubmissions;
     const teamCount = new Set(podiumRankings.map((ranking) => ranking.teamId)).size;
+    const manualReviewCount = podiumRankings.filter(
+        (ranking) => ranking.manualResolutionRequired,
+    ).length;
     const publishedDate =
         event.resultPublishedAt ??
         (rankings.some((ranking) => ranking.published)
@@ -211,6 +227,7 @@ export const CoordinatorRankingPage = () => {
                     disabled={
                         !activeRoundId ||
                         rankings.length === 0 ||
+                        manualReviewCount > 0 ||
                         roundFinalized ||
                         isPublishing
                     }
@@ -293,6 +310,11 @@ export const CoordinatorRankingPage = () => {
                         {completedSubmissionCount === 1 ? "" : "s"}.
                     </Alert>
                 )}
+                {manualReviewCount > 0 && (
+                    <Alert severity="warning" sx={{ borderRadius: "12px", fontWeight: 600 }}>
+                        Review and approve each tied group before publishing results.
+                    </Alert>
+                )}
             </div>
 
             <section className="mb-8">
@@ -313,6 +335,12 @@ export const CoordinatorRankingPage = () => {
                         <CoordinatorRankingTable
                             rankings={rankings}
                             awardsByTeamId={awardsByTeamId}
+                            approvingRankingId={
+                                approveTieMutation.isPending
+                                    ? approveTieMutation.variables?.rankingId
+                                    : undefined
+                            }
+                            onApproveTie={handleApproveTie}
                         />
                     )}
                 </div>

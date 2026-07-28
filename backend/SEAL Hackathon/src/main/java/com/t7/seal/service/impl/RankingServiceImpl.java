@@ -206,6 +206,54 @@ public class RankingServiceImpl implements RankingService {
         );
     }
 
+    @Transactional
+    @Override
+    public void approveTie(UUID roundId, UUID rankingId, Authentication authentication) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new NotFoundException("Round not found " + roundId));
+
+        if (round.isResultPublished()) {
+            throw new ConflictException("Published results cannot be changed.");
+        }
+
+        List<Ranking> rankings = rankingRepository.findByRoundIdAndTrackIdWithDetails(roundId, null);
+        Ranking selected = rankings.stream()
+                .filter(ranking -> ranking.getId().equals(rankingId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Ranking not found in round " + roundId));
+
+        String tieGroupKey = selected.getTieGroupKey();
+        if (!Boolean.TRUE.equals(selected.getManualResolutionRequired())
+                || !Boolean.TRUE.equals(selected.getTied())
+                || tieGroupKey == null) {
+            throw new ConflictException("This ranking does not require manual tie review.");
+        }
+
+        List<Ranking> tieGroup = rankings.stream()
+                .filter(ranking -> tieGroupKey.equals(ranking.getTieGroupKey()))
+                .toList();
+        tieGroup.forEach(Ranking::approveTie);
+        rankingRepository.saveAll(tieGroup);
+
+        auditLogService.record(
+                actor,
+                AuditActionType.RANKING_TIE_APPROVED,
+                "rankings",
+                rankingId,
+                Map.of("manualResolutionRequired", true),
+                Map.of(
+                        "manualResolutionRequired", false,
+                        "rankingIds", tieGroup.stream().map(Ranking::getId).map(UUID::toString).toList()
+                ),
+                Map.of(
+                        "eventId", round.getEvent().getId().toString(),
+                        "roundId", roundId.toString(),
+                        "tieGroupKey", tieGroupKey
+                )
+        );
+    }
+
     @Override
     @Transactional
     public PublishResultsResponse publishEventResults(
