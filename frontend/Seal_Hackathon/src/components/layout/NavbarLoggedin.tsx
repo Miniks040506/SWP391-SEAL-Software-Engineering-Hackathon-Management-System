@@ -1,7 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import Avatar from "@mui/material/Avatar";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { useAuthStore } from "@/stores/authStore";
 
 type NavbarLink = {
@@ -14,7 +13,6 @@ type NavbarLoggedinProps = {
   currentEventLabel?: string;
   navLinks?: NavbarLink[];
   notificationPath?: string;
-  settingsPath?: string;
   profilePath?: string;
 };
 
@@ -28,7 +26,6 @@ export const NavbarLoggedin = ({
   currentEventLabel = "Current: Spring 2024",
   navLinks = [],
   notificationPath,
-  settingsPath,
   profilePath = "/personal",
 }: NavbarLoggedinProps) => {
   const navigate = useNavigate();
@@ -99,15 +96,6 @@ export const NavbarLoggedin = ({
                 className="hidden text-gray-500 transition-colors hover:text-gray-900 dark:text-slate-400 dark:hover:text-white sm:flex"
               >
                 <NotificationsNoneOutlinedIcon fontSize="small" />
-              </button>
-            )}
-
-            {settingsPath && (
-              <button
-                onClick={() => navigate(settingsPath)}
-                className="hidden text-gray-500 transition-colors hover:text-gray-900 dark:text-slate-400 dark:hover:text-white sm:flex"
-              >
-                <SettingsOutlinedIcon fontSize="small" />
               </button>
             )}
 

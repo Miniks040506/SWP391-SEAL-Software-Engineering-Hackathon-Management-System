@@ -6,7 +6,6 @@ import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import LeaderboardOutlinedIcon from "@mui/icons-material/LeaderboardOutlined";
 import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 
 import { teamApi } from "@/api/team.api";
 import { AppLogo } from "@/components/layout/AppLogo";
@@ -31,7 +30,6 @@ type AppNavbarProps = {
   navLinks?: NavbarLink[];
   homePath?: string;
   notificationPath?: string;
-  settingsPath?: string;
   profilePath?: string;
   currentEventLabel?: string | null;
   maxWidthClassName?: string;
@@ -76,7 +74,6 @@ export function AppNavbar({
   navLinks = publicNavLinks,
   homePath,
   notificationPath,
-  settingsPath,
   profilePath,
   currentEventLabel,
   maxWidthClassName = "max-w-6xl",
@@ -288,20 +285,9 @@ export function AppNavbar({
 
               {notificationPath && <NotificationBell inboxPath={notificationPath} />}
 
-              {settingsPath && (
-                <button
-                  type="button"
-                  onClick={() => navigate(settingsPath)}
-                  className="hidden text-gray-500 transition-colors hover:text-gray-900 dark:text-slate-400 dark:hover:text-white sm:flex"
-                >
-                  <SettingsOutlinedIcon fontSize="small" />
-                </button>
-              )}
-
               <UserAvatarMenu
                 user={user}
                 profilePath={profilePath}
-                settingsPath={settingsPath}
                 onLogout={handleLogout}
               />
             </div>
