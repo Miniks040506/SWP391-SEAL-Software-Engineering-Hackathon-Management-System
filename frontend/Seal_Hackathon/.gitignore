@@ -25,3 +25,6 @@ dist-ssr
 
 .history
 .history/*diff.txt
+.vercel
+.env.local
+.env.*.local
