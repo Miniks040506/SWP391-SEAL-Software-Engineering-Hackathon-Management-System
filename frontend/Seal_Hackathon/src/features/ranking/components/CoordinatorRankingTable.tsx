@@ -20,6 +20,8 @@ import { RankingStatusBadge } from "./RankingStatusBadge";
 interface CoordinatorRankingTableProps {
   rankings: RankingResponse[];
   awardsByTeamId?: Map<string, PrizeResponse[]>;
+  approvingRankingId?: string;
+  onApproveTie?: (ranking: RankingResponse) => void;
 }
 
 type RowStatus =
@@ -128,6 +130,8 @@ function CoordinatorBadges({
 export const CoordinatorRankingTable = ({
   rankings,
   awardsByTeamId,
+  approvingRankingId,
+  onApproveTie,
 }: CoordinatorRankingTableProps) => {
   const disqualifyMutation = useDisqualifySubmissionMutation();
   const [disqualifyDialogOpen, setDisqualifyDialogOpen] = useState(false);
@@ -291,6 +295,18 @@ export const CoordinatorRankingTable = ({
                         <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />
                         View submission
                       </Link>
+                      {row.manualResolutionRequired && onApproveTie && (
+                        <button
+                          type="button"
+                          onClick={() => onApproveTie(row)}
+                          disabled={Boolean(approvingRankingId)}
+                          className="min-h-9 cursor-pointer rounded-lg bg-amber-500 px-3 text-xs font-bold text-slate-950 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
+                        >
+                          {approvingRankingId === row.id
+                            ? "Approving..."
+                            : "Approve tie"}
+                        </button>
+                      )}
                       {!disqualified && (
                         <button
                           type="button"
@@ -385,6 +401,18 @@ export const CoordinatorRankingTable = ({
                   <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />
                   View submission
                 </Link>
+                {row.manualResolutionRequired && onApproveTie && (
+                  <button
+                    type="button"
+                    onClick={() => onApproveTie(row)}
+                    disabled={Boolean(approvingRankingId)}
+                    className="min-h-10 flex-1 cursor-pointer rounded-lg bg-amber-500 px-3 text-xs font-bold text-slate-950 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
+                  >
+                    {approvingRankingId === row.id
+                      ? "Approving..."
+                      : "Approve tie"}
+                  </button>
+                )}
                 {!disqualified && (
                   <button
                     type="button"

@@ -33,6 +33,12 @@ export const rankingApi = {
     );
   },
 
+  approveTie(roundId: UUID, rankingId: UUID) {
+    return apiRequest.post<void>(
+      `/rounds/${roundId}/rankings/${rankingId}/approve-tie`,
+    );
+  },
+
   getRoundRankings(roundId: UUID, params?: RoundRankingParams) {
     return apiRequest.get<RankingResponse[]>(`/rounds/${roundId}/rankings`, {
       params,
