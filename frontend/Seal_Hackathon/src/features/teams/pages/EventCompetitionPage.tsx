@@ -3,7 +3,9 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
+import OpenInNewOutlinedIcon from "@mui/icons-material/OpenInNewOutlined";
+import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
@@ -15,6 +17,7 @@ import { teamApi } from "@/api/team.api";
 import { eventApi } from "@/api/event.api";
 import { getSeasonLabel } from "@/features/events/utils/publicEventView";
 import type { EventCompetitionRoundResponse } from "@/types/team.types";
+import { getCloudinaryDownloadUrl } from "@/utils/cloudinaryDownload";
 
 import { useTeamAdvancementStatusQuery } from "@/features/advancement/hooks/useAdvancementQueries";
 import { TeamAdvancementStatusBanner } from "@/features/advancement/components/TeamAdvancementStatusBanner";
@@ -499,16 +502,46 @@ export function EventCompetitionPage() {
               ref={briefRef}
               className={`${briefRevealed ? "ec-reveal" : "ec-reveal-idle"} rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900`}
             >
-              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                <DescriptionOutlinedIcon style={{ fontSize: 17 }} />
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                <PictureAsPdfOutlinedIcon style={{ fontSize: 18 }} />
                 <h2 className="text-xs font-bold uppercase tracking-[0.18em]">
-                  Round brief
+                  Exam paper
                 </h2>
               </div>
               <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-700 dark:text-slate-300">
                 {selectedRound.description ||
                   "No exam instruction has been configured for this round yet. Please wait for the coordinator announcement."}
               </p>
+              {selectedRound.problemStatementUrl ? (
+                <div className="mt-5 flex flex-wrap gap-2">
+                    <a
+                      href={selectedRound.problemStatementUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-2 text-xs font-black text-white hover:bg-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                    >
+                      <OpenInNewOutlinedIcon sx={{ fontSize: 15 }} />
+                        Open exam
+                    </a>
+                    <a
+                      href={getCloudinaryDownloadUrl(
+                        selectedRound.problemStatementUrl,
+                        selectedRound.problemStatementFileName ??
+                          "exam-paper.pdf",
+                      )}
+                      download={selectedRound.problemStatementFileName ?? "problem-statement.pdf"}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-black text-rose-700 hover:border-rose-400 dark:border-rose-400/30 dark:bg-slate-900 dark:text-rose-300"
+                    >
+                      <DownloadOutlinedIcon sx={{ fontSize: 15 }} />
+                        Download PDF
+                    </a>
+                </div>
+              ) : (
+                <div className="mt-5 rounded-xl border border-dashed border-amber-300 bg-amber-50 p-5 text-sm font-semibold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                  The coordinator has not released the PDF exam paper for this
+                  round yet.
+                </div>
+              )}
               <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-gray-500 dark:border-slate-800 dark:text-slate-400">
                 Submission deadline{" "}
                 <span className="font-medium text-gray-700 dark:text-slate-200">
