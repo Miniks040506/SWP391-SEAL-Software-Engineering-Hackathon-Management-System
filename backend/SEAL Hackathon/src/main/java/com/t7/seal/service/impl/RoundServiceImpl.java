@@ -10,6 +10,7 @@ import com.t7.seal.request.round.*;
 import com.t7.seal.response.results.RankingResponse;
 import com.t7.seal.response.round.*;
 import com.t7.seal.response.team.TeamAdvancementDecisionResponse;
+import com.t7.seal.service.CloudinaryStorageService;
 import com.t7.seal.service.CurrentUserService;
 import com.t7.seal.service.NotificationService;
 import com.t7.seal.service.RoundDeadlineReminderService;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -45,6 +47,7 @@ public class RoundServiceImpl implements RoundService {
     private final RankingRepository rankingRepository;
     private final TeamRepository teamRepository;
     private final RoundDeadlineReminderService roundDeadlineReminderService;
+    private final CloudinaryStorageService cloudinaryStorageService;
 
     private final CurrentUserService currentUserService;
 
@@ -142,8 +145,40 @@ public class RoundServiceImpl implements RoundService {
                 round.getJudgingDeadline(),
                 round.getSubmissionLockedAt(),
                 round.getGradingLockedAt(),
-                round.getAdvancementConfirmedAt()
+                round.getAdvancementConfirmedAt(),
+                round.getProblemStatementUrl(),
+                round.getProblemStatementFileName(),
+                round.getProblemStatementUploadedAt()
         );
+    }
+
+    @Transactional
+    @Override
+    public RoundResponse uploadProblemStatement(
+            UUID roundId,
+            MultipartFile file,
+            Authentication authentication
+    ) {
+        User actor = currentUserService.getCurrentUser(authentication);
+        Round round = getRound(roundId);
+        RegistrationStatus eventStatus = round.getEvent().getStatus();
+
+        if (round.isResultPublished()
+                || (eventStatus != RegistrationStatus.DRAFT
+                && eventStatus != RegistrationStatus.REGISTRATION
+                && eventStatus != RegistrationStatus.ONGOING)) {
+            throw new ConflictException("Problem statements cannot be changed in this event status.");
+        }
+
+        String url = cloudinaryStorageService.uploadRoundProblemStatement(roundId, file);
+        round.setProblemStatementUrl(url);
+        round.setProblemStatementFileName(file.getOriginalFilename());
+        round.setProblemStatementUploadedAt(LocalDateTime.now());
+        Round saved = roundRepository.save(round);
+
+        saveRoundAudit(actor, saved, AuditActionType.ROUND_PROBLEM_STATEMENT_UPLOADED,
+                saved.getStatus().name(), saved.getStatus().name());
+        return toRoundResponse(saved);
     }
 
     @Transactional
@@ -957,7 +992,10 @@ public class RoundServiceImpl implements RoundService {
                 round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline(),
-                round.getResultPublishedAt()
+                round.getResultPublishedAt(),
+                round.getProblemStatementUrl(),
+                round.getProblemStatementFileName(),
+                round.getProblemStatementUploadedAt()
         );
     }
 

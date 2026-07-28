@@ -367,7 +367,10 @@ public class EventServiceImpl implements EventService {
                 round.getEndAt(),
                 round.getSubmissionDeadline(),
                 round.getJudgingDeadline(),
-                round.getResultPublishedAt()
+                round.getResultPublishedAt(),
+                round.getProblemStatementUrl(),
+                round.getProblemStatementFileName(),
+                round.getProblemStatementUploadedAt()
         );
     }
 

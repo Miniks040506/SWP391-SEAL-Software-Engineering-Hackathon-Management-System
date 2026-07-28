@@ -16,11 +16,13 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -162,6 +164,23 @@ public class RoundController {
             @Parameter(hidden = true) Authentication authentication
     ) {
         return ResponseEntity.ok(roundService.getRoundById(roundId, authentication));
+    }
+
+    @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
+    @Operation(
+            summary = "Upload Round Problem Statement",
+            description = "Uploads or replaces the PDF problem statement for a round.",
+            operationId = "roundUploadProblemStatement",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PostMapping(value = "/rounds/{roundId}/problem-statement",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RoundResponse> uploadProblemStatement(
+            @PathVariable UUID roundId,
+            @RequestPart("file") MultipartFile file,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(roundService.uploadProblemStatement(roundId, file, authentication));
     }
 
     @PreAuthorize("@eventSecurity.canManageRound(#roundId, authentication)")
