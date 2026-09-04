@@ -509,7 +509,7 @@ Developed by **Team T7** — SWP391, FPT University HCM.
 
 | | | | |
 |---|---|---|---|
-| [Miniks040506](https://github.com/Miniks040506) | [nguyen2312-dev](https://github.com/nguyen2312-dev) | VoNMThu | DatIT-026 |
+| [Miniks040506](https://github.com/Miniks040506) | [nguyen2312-dev](https://github.com/yuk1na2312) | [VoNMThu](https://github.com/VoNMThu) | [DatIT-026](https://github.com/DatIT-026) |
 
 ---
 
